@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,50 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["VcenterClusterHostCount"] = mb.metricVcenterClusterHostCount.config.AggregationStrategy
+			aggMap["VcenterClusterVMCount"] = mb.metricVcenterClusterVMCount.config.AggregationStrategy
+			aggMap["VcenterClusterVsanLatencyAvg"] = mb.metricVcenterClusterVsanLatencyAvg.config.AggregationStrategy
+			aggMap["VcenterClusterVsanOperations"] = mb.metricVcenterClusterVsanOperations.config.AggregationStrategy
+			aggMap["VcenterClusterVsanThroughput"] = mb.metricVcenterClusterVsanThroughput.config.AggregationStrategy
+			aggMap["VcenterDatacenterClusterCount"] = mb.metricVcenterDatacenterClusterCount.config.AggregationStrategy
+			aggMap["VcenterDatacenterDiskSpace"] = mb.metricVcenterDatacenterDiskSpace.config.AggregationStrategy
+			aggMap["VcenterDatacenterHostCount"] = mb.metricVcenterDatacenterHostCount.config.AggregationStrategy
+			aggMap["VcenterDatacenterVMCount"] = mb.metricVcenterDatacenterVMCount.config.AggregationStrategy
+			aggMap["VcenterDatastoreDiskUsage"] = mb.metricVcenterDatastoreDiskUsage.config.AggregationStrategy
+			aggMap["VcenterHostCPUReserved"] = mb.metricVcenterHostCPUReserved.config.AggregationStrategy
+			aggMap["VcenterHostDiskLatencyAvg"] = mb.metricVcenterHostDiskLatencyAvg.config.AggregationStrategy
+			aggMap["VcenterHostDiskLatencyMax"] = mb.metricVcenterHostDiskLatencyMax.config.AggregationStrategy
+			aggMap["VcenterHostDiskThroughput"] = mb.metricVcenterHostDiskThroughput.config.AggregationStrategy
+			aggMap["VcenterHostNetworkPacketDropRate"] = mb.metricVcenterHostNetworkPacketDropRate.config.AggregationStrategy
+			aggMap["VcenterHostNetworkPacketErrorRate"] = mb.metricVcenterHostNetworkPacketErrorRate.config.AggregationStrategy
+			aggMap["VcenterHostNetworkPacketRate"] = mb.metricVcenterHostNetworkPacketRate.config.AggregationStrategy
+			aggMap["VcenterHostNetworkThroughput"] = mb.metricVcenterHostNetworkThroughput.config.AggregationStrategy
+			aggMap["VcenterHostNetworkUsage"] = mb.metricVcenterHostNetworkUsage.config.AggregationStrategy
+			aggMap["VcenterHostVsanLatencyAvg"] = mb.metricVcenterHostVsanLatencyAvg.config.AggregationStrategy
+			aggMap["VcenterHostVsanOperations"] = mb.metricVcenterHostVsanOperations.config.AggregationStrategy
+			aggMap["VcenterHostVsanThroughput"] = mb.metricVcenterHostVsanThroughput.config.AggregationStrategy
+			aggMap["VcenterResourcePoolMemoryGranted"] = mb.metricVcenterResourcePoolMemoryGranted.config.AggregationStrategy
+			aggMap["VcenterResourcePoolMemoryUsage"] = mb.metricVcenterResourcePoolMemoryUsage.config.AggregationStrategy
+			aggMap["VcenterVMCPUTime"] = mb.metricVcenterVMCPUTime.config.AggregationStrategy
+			aggMap["VcenterVMDiskLatencyAvg"] = mb.metricVcenterVMDiskLatencyAvg.config.AggregationStrategy
+			aggMap["VcenterVMDiskLatencyMax"] = mb.metricVcenterVMDiskLatencyMax.config.AggregationStrategy
+			aggMap["VcenterVMDiskThroughput"] = mb.metricVcenterVMDiskThroughput.config.AggregationStrategy
+			aggMap["VcenterVMDiskUsage"] = mb.metricVcenterVMDiskUsage.config.AggregationStrategy
+			aggMap["VcenterVMNetworkBroadcastPacketRate"] = mb.metricVcenterVMNetworkBroadcastPacketRate.config.AggregationStrategy
+			aggMap["VcenterVMNetworkMulticastPacketRate"] = mb.metricVcenterVMNetworkMulticastPacketRate.config.AggregationStrategy
+			aggMap["VcenterVMNetworkPacketDropRate"] = mb.metricVcenterVMNetworkPacketDropRate.config.AggregationStrategy
+			aggMap["VcenterVMNetworkPacketRate"] = mb.metricVcenterVMNetworkPacketRate.config.AggregationStrategy
+			aggMap["VcenterVMNetworkThroughput"] = mb.metricVcenterVMNetworkThroughput.config.AggregationStrategy
+			aggMap["VcenterVMNetworkUsage"] = mb.metricVcenterVMNetworkUsage.config.AggregationStrategy
+			aggMap["VcenterVMVsanLatencyAvg"] = mb.metricVcenterVMVsanLatencyAvg.config.AggregationStrategy
+			aggMap["VcenterVMVsanOperations"] = mb.metricVcenterVMVsanOperations.config.AggregationStrategy
+			aggMap["VcenterVMVsanThroughput"] = mb.metricVcenterVMVsanThroughput.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -78,6 +125,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterClusterHostCountDataPoint(ts, 3, false)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -90,6 +140,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterClusterVMCountDataPoint(ts, 3, AttributeVMCountPowerStateOff)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -102,18 +155,30 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterClusterCountDataPoint(ts, 1, AttributeEntityStatusRed)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterDatacenterClusterCountDataPoint(ts, 3, AttributeEntityStatusYellow)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -126,10 +191,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 1, AttributeDiskStateAvailable)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 3, AttributeDiskStateUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterHostCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeHostPowerStateOn)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterDatacenterHostCountDataPoint(ts, 3, AttributeEntityStatusYellow, AttributeHostPowerStateOff)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -138,10 +209,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatacenterVMCountDataPoint(ts, 1, AttributeEntityStatusRed, AttributeVMCountPowerStateOn)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterDatacenterVMCountDataPoint(ts, 3, AttributeEntityStatusYellow, AttributeVMCountPowerStateOff)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 3, AttributeDiskStateUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -154,6 +231,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUReservedDataPoint(ts, 1, AttributeCPUReservationTypeTotal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostCPUReservedDataPoint(ts, 3, AttributeCPUReservationTypeUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -166,14 +246,23 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 3, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostDiskThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryCapacityDataPoint(ts, 1)
@@ -189,22 +278,37 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostNetworkPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostNetworkUsageDataPoint(ts, 3, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -217,14 +321,23 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterHostVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -241,6 +354,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, 1, AttributeMemoryGrantedTypePrivate)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, 3, AttributeMemoryGrantedTypeShared)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -253,6 +369,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1, AttributeMemoryUsageTypeGuest)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 3, AttributeMemoryUsageTypeHost)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -260,6 +379,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordVcenterVMCPUTimeDataPoint(ts, 1, AttributeCPUStateIdle, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMCPUTimeDataPoint(ts, 3, AttributeCPUStateReady, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -272,18 +394,30 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, AttributeDiskTypeVirtual, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 3, AttributeDiskDirectionWrite, AttributeDiskTypePhysical, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 3, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMDiskThroughputDataPoint(ts, 3, AttributeDiskDirectionWrite, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMDiskUsageDataPoint(ts, 3, AttributeDiskStateUsed)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -314,37 +448,64 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMNetworkPacketRateDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 3, AttributeThroughputDirectionReceived, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1, "object_name-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMNetworkUsageDataPoint(ts, 3, "object_name-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 3, AttributeVsanLatencyTypeWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMVsanOperationsDataPoint(ts, 3, AttributeVsanOperationTypeWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordVcenterVMVsanThroughputDataPoint(ts, 3, AttributeVsanThroughputDirectionWrite)
+			}
 
 			rb := mb.NewResourceBuilder()
 			rb.SetVcenterClusterName("vcenter.cluster.name-val")
@@ -361,36 +522,82 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetVcenterVMTemplateName("vcenter.vm_template.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricVcenterClusterHostCount.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterClusterVMCount.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterClusterVsanLatencyAvg.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterClusterVsanOperations.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterClusterVsanThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterDatacenterClusterCount.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterDatacenterDiskSpace.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterDatacenterHostCount.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterDatacenterVMCount.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterDatastoreDiskUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostCPUReserved.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostDiskLatencyAvg.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostDiskLatencyMax.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostDiskThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostNetworkPacketDropRate.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostNetworkPacketErrorRate.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostNetworkPacketRate.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostNetworkThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostNetworkUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostVsanLatencyAvg.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostVsanOperations.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterHostVsanThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterResourcePoolMemoryGranted.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterResourcePoolMemoryUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMCPUTime.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMDiskLatencyAvg.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMDiskLatencyMax.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMDiskThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMDiskUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMNetworkBroadcastPacketRate.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMNetworkMulticastPacketRate.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMNetworkPacketDropRate.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMNetworkPacketRate.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMNetworkThroughput.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMNetworkUsage.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMVsanLatencyAvg.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMVsanOperations.aggDataPoints)
+				assert.Empty(t, mb.metricVcenterVMVsanThroughput.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "vcenter.cluster.cpu.effective":
 					assert.False(t, validatedMetrics["vcenter.cluster.cpu.effective"], "Found a duplicate in the metrics slice: vcenter.cluster.cpu.effective")
 					validatedMetrics["vcenter.cluster.cpu.effective"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.", mi.Description())
+					assert.Equal(t, "MHz", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -398,44 +605,71 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.cluster.cpu.limit":
 					assert.False(t, validatedMetrics["vcenter.cluster.cpu.limit"], "Found a duplicate in the metrics slice: vcenter.cluster.cpu.limit")
 					validatedMetrics["vcenter.cluster.cpu.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of CPU available to the cluster.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of CPU available to the cluster.", mi.Description())
+					assert.Equal(t, "MHz", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.cluster.host.count":
-					assert.False(t, validatedMetrics["vcenter.cluster.host.count"], "Found a duplicate in the metrics slice: vcenter.cluster.host.count")
-					validatedMetrics["vcenter.cluster.host.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of hosts in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{hosts}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("effective")
-					assert.True(t, ok)
-					assert.True(t, attrVal.Bool())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.cluster.host.count"], "Found a duplicate in the metrics slice: vcenter.cluster.host.count")
+						validatedMetrics["vcenter.cluster.host.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of hosts in the cluster.", mi.Description())
+						assert.Equal(t, "{hosts}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("effective")
+						assert.True(t, ok)
+						assert.True(t, attrVal.Bool())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.cluster.host.count"], "Found a duplicate in the metrics slice: vcenter.cluster.host.count")
+						validatedMetrics["vcenter.cluster.host.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of hosts in the cluster.", mi.Description())
+						assert.Equal(t, "{hosts}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.cluster.host.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("effective")
+						assert.False(t, ok)
+					}
 				case "vcenter.cluster.memory.effective":
 					assert.False(t, validatedMetrics["vcenter.cluster.memory.effective"], "Found a duplicate in the metrics slice: vcenter.cluster.memory.effective")
 					validatedMetrics["vcenter.cluster.memory.effective"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The effective available memory of the cluster.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The effective available memory of the cluster.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -443,44 +677,71 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.cluster.memory.limit":
 					assert.False(t, validatedMetrics["vcenter.cluster.memory.limit"], "Found a duplicate in the metrics slice: vcenter.cluster.memory.limit")
 					validatedMetrics["vcenter.cluster.memory.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The available memory of the cluster.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The available memory of the cluster.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.cluster.vm.count":
-					assert.False(t, validatedMetrics["vcenter.cluster.vm.count"], "Found a duplicate in the metrics slice: vcenter.cluster.vm.count")
-					validatedMetrics["vcenter.cluster.vm.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of virtual machines in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("power_state")
-					assert.True(t, ok)
-					assert.Equal(t, "on", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.cluster.vm.count"], "Found a duplicate in the metrics slice: vcenter.cluster.vm.count")
+						validatedMetrics["vcenter.cluster.vm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of virtual machines in the cluster.", mi.Description())
+						assert.Equal(t, "{virtual_machines}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("power_state")
+						assert.True(t, ok)
+						assert.Equal(t, "on", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.cluster.vm.count"], "Found a duplicate in the metrics slice: vcenter.cluster.vm.count")
+						validatedMetrics["vcenter.cluster.vm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of virtual machines in the cluster.", mi.Description())
+						assert.Equal(t, "{virtual_machines}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.cluster.vm.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("power_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.cluster.vm_template.count":
 					assert.False(t, validatedMetrics["vcenter.cluster.vm_template.count"], "Found a duplicate in the metrics slice: vcenter.cluster.vm_template.count")
 					validatedMetrics["vcenter.cluster.vm_template.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of virtual machine templates in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{virtual_machine_templates}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of virtual machine templates in the cluster.", mi.Description())
+					assert.Equal(t, "{virtual_machine_templates}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -488,87 +749,189 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.cluster.vsan.congestions":
 					assert.False(t, validatedMetrics["vcenter.cluster.vsan.congestions"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.congestions")
 					validatedMetrics["vcenter.cluster.vsan.congestions"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{congestions/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the cluster.", mi.Description())
+					assert.Equal(t, "{congestions/s}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.cluster.vsan.latency.avg":
-					assert.False(t, validatedMetrics["vcenter.cluster.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.latency.avg")
-					validatedMetrics["vcenter.cluster.vsan.latency.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The overall cluster latency while accessing vSAN storage.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.cluster.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.latency.avg")
+						validatedMetrics["vcenter.cluster.vsan.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The overall cluster latency while accessing vSAN storage.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.cluster.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.latency.avg")
+						validatedMetrics["vcenter.cluster.vsan.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The overall cluster latency while accessing vSAN storage.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.cluster.vsan.latency.avg"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.cluster.vsan.operations":
-					assert.False(t, validatedMetrics["vcenter.cluster.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.operations")
-					validatedMetrics["vcenter.cluster.vsan.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The vSAN IOPs of a cluster.", ms.At(i).Description())
-					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.cluster.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.operations")
+						validatedMetrics["vcenter.cluster.vsan.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN IOPs of a cluster.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.cluster.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.operations")
+						validatedMetrics["vcenter.cluster.vsan.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN IOPs of a cluster.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.cluster.vsan.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.cluster.vsan.throughput":
-					assert.False(t, validatedMetrics["vcenter.cluster.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.throughput")
-					validatedMetrics["vcenter.cluster.vsan.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The vSAN throughput of a cluster.", ms.At(i).Description())
-					assert.Equal(t, "By/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.cluster.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.throughput")
+						validatedMetrics["vcenter.cluster.vsan.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN throughput of a cluster.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.cluster.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.throughput")
+						validatedMetrics["vcenter.cluster.vsan.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN throughput of a cluster.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.cluster.vsan.throughput"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "vcenter.datacenter.cluster.count":
-					assert.False(t, validatedMetrics["vcenter.datacenter.cluster.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.cluster.count")
-					validatedMetrics["vcenter.datacenter.cluster.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of clusters in the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "{clusters}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("status")
-					assert.True(t, ok)
-					assert.Equal(t, "red", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.datacenter.cluster.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.cluster.count")
+						validatedMetrics["vcenter.datacenter.cluster.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of clusters in the datacenter.", mi.Description())
+						assert.Equal(t, "{clusters}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "red", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.datacenter.cluster.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.cluster.count")
+						validatedMetrics["vcenter.datacenter.cluster.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of clusters in the datacenter.", mi.Description())
+						assert.Equal(t, "{clusters}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.datacenter.cluster.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.False(t, ok)
+					}
 				case "vcenter.datacenter.cpu.limit":
 					assert.False(t, validatedMetrics["vcenter.datacenter.cpu.limit"], "Found a duplicate in the metrics slice: vcenter.datacenter.cpu.limit")
 					validatedMetrics["vcenter.datacenter.cpu.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total amount of CPU available to the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total amount of CPU available to the datacenter.", mi.Description())
+					assert.Equal(t, "MHz", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -576,113 +939,225 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.datacenter.datastore.count":
 					assert.False(t, validatedMetrics["vcenter.datacenter.datastore.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.datastore.count")
 					validatedMetrics["vcenter.datacenter.datastore.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of datastores in the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "{datastores}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of datastores in the datacenter.", mi.Description())
+					assert.Equal(t, "{datastores}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.datacenter.disk.space":
-					assert.False(t, validatedMetrics["vcenter.datacenter.disk.space"], "Found a duplicate in the metrics slice: vcenter.datacenter.disk.space")
-					validatedMetrics["vcenter.datacenter.disk.space"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of available and used disk space in the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("disk_state")
-					assert.True(t, ok)
-					assert.Equal(t, "available", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.datacenter.disk.space"], "Found a duplicate in the metrics slice: vcenter.datacenter.disk.space")
+						validatedMetrics["vcenter.datacenter.disk.space"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of available and used disk space in the datacenter.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("disk_state")
+						assert.True(t, ok)
+						assert.Equal(t, "available", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.datacenter.disk.space"], "Found a duplicate in the metrics slice: vcenter.datacenter.disk.space")
+						validatedMetrics["vcenter.datacenter.disk.space"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of available and used disk space in the datacenter.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.datacenter.disk.space"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("disk_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.datacenter.host.count":
-					assert.False(t, validatedMetrics["vcenter.datacenter.host.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.host.count")
-					validatedMetrics["vcenter.datacenter.host.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of hosts in the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "{hosts}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("status")
-					assert.True(t, ok)
-					assert.Equal(t, "red", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("power_state")
-					assert.True(t, ok)
-					assert.Equal(t, "on", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.datacenter.host.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.host.count")
+						validatedMetrics["vcenter.datacenter.host.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of hosts in the datacenter.", mi.Description())
+						assert.Equal(t, "{hosts}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "red", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("power_state")
+						assert.True(t, ok)
+						assert.Equal(t, "on", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.datacenter.host.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.host.count")
+						validatedMetrics["vcenter.datacenter.host.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of hosts in the datacenter.", mi.Description())
+						assert.Equal(t, "{hosts}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.datacenter.host.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("power_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.datacenter.memory.limit":
 					assert.False(t, validatedMetrics["vcenter.datacenter.memory.limit"], "Found a duplicate in the metrics slice: vcenter.datacenter.memory.limit")
 					validatedMetrics["vcenter.datacenter.memory.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total amount of memory available to the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total amount of memory available to the datacenter.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.datacenter.vm.count":
-					assert.False(t, validatedMetrics["vcenter.datacenter.vm.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.vm.count")
-					validatedMetrics["vcenter.datacenter.vm.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of VM's in the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("status")
-					assert.True(t, ok)
-					assert.Equal(t, "red", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("power_state")
-					assert.True(t, ok)
-					assert.Equal(t, "on", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.datacenter.vm.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.vm.count")
+						validatedMetrics["vcenter.datacenter.vm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of VM's in the datacenter.", mi.Description())
+						assert.Equal(t, "{virtual_machines}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("status")
+						assert.True(t, ok)
+						assert.Equal(t, "red", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("power_state")
+						assert.True(t, ok)
+						assert.Equal(t, "on", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.datacenter.vm.count"], "Found a duplicate in the metrics slice: vcenter.datacenter.vm.count")
+						validatedMetrics["vcenter.datacenter.vm.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of VM's in the datacenter.", mi.Description())
+						assert.Equal(t, "{virtual_machines}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.datacenter.vm.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("status")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("power_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.datastore.disk.usage":
-					assert.False(t, validatedMetrics["vcenter.datastore.disk.usage"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.usage")
-					validatedMetrics["vcenter.datastore.disk.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of space in the datastore.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("disk_state")
-					assert.True(t, ok)
-					assert.Equal(t, "available", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.datastore.disk.usage"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.usage")
+						validatedMetrics["vcenter.datastore.disk.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of space in the datastore.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("disk_state")
+						assert.True(t, ok)
+						assert.Equal(t, "available", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.datastore.disk.usage"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.usage")
+						validatedMetrics["vcenter.datastore.disk.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of space in the datastore.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.datastore.disk.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("disk_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.datastore.disk.utilization":
 					assert.False(t, validatedMetrics["vcenter.datastore.disk.utilization"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.utilization")
 					validatedMetrics["vcenter.datastore.disk.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The utilization of the datastore.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The utilization of the datastore.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -690,44 +1165,71 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.host.cpu.capacity":
 					assert.False(t, validatedMetrics["vcenter.host.cpu.capacity"], "Found a duplicate in the metrics slice: vcenter.host.cpu.capacity")
 					validatedMetrics["vcenter.host.cpu.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU capacity of the host system.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total CPU capacity of the host system.", mi.Description())
+					assert.Equal(t, "MHz", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.host.cpu.reserved":
-					assert.False(t, validatedMetrics["vcenter.host.cpu.reserved"], "Found a duplicate in the metrics slice: vcenter.host.cpu.reserved")
-					validatedMetrics["vcenter.host.cpu.reserved"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The CPU of the host reserved for use by virtual machines.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("cpu_reservation_type")
-					assert.True(t, ok)
-					assert.Equal(t, "total", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.cpu.reserved"], "Found a duplicate in the metrics slice: vcenter.host.cpu.reserved")
+						validatedMetrics["vcenter.host.cpu.reserved"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The CPU of the host reserved for use by virtual machines.", mi.Description())
+						assert.Equal(t, "MHz", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("cpu_reservation_type")
+						assert.True(t, ok)
+						assert.Equal(t, "total", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.cpu.reserved"], "Found a duplicate in the metrics slice: vcenter.host.cpu.reserved")
+						validatedMetrics["vcenter.host.cpu.reserved"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The CPU of the host reserved for use by virtual machines.", mi.Description())
+						assert.Equal(t, "MHz", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.cpu.reserved"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("cpu_reservation_type")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.cpu.usage":
 					assert.False(t, validatedMetrics["vcenter.host.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.host.cpu.usage")
 					validatedMetrics["vcenter.host.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of CPU used by the host.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of CPU used by the host.", mi.Description())
+					assert.Equal(t, "MHz", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -735,78 +1237,159 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.host.cpu.utilization":
 					assert.False(t, validatedMetrics["vcenter.host.cpu.utilization"], "Found a duplicate in the metrics slice: vcenter.host.cpu.utilization")
 					validatedMetrics["vcenter.host.cpu.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The CPU utilization of the host system.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The CPU utilization of the host system.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.host.disk.latency.avg":
-					assert.False(t, validatedMetrics["vcenter.host.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.avg")
-					validatedMetrics["vcenter.host.disk.latency.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The latency of operations to the host system's disk.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.avg")
+						validatedMetrics["vcenter.host.disk.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The latency of operations to the host system's disk.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.avg")
+						validatedMetrics["vcenter.host.disk.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The latency of operations to the host system's disk.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.disk.latency.avg"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.disk.latency.max":
-					assert.False(t, validatedMetrics["vcenter.host.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.max")
-					validatedMetrics["vcenter.host.disk.latency.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Highest latency value across all disks used by the host.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.max")
+						validatedMetrics["vcenter.host.disk.latency.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Highest latency value across all disks used by the host.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.max")
+						validatedMetrics["vcenter.host.disk.latency.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Highest latency value across all disks used by the host.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.disk.latency.max"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.disk.throughput":
-					assert.False(t, validatedMetrics["vcenter.host.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.host.disk.throughput")
-					validatedMetrics["vcenter.host.disk.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Average number of kilobytes read from or written to the disk each second.", ms.At(i).Description())
-					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.host.disk.throughput")
+						validatedMetrics["vcenter.host.disk.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Average number of kilobytes read from or written to the disk each second.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.host.disk.throughput")
+						validatedMetrics["vcenter.host.disk.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Average number of kilobytes read from or written to the disk each second.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.disk.throughput"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.memory.capacity":
 					assert.False(t, validatedMetrics["vcenter.host.memory.capacity"], "Found a duplicate in the metrics slice: vcenter.host.memory.capacity")
 					validatedMetrics["vcenter.host.memory.capacity"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total memory  capacity of the host system.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total memory  capacity of the host system.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -814,13 +1397,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.host.memory.usage":
 					assert.False(t, validatedMetrics["vcenter.host.memory.usage"], "Found a duplicate in the metrics slice: vcenter.host.memory.usage")
 					validatedMetrics["vcenter.host.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory the host system is using.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory the host system is using.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -828,114 +1411,251 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.host.memory.utilization":
 					assert.False(t, validatedMetrics["vcenter.host.memory.utilization"], "Found a duplicate in the metrics slice: vcenter.host.memory.utilization")
 					validatedMetrics["vcenter.host.memory.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The percentage of the host system's memory capacity that is being utilized.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The percentage of the host system's memory capacity that is being utilized.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.host.network.packet.drop.rate":
-					assert.False(t, validatedMetrics["vcenter.host.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.drop.rate")
-					validatedMetrics["vcenter.host.network.packet.drop.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The rate of packets dropped across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
-					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.drop.rate")
+						validatedMetrics["vcenter.host.network.packet.drop.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packets dropped across each physical NIC (network interface controller) instance on the host.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.drop.rate")
+						validatedMetrics["vcenter.host.network.packet.drop.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packets dropped across each physical NIC (network interface controller) instance on the host.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.host.network.packet.drop.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.network.packet.error.rate":
-					assert.False(t, validatedMetrics["vcenter.host.network.packet.error.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.error.rate")
-					validatedMetrics["vcenter.host.network.packet.error.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The rate of packet errors transmitted or received on the host network.", ms.At(i).Description())
-					assert.Equal(t, "{errors/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.network.packet.error.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.error.rate")
+						validatedMetrics["vcenter.host.network.packet.error.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packet errors transmitted or received on the host network.", mi.Description())
+						assert.Equal(t, "{errors/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.network.packet.error.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.error.rate")
+						validatedMetrics["vcenter.host.network.packet.error.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packet errors transmitted or received on the host network.", mi.Description())
+						assert.Equal(t, "{errors/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.host.network.packet.error.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.network.packet.rate":
-					assert.False(t, validatedMetrics["vcenter.host.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.rate")
-					validatedMetrics["vcenter.host.network.packet.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
-					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.rate")
+						validatedMetrics["vcenter.host.network.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.rate")
+						validatedMetrics["vcenter.host.network.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.host.network.packet.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.network.throughput":
-					assert.False(t, validatedMetrics["vcenter.host.network.throughput"], "Found a duplicate in the metrics slice: vcenter.host.network.throughput")
-					validatedMetrics["vcenter.host.network.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of data that was transmitted or received over the network by the host.", ms.At(i).Description())
-					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.network.throughput"], "Found a duplicate in the metrics slice: vcenter.host.network.throughput")
+						validatedMetrics["vcenter.host.network.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of data that was transmitted or received over the network by the host.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.network.throughput"], "Found a duplicate in the metrics slice: vcenter.host.network.throughput")
+						validatedMetrics["vcenter.host.network.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of data that was transmitted or received over the network by the host.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.network.throughput"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.network.usage":
-					assert.False(t, validatedMetrics["vcenter.host.network.usage"], "Found a duplicate in the metrics slice: vcenter.host.network.usage")
-					validatedMetrics["vcenter.host.network.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The sum of the data transmitted and received for all the NIC instances of the host.", ms.At(i).Description())
-					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.network.usage"], "Found a duplicate in the metrics slice: vcenter.host.network.usage")
+						validatedMetrics["vcenter.host.network.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The sum of the data transmitted and received for all the NIC instances of the host.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.network.usage"], "Found a duplicate in the metrics slice: vcenter.host.network.usage")
+						validatedMetrics["vcenter.host.network.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The sum of the data transmitted and received for all the NIC instances of the host.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.network.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.vsan.cache.hit_rate":
 					assert.False(t, validatedMetrics["vcenter.host.vsan.cache.hit_rate"], "Found a duplicate in the metrics slice: vcenter.host.vsan.cache.hit_rate")
 					validatedMetrics["vcenter.host.vsan.cache.hit_rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The host's read IOs which could be satisfied by the local client cache.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The host's read IOs which could be satisfied by the local client cache.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -943,70 +1663,145 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.host.vsan.congestions":
 					assert.False(t, validatedMetrics["vcenter.host.vsan.congestions"], "Found a duplicate in the metrics slice: vcenter.host.vsan.congestions")
 					validatedMetrics["vcenter.host.vsan.congestions"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the host.", ms.At(i).Description())
-					assert.Equal(t, "{congestions/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the host.", mi.Description())
+					assert.Equal(t, "{congestions/s}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.host.vsan.latency.avg":
-					assert.False(t, validatedMetrics["vcenter.host.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.vsan.latency.avg")
-					validatedMetrics["vcenter.host.vsan.latency.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The host latency while accessing vSAN storage.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.vsan.latency.avg")
+						validatedMetrics["vcenter.host.vsan.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The host latency while accessing vSAN storage.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.vsan.latency.avg")
+						validatedMetrics["vcenter.host.vsan.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The host latency while accessing vSAN storage.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.vsan.latency.avg"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.vsan.operations":
-					assert.False(t, validatedMetrics["vcenter.host.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.host.vsan.operations")
-					validatedMetrics["vcenter.host.vsan.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The vSAN IOPs of a host.", ms.At(i).Description())
-					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.host.vsan.operations")
+						validatedMetrics["vcenter.host.vsan.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN IOPs of a host.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.host.vsan.operations")
+						validatedMetrics["vcenter.host.vsan.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN IOPs of a host.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.host.vsan.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.host.vsan.throughput":
-					assert.False(t, validatedMetrics["vcenter.host.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.host.vsan.throughput")
-					validatedMetrics["vcenter.host.vsan.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The vSAN throughput of a host.", ms.At(i).Description())
-					assert.Equal(t, "By/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.host.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.host.vsan.throughput")
+						validatedMetrics["vcenter.host.vsan.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN throughput of a host.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.host.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.host.vsan.throughput")
+						validatedMetrics["vcenter.host.vsan.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN throughput of a host.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.host.vsan.throughput"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "vcenter.resource_pool.cpu.shares":
 					assert.False(t, validatedMetrics["vcenter.resource_pool.cpu.shares"], "Found a duplicate in the metrics slice: vcenter.resource_pool.cpu.shares")
 					validatedMetrics["vcenter.resource_pool.cpu.shares"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of shares of CPU in the resource pool.", ms.At(i).Description())
-					assert.Equal(t, "{shares}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of shares of CPU in the resource pool.", mi.Description())
+					assert.Equal(t, "{shares}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1014,13 +1809,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.resource_pool.cpu.usage":
 					assert.False(t, validatedMetrics["vcenter.resource_pool.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.resource_pool.cpu.usage")
 					validatedMetrics["vcenter.resource_pool.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The usage of the CPU used by the resource pool.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The usage of the CPU used by the resource pool.", mi.Description())
+					assert.Equal(t, "MHz", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1028,44 +1823,71 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.resource_pool.memory.ballooned":
 					assert.False(t, validatedMetrics["vcenter.resource_pool.memory.ballooned"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.ballooned")
 					validatedMetrics["vcenter.resource_pool.memory.ballooned"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory in a resource pool that is ballooned due to virtualization.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory in a resource pool that is ballooned due to virtualization.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.resource_pool.memory.granted":
-					assert.False(t, validatedMetrics["vcenter.resource_pool.memory.granted"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.granted")
-					validatedMetrics["vcenter.resource_pool.memory.granted"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "private", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.resource_pool.memory.granted"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.granted")
+						validatedMetrics["vcenter.resource_pool.memory.granted"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.", mi.Description())
+						assert.Equal(t, "MiBy", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "private", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.resource_pool.memory.granted"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.granted")
+						validatedMetrics["vcenter.resource_pool.memory.granted"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.", mi.Description())
+						assert.Equal(t, "MiBy", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.resource_pool.memory.granted"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.resource_pool.memory.shares":
 					assert.False(t, validatedMetrics["vcenter.resource_pool.memory.shares"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.shares")
 					validatedMetrics["vcenter.resource_pool.memory.shares"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of shares of memory in the resource pool.", ms.At(i).Description())
-					assert.Equal(t, "{shares}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of shares of memory in the resource pool.", mi.Description())
+					assert.Equal(t, "{shares}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1073,74 +1895,128 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.resource_pool.memory.swapped":
 					assert.False(t, validatedMetrics["vcenter.resource_pool.memory.swapped"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.swapped")
 					validatedMetrics["vcenter.resource_pool.memory.swapped"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from the host's swap space.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from the host's swap space.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.resource_pool.memory.usage":
-					assert.False(t, validatedMetrics["vcenter.resource_pool.memory.usage"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.usage")
-					validatedMetrics["vcenter.resource_pool.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The usage of the memory by the resource pool.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "guest", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.resource_pool.memory.usage"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.usage")
+						validatedMetrics["vcenter.resource_pool.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The usage of the memory by the resource pool.", mi.Description())
+						assert.Equal(t, "MiBy", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "guest", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.resource_pool.memory.usage"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.usage")
+						validatedMetrics["vcenter.resource_pool.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The usage of the memory by the resource pool.", mi.Description())
+						assert.Equal(t, "MiBy", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.resource_pool.memory.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.cpu.readiness":
 					assert.False(t, validatedMetrics["vcenter.vm.cpu.readiness"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.readiness")
 					validatedMetrics["vcenter.vm.cpu.readiness"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.vm.cpu.time":
-					assert.False(t, validatedMetrics["vcenter.vm.cpu.time"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.time")
-					validatedMetrics["vcenter.vm.cpu.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU time spent in idle, ready or wait state.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "idle", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.cpu.time"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.time")
+						validatedMetrics["vcenter.vm.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU time spent in idle, ready or wait state.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("cpu_state")
+						assert.True(t, ok)
+						assert.Equal(t, "idle", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.cpu.time"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.time")
+						validatedMetrics["vcenter.vm.cpu.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "CPU time spent in idle, ready or wait state.", mi.Description())
+						assert.Equal(t, "%", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.vm.cpu.time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("cpu_state")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.cpu.usage":
 					assert.False(t, validatedMetrics["vcenter.vm.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.usage")
 					validatedMetrics["vcenter.vm.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of CPU used by the VM.", ms.At(i).Description())
-					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of CPU used by the VM.", mi.Description())
+					assert.Equal(t, "MHz", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1148,94 +2024,202 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.cpu.utilization":
 					assert.False(t, validatedMetrics["vcenter.vm.cpu.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.utilization")
 					validatedMetrics["vcenter.vm.cpu.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The CPU utilization of the VM.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The CPU utilization of the VM.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.vm.disk.latency.avg":
-					assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")
-					validatedMetrics["vcenter.vm.disk.latency.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The latency of operations to the virtual machine's disk.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("disk_type")
-					assert.True(t, ok)
-					assert.Equal(t, "virtual", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")
+						validatedMetrics["vcenter.vm.disk.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The latency of operations to the virtual machine's disk.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("disk_type")
+						assert.True(t, ok)
+						assert.Equal(t, "virtual", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")
+						validatedMetrics["vcenter.vm.disk.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The latency of operations to the virtual machine's disk.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.disk.latency.avg"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("disk_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.disk.latency.max":
-					assert.False(t, validatedMetrics["vcenter.vm.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.max")
-					validatedMetrics["vcenter.vm.disk.latency.max"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The highest reported total latency (device and kernel times) over an interval of 20 seconds.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.max")
+						validatedMetrics["vcenter.vm.disk.latency.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The highest reported total latency (device and kernel times) over an interval of 20 seconds.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.max")
+						validatedMetrics["vcenter.vm.disk.latency.max"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The highest reported total latency (device and kernel times) over an interval of 20 seconds.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.disk.latency.max"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.disk.throughput":
-					assert.False(t, validatedMetrics["vcenter.vm.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.disk.throughput")
-					validatedMetrics["vcenter.vm.disk.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average number of kilobytes read from or written to the virtual disk each second.", ms.At(i).Description())
-					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.disk.throughput")
+						validatedMetrics["vcenter.vm.disk.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of kilobytes read from or written to the virtual disk each second.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.disk.throughput")
+						validatedMetrics["vcenter.vm.disk.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Average number of kilobytes read from or written to the virtual disk each second.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.disk.throughput"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.disk.usage":
-					assert.False(t, validatedMetrics["vcenter.vm.disk.usage"], "Found a duplicate in the metrics slice: vcenter.vm.disk.usage")
-					validatedMetrics["vcenter.vm.disk.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of storage space used by the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("disk_state")
-					assert.True(t, ok)
-					assert.Equal(t, "available", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.usage"], "Found a duplicate in the metrics slice: vcenter.vm.disk.usage")
+						validatedMetrics["vcenter.vm.disk.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of storage space used by the virtual machine.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("disk_state")
+						assert.True(t, ok)
+						assert.Equal(t, "available", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.disk.usage"], "Found a duplicate in the metrics slice: vcenter.vm.disk.usage")
+						validatedMetrics["vcenter.vm.disk.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of storage space used by the virtual machine.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.disk.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("disk_state")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.disk.utilization":
 					assert.False(t, validatedMetrics["vcenter.vm.disk.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.disk.utilization")
 					validatedMetrics["vcenter.vm.disk.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The utilization of storage on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The utilization of storage on the virtual machine.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -1243,13 +2227,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.memory.ballooned":
 					assert.False(t, validatedMetrics["vcenter.vm.memory.ballooned"], "Found a duplicate in the metrics slice: vcenter.vm.memory.ballooned")
 					validatedMetrics["vcenter.vm.memory.ballooned"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is ballooned due to virtualization.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is ballooned due to virtualization.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1257,13 +2241,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.memory.granted":
 					assert.False(t, validatedMetrics["vcenter.vm.memory.granted"], "Found a duplicate in the metrics slice: vcenter.vm.memory.granted")
 					validatedMetrics["vcenter.vm.memory.granted"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is granted to a VM.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is granted to a VM.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1271,13 +2255,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.memory.swapped":
 					assert.False(t, validatedMetrics["vcenter.vm.memory.swapped"], "Found a duplicate in the metrics slice: vcenter.vm.memory.swapped")
 					validatedMetrics["vcenter.vm.memory.swapped"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The portion of memory that is granted to this VM from the host's swap space.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The portion of memory that is granted to this VM from the host's swap space.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1285,13 +2269,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.memory.swapped_ssd":
 					assert.False(t, validatedMetrics["vcenter.vm.memory.swapped_ssd"], "Found a duplicate in the metrics slice: vcenter.vm.memory.swapped_ssd")
 					validatedMetrics["vcenter.vm.memory.swapped_ssd"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory swapped to fast disk device such as SSD.", ms.At(i).Description())
-					assert.Equal(t, "KiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory swapped to fast disk device such as SSD.", mi.Description())
+					assert.Equal(t, "KiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1299,13 +2283,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.memory.usage":
 					assert.False(t, validatedMetrics["vcenter.vm.memory.usage"], "Found a duplicate in the metrics slice: vcenter.vm.memory.usage")
 					validatedMetrics["vcenter.vm.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is used by the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is used by the virtual machine.", mi.Description())
+					assert.Equal(t, "MiBy", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -1313,169 +2297,408 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.memory.utilization":
 					assert.False(t, validatedMetrics["vcenter.vm.memory.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.memory.utilization")
 					validatedMetrics["vcenter.vm.memory.utilization"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The memory utilization of the VM.", ms.At(i).Description())
-					assert.Equal(t, "%", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The memory utilization of the VM.", mi.Description())
+					assert.Equal(t, "%", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.vm.network.broadcast.packet.rate":
-					assert.False(t, validatedMetrics["vcenter.vm.network.broadcast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.broadcast.packet.rate")
-					validatedMetrics["vcenter.vm.network.broadcast.packet.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.network.broadcast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.broadcast.packet.rate")
+						validatedMetrics["vcenter.vm.network.broadcast.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.network.broadcast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.broadcast.packet.rate")
+						validatedMetrics["vcenter.vm.network.broadcast.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.vm.network.broadcast.packet.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.network.multicast.packet.rate":
-					assert.False(t, validatedMetrics["vcenter.vm.network.multicast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.multicast.packet.rate")
-					validatedMetrics["vcenter.vm.network.multicast.packet.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.network.multicast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.multicast.packet.rate")
+						validatedMetrics["vcenter.vm.network.multicast.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.network.multicast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.multicast.packet.rate")
+						validatedMetrics["vcenter.vm.network.multicast.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.vm.network.multicast.packet.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.network.packet.drop.rate":
-					assert.False(t, validatedMetrics["vcenter.vm.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.drop.rate")
-					validatedMetrics["vcenter.vm.network.packet.drop.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.drop.rate")
+						validatedMetrics["vcenter.vm.network.packet.drop.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.drop.rate")
+						validatedMetrics["vcenter.vm.network.packet.drop.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.vm.network.packet.drop.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.network.packet.rate":
-					assert.False(t, validatedMetrics["vcenter.vm.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.rate")
-					validatedMetrics["vcenter.vm.network.packet.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.rate")
+						validatedMetrics["vcenter.vm.network.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.network.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.rate")
+						validatedMetrics["vcenter.vm.network.packet.rate"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", mi.Description())
+						assert.Equal(t, "{packets/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.vm.network.packet.rate"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.network.throughput":
-					assert.False(t, validatedMetrics["vcenter.vm.network.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.network.throughput")
-					validatedMetrics["vcenter.vm.network.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "By/s", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.network.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.network.throughput")
+						validatedMetrics["vcenter.vm.network.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "transmitted", attrVal.Str())
+						attrVal, ok = dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.network.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.network.throughput")
+						validatedMetrics["vcenter.vm.network.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.network.throughput"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.network.usage":
-					assert.False(t, validatedMetrics["vcenter.vm.network.usage"], "Found a duplicate in the metrics slice: vcenter.vm.network.usage")
-					validatedMetrics["vcenter.vm.network.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The network utilization combined transmit and receive rates during an interval.", ms.At(i).Description())
-					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.Equal(t, "object_name-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.network.usage"], "Found a duplicate in the metrics slice: vcenter.vm.network.usage")
+						validatedMetrics["vcenter.vm.network.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The network utilization combined transmit and receive rates during an interval.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("object")
+						assert.True(t, ok)
+						assert.Equal(t, "object_name-val", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.network.usage"], "Found a duplicate in the metrics slice: vcenter.vm.network.usage")
+						validatedMetrics["vcenter.vm.network.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The network utilization combined transmit and receive rates during an interval.", mi.Description())
+						assert.Equal(t, "{KiBy/s}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.network.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("object")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.vsan.latency.avg":
-					assert.False(t, validatedMetrics["vcenter.vm.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.latency.avg")
-					validatedMetrics["vcenter.vm.vsan.latency.avg"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The virtual machine latency while accessing vSAN storage.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.latency.avg")
+						validatedMetrics["vcenter.vm.vsan.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The virtual machine latency while accessing vSAN storage.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.latency.avg")
+						validatedMetrics["vcenter.vm.vsan.latency.avg"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The virtual machine latency while accessing vSAN storage.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.vsan.latency.avg"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.vsan.operations":
-					assert.False(t, validatedMetrics["vcenter.vm.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.operations")
-					validatedMetrics["vcenter.vm.vsan.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The vSAN IOPs of a virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.operations")
+						validatedMetrics["vcenter.vm.vsan.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN IOPs of a virtual machine.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						attrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.vsan.operations"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.operations")
+						validatedMetrics["vcenter.vm.vsan.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN IOPs of a virtual machine.", mi.Description())
+						assert.Equal(t, "{operations/s}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["vcenter.vm.vsan.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "vcenter.vm.vsan.throughput":
-					assert.False(t, validatedMetrics["vcenter.vm.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.throughput")
-					validatedMetrics["vcenter.vm.vsan.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The vSAN throughput of a virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "By/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["vcenter.vm.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.throughput")
+						validatedMetrics["vcenter.vm.vsan.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN throughput of a virtual machine.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						attrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", attrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["vcenter.vm.vsan.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.vsan.throughput")
+						validatedMetrics["vcenter.vm.vsan.throughput"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The vSAN throughput of a virtual machine.", mi.Description())
+						assert.Equal(t, "By/s", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["vcenter.vm.vsan.throughput"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

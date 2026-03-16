@@ -1,4 +1,11 @@
+display_name: Microsoft SQL Server Receiver
 type: sqlserver
+
+description: |
+  The `sqlserver` receiver grabs metrics/logs about a Microsoft SQL Server instance. The receiver works by either using the
+  Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
+  are only available when running on Windows.
+
 
 status:
   class: receiver
@@ -134,6 +141,9 @@ attributes:
     description: Percentage of work completed.
     type: double
   # Stored Procedures
+  sqlserver.procedure_execution_count:
+    description: Number of times that the procedure has been executed since it was last compiled, reported in delta value.
+    type: int
   sqlserver.procedure_id:
     description: The SQL Server ID of the stored procedure, if any
     type: string
@@ -291,6 +301,7 @@ events:
       - server.address
       - server.port
       - db.system.name
+      - sqlserver.procedure_execution_count
       - sqlserver.procedure_id
       - sqlserver.procedure_name
 

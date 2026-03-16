@@ -152,6 +152,9 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 		}
 	}
 
+	// Limit request body size
+	req.Body = http.MaxBytesReader(rw, req.Body, l.cfg.MaxRequestBodySize)
+
 	var payload []byte
 	if req.Header.Get("Content-Encoding") == "gzip" {
 		reader, err := gzip.NewReader(req.Body)

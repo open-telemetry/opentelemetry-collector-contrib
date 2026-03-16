@@ -19,7 +19,7 @@ $defs:
         description: ConsulConfig contains user-specified configurations for the Consul detector
         $ref: ./internal/consul.config
       digitalocean:
-        description: DigitalOceanConfig contains user-specified configurations for the docker detector
+        description: DigitalOceanConfig contains user-specified configurations for the digitalocean detector
         $ref: ./internal/digitalocean.config
       docker:
         description: DockerConfig contains user-specified configurations for the docker detector
@@ -69,6 +69,9 @@ $defs:
       system:
         description: SystemConfig contains user-specified configurations for the System detector
         $ref: ./internal/system.config
+      tencent_cvm:
+        description: TencentCVMConfig contains user-specified configurations for the Tencent Cloud CVM detector
+        $ref: ./internal/tencent/cvm.config
       upcloud:
         description: UpcloudConfig contains user-specified configurations for the upcloud detector
         $ref: ./internal/upcloud.config

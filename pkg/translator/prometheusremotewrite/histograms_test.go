@@ -443,6 +443,41 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			},
 		},
 		{
+			name: "convert exp. to native histogram with specific zero_threshold",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(4)
+				pt.SetSum(10.1)
+				pt.SetScale(1)
+				pt.SetZeroCount(1)
+				pt.SetZeroThreshold(0.02)
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1})
+				pt.Negative().SetOffset(1)
+
+				return pt
+			},
+			wantNativeHist: func() prompb.Histogram {
+				return prompb.Histogram{
+					Count:          &prompb.Histogram_CountInt{CountInt: 4},
+					Sum:            10.1,
+					Schema:         1,
+					ZeroThreshold:  0.02,
+					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
+					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
+					NegativeDeltas: []int64{1, 0},
+					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
+					PositiveDeltas: []int64{1, 0},
+					Timestamp:      500,
+				}
+			},
+		},
+		{
 			name: "convert exp. to native histogram with no sum",
 			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
 				pt := pmetric.NewExponentialHistogramDataPoint()
