@@ -198,6 +198,53 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
 }
 
+func TestDefaultTranslationRules_MemoryTotalIncludesInactive(t *testing.T) {
+	rules := defaultTranslationRules
+	require.NotNil(t, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
+	require.NoError(t, err)
+
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)
+	require.NoError(t, err)
+
+	md := pmetric.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("system.memory.usage")
+	m.SetDescription("Bytes of memory in use")
+	m.SetUnit("bytes")
+	g := m.SetEmptyGauge().DataPoints()
+
+	add := func(state string, value int64) {
+		dp := g.AppendEmpty()
+		dp.Attributes().PutStr("state", state)
+		dp.Attributes().PutStr("host", "host0")
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
+		dp.SetIntValue(value)
+	}
+
+	add("used", 6)
+	add("free", 2)
+	add("inactive", 2)
+
+	translated := c.MetricsToSignalFxV2(md)
+	require.NotNil(t, translated)
+
+	metrics := make(map[string][]*sfxpb.DataPoint)
+	for _, pt := range translated {
+		metrics[pt.Metric] = append(metrics[pt.Metric], pt)
+	}
+
+	total, ok := metrics["memory.total"]
+	require.True(t, ok, "memory.total metric not found")
+	require.Len(t, total, 1)
+	require.EqualValues(t, 10, *total[0].Value.IntValue)
+
+	util, ok := metrics["memory.utilization"]
+	require.True(t, ok, "memory.utilization metric not found")
+	require.Len(t, util, 1)
+	require.Equal(t, 60.0, *util[0].Value.DoubleValue)
+}
+
 func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 	var found bool
 	for _, dim := range dims {
