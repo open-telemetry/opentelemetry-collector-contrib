@@ -453,7 +453,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusOK,
 						)
 					},
-					queryParams:        "",
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -473,7 +473,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -546,7 +546,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
-					queryParams:        "",
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -581,7 +581,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=metrics",
+					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -713,7 +713,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -784,7 +784,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusStopped,
 						)
 					},
-					queryParams:        "",
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -804,7 +804,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -813,7 +813,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=metrics",
+					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -1115,7 +1115,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusOK,
 						)
 					},
-					queryParams:        "",
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -1400,7 +1400,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -1409,7 +1409,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=metrics",
+					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -1706,7 +1706,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusOK,
 						)
 					},
-					queryParams:        "",
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -1991,7 +1991,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -2000,7 +2000,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=metrics",
+					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -2302,7 +2302,7 @@ func TestStatus(t *testing.T) {
 							componentstatus.StatusOK,
 						)
 					},
-					queryParams:        "",
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -2587,7 +2587,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
@@ -2596,7 +2596,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=metrics",
+					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,

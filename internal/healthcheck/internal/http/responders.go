@@ -30,13 +30,13 @@ type serializationErr struct {
 }
 
 type responder interface {
-	respond(*status.AggregateStatus, http.ResponseWriter, bool) error
+	respond(*status.AggregateStatus, http.ResponseWriter) error
 }
 
-type responderFunc func(*status.AggregateStatus, http.ResponseWriter, bool) error
+type responderFunc func(*status.AggregateStatus, http.ResponseWriter) error
 
-func (f responderFunc) respond(st *status.AggregateStatus, w http.ResponseWriter, verbose bool) error {
-	return f(st, w, verbose)
+func (f responderFunc) respond(st *status.AggregateStatus, w http.ResponseWriter) error {
+	return f(st, w)
 }
 
 func respondWithJSON(code int, content any, w http.ResponseWriter) error {
@@ -52,7 +52,7 @@ func respondWithJSON(code int, content any, w http.ResponseWriter) error {
 }
 
 func defaultResponder(startTimestamp *time.Time, includeAttributes bool) responderFunc {
-	return func(st *status.AggregateStatus, w http.ResponseWriter, _ bool) error {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		code := responseCodes[st.Status()]
 		sst := toSerializableStatus(st, &serializationOptions{
 			includeStartTime:  true,
@@ -81,7 +81,7 @@ func componentHealthResponder(
 			return ev.Status() != componentstatus.StatusFatalError
 		}
 	}
-	return func(st *status.AggregateStatus, w http.ResponseWriter, _ bool) error {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		now := time.Now()
 		sst := toSerializableStatus(
 			st,
@@ -131,7 +131,7 @@ func legacyDefaultResponder(startTimestamp *time.Time) responderFunc {
 		http.StatusServiceUnavailable: "Server not available",
 	}
 
-	return func(st *status.AggregateStatus, w http.ResponseWriter, _ bool) error {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		code := legacyResponseCodes[st.Status()]
 		resp := healthCheckResponse{
 			StatusMsg: codeToMsgMap[code],
@@ -149,7 +149,7 @@ func legacyCustomResponder(config *ResponseBodyConfig) responderFunc {
 		http.StatusOK:                 []byte(config.Healthy),
 		http.StatusServiceUnavailable: []byte(config.Unhealthy),
 	}
-	return func(st *status.AggregateStatus, w http.ResponseWriter, _ bool) error {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		code := legacyResponseCodes[st.Status()]
 		w.WriteHeader(code)
 		_, err := w.Write(codeToMsgMap[code])
