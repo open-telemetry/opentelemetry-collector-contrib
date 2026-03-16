@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -67,6 +68,48 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 			require.NoError(t, err)
 
 			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessLogs_ResourceContext_EntityRefs(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td plog.Logs)
+	}{
+		{
+			statement: `delete_key(attributes, "service.name")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().Remove("service.name")
+				entity.ResourceEntityRefs(td.ResourceLogs().At(0).Resource()).RemoveIf(func(e entity.EntityRef) bool {
+					return e.Type() == "service"
+				})
+			},
+		},
+		{
+			statement: `delete_key(attributes, "service.version")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().Remove("service.version")
+				entity.ResourceEntityRefs(td.ResourceLogs().At(0).Resource()).At(0).DescriptionKeys().RemoveIf(func(dk string) bool {
+					return dk == "service.version"
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructLogsWithEntityRefs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), DefaultLogFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessLogs(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructLogsWithEntityRefs()
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
@@ -1348,6 +1391,24 @@ func constructLogs() plog.Logs {
 	fillLogOne(rs0ils0.LogRecords().AppendEmpty())
 	fillLogTwo(rs0ils0.LogRecords().AppendEmpty())
 	return td
+}
+
+func constructLogsWithEntityRefs() plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+
+	common.SetupResourceWithEntityRefs(rl.Resource())
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("test-scope")
+	lr := sl.LogRecords().AppendEmpty()
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
+	lr.SetSeverityNumber(plog.SeverityNumberInfo)
+	lr.SetSeverityText("Info")
+	lr.Body().SetStr("This is a test log message")
+	lr.Attributes().PutStr("test.attribute", "test-value")
+
+	return ld
 }
 
 func fillLogOne(log plog.LogRecord) {

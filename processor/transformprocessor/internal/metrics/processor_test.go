@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -65,6 +66,48 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 			require.NoError(t, err)
 
 			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessMetrics_ResourceContext_EntityRefs(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td pmetric.Metrics)
+	}{
+		{
+			statement: `delete_key(attributes, "service.name")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().Remove("service.name")
+				entity.ResourceEntityRefs(td.ResourceMetrics().At(0).Resource()).RemoveIf(func(e entity.EntityRef) bool {
+					return e.Type() == "service"
+				})
+			},
+		},
+		{
+			statement: `delete_key(attributes, "service.version")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().Remove("service.version")
+				entity.ResourceEntityRefs(td.ResourceMetrics().At(0).Resource()).At(0).DescriptionKeys().RemoveIf(func(dk string) bool {
+					return dk == "service.version"
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructMetricsWithEntityRefs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultMetricFunctions, DefaultDataPointFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructMetricsWithEntityRefs()
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
@@ -2151,6 +2194,27 @@ func constructMetrics() pmetric.Metrics {
 	fillMetricFour(rm0ils0.Metrics().AppendEmpty())
 	fillMetricFive(rm0ils0.Metrics().AppendEmpty())
 	return td
+}
+
+func constructMetricsWithEntityRefs() pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+
+	common.SetupResourceWithEntityRefs(rm.Resource())
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("test-scope")
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test-metric")
+	metric.SetDescription("A test metric")
+	metric.SetUnit("1")
+
+	gauge := metric.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetDoubleValue(123.45)
+	dp.Attributes().PutStr("test.attribute", "test-value")
+
+	return md
 }
 
 func fillMetricOne(m pmetric.Metric) {

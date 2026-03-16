@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -70,6 +71,47 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 			require.NoError(t, err)
 
 			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_ResourceContext_EntityRefs(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td ptrace.Traces)
+	}{
+		{
+			statement: `delete_key(attributes, "service.name")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().Remove("service.name")
+				entity.ResourceEntityRefs(td.ResourceSpans().At(0).Resource()).RemoveIf(func(e entity.EntityRef) bool {
+					return e.Type() == "service"
+				})
+			},
+		},
+		{
+			statement: `delete_key(attributes, "service.version")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().Remove("service.version")
+				entity.ResourceEntityRefs(td.ResourceSpans().At(0).Resource()).At(0).DescriptionKeys().RemoveIf(func(dk string) bool {
+					return dk == "service.version"
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructTracesWithEntityRefs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultSpanFunctions, DefaultSpanEventFunctions)
+			require.NoError(t, err)
+			_, err = processor.ProcessTraces(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructTracesWithEntityRefs()
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
@@ -1616,6 +1658,22 @@ func constructTraces() ptrace.Traces {
 	rs0ils0.Scope().SetName("scope")
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
+	return td
+}
+
+func constructTracesWithEntityRefs() ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+
+	common.SetupResourceWithEntityRefs(rs.Resource())
+
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("test-scope")
+	span := ss.Spans().AppendEmpty()
+	span.SetName("test-span")
+	span.SetSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
+	span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+
 	return td
 }
 

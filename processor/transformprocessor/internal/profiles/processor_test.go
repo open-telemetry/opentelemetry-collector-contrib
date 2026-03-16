@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
@@ -67,6 +68,48 @@ func Test_ProcessProfiles_ResourceContext(t *testing.T) {
 			require.NoError(t, err)
 
 			exTd := constructProfiles()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessProfiles_ResourceContext_EntityRefs(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td pprofile.Profiles)
+	}{
+		{
+			statement: `delete_key(attributes, "service.name")`,
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).Resource().Attributes().Remove("service.name")
+				entity.ResourceEntityRefs(td.ResourceProfiles().At(0).Resource()).RemoveIf(func(e entity.EntityRef) bool {
+					return e.Type() == "service"
+				})
+			},
+		},
+		{
+			statement: `delete_key(attributes, "service.version")`,
+			want: func(td pprofile.Profiles) {
+				td.ResourceProfiles().At(0).Resource().Attributes().Remove("service.version")
+				entity.ResourceEntityRefs(td.ResourceProfiles().At(0).Resource()).At(0).DescriptionKeys().RemoveIf(func(dk string) bool {
+					return dk == "service.version"
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructProfilesWithEntityRefs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), DefaultProfileFunctions)
+			require.NoError(t, err)
+
+			_, err = processor.ProcessProfiles(t.Context(), td)
+			require.NoError(t, err)
+
+			exTd := constructProfilesWithEntityRefs()
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
@@ -1292,6 +1335,30 @@ func Test_NewProcessor_NonDefaultFunctions(t *testing.T) {
 
 func constructProfiles() pprofile.Profiles {
 	return constructTestProfiles().Transform()
+}
+
+func constructProfilesWithEntityRefs() pprofile.Profiles {
+	pd := pprofile.NewProfiles()
+	rp := pd.ResourceProfiles().AppendEmpty()
+
+	common.SetupResourceWithEntityRefs(rp.Resource())
+
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("test-scope")
+	profile := sp.Profiles().AppendEmpty()
+
+	sample := profile.Samples().AppendEmpty()
+	sample.Values().FromRaw([]int64{100})
+
+	dic := pd.Dictionary()
+	dic.StringTable().Append("")
+	dic.StringTable().Append("cpu")
+	dic.StringTable().Append("nanoseconds")
+
+	profile.SampleType().SetTypeStrindex(1)
+	profile.SampleType().SetUnitStrindex(2)
+
+	return pd
 }
 
 func constructTestProfiles() pprofiletest.Profiles {
