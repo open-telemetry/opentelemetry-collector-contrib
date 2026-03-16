@@ -4,6 +4,7 @@
 package datapoints // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,17 +15,17 @@ import (
 )
 
 func TestHistogramValue(t *testing.T) {
+	now := time.Now()
 	for _, tc := range []struct {
 		name        string
 		histogramDP pmetric.HistogramDataPoint
 		mappingMode string
-		wantErr     bool
+		expectedErr error
 		expected    func(t *testing.T) pcommon.Value
 	}{
 		{
 			name: "empty",
 			histogramDP: func() pmetric.HistogramDataPoint {
-				now := time.Now()
 				dp := pmetric.NewHistogramDataPoint()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
@@ -43,7 +44,6 @@ func TestHistogramValue(t *testing.T) {
 		{
 			name: "required_fields_only",
 			histogramDP: func() pmetric.HistogramDataPoint {
-				now := time.Now()
 				dp := pmetric.NewHistogramDataPoint()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
@@ -64,7 +64,6 @@ func TestHistogramValue(t *testing.T) {
 		{
 			name: "default_midpoint_with_explicit_bounds",
 			histogramDP: func() pmetric.HistogramDataPoint {
-				now := time.Now()
 				dp := pmetric.NewHistogramDataPoint()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
@@ -85,7 +84,6 @@ func TestHistogramValue(t *testing.T) {
 		{
 			name: "preserve_intake_histogram_values",
 			histogramDP: func() pmetric.HistogramDataPoint {
-				now := time.Now()
 				dp := pmetric.NewHistogramDataPoint()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
@@ -108,9 +106,49 @@ func TestHistogramValue(t *testing.T) {
 			},
 		},
 		{
-			name: "preserve_intake_histogram_values_invalid_shape",
+			name: "non_ecs_mode_falls_through_to_standard_validation",
 			histogramDP: func() pmetric.HistogramDataPoint {
-				now := time.Now()
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.ExplicitBounds().FromRaw([]float64{10, 50, 100, 200})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 10, 5})
+				dp.Attributes().PutStr("processor.event", "metric")
+				return dp
+			}(),
+			mappingMode: "otel",
+			expectedErr: fmt.Errorf("invalid histogram data point %q", "test"),
+		},
+		{
+			name: "ecs_mode_missing_processor_event_falls_through",
+			histogramDP: func() pmetric.HistogramDataPoint {
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.ExplicitBounds().FromRaw([]float64{10, 50, 100, 200})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 10, 5})
+				return dp
+			}(),
+			mappingMode: "ecs",
+			expectedErr: fmt.Errorf("invalid histogram data point %q", "test"),
+		},
+		{
+			name: "ecs_mode_wrong_processor_event_falls_through",
+			histogramDP: func() pmetric.HistogramDataPoint {
+				dp := pmetric.NewHistogramDataPoint()
+				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
+				dp.ExplicitBounds().FromRaw([]float64{10, 50, 100, 200})
+				dp.BucketCounts().FromRaw([]uint64{10, 25, 10, 5})
+				dp.Attributes().PutStr("processor.event", "transaction")
+				return dp
+			}(),
+			mappingMode: "ecs",
+			expectedErr: fmt.Errorf("invalid histogram data point %q", "test"),
+		},
+		{
+			name: "intake_histogram_values_invalid_shape",
+			histogramDP: func() pmetric.HistogramDataPoint {
 				dp := pmetric.NewHistogramDataPoint()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(-1 * time.Hour)))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
@@ -120,7 +158,7 @@ func TestHistogramValue(t *testing.T) {
 				return dp
 			}(),
 			mappingMode: "ecs",
-			wantErr:     true,
+			expectedErr: fmt.Errorf("invalid histogram data point %q", "test"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -130,8 +168,8 @@ func TestHistogramValue(t *testing.T) {
 
 			esHist := NewHistogram(m, m.Histogram().DataPoints().At(0), tc.mappingMode)
 			actual, err := esHist.Value()
-			if tc.wantErr {
-				require.Error(t, err)
+			if tc.expectedErr != nil {
+				require.EqualError(t, err, tc.expectedErr.Error())
 				return
 			}
 			require.NoError(t, err)
