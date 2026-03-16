@@ -37,6 +37,7 @@ This receiver tails and parses logs from files.
 | `include_file_path_resolved`          | `false`                              | Whether to add the file path after symlinks resolution as the attribute `log.file.path_resolved`.                                                                                                                                                               |
 | `include_file_owner_name`             | `false`                              | Whether to add the file owner name as the attribute `log.file.owner.name`. Not supported for windows.                                                                                                                                                           |
 | `include_file_owner_group_name`       | `false`                              | Whether to add the file group name as the attribute `log.file.owner.group.name`. Not supported for windows.                                                                                                                                                     |
+| `include_file_permissions`                   | `false`                              | Whether to add the file permissions as the attribute `log.file.permissions` in 3-digit octal format (e.g., `755`). Not supported for windows.                                                                                                                                                       |
 | `include_file_record_number`          | `false`                              | Whether to add the record number in the file as the attribute `log.file.record_number`.                                                                                                                                                                         |
 | `include_file_record_offset`          | `false`                              | Whether to add the record offset in the file as the attribute `log.file.record_offset`                                                                                                                                                                          |
 | `poll_interval`                       | 200ms                                | The [duration](#time-parameters) between filesystem polls.                                                                                                                                                                                                      |
@@ -123,7 +124,7 @@ Many parsers operators can be configured to embed certain followup operations su
 
 ### Time parameters
 
-All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `1m`. 
+All time parameters must have the unit of time specified. e.g.: `200ms`, `1s`, `1m`.
 
 ### Log Rotation
 
@@ -250,7 +251,7 @@ Exactly how this information is serialized depends on the type of storage being 
 
 ### Archiving
 
-If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory. 
+If `polls_to_archive` setting is used in conjunction with `storage` setting, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enables the receiver to remember file for a longer period and also aims to use limited amount of memory.
 
 This is useful when `exclude_older_than` setting is used and the user wants the receiver to remember offsets of files for longer period of times. This helps prevent duplication if a file is modified after the `exclude_older_than` duration has passed.
 
@@ -259,7 +260,7 @@ Note that if the `polls_to_archive` setting is used without specifying `storage`
 ## Troubleshooting
 
 ### Tracking symlinked files
-If the receiver is being used to track a symlinked file and the symlink target is expected to change frequently, make sure 
+If the receiver is being used to track a symlinked file and the symlink target is expected to change frequently, make sure
 to set the value of the `poll_interval` setting to something lower than the symlink update frequency.
 
 ### Telemetry metrics
@@ -269,6 +270,21 @@ Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_re
 are provided.
 
 ## Feature Gates
+
+### `filelog.protobufCheckpointEncoding`
+
+When this feature gate is enabled, the receiver uses protobuf encoding for checkpoint storage instead of JSON. This provides improved performance (~7x faster decoding) and reduced storage usage (~31% smaller).
+
+The feature includes full backward compatibility:
+- The receiver can always read both protobuf and JSON checkpoints regardless of the feature gate setting
+- When the feature gate is enabled, new checkpoints are written in protobuf format
+- When the feature gate is disabled, new checkpoints are written in JSON format
+
+To enable this feature gate, use the flag: `--feature-gates=filelog.protobufCheckpointEncoding`
+
+Schedule for this feature gate is:
+
+- Introduce as `Alpha` (disabled by default) in `v0.148.0`
 
 ### `filelog.decompressFingerprint`
 
@@ -280,4 +296,4 @@ Schedule for this feature gate is:
 
 - Introduce as `Alpha` (disabled by default) in `v0.128.0`
 - Move to `Beta` (enabled by default) in `v0.133.0`
-- Move to `Stable` (cannot be disabled) in `v0.142.0` 
+- Move to `Stable` (cannot be disabled) in `v0.142.0`

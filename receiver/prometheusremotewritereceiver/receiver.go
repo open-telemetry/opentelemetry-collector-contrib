@@ -45,10 +45,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		settings:     settings,
 		nextConsumer: nextConsumer,
 		config:       cfg,
-		server: &http.Server{
-			ReadTimeout: 60 * time.Second,
-		},
-		rmCache: cache,
+		rmCache:      cache,
 		bodyBufferPool: &sync.Pool{
 			New: func() any {
 				// Pre-allocate 4KiB

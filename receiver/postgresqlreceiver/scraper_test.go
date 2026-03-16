@@ -631,6 +631,73 @@ func TestScrapeTopQueries(t *testing.T) {
 	assert.Equal(t, float64(12), planTime)
 }
 
+func TestIsExplainableQuery(t *testing.T) {
+	testCases := []struct {
+		name     string
+		query    string
+		expected bool
+	}{
+		// Explainable queries (whitelist: SELECT, TABLE, DELETE, INSERT, UPDATE, WITH, MERGE, VALUES)
+		{name: "simple SELECT", query: "SELECT * FROM users", expected: true},
+		{name: "SELECT with WHERE", query: "SELECT id, name FROM users WHERE active = true", expected: true},
+		{name: "INSERT", query: "INSERT INTO users (name) VALUES ('test')", expected: true},
+		{name: "UPDATE", query: "UPDATE users SET name = 'test' WHERE id = 1", expected: true},
+		{name: "DELETE", query: "DELETE FROM users WHERE id = 1", expected: true},
+		{name: "SELECT with leading whitespace", query: "   SELECT * FROM users", expected: true},
+		{name: "WITH CTE", query: "WITH cte AS (SELECT * FROM users) SELECT * FROM cte", expected: true},
+		{name: "TABLE shorthand", query: "TABLE users", expected: true},
+		{name: "VALUES", query: "VALUES (1, 'a'), (2, 'b')", expected: true},
+		{name: "MERGE", query: "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET name = source.name", expected: true},
+		{name: "SELECT after comment", query: "-- comment\nSELECT * FROM users", expected: true},
+		{name: "SELECT after multi-line comment", query: "/* comment */ SELECT * FROM users", expected: true},
+		{name: "SELECT with parenthesis", query: "(SELECT * FROM users)", expected: false}, // Subquery alone - first char is '('
+
+		// Non-explainable queries (anything not in whitelist)
+		{name: "GRANT", query: "GRANT SELECT ON pg_locks TO demo", expected: false},
+		{name: "REVOKE", query: "REVOKE ALL ON FUNCTION pg_stat_statements_reset() FROM PUBLIC", expected: false},
+		{name: "DROP FUNCTION", query: "DROP FUNCTION pg_stat_statements_reset(Oid, Oid, bigint)", expected: false},
+		{name: "DROP TRIGGER", query: "DROP TRIGGER IF EXISTS update_users_updated_at ON users", expected: false},
+		{name: "DROP TABLE", query: "DROP TABLE users", expected: false},
+		{name: "CREATE INDEX", query: "CREATE INDEX idx_users_name ON users(name)", expected: false},
+		{name: "CREATE EXTENSION", query: "CREATE EXTENSION IF NOT EXISTS pg_stat_statements", expected: false},
+		{name: "CREATE FUNCTION", query: "CREATE FUNCTION my_func() RETURNS void AS $$ BEGIN END; $$ LANGUAGE plpgsql", expected: false},
+		{name: "CREATE TRIGGER", query: "CREATE TRIGGER update_users BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at()", expected: false},
+		{name: "CREATE TABLE", query: "CREATE TABLE users (id INT)", expected: false},
+		{name: "CREATE TABLE AS SELECT", query: "CREATE TABLE new_table AS SELECT * FROM old_table", expected: false}, // CREATE not in whitelist
+		{name: "ALTER TABLE", query: "ALTER TABLE users ADD COLUMN email VARCHAR(255)", expected: false},
+		{name: "TRUNCATE", query: "TRUNCATE TABLE users", expected: false},
+		{name: "SET", query: "SET plan_cache_mode = force_generic_plan", expected: false},
+		{name: "COMMENT", query: "COMMENT ON TABLE users IS 'User table'", expected: false},
+		{name: "VACUUM", query: "VACUUM ANALYZE users", expected: false},
+		{name: "ANALYZE", query: "ANALYZE users", expected: false},
+		{name: "BEGIN", query: "BEGIN", expected: false},
+		{name: "COMMIT", query: "COMMIT", expected: false},
+		{name: "ROLLBACK", query: "ROLLBACK", expected: false},
+		{name: "COPY", query: "COPY users FROM '/tmp/data.csv'", expected: false},
+		{name: "EXPLAIN", query: "EXPLAIN SELECT * FROM users", expected: false}, // EXPLAIN itself not in whitelist
+		{name: "PREPARE", query: "PREPARE stmt AS SELECT * FROM users", expected: false},
+		{name: "EXECUTE", query: "EXECUTE stmt", expected: false},
+		{name: "DEALLOCATE", query: "DEALLOCATE stmt", expected: false},
+
+		// DDL with leading comments (should still be detected as non-explainable)
+		{name: "GRANT after comment", query: "-- Grant permissions\nGRANT SELECT ON users TO demo", expected: false},
+		{name: "DROP after multi-line comment", query: "/* cleanup */ DROP TABLE old_table", expected: false},
+		{name: "REVOKE after nested comments", query: "/* comment */ -- another\nREVOKE ALL FROM demo", expected: false},
+
+		// Edge cases
+		{name: "empty query", query: "", expected: false},
+		{name: "only whitespace", query: "   ", expected: false},
+		{name: "only comment", query: "-- just a comment", expected: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isExplainableQuery(tc.query)
+			assert.Equal(t, tc.expected, result, "query: %s", tc.query)
+		})
+	}
+}
+
 func TestScrapeTopQueriesCollectsOnlyWhenIntervalHasElapsed(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}

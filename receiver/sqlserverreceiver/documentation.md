@@ -632,6 +632,7 @@ top query
 | server.address | The network address of the server hosting the database. | Any Str |
 | server.port | The port number on which the server is listening. | Any Int |
 | db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Any Str |
+| sqlserver.procedure_execution_count | Number of times that the procedure has been executed since it was last compiled, reported in delta value. | Any Int |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str |
 
