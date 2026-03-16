@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       tlscheck.time_left:
-        description: "TlscheckTimeLeftConfig provides config for the tlscheck.time_left metric."
+        description: "TlscheckTimeLeftMetricConfig provides config for the tlscheck.time_left metric."
         type: object
         properties:
           enabled:

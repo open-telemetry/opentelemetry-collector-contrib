@@ -216,7 +216,12 @@ func TestScrapeLogsFromContainer(t *testing.T) {
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: net.JoinHostPort("localhost", p.Port()),
 		},
-		LogsBuilderConfig: metadata.DefaultLogsBuilderConfig(),
+		LogsBuilderConfig: func() metadata.LogsBuilderConfig {
+			cfg := metadata.DefaultLogsBuilderConfig()
+			cfg.Events.DbServerQuerySample.Enabled = true
+			cfg.Events.DbServerTopQuery.Enabled = true
+			return cfg
+		}(),
 	}
 	clientFactory := newDefaultClientFactory(&cfg)
 

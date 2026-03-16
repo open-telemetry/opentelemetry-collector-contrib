@@ -8,6 +8,7 @@ import (
 	"iter"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -31,7 +32,7 @@ import (
 
 const transport = "kafka"
 
-type consumeMessageFunc func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error
+type consumeMessageFunc func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error
 
 type newConsumeMessageFunc func(host component.Host, obsrecv *receiverhelper.ObsReport,
 	telBldr *metadata.TelemetryBuilder,
@@ -76,8 +77,9 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 			return nil, err
 		}
 
-		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
-			return processMessage(ctx, message, config, set.Logger, telBldr,
+		headerAttrKeys := buildHeaderAttrKeys(config)
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&logsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -85,6 +87,7 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 					encoding:    config.Logs.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -101,8 +104,9 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 			return nil, err
 		}
 
-		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
-			return processMessage(ctx, message, config, set.Logger, telBldr,
+		headerAttrKeys := buildHeaderAttrKeys(config)
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&metricsHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -110,6 +114,7 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 					encoding:    config.Metrics.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -126,8 +131,9 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 			return nil, err
 		}
 
-		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
-			return processMessage(ctx, message, config, set.Logger, telBldr,
+		headerAttrKeys := buildHeaderAttrKeys(config)
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&tracesHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -135,6 +141,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 					encoding:    config.Traces.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -151,8 +158,9 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 			return nil, err
 		}
 
-		return func(ctx context.Context, message kafkaMessage, attrs attribute.Set) error {
-			return processMessage(ctx, message, config, set.Logger, telBldr,
+		headerAttrKeys := buildHeaderAttrKeys(config)
+		return func(ctx context.Context, record *kgo.Record, attrs attribute.Set) error {
+			return processMessage(ctx, record, config, set.Logger, telBldr,
 				&profilesHandler{
 					unmarshaler: unmarshaler,
 					obsrecv:     obsrecv,
@@ -160,6 +168,7 @@ func newProfilesReceiver(config *Config, set receiver.Settings, nextConsumer xco
 					encoding:    config.Profiles.Encoding,
 				},
 				attrs,
+				headerAttrKeys,
 			)
 		}, nil
 	}
@@ -343,30 +352,31 @@ func (*profilesHandler) getUnmarshalFailureCounter(telBldr *metadata.TelemetryBu
 	return telBldr.KafkaReceiverUnmarshalFailedProfiles
 }
 
-// processMessage is a generic function that processes any KafkaMessage using a messageHandler
+// processMessage is a generic function that processes a Kafka record (*kgo.Record) using a messageHandler
 func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Profiles](
 	ctx context.Context,
-	message kafkaMessage,
+	record *kgo.Record,
 	config *Config,
 	logger *zap.Logger,
 	telBldr *metadata.TelemetryBuilder,
 	handler messageHandler[T],
 	attrs attribute.Set,
+	headerAttrKeys map[string]string,
 ) error {
 	if logger.Core().Enabled(zap.DebugLevel) {
 		logger.Debug("kafka message received",
-			zap.String("value", string(message.value())),
-			zap.Time("timestamp", message.timestamp()),
-			zap.String("topic", message.topic()),
-			zap.Int32("partition", message.partition()),
-			zap.Int64("offset", message.offset()),
+			zap.String("value", string(record.Value)),
+			zap.Time("timestamp", record.Timestamp),
+			zap.String("topic", record.Topic),
+			zap.Int32("partition", record.Partition),
+			zap.Int64("offset", record.Offset),
 		)
 	}
 
-	ctx = contextWithHeaders(ctx, message.headers())
+	ctx = contextWithHeaders(ctx, record.Headers)
 
 	obsCtx := handler.startObsReport(ctx)
-	data, n, err := handler.unmarshalData(message.value())
+	data, n, err := handler.unmarshalData(record.Value)
 	if err != nil {
 		handler.getUnmarshalFailureCounter(telBldr).Add(ctx, 1, metric.WithAttributeSet(attrs))
 		logger.Error("failed to unmarshal message", zap.Error(err))
@@ -378,7 +388,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	// Add resource attributes from headers if configured
 	if config.HeaderExtraction.ExtractHeaders {
 		for key, value := range getMessageHeaderResourceAttributes(
-			message.headers(), config.HeaderExtraction.Headers,
+			record.Headers, headerAttrKeys,
 		) {
 			for resource := range handler.getResources(data) {
 				resource.Attributes().PutStr(key, value)
@@ -391,18 +401,33 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 	return err
 }
 
-func getMessageHeaderResourceAttributes(h messageHeaders, resHeaders []string) iter.Seq2[string, string] {
+func getMessageHeaderResourceAttributes(headers []kgo.RecordHeader, headerKeys map[string]string) iter.Seq2[string, string] {
 	return func(yield func(string, string) bool) {
-		for _, resHeader := range resHeaders {
-			value, ok := h.get(resHeader)
-			if !ok {
-				continue
-			}
-			if !yield("kafka.header."+resHeader, value) {
-				return
+		for rawKey, attrKey := range headerKeys {
+			for _, h := range headers {
+				if h.Key == rawKey {
+					if !yield(attrKey, string(h.Value)) {
+						return
+					}
+					break
+				}
 			}
 		}
 	}
+}
+
+// buildHeaderAttrKeys pre-computes the mapping from raw header names to their
+// "kafka.header." prefixed attribute keys. Returns nil when header extraction
+// is disabled.
+func buildHeaderAttrKeys(config *Config) map[string]string {
+	if !config.HeaderExtraction.ExtractHeaders {
+		return nil
+	}
+	m := make(map[string]string, len(config.HeaderExtraction.Headers))
+	for _, h := range config.HeaderExtraction.Headers {
+		m[h] = "kafka.header." + h
+	}
+	return m
 }
 
 func newExponentialBackOff(config configretry.BackOffConfig) *backoff.ExponentialBackOff {
@@ -419,15 +444,13 @@ func newExponentialBackOff(config configretry.BackOffConfig) *backoff.Exponentia
 	return backOff
 }
 
-func contextWithHeaders(ctx context.Context, headers messageHeaders) context.Context {
-	m := make(map[string][]string)
-	for header := range headers.all() {
-		key := header.key
-		value := string(header.value)
-		m[key] = append(m[key], value)
-	}
-	if len(m) == 0 {
+func contextWithHeaders(ctx context.Context, headers []kgo.RecordHeader) context.Context {
+	if len(headers) == 0 {
 		return ctx
+	}
+	m := make(map[string][]string, len(headers))
+	for _, h := range headers {
+		m[h.Key] = append(m[h.Key], string(h.Value))
 	}
 	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(m)})
 }
