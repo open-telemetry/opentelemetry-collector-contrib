@@ -1,4 +1,10 @@
+display_name: Microsoft IIS Receiver
 type: iis
+reaggregation_enabled: true
+
+description: |
+  The Microsoft IIS Receiver grabs metrics about an IIS instance using the Windows Performance Counters. Because of
+  this, it is a Windows only receiver.
 
 tests:
   goleak:
@@ -27,12 +33,14 @@ resource_attributes:
 attributes:
   direction:
     description: The direction data is moving.
+    requirement_level: recommended
     type: string
     enum:
       - sent
       - received
   request:
     description: The type of request sent by a client.
+    requirement_level: recommended
     type: string
     enum:
       - delete

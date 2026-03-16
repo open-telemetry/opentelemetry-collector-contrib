@@ -33,7 +33,7 @@ The following settings can be configured:
 ```yaml
 extensions:
   # processor name: cgroupruntime
-  cgroupruntime:
+  cgroup_runtime:
     gomaxprocs:
       enabled: true
     gomemlimit:

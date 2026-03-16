@@ -1,7 +1,23 @@
+$defs:
+  device_config:
+    description: DeviceConfig represents configuration for a single Cisco device in the devices list.
+    type: object
+    properties:
+      auth:
+        $ref: ./internal/connection.auth_config
+      host:
+        type: string
+      name:
+        type: string
+      port:
+        type: integer
 description: Config defines configuration for Cisco OS receiver.
 type: object
 properties:
-  device:
-    $ref: ./internal/connection.device_config
+  devices:
+    description: Devices is the list of Cisco devices to monitor.
+    type: array
+    items:
+      $ref: device_config
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

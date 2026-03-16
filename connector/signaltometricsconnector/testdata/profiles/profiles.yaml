@@ -1,34 +1,3 @@
-resourceProfiles:
-  - resource:
-      attributes:
-        - key: resource.foo
-          value:
-            stringValue: foo
-        - key: resource.bar
-          value:
-            stringValue: bar
-    scopeProfiles:
-      - profiles:
-          - attributeIndices: [0, 1]
-            sample:
-              - timestampsUnixNano: ["0"]
-            sampleType:
-              unitStrindex: 0
-            duration: 10000
-          - attributeIndices: [2, 3]
-            sample:
-              - timestampsUnixNano: ["0"]
-            sampleType:
-              unitStrindex: 0
-            stringTable:
-              - count
-            duration: 10000
-          - attributeIndices: [5]
-            sample:
-              - timestampsUnixNano: ["0"]
-            sampleType:
-              unitStrindex: 0
-        scope: {}
 dictionary:
   attributeTable:
     - keyStrindex: 0
@@ -54,3 +23,40 @@ dictionary:
     - profile.bar
     - profile.required
     - profile.optional
+    - foo
+    - bar
+    - notbar
+    - notfoo
+    - resource.foo
+    - resource.bar
+resourceProfiles:
+  - resource:
+      attributes:
+        - keyStrindex: 8
+          value:
+            stringValueStrindex: 4
+        - keyStrindex: 9
+          value:
+            stringValueStrindex: 5
+    scopeProfiles:
+      - profiles:
+          - attributeIndices: [0, 1]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            duration: 10000
+          - attributeIndices: [2, 3]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+            stringTable:
+              - count
+            duration: 10000
+          - attributeIndices: [5]
+            sample:
+              - timestampsUnixNano: ["0"]
+            sampleType:
+              unitStrindex: 0
+        scope: {}
