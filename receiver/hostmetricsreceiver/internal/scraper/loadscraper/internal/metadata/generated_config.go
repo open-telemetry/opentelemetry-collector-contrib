@@ -6,13 +6,13 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// SystemCPULoadAverage15mConfig provides config for the system.cpu.load_average.15m metric.
-type SystemCPULoadAverage15mConfig struct {
+// SystemCPULoadAverage15mMetricConfig provides config for the system.cpu.load_average.15m metric.
+type SystemCPULoadAverage15mMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemCPULoadAverage15mConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPULoadAverage15mMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -26,13 +26,13 @@ func (ms *SystemCPULoadAverage15mConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SystemCPULoadAverage1mConfig provides config for the system.cpu.load_average.1m metric.
-type SystemCPULoadAverage1mConfig struct {
+// SystemCPULoadAverage1mMetricConfig provides config for the system.cpu.load_average.1m metric.
+type SystemCPULoadAverage1mMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemCPULoadAverage1mConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPULoadAverage1mMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -46,13 +46,13 @@ func (ms *SystemCPULoadAverage1mConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SystemCPULoadAverage5mConfig provides config for the system.cpu.load_average.5m metric.
-type SystemCPULoadAverage5mConfig struct {
+// SystemCPULoadAverage5mMetricConfig provides config for the system.cpu.load_average.5m metric.
+type SystemCPULoadAverage5mMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemCPULoadAverage5mConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPULoadAverage5mMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -68,20 +68,20 @@ func (ms *SystemCPULoadAverage5mConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for load metrics.
 type MetricsConfig struct {
-	SystemCPULoadAverage15m SystemCPULoadAverage15mConfig `mapstructure:"system.cpu.load_average.15m"`
-	SystemCPULoadAverage1m  SystemCPULoadAverage1mConfig  `mapstructure:"system.cpu.load_average.1m"`
-	SystemCPULoadAverage5m  SystemCPULoadAverage5mConfig  `mapstructure:"system.cpu.load_average.5m"`
+	SystemCPULoadAverage15m SystemCPULoadAverage15mMetricConfig `mapstructure:"system.cpu.load_average.15m"`
+	SystemCPULoadAverage1m  SystemCPULoadAverage1mMetricConfig  `mapstructure:"system.cpu.load_average.1m"`
+	SystemCPULoadAverage5m  SystemCPULoadAverage5mMetricConfig  `mapstructure:"system.cpu.load_average.5m"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemCPULoadAverage15m: SystemCPULoadAverage15mConfig{
+		SystemCPULoadAverage15m: SystemCPULoadAverage15mMetricConfig{
 			Enabled: true,
 		},
-		SystemCPULoadAverage1m: SystemCPULoadAverage1mConfig{
+		SystemCPULoadAverage1m: SystemCPULoadAverage1mMetricConfig{
 			Enabled: true,
 		},
-		SystemCPULoadAverage5m: SystemCPULoadAverage5mConfig{
+		SystemCPULoadAverage5m: SystemCPULoadAverage5mMetricConfig{
 			Enabled: true,
 		},
 	}

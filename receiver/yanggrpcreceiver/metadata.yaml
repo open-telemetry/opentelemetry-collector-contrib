@@ -1,5 +1,11 @@
+display_name: YANG gRPC Receiver
 type: yang_grpc
 deprecated_type: yanggrpc
+
+description: |
+  The YANG/gRPC receiver receives metrics offered using the
+  [YANG (Yet Another New Generation) data model](https://en.wikipedia.org/wiki/YANG), expressed over
+  [gRPC](https://ciscolearning.github.io/cisco-learning-codelabs/posts/yangsuite-restconf/#0).
 
 status:
   class: receiver

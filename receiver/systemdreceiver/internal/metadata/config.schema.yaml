@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       systemd.service.cpu.time:
-        description: "SystemdServiceCPUTimeConfig provides config for the systemd.service.cpu.time metric."
+        description: "SystemdServiceCPUTimeMetricConfig provides config for the systemd.service.cpu.time metric."
         type: object
         properties:
           enabled:
@@ -28,14 +28,14 @@ $defs:
             default:
               - "cpu.mode"
       systemd.service.restarts:
-        description: "SystemdServiceRestartsConfig provides config for the systemd.service.restarts metric."
+        description: "SystemdServiceRestartsMetricConfig provides config for the systemd.service.restarts metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       systemd.unit.state:
-        description: "SystemdUnitStateConfig provides config for the systemd.unit.state metric."
+        description: "SystemdUnitStateMetricConfig provides config for the systemd.unit.state metric."
         type: object
         properties:
           enabled:

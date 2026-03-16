@@ -5,56 +5,56 @@ $defs:
     type: object
     properties:
       couchdb.average_request_time:
-        description: "CouchdbAverageRequestTimeConfig provides config for the couchdb.average_request_time metric."
+        description: "CouchdbAverageRequestTimeMetricConfig provides config for the couchdb.average_request_time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       couchdb.database.open:
-        description: "CouchdbDatabaseOpenConfig provides config for the couchdb.database.open metric."
+        description: "CouchdbDatabaseOpenMetricConfig provides config for the couchdb.database.open metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       couchdb.database.operations:
-        description: "CouchdbDatabaseOperationsConfig provides config for the couchdb.database.operations metric."
+        description: "CouchdbDatabaseOperationsMetricConfig provides config for the couchdb.database.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       couchdb.file_descriptor.open:
-        description: "CouchdbFileDescriptorOpenConfig provides config for the couchdb.file_descriptor.open metric."
+        description: "CouchdbFileDescriptorOpenMetricConfig provides config for the couchdb.file_descriptor.open metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       couchdb.httpd.bulk_requests:
-        description: "CouchdbHttpdBulkRequestsConfig provides config for the couchdb.httpd.bulk_requests metric."
+        description: "CouchdbHttpdBulkRequestsMetricConfig provides config for the couchdb.httpd.bulk_requests metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       couchdb.httpd.requests:
-        description: "CouchdbHttpdRequestsConfig provides config for the couchdb.httpd.requests metric."
+        description: "CouchdbHttpdRequestsMetricConfig provides config for the couchdb.httpd.requests metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       couchdb.httpd.responses:
-        description: "CouchdbHttpdResponsesConfig provides config for the couchdb.httpd.responses metric."
+        description: "CouchdbHttpdResponsesMetricConfig provides config for the couchdb.httpd.responses metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       couchdb.httpd.views:
-        description: "CouchdbHttpdViewsConfig provides config for the couchdb.httpd.views metric."
+        description: "CouchdbHttpdViewsMetricConfig provides config for the couchdb.httpd.views metric."
         type: object
         properties:
           enabled:

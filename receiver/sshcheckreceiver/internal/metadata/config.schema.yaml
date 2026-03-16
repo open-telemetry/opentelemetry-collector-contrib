@@ -5,42 +5,42 @@ $defs:
     type: object
     properties:
       sshcheck.duration:
-        description: "SshcheckDurationConfig provides config for the sshcheck.duration metric."
+        description: "SshcheckDurationMetricConfig provides config for the sshcheck.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sshcheck.error:
-        description: "SshcheckErrorConfig provides config for the sshcheck.error metric."
+        description: "SshcheckErrorMetricConfig provides config for the sshcheck.error metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       sshcheck.sftp_duration:
-        description: "SshcheckSftpDurationConfig provides config for the sshcheck.sftp_duration metric."
+        description: "SshcheckSftpDurationMetricConfig provides config for the sshcheck.sftp_duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sshcheck.sftp_error:
-        description: "SshcheckSftpErrorConfig provides config for the sshcheck.sftp_error metric."
+        description: "SshcheckSftpErrorMetricConfig provides config for the sshcheck.sftp_error metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sshcheck.sftp_status:
-        description: "SshcheckSftpStatusConfig provides config for the sshcheck.sftp_status metric."
+        description: "SshcheckSftpStatusMetricConfig provides config for the sshcheck.sftp_status metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       sshcheck.status:
-        description: "SshcheckStatusConfig provides config for the sshcheck.status metric."
+        description: "SshcheckStatusMetricConfig provides config for the sshcheck.status metric."
         type: object
         properties:
           enabled:
