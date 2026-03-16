@@ -103,7 +103,6 @@ extensions:
         enabled: true
         path: "/health/status"
         include_attributes: true
-        verbose: true
       config:
         enabled: true
         path: "/health/config"
@@ -173,8 +172,8 @@ status to HTTP status is as follows:
 
 The response body contains either a detailed, or non-detailed view into collector or pipeline health
 in JSON format. The level of detail applies to the contents of the response body and is controlled
-by the `http.status.verbose` configuration setting. Component event attributes are included when
-`http.status.include_attributes` is set to `true`, regardless of the `http.status.verbose` setting.
+by the `verbose` query parameter. Component event attributes are included when
+`http.status.include_attributes` is set to `true`, regardless of whether the response is detailed.
 
 ###### Error Precedence
 
@@ -195,7 +194,7 @@ collector health.
 **Verbose Example**
 
 Assuming the health check extension is configured with `http.status.endpoint` set to
-`localhost:13133` and `http.status.verbose: true`, a request to `http://localhost:13133/status`
+`localhost:13133`, a request to `http://localhost:13133/status?verbose`
 will have a response body such as:
 
 ```json
@@ -277,7 +276,7 @@ Note the following based on this response:
 
 **Non-verbose Response example**
 
-If the same request is made to a collector with `http.status.verbose` disabled, only the overall
+If the same request is made without the `verbose` query parameter, only the overall
 status will be returned. The pipeline and component level statuses will be omitted. If
 `http.status.include_attributes` is enabled, the overall status will also include an `attributes`
 field.
@@ -302,8 +301,8 @@ pipeline.
 **Verbose Response Example**
 
 Assuming the health check extension is configured with `http.status.endpoint` set to
-`localhost:13133` and `http.status.verbose: true`, a request to
-`http://localhost:13133/status?pipeline=traces/http` will have a response body such as:
+`localhost:13133`, a request to
+`http://localhost:13133/status?pipeline=traces/http&verbose` will have a response body such as:
 
 
 ```json
@@ -334,7 +333,7 @@ Assuming the health check extension is configured with `http.status.endpoint` se
 
 **Non-detailed Response Example**
 
-If the same request is made with `http.status.verbose` disabled, only the overall pipeline status
+If the same request is made without the `verbose` query parameter, only the overall pipeline status
 will be returned. The component level statuses will be omitted. If `http.status.include_attributes`
 is enabled, the overall status will also include an `attributes` field.
 

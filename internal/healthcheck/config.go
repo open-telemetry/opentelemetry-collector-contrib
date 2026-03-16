@@ -177,7 +177,6 @@ func NewDefaultConfig() component.Config {
 				Enabled:           true,
 				Path:              "/status",
 				IncludeAttributes: false,
-				Verbose:           false,
 			},
 			Config: http.PathConfig{
 				Enabled: false,
