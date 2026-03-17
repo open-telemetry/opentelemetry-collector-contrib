@@ -122,10 +122,6 @@ func getQueryParamsFromEndpoint(config *Config, logger *zap.Logger) (queryParams
 		if err != nil {
 			logger.Warn("Failed to parse query parameters from endpoint", zap.Error(err))
 		}
-		delete(queryParams, "require_data_stream")
-		if len(queryParams) == 0 {
-			return nil
-		}
 		return queryParams
 	}
 	return nil

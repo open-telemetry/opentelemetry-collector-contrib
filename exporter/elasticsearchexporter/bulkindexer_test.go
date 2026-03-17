@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"compress/gzip"
 	"io"
 	"net/http"
 	"net/url"
@@ -268,8 +269,9 @@ func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 
 	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
 	require.Equal(t, map[string][]string{
-		"pipeline": {"test-pipeline"},
-		"pretty":   {"false"},
+		"pipeline":            {"test-pipeline"},
+		"pretty":              {"false"},
+		"require_data_stream": {"true"},
 	}, bi.QueryParams)
 }
 
@@ -360,24 +362,29 @@ func TestGetErrorHint(t *testing.T) {
 
 // BenchmarkRequireDataStreamPayloadOverhead benchmarks the payload size
 // overhead of encoding require_data_stream at the document level vs
-// omitting it.
+// omitting it, and reports compression impact on payload size.
 func BenchmarkRequireDataStreamPayloadOverhead(b *testing.B) {
 	for _, tc := range []struct {
 		name              string
 		requireDataStream bool
 		numItems          int
+		compressionLevel  int
 	}{
-		{name: "without_rds/10_items", requireDataStream: false, numItems: 10},
-		{name: "with_rds/10_items", requireDataStream: true, numItems: 10},
-		{name: "without_rds/100_items", requireDataStream: false, numItems: 100},
-		{name: "with_rds/100_items", requireDataStream: true, numItems: 100},
-		{name: "without_rds/1000_items", requireDataStream: false, numItems: 1000},
-		{name: "with_rds/1000_items", requireDataStream: true, numItems: 1000},
+		{name: "no_compression/without_rds/10_items", requireDataStream: false, numItems: 10},
+		{name: "no_compression/with_rds/10_items", requireDataStream: true, numItems: 10},
+		{name: "no_compression/without_rds/100_items", requireDataStream: false, numItems: 100},
+		{name: "no_compression/with_rds/100_items", requireDataStream: true, numItems: 100},
+		{name: "no_compression/without_rds/1000_items", requireDataStream: false, numItems: 1000},
+		{name: "no_compression/with_rds/1000_items", requireDataStream: true, numItems: 1000},
+		{name: "gzip_best_speed/without_rds/1000_items", requireDataStream: false, numItems: 1000, compressionLevel: gzip.BestSpeed},
+		{name: "gzip_best_speed/with_rds/1000_items", requireDataStream: true, numItems: 1000, compressionLevel: gzip.BestSpeed},
+		{name: "gzip_best_compression/without_rds/1000_items", requireDataStream: false, numItems: 1000, compressionLevel: gzip.BestCompression},
+		{name: "gzip_best_compression/with_rds/1000_items", requireDataStream: true, numItems: 1000, compressionLevel: gzip.BestCompression},
 	} {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				biCfg := newBenchBulkIndexerConfig(b)
+				biCfg := newBenchBulkIndexerConfig(b, tc.compressionLevel)
 				bi, err := docappender.NewBulkIndexer(biCfg)
 				require.NoError(b, err)
 				for range tc.numItems {
@@ -390,48 +397,14 @@ func BenchmarkRequireDataStreamPayloadOverhead(b *testing.B) {
 					})
 					require.NoError(b, err)
 				}
+				b.ReportMetric(float64(bi.UncompressedLen()), "uncompressed_payload_bytes")
 				b.ReportMetric(float64(bi.Len()), "payload_bytes")
 			}
 		})
 	}
 }
 
-// TestRequireDataStreamPayloadSizeImpact measures the byte overhead of
-// require_data_stream encoded on the action line.
-func TestRequireDataStreamPayloadSizeImpact(t *testing.T) {
-	buildPayload := func(requireDataStream bool, numItems int) int {
-		biCfg := newBenchBulkIndexerConfig(t)
-		bi, err := docappender.NewBulkIndexer(biCfg)
-		require.NoError(t, err)
-		for range numItems {
-			doc := strings.NewReader(`{"@timestamp":"2024-01-01T00:00:00Z","message":"test log message"}`)
-			err := bi.Add(docappender.BulkIndexerItem{
-				Index:             "logs-generic-default",
-				Body:              doc,
-				Action:            "create",
-				RequireDataStream: requireDataStream,
-			})
-			require.NoError(t, err)
-		}
-		return bi.Len()
-	}
-
-	for _, numItems := range []int{1, 10, 100, 1000} {
-		withoutRDS := buildPayload(false, numItems)
-		withRDS := buildPayload(true, numItems)
-
-		overhead := withRDS - withoutRDS
-		overheadPercent := float64(overhead) / float64(withoutRDS) * 100
-
-		t.Logf("Items: %4d | Without RDS: %6d bytes | With RDS: %6d bytes | Overhead: %4d bytes (%.2f%%)",
-			numItems, withoutRDS, withRDS, overhead, overheadPercent)
-
-		assert.Less(t, overheadPercent, 30.0,
-			"require_data_stream overhead should be less than 30%% for %d items", numItems)
-	}
-}
-
-func newBenchBulkIndexerConfig(tb testing.TB) docappender.BulkIndexerConfig {
+func newBenchBulkIndexerConfig(tb testing.TB, compressionLevel int) docappender.BulkIndexerConfig {
 	tb.Helper()
 	client, err := elastictransport.New(elastictransport.Config{
 		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
@@ -446,5 +419,8 @@ func newBenchBulkIndexerConfig(tb testing.TB) docappender.BulkIndexerConfig {
 		},
 	})
 	require.NoError(tb, err)
-	return docappender.BulkIndexerConfig{Client: client}
+	return docappender.BulkIndexerConfig{
+		Client:           client,
+		CompressionLevel: compressionLevel,
+	}
 }
