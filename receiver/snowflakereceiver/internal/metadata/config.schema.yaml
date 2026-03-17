@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       snowflake.billing.cloud_service.total:
-        description: "SnowflakeBillingCloudServiceTotalConfig provides config for the snowflake.billing.cloud_service.total metric."
+        description: "SnowflakeBillingCloudServiceTotalMetricConfig provides config for the snowflake.billing.cloud_service.total metric."
         type: object
         properties:
           enabled:
@@ -28,7 +28,7 @@ $defs:
             default:
               - "service_type"
       snowflake.billing.total_credit.total:
-        description: "SnowflakeBillingTotalCreditTotalConfig provides config for the snowflake.billing.total_credit.total metric."
+        description: "SnowflakeBillingTotalCreditTotalMetricConfig provides config for the snowflake.billing.total_credit.total metric."
         type: object
         properties:
           enabled:
@@ -51,7 +51,7 @@ $defs:
             default:
               - "service_type"
       snowflake.billing.virtual_warehouse.total:
-        description: "SnowflakeBillingVirtualWarehouseTotalConfig provides config for the snowflake.billing.virtual_warehouse.total metric."
+        description: "SnowflakeBillingVirtualWarehouseTotalMetricConfig provides config for the snowflake.billing.virtual_warehouse.total metric."
         type: object
         properties:
           enabled:
@@ -74,7 +74,7 @@ $defs:
             default:
               - "service_type"
       snowflake.billing.warehouse.cloud_service.total:
-        description: "SnowflakeBillingWarehouseCloudServiceTotalConfig provides config for the snowflake.billing.warehouse.cloud_service.total metric."
+        description: "SnowflakeBillingWarehouseCloudServiceTotalMetricConfig provides config for the snowflake.billing.warehouse.cloud_service.total metric."
         type: object
         properties:
           enabled:
@@ -97,7 +97,7 @@ $defs:
             default:
               - "warehouse_name"
       snowflake.billing.warehouse.total_credit.total:
-        description: "SnowflakeBillingWarehouseTotalCreditTotalConfig provides config for the snowflake.billing.warehouse.total_credit.total metric."
+        description: "SnowflakeBillingWarehouseTotalCreditTotalMetricConfig provides config for the snowflake.billing.warehouse.total_credit.total metric."
         type: object
         properties:
           enabled:
@@ -120,7 +120,7 @@ $defs:
             default:
               - "warehouse_name"
       snowflake.billing.warehouse.virtual_warehouse.total:
-        description: "SnowflakeBillingWarehouseVirtualWarehouseTotalConfig provides config for the snowflake.billing.warehouse.virtual_warehouse.total metric."
+        description: "SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig provides config for the snowflake.billing.warehouse.virtual_warehouse.total metric."
         type: object
         properties:
           enabled:
@@ -143,7 +143,7 @@ $defs:
             default:
               - "warehouse_name"
       snowflake.database.bytes_scanned.avg:
-        description: "SnowflakeDatabaseBytesScannedAvgConfig provides config for the snowflake.database.bytes_scanned.avg metric."
+        description: "SnowflakeDatabaseBytesScannedAvgMetricConfig provides config for the snowflake.database.bytes_scanned.avg metric."
         type: object
         properties:
           enabled:
@@ -178,7 +178,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.database.query.count:
-        description: "SnowflakeDatabaseQueryCountConfig provides config for the snowflake.database.query.count metric."
+        description: "SnowflakeDatabaseQueryCountMetricConfig provides config for the snowflake.database.query.count metric."
         type: object
         properties:
           enabled:
@@ -213,7 +213,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.logins.total:
-        description: "SnowflakeLoginsTotalConfig provides config for the snowflake.logins.total metric."
+        description: "SnowflakeLoginsTotalMetricConfig provides config for the snowflake.logins.total metric."
         type: object
         properties:
           enabled:
@@ -240,7 +240,7 @@ $defs:
               - "reported_client_type"
               - "is_success"
       snowflake.pipe.credits_used.total:
-        description: "SnowflakePipeCreditsUsedTotalConfig provides config for the snowflake.pipe.credits_used.total metric."
+        description: "SnowflakePipeCreditsUsedTotalMetricConfig provides config for the snowflake.pipe.credits_used.total metric."
         type: object
         properties:
           enabled:
@@ -263,7 +263,7 @@ $defs:
             default:
               - "pipe_name"
       snowflake.query.blocked:
-        description: "SnowflakeQueryBlockedConfig provides config for the snowflake.query.blocked metric."
+        description: "SnowflakeQueryBlockedMetricConfig provides config for the snowflake.query.blocked metric."
         type: object
         properties:
           enabled:
@@ -286,7 +286,7 @@ $defs:
             default:
               - "warehouse_name"
       snowflake.query.bytes_deleted.avg:
-        description: "SnowflakeQueryBytesDeletedAvgConfig provides config for the snowflake.query.bytes_deleted.avg metric."
+        description: "SnowflakeQueryBytesDeletedAvgMetricConfig provides config for the snowflake.query.bytes_deleted.avg metric."
         type: object
         properties:
           enabled:
@@ -321,7 +321,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.bytes_spilled.local.avg:
-        description: "SnowflakeQueryBytesSpilledLocalAvgConfig provides config for the snowflake.query.bytes_spilled.local.avg metric."
+        description: "SnowflakeQueryBytesSpilledLocalAvgMetricConfig provides config for the snowflake.query.bytes_spilled.local.avg metric."
         type: object
         properties:
           enabled:
@@ -356,7 +356,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.bytes_spilled.remote.avg:
-        description: "SnowflakeQueryBytesSpilledRemoteAvgConfig provides config for the snowflake.query.bytes_spilled.remote.avg metric."
+        description: "SnowflakeQueryBytesSpilledRemoteAvgMetricConfig provides config for the snowflake.query.bytes_spilled.remote.avg metric."
         type: object
         properties:
           enabled:
@@ -391,7 +391,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.bytes_written.avg:
-        description: "SnowflakeQueryBytesWrittenAvgConfig provides config for the snowflake.query.bytes_written.avg metric."
+        description: "SnowflakeQueryBytesWrittenAvgMetricConfig provides config for the snowflake.query.bytes_written.avg metric."
         type: object
         properties:
           enabled:
@@ -426,7 +426,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.compilation_time.avg:
-        description: "SnowflakeQueryCompilationTimeAvgConfig provides config for the snowflake.query.compilation_time.avg metric."
+        description: "SnowflakeQueryCompilationTimeAvgMetricConfig provides config for the snowflake.query.compilation_time.avg metric."
         type: object
         properties:
           enabled:
@@ -461,7 +461,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.data_scanned_cache.avg:
-        description: "SnowflakeQueryDataScannedCacheAvgConfig provides config for the snowflake.query.data_scanned_cache.avg metric."
+        description: "SnowflakeQueryDataScannedCacheAvgMetricConfig provides config for the snowflake.query.data_scanned_cache.avg metric."
         type: object
         properties:
           enabled:
@@ -496,7 +496,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.executed:
-        description: "SnowflakeQueryExecutedConfig provides config for the snowflake.query.executed metric."
+        description: "SnowflakeQueryExecutedMetricConfig provides config for the snowflake.query.executed metric."
         type: object
         properties:
           enabled:
@@ -519,7 +519,7 @@ $defs:
             default:
               - "warehouse_name"
       snowflake.query.execution_time.avg:
-        description: "SnowflakeQueryExecutionTimeAvgConfig provides config for the snowflake.query.execution_time.avg metric."
+        description: "SnowflakeQueryExecutionTimeAvgMetricConfig provides config for the snowflake.query.execution_time.avg metric."
         type: object
         properties:
           enabled:
@@ -554,7 +554,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.partitions_scanned.avg:
-        description: "SnowflakeQueryPartitionsScannedAvgConfig provides config for the snowflake.query.partitions_scanned.avg metric."
+        description: "SnowflakeQueryPartitionsScannedAvgMetricConfig provides config for the snowflake.query.partitions_scanned.avg metric."
         type: object
         properties:
           enabled:
@@ -589,7 +589,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.query.queued_overload:
-        description: "SnowflakeQueryQueuedOverloadConfig provides config for the snowflake.query.queued_overload metric."
+        description: "SnowflakeQueryQueuedOverloadMetricConfig provides config for the snowflake.query.queued_overload metric."
         type: object
         properties:
           enabled:
@@ -612,7 +612,7 @@ $defs:
             default:
               - "warehouse_name"
       snowflake.query.queued_provision:
-        description: "SnowflakeQueryQueuedProvisionConfig provides config for the snowflake.query.queued_provision metric."
+        description: "SnowflakeQueryQueuedProvisionMetricConfig provides config for the snowflake.query.queued_provision metric."
         type: object
         properties:
           enabled:
@@ -635,7 +635,7 @@ $defs:
             default:
               - "warehouse_name"
       snowflake.queued_overload_time.avg:
-        description: "SnowflakeQueuedOverloadTimeAvgConfig provides config for the snowflake.queued_overload_time.avg metric."
+        description: "SnowflakeQueuedOverloadTimeAvgMetricConfig provides config for the snowflake.queued_overload_time.avg metric."
         type: object
         properties:
           enabled:
@@ -670,7 +670,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.queued_provisioning_time.avg:
-        description: "SnowflakeQueuedProvisioningTimeAvgConfig provides config for the snowflake.queued_provisioning_time.avg metric."
+        description: "SnowflakeQueuedProvisioningTimeAvgMetricConfig provides config for the snowflake.queued_provisioning_time.avg metric."
         type: object
         properties:
           enabled:
@@ -705,7 +705,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.queued_repair_time.avg:
-        description: "SnowflakeQueuedRepairTimeAvgConfig provides config for the snowflake.queued_repair_time.avg metric."
+        description: "SnowflakeQueuedRepairTimeAvgMetricConfig provides config for the snowflake.queued_repair_time.avg metric."
         type: object
         properties:
           enabled:
@@ -740,7 +740,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.rows_deleted.avg:
-        description: "SnowflakeRowsDeletedAvgConfig provides config for the snowflake.rows_deleted.avg metric."
+        description: "SnowflakeRowsDeletedAvgMetricConfig provides config for the snowflake.rows_deleted.avg metric."
         type: object
         properties:
           enabled:
@@ -775,7 +775,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.rows_inserted.avg:
-        description: "SnowflakeRowsInsertedAvgConfig provides config for the snowflake.rows_inserted.avg metric."
+        description: "SnowflakeRowsInsertedAvgMetricConfig provides config for the snowflake.rows_inserted.avg metric."
         type: object
         properties:
           enabled:
@@ -810,7 +810,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.rows_produced.avg:
-        description: "SnowflakeRowsProducedAvgConfig provides config for the snowflake.rows_produced.avg metric."
+        description: "SnowflakeRowsProducedAvgMetricConfig provides config for the snowflake.rows_produced.avg metric."
         type: object
         properties:
           enabled:
@@ -845,7 +845,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.rows_unloaded.avg:
-        description: "SnowflakeRowsUnloadedAvgConfig provides config for the snowflake.rows_unloaded.avg metric."
+        description: "SnowflakeRowsUnloadedAvgMetricConfig provides config for the snowflake.rows_unloaded.avg metric."
         type: object
         properties:
           enabled:
@@ -880,7 +880,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.rows_updated.avg:
-        description: "SnowflakeRowsUpdatedAvgConfig provides config for the snowflake.rows_updated.avg metric."
+        description: "SnowflakeRowsUpdatedAvgMetricConfig provides config for the snowflake.rows_updated.avg metric."
         type: object
         properties:
           enabled:
@@ -915,7 +915,7 @@ $defs:
               - "database_name"
               - "warehouse_size"
       snowflake.session_id.count:
-        description: "SnowflakeSessionIDCountConfig provides config for the snowflake.session_id.count metric."
+        description: "SnowflakeSessionIDCountMetricConfig provides config for the snowflake.session_id.count metric."
         type: object
         properties:
           enabled:
@@ -938,28 +938,28 @@ $defs:
             default:
               - "user_name"
       snowflake.storage.failsafe_bytes.total:
-        description: "SnowflakeStorageFailsafeBytesTotalConfig provides config for the snowflake.storage.failsafe_bytes.total metric."
+        description: "SnowflakeStorageFailsafeBytesTotalMetricConfig provides config for the snowflake.storage.failsafe_bytes.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       snowflake.storage.stage_bytes.total:
-        description: "SnowflakeStorageStageBytesTotalConfig provides config for the snowflake.storage.stage_bytes.total metric."
+        description: "SnowflakeStorageStageBytesTotalMetricConfig provides config for the snowflake.storage.stage_bytes.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       snowflake.storage.storage_bytes.total:
-        description: "SnowflakeStorageStorageBytesTotalConfig provides config for the snowflake.storage.storage_bytes.total metric."
+        description: "SnowflakeStorageStorageBytesTotalMetricConfig provides config for the snowflake.storage.storage_bytes.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       snowflake.total_elapsed_time.avg:
-        description: "SnowflakeTotalElapsedTimeAvgConfig provides config for the snowflake.total_elapsed_time.avg metric."
+        description: "SnowflakeTotalElapsedTimeAvgMetricConfig provides config for the snowflake.total_elapsed_time.avg metric."
         type: object
         properties:
           enabled:

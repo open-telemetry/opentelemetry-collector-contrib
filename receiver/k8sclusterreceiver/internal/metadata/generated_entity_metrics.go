@@ -10,96 +10,168 @@ import (
 // K8sNamespaceEntity represents a k8s.namespace entity.
 // Create one with NewK8sNamespaceEntity and pass it to EmitForEntity.
 type K8sNamespaceEntity struct {
-	ent entity.Entity
+	k8sNamespaceUID  string
+	k8sNamespaceName string
 }
 
 // NewK8sNamespaceEntity creates a new K8sNamespaceEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sNamespaceEntity(K8snamespaceuid string) *K8sNamespaceEntity {
-	e := &K8sNamespaceEntity{
-		ent: entity.NewEntity("k8s.namespace"),
+func NewK8sNamespaceEntity(k8sNamespaceUID string) *K8sNamespaceEntity {
+	return &K8sNamespaceEntity{
+		k8sNamespaceUID: k8sNamespaceUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.namespace.uid", K8snamespaceuid)
-	return e
 }
 
 // Description attribute setters for k8s.namespace.
 
 // SetK8sNamespaceName sets the k8s.namespace.name description attribute.
 func (e *K8sNamespaceEntity) SetK8sNamespaceName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.namespace.name", val)
+	e.k8sNamespaceName = val
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sNamespaceEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sNamespaceUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.namespace")
+		ent.IdentifyingAttributes().PutStr("k8s.namespace.uid", e.k8sNamespaceUID)
+		if cfg.K8sNamespaceName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+	} else {
+		if cfg.K8sNamespaceUID.Enabled {
+			res.Attributes().PutStr("k8s.namespace.uid", e.k8sNamespaceUID)
+		}
+		if cfg.K8sNamespaceName.Enabled {
+			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+	}
 }
 
 // K8sNodeEntity represents a k8s.node entity.
 // Create one with NewK8sNodeEntity and pass it to EmitForEntity.
 type K8sNodeEntity struct {
-	ent entity.Entity
+	k8sNodeUID              string
+	k8sNodeName             string
+	k8sKubeletVersion       string
+	containerRuntime        string
+	containerRuntimeVersion string
+	osDescription           string
+	osType                  string
 }
 
 // NewK8sNodeEntity creates a new K8sNodeEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sNodeEntity(K8snodeuid string) *K8sNodeEntity {
-	e := &K8sNodeEntity{
-		ent: entity.NewEntity("k8s.node"),
+func NewK8sNodeEntity(k8sNodeUID string) *K8sNodeEntity {
+	return &K8sNodeEntity{
+		k8sNodeUID: k8sNodeUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.node.uid", K8snodeuid)
-	return e
 }
 
 // Description attribute setters for k8s.node.
 
 // SetK8sNodeName sets the k8s.node.name description attribute.
 func (e *K8sNodeEntity) SetK8sNodeName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.node.name", val)
+	e.k8sNodeName = val
 }
 
 // SetK8sKubeletVersion sets the k8s.kubelet.version description attribute.
 func (e *K8sNodeEntity) SetK8sKubeletVersion(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.kubelet.version", val)
+	e.k8sKubeletVersion = val
 }
 
 // SetContainerRuntime sets the container.runtime description attribute.
 func (e *K8sNodeEntity) SetContainerRuntime(val string) {
-	e.ent.DescriptiveAttributes().PutStr("container.runtime", val)
+	e.containerRuntime = val
 }
 
 // SetContainerRuntimeVersion sets the container.runtime.version description attribute.
 func (e *K8sNodeEntity) SetContainerRuntimeVersion(val string) {
-	e.ent.DescriptiveAttributes().PutStr("container.runtime.version", val)
+	e.containerRuntimeVersion = val
 }
 
 // SetOsDescription sets the os.description description attribute.
 func (e *K8sNodeEntity) SetOsDescription(val string) {
-	e.ent.DescriptiveAttributes().PutStr("os.description", val)
+	e.osDescription = val
 }
 
 // SetOsType sets the os.type description attribute.
 func (e *K8sNodeEntity) SetOsType(val string) {
-	e.ent.DescriptiveAttributes().PutStr("os.type", val)
+	e.osType = val
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sNodeEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sNodeUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.node")
+		ent.IdentifyingAttributes().PutStr("k8s.node.uid", e.k8sNodeUID)
+		if cfg.K8sNodeName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.node.name", e.k8sNodeName)
+		}
+		if cfg.K8sKubeletVersion.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.kubelet.version", e.k8sKubeletVersion)
+		}
+		if cfg.ContainerRuntime.Enabled {
+			ent.DescriptiveAttributes().PutStr("container.runtime", e.containerRuntime)
+		}
+		if cfg.ContainerRuntimeVersion.Enabled {
+			ent.DescriptiveAttributes().PutStr("container.runtime.version", e.containerRuntimeVersion)
+		}
+		if cfg.OsDescription.Enabled {
+			ent.DescriptiveAttributes().PutStr("os.description", e.osDescription)
+		}
+		if cfg.OsType.Enabled {
+			ent.DescriptiveAttributes().PutStr("os.type", e.osType)
+		}
+	} else {
+		if cfg.K8sNodeUID.Enabled {
+			res.Attributes().PutStr("k8s.node.uid", e.k8sNodeUID)
+		}
+		if cfg.K8sNodeName.Enabled {
+			res.Attributes().PutStr("k8s.node.name", e.k8sNodeName)
+		}
+		if cfg.K8sKubeletVersion.Enabled {
+			res.Attributes().PutStr("k8s.kubelet.version", e.k8sKubeletVersion)
+		}
+		if cfg.ContainerRuntime.Enabled {
+			res.Attributes().PutStr("container.runtime", e.containerRuntime)
+		}
+		if cfg.ContainerRuntimeVersion.Enabled {
+			res.Attributes().PutStr("container.runtime.version", e.containerRuntimeVersion)
+		}
+		if cfg.OsDescription.Enabled {
+			res.Attributes().PutStr("os.description", e.osDescription)
+		}
+		if cfg.OsType.Enabled {
+			res.Attributes().PutStr("os.type", e.osType)
+		}
+	}
 }
 
 // K8sDeploymentEntity represents a k8s.deployment entity.
 // Create one with NewK8sDeploymentEntity and pass it to EmitForEntity.
 type K8sDeploymentEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sDeploymentUID   string
+	k8sDeploymentName  string
+	partOfK8sNamespace *K8sNamespaceEntity
 }
 
 // NewK8sDeploymentEntity creates a new K8sDeploymentEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sDeploymentEntity(K8sdeploymentuid string) *K8sDeploymentEntity {
-	e := &K8sDeploymentEntity{
-		ent: entity.NewEntity("k8s.deployment"),
+func NewK8sDeploymentEntity(k8sDeploymentUID string) *K8sDeploymentEntity {
+	return &K8sDeploymentEntity{
+		k8sDeploymentUID: k8sDeploymentUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.deployment.uid", K8sdeploymentuid)
-	return e
 }
 
 // Description attribute setters for k8s.deployment.
 
 // SetK8sDeploymentName sets the k8s.deployment.name description attribute.
 func (e *K8sDeploymentEntity) SetK8sDeploymentName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.deployment.name", val)
+	e.k8sDeploymentName = val
 }
 
 // Relationship setters for k8s.deployment.
@@ -107,31 +179,50 @@ func (e *K8sDeploymentEntity) SetK8sDeploymentName(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sDeploymentEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sDeploymentEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sDeploymentUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.deployment")
+		ent.IdentifyingAttributes().PutStr("k8s.deployment.uid", e.k8sDeploymentUID)
+		if cfg.K8sDeploymentName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.deployment.name", e.k8sDeploymentName)
+		}
+	} else {
+		if cfg.K8sDeploymentUID.Enabled {
+			res.Attributes().PutStr("k8s.deployment.uid", e.k8sDeploymentUID)
+		}
+		if cfg.K8sDeploymentName.Enabled {
+			res.Attributes().PutStr("k8s.deployment.name", e.k8sDeploymentName)
+		}
+	}
 }
 
 // K8sReplicasetEntity represents a k8s.replicaset entity.
 // Create one with NewK8sReplicasetEntity and pass it to EmitForEntity.
 type K8sReplicasetEntity struct {
-	ent                    entity.Entity
-	ManagedByK8sDeployment *K8sDeploymentEntity
+	k8sReplicasetUID       string
+	k8sReplicasetName      string
+	managedByK8sDeployment *K8sDeploymentEntity
 }
 
 // NewK8sReplicasetEntity creates a new K8sReplicasetEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sReplicasetEntity(K8sreplicasetuid string) *K8sReplicasetEntity {
-	e := &K8sReplicasetEntity{
-		ent: entity.NewEntity("k8s.replicaset"),
+func NewK8sReplicasetEntity(k8sReplicasetUID string) *K8sReplicasetEntity {
+	return &K8sReplicasetEntity{
+		k8sReplicasetUID: k8sReplicasetUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.replicaset.uid", K8sreplicasetuid)
-	return e
 }
 
 // Description attribute setters for k8s.replicaset.
 
 // SetK8sReplicasetName sets the k8s.replicaset.name description attribute.
 func (e *K8sReplicasetEntity) SetK8sReplicasetName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.replicaset.name", val)
+	e.k8sReplicasetName = val
 }
 
 // Relationship setters for k8s.replicaset.
@@ -139,31 +230,50 @@ func (e *K8sReplicasetEntity) SetK8sReplicasetName(val string) {
 // SetManagedByK8sDeployment sets the managed_by relationship to a k8s.deployment entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sReplicasetEntity) SetManagedByK8sDeployment(target *K8sDeploymentEntity) {
-	e.ManagedByK8sDeployment = target
+	e.managedByK8sDeployment = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sReplicasetEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sReplicasetUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.replicaset")
+		ent.IdentifyingAttributes().PutStr("k8s.replicaset.uid", e.k8sReplicasetUID)
+		if cfg.K8sReplicasetName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.replicaset.name", e.k8sReplicasetName)
+		}
+	} else {
+		if cfg.K8sReplicasetUID.Enabled {
+			res.Attributes().PutStr("k8s.replicaset.uid", e.k8sReplicasetUID)
+		}
+		if cfg.K8sReplicasetName.Enabled {
+			res.Attributes().PutStr("k8s.replicaset.name", e.k8sReplicasetName)
+		}
+	}
 }
 
 // K8sStatefulsetEntity represents a k8s.statefulset entity.
 // Create one with NewK8sStatefulsetEntity and pass it to EmitForEntity.
 type K8sStatefulsetEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sStatefulsetUID  string
+	k8sStatefulsetName string
+	partOfK8sNamespace *K8sNamespaceEntity
 }
 
 // NewK8sStatefulsetEntity creates a new K8sStatefulsetEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sStatefulsetEntity(K8sstatefulsetuid string) *K8sStatefulsetEntity {
-	e := &K8sStatefulsetEntity{
-		ent: entity.NewEntity("k8s.statefulset"),
+func NewK8sStatefulsetEntity(k8sStatefulsetUID string) *K8sStatefulsetEntity {
+	return &K8sStatefulsetEntity{
+		k8sStatefulsetUID: k8sStatefulsetUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.statefulset.uid", K8sstatefulsetuid)
-	return e
 }
 
 // Description attribute setters for k8s.statefulset.
 
 // SetK8sStatefulsetName sets the k8s.statefulset.name description attribute.
 func (e *K8sStatefulsetEntity) SetK8sStatefulsetName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.statefulset.name", val)
+	e.k8sStatefulsetName = val
 }
 
 // Relationship setters for k8s.statefulset.
@@ -171,31 +281,50 @@ func (e *K8sStatefulsetEntity) SetK8sStatefulsetName(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sStatefulsetEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sStatefulsetEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sStatefulsetUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.statefulset")
+		ent.IdentifyingAttributes().PutStr("k8s.statefulset.uid", e.k8sStatefulsetUID)
+		if cfg.K8sStatefulsetName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.statefulset.name", e.k8sStatefulsetName)
+		}
+	} else {
+		if cfg.K8sStatefulsetUID.Enabled {
+			res.Attributes().PutStr("k8s.statefulset.uid", e.k8sStatefulsetUID)
+		}
+		if cfg.K8sStatefulsetName.Enabled {
+			res.Attributes().PutStr("k8s.statefulset.name", e.k8sStatefulsetName)
+		}
+	}
 }
 
 // K8sDaemonsetEntity represents a k8s.daemonset entity.
 // Create one with NewK8sDaemonsetEntity and pass it to EmitForEntity.
 type K8sDaemonsetEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sDaemonsetUID    string
+	k8sDaemonsetName   string
+	partOfK8sNamespace *K8sNamespaceEntity
 }
 
 // NewK8sDaemonsetEntity creates a new K8sDaemonsetEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sDaemonsetEntity(K8sdaemonsetuid string) *K8sDaemonsetEntity {
-	e := &K8sDaemonsetEntity{
-		ent: entity.NewEntity("k8s.daemonset"),
+func NewK8sDaemonsetEntity(k8sDaemonsetUID string) *K8sDaemonsetEntity {
+	return &K8sDaemonsetEntity{
+		k8sDaemonsetUID: k8sDaemonsetUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.daemonset.uid", K8sdaemonsetuid)
-	return e
 }
 
 // Description attribute setters for k8s.daemonset.
 
 // SetK8sDaemonsetName sets the k8s.daemonset.name description attribute.
 func (e *K8sDaemonsetEntity) SetK8sDaemonsetName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.daemonset.name", val)
+	e.k8sDaemonsetName = val
 }
 
 // Relationship setters for k8s.daemonset.
@@ -203,31 +332,50 @@ func (e *K8sDaemonsetEntity) SetK8sDaemonsetName(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sDaemonsetEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sDaemonsetEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sDaemonsetUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.daemonset")
+		ent.IdentifyingAttributes().PutStr("k8s.daemonset.uid", e.k8sDaemonsetUID)
+		if cfg.K8sDaemonsetName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.daemonset.name", e.k8sDaemonsetName)
+		}
+	} else {
+		if cfg.K8sDaemonsetUID.Enabled {
+			res.Attributes().PutStr("k8s.daemonset.uid", e.k8sDaemonsetUID)
+		}
+		if cfg.K8sDaemonsetName.Enabled {
+			res.Attributes().PutStr("k8s.daemonset.name", e.k8sDaemonsetName)
+		}
+	}
 }
 
 // K8sCronjobEntity represents a k8s.cronjob entity.
 // Create one with NewK8sCronjobEntity and pass it to EmitForEntity.
 type K8sCronjobEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sCronjobUID      string
+	k8sCronjobName     string
+	partOfK8sNamespace *K8sNamespaceEntity
 }
 
 // NewK8sCronjobEntity creates a new K8sCronjobEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sCronjobEntity(K8scronjobuid string) *K8sCronjobEntity {
-	e := &K8sCronjobEntity{
-		ent: entity.NewEntity("k8s.cronjob"),
+func NewK8sCronjobEntity(k8sCronjobUID string) *K8sCronjobEntity {
+	return &K8sCronjobEntity{
+		k8sCronjobUID: k8sCronjobUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.cronjob.uid", K8scronjobuid)
-	return e
 }
 
 // Description attribute setters for k8s.cronjob.
 
 // SetK8sCronjobName sets the k8s.cronjob.name description attribute.
 func (e *K8sCronjobEntity) SetK8sCronjobName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.cronjob.name", val)
+	e.k8sCronjobName = val
 }
 
 // Relationship setters for k8s.cronjob.
@@ -235,32 +383,51 @@ func (e *K8sCronjobEntity) SetK8sCronjobName(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sCronjobEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sCronjobEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sCronjobUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.cronjob")
+		ent.IdentifyingAttributes().PutStr("k8s.cronjob.uid", e.k8sCronjobUID)
+		if cfg.K8sCronjobName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.cronjob.name", e.k8sCronjobName)
+		}
+	} else {
+		if cfg.K8sCronjobUID.Enabled {
+			res.Attributes().PutStr("k8s.cronjob.uid", e.k8sCronjobUID)
+		}
+		if cfg.K8sCronjobName.Enabled {
+			res.Attributes().PutStr("k8s.cronjob.name", e.k8sCronjobName)
+		}
+	}
 }
 
 // K8sJobEntity represents a k8s.job entity.
 // Create one with NewK8sJobEntity and pass it to EmitForEntity.
 type K8sJobEntity struct {
-	ent                 entity.Entity
-	PartOfK8sNamespace  *K8sNamespaceEntity
-	ManagedByK8sCronjob *K8sCronjobEntity
+	k8sJobUID           string
+	k8sJobName          string
+	partOfK8sNamespace  *K8sNamespaceEntity
+	managedByK8sCronjob *K8sCronjobEntity
 }
 
 // NewK8sJobEntity creates a new K8sJobEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sJobEntity(K8sjobuid string) *K8sJobEntity {
-	e := &K8sJobEntity{
-		ent: entity.NewEntity("k8s.job"),
+func NewK8sJobEntity(k8sJobUID string) *K8sJobEntity {
+	return &K8sJobEntity{
+		k8sJobUID: k8sJobUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.job.uid", K8sjobuid)
-	return e
 }
 
 // Description attribute setters for k8s.job.
 
 // SetK8sJobName sets the k8s.job.name description attribute.
 func (e *K8sJobEntity) SetK8sJobName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.job.name", val)
+	e.k8sJobName = val
 }
 
 // Relationship setters for k8s.job.
@@ -268,48 +435,68 @@ func (e *K8sJobEntity) SetK8sJobName(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sJobEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
 }
 
 // SetManagedByK8sCronjob sets the managed_by relationship to a k8s.cronjob entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sJobEntity) SetManagedByK8sCronjob(target *K8sCronjobEntity) {
-	e.ManagedByK8sCronjob = target
+	e.managedByK8sCronjob = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sJobEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sJobUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.job")
+		ent.IdentifyingAttributes().PutStr("k8s.job.uid", e.k8sJobUID)
+		if cfg.K8sJobName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.job.name", e.k8sJobName)
+		}
+	} else {
+		if cfg.K8sJobUID.Enabled {
+			res.Attributes().PutStr("k8s.job.uid", e.k8sJobUID)
+		}
+		if cfg.K8sJobName.Enabled {
+			res.Attributes().PutStr("k8s.job.name", e.k8sJobName)
+		}
+	}
 }
 
 // K8sPodEntity represents a k8s.pod entity.
 // Create one with NewK8sPodEntity and pass it to EmitForEntity.
 type K8sPodEntity struct {
-	ent                               entity.Entity
-	ScheduledOnK8sNode                *K8sNodeEntity
-	PartOfK8sNamespace                *K8sNamespaceEntity
-	ManagedByK8sReplicaset            *K8sReplicasetEntity
-	ManagedByK8sStatefulset           *K8sStatefulsetEntity
-	ManagedByK8sDaemonset             *K8sDaemonsetEntity
-	ManagedByK8sJob                   *K8sJobEntity
-	ManagedByK8sReplicationcontroller *K8sReplicationcontrollerEntity
+	k8sPodUID                         string
+	k8sPodName                        string
+	k8sPodQosClass                    string
+	scheduledOnK8sNode                *K8sNodeEntity
+	partOfK8sNamespace                *K8sNamespaceEntity
+	managedByK8sReplicaset            *K8sReplicasetEntity
+	managedByK8sStatefulset           *K8sStatefulsetEntity
+	managedByK8sDaemonset             *K8sDaemonsetEntity
+	managedByK8sJob                   *K8sJobEntity
+	managedByK8sReplicationcontroller *K8sReplicationcontrollerEntity
 }
 
 // NewK8sPodEntity creates a new K8sPodEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sPodEntity(K8spoduid string) *K8sPodEntity {
-	e := &K8sPodEntity{
-		ent: entity.NewEntity("k8s.pod"),
+func NewK8sPodEntity(k8sPodUID string) *K8sPodEntity {
+	return &K8sPodEntity{
+		k8sPodUID: k8sPodUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.pod.uid", K8spoduid)
-	return e
 }
 
 // Description attribute setters for k8s.pod.
 
 // SetK8sPodName sets the k8s.pod.name description attribute.
 func (e *K8sPodEntity) SetK8sPodName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.pod.name", val)
+	e.k8sPodName = val
 }
 
 // SetK8sPodQosClass sets the k8s.pod.qos_class description attribute.
 func (e *K8sPodEntity) SetK8sPodQosClass(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.pod.qos_class", val)
+	e.k8sPodQosClass = val
 }
 
 // Relationship setters for k8s.pod.
@@ -317,82 +504,110 @@ func (e *K8sPodEntity) SetK8sPodQosClass(val string) {
 // SetScheduledOnK8sNode sets the scheduled_on relationship to a k8s.node entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetScheduledOnK8sNode(target *K8sNodeEntity) {
-	e.ScheduledOnK8sNode = target
+	e.scheduledOnK8sNode = target
 }
 
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
 }
 
 // SetManagedByK8sReplicaset sets the managed_by relationship to a k8s.replicaset entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetManagedByK8sReplicaset(target *K8sReplicasetEntity) {
-	e.ManagedByK8sReplicaset = target
+	e.managedByK8sReplicaset = target
 }
 
 // SetManagedByK8sStatefulset sets the managed_by relationship to a k8s.statefulset entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetManagedByK8sStatefulset(target *K8sStatefulsetEntity) {
-	e.ManagedByK8sStatefulset = target
+	e.managedByK8sStatefulset = target
 }
 
 // SetManagedByK8sDaemonset sets the managed_by relationship to a k8s.daemonset entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetManagedByK8sDaemonset(target *K8sDaemonsetEntity) {
-	e.ManagedByK8sDaemonset = target
+	e.managedByK8sDaemonset = target
 }
 
 // SetManagedByK8sJob sets the managed_by relationship to a k8s.job entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetManagedByK8sJob(target *K8sJobEntity) {
-	e.ManagedByK8sJob = target
+	e.managedByK8sJob = target
 }
 
 // SetManagedByK8sReplicationcontroller sets the managed_by relationship to a k8s.replicationcontroller entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sPodEntity) SetManagedByK8sReplicationcontroller(target *K8sReplicationcontrollerEntity) {
-	e.ManagedByK8sReplicationcontroller = target
+	e.managedByK8sReplicationcontroller = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sPodEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sPodUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.pod")
+		ent.IdentifyingAttributes().PutStr("k8s.pod.uid", e.k8sPodUID)
+		if cfg.K8sPodName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.pod.name", e.k8sPodName)
+		}
+		if cfg.K8sPodQosClass.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.pod.qos_class", e.k8sPodQosClass)
+		}
+	} else {
+		if cfg.K8sPodUID.Enabled {
+			res.Attributes().PutStr("k8s.pod.uid", e.k8sPodUID)
+		}
+		if cfg.K8sPodName.Enabled {
+			res.Attributes().PutStr("k8s.pod.name", e.k8sPodName)
+		}
+		if cfg.K8sPodQosClass.Enabled {
+			res.Attributes().PutStr("k8s.pod.qos_class", e.k8sPodQosClass)
+		}
+	}
 }
 
 // K8sContainerEntity represents a k8s.container entity.
 // Create one with NewK8sContainerEntity and pass it to EmitForEntity.
 type K8sContainerEntity struct {
-	ent           entity.Entity
-	ChildOfK8sPod *K8sPodEntity
+	containerID                            string
+	k8sContainerName                       string
+	containerImageName                     string
+	containerImageTag                      string
+	k8sContainerStatusLastTerminatedReason string
+	childOfK8sPod                          *K8sPodEntity
 }
 
 // NewK8sContainerEntity creates a new K8sContainerEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sContainerEntity(Containerid string) *K8sContainerEntity {
-	e := &K8sContainerEntity{
-		ent: entity.NewEntity("k8s.container"),
+func NewK8sContainerEntity(containerID string) *K8sContainerEntity {
+	return &K8sContainerEntity{
+		containerID: containerID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("container.id", Containerid)
-	return e
 }
 
 // Description attribute setters for k8s.container.
 
 // SetK8sContainerName sets the k8s.container.name description attribute.
 func (e *K8sContainerEntity) SetK8sContainerName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.container.name", val)
+	e.k8sContainerName = val
 }
 
 // SetContainerImageName sets the container.image.name description attribute.
 func (e *K8sContainerEntity) SetContainerImageName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("container.image.name", val)
+	e.containerImageName = val
 }
 
 // SetContainerImageTag sets the container.image.tag description attribute.
 func (e *K8sContainerEntity) SetContainerImageTag(val string) {
-	e.ent.DescriptiveAttributes().PutStr("container.image.tag", val)
+	e.containerImageTag = val
 }
 
 // SetK8sContainerStatusLastTerminatedReason sets the k8s.container.status.last_terminated_reason description attribute.
 func (e *K8sContainerEntity) SetK8sContainerStatusLastTerminatedReason(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.container.status.last_terminated_reason", val)
+	e.k8sContainerStatusLastTerminatedReason = val
 }
 
 // Relationship setters for k8s.container.
@@ -400,31 +615,68 @@ func (e *K8sContainerEntity) SetK8sContainerStatusLastTerminatedReason(val strin
 // SetChildOfK8sPod sets the child_of relationship to a k8s.pod entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sContainerEntity) SetChildOfK8sPod(target *K8sPodEntity) {
-	e.ChildOfK8sPod = target
+	e.childOfK8sPod = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sContainerEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.ContainerID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.container")
+		ent.IdentifyingAttributes().PutStr("container.id", e.containerID)
+		if cfg.K8sContainerName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.container.name", e.k8sContainerName)
+		}
+		if cfg.ContainerImageName.Enabled {
+			ent.DescriptiveAttributes().PutStr("container.image.name", e.containerImageName)
+		}
+		if cfg.ContainerImageTag.Enabled {
+			ent.DescriptiveAttributes().PutStr("container.image.tag", e.containerImageTag)
+		}
+		if cfg.K8sContainerStatusLastTerminatedReason.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.container.status.last_terminated_reason", e.k8sContainerStatusLastTerminatedReason)
+		}
+	} else {
+		if cfg.ContainerID.Enabled {
+			res.Attributes().PutStr("container.id", e.containerID)
+		}
+		if cfg.K8sContainerName.Enabled {
+			res.Attributes().PutStr("k8s.container.name", e.k8sContainerName)
+		}
+		if cfg.ContainerImageName.Enabled {
+			res.Attributes().PutStr("container.image.name", e.containerImageName)
+		}
+		if cfg.ContainerImageTag.Enabled {
+			res.Attributes().PutStr("container.image.tag", e.containerImageTag)
+		}
+		if cfg.K8sContainerStatusLastTerminatedReason.Enabled {
+			res.Attributes().PutStr("k8s.container.status.last_terminated_reason", e.k8sContainerStatusLastTerminatedReason)
+		}
+	}
 }
 
 // K8sReplicationcontrollerEntity represents a k8s.replicationcontroller entity.
 // Create one with NewK8sReplicationcontrollerEntity and pass it to EmitForEntity.
 type K8sReplicationcontrollerEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sReplicationcontrollerUID  string
+	k8sReplicationcontrollerName string
+	partOfK8sNamespace           *K8sNamespaceEntity
 }
 
 // NewK8sReplicationcontrollerEntity creates a new K8sReplicationcontrollerEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sReplicationcontrollerEntity(K8sreplicationcontrolleruid string) *K8sReplicationcontrollerEntity {
-	e := &K8sReplicationcontrollerEntity{
-		ent: entity.NewEntity("k8s.replicationcontroller"),
+func NewK8sReplicationcontrollerEntity(k8sReplicationcontrollerUID string) *K8sReplicationcontrollerEntity {
+	return &K8sReplicationcontrollerEntity{
+		k8sReplicationcontrollerUID: k8sReplicationcontrollerUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.replicationcontroller.uid", K8sreplicationcontrolleruid)
-	return e
 }
 
 // Description attribute setters for k8s.replicationcontroller.
 
 // SetK8sReplicationcontrollerName sets the k8s.replicationcontroller.name description attribute.
 func (e *K8sReplicationcontrollerEntity) SetK8sReplicationcontrollerName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.replicationcontroller.name", val)
+	e.k8sReplicationcontrollerName = val
 }
 
 // Relationship setters for k8s.replicationcontroller.
@@ -432,31 +684,50 @@ func (e *K8sReplicationcontrollerEntity) SetK8sReplicationcontrollerName(val str
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sReplicationcontrollerEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sReplicationcontrollerEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sReplicationcontrollerUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.replicationcontroller")
+		ent.IdentifyingAttributes().PutStr("k8s.replicationcontroller.uid", e.k8sReplicationcontrollerUID)
+		if cfg.K8sReplicationcontrollerName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.replicationcontroller.name", e.k8sReplicationcontrollerName)
+		}
+	} else {
+		if cfg.K8sReplicationcontrollerUID.Enabled {
+			res.Attributes().PutStr("k8s.replicationcontroller.uid", e.k8sReplicationcontrollerUID)
+		}
+		if cfg.K8sReplicationcontrollerName.Enabled {
+			res.Attributes().PutStr("k8s.replicationcontroller.name", e.k8sReplicationcontrollerName)
+		}
+	}
 }
 
 // K8sResourcequotaEntity represents a k8s.resourcequota entity.
 // Create one with NewK8sResourcequotaEntity and pass it to EmitForEntity.
 type K8sResourcequotaEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sResourcequotaUID  string
+	k8sResourcequotaName string
+	partOfK8sNamespace   *K8sNamespaceEntity
 }
 
 // NewK8sResourcequotaEntity creates a new K8sResourcequotaEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sResourcequotaEntity(K8sresourcequotauid string) *K8sResourcequotaEntity {
-	e := &K8sResourcequotaEntity{
-		ent: entity.NewEntity("k8s.resourcequota"),
+func NewK8sResourcequotaEntity(k8sResourcequotaUID string) *K8sResourcequotaEntity {
+	return &K8sResourcequotaEntity{
+		k8sResourcequotaUID: k8sResourcequotaUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.resourcequota.uid", K8sresourcequotauid)
-	return e
 }
 
 // Description attribute setters for k8s.resourcequota.
 
 // SetK8sResourcequotaName sets the k8s.resourcequota.name description attribute.
 func (e *K8sResourcequotaEntity) SetK8sResourcequotaName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.resourcequota.name", val)
+	e.k8sResourcequotaName = val
 }
 
 // Relationship setters for k8s.resourcequota.
@@ -464,46 +735,68 @@ func (e *K8sResourcequotaEntity) SetK8sResourcequotaName(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sResourcequotaEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sResourcequotaEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sResourcequotaUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.resourcequota")
+		ent.IdentifyingAttributes().PutStr("k8s.resourcequota.uid", e.k8sResourcequotaUID)
+		if cfg.K8sResourcequotaName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.resourcequota.name", e.k8sResourcequotaName)
+		}
+	} else {
+		if cfg.K8sResourcequotaUID.Enabled {
+			res.Attributes().PutStr("k8s.resourcequota.uid", e.k8sResourcequotaUID)
+		}
+		if cfg.K8sResourcequotaName.Enabled {
+			res.Attributes().PutStr("k8s.resourcequota.name", e.k8sResourcequotaName)
+		}
+	}
 }
 
 // K8sServiceEntity represents a k8s.service entity.
 // Create one with NewK8sServiceEntity and pass it to EmitForEntity.
 type K8sServiceEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sServiceUID                      string
+	k8sServiceName                     string
+	k8sServiceType                     string
+	k8sServicePublishNotReadyAddresses bool
+	k8sServiceTrafficDistribution      string
+	partOfK8sNamespace                 *K8sNamespaceEntity
 }
 
 // NewK8sServiceEntity creates a new K8sServiceEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sServiceEntity(K8sserviceuid string) *K8sServiceEntity {
-	e := &K8sServiceEntity{
-		ent: entity.NewEntity("k8s.service"),
+func NewK8sServiceEntity(k8sServiceUID string) *K8sServiceEntity {
+	return &K8sServiceEntity{
+		k8sServiceUID: k8sServiceUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.service.uid", K8sserviceuid)
-	return e
 }
 
 // Description attribute setters for k8s.service.
 
 // SetK8sServiceName sets the k8s.service.name description attribute.
 func (e *K8sServiceEntity) SetK8sServiceName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.service.name", val)
+	e.k8sServiceName = val
 }
 
 // SetK8sServiceType sets the k8s.service.type description attribute.
 func (e *K8sServiceEntity) SetK8sServiceType(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.service.type", val)
+	e.k8sServiceType = val
 }
 
 // SetK8sServicePublishNotReadyAddresses sets the k8s.service.publish_not_ready_addresses description attribute.
 func (e *K8sServiceEntity) SetK8sServicePublishNotReadyAddresses(val bool) {
-	e.ent.DescriptiveAttributes().PutEmpty("k8s.service.publish_not_ready_addresses").SetBool(val)
+	e.k8sServicePublishNotReadyAddresses = val
 }
 
 // SetK8sServiceTrafficDistribution sets the k8s.service.traffic_distribution description attribute.
 func (e *K8sServiceEntity) SetK8sServiceTrafficDistribution(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.service.traffic_distribution", val)
+	e.k8sServiceTrafficDistribution = val
 }
 
 // Relationship setters for k8s.service.
@@ -511,46 +804,86 @@ func (e *K8sServiceEntity) SetK8sServiceTrafficDistribution(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sServiceEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sServiceEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sServiceUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.service")
+		ent.IdentifyingAttributes().PutStr("k8s.service.uid", e.k8sServiceUID)
+		if cfg.K8sServiceName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.service.name", e.k8sServiceName)
+		}
+		if cfg.K8sServiceType.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.service.type", e.k8sServiceType)
+		}
+		if cfg.K8sServicePublishNotReadyAddresses.Enabled {
+			ent.DescriptiveAttributes().PutEmpty("k8s.service.publish_not_ready_addresses").SetBool(e.k8sServicePublishNotReadyAddresses)
+		}
+		if cfg.K8sServiceTrafficDistribution.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
+		}
+	} else {
+		if cfg.K8sServiceUID.Enabled {
+			res.Attributes().PutStr("k8s.service.uid", e.k8sServiceUID)
+		}
+		if cfg.K8sServiceName.Enabled {
+			res.Attributes().PutStr("k8s.service.name", e.k8sServiceName)
+		}
+		if cfg.K8sServiceType.Enabled {
+			res.Attributes().PutStr("k8s.service.type", e.k8sServiceType)
+		}
+		if cfg.K8sServicePublishNotReadyAddresses.Enabled {
+			res.Attributes().PutBool("k8s.service.publish_not_ready_addresses", e.k8sServicePublishNotReadyAddresses)
+		}
+		if cfg.K8sServiceTrafficDistribution.Enabled {
+			res.Attributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
+		}
+	}
 }
 
 // K8sHpaEntity represents a k8s.hpa entity.
 // Create one with NewK8sHpaEntity and pass it to EmitForEntity.
 type K8sHpaEntity struct {
-	ent                entity.Entity
-	PartOfK8sNamespace *K8sNamespaceEntity
+	k8sHpaUID                      string
+	k8sHpaName                     string
+	k8sHpaScaletargetrefApiversion string
+	k8sHpaScaletargetrefKind       string
+	k8sHpaScaletargetrefName       string
+	partOfK8sNamespace             *K8sNamespaceEntity
 }
 
 // NewK8sHpaEntity creates a new K8sHpaEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewK8sHpaEntity(K8shpauid string) *K8sHpaEntity {
-	e := &K8sHpaEntity{
-		ent: entity.NewEntity("k8s.hpa"),
+func NewK8sHpaEntity(k8sHpaUID string) *K8sHpaEntity {
+	return &K8sHpaEntity{
+		k8sHpaUID: k8sHpaUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("k8s.hpa.uid", K8shpauid)
-	return e
 }
 
 // Description attribute setters for k8s.hpa.
 
 // SetK8sHpaName sets the k8s.hpa.name description attribute.
 func (e *K8sHpaEntity) SetK8sHpaName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.hpa.name", val)
+	e.k8sHpaName = val
 }
 
 // SetK8sHpaScaletargetrefApiversion sets the k8s.hpa.scaletargetref.apiversion description attribute.
 func (e *K8sHpaEntity) SetK8sHpaScaletargetrefApiversion(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.hpa.scaletargetref.apiversion", val)
+	e.k8sHpaScaletargetrefApiversion = val
 }
 
 // SetK8sHpaScaletargetrefKind sets the k8s.hpa.scaletargetref.kind description attribute.
 func (e *K8sHpaEntity) SetK8sHpaScaletargetrefKind(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.hpa.scaletargetref.kind", val)
+	e.k8sHpaScaletargetrefKind = val
 }
 
 // SetK8sHpaScaletargetrefName sets the k8s.hpa.scaletargetref.name description attribute.
 func (e *K8sHpaEntity) SetK8sHpaScaletargetrefName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("k8s.hpa.scaletargetref.name", val)
+	e.k8sHpaScaletargetrefName = val
 }
 
 // Relationship setters for k8s.hpa.
@@ -558,30 +891,87 @@ func (e *K8sHpaEntity) SetK8sHpaScaletargetrefName(val string) {
 // SetPartOfK8sNamespace sets the part_of relationship to a k8s.namespace entity.
 // The related entity will be emitted alongside this entity's metrics.
 func (e *K8sHpaEntity) SetPartOfK8sNamespace(target *K8sNamespaceEntity) {
-	e.PartOfK8sNamespace = target
+	e.partOfK8sNamespace = target
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sHpaEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sHpaUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.hpa")
+		ent.IdentifyingAttributes().PutStr("k8s.hpa.uid", e.k8sHpaUID)
+		if cfg.K8sHpaName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.hpa.name", e.k8sHpaName)
+		}
+		if cfg.K8sHpaScaletargetrefApiversion.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.hpa.scaletargetref.apiversion", e.k8sHpaScaletargetrefApiversion)
+		}
+		if cfg.K8sHpaScaletargetrefKind.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.hpa.scaletargetref.kind", e.k8sHpaScaletargetrefKind)
+		}
+		if cfg.K8sHpaScaletargetrefName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.hpa.scaletargetref.name", e.k8sHpaScaletargetrefName)
+		}
+	} else {
+		if cfg.K8sHpaUID.Enabled {
+			res.Attributes().PutStr("k8s.hpa.uid", e.k8sHpaUID)
+		}
+		if cfg.K8sHpaName.Enabled {
+			res.Attributes().PutStr("k8s.hpa.name", e.k8sHpaName)
+		}
+		if cfg.K8sHpaScaletargetrefApiversion.Enabled {
+			res.Attributes().PutStr("k8s.hpa.scaletargetref.apiversion", e.k8sHpaScaletargetrefApiversion)
+		}
+		if cfg.K8sHpaScaletargetrefKind.Enabled {
+			res.Attributes().PutStr("k8s.hpa.scaletargetref.kind", e.k8sHpaScaletargetrefKind)
+		}
+		if cfg.K8sHpaScaletargetrefName.Enabled {
+			res.Attributes().PutStr("k8s.hpa.scaletargetref.name", e.k8sHpaScaletargetrefName)
+		}
+	}
 }
 
 // OpenshiftClusterquotaEntity represents a openshift.clusterquota entity.
 // Create one with NewOpenshiftClusterquotaEntity and pass it to EmitForEntity.
 type OpenshiftClusterquotaEntity struct {
-	ent entity.Entity
+	openshiftClusterquotaUID  string
+	openshiftClusterquotaName string
 }
 
 // NewOpenshiftClusterquotaEntity creates a new OpenshiftClusterquotaEntity.
 // Identity attributes are required and must be provided at construction time.
-func NewOpenshiftClusterquotaEntity(Openshiftclusterquotauid string) *OpenshiftClusterquotaEntity {
-	e := &OpenshiftClusterquotaEntity{
-		ent: entity.NewEntity("openshift.clusterquota"),
+func NewOpenshiftClusterquotaEntity(openshiftClusterquotaUID string) *OpenshiftClusterquotaEntity {
+	return &OpenshiftClusterquotaEntity{
+		openshiftClusterquotaUID: openshiftClusterquotaUID,
 	}
-	e.ent.IdentifyingAttributes().PutStr("openshift.clusterquota.uid", Openshiftclusterquotauid)
-	return e
 }
 
 // Description attribute setters for openshift.clusterquota.
 
 // SetOpenshiftClusterquotaName sets the openshift.clusterquota.name description attribute.
 func (e *OpenshiftClusterquotaEntity) SetOpenshiftClusterquotaName(val string) {
-	e.ent.DescriptiveAttributes().PutStr("openshift.clusterquota.name", val)
+	e.openshiftClusterquotaName = val
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *OpenshiftClusterquotaEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.OpenshiftClusterquotaUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("openshift.clusterquota")
+		ent.IdentifyingAttributes().PutStr("openshift.clusterquota.uid", e.openshiftClusterquotaUID)
+		if cfg.OpenshiftClusterquotaName.Enabled {
+			ent.DescriptiveAttributes().PutStr("openshift.clusterquota.name", e.openshiftClusterquotaName)
+		}
+	} else {
+		if cfg.OpenshiftClusterquotaUID.Enabled {
+			res.Attributes().PutStr("openshift.clusterquota.uid", e.openshiftClusterquotaUID)
+		}
+		if cfg.OpenshiftClusterquotaName.Enabled {
+			res.Attributes().PutStr("openshift.clusterquota.name", e.openshiftClusterquotaName)
+		}
+	}
 }
 
 // K8sNamespaceMetricsBuilder records metrics for the k8s.namespace entity.
@@ -596,12 +986,13 @@ func (eb *K8sNamespaceMetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommo
 	eb.mb.metricK8sNamespacePhase.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sNamespace and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sNamespaceMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
 
@@ -617,12 +1008,13 @@ func (eb *K8sNodeMetricsBuilder) RecordK8sNodeConditionDataPoint(ts pcommon.Time
 	eb.mb.metricK8sNodeCondition.recordDataPoint(eb.mb.startTime, ts, val, conditionAttributeValue)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sNode and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sNodeMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
 
@@ -643,14 +1035,15 @@ func (eb *K8sDeploymentMetricsBuilder) RecordK8sDeploymentDesiredDataPoint(ts pc
 	eb.mb.metricK8sDeploymentDesired.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sDeployment and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sDeploymentMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -672,14 +1065,15 @@ func (eb *K8sReplicasetMetricsBuilder) RecordK8sReplicasetDesiredDataPoint(ts pc
 	eb.mb.metricK8sReplicasetDesired.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sReplicaset and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sReplicasetMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.ManagedByK8sDeployment != nil {
-		eb.entity.ManagedByK8sDeployment.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.managedByK8sDeployment != nil {
+		eb.entity.managedByK8sDeployment.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -711,14 +1105,15 @@ func (eb *K8sStatefulsetMetricsBuilder) RecordK8sStatefulsetUpdatedPodsDataPoint
 	eb.mb.metricK8sStatefulsetUpdatedPods.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sStatefulset and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sStatefulsetMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -750,14 +1145,15 @@ func (eb *K8sDaemonsetMetricsBuilder) RecordK8sDaemonsetReadyNodesDataPoint(ts p
 	eb.mb.metricK8sDaemonsetReadyNodes.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sDaemonset and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sDaemonsetMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -774,14 +1170,15 @@ func (eb *K8sCronjobMetricsBuilder) RecordK8sCronjobActiveJobsDataPoint(ts pcomm
 	eb.mb.metricK8sCronjobActiveJobs.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sCronjob and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sCronjobMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -818,17 +1215,18 @@ func (eb *K8sJobMetricsBuilder) RecordK8sJobSuccessfulPodsDataPoint(ts pcommon.T
 	eb.mb.metricK8sJobSuccessfulPods.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sJob and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sJobMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
-	if eb.entity.ManagedByK8sCronjob != nil {
-		eb.entity.ManagedByK8sCronjob.ent.CopyToResource(res)
+	if eb.entity.managedByK8sCronjob != nil {
+		eb.entity.managedByK8sCronjob.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -850,32 +1248,33 @@ func (eb *K8sPodMetricsBuilder) RecordK8sPodStatusReasonDataPoint(ts pcommon.Tim
 	eb.mb.metricK8sPodStatusReason.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sPod and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sPodMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.ScheduledOnK8sNode != nil {
-		eb.entity.ScheduledOnK8sNode.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.scheduledOnK8sNode != nil {
+		eb.entity.scheduledOnK8sNode.copyToResource(cfg, res)
 	}
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
-	if eb.entity.ManagedByK8sReplicaset != nil {
-		eb.entity.ManagedByK8sReplicaset.ent.CopyToResource(res)
+	if eb.entity.managedByK8sReplicaset != nil {
+		eb.entity.managedByK8sReplicaset.copyToResource(cfg, res)
 	}
-	if eb.entity.ManagedByK8sStatefulset != nil {
-		eb.entity.ManagedByK8sStatefulset.ent.CopyToResource(res)
+	if eb.entity.managedByK8sStatefulset != nil {
+		eb.entity.managedByK8sStatefulset.copyToResource(cfg, res)
 	}
-	if eb.entity.ManagedByK8sDaemonset != nil {
-		eb.entity.ManagedByK8sDaemonset.ent.CopyToResource(res)
+	if eb.entity.managedByK8sDaemonset != nil {
+		eb.entity.managedByK8sDaemonset.copyToResource(cfg, res)
 	}
-	if eb.entity.ManagedByK8sJob != nil {
-		eb.entity.ManagedByK8sJob.ent.CopyToResource(res)
+	if eb.entity.managedByK8sJob != nil {
+		eb.entity.managedByK8sJob.copyToResource(cfg, res)
 	}
-	if eb.entity.ManagedByK8sReplicationcontroller != nil {
-		eb.entity.ManagedByK8sReplicationcontroller.ent.CopyToResource(res)
+	if eb.entity.managedByK8sReplicationcontroller != nil {
+		eb.entity.managedByK8sReplicationcontroller.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -947,14 +1346,15 @@ func (eb *K8sContainerMetricsBuilder) RecordK8sContainerStorageRequestDataPoint(
 	eb.mb.metricK8sContainerStorageRequest.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sContainer and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sContainerMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.ChildOfK8sPod != nil {
-		eb.entity.ChildOfK8sPod.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.childOfK8sPod != nil {
+		eb.entity.childOfK8sPod.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -976,14 +1376,15 @@ func (eb *K8sReplicationcontrollerMetricsBuilder) RecordK8sReplicationController
 	eb.mb.metricK8sReplicationControllerDesired.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sReplicationcontroller and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sReplicationcontrollerMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -1005,14 +1406,15 @@ func (eb *K8sResourcequotaMetricsBuilder) RecordK8sResourceQuotaUsedDataPoint(ts
 	eb.mb.metricK8sResourceQuotaUsed.recordDataPoint(eb.mb.startTime, ts, val, resourceAttributeValue)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sResourcequota and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sResourcequotaMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -1034,14 +1436,15 @@ func (eb *K8sServiceMetricsBuilder) RecordK8sServiceLoadBalancerIngressCountData
 	eb.mb.metricK8sServiceLoadBalancerIngressCount.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sService and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sServiceMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -1073,14 +1476,15 @@ func (eb *K8sHpaMetricsBuilder) RecordK8sHpaMinReplicasDataPoint(ts pcommon.Time
 	eb.mb.metricK8sHpaMinReplicas.recordDataPoint(eb.mb.startTime, ts, val)
 }
 
-// Emit emits all pending metrics for the entity passed to ForK8sHpa and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sHpaMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
-	if eb.entity.PartOfK8sNamespace != nil {
-		eb.entity.PartOfK8sNamespace.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	if eb.entity.partOfK8sNamespace != nil {
+		eb.entity.partOfK8sNamespace.copyToResource(cfg, res)
 	}
 	eb.mb.EmitForResource(withResourceMoved(res))
 }
@@ -1112,11 +1516,12 @@ func (eb *OpenshiftClusterquotaMetricsBuilder) RecordOpenshiftClusterquotaUsedDa
 	eb.mb.metricOpenshiftClusterquotaUsed.recordDataPoint(eb.mb.startTime, ts, val, resourceAttributeValue)
 }
 
-// Emit emits all pending metrics for the entity passed to ForOpenshiftClusterquota and resets
-// the internal state. The entity's identity and description attributes are added to the resource.
-// If any relationships have been set on the entity, the related entities are also added to the resource.
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *OpenshiftClusterquotaMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
-	eb.entity.ent.CopyToResource(res)
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
 	eb.mb.EmitForResource(withResourceMoved(res))
 }

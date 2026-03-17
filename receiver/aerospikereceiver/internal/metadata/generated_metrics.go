@@ -421,9 +421,9 @@ type metricInfo struct {
 }
 
 type metricAerospikeNamespaceDiskAvailable struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   AerospikeNamespaceDiskAvailableConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   AerospikeNamespaceDiskAvailableMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.namespace.disk.available metric with initial data.
@@ -460,7 +460,7 @@ func (m *metricAerospikeNamespaceDiskAvailable) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricAerospikeNamespaceDiskAvailable(cfg AerospikeNamespaceDiskAvailableConfig) metricAerospikeNamespaceDiskAvailable {
+func newMetricAerospikeNamespaceDiskAvailable(cfg AerospikeNamespaceDiskAvailableMetricConfig) metricAerospikeNamespaceDiskAvailable {
 	m := metricAerospikeNamespaceDiskAvailable{config: cfg}
 
 	if cfg.Enabled {
@@ -471,9 +471,9 @@ func newMetricAerospikeNamespaceDiskAvailable(cfg AerospikeNamespaceDiskAvailabl
 }
 
 type metricAerospikeNamespaceGeojsonRegionQueryCells struct {
-	data     pmetric.Metric                                  // data buffer for generated metric.
-	config   AerospikeNamespaceGeojsonRegionQueryCellsConfig // metric config provided by user.
-	capacity int                                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                                        // data buffer for generated metric.
+	config   AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig // metric config provided by user.
+	capacity int                                                   // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.namespace.geojson.region_query_cells metric with initial data.
@@ -512,7 +512,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryCells) emit(metrics pmetric.M
 	}
 }
 
-func newMetricAerospikeNamespaceGeojsonRegionQueryCells(cfg AerospikeNamespaceGeojsonRegionQueryCellsConfig) metricAerospikeNamespaceGeojsonRegionQueryCells {
+func newMetricAerospikeNamespaceGeojsonRegionQueryCells(cfg AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig) metricAerospikeNamespaceGeojsonRegionQueryCells {
 	m := metricAerospikeNamespaceGeojsonRegionQueryCells{config: cfg}
 
 	if cfg.Enabled {
@@ -523,9 +523,9 @@ func newMetricAerospikeNamespaceGeojsonRegionQueryCells(cfg AerospikeNamespaceGe
 }
 
 type metricAerospikeNamespaceGeojsonRegionQueryFalsePositive struct {
-	data     pmetric.Metric                                          // data buffer for generated metric.
-	config   AerospikeNamespaceGeojsonRegionQueryFalsePositiveConfig // metric config provided by user.
-	capacity int                                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                                // data buffer for generated metric.
+	config   AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig // metric config provided by user.
+	capacity int                                                           // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.namespace.geojson.region_query_false_positive metric with initial data.
@@ -564,7 +564,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryFalsePositive) emit(metrics p
 	}
 }
 
-func newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(cfg AerospikeNamespaceGeojsonRegionQueryFalsePositiveConfig) metricAerospikeNamespaceGeojsonRegionQueryFalsePositive {
+func newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(cfg AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig) metricAerospikeNamespaceGeojsonRegionQueryFalsePositive {
 	m := metricAerospikeNamespaceGeojsonRegionQueryFalsePositive{config: cfg}
 
 	if cfg.Enabled {
@@ -575,9 +575,9 @@ func newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(cfg AerospikeNam
 }
 
 type metricAerospikeNamespaceGeojsonRegionQueryPoints struct {
-	data     pmetric.Metric                                   // data buffer for generated metric.
-	config   AerospikeNamespaceGeojsonRegionQueryPointsConfig // metric config provided by user.
-	capacity int                                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                                         // data buffer for generated metric.
+	config   AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig // metric config provided by user.
+	capacity int                                                    // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.namespace.geojson.region_query_points metric with initial data.
@@ -616,7 +616,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryPoints) emit(metrics pmetric.
 	}
 }
 
-func newMetricAerospikeNamespaceGeojsonRegionQueryPoints(cfg AerospikeNamespaceGeojsonRegionQueryPointsConfig) metricAerospikeNamespaceGeojsonRegionQueryPoints {
+func newMetricAerospikeNamespaceGeojsonRegionQueryPoints(cfg AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig) metricAerospikeNamespaceGeojsonRegionQueryPoints {
 	m := metricAerospikeNamespaceGeojsonRegionQueryPoints{config: cfg}
 
 	if cfg.Enabled {
@@ -627,9 +627,9 @@ func newMetricAerospikeNamespaceGeojsonRegionQueryPoints(cfg AerospikeNamespaceG
 }
 
 type metricAerospikeNamespaceGeojsonRegionQueryRequests struct {
-	data     pmetric.Metric                                     // data buffer for generated metric.
-	config   AerospikeNamespaceGeojsonRegionQueryRequestsConfig // metric config provided by user.
-	capacity int                                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                                           // data buffer for generated metric.
+	config   AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig // metric config provided by user.
+	capacity int                                                      // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.namespace.geojson.region_query_requests metric with initial data.
@@ -668,7 +668,7 @@ func (m *metricAerospikeNamespaceGeojsonRegionQueryRequests) emit(metrics pmetri
 	}
 }
 
-func newMetricAerospikeNamespaceGeojsonRegionQueryRequests(cfg AerospikeNamespaceGeojsonRegionQueryRequestsConfig) metricAerospikeNamespaceGeojsonRegionQueryRequests {
+func newMetricAerospikeNamespaceGeojsonRegionQueryRequests(cfg AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig) metricAerospikeNamespaceGeojsonRegionQueryRequests {
 	m := metricAerospikeNamespaceGeojsonRegionQueryRequests{config: cfg}
 
 	if cfg.Enabled {
@@ -679,9 +679,9 @@ func newMetricAerospikeNamespaceGeojsonRegionQueryRequests(cfg AerospikeNamespac
 }
 
 type metricAerospikeNamespaceMemoryFree struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   AerospikeNamespaceMemoryFreeConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   AerospikeNamespaceMemoryFreeMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.namespace.memory.free metric with initial data.
@@ -718,7 +718,7 @@ func (m *metricAerospikeNamespaceMemoryFree) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricAerospikeNamespaceMemoryFree(cfg AerospikeNamespaceMemoryFreeConfig) metricAerospikeNamespaceMemoryFree {
+func newMetricAerospikeNamespaceMemoryFree(cfg AerospikeNamespaceMemoryFreeMetricConfig) metricAerospikeNamespaceMemoryFree {
 	m := metricAerospikeNamespaceMemoryFree{config: cfg}
 
 	if cfg.Enabled {
@@ -729,10 +729,10 @@ func newMetricAerospikeNamespaceMemoryFree(cfg AerospikeNamespaceMemoryFreeConfi
 }
 
 type metricAerospikeNamespaceMemoryUsage struct {
-	data          pmetric.Metric                      // data buffer for generated metric.
-	config        AerospikeNamespaceMemoryUsageConfig // metric config provided by user.
-	capacity      int                                 // max observed number of data points added to the metric.
-	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        AerospikeNamespaceMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills aerospike.namespace.memory.usage metric with initial data.
@@ -755,7 +755,7 @@ func (m *metricAerospikeNamespaceMemoryUsage) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceMemoryUsageAttributeKeyNamespaceComponent) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceMemoryUsageMetricAttributeKeyNamespaceComponent) {
 		dp.Attributes().PutStr("component", namespaceComponentAttributeValue)
 	}
 
@@ -809,7 +809,7 @@ func (m *metricAerospikeNamespaceMemoryUsage) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricAerospikeNamespaceMemoryUsage(cfg AerospikeNamespaceMemoryUsageConfig) metricAerospikeNamespaceMemoryUsage {
+func newMetricAerospikeNamespaceMemoryUsage(cfg AerospikeNamespaceMemoryUsageMetricConfig) metricAerospikeNamespaceMemoryUsage {
 	m := metricAerospikeNamespaceMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -820,10 +820,10 @@ func newMetricAerospikeNamespaceMemoryUsage(cfg AerospikeNamespaceMemoryUsageCon
 }
 
 type metricAerospikeNamespaceQueryCount struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        AerospikeNamespaceQueryCountConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        AerospikeNamespaceQueryCountMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills aerospike.namespace.query.count metric with initial data.
@@ -846,13 +846,13 @@ func (m *metricAerospikeNamespaceQueryCount) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceQueryCountAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceQueryCountMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceQueryCountAttributeKeyIndexType) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceQueryCountMetricAttributeKeyIndexType) {
 		dp.Attributes().PutStr("index", indexTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceQueryCountAttributeKeyQueryResult) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceQueryCountMetricAttributeKeyQueryResult) {
 		dp.Attributes().PutStr("result", queryResultAttributeValue)
 	}
 
@@ -906,7 +906,7 @@ func (m *metricAerospikeNamespaceQueryCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricAerospikeNamespaceQueryCount(cfg AerospikeNamespaceQueryCountConfig) metricAerospikeNamespaceQueryCount {
+func newMetricAerospikeNamespaceQueryCount(cfg AerospikeNamespaceQueryCountMetricConfig) metricAerospikeNamespaceQueryCount {
 	m := metricAerospikeNamespaceQueryCount{config: cfg}
 
 	if cfg.Enabled {
@@ -917,10 +917,10 @@ func newMetricAerospikeNamespaceQueryCount(cfg AerospikeNamespaceQueryCountConfi
 }
 
 type metricAerospikeNamespaceScanCount struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        AerospikeNamespaceScanCountConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        AerospikeNamespaceScanCountMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills aerospike.namespace.scan.count metric with initial data.
@@ -943,10 +943,10 @@ func (m *metricAerospikeNamespaceScanCount) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceScanCountAttributeKeyScanType) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceScanCountMetricAttributeKeyScanType) {
 		dp.Attributes().PutStr("type", scanTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceScanCountAttributeKeyScanResult) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceScanCountMetricAttributeKeyScanResult) {
 		dp.Attributes().PutStr("result", scanResultAttributeValue)
 	}
 
@@ -1000,7 +1000,7 @@ func (m *metricAerospikeNamespaceScanCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricAerospikeNamespaceScanCount(cfg AerospikeNamespaceScanCountConfig) metricAerospikeNamespaceScanCount {
+func newMetricAerospikeNamespaceScanCount(cfg AerospikeNamespaceScanCountMetricConfig) metricAerospikeNamespaceScanCount {
 	m := metricAerospikeNamespaceScanCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1011,10 +1011,10 @@ func newMetricAerospikeNamespaceScanCount(cfg AerospikeNamespaceScanCountConfig)
 }
 
 type metricAerospikeNamespaceTransactionCount struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        AerospikeNamespaceTransactionCountConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        AerospikeNamespaceTransactionCountMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills aerospike.namespace.transaction.count metric with initial data.
@@ -1037,10 +1037,10 @@ func (m *metricAerospikeNamespaceTransactionCount) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceTransactionCountAttributeKeyTransactionType) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionType) {
 		dp.Attributes().PutStr("type", transactionTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceTransactionCountAttributeKeyTransactionResult) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNamespaceTransactionCountMetricAttributeKeyTransactionResult) {
 		dp.Attributes().PutStr("result", transactionResultAttributeValue)
 	}
 
@@ -1094,7 +1094,7 @@ func (m *metricAerospikeNamespaceTransactionCount) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricAerospikeNamespaceTransactionCount(cfg AerospikeNamespaceTransactionCountConfig) metricAerospikeNamespaceTransactionCount {
+func newMetricAerospikeNamespaceTransactionCount(cfg AerospikeNamespaceTransactionCountMetricConfig) metricAerospikeNamespaceTransactionCount {
 	m := metricAerospikeNamespaceTransactionCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1105,10 +1105,10 @@ func newMetricAerospikeNamespaceTransactionCount(cfg AerospikeNamespaceTransacti
 }
 
 type metricAerospikeNodeConnectionCount struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        AerospikeNodeConnectionCountConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        AerospikeNodeConnectionCountMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills aerospike.node.connection.count metric with initial data.
@@ -1131,10 +1131,10 @@ func (m *metricAerospikeNodeConnectionCount) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNodeConnectionCountAttributeKeyConnectionType) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNodeConnectionCountMetricAttributeKeyConnectionType) {
 		dp.Attributes().PutStr("type", connectionTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNodeConnectionCountAttributeKeyConnectionOp) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNodeConnectionCountMetricAttributeKeyConnectionOp) {
 		dp.Attributes().PutStr("operation", connectionOpAttributeValue)
 	}
 
@@ -1188,7 +1188,7 @@ func (m *metricAerospikeNodeConnectionCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricAerospikeNodeConnectionCount(cfg AerospikeNodeConnectionCountConfig) metricAerospikeNodeConnectionCount {
+func newMetricAerospikeNodeConnectionCount(cfg AerospikeNodeConnectionCountMetricConfig) metricAerospikeNodeConnectionCount {
 	m := metricAerospikeNodeConnectionCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1199,10 +1199,10 @@ func newMetricAerospikeNodeConnectionCount(cfg AerospikeNodeConnectionCountConfi
 }
 
 type metricAerospikeNodeConnectionOpen struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        AerospikeNodeConnectionOpenConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        AerospikeNodeConnectionOpenMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills aerospike.node.connection.open metric with initial data.
@@ -1225,7 +1225,7 @@ func (m *metricAerospikeNodeConnectionOpen) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, AerospikeNodeConnectionOpenAttributeKeyConnectionType) {
+	if slices.Contains(m.config.EnabledAttributes, AerospikeNodeConnectionOpenMetricAttributeKeyConnectionType) {
 		dp.Attributes().PutStr("type", connectionTypeAttributeValue)
 	}
 
@@ -1279,7 +1279,7 @@ func (m *metricAerospikeNodeConnectionOpen) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricAerospikeNodeConnectionOpen(cfg AerospikeNodeConnectionOpenConfig) metricAerospikeNodeConnectionOpen {
+func newMetricAerospikeNodeConnectionOpen(cfg AerospikeNodeConnectionOpenMetricConfig) metricAerospikeNodeConnectionOpen {
 	m := metricAerospikeNodeConnectionOpen{config: cfg}
 
 	if cfg.Enabled {
@@ -1290,9 +1290,9 @@ func newMetricAerospikeNodeConnectionOpen(cfg AerospikeNodeConnectionOpenConfig)
 }
 
 type metricAerospikeNodeMemoryFree struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   AerospikeNodeMemoryFreeConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   AerospikeNodeMemoryFreeMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.node.memory.free metric with initial data.
@@ -1329,7 +1329,7 @@ func (m *metricAerospikeNodeMemoryFree) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricAerospikeNodeMemoryFree(cfg AerospikeNodeMemoryFreeConfig) metricAerospikeNodeMemoryFree {
+func newMetricAerospikeNodeMemoryFree(cfg AerospikeNodeMemoryFreeMetricConfig) metricAerospikeNodeMemoryFree {
 	m := metricAerospikeNodeMemoryFree{config: cfg}
 
 	if cfg.Enabled {
@@ -1340,9 +1340,9 @@ func newMetricAerospikeNodeMemoryFree(cfg AerospikeNodeMemoryFreeConfig) metricA
 }
 
 type metricAerospikeNodeQueryTracked struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   AerospikeNodeQueryTrackedConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   AerospikeNodeQueryTrackedMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills aerospike.node.query.tracked metric with initial data.
@@ -1381,7 +1381,7 @@ func (m *metricAerospikeNodeQueryTracked) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricAerospikeNodeQueryTracked(cfg AerospikeNodeQueryTrackedConfig) metricAerospikeNodeQueryTracked {
+func newMetricAerospikeNodeQueryTracked(cfg AerospikeNodeQueryTrackedMetricConfig) metricAerospikeNodeQueryTracked {
 	m := metricAerospikeNodeQueryTracked{config: cfg}
 
 	if cfg.Enabled {

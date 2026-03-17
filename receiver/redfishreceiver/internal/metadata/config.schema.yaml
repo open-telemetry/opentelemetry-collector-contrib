@@ -5,84 +5,84 @@ $defs:
     type: object
     properties:
       chassis.powerstate:
-        description: "ChassisPowerstateConfig provides config for the chassis.powerstate metric."
+        description: "ChassisPowerstateMetricConfig provides config for the chassis.powerstate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       chassis.status.health:
-        description: "ChassisStatusHealthConfig provides config for the chassis.status.health metric."
+        description: "ChassisStatusHealthMetricConfig provides config for the chassis.status.health metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       chassis.status.state:
-        description: "ChassisStatusStateConfig provides config for the chassis.status.state metric."
+        description: "ChassisStatusStateMetricConfig provides config for the chassis.status.state metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       fan.reading:
-        description: "FanReadingConfig provides config for the fan.reading metric."
+        description: "FanReadingMetricConfig provides config for the fan.reading metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       fan.status.health:
-        description: "FanStatusHealthConfig provides config for the fan.status.health metric."
+        description: "FanStatusHealthMetricConfig provides config for the fan.status.health metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       fan.status.state:
-        description: "FanStatusStateConfig provides config for the fan.status.state metric."
+        description: "FanStatusStateMetricConfig provides config for the fan.status.state metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.powerstate:
-        description: "SystemPowerstateConfig provides config for the system.powerstate metric."
+        description: "SystemPowerstateMetricConfig provides config for the system.powerstate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.status.health:
-        description: "SystemStatusHealthConfig provides config for the system.status.health metric."
+        description: "SystemStatusHealthMetricConfig provides config for the system.status.health metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.status.state:
-        description: "SystemStatusStateConfig provides config for the system.status.state metric."
+        description: "SystemStatusStateMetricConfig provides config for the system.status.state metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       temperature.reading:
-        description: "TemperatureReadingConfig provides config for the temperature.reading metric."
+        description: "TemperatureReadingMetricConfig provides config for the temperature.reading metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       temperature.status.health:
-        description: "TemperatureStatusHealthConfig provides config for the temperature.status.health metric."
+        description: "TemperatureStatusHealthMetricConfig provides config for the temperature.status.health metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       temperature.status.state:
-        description: "TemperatureStatusStateConfig provides config for the temperature.status.state metric."
+        description: "TemperatureStatusStateMetricConfig provides config for the temperature.status.state metric."
         type: object
         properties:
           enabled:

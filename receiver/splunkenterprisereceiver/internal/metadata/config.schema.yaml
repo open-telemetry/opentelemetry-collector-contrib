@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       splunk.aggregation.queue.ratio:
-        description: "SplunkAggregationQueueRatioConfig provides config for the splunk.aggregation.queue.ratio metric."
+        description: "SplunkAggregationQueueRatioMetricConfig provides config for the splunk.aggregation.queue.ratio metric."
         type: object
         properties:
           enabled:
@@ -32,7 +32,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.buckets.searchable.status:
-        description: "SplunkBucketsSearchableStatusConfig provides config for the splunk.buckets.searchable.status metric."
+        description: "SplunkBucketsSearchableStatusMetricConfig provides config for the splunk.buckets.searchable.status metric."
         type: object
         properties:
           enabled:
@@ -61,7 +61,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.data.indexes.extended.bucket.count:
-        description: "SplunkDataIndexesExtendedBucketCountConfig provides config for the splunk.data.indexes.extended.bucket.count metric."
+        description: "SplunkDataIndexesExtendedBucketCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.count metric."
         type: object
         properties:
           enabled:
@@ -88,7 +88,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.data.indexes.extended.bucket.event.count:
-        description: "SplunkDataIndexesExtendedBucketEventCountConfig provides config for the splunk.data.indexes.extended.bucket.event.count metric."
+        description: "SplunkDataIndexesExtendedBucketEventCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.event.count metric."
         type: object
         properties:
           enabled:
@@ -117,7 +117,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.data.indexes.extended.bucket.hot.count:
-        description: "SplunkDataIndexesExtendedBucketHotCountConfig provides config for the splunk.data.indexes.extended.bucket.hot.count metric."
+        description: "SplunkDataIndexesExtendedBucketHotCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.hot.count metric."
         type: object
         properties:
           enabled:
@@ -146,7 +146,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.data.indexes.extended.bucket.warm.count:
-        description: "SplunkDataIndexesExtendedBucketWarmCountConfig provides config for the splunk.data.indexes.extended.bucket.warm.count metric."
+        description: "SplunkDataIndexesExtendedBucketWarmCountMetricConfig provides config for the splunk.data.indexes.extended.bucket.warm.count metric."
         type: object
         properties:
           enabled:
@@ -175,7 +175,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.data.indexes.extended.event.count:
-        description: "SplunkDataIndexesExtendedEventCountConfig provides config for the splunk.data.indexes.extended.event.count metric."
+        description: "SplunkDataIndexesExtendedEventCountMetricConfig provides config for the splunk.data.indexes.extended.event.count metric."
         type: object
         properties:
           enabled:
@@ -202,7 +202,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.data.indexes.extended.raw.size:
-        description: "SplunkDataIndexesExtendedRawSizeConfig provides config for the splunk.data.indexes.extended.raw.size metric."
+        description: "SplunkDataIndexesExtendedRawSizeMetricConfig provides config for the splunk.data.indexes.extended.raw.size metric."
         type: object
         properties:
           enabled:
@@ -229,7 +229,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.data.indexes.extended.total.size:
-        description: "SplunkDataIndexesExtendedTotalSizeConfig provides config for the splunk.data.indexes.extended.total.size metric."
+        description: "SplunkDataIndexesExtendedTotalSizeMetricConfig provides config for the splunk.data.indexes.extended.total.size metric."
         type: object
         properties:
           enabled:
@@ -256,7 +256,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.health:
-        description: "SplunkHealthConfig provides config for the splunk.health metric."
+        description: "SplunkHealthMetricConfig provides config for the splunk.health metric."
         type: object
         properties:
           enabled:
@@ -285,7 +285,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexer.avg.rate:
-        description: "SplunkIndexerAvgRateConfig provides config for the splunk.indexer.avg.rate metric."
+        description: "SplunkIndexerAvgRateMetricConfig provides config for the splunk.indexer.avg.rate metric."
         type: object
         properties:
           enabled:
@@ -312,7 +312,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexer.cpu.time:
-        description: "SplunkIndexerCPUTimeConfig provides config for the splunk.indexer.cpu.time metric."
+        description: "SplunkIndexerCPUTimeMetricConfig provides config for the splunk.indexer.cpu.time metric."
         type: object
         properties:
           enabled:
@@ -339,7 +339,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexer.queue.ratio:
-        description: "SplunkIndexerQueueRatioConfig provides config for the splunk.indexer.queue.ratio metric."
+        description: "SplunkIndexerQueueRatioMetricConfig provides config for the splunk.indexer.queue.ratio metric."
         type: object
         properties:
           enabled:
@@ -366,7 +366,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexer.raw.write.time:
-        description: "SplunkIndexerRawWriteTimeConfig provides config for the splunk.indexer.raw.write.time metric."
+        description: "SplunkIndexerRawWriteTimeMetricConfig provides config for the splunk.indexer.raw.write.time metric."
         type: object
         properties:
           enabled:
@@ -393,7 +393,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexer.rollingrestart.status:
-        description: "SplunkIndexerRollingrestartStatusConfig provides config for the splunk.indexer.rollingrestart.status metric."
+        description: "SplunkIndexerRollingrestartStatusMetricConfig provides config for the splunk.indexer.rollingrestart.status metric."
         type: object
         properties:
           enabled:
@@ -422,7 +422,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexer.throughput:
-        description: "SplunkIndexerThroughputConfig provides config for the splunk.indexer.throughput metric."
+        description: "SplunkIndexerThroughputMetricConfig provides config for the splunk.indexer.throughput metric."
         type: object
         properties:
           enabled:
@@ -449,7 +449,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexes.avg.size:
-        description: "SplunkIndexesAvgSizeConfig provides config for the splunk.indexes.avg.size metric."
+        description: "SplunkIndexesAvgSizeMetricConfig provides config for the splunk.indexes.avg.size metric."
         type: object
         properties:
           enabled:
@@ -476,7 +476,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexes.avg.usage:
-        description: "SplunkIndexesAvgUsageConfig provides config for the splunk.indexes.avg.usage metric."
+        description: "SplunkIndexesAvgUsageMetricConfig provides config for the splunk.indexes.avg.usage metric."
         type: object
         properties:
           enabled:
@@ -503,7 +503,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexes.bucket.count:
-        description: "SplunkIndexesBucketCountConfig provides config for the splunk.indexes.bucket.count metric."
+        description: "SplunkIndexesBucketCountMetricConfig provides config for the splunk.indexes.bucket.count metric."
         type: object
         properties:
           enabled:
@@ -530,7 +530,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexes.median.data.age:
-        description: "SplunkIndexesMedianDataAgeConfig provides config for the splunk.indexes.median.data.age metric."
+        description: "SplunkIndexesMedianDataAgeMetricConfig provides config for the splunk.indexes.median.data.age metric."
         type: object
         properties:
           enabled:
@@ -557,7 +557,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.indexes.size:
-        description: "SplunkIndexesSizeConfig provides config for the splunk.indexes.size metric."
+        description: "SplunkIndexesSizeMetricConfig provides config for the splunk.indexes.size metric."
         type: object
         properties:
           enabled:
@@ -584,7 +584,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.io.avg.iops:
-        description: "SplunkIoAvgIopsConfig provides config for the splunk.io.avg.iops metric."
+        description: "SplunkIoAvgIopsMetricConfig provides config for the splunk.io.avg.iops metric."
         type: object
         properties:
           enabled:
@@ -611,7 +611,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.kvstore.backup.status:
-        description: "SplunkKvstoreBackupStatusConfig provides config for the splunk.kvstore.backup.status metric."
+        description: "SplunkKvstoreBackupStatusMetricConfig provides config for the splunk.kvstore.backup.status metric."
         type: object
         properties:
           enabled:
@@ -638,7 +638,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.kvstore.replication.status:
-        description: "SplunkKvstoreReplicationStatusConfig provides config for the splunk.kvstore.replication.status metric."
+        description: "SplunkKvstoreReplicationStatusMetricConfig provides config for the splunk.kvstore.replication.status metric."
         type: object
         properties:
           enabled:
@@ -665,7 +665,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.kvstore.status:
-        description: "SplunkKvstoreStatusConfig provides config for the splunk.kvstore.status metric."
+        description: "SplunkKvstoreStatusMetricConfig provides config for the splunk.kvstore.status metric."
         type: object
         properties:
           enabled:
@@ -696,7 +696,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.license.expiration.seconds_remaining:
-        description: "SplunkLicenseExpirationSecondsRemainingConfig provides config for the splunk.license.expiration.seconds_remaining metric."
+        description: "SplunkLicenseExpirationSecondsRemainingMetricConfig provides config for the splunk.license.expiration.seconds_remaining metric."
         type: object
         properties:
           enabled:
@@ -727,7 +727,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.license.index.usage:
-        description: "SplunkLicenseIndexUsageConfig provides config for the splunk.license.index.usage metric."
+        description: "SplunkLicenseIndexUsageMetricConfig provides config for the splunk.license.index.usage metric."
         type: object
         properties:
           enabled:
@@ -754,7 +754,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.parse.queue.ratio:
-        description: "SplunkParseQueueRatioConfig provides config for the splunk.parse.queue.ratio metric."
+        description: "SplunkParseQueueRatioMetricConfig provides config for the splunk.parse.queue.ratio metric."
         type: object
         properties:
           enabled:
@@ -781,7 +781,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.pipeline.set.count:
-        description: "SplunkPipelineSetCountConfig provides config for the splunk.pipeline.set.count metric."
+        description: "SplunkPipelineSetCountMetricConfig provides config for the splunk.pipeline.set.count metric."
         type: object
         properties:
           enabled:
@@ -808,7 +808,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.scheduler.avg.execution.latency:
-        description: "SplunkSchedulerAvgExecutionLatencyConfig provides config for the splunk.scheduler.avg.execution.latency metric."
+        description: "SplunkSchedulerAvgExecutionLatencyMetricConfig provides config for the splunk.scheduler.avg.execution.latency metric."
         type: object
         properties:
           enabled:
@@ -835,7 +835,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.scheduler.avg.run.time:
-        description: "SplunkSchedulerAvgRunTimeConfig provides config for the splunk.scheduler.avg.run.time metric."
+        description: "SplunkSchedulerAvgRunTimeMetricConfig provides config for the splunk.scheduler.avg.run.time metric."
         type: object
         properties:
           enabled:
@@ -862,7 +862,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.scheduler.completion.ratio:
-        description: "SplunkSchedulerCompletionRatioConfig provides config for the splunk.scheduler.completion.ratio metric."
+        description: "SplunkSchedulerCompletionRatioMetricConfig provides config for the splunk.scheduler.completion.ratio metric."
         type: object
         properties:
           enabled:
@@ -889,7 +889,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.search.duration:
-        description: "SplunkSearchDurationConfig provides config for the splunk.search.duration metric."
+        description: "SplunkSearchDurationMetricConfig provides config for the splunk.search.duration metric."
         type: object
         properties:
           enabled:
@@ -914,7 +914,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.search.initiation:
-        description: "SplunkSearchInitiationConfig provides config for the splunk.search.initiation metric."
+        description: "SplunkSearchInitiationMetricConfig provides config for the splunk.search.initiation metric."
         type: object
         properties:
           enabled:
@@ -939,7 +939,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.search.status:
-        description: "SplunkSearchStatusConfig provides config for the splunk.search.status metric."
+        description: "SplunkSearchStatusMetricConfig provides config for the splunk.search.status metric."
         type: object
         properties:
           enabled:
@@ -966,7 +966,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.search.success:
-        description: "SplunkSearchSuccessConfig provides config for the splunk.search.success metric."
+        description: "SplunkSearchSuccessMetricConfig provides config for the splunk.search.success metric."
         type: object
         properties:
           enabled:
@@ -991,7 +991,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.introspection.queues.current:
-        description: "SplunkServerIntrospectionQueuesCurrentConfig provides config for the splunk.server.introspection.queues.current metric."
+        description: "SplunkServerIntrospectionQueuesCurrentMetricConfig provides config for the splunk.server.introspection.queues.current metric."
         type: object
         properties:
           enabled:
@@ -1018,7 +1018,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.introspection.queues.current.bytes:
-        description: "SplunkServerIntrospectionQueuesCurrentBytesConfig provides config for the splunk.server.introspection.queues.current.bytes metric."
+        description: "SplunkServerIntrospectionQueuesCurrentBytesMetricConfig provides config for the splunk.server.introspection.queues.current.bytes metric."
         type: object
         properties:
           enabled:
@@ -1045,7 +1045,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.adhoc:
-        description: "SplunkServerSearchartifactsAdhocConfig provides config for the splunk.server.searchartifacts.adhoc metric."
+        description: "SplunkServerSearchartifactsAdhocMetricConfig provides config for the splunk.server.searchartifacts.adhoc metric."
         type: object
         properties:
           enabled:
@@ -1072,7 +1072,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.adhoc.size:
-        description: "SplunkServerSearchartifactsAdhocSizeConfig provides config for the splunk.server.searchartifacts.adhoc.size metric."
+        description: "SplunkServerSearchartifactsAdhocSizeMetricConfig provides config for the splunk.server.searchartifacts.adhoc.size metric."
         type: object
         properties:
           enabled:
@@ -1099,7 +1099,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.completed:
-        description: "SplunkServerSearchartifactsCompletedConfig provides config for the splunk.server.searchartifacts.completed metric."
+        description: "SplunkServerSearchartifactsCompletedMetricConfig provides config for the splunk.server.searchartifacts.completed metric."
         type: object
         properties:
           enabled:
@@ -1126,7 +1126,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.completed.size:
-        description: "SplunkServerSearchartifactsCompletedSizeConfig provides config for the splunk.server.searchartifacts.completed.size metric."
+        description: "SplunkServerSearchartifactsCompletedSizeMetricConfig provides config for the splunk.server.searchartifacts.completed.size metric."
         type: object
         properties:
           enabled:
@@ -1153,7 +1153,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.incomplete:
-        description: "SplunkServerSearchartifactsIncompleteConfig provides config for the splunk.server.searchartifacts.incomplete metric."
+        description: "SplunkServerSearchartifactsIncompleteMetricConfig provides config for the splunk.server.searchartifacts.incomplete metric."
         type: object
         properties:
           enabled:
@@ -1180,7 +1180,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.incomplete.size:
-        description: "SplunkServerSearchartifactsIncompleteSizeConfig provides config for the splunk.server.searchartifacts.incomplete.size metric."
+        description: "SplunkServerSearchartifactsIncompleteSizeMetricConfig provides config for the splunk.server.searchartifacts.incomplete.size metric."
         type: object
         properties:
           enabled:
@@ -1207,7 +1207,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.invalid:
-        description: "SplunkServerSearchartifactsInvalidConfig provides config for the splunk.server.searchartifacts.invalid metric."
+        description: "SplunkServerSearchartifactsInvalidMetricConfig provides config for the splunk.server.searchartifacts.invalid metric."
         type: object
         properties:
           enabled:
@@ -1234,7 +1234,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.job.cache.count:
-        description: "SplunkServerSearchartifactsJobCacheCountConfig provides config for the splunk.server.searchartifacts.job.cache.count metric."
+        description: "SplunkServerSearchartifactsJobCacheCountMetricConfig provides config for the splunk.server.searchartifacts.job.cache.count metric."
         type: object
         properties:
           enabled:
@@ -1261,7 +1261,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.job.cache.size:
-        description: "SplunkServerSearchartifactsJobCacheSizeConfig provides config for the splunk.server.searchartifacts.job.cache.size metric."
+        description: "SplunkServerSearchartifactsJobCacheSizeMetricConfig provides config for the splunk.server.searchartifacts.job.cache.size metric."
         type: object
         properties:
           enabled:
@@ -1290,7 +1290,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.savedsearches:
-        description: "SplunkServerSearchartifactsSavedsearchesConfig provides config for the splunk.server.searchartifacts.savedsearches metric."
+        description: "SplunkServerSearchartifactsSavedsearchesMetricConfig provides config for the splunk.server.searchartifacts.savedsearches metric."
         type: object
         properties:
           enabled:
@@ -1317,7 +1317,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.scheduled:
-        description: "SplunkServerSearchartifactsScheduledConfig provides config for the splunk.server.searchartifacts.scheduled metric."
+        description: "SplunkServerSearchartifactsScheduledMetricConfig provides config for the splunk.server.searchartifacts.scheduled metric."
         type: object
         properties:
           enabled:
@@ -1344,7 +1344,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.server.searchartifacts.scheduled.size:
-        description: "SplunkServerSearchartifactsScheduledSizeConfig provides config for the splunk.server.searchartifacts.scheduled.size metric."
+        description: "SplunkServerSearchartifactsScheduledSizeMetricConfig provides config for the splunk.server.searchartifacts.scheduled.size metric."
         type: object
         properties:
           enabled:
@@ -1371,7 +1371,7 @@ $defs:
               - "splunk.splunkd.build"
               - "splunk.splunkd.version"
       splunk.typing.queue.ratio:
-        description: "SplunkTypingQueueRatioConfig provides config for the splunk.typing.queue.ratio metric."
+        description: "SplunkTypingQueueRatioMetricConfig provides config for the splunk.typing.queue.ratio metric."
         type: object
         properties:
           enabled:

@@ -185,7 +185,6 @@ components:
     - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
-    - processor/datadogsemantics
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
@@ -239,10 +238,11 @@ components:
     - receiver/awsxray
     - receiver/azure_blob
     - receiver/azure_event_hub
+    - receiver/azure_functions
     - receiver/azure_monitor
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoos
+    - receiver/cisco_os
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd

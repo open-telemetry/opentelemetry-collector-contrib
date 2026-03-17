@@ -15,6 +15,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetHaproxyAddr("haproxy.addr-val")
 			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServerState("haproxy.server.state-val")
 			rb.SetHaproxyServiceName("haproxy.service_name-val")
 
 			res := rb.Emit()
@@ -24,7 +25,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -41,6 +42,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.Equal(t, "haproxy.proxy_name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("haproxy.server.state")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "haproxy.server.state-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("haproxy.service_name")
 			assert.True(t, ok)

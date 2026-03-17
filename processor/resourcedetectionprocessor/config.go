@@ -83,7 +83,7 @@ type DetectorConfig struct {
 	// ConsulConfig contains user-specified configurations for the Consul detector
 	ConsulConfig consul.Config `mapstructure:"consul"`
 
-	// DigitalOceanConfig contains user-specified configurations for the docker detector
+	// DigitalOceanConfig contains user-specified configurations for the digitalocean detector
 	DigitalOceanConfig digitalocean.Config `mapstructure:"digitalocean"`
 
 	// DockerConfig contains user-specified configurations for the docker detector
