@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.147.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.54.0
-	go.opentelemetry.io/collector/config/confighttp v0.147.1-0.20260317033252-665ab5d0143d
+	go.opentelemetry.io/collector/config/confighttp v0.148.0
 	go.opentelemetry.io/collector/config/configopaque v1.54.0
 	go.opentelemetry.io/collector/config/configretry v1.54.0
 	go.opentelemetry.io/collector/confmap v1.54.0
@@ -20,11 +20,11 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/component/componenttest v0.147.1-0.20260317033252-665ab5d0143d
+	go.opentelemetry.io/collector/component/componenttest v0.148.0
 	go.opentelemetry.io/collector/config/configoptional v1.54.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.147.1-0.20260317033252-665ab5d0143d
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.147.1-0.20260317033252-665ab5d0143d
-	go.opentelemetry.io/collector/exporter/exportertest v0.147.1-0.20260317033252-665ab5d0143d
+	go.opentelemetry.io/collector/confmap/xconfmap v0.148.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.148.0
+	go.opentelemetry.io/collector/exporter/exportertest v0.148.0
 )
 
 require (
@@ -78,23 +78,23 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.54.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.54.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.54.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.147.1-0.20260317033252-665ab5d0143d // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.147.1-0.20260317033252-665ab5d0143d // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.147.1-0.20260317033252-665ab5d0143d // indirect
-	go.opentelemetry.io/collector/exporter/xexporter v0.147.1-0.20260317033252-665ab5d0143d // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.148.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.148.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.148.0 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.148.0 // indirect
 	go.opentelemetry.io/collector/extension v1.54.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.54.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.147.1-0.20260317033252-665ab5d0143d // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.147.1-0.20260317033252-665ab5d0143d // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.148.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.148.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.54.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.147.1-0.20260317033252-665ab5d0143d // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260317033252-665ab5d0143d // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.147.1-0.20260317033252-665ab5d0143d // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.148.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.148.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.148.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.54.0 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.147.1-0.20260317033252-665ab5d0143d // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.148.0 // indirect
 	go.opentelemetry.io/collector/receiver v1.54.0 // indirect
-	go.opentelemetry.io/collector/receiver/receivertest v0.147.1-0.20260317033252-665ab5d0143d // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.147.1-0.20260317033252-665ab5d0143d // indirect
+	go.opentelemetry.io/collector/receiver/receivertest v0.148.0 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.148.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
