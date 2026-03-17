@@ -474,11 +474,18 @@ func TestBoundedQueueLimits(t *testing.T) {
 			// There is an end-to-end test of admission control, including the
 			// ResourceExhausted status code we expect, in
 			// internal/otelarrow/test/e2e_test.go.
+			sendDone := make(chan struct{})
 			if tt.expectErr {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
 				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(sizer.TracesSize(td)-100), 0)
+				close(sendDone)
 			} else {
-				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+					func(_ *arrowpb.BatchStatus) error {
+						close(sendDone)
+						return nil
+					},
+				)
 				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(tt.admitLimit), 0)
 			}
 			require.NoError(t, err)
@@ -496,6 +503,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 				}, []json.Marshaler{
 					compareJSONTraces{actualTD},
 				})
+				<-sendDone
 				requireCanceledOrCleanStatus(t, ctc.cancelAndWait())
 			}
 		})
@@ -511,7 +519,16 @@ func TestReceiverTraces(t *testing.T) {
 	batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 	require.NoError(t, err)
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+	// Use a channel to synchronize: ensure Send completes before we
+	// cancel the context, avoiding a race where cancellation arrives
+	// before the receiver goroutine calls Send.
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+		func(_ *arrowpb.BatchStatus) error {
+			close(sendDone)
+			return nil
+		},
+	)
 
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
@@ -522,8 +539,9 @@ func TestReceiverTraces(t *testing.T) {
 		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
 	})
 
+	<-sendDone
 	err = ctc.cancelAndWait()
-	requireCanceledStatus(t, err)
+	requireCanceledOrCleanStatus(t, err)
 }
 
 func TestReceiverLogs(t *testing.T) {
@@ -534,13 +552,20 @@ func TestReceiverLogs(t *testing.T) {
 	batch, err := ctc.testProducer.BatchArrowRecordsFromLogs(ld)
 	require.NoError(t, err)
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+		func(_ *arrowpb.BatchStatus) error {
+			close(sendDone)
+			return nil
+		},
+	)
 
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.Equal(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
 
+	<-sendDone
 	err = ctc.cancelAndWait()
 	requireCanceledOrCleanStatus(t, err)
 }
@@ -554,7 +579,13 @@ func TestReceiverMetrics(t *testing.T) {
 	batch, err := ctc.testProducer.BatchArrowRecordsFromMetrics(md)
 	require.NoError(t, err)
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+	sendDone := make(chan struct{})
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).DoAndReturn(
+		func(_ *arrowpb.BatchStatus) error {
+			close(sendDone)
+			return nil
+		},
+	)
 
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
@@ -565,6 +596,7 @@ func TestReceiverMetrics(t *testing.T) {
 		compareJSONMetrics{(<-ctc.consume).Data.(pmetric.Metrics)},
 	})
 
+	<-sendDone
 	err = ctc.cancelAndWait()
 	requireCanceledStatus(t, err)
 }
@@ -685,7 +717,13 @@ func TestReceiverConsumeError(t *testing.T) {
 
 		batch = copyBatch(batch)
 
-		ctc.stream.EXPECT().Send(statusUnavailableFor(batch.BatchId, "consumer unhealthy")).Times(1).Return(nil)
+		sendDone := make(chan struct{})
+		ctc.stream.EXPECT().Send(statusUnavailableFor(batch.BatchId, "consumer unhealthy")).Times(1).DoAndReturn(
+			func(_ *arrowpb.BatchStatus) error {
+				close(sendDone)
+				return nil
+			},
+		)
 
 		ctc.start(ctc.newRealConsumer, defaultBQ())
 
@@ -712,6 +750,7 @@ func TestReceiverConsumeError(t *testing.T) {
 			})
 		}
 
+		<-sendDone
 		err = ctc.cancelAndWait()
 		requireCanceledOrCleanStatus(t, err)
 	}

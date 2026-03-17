@@ -195,6 +195,7 @@ components:
     - processor/groupbyattrs
     - processor/groupbytrace
     - processor/hetznerdetector
+    - processor/ibmcloudvpcdetector
     - processor/interval
     - processor/isolationforest
     - processor/k8s_attributes
@@ -242,7 +243,7 @@ components:
     - receiver/azure_monitor
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoos
+    - receiver/cisco_os
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
