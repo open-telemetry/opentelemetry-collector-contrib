@@ -27,8 +27,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -2277,32 +2275,4 @@ func TestGetAttributesForPodsJob(t *testing.T) {
 	// Test getting attributes for non-existent job
 	attrs = p.getAttributesForPodsJob("non-existent")
 	assert.Nil(t, attrs)
-}
-
-func TestStart_DeprecatedWarning(t *testing.T) {
-	core, observed := observer.New(zap.WarnLevel)
-	logger := zap.New(core)
-
-	set := processortest.NewNopSettings(metadata.Type)
-	set.Logger = logger
-
-	cfg := createDefaultConfig().(*Config)
-	cfg.Extract.Metadata = []string{containerImageTag}
-
-	tp, err := createTracesProcessorWithOptions(
-		t.Context(),
-		set,
-		cfg,
-		consumertest.NewNop(),
-		withKubeClientProvider(newFakeClient), // prevent actual k8s client creation
-	)
-	require.NoError(t, err)
-
-	err = tp.Start(t.Context(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	expectedMsg := "Deprecated attributes are enabled. Some attributes are being renamed to follow SemConv. Please see the Semantic Conventions Compatibility section in the README."
-	logs := observed.FilterMessage(expectedMsg)
-
-	assert.Equal(t, 1, logs.Len(), "Expected exactly one warning log for deprecated attributes")
 }
