@@ -3,7 +3,7 @@
 
 //go:build linux
 
-package hwscraper
+package hardwarescraper
 
 import (
 	"os"
@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
 func TestHwTemperatureScraperStart_Linux(t *testing.T) {

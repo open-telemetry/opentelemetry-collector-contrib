@@ -3,7 +3,7 @@
 
 //go:build !linux
 
-package hwscraper
+package hardwarescraper
 
 import (
 	"testing"
@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
 func TestHwTemperatureScraperStart(t *testing.T) {
@@ -25,7 +25,7 @@ func TestHwTemperatureScraperStart(t *testing.T) {
 
 	err := scraper.start(t.Context())
 	assert.Error(t, err)
-	assert.Equal(t, ErrHWMonUnavailable, err)
+	assert.Equal(t, ErrHwmonUnavailable, err)
 }
 
 func TestHwTemperatureScraperScrape(t *testing.T) {
@@ -39,5 +39,5 @@ func TestHwTemperatureScraperScrape(t *testing.T) {
 	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), scrapertest.NewNopSettings(metadata.Type))
 	err := scraper.scrape(t.Context(), mb)
 	assert.Error(t, err)
-	assert.Equal(t, ErrHWMonUnavailable, err)
+	assert.Equal(t, ErrHwmonUnavailable, err)
 }

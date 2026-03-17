@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package hwscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper"
+package hardwarescraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper"
 
 import (
 	"context"
@@ -13,10 +13,10 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
-var ErrHWMonUnavailable = errors.New("hwmon not available")
+var ErrHwmonUnavailable = errors.New("hwmon not available")
 
 const (
 	hwTemperatureMetricsLen = 3
@@ -36,8 +36,8 @@ type hwScraper struct {
 	temperatureScraper temperatureScraper
 }
 
-// newHwScraper creates a new hardware metrics scraper
-func newHwScraper(_ context.Context, settings scraper.Settings, cfg *Config) *hwScraper {
+// newHardwareScraper creates a new hardware metrics scraper
+func newHardwareScraper(_ context.Context, settings scraper.Settings, cfg *Config) *hwScraper {
 	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
 
 	var tempScraper temperatureScraper

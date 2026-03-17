@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 )
 
@@ -119,12 +119,12 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 	).Run(t)
 }
 
-func Test_HwScrape(t *testing.T) {
+func Test_HardwareScrape(t *testing.T) {
 	if runtime.GOOS != "linux" {
-		t.Skip("hw scraper only supported on linux")
+		t.Skip("hardwarescraper only supported on linux")
 	}
 
-	expectedFile := filepath.Join("testdata", "e2e", "expected_hw.yaml")
+	expectedFile := filepath.Join("testdata", "e2e", "expected_hardware.yaml")
 	rootPath := filepath.Join("testdata", "e2e")
 
 	scraperinttest.NewIntegrationTest(
@@ -134,8 +134,8 @@ func Test_HwScrape(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
-				f := hwscraper.NewFactory()
-				hCfg := f.CreateDefaultConfig().(*hwscraper.Config)
+				f := hardwarescraper.NewFactory()
+				hCfg := f.CreateDefaultConfig().(*hardwarescraper.Config)
 				hCfg.Temperature.Include.Sensors = []string{".*"}
 				hCfg.MetricsBuilderConfig.Metrics.HwTemperatureLimit.Enabled = true
 				hCfg.MetricsBuilderConfig.Metrics.HwStatus.Enabled = true
@@ -153,12 +153,12 @@ func Test_HwScrape(t *testing.T) {
 	).Run(t)
 }
 
-func Test_HwScrapeWithSensorFiltering(t *testing.T) {
+func Test_HardwareScrapeWithSensorFiltering(t *testing.T) {
 	if runtime.GOOS != "linux" {
-		t.Skip("hw scraper only supported on linux")
+		t.Skip("hardwarescraper only supported on linux")
 	}
 
-	expectedFile := filepath.Join("testdata", "e2e", "expected_hw_filtered_sensors.yaml")
+	expectedFile := filepath.Join("testdata", "e2e", "expected_hardware_filtered_sensors.yaml")
 	rootPath := filepath.Join("testdata", "e2e")
 
 	scraperinttest.NewIntegrationTest(
@@ -168,8 +168,8 @@ func Test_HwScrapeWithSensorFiltering(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
-				f := hwscraper.NewFactory()
-				hCfg := f.CreateDefaultConfig().(*hwscraper.Config)
+				f := hardwarescraper.NewFactory()
+				hCfg := f.CreateDefaultConfig().(*hardwarescraper.Config)
 				hCfg.Temperature.Include.Sensors = []string{"Composite"}
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,

@@ -26,7 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for hw metrics.
+// MetricsConfig provides config for hardware metrics.
 type MetricsConfig struct {
 	HwStatus           MetricConfig `mapstructure:"hw.status"`
 	HwTemperature      MetricConfig `mapstructure:"hw.temperature"`
@@ -47,7 +47,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for hw metrics builder.
+// MetricsBuilderConfig is a configuration for hardware metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

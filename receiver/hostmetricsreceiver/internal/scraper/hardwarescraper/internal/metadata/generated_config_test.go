@@ -26,9 +26,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HwStatus:           MetricConfig{Enabled: true},
-					HwTemperature:      MetricConfig{Enabled: true},
-					HwTemperatureLimit: MetricConfig{Enabled: true},
+					HwStatus: MetricConfig{
+						Enabled: true,
+					},
+					HwTemperature: MetricConfig{
+						Enabled: true,
+					},
+					HwTemperatureLimit: MetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -36,9 +42,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HwStatus:           MetricConfig{Enabled: false},
-					HwTemperature:      MetricConfig{Enabled: false},
-					HwTemperatureLimit: MetricConfig{Enabled: false},
+					HwStatus: MetricConfig{
+						Enabled: false,
+					},
+					HwTemperature: MetricConfig{
+						Enabled: false,
+					},
+					HwTemperatureLimit: MetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},

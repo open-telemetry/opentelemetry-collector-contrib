@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package hwscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper"
+package hardwarescraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper"
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
-// NewFactory creates a new factory for hw scraper.
+// NewFactory creates a new factory for hardwarescraper.
 func NewFactory() scraper.Factory {
 	return scraper.NewFactory(metadata.Type, createDefaultConfig, scraper.WithMetrics(createMetricsScraper, metadata.MetricsStability))
 }
@@ -32,14 +32,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// createMetricsScraper creates a hw scraper based on provided config.
+// createMetricsScraper creates a hardwarescraper based on provided config.
 func createMetricsScraper(
 	ctx context.Context,
 	settings scraper.Settings,
 	config component.Config,
 ) (scraper.Metrics, error) {
 	cfg := config.(*Config)
-	s := newHwScraper(ctx, settings, cfg)
+	s := newHardwareScraper(ctx, settings, cfg)
 
 	return scraper.NewMetrics(s.scrape, scraper.WithStart(s.start))
 }

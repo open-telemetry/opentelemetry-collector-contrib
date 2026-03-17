@@ -342,7 +342,7 @@ components:
     - scraper/cpu
     - scraper/disk
     - scraper/filesystem
-    - scraper/hw
+    - scraper/hardware
     - scraper/interfaces
     - scraper/load
     - scraper/memory

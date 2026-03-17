@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package hwscraper
+package hardwarescraper
 
 import (
 	"context"
@@ -19,12 +19,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hardwarescraper/internal/metadata"
 )
 
 func TestScrape(t *testing.T) {
 	if runtime.GOOS != "linux" {
-		t.Skip("hw scraper only supported on linux")
+		t.Skip("hardwarescraper only supported on linux")
 	}
 
 	type testCase struct {
@@ -98,7 +98,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newHwScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
+			scraper := newHardwareScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			require.NotNil(t, scraper)
 
 			err := scraper.start(test.ctx, componenttest.NewNopHost())
@@ -131,7 +131,7 @@ func TestScrapeOnNonLinux(t *testing.T) {
 		},
 	}
 
-	scraper := newHwScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), config)
+	scraper := newHardwareScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), config)
 	require.NotNil(t, scraper)
 
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
