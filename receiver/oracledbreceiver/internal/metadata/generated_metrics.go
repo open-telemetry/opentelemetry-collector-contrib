@@ -201,9 +201,9 @@ type metricInfo struct {
 }
 
 type metricOracledbConsistentGets struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   OracledbConsistentGetsConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbConsistentGetsMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.consistent_gets metric with initial data.
@@ -242,7 +242,7 @@ func (m *metricOracledbConsistentGets) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbConsistentGets(cfg OracledbConsistentGetsConfig) metricOracledbConsistentGets {
+func newMetricOracledbConsistentGets(cfg OracledbConsistentGetsMetricConfig) metricOracledbConsistentGets {
 	m := metricOracledbConsistentGets{config: cfg}
 
 	if cfg.Enabled {
@@ -253,9 +253,9 @@ func newMetricOracledbConsistentGets(cfg OracledbConsistentGetsConfig) metricOra
 }
 
 type metricOracledbCPUTime struct {
-	data     pmetric.Metric        // data buffer for generated metric.
-	config   OracledbCPUTimeConfig // metric config provided by user.
-	capacity int                   // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   OracledbCPUTimeMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.cpu_time metric with initial data.
@@ -294,7 +294,7 @@ func (m *metricOracledbCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbCPUTime(cfg OracledbCPUTimeConfig) metricOracledbCPUTime {
+func newMetricOracledbCPUTime(cfg OracledbCPUTimeMetricConfig) metricOracledbCPUTime {
 	m := metricOracledbCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -305,9 +305,9 @@ func newMetricOracledbCPUTime(cfg OracledbCPUTimeConfig) metricOracledbCPUTime {
 }
 
 type metricOracledbDbBlockGets struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   OracledbDbBlockGetsConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   OracledbDbBlockGetsMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.db_block_gets metric with initial data.
@@ -346,7 +346,7 @@ func (m *metricOracledbDbBlockGets) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbDbBlockGets(cfg OracledbDbBlockGetsConfig) metricOracledbDbBlockGets {
+func newMetricOracledbDbBlockGets(cfg OracledbDbBlockGetsMetricConfig) metricOracledbDbBlockGets {
 	m := metricOracledbDbBlockGets{config: cfg}
 
 	if cfg.Enabled {
@@ -357,9 +357,9 @@ func newMetricOracledbDbBlockGets(cfg OracledbDbBlockGetsConfig) metricOracledbD
 }
 
 type metricOracledbDdlStatementsParallelized struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   OracledbDdlStatementsParallelizedConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   OracledbDdlStatementsParallelizedMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.ddl_statements_parallelized metric with initial data.
@@ -398,7 +398,7 @@ func (m *metricOracledbDdlStatementsParallelized) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricOracledbDdlStatementsParallelized(cfg OracledbDdlStatementsParallelizedConfig) metricOracledbDdlStatementsParallelized {
+func newMetricOracledbDdlStatementsParallelized(cfg OracledbDdlStatementsParallelizedMetricConfig) metricOracledbDdlStatementsParallelized {
 	m := metricOracledbDdlStatementsParallelized{config: cfg}
 
 	if cfg.Enabled {
@@ -409,9 +409,9 @@ func newMetricOracledbDdlStatementsParallelized(cfg OracledbDdlStatementsParalle
 }
 
 type metricOracledbDmlLocksLimit struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   OracledbDmlLocksLimitConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbDmlLocksLimitMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.dml_locks.limit metric with initial data.
@@ -448,7 +448,7 @@ func (m *metricOracledbDmlLocksLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbDmlLocksLimit(cfg OracledbDmlLocksLimitConfig) metricOracledbDmlLocksLimit {
+func newMetricOracledbDmlLocksLimit(cfg OracledbDmlLocksLimitMetricConfig) metricOracledbDmlLocksLimit {
 	m := metricOracledbDmlLocksLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -459,9 +459,9 @@ func newMetricOracledbDmlLocksLimit(cfg OracledbDmlLocksLimitConfig) metricOracl
 }
 
 type metricOracledbDmlLocksUsage struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   OracledbDmlLocksUsageConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbDmlLocksUsageMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.dml_locks.usage metric with initial data.
@@ -498,7 +498,7 @@ func (m *metricOracledbDmlLocksUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbDmlLocksUsage(cfg OracledbDmlLocksUsageConfig) metricOracledbDmlLocksUsage {
+func newMetricOracledbDmlLocksUsage(cfg OracledbDmlLocksUsageMetricConfig) metricOracledbDmlLocksUsage {
 	m := metricOracledbDmlLocksUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -509,9 +509,9 @@ func newMetricOracledbDmlLocksUsage(cfg OracledbDmlLocksUsageConfig) metricOracl
 }
 
 type metricOracledbDmlStatementsParallelized struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   OracledbDmlStatementsParallelizedConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   OracledbDmlStatementsParallelizedMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.dml_statements_parallelized metric with initial data.
@@ -550,7 +550,7 @@ func (m *metricOracledbDmlStatementsParallelized) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricOracledbDmlStatementsParallelized(cfg OracledbDmlStatementsParallelizedConfig) metricOracledbDmlStatementsParallelized {
+func newMetricOracledbDmlStatementsParallelized(cfg OracledbDmlStatementsParallelizedMetricConfig) metricOracledbDmlStatementsParallelized {
 	m := metricOracledbDmlStatementsParallelized{config: cfg}
 
 	if cfg.Enabled {
@@ -561,9 +561,9 @@ func newMetricOracledbDmlStatementsParallelized(cfg OracledbDmlStatementsParalle
 }
 
 type metricOracledbEnqueueDeadlocks struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   OracledbEnqueueDeadlocksConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   OracledbEnqueueDeadlocksMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.enqueue_deadlocks metric with initial data.
@@ -602,7 +602,7 @@ func (m *metricOracledbEnqueueDeadlocks) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbEnqueueDeadlocks(cfg OracledbEnqueueDeadlocksConfig) metricOracledbEnqueueDeadlocks {
+func newMetricOracledbEnqueueDeadlocks(cfg OracledbEnqueueDeadlocksMetricConfig) metricOracledbEnqueueDeadlocks {
 	m := metricOracledbEnqueueDeadlocks{config: cfg}
 
 	if cfg.Enabled {
@@ -613,9 +613,9 @@ func newMetricOracledbEnqueueDeadlocks(cfg OracledbEnqueueDeadlocksConfig) metri
 }
 
 type metricOracledbEnqueueLocksLimit struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   OracledbEnqueueLocksLimitConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OracledbEnqueueLocksLimitMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.enqueue_locks.limit metric with initial data.
@@ -652,7 +652,7 @@ func (m *metricOracledbEnqueueLocksLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbEnqueueLocksLimit(cfg OracledbEnqueueLocksLimitConfig) metricOracledbEnqueueLocksLimit {
+func newMetricOracledbEnqueueLocksLimit(cfg OracledbEnqueueLocksLimitMetricConfig) metricOracledbEnqueueLocksLimit {
 	m := metricOracledbEnqueueLocksLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -663,9 +663,9 @@ func newMetricOracledbEnqueueLocksLimit(cfg OracledbEnqueueLocksLimitConfig) met
 }
 
 type metricOracledbEnqueueLocksUsage struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   OracledbEnqueueLocksUsageConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OracledbEnqueueLocksUsageMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.enqueue_locks.usage metric with initial data.
@@ -702,7 +702,7 @@ func (m *metricOracledbEnqueueLocksUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbEnqueueLocksUsage(cfg OracledbEnqueueLocksUsageConfig) metricOracledbEnqueueLocksUsage {
+func newMetricOracledbEnqueueLocksUsage(cfg OracledbEnqueueLocksUsageMetricConfig) metricOracledbEnqueueLocksUsage {
 	m := metricOracledbEnqueueLocksUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -713,9 +713,9 @@ func newMetricOracledbEnqueueLocksUsage(cfg OracledbEnqueueLocksUsageConfig) met
 }
 
 type metricOracledbEnqueueResourcesLimit struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   OracledbEnqueueResourcesLimitConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   OracledbEnqueueResourcesLimitMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.enqueue_resources.limit metric with initial data.
@@ -752,7 +752,7 @@ func (m *metricOracledbEnqueueResourcesLimit) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricOracledbEnqueueResourcesLimit(cfg OracledbEnqueueResourcesLimitConfig) metricOracledbEnqueueResourcesLimit {
+func newMetricOracledbEnqueueResourcesLimit(cfg OracledbEnqueueResourcesLimitMetricConfig) metricOracledbEnqueueResourcesLimit {
 	m := metricOracledbEnqueueResourcesLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -763,9 +763,9 @@ func newMetricOracledbEnqueueResourcesLimit(cfg OracledbEnqueueResourcesLimitCon
 }
 
 type metricOracledbEnqueueResourcesUsage struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   OracledbEnqueueResourcesUsageConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   OracledbEnqueueResourcesUsageMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.enqueue_resources.usage metric with initial data.
@@ -802,7 +802,7 @@ func (m *metricOracledbEnqueueResourcesUsage) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricOracledbEnqueueResourcesUsage(cfg OracledbEnqueueResourcesUsageConfig) metricOracledbEnqueueResourcesUsage {
+func newMetricOracledbEnqueueResourcesUsage(cfg OracledbEnqueueResourcesUsageMetricConfig) metricOracledbEnqueueResourcesUsage {
 	m := metricOracledbEnqueueResourcesUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -813,9 +813,9 @@ func newMetricOracledbEnqueueResourcesUsage(cfg OracledbEnqueueResourcesUsageCon
 }
 
 type metricOracledbExchangeDeadlocks struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   OracledbExchangeDeadlocksConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OracledbExchangeDeadlocksMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.exchange_deadlocks metric with initial data.
@@ -854,7 +854,7 @@ func (m *metricOracledbExchangeDeadlocks) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbExchangeDeadlocks(cfg OracledbExchangeDeadlocksConfig) metricOracledbExchangeDeadlocks {
+func newMetricOracledbExchangeDeadlocks(cfg OracledbExchangeDeadlocksMetricConfig) metricOracledbExchangeDeadlocks {
 	m := metricOracledbExchangeDeadlocks{config: cfg}
 
 	if cfg.Enabled {
@@ -865,9 +865,9 @@ func newMetricOracledbExchangeDeadlocks(cfg OracledbExchangeDeadlocksConfig) met
 }
 
 type metricOracledbExecutions struct {
-	data     pmetric.Metric           // data buffer for generated metric.
-	config   OracledbExecutionsConfig // metric config provided by user.
-	capacity int                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   OracledbExecutionsMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.executions metric with initial data.
@@ -906,7 +906,7 @@ func (m *metricOracledbExecutions) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbExecutions(cfg OracledbExecutionsConfig) metricOracledbExecutions {
+func newMetricOracledbExecutions(cfg OracledbExecutionsMetricConfig) metricOracledbExecutions {
 	m := metricOracledbExecutions{config: cfg}
 
 	if cfg.Enabled {
@@ -917,9 +917,9 @@ func newMetricOracledbExecutions(cfg OracledbExecutionsConfig) metricOracledbExe
 }
 
 type metricOracledbHardParses struct {
-	data     pmetric.Metric           // data buffer for generated metric.
-	config   OracledbHardParsesConfig // metric config provided by user.
-	capacity int                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   OracledbHardParsesMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.hard_parses metric with initial data.
@@ -958,7 +958,7 @@ func (m *metricOracledbHardParses) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbHardParses(cfg OracledbHardParsesConfig) metricOracledbHardParses {
+func newMetricOracledbHardParses(cfg OracledbHardParsesMetricConfig) metricOracledbHardParses {
 	m := metricOracledbHardParses{config: cfg}
 
 	if cfg.Enabled {
@@ -969,9 +969,9 @@ func newMetricOracledbHardParses(cfg OracledbHardParsesConfig) metricOracledbHar
 }
 
 type metricOracledbLogicalReads struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   OracledbLogicalReadsConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   OracledbLogicalReadsMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.logical_reads metric with initial data.
@@ -1010,7 +1010,7 @@ func (m *metricOracledbLogicalReads) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbLogicalReads(cfg OracledbLogicalReadsConfig) metricOracledbLogicalReads {
+func newMetricOracledbLogicalReads(cfg OracledbLogicalReadsMetricConfig) metricOracledbLogicalReads {
 	m := metricOracledbLogicalReads{config: cfg}
 
 	if cfg.Enabled {
@@ -1021,9 +1021,9 @@ func newMetricOracledbLogicalReads(cfg OracledbLogicalReadsConfig) metricOracled
 }
 
 type metricOracledbLogons struct {
-	data     pmetric.Metric       // data buffer for generated metric.
-	config   OracledbLogonsConfig // metric config provided by user.
-	capacity int                  // max observed number of data points added to the metric.
+	data     pmetric.Metric             // data buffer for generated metric.
+	config   OracledbLogonsMetricConfig // metric config provided by user.
+	capacity int                        // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.logons metric with initial data.
@@ -1062,7 +1062,7 @@ func (m *metricOracledbLogons) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbLogons(cfg OracledbLogonsConfig) metricOracledbLogons {
+func newMetricOracledbLogons(cfg OracledbLogonsMetricConfig) metricOracledbLogons {
 	m := metricOracledbLogons{config: cfg}
 
 	if cfg.Enabled {
@@ -1073,9 +1073,9 @@ func newMetricOracledbLogons(cfg OracledbLogonsConfig) metricOracledbLogons {
 }
 
 type metricOracledbParallelOperationsDowngraded1To25Pct struct {
-	data     pmetric.Metric                                     // data buffer for generated metric.
-	config   OracledbParallelOperationsDowngraded1To25PctConfig // metric config provided by user.
-	capacity int                                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                                           // data buffer for generated metric.
+	config   OracledbParallelOperationsDowngraded1To25PctMetricConfig // metric config provided by user.
+	capacity int                                                      // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.parallel_operations_downgraded_1_to_25_pct metric with initial data.
@@ -1114,7 +1114,7 @@ func (m *metricOracledbParallelOperationsDowngraded1To25Pct) emit(metrics pmetri
 	}
 }
 
-func newMetricOracledbParallelOperationsDowngraded1To25Pct(cfg OracledbParallelOperationsDowngraded1To25PctConfig) metricOracledbParallelOperationsDowngraded1To25Pct {
+func newMetricOracledbParallelOperationsDowngraded1To25Pct(cfg OracledbParallelOperationsDowngraded1To25PctMetricConfig) metricOracledbParallelOperationsDowngraded1To25Pct {
 	m := metricOracledbParallelOperationsDowngraded1To25Pct{config: cfg}
 
 	if cfg.Enabled {
@@ -1125,9 +1125,9 @@ func newMetricOracledbParallelOperationsDowngraded1To25Pct(cfg OracledbParallelO
 }
 
 type metricOracledbParallelOperationsDowngraded25To50Pct struct {
-	data     pmetric.Metric                                      // data buffer for generated metric.
-	config   OracledbParallelOperationsDowngraded25To50PctConfig // metric config provided by user.
-	capacity int                                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                                            // data buffer for generated metric.
+	config   OracledbParallelOperationsDowngraded25To50PctMetricConfig // metric config provided by user.
+	capacity int                                                       // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.parallel_operations_downgraded_25_to_50_pct metric with initial data.
@@ -1166,7 +1166,7 @@ func (m *metricOracledbParallelOperationsDowngraded25To50Pct) emit(metrics pmetr
 	}
 }
 
-func newMetricOracledbParallelOperationsDowngraded25To50Pct(cfg OracledbParallelOperationsDowngraded25To50PctConfig) metricOracledbParallelOperationsDowngraded25To50Pct {
+func newMetricOracledbParallelOperationsDowngraded25To50Pct(cfg OracledbParallelOperationsDowngraded25To50PctMetricConfig) metricOracledbParallelOperationsDowngraded25To50Pct {
 	m := metricOracledbParallelOperationsDowngraded25To50Pct{config: cfg}
 
 	if cfg.Enabled {
@@ -1177,9 +1177,9 @@ func newMetricOracledbParallelOperationsDowngraded25To50Pct(cfg OracledbParallel
 }
 
 type metricOracledbParallelOperationsDowngraded50To75Pct struct {
-	data     pmetric.Metric                                      // data buffer for generated metric.
-	config   OracledbParallelOperationsDowngraded50To75PctConfig // metric config provided by user.
-	capacity int                                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                                            // data buffer for generated metric.
+	config   OracledbParallelOperationsDowngraded50To75PctMetricConfig // metric config provided by user.
+	capacity int                                                       // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.parallel_operations_downgraded_50_to_75_pct metric with initial data.
@@ -1218,7 +1218,7 @@ func (m *metricOracledbParallelOperationsDowngraded50To75Pct) emit(metrics pmetr
 	}
 }
 
-func newMetricOracledbParallelOperationsDowngraded50To75Pct(cfg OracledbParallelOperationsDowngraded50To75PctConfig) metricOracledbParallelOperationsDowngraded50To75Pct {
+func newMetricOracledbParallelOperationsDowngraded50To75Pct(cfg OracledbParallelOperationsDowngraded50To75PctMetricConfig) metricOracledbParallelOperationsDowngraded50To75Pct {
 	m := metricOracledbParallelOperationsDowngraded50To75Pct{config: cfg}
 
 	if cfg.Enabled {
@@ -1229,9 +1229,9 @@ func newMetricOracledbParallelOperationsDowngraded50To75Pct(cfg OracledbParallel
 }
 
 type metricOracledbParallelOperationsDowngraded75To99Pct struct {
-	data     pmetric.Metric                                      // data buffer for generated metric.
-	config   OracledbParallelOperationsDowngraded75To99PctConfig // metric config provided by user.
-	capacity int                                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                                            // data buffer for generated metric.
+	config   OracledbParallelOperationsDowngraded75To99PctMetricConfig // metric config provided by user.
+	capacity int                                                       // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.parallel_operations_downgraded_75_to_99_pct metric with initial data.
@@ -1270,7 +1270,7 @@ func (m *metricOracledbParallelOperationsDowngraded75To99Pct) emit(metrics pmetr
 	}
 }
 
-func newMetricOracledbParallelOperationsDowngraded75To99Pct(cfg OracledbParallelOperationsDowngraded75To99PctConfig) metricOracledbParallelOperationsDowngraded75To99Pct {
+func newMetricOracledbParallelOperationsDowngraded75To99Pct(cfg OracledbParallelOperationsDowngraded75To99PctMetricConfig) metricOracledbParallelOperationsDowngraded75To99Pct {
 	m := metricOracledbParallelOperationsDowngraded75To99Pct{config: cfg}
 
 	if cfg.Enabled {
@@ -1281,9 +1281,9 @@ func newMetricOracledbParallelOperationsDowngraded75To99Pct(cfg OracledbParallel
 }
 
 type metricOracledbParallelOperationsDowngradedToSerial struct {
-	data     pmetric.Metric                                     // data buffer for generated metric.
-	config   OracledbParallelOperationsDowngradedToSerialConfig // metric config provided by user.
-	capacity int                                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                                           // data buffer for generated metric.
+	config   OracledbParallelOperationsDowngradedToSerialMetricConfig // metric config provided by user.
+	capacity int                                                      // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.parallel_operations_downgraded_to_serial metric with initial data.
@@ -1322,7 +1322,7 @@ func (m *metricOracledbParallelOperationsDowngradedToSerial) emit(metrics pmetri
 	}
 }
 
-func newMetricOracledbParallelOperationsDowngradedToSerial(cfg OracledbParallelOperationsDowngradedToSerialConfig) metricOracledbParallelOperationsDowngradedToSerial {
+func newMetricOracledbParallelOperationsDowngradedToSerial(cfg OracledbParallelOperationsDowngradedToSerialMetricConfig) metricOracledbParallelOperationsDowngradedToSerial {
 	m := metricOracledbParallelOperationsDowngradedToSerial{config: cfg}
 
 	if cfg.Enabled {
@@ -1333,9 +1333,9 @@ func newMetricOracledbParallelOperationsDowngradedToSerial(cfg OracledbParallelO
 }
 
 type metricOracledbParallelOperationsNotDowngraded struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   OracledbParallelOperationsNotDowngradedConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   OracledbParallelOperationsNotDowngradedMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.parallel_operations_not_downgraded metric with initial data.
@@ -1374,7 +1374,7 @@ func (m *metricOracledbParallelOperationsNotDowngraded) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricOracledbParallelOperationsNotDowngraded(cfg OracledbParallelOperationsNotDowngradedConfig) metricOracledbParallelOperationsNotDowngraded {
+func newMetricOracledbParallelOperationsNotDowngraded(cfg OracledbParallelOperationsNotDowngradedMetricConfig) metricOracledbParallelOperationsNotDowngraded {
 	m := metricOracledbParallelOperationsNotDowngraded{config: cfg}
 
 	if cfg.Enabled {
@@ -1385,9 +1385,9 @@ func newMetricOracledbParallelOperationsNotDowngraded(cfg OracledbParallelOperat
 }
 
 type metricOracledbParseCalls struct {
-	data     pmetric.Metric           // data buffer for generated metric.
-	config   OracledbParseCallsConfig // metric config provided by user.
-	capacity int                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   OracledbParseCallsMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.parse_calls metric with initial data.
@@ -1426,7 +1426,7 @@ func (m *metricOracledbParseCalls) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbParseCalls(cfg OracledbParseCallsConfig) metricOracledbParseCalls {
+func newMetricOracledbParseCalls(cfg OracledbParseCallsMetricConfig) metricOracledbParseCalls {
 	m := metricOracledbParseCalls{config: cfg}
 
 	if cfg.Enabled {
@@ -1437,9 +1437,9 @@ func newMetricOracledbParseCalls(cfg OracledbParseCallsConfig) metricOracledbPar
 }
 
 type metricOracledbPgaMemory struct {
-	data     pmetric.Metric          // data buffer for generated metric.
-	config   OracledbPgaMemoryConfig // metric config provided by user.
-	capacity int                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   OracledbPgaMemoryMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.pga_memory metric with initial data.
@@ -1478,7 +1478,7 @@ func (m *metricOracledbPgaMemory) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbPgaMemory(cfg OracledbPgaMemoryConfig) metricOracledbPgaMemory {
+func newMetricOracledbPgaMemory(cfg OracledbPgaMemoryMetricConfig) metricOracledbPgaMemory {
 	m := metricOracledbPgaMemory{config: cfg}
 
 	if cfg.Enabled {
@@ -1489,9 +1489,9 @@ func newMetricOracledbPgaMemory(cfg OracledbPgaMemoryConfig) metricOracledbPgaMe
 }
 
 type metricOracledbPhysicalReadIoRequests struct {
-	data     pmetric.Metric                       // data buffer for generated metric.
-	config   OracledbPhysicalReadIoRequestsConfig // metric config provided by user.
-	capacity int                                  // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   OracledbPhysicalReadIoRequestsMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.physical_read_io_requests metric with initial data.
@@ -1530,7 +1530,7 @@ func (m *metricOracledbPhysicalReadIoRequests) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricOracledbPhysicalReadIoRequests(cfg OracledbPhysicalReadIoRequestsConfig) metricOracledbPhysicalReadIoRequests {
+func newMetricOracledbPhysicalReadIoRequests(cfg OracledbPhysicalReadIoRequestsMetricConfig) metricOracledbPhysicalReadIoRequests {
 	m := metricOracledbPhysicalReadIoRequests{config: cfg}
 
 	if cfg.Enabled {
@@ -1541,9 +1541,9 @@ func newMetricOracledbPhysicalReadIoRequests(cfg OracledbPhysicalReadIoRequestsC
 }
 
 type metricOracledbPhysicalReads struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   OracledbPhysicalReadsConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbPhysicalReadsMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.physical_reads metric with initial data.
@@ -1582,7 +1582,7 @@ func (m *metricOracledbPhysicalReads) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbPhysicalReads(cfg OracledbPhysicalReadsConfig) metricOracledbPhysicalReads {
+func newMetricOracledbPhysicalReads(cfg OracledbPhysicalReadsMetricConfig) metricOracledbPhysicalReads {
 	m := metricOracledbPhysicalReads{config: cfg}
 
 	if cfg.Enabled {
@@ -1593,9 +1593,9 @@ func newMetricOracledbPhysicalReads(cfg OracledbPhysicalReadsConfig) metricOracl
 }
 
 type metricOracledbPhysicalReadsDirect struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   OracledbPhysicalReadsDirectConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   OracledbPhysicalReadsDirectMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.physical_reads_direct metric with initial data.
@@ -1634,7 +1634,7 @@ func (m *metricOracledbPhysicalReadsDirect) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbPhysicalReadsDirect(cfg OracledbPhysicalReadsDirectConfig) metricOracledbPhysicalReadsDirect {
+func newMetricOracledbPhysicalReadsDirect(cfg OracledbPhysicalReadsDirectMetricConfig) metricOracledbPhysicalReadsDirect {
 	m := metricOracledbPhysicalReadsDirect{config: cfg}
 
 	if cfg.Enabled {
@@ -1645,9 +1645,9 @@ func newMetricOracledbPhysicalReadsDirect(cfg OracledbPhysicalReadsDirectConfig)
 }
 
 type metricOracledbPhysicalWriteIoRequests struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   OracledbPhysicalWriteIoRequestsConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   OracledbPhysicalWriteIoRequestsMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.physical_write_io_requests metric with initial data.
@@ -1686,7 +1686,7 @@ func (m *metricOracledbPhysicalWriteIoRequests) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricOracledbPhysicalWriteIoRequests(cfg OracledbPhysicalWriteIoRequestsConfig) metricOracledbPhysicalWriteIoRequests {
+func newMetricOracledbPhysicalWriteIoRequests(cfg OracledbPhysicalWriteIoRequestsMetricConfig) metricOracledbPhysicalWriteIoRequests {
 	m := metricOracledbPhysicalWriteIoRequests{config: cfg}
 
 	if cfg.Enabled {
@@ -1697,9 +1697,9 @@ func newMetricOracledbPhysicalWriteIoRequests(cfg OracledbPhysicalWriteIoRequest
 }
 
 type metricOracledbPhysicalWrites struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   OracledbPhysicalWritesConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbPhysicalWritesMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.physical_writes metric with initial data.
@@ -1738,7 +1738,7 @@ func (m *metricOracledbPhysicalWrites) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbPhysicalWrites(cfg OracledbPhysicalWritesConfig) metricOracledbPhysicalWrites {
+func newMetricOracledbPhysicalWrites(cfg OracledbPhysicalWritesMetricConfig) metricOracledbPhysicalWrites {
 	m := metricOracledbPhysicalWrites{config: cfg}
 
 	if cfg.Enabled {
@@ -1749,9 +1749,9 @@ func newMetricOracledbPhysicalWrites(cfg OracledbPhysicalWritesConfig) metricOra
 }
 
 type metricOracledbPhysicalWritesDirect struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   OracledbPhysicalWritesDirectConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   OracledbPhysicalWritesDirectMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.physical_writes_direct metric with initial data.
@@ -1790,7 +1790,7 @@ func (m *metricOracledbPhysicalWritesDirect) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbPhysicalWritesDirect(cfg OracledbPhysicalWritesDirectConfig) metricOracledbPhysicalWritesDirect {
+func newMetricOracledbPhysicalWritesDirect(cfg OracledbPhysicalWritesDirectMetricConfig) metricOracledbPhysicalWritesDirect {
 	m := metricOracledbPhysicalWritesDirect{config: cfg}
 
 	if cfg.Enabled {
@@ -1801,9 +1801,9 @@ func newMetricOracledbPhysicalWritesDirect(cfg OracledbPhysicalWritesDirectConfi
 }
 
 type metricOracledbProcessesLimit struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   OracledbProcessesLimitConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbProcessesLimitMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.processes.limit metric with initial data.
@@ -1840,7 +1840,7 @@ func (m *metricOracledbProcessesLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbProcessesLimit(cfg OracledbProcessesLimitConfig) metricOracledbProcessesLimit {
+func newMetricOracledbProcessesLimit(cfg OracledbProcessesLimitMetricConfig) metricOracledbProcessesLimit {
 	m := metricOracledbProcessesLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -1851,9 +1851,9 @@ func newMetricOracledbProcessesLimit(cfg OracledbProcessesLimitConfig) metricOra
 }
 
 type metricOracledbProcessesUsage struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   OracledbProcessesUsageConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbProcessesUsageMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.processes.usage metric with initial data.
@@ -1890,7 +1890,7 @@ func (m *metricOracledbProcessesUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbProcessesUsage(cfg OracledbProcessesUsageConfig) metricOracledbProcessesUsage {
+func newMetricOracledbProcessesUsage(cfg OracledbProcessesUsageMetricConfig) metricOracledbProcessesUsage {
 	m := metricOracledbProcessesUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -1901,9 +1901,9 @@ func newMetricOracledbProcessesUsage(cfg OracledbProcessesUsageConfig) metricOra
 }
 
 type metricOracledbQueriesParallelized struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   OracledbQueriesParallelizedConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   OracledbQueriesParallelizedMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.queries_parallelized metric with initial data.
@@ -1942,7 +1942,7 @@ func (m *metricOracledbQueriesParallelized) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbQueriesParallelized(cfg OracledbQueriesParallelizedConfig) metricOracledbQueriesParallelized {
+func newMetricOracledbQueriesParallelized(cfg OracledbQueriesParallelizedMetricConfig) metricOracledbQueriesParallelized {
 	m := metricOracledbQueriesParallelized{config: cfg}
 
 	if cfg.Enabled {
@@ -1953,9 +1953,9 @@ func newMetricOracledbQueriesParallelized(cfg OracledbQueriesParallelizedConfig)
 }
 
 type metricOracledbSessionsLimit struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   OracledbSessionsLimitConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbSessionsLimitMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.sessions.limit metric with initial data.
@@ -1992,7 +1992,7 @@ func (m *metricOracledbSessionsLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbSessionsLimit(cfg OracledbSessionsLimitConfig) metricOracledbSessionsLimit {
+func newMetricOracledbSessionsLimit(cfg OracledbSessionsLimitMetricConfig) metricOracledbSessionsLimit {
 	m := metricOracledbSessionsLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -2003,10 +2003,10 @@ func newMetricOracledbSessionsLimit(cfg OracledbSessionsLimitConfig) metricOracl
 }
 
 type metricOracledbSessionsUsage struct {
-	data          pmetric.Metric              // data buffer for generated metric.
-	config        OracledbSessionsUsageConfig // metric config provided by user.
-	capacity      int                         // max observed number of data points added to the metric.
-	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        OracledbSessionsUsageMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills oracledb.sessions.usage metric with initial data.
@@ -2027,10 +2027,10 @@ func (m *metricOracledbSessionsUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbSessionsUsageAttributeKeySessionType) {
+	if slices.Contains(m.config.EnabledAttributes, OracledbSessionsUsageMetricAttributeKeySessionType) {
 		dp.Attributes().PutStr("session_type", sessionTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, OracledbSessionsUsageAttributeKeySessionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, OracledbSessionsUsageMetricAttributeKeySessionStatus) {
 		dp.Attributes().PutStr("session_status", sessionStatusAttributeValue)
 	}
 
@@ -2084,7 +2084,7 @@ func (m *metricOracledbSessionsUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbSessionsUsage(cfg OracledbSessionsUsageConfig) metricOracledbSessionsUsage {
+func newMetricOracledbSessionsUsage(cfg OracledbSessionsUsageMetricConfig) metricOracledbSessionsUsage {
 	m := metricOracledbSessionsUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2095,10 +2095,10 @@ func newMetricOracledbSessionsUsage(cfg OracledbSessionsUsageConfig) metricOracl
 }
 
 type metricOracledbTablespaceSizeLimit struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        OracledbTablespaceSizeLimitConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        OracledbTablespaceSizeLimitMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills oracledb.tablespace_size.limit metric with initial data.
@@ -2119,7 +2119,7 @@ func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceSizeLimitAttributeKeyTablespaceName) {
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName) {
 		dp.Attributes().PutStr("tablespace_name", tablespaceNameAttributeValue)
 	}
 
@@ -2173,7 +2173,7 @@ func (m *metricOracledbTablespaceSizeLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTablespaceSizeLimit(cfg OracledbTablespaceSizeLimitConfig) metricOracledbTablespaceSizeLimit {
+func newMetricOracledbTablespaceSizeLimit(cfg OracledbTablespaceSizeLimitMetricConfig) metricOracledbTablespaceSizeLimit {
 	m := metricOracledbTablespaceSizeLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -2184,10 +2184,10 @@ func newMetricOracledbTablespaceSizeLimit(cfg OracledbTablespaceSizeLimitConfig)
 }
 
 type metricOracledbTablespaceSizeUsage struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        OracledbTablespaceSizeUsageConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        OracledbTablespaceSizeUsageMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills oracledb.tablespace_size.usage metric with initial data.
@@ -2208,7 +2208,7 @@ func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceSizeUsageAttributeKeyTablespaceName) {
+	if slices.Contains(m.config.EnabledAttributes, OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName) {
 		dp.Attributes().PutStr("tablespace_name", tablespaceNameAttributeValue)
 	}
 
@@ -2262,7 +2262,7 @@ func (m *metricOracledbTablespaceSizeUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTablespaceSizeUsage(cfg OracledbTablespaceSizeUsageConfig) metricOracledbTablespaceSizeUsage {
+func newMetricOracledbTablespaceSizeUsage(cfg OracledbTablespaceSizeUsageMetricConfig) metricOracledbTablespaceSizeUsage {
 	m := metricOracledbTablespaceSizeUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2273,9 +2273,9 @@ func newMetricOracledbTablespaceSizeUsage(cfg OracledbTablespaceSizeUsageConfig)
 }
 
 type metricOracledbTransactionsLimit struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   OracledbTransactionsLimitConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OracledbTransactionsLimitMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.transactions.limit metric with initial data.
@@ -2312,7 +2312,7 @@ func (m *metricOracledbTransactionsLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTransactionsLimit(cfg OracledbTransactionsLimitConfig) metricOracledbTransactionsLimit {
+func newMetricOracledbTransactionsLimit(cfg OracledbTransactionsLimitMetricConfig) metricOracledbTransactionsLimit {
 	m := metricOracledbTransactionsLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -2323,9 +2323,9 @@ func newMetricOracledbTransactionsLimit(cfg OracledbTransactionsLimitConfig) met
 }
 
 type metricOracledbTransactionsUsage struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   OracledbTransactionsUsageConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   OracledbTransactionsUsageMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.transactions.usage metric with initial data.
@@ -2362,7 +2362,7 @@ func (m *metricOracledbTransactionsUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbTransactionsUsage(cfg OracledbTransactionsUsageConfig) metricOracledbTransactionsUsage {
+func newMetricOracledbTransactionsUsage(cfg OracledbTransactionsUsageMetricConfig) metricOracledbTransactionsUsage {
 	m := metricOracledbTransactionsUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2373,9 +2373,9 @@ func newMetricOracledbTransactionsUsage(cfg OracledbTransactionsUsageConfig) met
 }
 
 type metricOracledbUserCommits struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   OracledbUserCommitsConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   OracledbUserCommitsMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.user_commits metric with initial data.
@@ -2414,7 +2414,7 @@ func (m *metricOracledbUserCommits) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbUserCommits(cfg OracledbUserCommitsConfig) metricOracledbUserCommits {
+func newMetricOracledbUserCommits(cfg OracledbUserCommitsMetricConfig) metricOracledbUserCommits {
 	m := metricOracledbUserCommits{config: cfg}
 
 	if cfg.Enabled {
@@ -2425,9 +2425,9 @@ func newMetricOracledbUserCommits(cfg OracledbUserCommitsConfig) metricOracledbU
 }
 
 type metricOracledbUserRollbacks struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   OracledbUserRollbacksConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   OracledbUserRollbacksMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills oracledb.user_rollbacks metric with initial data.
@@ -2466,7 +2466,7 @@ func (m *metricOracledbUserRollbacks) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricOracledbUserRollbacks(cfg OracledbUserRollbacksConfig) metricOracledbUserRollbacks {
+func newMetricOracledbUserRollbacks(cfg OracledbUserRollbacksMetricConfig) metricOracledbUserRollbacks {
 	m := metricOracledbUserRollbacks{config: cfg}
 
 	if cfg.Enabled {

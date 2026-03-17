@@ -605,6 +605,10 @@ component_management:
     name: receiver_azureeventhub
     paths:
     - receiver/azureeventhubreceiver/**
+  - component_id: receiver_azurefunctions
+    name: receiver_azurefunctions
+    paths:
+    - receiver/azurefunctionsreceiver/**
   - component_id: receiver_azuremonitor
     name: receiver_azuremonitor
     paths:

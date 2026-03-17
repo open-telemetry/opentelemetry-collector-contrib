@@ -26,39 +26,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead: ContainerBlockioIoServiceBytesRecursiveReadConfig{
+					ContainerBlockioIoServiceBytesRecursiveRead: ContainerBlockioIoServiceBytesRecursiveReadMetricConfig{
 						Enabled: true,
 					},
-					ContainerBlockioIoServiceBytesRecursiveWrite: ContainerBlockioIoServiceBytesRecursiveWriteConfig{
+					ContainerBlockioIoServiceBytesRecursiveWrite: ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUPercent: ContainerCPUPercentConfig{
+					ContainerCPUPercent: ContainerCPUPercentMetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuConfig{
+					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerCPUUsagePercpuAttributeKey{ContainerCPUUsagePercpuAttributeKeyCore},
+						EnabledAttributes:   []ContainerCPUUsagePercpuMetricAttributeKey{ContainerCPUUsagePercpuMetricAttributeKeyCore},
 					},
-					ContainerCPUUsageSystem: ContainerCPUUsageSystemConfig{
+					ContainerCPUUsageSystem: ContainerCPUUsageSystemMetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUUsageTotal: ContainerCPUUsageTotalConfig{
+					ContainerCPUUsageTotal: ContainerCPUUsageTotalMetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryPercent: ContainerMemoryPercentConfig{
+					ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitConfig{
+					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalConfig{
+					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 						Enabled: true,
 					},
-					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesConfig{
+					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesMetricConfig{
 						Enabled: true,
 					},
-					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesConfig{
+					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -74,39 +74,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead: ContainerBlockioIoServiceBytesRecursiveReadConfig{
+					ContainerBlockioIoServiceBytesRecursiveRead: ContainerBlockioIoServiceBytesRecursiveReadMetricConfig{
 						Enabled: false,
 					},
-					ContainerBlockioIoServiceBytesRecursiveWrite: ContainerBlockioIoServiceBytesRecursiveWriteConfig{
+					ContainerBlockioIoServiceBytesRecursiveWrite: ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUPercent: ContainerCPUPercentConfig{
+					ContainerCPUPercent: ContainerCPUPercentMetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuConfig{
+					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []ContainerCPUUsagePercpuAttributeKey{ContainerCPUUsagePercpuAttributeKeyCore},
+						EnabledAttributes:   []ContainerCPUUsagePercpuMetricAttributeKey{ContainerCPUUsagePercpuMetricAttributeKeyCore},
 					},
-					ContainerCPUUsageSystem: ContainerCPUUsageSystemConfig{
+					ContainerCPUUsageSystem: ContainerCPUUsageSystemMetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUUsageTotal: ContainerCPUUsageTotalConfig{
+					ContainerCPUUsageTotal: ContainerCPUUsageTotalMetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryPercent: ContainerMemoryPercentConfig{
+					ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitConfig{
+					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalConfig{
+					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 						Enabled: false,
 					},
-					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesConfig{
+					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesMetricConfig{
 						Enabled: false,
 					},
-					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesConfig{
+					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -122,7 +122,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoServiceBytesRecursiveReadConfig{}, ContainerBlockioIoServiceBytesRecursiveWriteConfig{}, ContainerCPUPercentConfig{}, ContainerCPUUsagePercpuConfig{}, ContainerCPUUsageSystemConfig{}, ContainerCPUUsageTotalConfig{}, ContainerMemoryPercentConfig{}, ContainerMemoryUsageLimitConfig{}, ContainerMemoryUsageTotalConfig{}, ContainerNetworkIoUsageRxBytesConfig{}, ContainerNetworkIoUsageTxBytesConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoServiceBytesRecursiveReadMetricConfig{}, ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig{}, ContainerCPUPercentMetricConfig{}, ContainerCPUUsagePercpuMetricConfig{}, ContainerCPUUsageSystemMetricConfig{}, ContainerCPUUsageTotalMetricConfig{}, ContainerMemoryPercentMetricConfig{}, ContainerMemoryUsageLimitMetricConfig{}, ContainerMemoryUsageTotalMetricConfig{}, ContainerNetworkIoUsageRxBytesMetricConfig{}, ContainerNetworkIoUsageTxBytesMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

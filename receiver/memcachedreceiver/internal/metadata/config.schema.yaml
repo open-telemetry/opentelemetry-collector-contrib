@@ -5,77 +5,77 @@ $defs:
     type: object
     properties:
       memcached.bytes:
-        description: "MemcachedBytesConfig provides config for the memcached.bytes metric."
+        description: "MemcachedBytesMetricConfig provides config for the memcached.bytes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.commands:
-        description: "MemcachedCommandsConfig provides config for the memcached.commands metric."
+        description: "MemcachedCommandsMetricConfig provides config for the memcached.commands metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.connections.current:
-        description: "MemcachedConnectionsCurrentConfig provides config for the memcached.connections.current metric."
+        description: "MemcachedConnectionsCurrentMetricConfig provides config for the memcached.connections.current metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.connections.total:
-        description: "MemcachedConnectionsTotalConfig provides config for the memcached.connections.total metric."
+        description: "MemcachedConnectionsTotalMetricConfig provides config for the memcached.connections.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.cpu.usage:
-        description: "MemcachedCPUUsageConfig provides config for the memcached.cpu.usage metric."
+        description: "MemcachedCPUUsageMetricConfig provides config for the memcached.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.current_items:
-        description: "MemcachedCurrentItemsConfig provides config for the memcached.current_items metric."
+        description: "MemcachedCurrentItemsMetricConfig provides config for the memcached.current_items metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.evictions:
-        description: "MemcachedEvictionsConfig provides config for the memcached.evictions metric."
+        description: "MemcachedEvictionsMetricConfig provides config for the memcached.evictions metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.network:
-        description: "MemcachedNetworkConfig provides config for the memcached.network metric."
+        description: "MemcachedNetworkMetricConfig provides config for the memcached.network metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.operation_hit_ratio:
-        description: "MemcachedOperationHitRatioConfig provides config for the memcached.operation_hit_ratio metric."
+        description: "MemcachedOperationHitRatioMetricConfig provides config for the memcached.operation_hit_ratio metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.operations:
-        description: "MemcachedOperationsConfig provides config for the memcached.operations metric."
+        description: "MemcachedOperationsMetricConfig provides config for the memcached.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       memcached.threads:
-        description: "MemcachedThreadsConfig provides config for the memcached.threads metric."
+        description: "MemcachedThreadsMetricConfig provides config for the memcached.threads metric."
         type: object
         properties:
           enabled:

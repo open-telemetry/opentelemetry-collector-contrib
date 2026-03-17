@@ -171,10 +171,10 @@ type metricInfo struct {
 }
 
 type metricSnowflakeBillingCloudServiceTotal struct {
-	data          pmetric.Metric                          // data buffer for generated metric.
-	config        SnowflakeBillingCloudServiceTotalConfig // metric config provided by user.
-	capacity      int                                     // max observed number of data points added to the metric.
-	aggDataPoints []float64                               // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SnowflakeBillingCloudServiceTotalMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.cloud_service.total metric with initial data.
@@ -195,7 +195,7 @@ func (m *metricSnowflakeBillingCloudServiceTotal) recordDataPoint(start pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingCloudServiceTotalAttributeKeyServiceType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType) {
 		dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
 	}
 
@@ -249,7 +249,7 @@ func (m *metricSnowflakeBillingCloudServiceTotal) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricSnowflakeBillingCloudServiceTotal(cfg SnowflakeBillingCloudServiceTotalConfig) metricSnowflakeBillingCloudServiceTotal {
+func newMetricSnowflakeBillingCloudServiceTotal(cfg SnowflakeBillingCloudServiceTotalMetricConfig) metricSnowflakeBillingCloudServiceTotal {
 	m := metricSnowflakeBillingCloudServiceTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -260,10 +260,10 @@ func newMetricSnowflakeBillingCloudServiceTotal(cfg SnowflakeBillingCloudService
 }
 
 type metricSnowflakeBillingTotalCreditTotal struct {
-	data          pmetric.Metric                         // data buffer for generated metric.
-	config        SnowflakeBillingTotalCreditTotalConfig // metric config provided by user.
-	capacity      int                                    // max observed number of data points added to the metric.
-	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SnowflakeBillingTotalCreditTotalMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.total_credit.total metric with initial data.
@@ -284,7 +284,7 @@ func (m *metricSnowflakeBillingTotalCreditTotal) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingTotalCreditTotalAttributeKeyServiceType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType) {
 		dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
 	}
 
@@ -338,7 +338,7 @@ func (m *metricSnowflakeBillingTotalCreditTotal) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSnowflakeBillingTotalCreditTotal(cfg SnowflakeBillingTotalCreditTotalConfig) metricSnowflakeBillingTotalCreditTotal {
+func newMetricSnowflakeBillingTotalCreditTotal(cfg SnowflakeBillingTotalCreditTotalMetricConfig) metricSnowflakeBillingTotalCreditTotal {
 	m := metricSnowflakeBillingTotalCreditTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -349,10 +349,10 @@ func newMetricSnowflakeBillingTotalCreditTotal(cfg SnowflakeBillingTotalCreditTo
 }
 
 type metricSnowflakeBillingVirtualWarehouseTotal struct {
-	data          pmetric.Metric                              // data buffer for generated metric.
-	config        SnowflakeBillingVirtualWarehouseTotalConfig // metric config provided by user.
-	capacity      int                                         // max observed number of data points added to the metric.
-	aggDataPoints []float64                                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        SnowflakeBillingVirtualWarehouseTotalMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.virtual_warehouse.total metric with initial data.
@@ -373,7 +373,7 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) recordDataPoint(start pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingVirtualWarehouseTotalAttributeKeyServiceType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType) {
 		dp.Attributes().PutStr("service_type", serviceTypeAttributeValue)
 	}
 
@@ -427,7 +427,7 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricSnowflakeBillingVirtualWarehouseTotal(cfg SnowflakeBillingVirtualWarehouseTotalConfig) metricSnowflakeBillingVirtualWarehouseTotal {
+func newMetricSnowflakeBillingVirtualWarehouseTotal(cfg SnowflakeBillingVirtualWarehouseTotalMetricConfig) metricSnowflakeBillingVirtualWarehouseTotal {
 	m := metricSnowflakeBillingVirtualWarehouseTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -438,10 +438,10 @@ func newMetricSnowflakeBillingVirtualWarehouseTotal(cfg SnowflakeBillingVirtualW
 }
 
 type metricSnowflakeBillingWarehouseCloudServiceTotal struct {
-	data          pmetric.Metric                                   // data buffer for generated metric.
-	config        SnowflakeBillingWarehouseCloudServiceTotalConfig // metric config provided by user.
-	capacity      int                                              // max observed number of data points added to the metric.
-	aggDataPoints []float64                                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                         // data buffer for generated metric.
+	config        SnowflakeBillingWarehouseCloudServiceTotalMetricConfig // metric config provided by user.
+	capacity      int                                                    // max observed number of data points added to the metric.
+	aggDataPoints []float64                                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.warehouse.cloud_service.total metric with initial data.
@@ -462,7 +462,7 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) recordDataPoint(start
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingWarehouseCloudServiceTotalAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
 
@@ -516,7 +516,7 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) emit(metrics pmetric.
 	}
 }
 
-func newMetricSnowflakeBillingWarehouseCloudServiceTotal(cfg SnowflakeBillingWarehouseCloudServiceTotalConfig) metricSnowflakeBillingWarehouseCloudServiceTotal {
+func newMetricSnowflakeBillingWarehouseCloudServiceTotal(cfg SnowflakeBillingWarehouseCloudServiceTotalMetricConfig) metricSnowflakeBillingWarehouseCloudServiceTotal {
 	m := metricSnowflakeBillingWarehouseCloudServiceTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -527,10 +527,10 @@ func newMetricSnowflakeBillingWarehouseCloudServiceTotal(cfg SnowflakeBillingWar
 }
 
 type metricSnowflakeBillingWarehouseTotalCreditTotal struct {
-	data          pmetric.Metric                                  // data buffer for generated metric.
-	config        SnowflakeBillingWarehouseTotalCreditTotalConfig // metric config provided by user.
-	capacity      int                                             // max observed number of data points added to the metric.
-	aggDataPoints []float64                                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                        // data buffer for generated metric.
+	config        SnowflakeBillingWarehouseTotalCreditTotalMetricConfig // metric config provided by user.
+	capacity      int                                                   // max observed number of data points added to the metric.
+	aggDataPoints []float64                                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.warehouse.total_credit.total metric with initial data.
@@ -551,7 +551,7 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) recordDataPoint(start 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingWarehouseTotalCreditTotalAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
 
@@ -605,7 +605,7 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) emit(metrics pmetric.M
 	}
 }
 
-func newMetricSnowflakeBillingWarehouseTotalCreditTotal(cfg SnowflakeBillingWarehouseTotalCreditTotalConfig) metricSnowflakeBillingWarehouseTotalCreditTotal {
+func newMetricSnowflakeBillingWarehouseTotalCreditTotal(cfg SnowflakeBillingWarehouseTotalCreditTotalMetricConfig) metricSnowflakeBillingWarehouseTotalCreditTotal {
 	m := metricSnowflakeBillingWarehouseTotalCreditTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -616,10 +616,10 @@ func newMetricSnowflakeBillingWarehouseTotalCreditTotal(cfg SnowflakeBillingWare
 }
 
 type metricSnowflakeBillingWarehouseVirtualWarehouseTotal struct {
-	data          pmetric.Metric                                       // data buffer for generated metric.
-	config        SnowflakeBillingWarehouseVirtualWarehouseTotalConfig // metric config provided by user.
-	capacity      int                                                  // max observed number of data points added to the metric.
-	aggDataPoints []float64                                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                             // data buffer for generated metric.
+	config        SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig // metric config provided by user.
+	capacity      int                                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.billing.warehouse.virtual_warehouse.total metric with initial data.
@@ -640,7 +640,7 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) recordDataPoint(s
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingWarehouseVirtualWarehouseTotalAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
 
@@ -694,7 +694,7 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) emit(metrics pmet
 	}
 }
 
-func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(cfg SnowflakeBillingWarehouseVirtualWarehouseTotalConfig) metricSnowflakeBillingWarehouseVirtualWarehouseTotal {
+func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(cfg SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig) metricSnowflakeBillingWarehouseVirtualWarehouseTotal {
 	m := metricSnowflakeBillingWarehouseVirtualWarehouseTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -705,10 +705,10 @@ func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(cfg SnowflakeBillin
 }
 
 type metricSnowflakeDatabaseBytesScannedAvg struct {
-	data          pmetric.Metric                         // data buffer for generated metric.
-	config        SnowflakeDatabaseBytesScannedAvgConfig // metric config provided by user.
-	capacity      int                                    // max observed number of data points added to the metric.
-	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SnowflakeDatabaseBytesScannedAvgMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.database.bytes_scanned.avg metric with initial data.
@@ -729,25 +729,25 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -801,7 +801,7 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSnowflakeDatabaseBytesScannedAvg(cfg SnowflakeDatabaseBytesScannedAvgConfig) metricSnowflakeDatabaseBytesScannedAvg {
+func newMetricSnowflakeDatabaseBytesScannedAvg(cfg SnowflakeDatabaseBytesScannedAvgMetricConfig) metricSnowflakeDatabaseBytesScannedAvg {
 	m := metricSnowflakeDatabaseBytesScannedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -812,10 +812,10 @@ func newMetricSnowflakeDatabaseBytesScannedAvg(cfg SnowflakeDatabaseBytesScanned
 }
 
 type metricSnowflakeDatabaseQueryCount struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        SnowflakeDatabaseQueryCountConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SnowflakeDatabaseQueryCountMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.database.query.count metric with initial data.
@@ -836,25 +836,25 @@ func (m *metricSnowflakeDatabaseQueryCount) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -908,7 +908,7 @@ func (m *metricSnowflakeDatabaseQueryCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeDatabaseQueryCount(cfg SnowflakeDatabaseQueryCountConfig) metricSnowflakeDatabaseQueryCount {
+func newMetricSnowflakeDatabaseQueryCount(cfg SnowflakeDatabaseQueryCountMetricConfig) metricSnowflakeDatabaseQueryCount {
 	m := metricSnowflakeDatabaseQueryCount{config: cfg}
 
 	if cfg.Enabled {
@@ -919,10 +919,10 @@ func newMetricSnowflakeDatabaseQueryCount(cfg SnowflakeDatabaseQueryCountConfig)
 }
 
 type metricSnowflakeLoginsTotal struct {
-	data          pmetric.Metric             // data buffer for generated metric.
-	config        SnowflakeLoginsTotalConfig // metric config provided by user.
-	capacity      int                        // max observed number of data points added to the metric.
-	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SnowflakeLoginsTotalMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.logins.total metric with initial data.
@@ -943,13 +943,13 @@ func (m *metricSnowflakeLoginsTotal) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeLoginsTotalAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeLoginsTotalMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeLoginsTotalAttributeKeyReportedClientType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeLoginsTotalMetricAttributeKeyReportedClientType) {
 		dp.Attributes().PutStr("reported_client_type", reportedClientTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeLoginsTotalAttributeKeyIsSuccess) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeLoginsTotalMetricAttributeKeyIsSuccess) {
 		dp.Attributes().PutStr("is_success", isSuccessAttributeValue)
 	}
 
@@ -1003,7 +1003,7 @@ func (m *metricSnowflakeLoginsTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeLoginsTotal(cfg SnowflakeLoginsTotalConfig) metricSnowflakeLoginsTotal {
+func newMetricSnowflakeLoginsTotal(cfg SnowflakeLoginsTotalMetricConfig) metricSnowflakeLoginsTotal {
 	m := metricSnowflakeLoginsTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1014,10 +1014,10 @@ func newMetricSnowflakeLoginsTotal(cfg SnowflakeLoginsTotalConfig) metricSnowfla
 }
 
 type metricSnowflakePipeCreditsUsedTotal struct {
-	data          pmetric.Metric                      // data buffer for generated metric.
-	config        SnowflakePipeCreditsUsedTotalConfig // metric config provided by user.
-	capacity      int                                 // max observed number of data points added to the metric.
-	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SnowflakePipeCreditsUsedTotalMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.pipe.credits_used.total metric with initial data.
@@ -1038,7 +1038,7 @@ func (m *metricSnowflakePipeCreditsUsedTotal) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakePipeCreditsUsedTotalAttributeKeyPipeName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName) {
 		dp.Attributes().PutStr("pipe_name", pipeNameAttributeValue)
 	}
 
@@ -1092,7 +1092,7 @@ func (m *metricSnowflakePipeCreditsUsedTotal) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricSnowflakePipeCreditsUsedTotal(cfg SnowflakePipeCreditsUsedTotalConfig) metricSnowflakePipeCreditsUsedTotal {
+func newMetricSnowflakePipeCreditsUsedTotal(cfg SnowflakePipeCreditsUsedTotalMetricConfig) metricSnowflakePipeCreditsUsedTotal {
 	m := metricSnowflakePipeCreditsUsedTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1103,10 +1103,10 @@ func newMetricSnowflakePipeCreditsUsedTotal(cfg SnowflakePipeCreditsUsedTotalCon
 }
 
 type metricSnowflakeQueryBlocked struct {
-	data          pmetric.Metric              // data buffer for generated metric.
-	config        SnowflakeQueryBlockedConfig // metric config provided by user.
-	capacity      int                         // max observed number of data points added to the metric.
-	aggDataPoints []float64                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                    // data buffer for generated metric.
+	config        SnowflakeQueryBlockedMetricConfig // metric config provided by user.
+	capacity      int                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.blocked metric with initial data.
@@ -1127,7 +1127,7 @@ func (m *metricSnowflakeQueryBlocked) recordDataPoint(start pcommon.Timestamp, t
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBlockedAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBlockedMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
 
@@ -1181,7 +1181,7 @@ func (m *metricSnowflakeQueryBlocked) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeQueryBlocked(cfg SnowflakeQueryBlockedConfig) metricSnowflakeQueryBlocked {
+func newMetricSnowflakeQueryBlocked(cfg SnowflakeQueryBlockedMetricConfig) metricSnowflakeQueryBlocked {
 	m := metricSnowflakeQueryBlocked{config: cfg}
 
 	if cfg.Enabled {
@@ -1192,10 +1192,10 @@ func newMetricSnowflakeQueryBlocked(cfg SnowflakeQueryBlockedConfig) metricSnowf
 }
 
 type metricSnowflakeQueryBytesDeletedAvg struct {
-	data          pmetric.Metric                      // data buffer for generated metric.
-	config        SnowflakeQueryBytesDeletedAvgConfig // metric config provided by user.
-	capacity      int                                 // max observed number of data points added to the metric.
-	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SnowflakeQueryBytesDeletedAvgMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_deleted.avg metric with initial data.
@@ -1216,25 +1216,25 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -1288,7 +1288,7 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricSnowflakeQueryBytesDeletedAvg(cfg SnowflakeQueryBytesDeletedAvgConfig) metricSnowflakeQueryBytesDeletedAvg {
+func newMetricSnowflakeQueryBytesDeletedAvg(cfg SnowflakeQueryBytesDeletedAvgMetricConfig) metricSnowflakeQueryBytesDeletedAvg {
 	m := metricSnowflakeQueryBytesDeletedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -1299,10 +1299,10 @@ func newMetricSnowflakeQueryBytesDeletedAvg(cfg SnowflakeQueryBytesDeletedAvgCon
 }
 
 type metricSnowflakeQueryBytesSpilledLocalAvg struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SnowflakeQueryBytesSpilledLocalAvgConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SnowflakeQueryBytesSpilledLocalAvgMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_spilled.local.avg metric with initial data.
@@ -1323,25 +1323,25 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -1395,7 +1395,7 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSnowflakeQueryBytesSpilledLocalAvg(cfg SnowflakeQueryBytesSpilledLocalAvgConfig) metricSnowflakeQueryBytesSpilledLocalAvg {
+func newMetricSnowflakeQueryBytesSpilledLocalAvg(cfg SnowflakeQueryBytesSpilledLocalAvgMetricConfig) metricSnowflakeQueryBytesSpilledLocalAvg {
 	m := metricSnowflakeQueryBytesSpilledLocalAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -1406,10 +1406,10 @@ func newMetricSnowflakeQueryBytesSpilledLocalAvg(cfg SnowflakeQueryBytesSpilledL
 }
 
 type metricSnowflakeQueryBytesSpilledRemoteAvg struct {
-	data          pmetric.Metric                            // data buffer for generated metric.
-	config        SnowflakeQueryBytesSpilledRemoteAvgConfig // metric config provided by user.
-	capacity      int                                       // max observed number of data points added to the metric.
-	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                  // data buffer for generated metric.
+	config        SnowflakeQueryBytesSpilledRemoteAvgMetricConfig // metric config provided by user.
+	capacity      int                                             // max observed number of data points added to the metric.
+	aggDataPoints []float64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_spilled.remote.avg metric with initial data.
@@ -1430,25 +1430,25 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) recordDataPoint(start pcommo
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -1502,7 +1502,7 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricSnowflakeQueryBytesSpilledRemoteAvg(cfg SnowflakeQueryBytesSpilledRemoteAvgConfig) metricSnowflakeQueryBytesSpilledRemoteAvg {
+func newMetricSnowflakeQueryBytesSpilledRemoteAvg(cfg SnowflakeQueryBytesSpilledRemoteAvgMetricConfig) metricSnowflakeQueryBytesSpilledRemoteAvg {
 	m := metricSnowflakeQueryBytesSpilledRemoteAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -1513,10 +1513,10 @@ func newMetricSnowflakeQueryBytesSpilledRemoteAvg(cfg SnowflakeQueryBytesSpilled
 }
 
 type metricSnowflakeQueryBytesWrittenAvg struct {
-	data          pmetric.Metric                      // data buffer for generated metric.
-	config        SnowflakeQueryBytesWrittenAvgConfig // metric config provided by user.
-	capacity      int                                 // max observed number of data points added to the metric.
-	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SnowflakeQueryBytesWrittenAvgMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.bytes_written.avg metric with initial data.
@@ -1537,25 +1537,25 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -1609,7 +1609,7 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricSnowflakeQueryBytesWrittenAvg(cfg SnowflakeQueryBytesWrittenAvgConfig) metricSnowflakeQueryBytesWrittenAvg {
+func newMetricSnowflakeQueryBytesWrittenAvg(cfg SnowflakeQueryBytesWrittenAvgMetricConfig) metricSnowflakeQueryBytesWrittenAvg {
 	m := metricSnowflakeQueryBytesWrittenAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -1620,10 +1620,10 @@ func newMetricSnowflakeQueryBytesWrittenAvg(cfg SnowflakeQueryBytesWrittenAvgCon
 }
 
 type metricSnowflakeQueryCompilationTimeAvg struct {
-	data          pmetric.Metric                         // data buffer for generated metric.
-	config        SnowflakeQueryCompilationTimeAvgConfig // metric config provided by user.
-	capacity      int                                    // max observed number of data points added to the metric.
-	aggDataPoints []float64                              // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SnowflakeQueryCompilationTimeAvgMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.compilation_time.avg metric with initial data.
@@ -1644,25 +1644,25 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -1716,7 +1716,7 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSnowflakeQueryCompilationTimeAvg(cfg SnowflakeQueryCompilationTimeAvgConfig) metricSnowflakeQueryCompilationTimeAvg {
+func newMetricSnowflakeQueryCompilationTimeAvg(cfg SnowflakeQueryCompilationTimeAvgMetricConfig) metricSnowflakeQueryCompilationTimeAvg {
 	m := metricSnowflakeQueryCompilationTimeAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -1727,10 +1727,10 @@ func newMetricSnowflakeQueryCompilationTimeAvg(cfg SnowflakeQueryCompilationTime
 }
 
 type metricSnowflakeQueryDataScannedCacheAvg struct {
-	data          pmetric.Metric                          // data buffer for generated metric.
-	config        SnowflakeQueryDataScannedCacheAvgConfig // metric config provided by user.
-	capacity      int                                     // max observed number of data points added to the metric.
-	aggDataPoints []float64                               // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SnowflakeQueryDataScannedCacheAvgMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.data_scanned_cache.avg metric with initial data.
@@ -1751,25 +1751,25 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) recordDataPoint(start pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -1823,7 +1823,7 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricSnowflakeQueryDataScannedCacheAvg(cfg SnowflakeQueryDataScannedCacheAvgConfig) metricSnowflakeQueryDataScannedCacheAvg {
+func newMetricSnowflakeQueryDataScannedCacheAvg(cfg SnowflakeQueryDataScannedCacheAvgMetricConfig) metricSnowflakeQueryDataScannedCacheAvg {
 	m := metricSnowflakeQueryDataScannedCacheAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -1834,10 +1834,10 @@ func newMetricSnowflakeQueryDataScannedCacheAvg(cfg SnowflakeQueryDataScannedCac
 }
 
 type metricSnowflakeQueryExecuted struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        SnowflakeQueryExecutedConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []float64                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SnowflakeQueryExecutedMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.executed metric with initial data.
@@ -1858,7 +1858,7 @@ func (m *metricSnowflakeQueryExecuted) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutedAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutedMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
 
@@ -1912,7 +1912,7 @@ func (m *metricSnowflakeQueryExecuted) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeQueryExecuted(cfg SnowflakeQueryExecutedConfig) metricSnowflakeQueryExecuted {
+func newMetricSnowflakeQueryExecuted(cfg SnowflakeQueryExecutedMetricConfig) metricSnowflakeQueryExecuted {
 	m := metricSnowflakeQueryExecuted{config: cfg}
 
 	if cfg.Enabled {
@@ -1923,10 +1923,10 @@ func newMetricSnowflakeQueryExecuted(cfg SnowflakeQueryExecutedConfig) metricSno
 }
 
 type metricSnowflakeQueryExecutionTimeAvg struct {
-	data          pmetric.Metric                       // data buffer for generated metric.
-	config        SnowflakeQueryExecutionTimeAvgConfig // metric config provided by user.
-	capacity      int                                  // max observed number of data points added to the metric.
-	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SnowflakeQueryExecutionTimeAvgMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.execution_time.avg metric with initial data.
@@ -1947,25 +1947,25 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2019,7 +2019,7 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSnowflakeQueryExecutionTimeAvg(cfg SnowflakeQueryExecutionTimeAvgConfig) metricSnowflakeQueryExecutionTimeAvg {
+func newMetricSnowflakeQueryExecutionTimeAvg(cfg SnowflakeQueryExecutionTimeAvgMetricConfig) metricSnowflakeQueryExecutionTimeAvg {
 	m := metricSnowflakeQueryExecutionTimeAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2030,10 +2030,10 @@ func newMetricSnowflakeQueryExecutionTimeAvg(cfg SnowflakeQueryExecutionTimeAvgC
 }
 
 type metricSnowflakeQueryPartitionsScannedAvg struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SnowflakeQueryPartitionsScannedAvgConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SnowflakeQueryPartitionsScannedAvgMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.partitions_scanned.avg metric with initial data.
@@ -2054,25 +2054,25 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2126,7 +2126,7 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSnowflakeQueryPartitionsScannedAvg(cfg SnowflakeQueryPartitionsScannedAvgConfig) metricSnowflakeQueryPartitionsScannedAvg {
+func newMetricSnowflakeQueryPartitionsScannedAvg(cfg SnowflakeQueryPartitionsScannedAvgMetricConfig) metricSnowflakeQueryPartitionsScannedAvg {
 	m := metricSnowflakeQueryPartitionsScannedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2137,10 +2137,10 @@ func newMetricSnowflakeQueryPartitionsScannedAvg(cfg SnowflakeQueryPartitionsSca
 }
 
 type metricSnowflakeQueryQueuedOverload struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        SnowflakeQueryQueuedOverloadConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SnowflakeQueryQueuedOverloadMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.queued_overload metric with initial data.
@@ -2161,7 +2161,7 @@ func (m *metricSnowflakeQueryQueuedOverload) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryQueuedOverloadAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
 
@@ -2215,7 +2215,7 @@ func (m *metricSnowflakeQueryQueuedOverload) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeQueryQueuedOverload(cfg SnowflakeQueryQueuedOverloadConfig) metricSnowflakeQueryQueuedOverload {
+func newMetricSnowflakeQueryQueuedOverload(cfg SnowflakeQueryQueuedOverloadMetricConfig) metricSnowflakeQueryQueuedOverload {
 	m := metricSnowflakeQueryQueuedOverload{config: cfg}
 
 	if cfg.Enabled {
@@ -2226,10 +2226,10 @@ func newMetricSnowflakeQueryQueuedOverload(cfg SnowflakeQueryQueuedOverloadConfi
 }
 
 type metricSnowflakeQueryQueuedProvision struct {
-	data          pmetric.Metric                      // data buffer for generated metric.
-	config        SnowflakeQueryQueuedProvisionConfig // metric config provided by user.
-	capacity      int                                 // max observed number of data points added to the metric.
-	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SnowflakeQueryQueuedProvisionMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []float64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.query.queued_provision metric with initial data.
@@ -2250,7 +2250,7 @@ func (m *metricSnowflakeQueryQueuedProvision) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryQueuedProvisionAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
 
@@ -2304,7 +2304,7 @@ func (m *metricSnowflakeQueryQueuedProvision) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricSnowflakeQueryQueuedProvision(cfg SnowflakeQueryQueuedProvisionConfig) metricSnowflakeQueryQueuedProvision {
+func newMetricSnowflakeQueryQueuedProvision(cfg SnowflakeQueryQueuedProvisionMetricConfig) metricSnowflakeQueryQueuedProvision {
 	m := metricSnowflakeQueryQueuedProvision{config: cfg}
 
 	if cfg.Enabled {
@@ -2315,10 +2315,10 @@ func newMetricSnowflakeQueryQueuedProvision(cfg SnowflakeQueryQueuedProvisionCon
 }
 
 type metricSnowflakeQueuedOverloadTimeAvg struct {
-	data          pmetric.Metric                       // data buffer for generated metric.
-	config        SnowflakeQueuedOverloadTimeAvgConfig // metric config provided by user.
-	capacity      int                                  // max observed number of data points added to the metric.
-	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SnowflakeQueuedOverloadTimeAvgMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.queued_overload_time.avg metric with initial data.
@@ -2339,25 +2339,25 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2411,7 +2411,7 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSnowflakeQueuedOverloadTimeAvg(cfg SnowflakeQueuedOverloadTimeAvgConfig) metricSnowflakeQueuedOverloadTimeAvg {
+func newMetricSnowflakeQueuedOverloadTimeAvg(cfg SnowflakeQueuedOverloadTimeAvgMetricConfig) metricSnowflakeQueuedOverloadTimeAvg {
 	m := metricSnowflakeQueuedOverloadTimeAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2422,10 +2422,10 @@ func newMetricSnowflakeQueuedOverloadTimeAvg(cfg SnowflakeQueuedOverloadTimeAvgC
 }
 
 type metricSnowflakeQueuedProvisioningTimeAvg struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SnowflakeQueuedProvisioningTimeAvgConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SnowflakeQueuedProvisioningTimeAvgMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.queued_provisioning_time.avg metric with initial data.
@@ -2446,25 +2446,25 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2518,7 +2518,7 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSnowflakeQueuedProvisioningTimeAvg(cfg SnowflakeQueuedProvisioningTimeAvgConfig) metricSnowflakeQueuedProvisioningTimeAvg {
+func newMetricSnowflakeQueuedProvisioningTimeAvg(cfg SnowflakeQueuedProvisioningTimeAvgMetricConfig) metricSnowflakeQueuedProvisioningTimeAvg {
 	m := metricSnowflakeQueuedProvisioningTimeAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2529,10 +2529,10 @@ func newMetricSnowflakeQueuedProvisioningTimeAvg(cfg SnowflakeQueuedProvisioning
 }
 
 type metricSnowflakeQueuedRepairTimeAvg struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        SnowflakeQueuedRepairTimeAvgConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SnowflakeQueuedRepairTimeAvgMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.queued_repair_time.avg metric with initial data.
@@ -2553,25 +2553,25 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2625,7 +2625,7 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeQueuedRepairTimeAvg(cfg SnowflakeQueuedRepairTimeAvgConfig) metricSnowflakeQueuedRepairTimeAvg {
+func newMetricSnowflakeQueuedRepairTimeAvg(cfg SnowflakeQueuedRepairTimeAvgMetricConfig) metricSnowflakeQueuedRepairTimeAvg {
 	m := metricSnowflakeQueuedRepairTimeAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2636,10 +2636,10 @@ func newMetricSnowflakeQueuedRepairTimeAvg(cfg SnowflakeQueuedRepairTimeAvgConfi
 }
 
 type metricSnowflakeRowsDeletedAvg struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SnowflakeRowsDeletedAvgConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SnowflakeRowsDeletedAvgMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_deleted.avg metric with initial data.
@@ -2660,25 +2660,25 @@ func (m *metricSnowflakeRowsDeletedAvg) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2732,7 +2732,7 @@ func (m *metricSnowflakeRowsDeletedAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsDeletedAvg(cfg SnowflakeRowsDeletedAvgConfig) metricSnowflakeRowsDeletedAvg {
+func newMetricSnowflakeRowsDeletedAvg(cfg SnowflakeRowsDeletedAvgMetricConfig) metricSnowflakeRowsDeletedAvg {
 	m := metricSnowflakeRowsDeletedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2743,10 +2743,10 @@ func newMetricSnowflakeRowsDeletedAvg(cfg SnowflakeRowsDeletedAvgConfig) metricS
 }
 
 type metricSnowflakeRowsInsertedAvg struct {
-	data          pmetric.Metric                 // data buffer for generated metric.
-	config        SnowflakeRowsInsertedAvgConfig // metric config provided by user.
-	capacity      int                            // max observed number of data points added to the metric.
-	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SnowflakeRowsInsertedAvgMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_inserted.avg metric with initial data.
@@ -2767,25 +2767,25 @@ func (m *metricSnowflakeRowsInsertedAvg) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2839,7 +2839,7 @@ func (m *metricSnowflakeRowsInsertedAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsInsertedAvg(cfg SnowflakeRowsInsertedAvgConfig) metricSnowflakeRowsInsertedAvg {
+func newMetricSnowflakeRowsInsertedAvg(cfg SnowflakeRowsInsertedAvgMetricConfig) metricSnowflakeRowsInsertedAvg {
 	m := metricSnowflakeRowsInsertedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2850,10 +2850,10 @@ func newMetricSnowflakeRowsInsertedAvg(cfg SnowflakeRowsInsertedAvgConfig) metri
 }
 
 type metricSnowflakeRowsProducedAvg struct {
-	data          pmetric.Metric                 // data buffer for generated metric.
-	config        SnowflakeRowsProducedAvgConfig // metric config provided by user.
-	capacity      int                            // max observed number of data points added to the metric.
-	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SnowflakeRowsProducedAvgMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_produced.avg metric with initial data.
@@ -2874,25 +2874,25 @@ func (m *metricSnowflakeRowsProducedAvg) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -2946,7 +2946,7 @@ func (m *metricSnowflakeRowsProducedAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsProducedAvg(cfg SnowflakeRowsProducedAvgConfig) metricSnowflakeRowsProducedAvg {
+func newMetricSnowflakeRowsProducedAvg(cfg SnowflakeRowsProducedAvgMetricConfig) metricSnowflakeRowsProducedAvg {
 	m := metricSnowflakeRowsProducedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -2957,10 +2957,10 @@ func newMetricSnowflakeRowsProducedAvg(cfg SnowflakeRowsProducedAvgConfig) metri
 }
 
 type metricSnowflakeRowsUnloadedAvg struct {
-	data          pmetric.Metric                 // data buffer for generated metric.
-	config        SnowflakeRowsUnloadedAvgConfig // metric config provided by user.
-	capacity      int                            // max observed number of data points added to the metric.
-	aggDataPoints []float64                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SnowflakeRowsUnloadedAvgMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_unloaded.avg metric with initial data.
@@ -2981,25 +2981,25 @@ func (m *metricSnowflakeRowsUnloadedAvg) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -3053,7 +3053,7 @@ func (m *metricSnowflakeRowsUnloadedAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsUnloadedAvg(cfg SnowflakeRowsUnloadedAvgConfig) metricSnowflakeRowsUnloadedAvg {
+func newMetricSnowflakeRowsUnloadedAvg(cfg SnowflakeRowsUnloadedAvgMetricConfig) metricSnowflakeRowsUnloadedAvg {
 	m := metricSnowflakeRowsUnloadedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -3064,10 +3064,10 @@ func newMetricSnowflakeRowsUnloadedAvg(cfg SnowflakeRowsUnloadedAvgConfig) metri
 }
 
 type metricSnowflakeRowsUpdatedAvg struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SnowflakeRowsUpdatedAvgConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []float64                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SnowflakeRowsUpdatedAvgMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.rows_updated.avg metric with initial data.
@@ -3088,25 +3088,25 @@ func (m *metricSnowflakeRowsUpdatedAvg) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -3160,7 +3160,7 @@ func (m *metricSnowflakeRowsUpdatedAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsUpdatedAvg(cfg SnowflakeRowsUpdatedAvgConfig) metricSnowflakeRowsUpdatedAvg {
+func newMetricSnowflakeRowsUpdatedAvg(cfg SnowflakeRowsUpdatedAvgMetricConfig) metricSnowflakeRowsUpdatedAvg {
 	m := metricSnowflakeRowsUpdatedAvg{config: cfg}
 
 	if cfg.Enabled {
@@ -3171,10 +3171,10 @@ func newMetricSnowflakeRowsUpdatedAvg(cfg SnowflakeRowsUpdatedAvgConfig) metricS
 }
 
 type metricSnowflakeSessionIDCount struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SnowflakeSessionIDCountConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SnowflakeSessionIDCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.session_id.count metric with initial data.
@@ -3195,7 +3195,7 @@ func (m *metricSnowflakeSessionIDCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeSessionIDCountAttributeKeyUserName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeSessionIDCountMetricAttributeKeyUserName) {
 		dp.Attributes().PutStr("user_name", userNameAttributeValue)
 	}
 
@@ -3249,7 +3249,7 @@ func (m *metricSnowflakeSessionIDCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeSessionIDCount(cfg SnowflakeSessionIDCountConfig) metricSnowflakeSessionIDCount {
+func newMetricSnowflakeSessionIDCount(cfg SnowflakeSessionIDCountMetricConfig) metricSnowflakeSessionIDCount {
 	m := metricSnowflakeSessionIDCount{config: cfg}
 
 	if cfg.Enabled {
@@ -3260,9 +3260,9 @@ func newMetricSnowflakeSessionIDCount(cfg SnowflakeSessionIDCountConfig) metricS
 }
 
 type metricSnowflakeStorageFailsafeBytesTotal struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   SnowflakeStorageFailsafeBytesTotalConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   SnowflakeStorageFailsafeBytesTotalMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills snowflake.storage.failsafe_bytes.total metric with initial data.
@@ -3299,7 +3299,7 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSnowflakeStorageFailsafeBytesTotal(cfg SnowflakeStorageFailsafeBytesTotalConfig) metricSnowflakeStorageFailsafeBytesTotal {
+func newMetricSnowflakeStorageFailsafeBytesTotal(cfg SnowflakeStorageFailsafeBytesTotalMetricConfig) metricSnowflakeStorageFailsafeBytesTotal {
 	m := metricSnowflakeStorageFailsafeBytesTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -3310,9 +3310,9 @@ func newMetricSnowflakeStorageFailsafeBytesTotal(cfg SnowflakeStorageFailsafeByt
 }
 
 type metricSnowflakeStorageStageBytesTotal struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   SnowflakeStorageStageBytesTotalConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   SnowflakeStorageStageBytesTotalMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills snowflake.storage.stage_bytes.total metric with initial data.
@@ -3349,7 +3349,7 @@ func (m *metricSnowflakeStorageStageBytesTotal) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricSnowflakeStorageStageBytesTotal(cfg SnowflakeStorageStageBytesTotalConfig) metricSnowflakeStorageStageBytesTotal {
+func newMetricSnowflakeStorageStageBytesTotal(cfg SnowflakeStorageStageBytesTotalMetricConfig) metricSnowflakeStorageStageBytesTotal {
 	m := metricSnowflakeStorageStageBytesTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -3360,9 +3360,9 @@ func newMetricSnowflakeStorageStageBytesTotal(cfg SnowflakeStorageStageBytesTota
 }
 
 type metricSnowflakeStorageStorageBytesTotal struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   SnowflakeStorageStorageBytesTotalConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   SnowflakeStorageStorageBytesTotalMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills snowflake.storage.storage_bytes.total metric with initial data.
@@ -3399,7 +3399,7 @@ func (m *metricSnowflakeStorageStorageBytesTotal) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricSnowflakeStorageStorageBytesTotal(cfg SnowflakeStorageStorageBytesTotalConfig) metricSnowflakeStorageStorageBytesTotal {
+func newMetricSnowflakeStorageStorageBytesTotal(cfg SnowflakeStorageStorageBytesTotalMetricConfig) metricSnowflakeStorageStorageBytesTotal {
 	m := metricSnowflakeStorageStorageBytesTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -3410,10 +3410,10 @@ func newMetricSnowflakeStorageStorageBytesTotal(cfg SnowflakeStorageStorageBytes
 }
 
 type metricSnowflakeTotalElapsedTimeAvg struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        SnowflakeTotalElapsedTimeAvgConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []float64                          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SnowflakeTotalElapsedTimeAvgMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []float64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills snowflake.total_elapsed_time.avg metric with initial data.
@@ -3434,25 +3434,25 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgAttributeKeySchemaName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName) {
 		dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgAttributeKeyExecutionStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus) {
 		dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgAttributeKeyErrorMessage) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage) {
 		dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgAttributeKeyQueryType) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType) {
 		dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgAttributeKeyWarehouseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName) {
 		dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgAttributeKeyDatabaseName) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName) {
 		dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgAttributeKeyWarehouseSize) {
+	if slices.Contains(m.config.EnabledAttributes, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize) {
 		dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
 	}
 
@@ -3506,7 +3506,7 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeTotalElapsedTimeAvg(cfg SnowflakeTotalElapsedTimeAvgConfig) metricSnowflakeTotalElapsedTimeAvg {
+func newMetricSnowflakeTotalElapsedTimeAvg(cfg SnowflakeTotalElapsedTimeAvgMetricConfig) metricSnowflakeTotalElapsedTimeAvg {
 	m := metricSnowflakeTotalElapsedTimeAvg{config: cfg}
 
 	if cfg.Enabled {

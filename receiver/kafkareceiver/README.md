@@ -172,9 +172,17 @@ Available only for logs:
 - `json`: the payload is decoded as JSON and inserted as the body of a log record.
 - `azure_resource_logs`: the payload is converted from Azure Resource Logs format to OTel format.
 
-### Message header propagation
+### Message metadata propagation
 
-The Kafka receiver will extract Kafka message headers and include them as request metadata (context).
+The Kafka receiver includes the following record metadata as request metadata (context) for each
+consumed message:
+
+- `kafka.topic`: the topic the message was consumed from
+- `kafka.partition`: the partition the message was consumed from
+- `kafka.offset`: the offset of the message within the partition
+
+Additionally, all Kafka message headers are included in the request metadata.
+
 This metadata can then be used throughout the pipeline, for example to set attributes using the
 [attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md).
 
@@ -208,8 +216,8 @@ receivers:
 
 #### Header extraction
 
-In addition to propagating Kafka message headers as metadata as described above in
-[Message header propagation](#message-header-propagation), the Kafka receiver can also
+In addition to propagating Kafka message metadata as described above in
+[Message metadata propagation](#message-metadata-propagation), the Kafka receiver can also
 be configured to extract and attach specific headers as resource attributes. e.g.
 
 ```yaml

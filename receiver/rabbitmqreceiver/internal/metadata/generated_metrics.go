@@ -377,9 +377,9 @@ type metricInfo struct {
 }
 
 type metricRabbitmqConsumerCount struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   RabbitmqConsumerCountConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   RabbitmqConsumerCountMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.consumer.count metric with initial data.
@@ -418,7 +418,7 @@ func (m *metricRabbitmqConsumerCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqConsumerCount(cfg RabbitmqConsumerCountConfig) metricRabbitmqConsumerCount {
+func newMetricRabbitmqConsumerCount(cfg RabbitmqConsumerCountMetricConfig) metricRabbitmqConsumerCount {
 	m := metricRabbitmqConsumerCount{config: cfg}
 
 	if cfg.Enabled {
@@ -429,9 +429,9 @@ func newMetricRabbitmqConsumerCount(cfg RabbitmqConsumerCountConfig) metricRabbi
 }
 
 type metricRabbitmqMessageAcknowledged struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   RabbitmqMessageAcknowledgedConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   RabbitmqMessageAcknowledgedMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.message.acknowledged metric with initial data.
@@ -470,7 +470,7 @@ func (m *metricRabbitmqMessageAcknowledged) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqMessageAcknowledged(cfg RabbitmqMessageAcknowledgedConfig) metricRabbitmqMessageAcknowledged {
+func newMetricRabbitmqMessageAcknowledged(cfg RabbitmqMessageAcknowledgedMetricConfig) metricRabbitmqMessageAcknowledged {
 	m := metricRabbitmqMessageAcknowledged{config: cfg}
 
 	if cfg.Enabled {
@@ -481,10 +481,10 @@ func newMetricRabbitmqMessageAcknowledged(cfg RabbitmqMessageAcknowledgedConfig)
 }
 
 type metricRabbitmqMessageCurrent struct {
-	data          pmetric.Metric               // data buffer for generated metric.
-	config        RabbitmqMessageCurrentConfig // metric config provided by user.
-	capacity      int                          // max observed number of data points added to the metric.
-	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        RabbitmqMessageCurrentMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills rabbitmq.message.current metric with initial data.
@@ -507,7 +507,7 @@ func (m *metricRabbitmqMessageCurrent) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, RabbitmqMessageCurrentAttributeKeyMessageState) {
+	if slices.Contains(m.config.EnabledAttributes, RabbitmqMessageCurrentMetricAttributeKeyMessageState) {
 		dp.Attributes().PutStr("state", messageStateAttributeValue)
 	}
 
@@ -561,7 +561,7 @@ func (m *metricRabbitmqMessageCurrent) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqMessageCurrent(cfg RabbitmqMessageCurrentConfig) metricRabbitmqMessageCurrent {
+func newMetricRabbitmqMessageCurrent(cfg RabbitmqMessageCurrentMetricConfig) metricRabbitmqMessageCurrent {
 	m := metricRabbitmqMessageCurrent{config: cfg}
 
 	if cfg.Enabled {
@@ -572,9 +572,9 @@ func newMetricRabbitmqMessageCurrent(cfg RabbitmqMessageCurrentConfig) metricRab
 }
 
 type metricRabbitmqMessageDelivered struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RabbitmqMessageDeliveredConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RabbitmqMessageDeliveredMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.message.delivered metric with initial data.
@@ -613,7 +613,7 @@ func (m *metricRabbitmqMessageDelivered) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqMessageDelivered(cfg RabbitmqMessageDeliveredConfig) metricRabbitmqMessageDelivered {
+func newMetricRabbitmqMessageDelivered(cfg RabbitmqMessageDeliveredMetricConfig) metricRabbitmqMessageDelivered {
 	m := metricRabbitmqMessageDelivered{config: cfg}
 
 	if cfg.Enabled {
@@ -624,9 +624,9 @@ func newMetricRabbitmqMessageDelivered(cfg RabbitmqMessageDeliveredConfig) metri
 }
 
 type metricRabbitmqMessageDropped struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RabbitmqMessageDroppedConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RabbitmqMessageDroppedMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.message.dropped metric with initial data.
@@ -665,7 +665,7 @@ func (m *metricRabbitmqMessageDropped) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqMessageDropped(cfg RabbitmqMessageDroppedConfig) metricRabbitmqMessageDropped {
+func newMetricRabbitmqMessageDropped(cfg RabbitmqMessageDroppedMetricConfig) metricRabbitmqMessageDropped {
 	m := metricRabbitmqMessageDropped{config: cfg}
 
 	if cfg.Enabled {
@@ -676,9 +676,9 @@ func newMetricRabbitmqMessageDropped(cfg RabbitmqMessageDroppedConfig) metricRab
 }
 
 type metricRabbitmqMessagePublished struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RabbitmqMessagePublishedConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RabbitmqMessagePublishedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.message.published metric with initial data.
@@ -717,7 +717,7 @@ func (m *metricRabbitmqMessagePublished) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqMessagePublished(cfg RabbitmqMessagePublishedConfig) metricRabbitmqMessagePublished {
+func newMetricRabbitmqMessagePublished(cfg RabbitmqMessagePublishedMetricConfig) metricRabbitmqMessagePublished {
 	m := metricRabbitmqMessagePublished{config: cfg}
 
 	if cfg.Enabled {
@@ -728,9 +728,9 @@ func newMetricRabbitmqMessagePublished(cfg RabbitmqMessagePublishedConfig) metri
 }
 
 type metricRabbitmqNodeChannelClosed struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeChannelClosedConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeChannelClosedMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.channel_closed metric with initial data.
@@ -769,7 +769,7 @@ func (m *metricRabbitmqNodeChannelClosed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeChannelClosed(cfg RabbitmqNodeChannelClosedConfig) metricRabbitmqNodeChannelClosed {
+func newMetricRabbitmqNodeChannelClosed(cfg RabbitmqNodeChannelClosedMetricConfig) metricRabbitmqNodeChannelClosed {
 	m := metricRabbitmqNodeChannelClosed{config: cfg}
 
 	if cfg.Enabled {
@@ -780,9 +780,9 @@ func newMetricRabbitmqNodeChannelClosed(cfg RabbitmqNodeChannelClosedConfig) met
 }
 
 type metricRabbitmqNodeChannelClosedDetailsRate struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   RabbitmqNodeChannelClosedDetailsRateConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   RabbitmqNodeChannelClosedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.channel_closed_details.rate metric with initial data.
@@ -821,7 +821,7 @@ func (m *metricRabbitmqNodeChannelClosedDetailsRate) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricRabbitmqNodeChannelClosedDetailsRate(cfg RabbitmqNodeChannelClosedDetailsRateConfig) metricRabbitmqNodeChannelClosedDetailsRate {
+func newMetricRabbitmqNodeChannelClosedDetailsRate(cfg RabbitmqNodeChannelClosedDetailsRateMetricConfig) metricRabbitmqNodeChannelClosedDetailsRate {
 	m := metricRabbitmqNodeChannelClosedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -832,9 +832,9 @@ func newMetricRabbitmqNodeChannelClosedDetailsRate(cfg RabbitmqNodeChannelClosed
 }
 
 type metricRabbitmqNodeChannelCreated struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   RabbitmqNodeChannelCreatedConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   RabbitmqNodeChannelCreatedMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.channel_created metric with initial data.
@@ -873,7 +873,7 @@ func (m *metricRabbitmqNodeChannelCreated) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeChannelCreated(cfg RabbitmqNodeChannelCreatedConfig) metricRabbitmqNodeChannelCreated {
+func newMetricRabbitmqNodeChannelCreated(cfg RabbitmqNodeChannelCreatedMetricConfig) metricRabbitmqNodeChannelCreated {
 	m := metricRabbitmqNodeChannelCreated{config: cfg}
 
 	if cfg.Enabled {
@@ -884,9 +884,9 @@ func newMetricRabbitmqNodeChannelCreated(cfg RabbitmqNodeChannelCreatedConfig) m
 }
 
 type metricRabbitmqNodeChannelCreatedDetailsRate struct {
-	data     pmetric.Metric                              // data buffer for generated metric.
-	config   RabbitmqNodeChannelCreatedDetailsRateConfig // metric config provided by user.
-	capacity int                                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                                    // data buffer for generated metric.
+	config   RabbitmqNodeChannelCreatedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                               // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.channel_created_details.rate metric with initial data.
@@ -925,7 +925,7 @@ func (m *metricRabbitmqNodeChannelCreatedDetailsRate) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricRabbitmqNodeChannelCreatedDetailsRate(cfg RabbitmqNodeChannelCreatedDetailsRateConfig) metricRabbitmqNodeChannelCreatedDetailsRate {
+func newMetricRabbitmqNodeChannelCreatedDetailsRate(cfg RabbitmqNodeChannelCreatedDetailsRateMetricConfig) metricRabbitmqNodeChannelCreatedDetailsRate {
 	m := metricRabbitmqNodeChannelCreatedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -936,9 +936,9 @@ func newMetricRabbitmqNodeChannelCreatedDetailsRate(cfg RabbitmqNodeChannelCreat
 }
 
 type metricRabbitmqNodeConnectionClosed struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   RabbitmqNodeConnectionClosedConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   RabbitmqNodeConnectionClosedMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.connection_closed metric with initial data.
@@ -977,7 +977,7 @@ func (m *metricRabbitmqNodeConnectionClosed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeConnectionClosed(cfg RabbitmqNodeConnectionClosedConfig) metricRabbitmqNodeConnectionClosed {
+func newMetricRabbitmqNodeConnectionClosed(cfg RabbitmqNodeConnectionClosedMetricConfig) metricRabbitmqNodeConnectionClosed {
 	m := metricRabbitmqNodeConnectionClosed{config: cfg}
 
 	if cfg.Enabled {
@@ -988,9 +988,9 @@ func newMetricRabbitmqNodeConnectionClosed(cfg RabbitmqNodeConnectionClosedConfi
 }
 
 type metricRabbitmqNodeConnectionClosedDetailsRate struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   RabbitmqNodeConnectionClosedDetailsRateConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   RabbitmqNodeConnectionClosedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.connection_closed_details.rate metric with initial data.
@@ -1029,7 +1029,7 @@ func (m *metricRabbitmqNodeConnectionClosedDetailsRate) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricRabbitmqNodeConnectionClosedDetailsRate(cfg RabbitmqNodeConnectionClosedDetailsRateConfig) metricRabbitmqNodeConnectionClosedDetailsRate {
+func newMetricRabbitmqNodeConnectionClosedDetailsRate(cfg RabbitmqNodeConnectionClosedDetailsRateMetricConfig) metricRabbitmqNodeConnectionClosedDetailsRate {
 	m := metricRabbitmqNodeConnectionClosedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1040,9 +1040,9 @@ func newMetricRabbitmqNodeConnectionClosedDetailsRate(cfg RabbitmqNodeConnection
 }
 
 type metricRabbitmqNodeConnectionCreated struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RabbitmqNodeConnectionCreatedConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RabbitmqNodeConnectionCreatedMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.connection_created metric with initial data.
@@ -1081,7 +1081,7 @@ func (m *metricRabbitmqNodeConnectionCreated) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRabbitmqNodeConnectionCreated(cfg RabbitmqNodeConnectionCreatedConfig) metricRabbitmqNodeConnectionCreated {
+func newMetricRabbitmqNodeConnectionCreated(cfg RabbitmqNodeConnectionCreatedMetricConfig) metricRabbitmqNodeConnectionCreated {
 	m := metricRabbitmqNodeConnectionCreated{config: cfg}
 
 	if cfg.Enabled {
@@ -1092,9 +1092,9 @@ func newMetricRabbitmqNodeConnectionCreated(cfg RabbitmqNodeConnectionCreatedCon
 }
 
 type metricRabbitmqNodeConnectionCreatedDetailsRate struct {
-	data     pmetric.Metric                                 // data buffer for generated metric.
-	config   RabbitmqNodeConnectionCreatedDetailsRateConfig // metric config provided by user.
-	capacity int                                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   RabbitmqNodeConnectionCreatedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.connection_created_details.rate metric with initial data.
@@ -1133,7 +1133,7 @@ func (m *metricRabbitmqNodeConnectionCreatedDetailsRate) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricRabbitmqNodeConnectionCreatedDetailsRate(cfg RabbitmqNodeConnectionCreatedDetailsRateConfig) metricRabbitmqNodeConnectionCreatedDetailsRate {
+func newMetricRabbitmqNodeConnectionCreatedDetailsRate(cfg RabbitmqNodeConnectionCreatedDetailsRateMetricConfig) metricRabbitmqNodeConnectionCreatedDetailsRate {
 	m := metricRabbitmqNodeConnectionCreatedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1144,9 +1144,9 @@ func newMetricRabbitmqNodeConnectionCreatedDetailsRate(cfg RabbitmqNodeConnectio
 }
 
 type metricRabbitmqNodeContextSwitches struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   RabbitmqNodeContextSwitchesConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   RabbitmqNodeContextSwitchesMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.context_switches metric with initial data.
@@ -1185,7 +1185,7 @@ func (m *metricRabbitmqNodeContextSwitches) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeContextSwitches(cfg RabbitmqNodeContextSwitchesConfig) metricRabbitmqNodeContextSwitches {
+func newMetricRabbitmqNodeContextSwitches(cfg RabbitmqNodeContextSwitchesMetricConfig) metricRabbitmqNodeContextSwitches {
 	m := metricRabbitmqNodeContextSwitches{config: cfg}
 
 	if cfg.Enabled {
@@ -1196,9 +1196,9 @@ func newMetricRabbitmqNodeContextSwitches(cfg RabbitmqNodeContextSwitchesConfig)
 }
 
 type metricRabbitmqNodeContextSwitchesDetailsRate struct {
-	data     pmetric.Metric                               // data buffer for generated metric.
-	config   RabbitmqNodeContextSwitchesDetailsRateConfig // metric config provided by user.
-	capacity int                                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   RabbitmqNodeContextSwitchesDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.context_switches_details.rate metric with initial data.
@@ -1237,7 +1237,7 @@ func (m *metricRabbitmqNodeContextSwitchesDetailsRate) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricRabbitmqNodeContextSwitchesDetailsRate(cfg RabbitmqNodeContextSwitchesDetailsRateConfig) metricRabbitmqNodeContextSwitchesDetailsRate {
+func newMetricRabbitmqNodeContextSwitchesDetailsRate(cfg RabbitmqNodeContextSwitchesDetailsRateMetricConfig) metricRabbitmqNodeContextSwitchesDetailsRate {
 	m := metricRabbitmqNodeContextSwitchesDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1248,9 +1248,9 @@ func newMetricRabbitmqNodeContextSwitchesDetailsRate(cfg RabbitmqNodeContextSwit
 }
 
 type metricRabbitmqNodeDiskFree struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   RabbitmqNodeDiskFreeConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   RabbitmqNodeDiskFreeMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.disk_free metric with initial data.
@@ -1289,7 +1289,7 @@ func (m *metricRabbitmqNodeDiskFree) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeDiskFree(cfg RabbitmqNodeDiskFreeConfig) metricRabbitmqNodeDiskFree {
+func newMetricRabbitmqNodeDiskFree(cfg RabbitmqNodeDiskFreeMetricConfig) metricRabbitmqNodeDiskFree {
 	m := metricRabbitmqNodeDiskFree{config: cfg}
 
 	if cfg.Enabled {
@@ -1300,9 +1300,9 @@ func newMetricRabbitmqNodeDiskFree(cfg RabbitmqNodeDiskFreeConfig) metricRabbitm
 }
 
 type metricRabbitmqNodeDiskFreeAlarm struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeDiskFreeAlarmConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeDiskFreeAlarmMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.disk_free_alarm metric with initial data.
@@ -1341,7 +1341,7 @@ func (m *metricRabbitmqNodeDiskFreeAlarm) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeDiskFreeAlarm(cfg RabbitmqNodeDiskFreeAlarmConfig) metricRabbitmqNodeDiskFreeAlarm {
+func newMetricRabbitmqNodeDiskFreeAlarm(cfg RabbitmqNodeDiskFreeAlarmMetricConfig) metricRabbitmqNodeDiskFreeAlarm {
 	m := metricRabbitmqNodeDiskFreeAlarm{config: cfg}
 
 	if cfg.Enabled {
@@ -1352,9 +1352,9 @@ func newMetricRabbitmqNodeDiskFreeAlarm(cfg RabbitmqNodeDiskFreeAlarmConfig) met
 }
 
 type metricRabbitmqNodeDiskFreeDetailsRate struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   RabbitmqNodeDiskFreeDetailsRateConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   RabbitmqNodeDiskFreeDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.disk_free_details.rate metric with initial data.
@@ -1393,7 +1393,7 @@ func (m *metricRabbitmqNodeDiskFreeDetailsRate) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricRabbitmqNodeDiskFreeDetailsRate(cfg RabbitmqNodeDiskFreeDetailsRateConfig) metricRabbitmqNodeDiskFreeDetailsRate {
+func newMetricRabbitmqNodeDiskFreeDetailsRate(cfg RabbitmqNodeDiskFreeDetailsRateMetricConfig) metricRabbitmqNodeDiskFreeDetailsRate {
 	m := metricRabbitmqNodeDiskFreeDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1404,9 +1404,9 @@ func newMetricRabbitmqNodeDiskFreeDetailsRate(cfg RabbitmqNodeDiskFreeDetailsRat
 }
 
 type metricRabbitmqNodeDiskFreeLimit struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeDiskFreeLimitConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeDiskFreeLimitMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.disk_free_limit metric with initial data.
@@ -1445,7 +1445,7 @@ func (m *metricRabbitmqNodeDiskFreeLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeDiskFreeLimit(cfg RabbitmqNodeDiskFreeLimitConfig) metricRabbitmqNodeDiskFreeLimit {
+func newMetricRabbitmqNodeDiskFreeLimit(cfg RabbitmqNodeDiskFreeLimitMetricConfig) metricRabbitmqNodeDiskFreeLimit {
 	m := metricRabbitmqNodeDiskFreeLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -1456,9 +1456,9 @@ func newMetricRabbitmqNodeDiskFreeLimit(cfg RabbitmqNodeDiskFreeLimitConfig) met
 }
 
 type metricRabbitmqNodeFdTotal struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   RabbitmqNodeFdTotalConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   RabbitmqNodeFdTotalMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.fd_total metric with initial data.
@@ -1497,7 +1497,7 @@ func (m *metricRabbitmqNodeFdTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeFdTotal(cfg RabbitmqNodeFdTotalConfig) metricRabbitmqNodeFdTotal {
+func newMetricRabbitmqNodeFdTotal(cfg RabbitmqNodeFdTotalMetricConfig) metricRabbitmqNodeFdTotal {
 	m := metricRabbitmqNodeFdTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1508,9 +1508,9 @@ func newMetricRabbitmqNodeFdTotal(cfg RabbitmqNodeFdTotalConfig) metricRabbitmqN
 }
 
 type metricRabbitmqNodeFdUsed struct {
-	data     pmetric.Metric           // data buffer for generated metric.
-	config   RabbitmqNodeFdUsedConfig // metric config provided by user.
-	capacity int                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   RabbitmqNodeFdUsedMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.fd_used metric with initial data.
@@ -1549,7 +1549,7 @@ func (m *metricRabbitmqNodeFdUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeFdUsed(cfg RabbitmqNodeFdUsedConfig) metricRabbitmqNodeFdUsed {
+func newMetricRabbitmqNodeFdUsed(cfg RabbitmqNodeFdUsedMetricConfig) metricRabbitmqNodeFdUsed {
 	m := metricRabbitmqNodeFdUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -1560,9 +1560,9 @@ func newMetricRabbitmqNodeFdUsed(cfg RabbitmqNodeFdUsedConfig) metricRabbitmqNod
 }
 
 type metricRabbitmqNodeFdUsedDetailsRate struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RabbitmqNodeFdUsedDetailsRateConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RabbitmqNodeFdUsedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.fd_used_details.rate metric with initial data.
@@ -1601,7 +1601,7 @@ func (m *metricRabbitmqNodeFdUsedDetailsRate) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRabbitmqNodeFdUsedDetailsRate(cfg RabbitmqNodeFdUsedDetailsRateConfig) metricRabbitmqNodeFdUsedDetailsRate {
+func newMetricRabbitmqNodeFdUsedDetailsRate(cfg RabbitmqNodeFdUsedDetailsRateMetricConfig) metricRabbitmqNodeFdUsedDetailsRate {
 	m := metricRabbitmqNodeFdUsedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1612,9 +1612,9 @@ func newMetricRabbitmqNodeFdUsedDetailsRate(cfg RabbitmqNodeFdUsedDetailsRateCon
 }
 
 type metricRabbitmqNodeGcBytesReclaimed struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   RabbitmqNodeGcBytesReclaimedConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   RabbitmqNodeGcBytesReclaimedMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.gc_bytes_reclaimed metric with initial data.
@@ -1653,7 +1653,7 @@ func (m *metricRabbitmqNodeGcBytesReclaimed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeGcBytesReclaimed(cfg RabbitmqNodeGcBytesReclaimedConfig) metricRabbitmqNodeGcBytesReclaimed {
+func newMetricRabbitmqNodeGcBytesReclaimed(cfg RabbitmqNodeGcBytesReclaimedMetricConfig) metricRabbitmqNodeGcBytesReclaimed {
 	m := metricRabbitmqNodeGcBytesReclaimed{config: cfg}
 
 	if cfg.Enabled {
@@ -1664,9 +1664,9 @@ func newMetricRabbitmqNodeGcBytesReclaimed(cfg RabbitmqNodeGcBytesReclaimedConfi
 }
 
 type metricRabbitmqNodeGcBytesReclaimedDetailsRate struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   RabbitmqNodeGcBytesReclaimedDetailsRateConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.gc_bytes_reclaimed_details.rate metric with initial data.
@@ -1705,7 +1705,7 @@ func (m *metricRabbitmqNodeGcBytesReclaimedDetailsRate) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricRabbitmqNodeGcBytesReclaimedDetailsRate(cfg RabbitmqNodeGcBytesReclaimedDetailsRateConfig) metricRabbitmqNodeGcBytesReclaimedDetailsRate {
+func newMetricRabbitmqNodeGcBytesReclaimedDetailsRate(cfg RabbitmqNodeGcBytesReclaimedDetailsRateMetricConfig) metricRabbitmqNodeGcBytesReclaimedDetailsRate {
 	m := metricRabbitmqNodeGcBytesReclaimedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1716,9 +1716,9 @@ func newMetricRabbitmqNodeGcBytesReclaimedDetailsRate(cfg RabbitmqNodeGcBytesRec
 }
 
 type metricRabbitmqNodeGcNum struct {
-	data     pmetric.Metric          // data buffer for generated metric.
-	config   RabbitmqNodeGcNumConfig // metric config provided by user.
-	capacity int                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   RabbitmqNodeGcNumMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.gc_num metric with initial data.
@@ -1757,7 +1757,7 @@ func (m *metricRabbitmqNodeGcNum) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeGcNum(cfg RabbitmqNodeGcNumConfig) metricRabbitmqNodeGcNum {
+func newMetricRabbitmqNodeGcNum(cfg RabbitmqNodeGcNumMetricConfig) metricRabbitmqNodeGcNum {
 	m := metricRabbitmqNodeGcNum{config: cfg}
 
 	if cfg.Enabled {
@@ -1768,9 +1768,9 @@ func newMetricRabbitmqNodeGcNum(cfg RabbitmqNodeGcNumConfig) metricRabbitmqNodeG
 }
 
 type metricRabbitmqNodeGcNumDetailsRate struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   RabbitmqNodeGcNumDetailsRateConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   RabbitmqNodeGcNumDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.gc_num_details.rate metric with initial data.
@@ -1809,7 +1809,7 @@ func (m *metricRabbitmqNodeGcNumDetailsRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeGcNumDetailsRate(cfg RabbitmqNodeGcNumDetailsRateConfig) metricRabbitmqNodeGcNumDetailsRate {
+func newMetricRabbitmqNodeGcNumDetailsRate(cfg RabbitmqNodeGcNumDetailsRateMetricConfig) metricRabbitmqNodeGcNumDetailsRate {
 	m := metricRabbitmqNodeGcNumDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1820,9 +1820,9 @@ func newMetricRabbitmqNodeGcNumDetailsRate(cfg RabbitmqNodeGcNumDetailsRateConfi
 }
 
 type metricRabbitmqNodeIoReadAvgTime struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeIoReadAvgTimeConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeIoReadAvgTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_read_avg_time metric with initial data.
@@ -1861,7 +1861,7 @@ func (m *metricRabbitmqNodeIoReadAvgTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoReadAvgTime(cfg RabbitmqNodeIoReadAvgTimeConfig) metricRabbitmqNodeIoReadAvgTime {
+func newMetricRabbitmqNodeIoReadAvgTime(cfg RabbitmqNodeIoReadAvgTimeMetricConfig) metricRabbitmqNodeIoReadAvgTime {
 	m := metricRabbitmqNodeIoReadAvgTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1872,9 +1872,9 @@ func newMetricRabbitmqNodeIoReadAvgTime(cfg RabbitmqNodeIoReadAvgTimeConfig) met
 }
 
 type metricRabbitmqNodeIoReadAvgTimeDetailsRate struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   RabbitmqNodeIoReadAvgTimeDetailsRateConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_read_avg_time_details.rate metric with initial data.
@@ -1913,7 +1913,7 @@ func (m *metricRabbitmqNodeIoReadAvgTimeDetailsRate) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricRabbitmqNodeIoReadAvgTimeDetailsRate(cfg RabbitmqNodeIoReadAvgTimeDetailsRateConfig) metricRabbitmqNodeIoReadAvgTimeDetailsRate {
+func newMetricRabbitmqNodeIoReadAvgTimeDetailsRate(cfg RabbitmqNodeIoReadAvgTimeDetailsRateMetricConfig) metricRabbitmqNodeIoReadAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoReadAvgTimeDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1924,9 +1924,9 @@ func newMetricRabbitmqNodeIoReadAvgTimeDetailsRate(cfg RabbitmqNodeIoReadAvgTime
 }
 
 type metricRabbitmqNodeIoReadBytes struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   RabbitmqNodeIoReadBytesConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   RabbitmqNodeIoReadBytesMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_read_bytes metric with initial data.
@@ -1965,7 +1965,7 @@ func (m *metricRabbitmqNodeIoReadBytes) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoReadBytes(cfg RabbitmqNodeIoReadBytesConfig) metricRabbitmqNodeIoReadBytes {
+func newMetricRabbitmqNodeIoReadBytes(cfg RabbitmqNodeIoReadBytesMetricConfig) metricRabbitmqNodeIoReadBytes {
 	m := metricRabbitmqNodeIoReadBytes{config: cfg}
 
 	if cfg.Enabled {
@@ -1976,9 +1976,9 @@ func newMetricRabbitmqNodeIoReadBytes(cfg RabbitmqNodeIoReadBytesConfig) metricR
 }
 
 type metricRabbitmqNodeIoReadBytesDetailsRate struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   RabbitmqNodeIoReadBytesDetailsRateConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   RabbitmqNodeIoReadBytesDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_read_bytes_details.rate metric with initial data.
@@ -2017,7 +2017,7 @@ func (m *metricRabbitmqNodeIoReadBytesDetailsRate) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricRabbitmqNodeIoReadBytesDetailsRate(cfg RabbitmqNodeIoReadBytesDetailsRateConfig) metricRabbitmqNodeIoReadBytesDetailsRate {
+func newMetricRabbitmqNodeIoReadBytesDetailsRate(cfg RabbitmqNodeIoReadBytesDetailsRateMetricConfig) metricRabbitmqNodeIoReadBytesDetailsRate {
 	m := metricRabbitmqNodeIoReadBytesDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2028,9 +2028,9 @@ func newMetricRabbitmqNodeIoReadBytesDetailsRate(cfg RabbitmqNodeIoReadBytesDeta
 }
 
 type metricRabbitmqNodeIoReadCount struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   RabbitmqNodeIoReadCountConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   RabbitmqNodeIoReadCountMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_read_count metric with initial data.
@@ -2069,7 +2069,7 @@ func (m *metricRabbitmqNodeIoReadCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoReadCount(cfg RabbitmqNodeIoReadCountConfig) metricRabbitmqNodeIoReadCount {
+func newMetricRabbitmqNodeIoReadCount(cfg RabbitmqNodeIoReadCountMetricConfig) metricRabbitmqNodeIoReadCount {
 	m := metricRabbitmqNodeIoReadCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2080,9 +2080,9 @@ func newMetricRabbitmqNodeIoReadCount(cfg RabbitmqNodeIoReadCountConfig) metricR
 }
 
 type metricRabbitmqNodeIoReadCountDetailsRate struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   RabbitmqNodeIoReadCountDetailsRateConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   RabbitmqNodeIoReadCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_read_count_details.rate metric with initial data.
@@ -2121,7 +2121,7 @@ func (m *metricRabbitmqNodeIoReadCountDetailsRate) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricRabbitmqNodeIoReadCountDetailsRate(cfg RabbitmqNodeIoReadCountDetailsRateConfig) metricRabbitmqNodeIoReadCountDetailsRate {
+func newMetricRabbitmqNodeIoReadCountDetailsRate(cfg RabbitmqNodeIoReadCountDetailsRateMetricConfig) metricRabbitmqNodeIoReadCountDetailsRate {
 	m := metricRabbitmqNodeIoReadCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2132,9 +2132,9 @@ func newMetricRabbitmqNodeIoReadCountDetailsRate(cfg RabbitmqNodeIoReadCountDeta
 }
 
 type metricRabbitmqNodeIoReopenCount struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeIoReopenCountConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeIoReopenCountMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_reopen_count metric with initial data.
@@ -2173,7 +2173,7 @@ func (m *metricRabbitmqNodeIoReopenCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoReopenCount(cfg RabbitmqNodeIoReopenCountConfig) metricRabbitmqNodeIoReopenCount {
+func newMetricRabbitmqNodeIoReopenCount(cfg RabbitmqNodeIoReopenCountMetricConfig) metricRabbitmqNodeIoReopenCount {
 	m := metricRabbitmqNodeIoReopenCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2184,9 +2184,9 @@ func newMetricRabbitmqNodeIoReopenCount(cfg RabbitmqNodeIoReopenCountConfig) met
 }
 
 type metricRabbitmqNodeIoReopenCountDetailsRate struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   RabbitmqNodeIoReopenCountDetailsRateConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   RabbitmqNodeIoReopenCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_reopen_count_details.rate metric with initial data.
@@ -2225,7 +2225,7 @@ func (m *metricRabbitmqNodeIoReopenCountDetailsRate) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricRabbitmqNodeIoReopenCountDetailsRate(cfg RabbitmqNodeIoReopenCountDetailsRateConfig) metricRabbitmqNodeIoReopenCountDetailsRate {
+func newMetricRabbitmqNodeIoReopenCountDetailsRate(cfg RabbitmqNodeIoReopenCountDetailsRateMetricConfig) metricRabbitmqNodeIoReopenCountDetailsRate {
 	m := metricRabbitmqNodeIoReopenCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2236,9 +2236,9 @@ func newMetricRabbitmqNodeIoReopenCountDetailsRate(cfg RabbitmqNodeIoReopenCount
 }
 
 type metricRabbitmqNodeIoSeekAvgTime struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeIoSeekAvgTimeConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeIoSeekAvgTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_seek_avg_time metric with initial data.
@@ -2277,7 +2277,7 @@ func (m *metricRabbitmqNodeIoSeekAvgTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoSeekAvgTime(cfg RabbitmqNodeIoSeekAvgTimeConfig) metricRabbitmqNodeIoSeekAvgTime {
+func newMetricRabbitmqNodeIoSeekAvgTime(cfg RabbitmqNodeIoSeekAvgTimeMetricConfig) metricRabbitmqNodeIoSeekAvgTime {
 	m := metricRabbitmqNodeIoSeekAvgTime{config: cfg}
 
 	if cfg.Enabled {
@@ -2288,9 +2288,9 @@ func newMetricRabbitmqNodeIoSeekAvgTime(cfg RabbitmqNodeIoSeekAvgTimeConfig) met
 }
 
 type metricRabbitmqNodeIoSeekAvgTimeDetailsRate struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   RabbitmqNodeIoSeekAvgTimeDetailsRateConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_seek_avg_time_details.rate metric with initial data.
@@ -2329,7 +2329,7 @@ func (m *metricRabbitmqNodeIoSeekAvgTimeDetailsRate) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricRabbitmqNodeIoSeekAvgTimeDetailsRate(cfg RabbitmqNodeIoSeekAvgTimeDetailsRateConfig) metricRabbitmqNodeIoSeekAvgTimeDetailsRate {
+func newMetricRabbitmqNodeIoSeekAvgTimeDetailsRate(cfg RabbitmqNodeIoSeekAvgTimeDetailsRateMetricConfig) metricRabbitmqNodeIoSeekAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoSeekAvgTimeDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2340,9 +2340,9 @@ func newMetricRabbitmqNodeIoSeekAvgTimeDetailsRate(cfg RabbitmqNodeIoSeekAvgTime
 }
 
 type metricRabbitmqNodeIoSeekCount struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   RabbitmqNodeIoSeekCountConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   RabbitmqNodeIoSeekCountMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_seek_count metric with initial data.
@@ -2381,7 +2381,7 @@ func (m *metricRabbitmqNodeIoSeekCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoSeekCount(cfg RabbitmqNodeIoSeekCountConfig) metricRabbitmqNodeIoSeekCount {
+func newMetricRabbitmqNodeIoSeekCount(cfg RabbitmqNodeIoSeekCountMetricConfig) metricRabbitmqNodeIoSeekCount {
 	m := metricRabbitmqNodeIoSeekCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2392,9 +2392,9 @@ func newMetricRabbitmqNodeIoSeekCount(cfg RabbitmqNodeIoSeekCountConfig) metricR
 }
 
 type metricRabbitmqNodeIoSeekCountDetailsRate struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   RabbitmqNodeIoSeekCountDetailsRateConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   RabbitmqNodeIoSeekCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_seek_count_details.rate metric with initial data.
@@ -2433,7 +2433,7 @@ func (m *metricRabbitmqNodeIoSeekCountDetailsRate) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricRabbitmqNodeIoSeekCountDetailsRate(cfg RabbitmqNodeIoSeekCountDetailsRateConfig) metricRabbitmqNodeIoSeekCountDetailsRate {
+func newMetricRabbitmqNodeIoSeekCountDetailsRate(cfg RabbitmqNodeIoSeekCountDetailsRateMetricConfig) metricRabbitmqNodeIoSeekCountDetailsRate {
 	m := metricRabbitmqNodeIoSeekCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2444,9 +2444,9 @@ func newMetricRabbitmqNodeIoSeekCountDetailsRate(cfg RabbitmqNodeIoSeekCountDeta
 }
 
 type metricRabbitmqNodeIoSyncAvgTime struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeIoSyncAvgTimeConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeIoSyncAvgTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_sync_avg_time metric with initial data.
@@ -2485,7 +2485,7 @@ func (m *metricRabbitmqNodeIoSyncAvgTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoSyncAvgTime(cfg RabbitmqNodeIoSyncAvgTimeConfig) metricRabbitmqNodeIoSyncAvgTime {
+func newMetricRabbitmqNodeIoSyncAvgTime(cfg RabbitmqNodeIoSyncAvgTimeMetricConfig) metricRabbitmqNodeIoSyncAvgTime {
 	m := metricRabbitmqNodeIoSyncAvgTime{config: cfg}
 
 	if cfg.Enabled {
@@ -2496,9 +2496,9 @@ func newMetricRabbitmqNodeIoSyncAvgTime(cfg RabbitmqNodeIoSyncAvgTimeConfig) met
 }
 
 type metricRabbitmqNodeIoSyncAvgTimeDetailsRate struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   RabbitmqNodeIoSyncAvgTimeDetailsRateConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_sync_avg_time_details.rate metric with initial data.
@@ -2537,7 +2537,7 @@ func (m *metricRabbitmqNodeIoSyncAvgTimeDetailsRate) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricRabbitmqNodeIoSyncAvgTimeDetailsRate(cfg RabbitmqNodeIoSyncAvgTimeDetailsRateConfig) metricRabbitmqNodeIoSyncAvgTimeDetailsRate {
+func newMetricRabbitmqNodeIoSyncAvgTimeDetailsRate(cfg RabbitmqNodeIoSyncAvgTimeDetailsRateMetricConfig) metricRabbitmqNodeIoSyncAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoSyncAvgTimeDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2548,9 +2548,9 @@ func newMetricRabbitmqNodeIoSyncAvgTimeDetailsRate(cfg RabbitmqNodeIoSyncAvgTime
 }
 
 type metricRabbitmqNodeIoSyncCount struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   RabbitmqNodeIoSyncCountConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   RabbitmqNodeIoSyncCountMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_sync_count metric with initial data.
@@ -2589,7 +2589,7 @@ func (m *metricRabbitmqNodeIoSyncCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoSyncCount(cfg RabbitmqNodeIoSyncCountConfig) metricRabbitmqNodeIoSyncCount {
+func newMetricRabbitmqNodeIoSyncCount(cfg RabbitmqNodeIoSyncCountMetricConfig) metricRabbitmqNodeIoSyncCount {
 	m := metricRabbitmqNodeIoSyncCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2600,9 +2600,9 @@ func newMetricRabbitmqNodeIoSyncCount(cfg RabbitmqNodeIoSyncCountConfig) metricR
 }
 
 type metricRabbitmqNodeIoSyncCountDetailsRate struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   RabbitmqNodeIoSyncCountDetailsRateConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   RabbitmqNodeIoSyncCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_sync_count_details.rate metric with initial data.
@@ -2641,7 +2641,7 @@ func (m *metricRabbitmqNodeIoSyncCountDetailsRate) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricRabbitmqNodeIoSyncCountDetailsRate(cfg RabbitmqNodeIoSyncCountDetailsRateConfig) metricRabbitmqNodeIoSyncCountDetailsRate {
+func newMetricRabbitmqNodeIoSyncCountDetailsRate(cfg RabbitmqNodeIoSyncCountDetailsRateMetricConfig) metricRabbitmqNodeIoSyncCountDetailsRate {
 	m := metricRabbitmqNodeIoSyncCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2652,9 +2652,9 @@ func newMetricRabbitmqNodeIoSyncCountDetailsRate(cfg RabbitmqNodeIoSyncCountDeta
 }
 
 type metricRabbitmqNodeIoWriteAvgTime struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   RabbitmqNodeIoWriteAvgTimeConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   RabbitmqNodeIoWriteAvgTimeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_write_avg_time metric with initial data.
@@ -2693,7 +2693,7 @@ func (m *metricRabbitmqNodeIoWriteAvgTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoWriteAvgTime(cfg RabbitmqNodeIoWriteAvgTimeConfig) metricRabbitmqNodeIoWriteAvgTime {
+func newMetricRabbitmqNodeIoWriteAvgTime(cfg RabbitmqNodeIoWriteAvgTimeMetricConfig) metricRabbitmqNodeIoWriteAvgTime {
 	m := metricRabbitmqNodeIoWriteAvgTime{config: cfg}
 
 	if cfg.Enabled {
@@ -2704,9 +2704,9 @@ func newMetricRabbitmqNodeIoWriteAvgTime(cfg RabbitmqNodeIoWriteAvgTimeConfig) m
 }
 
 type metricRabbitmqNodeIoWriteAvgTimeDetailsRate struct {
-	data     pmetric.Metric                              // data buffer for generated metric.
-	config   RabbitmqNodeIoWriteAvgTimeDetailsRateConfig // metric config provided by user.
-	capacity int                                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                                    // data buffer for generated metric.
+	config   RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                               // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_write_avg_time_details.rate metric with initial data.
@@ -2745,7 +2745,7 @@ func (m *metricRabbitmqNodeIoWriteAvgTimeDetailsRate) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricRabbitmqNodeIoWriteAvgTimeDetailsRate(cfg RabbitmqNodeIoWriteAvgTimeDetailsRateConfig) metricRabbitmqNodeIoWriteAvgTimeDetailsRate {
+func newMetricRabbitmqNodeIoWriteAvgTimeDetailsRate(cfg RabbitmqNodeIoWriteAvgTimeDetailsRateMetricConfig) metricRabbitmqNodeIoWriteAvgTimeDetailsRate {
 	m := metricRabbitmqNodeIoWriteAvgTimeDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2756,9 +2756,9 @@ func newMetricRabbitmqNodeIoWriteAvgTimeDetailsRate(cfg RabbitmqNodeIoWriteAvgTi
 }
 
 type metricRabbitmqNodeIoWriteBytes struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RabbitmqNodeIoWriteBytesConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RabbitmqNodeIoWriteBytesMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_write_bytes metric with initial data.
@@ -2797,7 +2797,7 @@ func (m *metricRabbitmqNodeIoWriteBytes) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoWriteBytes(cfg RabbitmqNodeIoWriteBytesConfig) metricRabbitmqNodeIoWriteBytes {
+func newMetricRabbitmqNodeIoWriteBytes(cfg RabbitmqNodeIoWriteBytesMetricConfig) metricRabbitmqNodeIoWriteBytes {
 	m := metricRabbitmqNodeIoWriteBytes{config: cfg}
 
 	if cfg.Enabled {
@@ -2808,9 +2808,9 @@ func newMetricRabbitmqNodeIoWriteBytes(cfg RabbitmqNodeIoWriteBytesConfig) metri
 }
 
 type metricRabbitmqNodeIoWriteBytesDetailsRate struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   RabbitmqNodeIoWriteBytesDetailsRateConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   RabbitmqNodeIoWriteBytesDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_write_bytes_details.rate metric with initial data.
@@ -2849,7 +2849,7 @@ func (m *metricRabbitmqNodeIoWriteBytesDetailsRate) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricRabbitmqNodeIoWriteBytesDetailsRate(cfg RabbitmqNodeIoWriteBytesDetailsRateConfig) metricRabbitmqNodeIoWriteBytesDetailsRate {
+func newMetricRabbitmqNodeIoWriteBytesDetailsRate(cfg RabbitmqNodeIoWriteBytesDetailsRateMetricConfig) metricRabbitmqNodeIoWriteBytesDetailsRate {
 	m := metricRabbitmqNodeIoWriteBytesDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2860,9 +2860,9 @@ func newMetricRabbitmqNodeIoWriteBytesDetailsRate(cfg RabbitmqNodeIoWriteBytesDe
 }
 
 type metricRabbitmqNodeIoWriteCount struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RabbitmqNodeIoWriteCountConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RabbitmqNodeIoWriteCountMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_write_count metric with initial data.
@@ -2901,7 +2901,7 @@ func (m *metricRabbitmqNodeIoWriteCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeIoWriteCount(cfg RabbitmqNodeIoWriteCountConfig) metricRabbitmqNodeIoWriteCount {
+func newMetricRabbitmqNodeIoWriteCount(cfg RabbitmqNodeIoWriteCountMetricConfig) metricRabbitmqNodeIoWriteCount {
 	m := metricRabbitmqNodeIoWriteCount{config: cfg}
 
 	if cfg.Enabled {
@@ -2912,9 +2912,9 @@ func newMetricRabbitmqNodeIoWriteCount(cfg RabbitmqNodeIoWriteCountConfig) metri
 }
 
 type metricRabbitmqNodeIoWriteCountDetailsRate struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   RabbitmqNodeIoWriteCountDetailsRateConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   RabbitmqNodeIoWriteCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.io_write_count_details.rate metric with initial data.
@@ -2953,7 +2953,7 @@ func (m *metricRabbitmqNodeIoWriteCountDetailsRate) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricRabbitmqNodeIoWriteCountDetailsRate(cfg RabbitmqNodeIoWriteCountDetailsRateConfig) metricRabbitmqNodeIoWriteCountDetailsRate {
+func newMetricRabbitmqNodeIoWriteCountDetailsRate(cfg RabbitmqNodeIoWriteCountDetailsRateMetricConfig) metricRabbitmqNodeIoWriteCountDetailsRate {
 	m := metricRabbitmqNodeIoWriteCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -2964,9 +2964,9 @@ func newMetricRabbitmqNodeIoWriteCountDetailsRate(cfg RabbitmqNodeIoWriteCountDe
 }
 
 type metricRabbitmqNodeMemAlarm struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   RabbitmqNodeMemAlarmConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   RabbitmqNodeMemAlarmMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mem_alarm metric with initial data.
@@ -3005,7 +3005,7 @@ func (m *metricRabbitmqNodeMemAlarm) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeMemAlarm(cfg RabbitmqNodeMemAlarmConfig) metricRabbitmqNodeMemAlarm {
+func newMetricRabbitmqNodeMemAlarm(cfg RabbitmqNodeMemAlarmMetricConfig) metricRabbitmqNodeMemAlarm {
 	m := metricRabbitmqNodeMemAlarm{config: cfg}
 
 	if cfg.Enabled {
@@ -3016,9 +3016,9 @@ func newMetricRabbitmqNodeMemAlarm(cfg RabbitmqNodeMemAlarmConfig) metricRabbitm
 }
 
 type metricRabbitmqNodeMemLimit struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   RabbitmqNodeMemLimitConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   RabbitmqNodeMemLimitMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mem_limit metric with initial data.
@@ -3057,7 +3057,7 @@ func (m *metricRabbitmqNodeMemLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeMemLimit(cfg RabbitmqNodeMemLimitConfig) metricRabbitmqNodeMemLimit {
+func newMetricRabbitmqNodeMemLimit(cfg RabbitmqNodeMemLimitMetricConfig) metricRabbitmqNodeMemLimit {
 	m := metricRabbitmqNodeMemLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -3068,9 +3068,9 @@ func newMetricRabbitmqNodeMemLimit(cfg RabbitmqNodeMemLimitConfig) metricRabbitm
 }
 
 type metricRabbitmqNodeMemUsed struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   RabbitmqNodeMemUsedConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   RabbitmqNodeMemUsedMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mem_used metric with initial data.
@@ -3109,7 +3109,7 @@ func (m *metricRabbitmqNodeMemUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeMemUsed(cfg RabbitmqNodeMemUsedConfig) metricRabbitmqNodeMemUsed {
+func newMetricRabbitmqNodeMemUsed(cfg RabbitmqNodeMemUsedMetricConfig) metricRabbitmqNodeMemUsed {
 	m := metricRabbitmqNodeMemUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -3120,9 +3120,9 @@ func newMetricRabbitmqNodeMemUsed(cfg RabbitmqNodeMemUsedConfig) metricRabbitmqN
 }
 
 type metricRabbitmqNodeMemUsedDetailsRate struct {
-	data     pmetric.Metric                       // data buffer for generated metric.
-	config   RabbitmqNodeMemUsedDetailsRateConfig // metric config provided by user.
-	capacity int                                  // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   RabbitmqNodeMemUsedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mem_used_details.rate metric with initial data.
@@ -3161,7 +3161,7 @@ func (m *metricRabbitmqNodeMemUsedDetailsRate) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricRabbitmqNodeMemUsedDetailsRate(cfg RabbitmqNodeMemUsedDetailsRateConfig) metricRabbitmqNodeMemUsedDetailsRate {
+func newMetricRabbitmqNodeMemUsedDetailsRate(cfg RabbitmqNodeMemUsedDetailsRateMetricConfig) metricRabbitmqNodeMemUsedDetailsRate {
 	m := metricRabbitmqNodeMemUsedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3172,9 +3172,9 @@ func newMetricRabbitmqNodeMemUsedDetailsRate(cfg RabbitmqNodeMemUsedDetailsRateC
 }
 
 type metricRabbitmqNodeMnesiaDiskTxCount struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RabbitmqNodeMnesiaDiskTxCountConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RabbitmqNodeMnesiaDiskTxCountMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mnesia_disk_tx_count metric with initial data.
@@ -3213,7 +3213,7 @@ func (m *metricRabbitmqNodeMnesiaDiskTxCount) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRabbitmqNodeMnesiaDiskTxCount(cfg RabbitmqNodeMnesiaDiskTxCountConfig) metricRabbitmqNodeMnesiaDiskTxCount {
+func newMetricRabbitmqNodeMnesiaDiskTxCount(cfg RabbitmqNodeMnesiaDiskTxCountMetricConfig) metricRabbitmqNodeMnesiaDiskTxCount {
 	m := metricRabbitmqNodeMnesiaDiskTxCount{config: cfg}
 
 	if cfg.Enabled {
@@ -3224,9 +3224,9 @@ func newMetricRabbitmqNodeMnesiaDiskTxCount(cfg RabbitmqNodeMnesiaDiskTxCountCon
 }
 
 type metricRabbitmqNodeMnesiaDiskTxCountDetailsRate struct {
-	data     pmetric.Metric                                 // data buffer for generated metric.
-	config   RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig // metric config provided by user.
-	capacity int                                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mnesia_disk_tx_count_details.rate metric with initial data.
@@ -3265,7 +3265,7 @@ func (m *metricRabbitmqNodeMnesiaDiskTxCountDetailsRate) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricRabbitmqNodeMnesiaDiskTxCountDetailsRate(cfg RabbitmqNodeMnesiaDiskTxCountDetailsRateConfig) metricRabbitmqNodeMnesiaDiskTxCountDetailsRate {
+func newMetricRabbitmqNodeMnesiaDiskTxCountDetailsRate(cfg RabbitmqNodeMnesiaDiskTxCountDetailsRateMetricConfig) metricRabbitmqNodeMnesiaDiskTxCountDetailsRate {
 	m := metricRabbitmqNodeMnesiaDiskTxCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3276,9 +3276,9 @@ func newMetricRabbitmqNodeMnesiaDiskTxCountDetailsRate(cfg RabbitmqNodeMnesiaDis
 }
 
 type metricRabbitmqNodeMnesiaRAMTxCount struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   RabbitmqNodeMnesiaRAMTxCountConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   RabbitmqNodeMnesiaRAMTxCountMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mnesia_ram_tx_count metric with initial data.
@@ -3317,7 +3317,7 @@ func (m *metricRabbitmqNodeMnesiaRAMTxCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeMnesiaRAMTxCount(cfg RabbitmqNodeMnesiaRAMTxCountConfig) metricRabbitmqNodeMnesiaRAMTxCount {
+func newMetricRabbitmqNodeMnesiaRAMTxCount(cfg RabbitmqNodeMnesiaRAMTxCountMetricConfig) metricRabbitmqNodeMnesiaRAMTxCount {
 	m := metricRabbitmqNodeMnesiaRAMTxCount{config: cfg}
 
 	if cfg.Enabled {
@@ -3328,9 +3328,9 @@ func newMetricRabbitmqNodeMnesiaRAMTxCount(cfg RabbitmqNodeMnesiaRAMTxCountConfi
 }
 
 type metricRabbitmqNodeMnesiaRAMTxCountDetailsRate struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.mnesia_ram_tx_count_details.rate metric with initial data.
@@ -3369,7 +3369,7 @@ func (m *metricRabbitmqNodeMnesiaRAMTxCountDetailsRate) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricRabbitmqNodeMnesiaRAMTxCountDetailsRate(cfg RabbitmqNodeMnesiaRAMTxCountDetailsRateConfig) metricRabbitmqNodeMnesiaRAMTxCountDetailsRate {
+func newMetricRabbitmqNodeMnesiaRAMTxCountDetailsRate(cfg RabbitmqNodeMnesiaRAMTxCountDetailsRateMetricConfig) metricRabbitmqNodeMnesiaRAMTxCountDetailsRate {
 	m := metricRabbitmqNodeMnesiaRAMTxCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3380,9 +3380,9 @@ func newMetricRabbitmqNodeMnesiaRAMTxCountDetailsRate(cfg RabbitmqNodeMnesiaRAMT
 }
 
 type metricRabbitmqNodeMsgStoreReadCount struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   RabbitmqNodeMsgStoreReadCountConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   RabbitmqNodeMsgStoreReadCountMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.msg_store_read_count metric with initial data.
@@ -3421,7 +3421,7 @@ func (m *metricRabbitmqNodeMsgStoreReadCount) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricRabbitmqNodeMsgStoreReadCount(cfg RabbitmqNodeMsgStoreReadCountConfig) metricRabbitmqNodeMsgStoreReadCount {
+func newMetricRabbitmqNodeMsgStoreReadCount(cfg RabbitmqNodeMsgStoreReadCountMetricConfig) metricRabbitmqNodeMsgStoreReadCount {
 	m := metricRabbitmqNodeMsgStoreReadCount{config: cfg}
 
 	if cfg.Enabled {
@@ -3432,9 +3432,9 @@ func newMetricRabbitmqNodeMsgStoreReadCount(cfg RabbitmqNodeMsgStoreReadCountCon
 }
 
 type metricRabbitmqNodeMsgStoreReadCountDetailsRate struct {
-	data     pmetric.Metric                                 // data buffer for generated metric.
-	config   RabbitmqNodeMsgStoreReadCountDetailsRateConfig // metric config provided by user.
-	capacity int                                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.msg_store_read_count_details.rate metric with initial data.
@@ -3473,7 +3473,7 @@ func (m *metricRabbitmqNodeMsgStoreReadCountDetailsRate) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricRabbitmqNodeMsgStoreReadCountDetailsRate(cfg RabbitmqNodeMsgStoreReadCountDetailsRateConfig) metricRabbitmqNodeMsgStoreReadCountDetailsRate {
+func newMetricRabbitmqNodeMsgStoreReadCountDetailsRate(cfg RabbitmqNodeMsgStoreReadCountDetailsRateMetricConfig) metricRabbitmqNodeMsgStoreReadCountDetailsRate {
 	m := metricRabbitmqNodeMsgStoreReadCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3484,9 +3484,9 @@ func newMetricRabbitmqNodeMsgStoreReadCountDetailsRate(cfg RabbitmqNodeMsgStoreR
 }
 
 type metricRabbitmqNodeMsgStoreWriteCount struct {
-	data     pmetric.Metric                       // data buffer for generated metric.
-	config   RabbitmqNodeMsgStoreWriteCountConfig // metric config provided by user.
-	capacity int                                  // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   RabbitmqNodeMsgStoreWriteCountMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.msg_store_write_count metric with initial data.
@@ -3525,7 +3525,7 @@ func (m *metricRabbitmqNodeMsgStoreWriteCount) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricRabbitmqNodeMsgStoreWriteCount(cfg RabbitmqNodeMsgStoreWriteCountConfig) metricRabbitmqNodeMsgStoreWriteCount {
+func newMetricRabbitmqNodeMsgStoreWriteCount(cfg RabbitmqNodeMsgStoreWriteCountMetricConfig) metricRabbitmqNodeMsgStoreWriteCount {
 	m := metricRabbitmqNodeMsgStoreWriteCount{config: cfg}
 
 	if cfg.Enabled {
@@ -3536,9 +3536,9 @@ func newMetricRabbitmqNodeMsgStoreWriteCount(cfg RabbitmqNodeMsgStoreWriteCountC
 }
 
 type metricRabbitmqNodeMsgStoreWriteCountDetailsRate struct {
-	data     pmetric.Metric                                  // data buffer for generated metric.
-	config   RabbitmqNodeMsgStoreWriteCountDetailsRateConfig // metric config provided by user.
-	capacity int                                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                                        // data buffer for generated metric.
+	config   RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.msg_store_write_count_details.rate metric with initial data.
@@ -3577,7 +3577,7 @@ func (m *metricRabbitmqNodeMsgStoreWriteCountDetailsRate) emit(metrics pmetric.M
 	}
 }
 
-func newMetricRabbitmqNodeMsgStoreWriteCountDetailsRate(cfg RabbitmqNodeMsgStoreWriteCountDetailsRateConfig) metricRabbitmqNodeMsgStoreWriteCountDetailsRate {
+func newMetricRabbitmqNodeMsgStoreWriteCountDetailsRate(cfg RabbitmqNodeMsgStoreWriteCountDetailsRateMetricConfig) metricRabbitmqNodeMsgStoreWriteCountDetailsRate {
 	m := metricRabbitmqNodeMsgStoreWriteCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3588,9 +3588,9 @@ func newMetricRabbitmqNodeMsgStoreWriteCountDetailsRate(cfg RabbitmqNodeMsgStore
 }
 
 type metricRabbitmqNodeProcTotal struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   RabbitmqNodeProcTotalConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   RabbitmqNodeProcTotalMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.proc_total metric with initial data.
@@ -3629,7 +3629,7 @@ func (m *metricRabbitmqNodeProcTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeProcTotal(cfg RabbitmqNodeProcTotalConfig) metricRabbitmqNodeProcTotal {
+func newMetricRabbitmqNodeProcTotal(cfg RabbitmqNodeProcTotalMetricConfig) metricRabbitmqNodeProcTotal {
 	m := metricRabbitmqNodeProcTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -3640,9 +3640,9 @@ func newMetricRabbitmqNodeProcTotal(cfg RabbitmqNodeProcTotalConfig) metricRabbi
 }
 
 type metricRabbitmqNodeProcUsed struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   RabbitmqNodeProcUsedConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   RabbitmqNodeProcUsedMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.proc_used metric with initial data.
@@ -3681,7 +3681,7 @@ func (m *metricRabbitmqNodeProcUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeProcUsed(cfg RabbitmqNodeProcUsedConfig) metricRabbitmqNodeProcUsed {
+func newMetricRabbitmqNodeProcUsed(cfg RabbitmqNodeProcUsedMetricConfig) metricRabbitmqNodeProcUsed {
 	m := metricRabbitmqNodeProcUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -3692,9 +3692,9 @@ func newMetricRabbitmqNodeProcUsed(cfg RabbitmqNodeProcUsedConfig) metricRabbitm
 }
 
 type metricRabbitmqNodeProcUsedDetailsRate struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   RabbitmqNodeProcUsedDetailsRateConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   RabbitmqNodeProcUsedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.proc_used_details.rate metric with initial data.
@@ -3733,7 +3733,7 @@ func (m *metricRabbitmqNodeProcUsedDetailsRate) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricRabbitmqNodeProcUsedDetailsRate(cfg RabbitmqNodeProcUsedDetailsRateConfig) metricRabbitmqNodeProcUsedDetailsRate {
+func newMetricRabbitmqNodeProcUsedDetailsRate(cfg RabbitmqNodeProcUsedDetailsRateMetricConfig) metricRabbitmqNodeProcUsedDetailsRate {
 	m := metricRabbitmqNodeProcUsedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3744,9 +3744,9 @@ func newMetricRabbitmqNodeProcUsedDetailsRate(cfg RabbitmqNodeProcUsedDetailsRat
 }
 
 type metricRabbitmqNodeProcessors struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   RabbitmqNodeProcessorsConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   RabbitmqNodeProcessorsMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.processors metric with initial data.
@@ -3785,7 +3785,7 @@ func (m *metricRabbitmqNodeProcessors) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeProcessors(cfg RabbitmqNodeProcessorsConfig) metricRabbitmqNodeProcessors {
+func newMetricRabbitmqNodeProcessors(cfg RabbitmqNodeProcessorsMetricConfig) metricRabbitmqNodeProcessors {
 	m := metricRabbitmqNodeProcessors{config: cfg}
 
 	if cfg.Enabled {
@@ -3796,9 +3796,9 @@ func newMetricRabbitmqNodeProcessors(cfg RabbitmqNodeProcessorsConfig) metricRab
 }
 
 type metricRabbitmqNodeQueueCreated struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RabbitmqNodeQueueCreatedConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RabbitmqNodeQueueCreatedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_created metric with initial data.
@@ -3837,7 +3837,7 @@ func (m *metricRabbitmqNodeQueueCreated) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeQueueCreated(cfg RabbitmqNodeQueueCreatedConfig) metricRabbitmqNodeQueueCreated {
+func newMetricRabbitmqNodeQueueCreated(cfg RabbitmqNodeQueueCreatedMetricConfig) metricRabbitmqNodeQueueCreated {
 	m := metricRabbitmqNodeQueueCreated{config: cfg}
 
 	if cfg.Enabled {
@@ -3848,9 +3848,9 @@ func newMetricRabbitmqNodeQueueCreated(cfg RabbitmqNodeQueueCreatedConfig) metri
 }
 
 type metricRabbitmqNodeQueueCreatedDetailsRate struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   RabbitmqNodeQueueCreatedDetailsRateConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   RabbitmqNodeQueueCreatedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_created_details.rate metric with initial data.
@@ -3889,7 +3889,7 @@ func (m *metricRabbitmqNodeQueueCreatedDetailsRate) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricRabbitmqNodeQueueCreatedDetailsRate(cfg RabbitmqNodeQueueCreatedDetailsRateConfig) metricRabbitmqNodeQueueCreatedDetailsRate {
+func newMetricRabbitmqNodeQueueCreatedDetailsRate(cfg RabbitmqNodeQueueCreatedDetailsRateMetricConfig) metricRabbitmqNodeQueueCreatedDetailsRate {
 	m := metricRabbitmqNodeQueueCreatedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -3900,9 +3900,9 @@ func newMetricRabbitmqNodeQueueCreatedDetailsRate(cfg RabbitmqNodeQueueCreatedDe
 }
 
 type metricRabbitmqNodeQueueDeclared struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   RabbitmqNodeQueueDeclaredConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   RabbitmqNodeQueueDeclaredMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_declared metric with initial data.
@@ -3941,7 +3941,7 @@ func (m *metricRabbitmqNodeQueueDeclared) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeQueueDeclared(cfg RabbitmqNodeQueueDeclaredConfig) metricRabbitmqNodeQueueDeclared {
+func newMetricRabbitmqNodeQueueDeclared(cfg RabbitmqNodeQueueDeclaredMetricConfig) metricRabbitmqNodeQueueDeclared {
 	m := metricRabbitmqNodeQueueDeclared{config: cfg}
 
 	if cfg.Enabled {
@@ -3952,9 +3952,9 @@ func newMetricRabbitmqNodeQueueDeclared(cfg RabbitmqNodeQueueDeclaredConfig) met
 }
 
 type metricRabbitmqNodeQueueDeclaredDetailsRate struct {
-	data     pmetric.Metric                             // data buffer for generated metric.
-	config   RabbitmqNodeQueueDeclaredDetailsRateConfig // metric config provided by user.
-	capacity int                                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                                   // data buffer for generated metric.
+	config   RabbitmqNodeQueueDeclaredDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_declared_details.rate metric with initial data.
@@ -3993,7 +3993,7 @@ func (m *metricRabbitmqNodeQueueDeclaredDetailsRate) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricRabbitmqNodeQueueDeclaredDetailsRate(cfg RabbitmqNodeQueueDeclaredDetailsRateConfig) metricRabbitmqNodeQueueDeclaredDetailsRate {
+func newMetricRabbitmqNodeQueueDeclaredDetailsRate(cfg RabbitmqNodeQueueDeclaredDetailsRateMetricConfig) metricRabbitmqNodeQueueDeclaredDetailsRate {
 	m := metricRabbitmqNodeQueueDeclaredDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -4004,9 +4004,9 @@ func newMetricRabbitmqNodeQueueDeclaredDetailsRate(cfg RabbitmqNodeQueueDeclared
 }
 
 type metricRabbitmqNodeQueueDeleted struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RabbitmqNodeQueueDeletedConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RabbitmqNodeQueueDeletedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_deleted metric with initial data.
@@ -4045,7 +4045,7 @@ func (m *metricRabbitmqNodeQueueDeleted) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeQueueDeleted(cfg RabbitmqNodeQueueDeletedConfig) metricRabbitmqNodeQueueDeleted {
+func newMetricRabbitmqNodeQueueDeleted(cfg RabbitmqNodeQueueDeletedMetricConfig) metricRabbitmqNodeQueueDeleted {
 	m := metricRabbitmqNodeQueueDeleted{config: cfg}
 
 	if cfg.Enabled {
@@ -4056,9 +4056,9 @@ func newMetricRabbitmqNodeQueueDeleted(cfg RabbitmqNodeQueueDeletedConfig) metri
 }
 
 type metricRabbitmqNodeQueueDeletedDetailsRate struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   RabbitmqNodeQueueDeletedDetailsRateConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   RabbitmqNodeQueueDeletedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_deleted_details.rate metric with initial data.
@@ -4097,7 +4097,7 @@ func (m *metricRabbitmqNodeQueueDeletedDetailsRate) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricRabbitmqNodeQueueDeletedDetailsRate(cfg RabbitmqNodeQueueDeletedDetailsRateConfig) metricRabbitmqNodeQueueDeletedDetailsRate {
+func newMetricRabbitmqNodeQueueDeletedDetailsRate(cfg RabbitmqNodeQueueDeletedDetailsRateMetricConfig) metricRabbitmqNodeQueueDeletedDetailsRate {
 	m := metricRabbitmqNodeQueueDeletedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -4108,9 +4108,9 @@ func newMetricRabbitmqNodeQueueDeletedDetailsRate(cfg RabbitmqNodeQueueDeletedDe
 }
 
 type metricRabbitmqNodeQueueIndexReadCount struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   RabbitmqNodeQueueIndexReadCountConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   RabbitmqNodeQueueIndexReadCountMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_index_read_count metric with initial data.
@@ -4149,7 +4149,7 @@ func (m *metricRabbitmqNodeQueueIndexReadCount) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricRabbitmqNodeQueueIndexReadCount(cfg RabbitmqNodeQueueIndexReadCountConfig) metricRabbitmqNodeQueueIndexReadCount {
+func newMetricRabbitmqNodeQueueIndexReadCount(cfg RabbitmqNodeQueueIndexReadCountMetricConfig) metricRabbitmqNodeQueueIndexReadCount {
 	m := metricRabbitmqNodeQueueIndexReadCount{config: cfg}
 
 	if cfg.Enabled {
@@ -4160,9 +4160,9 @@ func newMetricRabbitmqNodeQueueIndexReadCount(cfg RabbitmqNodeQueueIndexReadCoun
 }
 
 type metricRabbitmqNodeQueueIndexReadCountDetailsRate struct {
-	data     pmetric.Metric                                   // data buffer for generated metric.
-	config   RabbitmqNodeQueueIndexReadCountDetailsRateConfig // metric config provided by user.
-	capacity int                                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                                         // data buffer for generated metric.
+	config   RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                    // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_index_read_count_details.rate metric with initial data.
@@ -4201,7 +4201,7 @@ func (m *metricRabbitmqNodeQueueIndexReadCountDetailsRate) emit(metrics pmetric.
 	}
 }
 
-func newMetricRabbitmqNodeQueueIndexReadCountDetailsRate(cfg RabbitmqNodeQueueIndexReadCountDetailsRateConfig) metricRabbitmqNodeQueueIndexReadCountDetailsRate {
+func newMetricRabbitmqNodeQueueIndexReadCountDetailsRate(cfg RabbitmqNodeQueueIndexReadCountDetailsRateMetricConfig) metricRabbitmqNodeQueueIndexReadCountDetailsRate {
 	m := metricRabbitmqNodeQueueIndexReadCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -4212,9 +4212,9 @@ func newMetricRabbitmqNodeQueueIndexReadCountDetailsRate(cfg RabbitmqNodeQueueIn
 }
 
 type metricRabbitmqNodeQueueIndexWriteCount struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   RabbitmqNodeQueueIndexWriteCountConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   RabbitmqNodeQueueIndexWriteCountMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_index_write_count metric with initial data.
@@ -4253,7 +4253,7 @@ func (m *metricRabbitmqNodeQueueIndexWriteCount) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricRabbitmqNodeQueueIndexWriteCount(cfg RabbitmqNodeQueueIndexWriteCountConfig) metricRabbitmqNodeQueueIndexWriteCount {
+func newMetricRabbitmqNodeQueueIndexWriteCount(cfg RabbitmqNodeQueueIndexWriteCountMetricConfig) metricRabbitmqNodeQueueIndexWriteCount {
 	m := metricRabbitmqNodeQueueIndexWriteCount{config: cfg}
 
 	if cfg.Enabled {
@@ -4264,9 +4264,9 @@ func newMetricRabbitmqNodeQueueIndexWriteCount(cfg RabbitmqNodeQueueIndexWriteCo
 }
 
 type metricRabbitmqNodeQueueIndexWriteCountDetailsRate struct {
-	data     pmetric.Metric                                    // data buffer for generated metric.
-	config   RabbitmqNodeQueueIndexWriteCountDetailsRateConfig // metric config provided by user.
-	capacity int                                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                                          // data buffer for generated metric.
+	config   RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                                     // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.queue_index_write_count_details.rate metric with initial data.
@@ -4305,7 +4305,7 @@ func (m *metricRabbitmqNodeQueueIndexWriteCountDetailsRate) emit(metrics pmetric
 	}
 }
 
-func newMetricRabbitmqNodeQueueIndexWriteCountDetailsRate(cfg RabbitmqNodeQueueIndexWriteCountDetailsRateConfig) metricRabbitmqNodeQueueIndexWriteCountDetailsRate {
+func newMetricRabbitmqNodeQueueIndexWriteCountDetailsRate(cfg RabbitmqNodeQueueIndexWriteCountDetailsRateMetricConfig) metricRabbitmqNodeQueueIndexWriteCountDetailsRate {
 	m := metricRabbitmqNodeQueueIndexWriteCountDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -4316,9 +4316,9 @@ func newMetricRabbitmqNodeQueueIndexWriteCountDetailsRate(cfg RabbitmqNodeQueueI
 }
 
 type metricRabbitmqNodeRunQueue struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   RabbitmqNodeRunQueueConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   RabbitmqNodeRunQueueMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.run_queue metric with initial data.
@@ -4357,7 +4357,7 @@ func (m *metricRabbitmqNodeRunQueue) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeRunQueue(cfg RabbitmqNodeRunQueueConfig) metricRabbitmqNodeRunQueue {
+func newMetricRabbitmqNodeRunQueue(cfg RabbitmqNodeRunQueueMetricConfig) metricRabbitmqNodeRunQueue {
 	m := metricRabbitmqNodeRunQueue{config: cfg}
 
 	if cfg.Enabled {
@@ -4368,9 +4368,9 @@ func newMetricRabbitmqNodeRunQueue(cfg RabbitmqNodeRunQueueConfig) metricRabbitm
 }
 
 type metricRabbitmqNodeSocketsTotal struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   RabbitmqNodeSocketsTotalConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   RabbitmqNodeSocketsTotalMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.sockets_total metric with initial data.
@@ -4409,7 +4409,7 @@ func (m *metricRabbitmqNodeSocketsTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeSocketsTotal(cfg RabbitmqNodeSocketsTotalConfig) metricRabbitmqNodeSocketsTotal {
+func newMetricRabbitmqNodeSocketsTotal(cfg RabbitmqNodeSocketsTotalMetricConfig) metricRabbitmqNodeSocketsTotal {
 	m := metricRabbitmqNodeSocketsTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -4420,9 +4420,9 @@ func newMetricRabbitmqNodeSocketsTotal(cfg RabbitmqNodeSocketsTotalConfig) metri
 }
 
 type metricRabbitmqNodeSocketsUsed struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   RabbitmqNodeSocketsUsedConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   RabbitmqNodeSocketsUsedMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.sockets_used metric with initial data.
@@ -4461,7 +4461,7 @@ func (m *metricRabbitmqNodeSocketsUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeSocketsUsed(cfg RabbitmqNodeSocketsUsedConfig) metricRabbitmqNodeSocketsUsed {
+func newMetricRabbitmqNodeSocketsUsed(cfg RabbitmqNodeSocketsUsedMetricConfig) metricRabbitmqNodeSocketsUsed {
 	m := metricRabbitmqNodeSocketsUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -4472,9 +4472,9 @@ func newMetricRabbitmqNodeSocketsUsed(cfg RabbitmqNodeSocketsUsedConfig) metricR
 }
 
 type metricRabbitmqNodeSocketsUsedDetailsRate struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   RabbitmqNodeSocketsUsedDetailsRateConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   RabbitmqNodeSocketsUsedDetailsRateMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.sockets_used_details.rate metric with initial data.
@@ -4513,7 +4513,7 @@ func (m *metricRabbitmqNodeSocketsUsedDetailsRate) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricRabbitmqNodeSocketsUsedDetailsRate(cfg RabbitmqNodeSocketsUsedDetailsRateConfig) metricRabbitmqNodeSocketsUsedDetailsRate {
+func newMetricRabbitmqNodeSocketsUsedDetailsRate(cfg RabbitmqNodeSocketsUsedDetailsRateMetricConfig) metricRabbitmqNodeSocketsUsedDetailsRate {
 	m := metricRabbitmqNodeSocketsUsedDetailsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -4524,9 +4524,9 @@ func newMetricRabbitmqNodeSocketsUsedDetailsRate(cfg RabbitmqNodeSocketsUsedDeta
 }
 
 type metricRabbitmqNodeUptime struct {
-	data     pmetric.Metric           // data buffer for generated metric.
-	config   RabbitmqNodeUptimeConfig // metric config provided by user.
-	capacity int                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   RabbitmqNodeUptimeMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills rabbitmq.node.uptime metric with initial data.
@@ -4565,7 +4565,7 @@ func (m *metricRabbitmqNodeUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricRabbitmqNodeUptime(cfg RabbitmqNodeUptimeConfig) metricRabbitmqNodeUptime {
+func newMetricRabbitmqNodeUptime(cfg RabbitmqNodeUptimeMetricConfig) metricRabbitmqNodeUptime {
 	m := metricRabbitmqNodeUptime{config: cfg}
 
 	if cfg.Enabled {
