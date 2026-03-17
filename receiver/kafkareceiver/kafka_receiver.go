@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"iter"
+	"strconv"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -373,7 +374,7 @@ func processMessage[T plog.Logs | pmetric.Metrics | ptrace.Traces | pprofile.Pro
 		)
 	}
 
-	ctx = contextWithHeaders(ctx, record.Headers)
+	ctx = contextWithMetadata(ctx, record)
 
 	obsCtx := handler.startObsReport(ctx)
 	data, n, err := handler.unmarshalData(record.Value)
@@ -444,12 +445,13 @@ func newExponentialBackOff(config configretry.BackOffConfig) *backoff.Exponentia
 	return backOff
 }
 
-func contextWithHeaders(ctx context.Context, headers []kgo.RecordHeader) context.Context {
-	if len(headers) == 0 {
-		return ctx
+func contextWithMetadata(ctx context.Context, record *kgo.Record) context.Context {
+	m := map[string][]string{
+		"kafka.topic":     {record.Topic},
+		"kafka.partition": {strconv.FormatInt(int64(record.Partition), 10)},
+		"kafka.offset":    {strconv.FormatInt(record.Offset, 10)},
 	}
-	m := make(map[string][]string, len(headers))
-	for _, h := range headers {
+	for _, h := range record.Headers {
 		m[h.Key] = append(m[h.Key], string(h.Value))
 	}
 	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(m)})
