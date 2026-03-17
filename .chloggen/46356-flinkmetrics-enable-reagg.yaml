@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: receiver/flinkmetrics
+
+note: Enable re-aggregation feature by classifying attributes with requirement_level and setting reaggregation_enabled to true
+
+issues: [46356]
+
+subtext: |
+  Attributes are classified as required when aggregating across them produces meaningless results
+  (checkpoint, garbage_collector_name, record), and recommended when totals remain operationally
+  meaningful (operator_name).
+
+change_logs: [user]

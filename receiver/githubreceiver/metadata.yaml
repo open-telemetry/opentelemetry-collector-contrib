@@ -12,6 +12,8 @@ status:
   codeowners:
     active: [adrielp, crobert-1, TylerHelmuth]
 
+reaggregation_enabled: true
+
 resource_attributes:
   vcs.owner.name:
     enabled: true
@@ -26,48 +28,58 @@ attributes:
   vcs.change.state:
     description: The state of a change (pull request)
     type: string
+    requirement_level: recommended
     enum:
       - open
       - merged
   vcs.line_change.type:
     description: The type of line change being measured on a ref (branch).
     type: string
+    requirement_level: recommended
     enum:
       - added
       - removed
   vcs.ref.base.name:
     description: The name of the VCS base reference (branch/tag) for comparison.
     type: string
+    requirement_level: recommended
   vcs.ref.base.type:
     description: The type of the base reference (branch, tag).
     type: string
+    requirement_level: recommended
     enum:
       - branch
       - tag
   vcs.ref.head.name:
     description: The name of the VCS head reference (branch).
     type: string
+    requirement_level: recommended
   vcs.ref.head.type:
     description: The type of the head reference (branch, tag).
     type: string
+    requirement_level: recommended
     enum:
       - branch
       - tag
   vcs.ref.type:
     description: The type of the reference in the repository.
     type: string
+    requirement_level: recommended
     enum:
       - branch
       - tag
   vcs.repository.name:
     description: The name of the VCS repository.
     type: string
+    requirement_level: recommended
   vcs.repository.url.full:
     description: The canonical URL of the repository providing the complete HTTPS address.
     type: string
+    requirement_level: recommended
   vcs.revision_delta.direction:
     description: The type of revision comparison.
     type: string
+    requirement_level: recommended
     enum:
       - ahead
       - behind
