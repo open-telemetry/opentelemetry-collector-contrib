@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/heade
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.147.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.148.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.54.0
 	go.opentelemetry.io/collector/component v1.54.0
