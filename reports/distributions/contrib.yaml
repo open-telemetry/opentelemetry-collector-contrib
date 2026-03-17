@@ -147,6 +147,7 @@ components:
         - azure_monitor
         - carbon
         - chrony
+        - cisco_os
         - cloudflare
         - cloudfoundry
         - collectd

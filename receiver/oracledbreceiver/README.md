@@ -28,7 +28,7 @@ option will be used.
 ### Primary Configuration Option
 
 Required options:
-- `datasource`: Oracle database connection string. Special characters must be encoded. Refer to Oracle Go Driver go_ora documentation for full connection string options.
+- `datasource`: Oracle database connection string. Special characters must be encoded. Refer to [Oracle Go Driver go_ora documentation](https://github.com/sijms/go-ora) for full connection string options.
 
 Example:
 
