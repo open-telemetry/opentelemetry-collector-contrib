@@ -228,6 +228,7 @@ receiver/awss3receiver receiver/awss3
 receiver/awsxrayreceiver receiver/awsxray
 receiver/azureblobreceiver receiver/azureblob
 receiver/azureeventhubreceiver receiver/azureeventhub
+receiver/azurefunctionsreceiver receiver/azurefunctions
 receiver/azuremonitorreceiver receiver/azuremonitor
 receiver/carbonreceiver receiver/carbon
 receiver/chronyreceiver receiver/chrony

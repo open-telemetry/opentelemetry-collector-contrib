@@ -1,10 +1,12 @@
 bmchelix/helix1:
   endpoint: https://helix1:8080
   api_key: api_key
+  enrich_metric_with_attributes: true
 bmchelix/helix2:
   endpoint: https://helix2:8080
   api_key: api_key
   timeout: 20s
+  enrich_metric_with_attributes: true
   retry_on_failure:
     enabled: true
     initial_interval: 5s
