@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -71,12 +70,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
 					m := metadata.DefaultMetricsBuilderConfig()
-					m.Metrics.ContainerCPUUsageSystem = metadata.MetricConfig{
-						Enabled: false,
-					}
-					m.Metrics.ContainerMemoryTotalRss = metadata.MetricConfig{
-						Enabled: true,
-					}
+					m.Metrics.ContainerCPUUsageSystem.Enabled = false
+					m.Metrics.ContainerMemoryTotalRss.Enabled = true
 					return m
 				}(),
 			},
@@ -91,7 +86,9 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg, cmp.FilterPath(func(p cmp.Path) bool {
+				return p.Last().String() == ".enabledSetByUser"
+			}, cmp.Ignore())); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

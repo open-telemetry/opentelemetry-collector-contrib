@@ -3,16 +3,66 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// SystemProcessesCountMetricAttributeKey specifies the key of an attribute for the system.processes.count metric.
+type SystemProcessesCountMetricAttributeKey string
+
+const (
+	SystemProcessesCountMetricAttributeKeyStatus SystemProcessesCountMetricAttributeKey = "status"
+)
+
+// SystemProcessesCountMetricConfig provides config for the system.processes.count metric.
+type SystemProcessesCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemProcessesCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemProcessesCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemProcessesCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemProcessesCountMetricAttributeKeyStatus:
+		default:
+			return fmt.Errorf("metric system.processes.count doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemProcessesCreatedMetricConfig provides config for the system.processes.created metric.
+type SystemProcessesCreatedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemProcessesCreatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,16 +78,18 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for processes metrics.
 type MetricsConfig struct {
-	SystemProcessesCount   MetricConfig `mapstructure:"system.processes.count"`
-	SystemProcessesCreated MetricConfig `mapstructure:"system.processes.created"`
+	SystemProcessesCount   SystemProcessesCountMetricConfig   `mapstructure:"system.processes.count"`
+	SystemProcessesCreated SystemProcessesCreatedMetricConfig `mapstructure:"system.processes.created"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemProcessesCount: MetricConfig{
-			Enabled: true,
+		SystemProcessesCount: SystemProcessesCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemProcessesCountMetricAttributeKey{SystemProcessesCountMetricAttributeKeyStatus},
 		},
-		SystemProcessesCreated: MetricConfig{
+		SystemProcessesCreated: SystemProcessesCreatedMetricConfig{
 			Enabled: true,
 		},
 	}

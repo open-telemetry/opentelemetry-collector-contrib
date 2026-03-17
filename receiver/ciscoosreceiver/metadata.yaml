@@ -1,5 +1,6 @@
 display_name: Cisco OS Receiver
-type: ciscoos
+type: cisco_os
+deprecated_type: ciscoos
 
 description: |
   The Cisco OS Receiver is a modular receiver that collects metrics from Cisco network devices via SSH connections. It
@@ -10,6 +11,6 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: []
+  distributions: [contrib]
   codeowners:
     active: [dmitryax]
