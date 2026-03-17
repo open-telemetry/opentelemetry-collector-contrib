@@ -8,6 +8,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
 )
 
+const defaultHwmonPath = "/sys/class/hwmon"
+
 // Config relating to HW Sensor Metric Scraper.
 type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`

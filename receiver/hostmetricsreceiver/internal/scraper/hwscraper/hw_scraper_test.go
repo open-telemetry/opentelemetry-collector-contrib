@@ -4,11 +4,13 @@
 package hwscraper
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -16,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
 )
 
@@ -27,9 +30,13 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                string
 		config              *Config
+		ctx                 context.Context
 		expectedMetricCount int
 		expectedErr         string
 	}
+
+	rootPath := createTestRootPathWithHwmon(t)
+	rootPathCtx := context.WithValue(t.Context(), common.EnvKey, gopsutilenv.SetGoPsutilEnvVars(rootPath))
 
 	testCases := []testCase{
 		{
@@ -44,6 +51,22 @@ func TestScrape(t *testing.T) {
 					},
 				},
 			},
+			ctx:                 t.Context(),
+			expectedMetricCount: 1,
+		},
+		{
+			name: "Standard with root path",
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				HwmonPath:            defaultHwmonPath,
+				Temperature: &TemperatureConfig{
+					Include: MatchConfig{
+						Config:  filterset.Config{MatchType: filterset.Regexp},
+						Sensors: []string{".*"},
+					},
+				},
+			},
+			ctx:                 rootPathCtx,
 			expectedMetricCount: 1,
 		},
 		{
@@ -58,6 +81,7 @@ func TestScrape(t *testing.T) {
 					},
 				},
 			},
+			ctx:                 t.Context(),
 			expectedMetricCount: 0,
 		},
 		{
@@ -67,6 +91,7 @@ func TestScrape(t *testing.T) {
 				HwmonPath:            createTestHwmonData(t),
 				Temperature:          nil,
 			},
+			ctx:                 t.Context(),
 			expectedMetricCount: 0,
 		},
 	}
@@ -76,7 +101,7 @@ func TestScrape(t *testing.T) {
 			scraper := newHwScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			require.NotNil(t, scraper)
 
-			err := scraper.start(t.Context(), componenttest.NewNopHost())
+			err := scraper.start(test.ctx, componenttest.NewNopHost())
 			if test.expectedErr != "" {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), test.expectedErr)
@@ -84,7 +109,7 @@ func TestScrape(t *testing.T) {
 			}
 			assert.NoError(t, err)
 
-			metrics, err := scraper.scrape(t.Context())
+			metrics, err := scraper.scrape(test.ctx)
 			assert.NoError(t, err)
 			validateMetrics(t, metrics, test.expectedMetricCount)
 		})
@@ -172,4 +197,39 @@ func createTestHwmonData(t *testing.T) string {
 	require.NoError(t, err)
 
 	return tempDir
+}
+
+func createTestRootPathWithHwmon(t *testing.T) string {
+	rootPath := t.TempDir()
+	hwmonPath := filepath.Join(rootPath, "sys", "class", "hwmon")
+
+	err := os.MkdirAll(hwmonPath, 0o755)
+	require.NoError(t, err)
+
+	basePath := createTestHwmonData(t)
+	entries, err := os.ReadDir(basePath)
+	require.NoError(t, err)
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(basePath, entry.Name())
+		dstPath := filepath.Join(hwmonPath, entry.Name())
+
+		data, readErr := os.ReadFile(filepath.Join(srcPath, "name"))
+		require.NoError(t, readErr)
+
+		err = os.MkdirAll(dstPath, 0o755)
+		require.NoError(t, err)
+
+		err = os.WriteFile(filepath.Join(dstPath, "name"), data, 0o600)
+		require.NoError(t, err)
+
+		for _, fileName := range []string{"temp1_input", "temp1_label", "temp1_max"} {
+			fileData, fileErr := os.ReadFile(filepath.Join(srcPath, fileName))
+			require.NoError(t, fileErr)
+			err = os.WriteFile(filepath.Join(dstPath, fileName), fileData, 0o600)
+			require.NoError(t, err)
+		}
+	}
+
+	return rootPath
 }

@@ -8,6 +8,7 @@ package hostmetricsreceiver
 import (
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -119,8 +120,12 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 }
 
 func Test_HwScrape(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("hw scraper only supported on linux")
+	}
+
 	expectedFile := filepath.Join("testdata", "e2e", "expected_hw.yaml")
-	hwmonPath := filepath.Join("testdata", "e2e", "sys", "class", "hwmon")
+	rootPath := filepath.Join("testdata", "e2e")
 
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
@@ -128,9 +133,9 @@ func Test_HwScrape(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
+				rCfg.RootPath = rootPath
 				f := hwscraper.NewFactory()
 				hCfg := f.CreateDefaultConfig().(*hwscraper.Config)
-				hCfg.HwmonPath = hwmonPath
 				hCfg.Temperature.Include.Sensors = []string{".*"}
 				hCfg.MetricsBuilderConfig.Metrics.HwTemperatureLimit.Enabled = true
 				hCfg.MetricsBuilderConfig.Metrics.HwStatus.Enabled = true
@@ -149,8 +154,12 @@ func Test_HwScrape(t *testing.T) {
 }
 
 func Test_HwScrapeWithSensorFiltering(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("hw scraper only supported on linux")
+	}
+
 	expectedFile := filepath.Join("testdata", "e2e", "expected_hw_filtered_sensors.yaml")
-	hwmonPath := filepath.Join("testdata", "e2e", "sys", "class", "hwmon")
+	rootPath := filepath.Join("testdata", "e2e")
 
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
@@ -158,9 +167,9 @@ func Test_HwScrapeWithSensorFiltering(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
+				rCfg.RootPath = rootPath
 				f := hwscraper.NewFactory()
 				hCfg := f.CreateDefaultConfig().(*hwscraper.Config)
-				hCfg.HwmonPath = hwmonPath
 				hCfg.Temperature.Include.Sensors = []string{"Composite"}
 				rCfg.Scrapers = map[component.Type]component.Config{
 					f.Type(): hCfg,

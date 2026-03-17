@@ -22,7 +22,7 @@ func NewFactory() scraper.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		HwmonPath:            "/sys/class/hwmon",
+		HwmonPath:            defaultHwmonPath,
 		Temperature: &TemperatureConfig{
 			Include: MatchConfig{
 				Config:  filterset.Config{MatchType: filterset.Regexp},

@@ -15,11 +15,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/gopsutilenv"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/hwscraper/internal/metadata"
 )
 
@@ -40,8 +42,12 @@ type hwTemperatureScraper struct {
 	sensors []sensorInfo
 }
 
-func (s *hwTemperatureScraper) start(_ context.Context) error {
+func (s *hwTemperatureScraper) start(ctx context.Context) error {
 	var err error
+
+	if s.hwmonPath == "" || s.hwmonPath == defaultHwmonPath {
+		s.hwmonPath = gopsutilenv.GetEnvWithContext(ctx, string(common.HostSysEnvKey), "/sys", "class", "hwmon")
+	}
 
 	if len(s.config.Include.Sensors) > 0 {
 		s.includeFilter, err = filterset.CreateFilterSet(s.config.Include.Sensors, &s.config.Include.Config)
