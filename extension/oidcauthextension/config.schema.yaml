@@ -1,0 +1,54 @@
+$defs:
+  provider_cfg:
+    type: object
+    properties:
+      audience:
+        description: 'Audience of the token, used during the verification. For example: "https://accounts.google.com" or "https://login.salesforce.com". Required unless IgnoreAudience is true.'
+        type: string
+      groups_claim:
+        description: The claim that holds the subject's group membership information. Optional.
+        type: string
+      ignore_audience:
+        description: When true, this skips validating the audience field. Optional.
+        type: boolean
+      issuer_ca_path:
+        description: The local path for the issuer CA's TLS server cert. Optional.
+        type: string
+      issuer_url:
+        description: IssuerURL is the base URL for the OIDC provider. Required.
+        type: string
+      public_keys_file:
+        description: Path to a local JWKS file containing public keys for token verification. When provided, only keys from this file will be used - no remote key discovery will happen. The file is watched for changes and keys are automatically reloaded on updates. Optional.
+        type: string
+      username_claim:
+        description: The claim to use as the username, in case the token's 'sub' isn't the suitable source. Optional.
+        type: string
+description: Config has the configuration for the OIDC Authenticator extension.
+type: object
+properties:
+  attribute:
+    description: 'The attribute (header name) to look for auth data. Optional, default value: "authorization".'
+    type: string
+  audience:
+    description: 'Deprecated: use Providers instead. Audience of the token, used during the verification. For example: "https://accounts.google.com" or "https://login.salesforce.com". Required unless IgnoreAudience is true.'
+    type: string
+  groups_claim:
+    description: 'Deprecated: use Providers instead. The claim that holds the subject''s group membership information. Optional.'
+    type: string
+  ignore_audience:
+    description: 'Deprecated: use Providers instead. When true, this skips validating the audience field. Optional.'
+    type: boolean
+  issuer_ca_path:
+    description: 'Deprecated: use Providers instead. The local path for the issuer CA''s TLS server cert. Optional.'
+    type: string
+  issuer_url:
+    description: 'Deprecated: use Providers instead. IssuerURL is the base URL for the OIDC provider. Required.'
+    type: string
+  providers:
+    description: Providers allows configuring multiple OIDC providers. Use the getProviderConfigs() method to get the full list of providers, including the legacy configuration.
+    type: array
+    items:
+      $ref: provider_cfg
+  username_claim:
+    description: 'Deprecated: use Providers instead. The claim to use as the username, in case the token''s ''sub'' isn''t the suitable source. Optional.'
+    type: string
