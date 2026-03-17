@@ -79,12 +79,14 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 					config.Performance.BatchSize, // Use global batch size as initial window size
 					0,                            // Let forest determine max depth automatically
 					config.AdaptiveWindow,        // Pass adaptive configuration
+					modelConfig.ContaminationRate,
 				)
 			} else {
 				forest = newOnlineIsolationForest(
 					modelConfig.ForestSize,
 					config.Performance.BatchSize,
 					0,
+					modelConfig.ContaminationRate,
 				)
 			}
 			processor.modelForests[modelConfig.Name] = forest
@@ -105,12 +107,14 @@ func newIsolationForestProcessor(config *Config, logger *zap.Logger) (*isolation
 				config.Performance.BatchSize,
 				0, // Auto-determine max depth
 				config.AdaptiveWindow,
+				config.ContaminationRate,
 			)
 		} else {
 			processor.defaultForest = newOnlineIsolationForest(
 				config.ForestSize,
 				config.Performance.BatchSize,
 				0,
+				config.ContaminationRate,
 			)
 		}
 
