@@ -356,15 +356,11 @@ jobs:
         run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
+
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
-    needs:
-      [
-        setup-environment,
-        integration-tests-matrix,
-        integration-sudo-tests-matrix,
-      ]
+    needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
       - name: Print result
         run: echo ${{ needs.integration-tests-matrix.result }}
@@ -557,7 +553,7 @@ jobs:
         id: new-contributor-text
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
-          result-encoding: "string"
+          result-encoding: 'string'
           script: |
             const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/generate-new-contributors.js')
             return await script(github, '${{ steps.github_tag.outputs.tag }}', '${{ steps.github_tag.outputs.previous_tag }}')
