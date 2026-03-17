@@ -36,7 +36,7 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	cfg := dcfg.(Config)
 
 	return &Detector{
-		provider: vpcprovider.NewProvider(cfg.Secure),
+		provider: vpcprovider.NewProvider(cfg.Protocol),
 		logger:   p.Logger,
 		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil

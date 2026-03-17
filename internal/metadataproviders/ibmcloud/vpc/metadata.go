@@ -74,14 +74,10 @@ type metadataClient struct {
 var _ Provider = (*metadataClient)(nil)
 
 // NewProvider returns a new IBM Cloud VPC metadata provider.
-// When secure is true, the HTTPS endpoint is used; otherwise plain HTTP.
+// The protocol parameter selects the scheme ("http" or "https").
 // Both schemes target the same host (api.metadata.cloud.ibm.com).
-func NewProvider(secure bool) Provider {
-	scheme := "http"
-	if secure {
-		scheme = "https"
-	}
-	return newProvider(scheme + "://" + metadataHost)
+func NewProvider(protocol string) Provider {
+	return newProvider(protocol + "://" + metadataHost)
 }
 
 // newProvider is the internal constructor that accepts an arbitrary endpoint.

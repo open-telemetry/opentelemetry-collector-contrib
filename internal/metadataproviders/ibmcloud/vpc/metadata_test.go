@@ -342,13 +342,13 @@ func TestContextCancellation(t *testing.T) {
 }
 
 func TestHTTPEndpoint(t *testing.T) {
-	provider := NewProvider(false)
+	provider := NewProvider("http")
 	mc := provider.(*metadataClient)
 	require.Equal(t, "http://"+metadataHost, mc.endpoint)
 }
 
 func TestHTTPSEndpoint(t *testing.T) {
-	provider := NewProvider(true)
+	provider := NewProvider("https")
 	mc := provider.(*metadataClient)
 	require.Equal(t, "https://"+metadataHost, mc.endpoint)
 }

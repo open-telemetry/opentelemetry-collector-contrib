@@ -914,13 +914,13 @@ Queries the [IBM Cloud VPC Instance Metadata Service](https://cloud.ibm.com/apid
 
 The list of the populated resource attributes can be found at [IBM Cloud VPC Detector Resource Attributes](./internal/ibmcloud/vpc/documentation.md).
 
-By default, the detector queries the IBM Cloud VPC Instance Metadata Service at `http://api.metadata.cloud.ibm.com`. Set `secure: true` to use HTTPS instead.
+By default, the detector queries the IBM Cloud VPC Instance Metadata Service at `http://api.metadata.cloud.ibm.com`. Set `protocol: https` to use HTTPS instead.
 
 > **Note**
 >
-> The `secure` option must match the instance's metadata service access mode. If the
+> The `protocol` option must match the instance's metadata service access mode. If the
 > [Secure access](https://cloud.ibm.com/docs/vpc?topic=vpc-imd-configure-service&interface=ui#secure-access-ui)
-> state is toggled while the collector is running, update the `secure` configuration
+> state is toggled while the collector is running, update the `protocol` configuration
 > value accordingly and restart the collector.
 
 Example:
@@ -941,7 +941,7 @@ processors:
     detectors: ["ibmcloud_vpc"]
     ibmcloud_vpc:
       # Use HTTPS for the IMDS endpoint
-      secure: true
+      protocol: https
 ```
 
 ## Configuration

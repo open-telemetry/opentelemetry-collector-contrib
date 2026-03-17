@@ -9,15 +9,17 @@ import (
 
 // Config defines user-specified configurations unique to the IBM Cloud VPC detector.
 type Config struct {
-	// Secure switches the IMDS endpoint from http:// to https://
-	// (both use api.metadata.cloud.ibm.com).
-	Secure             bool                              `mapstructure:"secure"`
+	// Protocol selects the scheme used to reach the IMDS endpoint.
+	// Accepted values are "http" (default) and "https".
+	// Both use the host api.metadata.cloud.ibm.com.
+	Protocol           string                            `mapstructure:"protocol"`
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 // CreateDefaultConfig returns the default configuration for the IBM Cloud VPC detector.
 func CreateDefaultConfig() Config {
 	return Config{
+		Protocol:           "http",
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
 }
