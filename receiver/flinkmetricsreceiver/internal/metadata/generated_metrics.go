@@ -239,9 +239,9 @@ type metricInfo struct {
 }
 
 type metricFlinkJobCheckpointCount struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   FlinkJobCheckpointCountConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   FlinkJobCheckpointCountMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills flink.job.checkpoint.count metric with initial data.
@@ -282,7 +282,7 @@ func (m *metricFlinkJobCheckpointCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJobCheckpointCount(cfg FlinkJobCheckpointCountConfig) metricFlinkJobCheckpointCount {
+func newMetricFlinkJobCheckpointCount(cfg FlinkJobCheckpointCountMetricConfig) metricFlinkJobCheckpointCount {
 	m := metricFlinkJobCheckpointCount{config: cfg}
 
 	if cfg.Enabled {
@@ -293,9 +293,9 @@ func newMetricFlinkJobCheckpointCount(cfg FlinkJobCheckpointCountConfig) metricF
 }
 
 type metricFlinkJobCheckpointInProgress struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   FlinkJobCheckpointInProgressConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   FlinkJobCheckpointInProgressMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills flink.job.checkpoint.in_progress metric with initial data.
@@ -334,7 +334,7 @@ func (m *metricFlinkJobCheckpointInProgress) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJobCheckpointInProgress(cfg FlinkJobCheckpointInProgressConfig) metricFlinkJobCheckpointInProgress {
+func newMetricFlinkJobCheckpointInProgress(cfg FlinkJobCheckpointInProgressMetricConfig) metricFlinkJobCheckpointInProgress {
 	m := metricFlinkJobCheckpointInProgress{config: cfg}
 
 	if cfg.Enabled {
@@ -345,9 +345,9 @@ func newMetricFlinkJobCheckpointInProgress(cfg FlinkJobCheckpointInProgressConfi
 }
 
 type metricFlinkJobLastCheckpointSize struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   FlinkJobLastCheckpointSizeConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   FlinkJobLastCheckpointSizeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills flink.job.last_checkpoint.size metric with initial data.
@@ -386,7 +386,7 @@ func (m *metricFlinkJobLastCheckpointSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJobLastCheckpointSize(cfg FlinkJobLastCheckpointSizeConfig) metricFlinkJobLastCheckpointSize {
+func newMetricFlinkJobLastCheckpointSize(cfg FlinkJobLastCheckpointSizeMetricConfig) metricFlinkJobLastCheckpointSize {
 	m := metricFlinkJobLastCheckpointSize{config: cfg}
 
 	if cfg.Enabled {
@@ -397,9 +397,9 @@ func newMetricFlinkJobLastCheckpointSize(cfg FlinkJobLastCheckpointSizeConfig) m
 }
 
 type metricFlinkJobLastCheckpointTime struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   FlinkJobLastCheckpointTimeConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   FlinkJobLastCheckpointTimeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills flink.job.last_checkpoint.time metric with initial data.
@@ -436,7 +436,7 @@ func (m *metricFlinkJobLastCheckpointTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJobLastCheckpointTime(cfg FlinkJobLastCheckpointTimeConfig) metricFlinkJobLastCheckpointTime {
+func newMetricFlinkJobLastCheckpointTime(cfg FlinkJobLastCheckpointTimeMetricConfig) metricFlinkJobLastCheckpointTime {
 	m := metricFlinkJobLastCheckpointTime{config: cfg}
 
 	if cfg.Enabled {
@@ -447,9 +447,9 @@ func newMetricFlinkJobLastCheckpointTime(cfg FlinkJobLastCheckpointTimeConfig) m
 }
 
 type metricFlinkJobRestartCount struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   FlinkJobRestartCountConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   FlinkJobRestartCountMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills flink.job.restart.count metric with initial data.
@@ -488,7 +488,7 @@ func (m *metricFlinkJobRestartCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJobRestartCount(cfg FlinkJobRestartCountConfig) metricFlinkJobRestartCount {
+func newMetricFlinkJobRestartCount(cfg FlinkJobRestartCountMetricConfig) metricFlinkJobRestartCount {
 	m := metricFlinkJobRestartCount{config: cfg}
 
 	if cfg.Enabled {
@@ -499,9 +499,9 @@ func newMetricFlinkJobRestartCount(cfg FlinkJobRestartCountConfig) metricFlinkJo
 }
 
 type metricFlinkJvmClassLoaderClassesLoaded struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   FlinkJvmClassLoaderClassesLoadedConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   FlinkJvmClassLoaderClassesLoadedMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.class_loader.classes_loaded metric with initial data.
@@ -540,7 +540,7 @@ func (m *metricFlinkJvmClassLoaderClassesLoaded) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricFlinkJvmClassLoaderClassesLoaded(cfg FlinkJvmClassLoaderClassesLoadedConfig) metricFlinkJvmClassLoaderClassesLoaded {
+func newMetricFlinkJvmClassLoaderClassesLoaded(cfg FlinkJvmClassLoaderClassesLoadedMetricConfig) metricFlinkJvmClassLoaderClassesLoaded {
 	m := metricFlinkJvmClassLoaderClassesLoaded{config: cfg}
 
 	if cfg.Enabled {
@@ -551,9 +551,9 @@ func newMetricFlinkJvmClassLoaderClassesLoaded(cfg FlinkJvmClassLoaderClassesLoa
 }
 
 type metricFlinkJvmCPULoad struct {
-	data     pmetric.Metric        // data buffer for generated metric.
-	config   FlinkJvmCPULoadConfig // metric config provided by user.
-	capacity int                   // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   FlinkJvmCPULoadMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.cpu.load metric with initial data.
@@ -590,7 +590,7 @@ func (m *metricFlinkJvmCPULoad) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmCPULoad(cfg FlinkJvmCPULoadConfig) metricFlinkJvmCPULoad {
+func newMetricFlinkJvmCPULoad(cfg FlinkJvmCPULoadMetricConfig) metricFlinkJvmCPULoad {
 	m := metricFlinkJvmCPULoad{config: cfg}
 
 	if cfg.Enabled {
@@ -601,9 +601,9 @@ func newMetricFlinkJvmCPULoad(cfg FlinkJvmCPULoadConfig) metricFlinkJvmCPULoad {
 }
 
 type metricFlinkJvmCPUTime struct {
-	data     pmetric.Metric        // data buffer for generated metric.
-	config   FlinkJvmCPUTimeConfig // metric config provided by user.
-	capacity int                   // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   FlinkJvmCPUTimeMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.cpu.time metric with initial data.
@@ -642,7 +642,7 @@ func (m *metricFlinkJvmCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmCPUTime(cfg FlinkJvmCPUTimeConfig) metricFlinkJvmCPUTime {
+func newMetricFlinkJvmCPUTime(cfg FlinkJvmCPUTimeMetricConfig) metricFlinkJvmCPUTime {
 	m := metricFlinkJvmCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -653,9 +653,9 @@ func newMetricFlinkJvmCPUTime(cfg FlinkJvmCPUTimeConfig) metricFlinkJvmCPUTime {
 }
 
 type metricFlinkJvmGcCollectionsCount struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   FlinkJvmGcCollectionsCountConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   FlinkJvmGcCollectionsCountMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.gc.collections.count metric with initial data.
@@ -696,7 +696,7 @@ func (m *metricFlinkJvmGcCollectionsCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmGcCollectionsCount(cfg FlinkJvmGcCollectionsCountConfig) metricFlinkJvmGcCollectionsCount {
+func newMetricFlinkJvmGcCollectionsCount(cfg FlinkJvmGcCollectionsCountMetricConfig) metricFlinkJvmGcCollectionsCount {
 	m := metricFlinkJvmGcCollectionsCount{config: cfg}
 
 	if cfg.Enabled {
@@ -707,9 +707,9 @@ func newMetricFlinkJvmGcCollectionsCount(cfg FlinkJvmGcCollectionsCountConfig) m
 }
 
 type metricFlinkJvmGcCollectionsTime struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   FlinkJvmGcCollectionsTimeConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   FlinkJvmGcCollectionsTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.gc.collections.time metric with initial data.
@@ -750,7 +750,7 @@ func (m *metricFlinkJvmGcCollectionsTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmGcCollectionsTime(cfg FlinkJvmGcCollectionsTimeConfig) metricFlinkJvmGcCollectionsTime {
+func newMetricFlinkJvmGcCollectionsTime(cfg FlinkJvmGcCollectionsTimeMetricConfig) metricFlinkJvmGcCollectionsTime {
 	m := metricFlinkJvmGcCollectionsTime{config: cfg}
 
 	if cfg.Enabled {
@@ -761,9 +761,9 @@ func newMetricFlinkJvmGcCollectionsTime(cfg FlinkJvmGcCollectionsTimeConfig) met
 }
 
 type metricFlinkJvmMemoryDirectTotalCapacity struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   FlinkJvmMemoryDirectTotalCapacityConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   FlinkJvmMemoryDirectTotalCapacityMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.direct.total_capacity metric with initial data.
@@ -802,7 +802,7 @@ func (m *metricFlinkJvmMemoryDirectTotalCapacity) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricFlinkJvmMemoryDirectTotalCapacity(cfg FlinkJvmMemoryDirectTotalCapacityConfig) metricFlinkJvmMemoryDirectTotalCapacity {
+func newMetricFlinkJvmMemoryDirectTotalCapacity(cfg FlinkJvmMemoryDirectTotalCapacityMetricConfig) metricFlinkJvmMemoryDirectTotalCapacity {
 	m := metricFlinkJvmMemoryDirectTotalCapacity{config: cfg}
 
 	if cfg.Enabled {
@@ -813,9 +813,9 @@ func newMetricFlinkJvmMemoryDirectTotalCapacity(cfg FlinkJvmMemoryDirectTotalCap
 }
 
 type metricFlinkJvmMemoryDirectUsed struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   FlinkJvmMemoryDirectUsedConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   FlinkJvmMemoryDirectUsedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.direct.used metric with initial data.
@@ -854,7 +854,7 @@ func (m *metricFlinkJvmMemoryDirectUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryDirectUsed(cfg FlinkJvmMemoryDirectUsedConfig) metricFlinkJvmMemoryDirectUsed {
+func newMetricFlinkJvmMemoryDirectUsed(cfg FlinkJvmMemoryDirectUsedMetricConfig) metricFlinkJvmMemoryDirectUsed {
 	m := metricFlinkJvmMemoryDirectUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -865,9 +865,9 @@ func newMetricFlinkJvmMemoryDirectUsed(cfg FlinkJvmMemoryDirectUsedConfig) metri
 }
 
 type metricFlinkJvmMemoryHeapCommitted struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   FlinkJvmMemoryHeapCommittedConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   FlinkJvmMemoryHeapCommittedMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.heap.committed metric with initial data.
@@ -906,7 +906,7 @@ func (m *metricFlinkJvmMemoryHeapCommitted) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryHeapCommitted(cfg FlinkJvmMemoryHeapCommittedConfig) metricFlinkJvmMemoryHeapCommitted {
+func newMetricFlinkJvmMemoryHeapCommitted(cfg FlinkJvmMemoryHeapCommittedMetricConfig) metricFlinkJvmMemoryHeapCommitted {
 	m := metricFlinkJvmMemoryHeapCommitted{config: cfg}
 
 	if cfg.Enabled {
@@ -917,9 +917,9 @@ func newMetricFlinkJvmMemoryHeapCommitted(cfg FlinkJvmMemoryHeapCommittedConfig)
 }
 
 type metricFlinkJvmMemoryHeapMax struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   FlinkJvmMemoryHeapMaxConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   FlinkJvmMemoryHeapMaxMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.heap.max metric with initial data.
@@ -958,7 +958,7 @@ func (m *metricFlinkJvmMemoryHeapMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryHeapMax(cfg FlinkJvmMemoryHeapMaxConfig) metricFlinkJvmMemoryHeapMax {
+func newMetricFlinkJvmMemoryHeapMax(cfg FlinkJvmMemoryHeapMaxMetricConfig) metricFlinkJvmMemoryHeapMax {
 	m := metricFlinkJvmMemoryHeapMax{config: cfg}
 
 	if cfg.Enabled {
@@ -969,9 +969,9 @@ func newMetricFlinkJvmMemoryHeapMax(cfg FlinkJvmMemoryHeapMaxConfig) metricFlink
 }
 
 type metricFlinkJvmMemoryHeapUsed struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   FlinkJvmMemoryHeapUsedConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   FlinkJvmMemoryHeapUsedMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.heap.used metric with initial data.
@@ -1010,7 +1010,7 @@ func (m *metricFlinkJvmMemoryHeapUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryHeapUsed(cfg FlinkJvmMemoryHeapUsedConfig) metricFlinkJvmMemoryHeapUsed {
+func newMetricFlinkJvmMemoryHeapUsed(cfg FlinkJvmMemoryHeapUsedMetricConfig) metricFlinkJvmMemoryHeapUsed {
 	m := metricFlinkJvmMemoryHeapUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -1021,9 +1021,9 @@ func newMetricFlinkJvmMemoryHeapUsed(cfg FlinkJvmMemoryHeapUsedConfig) metricFli
 }
 
 type metricFlinkJvmMemoryMappedTotalCapacity struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   FlinkJvmMemoryMappedTotalCapacityConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   FlinkJvmMemoryMappedTotalCapacityMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.mapped.total_capacity metric with initial data.
@@ -1062,7 +1062,7 @@ func (m *metricFlinkJvmMemoryMappedTotalCapacity) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricFlinkJvmMemoryMappedTotalCapacity(cfg FlinkJvmMemoryMappedTotalCapacityConfig) metricFlinkJvmMemoryMappedTotalCapacity {
+func newMetricFlinkJvmMemoryMappedTotalCapacity(cfg FlinkJvmMemoryMappedTotalCapacityMetricConfig) metricFlinkJvmMemoryMappedTotalCapacity {
 	m := metricFlinkJvmMemoryMappedTotalCapacity{config: cfg}
 
 	if cfg.Enabled {
@@ -1073,9 +1073,9 @@ func newMetricFlinkJvmMemoryMappedTotalCapacity(cfg FlinkJvmMemoryMappedTotalCap
 }
 
 type metricFlinkJvmMemoryMappedUsed struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   FlinkJvmMemoryMappedUsedConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   FlinkJvmMemoryMappedUsedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.mapped.used metric with initial data.
@@ -1114,7 +1114,7 @@ func (m *metricFlinkJvmMemoryMappedUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryMappedUsed(cfg FlinkJvmMemoryMappedUsedConfig) metricFlinkJvmMemoryMappedUsed {
+func newMetricFlinkJvmMemoryMappedUsed(cfg FlinkJvmMemoryMappedUsedMetricConfig) metricFlinkJvmMemoryMappedUsed {
 	m := metricFlinkJvmMemoryMappedUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -1125,9 +1125,9 @@ func newMetricFlinkJvmMemoryMappedUsed(cfg FlinkJvmMemoryMappedUsedConfig) metri
 }
 
 type metricFlinkJvmMemoryMetaspaceCommitted struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   FlinkJvmMemoryMetaspaceCommittedConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   FlinkJvmMemoryMetaspaceCommittedMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.metaspace.committed metric with initial data.
@@ -1166,7 +1166,7 @@ func (m *metricFlinkJvmMemoryMetaspaceCommitted) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricFlinkJvmMemoryMetaspaceCommitted(cfg FlinkJvmMemoryMetaspaceCommittedConfig) metricFlinkJvmMemoryMetaspaceCommitted {
+func newMetricFlinkJvmMemoryMetaspaceCommitted(cfg FlinkJvmMemoryMetaspaceCommittedMetricConfig) metricFlinkJvmMemoryMetaspaceCommitted {
 	m := metricFlinkJvmMemoryMetaspaceCommitted{config: cfg}
 
 	if cfg.Enabled {
@@ -1177,9 +1177,9 @@ func newMetricFlinkJvmMemoryMetaspaceCommitted(cfg FlinkJvmMemoryMetaspaceCommit
 }
 
 type metricFlinkJvmMemoryMetaspaceMax struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   FlinkJvmMemoryMetaspaceMaxConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   FlinkJvmMemoryMetaspaceMaxMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.metaspace.max metric with initial data.
@@ -1218,7 +1218,7 @@ func (m *metricFlinkJvmMemoryMetaspaceMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryMetaspaceMax(cfg FlinkJvmMemoryMetaspaceMaxConfig) metricFlinkJvmMemoryMetaspaceMax {
+func newMetricFlinkJvmMemoryMetaspaceMax(cfg FlinkJvmMemoryMetaspaceMaxMetricConfig) metricFlinkJvmMemoryMetaspaceMax {
 	m := metricFlinkJvmMemoryMetaspaceMax{config: cfg}
 
 	if cfg.Enabled {
@@ -1229,9 +1229,9 @@ func newMetricFlinkJvmMemoryMetaspaceMax(cfg FlinkJvmMemoryMetaspaceMaxConfig) m
 }
 
 type metricFlinkJvmMemoryMetaspaceUsed struct {
-	data     pmetric.Metric                    // data buffer for generated metric.
-	config   FlinkJvmMemoryMetaspaceUsedConfig // metric config provided by user.
-	capacity int                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   FlinkJvmMemoryMetaspaceUsedMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.metaspace.used metric with initial data.
@@ -1270,7 +1270,7 @@ func (m *metricFlinkJvmMemoryMetaspaceUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryMetaspaceUsed(cfg FlinkJvmMemoryMetaspaceUsedConfig) metricFlinkJvmMemoryMetaspaceUsed {
+func newMetricFlinkJvmMemoryMetaspaceUsed(cfg FlinkJvmMemoryMetaspaceUsedMetricConfig) metricFlinkJvmMemoryMetaspaceUsed {
 	m := metricFlinkJvmMemoryMetaspaceUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -1281,9 +1281,9 @@ func newMetricFlinkJvmMemoryMetaspaceUsed(cfg FlinkJvmMemoryMetaspaceUsedConfig)
 }
 
 type metricFlinkJvmMemoryNonheapCommitted struct {
-	data     pmetric.Metric                       // data buffer for generated metric.
-	config   FlinkJvmMemoryNonheapCommittedConfig // metric config provided by user.
-	capacity int                                  // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   FlinkJvmMemoryNonheapCommittedMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.nonheap.committed metric with initial data.
@@ -1322,7 +1322,7 @@ func (m *metricFlinkJvmMemoryNonheapCommitted) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricFlinkJvmMemoryNonheapCommitted(cfg FlinkJvmMemoryNonheapCommittedConfig) metricFlinkJvmMemoryNonheapCommitted {
+func newMetricFlinkJvmMemoryNonheapCommitted(cfg FlinkJvmMemoryNonheapCommittedMetricConfig) metricFlinkJvmMemoryNonheapCommitted {
 	m := metricFlinkJvmMemoryNonheapCommitted{config: cfg}
 
 	if cfg.Enabled {
@@ -1333,9 +1333,9 @@ func newMetricFlinkJvmMemoryNonheapCommitted(cfg FlinkJvmMemoryNonheapCommittedC
 }
 
 type metricFlinkJvmMemoryNonheapMax struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   FlinkJvmMemoryNonheapMaxConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   FlinkJvmMemoryNonheapMaxMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.nonheap.max metric with initial data.
@@ -1374,7 +1374,7 @@ func (m *metricFlinkJvmMemoryNonheapMax) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryNonheapMax(cfg FlinkJvmMemoryNonheapMaxConfig) metricFlinkJvmMemoryNonheapMax {
+func newMetricFlinkJvmMemoryNonheapMax(cfg FlinkJvmMemoryNonheapMaxMetricConfig) metricFlinkJvmMemoryNonheapMax {
 	m := metricFlinkJvmMemoryNonheapMax{config: cfg}
 
 	if cfg.Enabled {
@@ -1385,9 +1385,9 @@ func newMetricFlinkJvmMemoryNonheapMax(cfg FlinkJvmMemoryNonheapMaxConfig) metri
 }
 
 type metricFlinkJvmMemoryNonheapUsed struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   FlinkJvmMemoryNonheapUsedConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   FlinkJvmMemoryNonheapUsedMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.memory.nonheap.used metric with initial data.
@@ -1426,7 +1426,7 @@ func (m *metricFlinkJvmMemoryNonheapUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmMemoryNonheapUsed(cfg FlinkJvmMemoryNonheapUsedConfig) metricFlinkJvmMemoryNonheapUsed {
+func newMetricFlinkJvmMemoryNonheapUsed(cfg FlinkJvmMemoryNonheapUsedMetricConfig) metricFlinkJvmMemoryNonheapUsed {
 	m := metricFlinkJvmMemoryNonheapUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -1437,9 +1437,9 @@ func newMetricFlinkJvmMemoryNonheapUsed(cfg FlinkJvmMemoryNonheapUsedConfig) met
 }
 
 type metricFlinkJvmThreadsCount struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   FlinkJvmThreadsCountConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   FlinkJvmThreadsCountMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills flink.jvm.threads.count metric with initial data.
@@ -1478,7 +1478,7 @@ func (m *metricFlinkJvmThreadsCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkJvmThreadsCount(cfg FlinkJvmThreadsCountConfig) metricFlinkJvmThreadsCount {
+func newMetricFlinkJvmThreadsCount(cfg FlinkJvmThreadsCountMetricConfig) metricFlinkJvmThreadsCount {
 	m := metricFlinkJvmThreadsCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1489,9 +1489,9 @@ func newMetricFlinkJvmThreadsCount(cfg FlinkJvmThreadsCountConfig) metricFlinkJv
 }
 
 type metricFlinkMemoryManagedTotal struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   FlinkMemoryManagedTotalConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   FlinkMemoryManagedTotalMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills flink.memory.managed.total metric with initial data.
@@ -1530,7 +1530,7 @@ func (m *metricFlinkMemoryManagedTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkMemoryManagedTotal(cfg FlinkMemoryManagedTotalConfig) metricFlinkMemoryManagedTotal {
+func newMetricFlinkMemoryManagedTotal(cfg FlinkMemoryManagedTotalMetricConfig) metricFlinkMemoryManagedTotal {
 	m := metricFlinkMemoryManagedTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1541,9 +1541,9 @@ func newMetricFlinkMemoryManagedTotal(cfg FlinkMemoryManagedTotalConfig) metricF
 }
 
 type metricFlinkMemoryManagedUsed struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   FlinkMemoryManagedUsedConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   FlinkMemoryManagedUsedMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills flink.memory.managed.used metric with initial data.
@@ -1582,7 +1582,7 @@ func (m *metricFlinkMemoryManagedUsed) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkMemoryManagedUsed(cfg FlinkMemoryManagedUsedConfig) metricFlinkMemoryManagedUsed {
+func newMetricFlinkMemoryManagedUsed(cfg FlinkMemoryManagedUsedMetricConfig) metricFlinkMemoryManagedUsed {
 	m := metricFlinkMemoryManagedUsed{config: cfg}
 
 	if cfg.Enabled {
@@ -1593,10 +1593,10 @@ func newMetricFlinkMemoryManagedUsed(cfg FlinkMemoryManagedUsedConfig) metricFli
 }
 
 type metricFlinkOperatorRecordCount struct {
-	data          pmetric.Metric                 // data buffer for generated metric.
-	config        FlinkOperatorRecordCountConfig // metric config provided by user.
-	capacity      int                            // max observed number of data points added to the metric.
-	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        FlinkOperatorRecordCountMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills flink.operator.record.count metric with initial data.
@@ -1619,10 +1619,10 @@ func (m *metricFlinkOperatorRecordCount) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, FlinkOperatorRecordCountAttributeKeyOperatorName) {
+	if slices.Contains(m.config.EnabledAttributes, FlinkOperatorRecordCountMetricAttributeKeyOperatorName) {
 		dp.Attributes().PutStr("name", operatorNameAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, FlinkOperatorRecordCountAttributeKeyRecord) {
+	if slices.Contains(m.config.EnabledAttributes, FlinkOperatorRecordCountMetricAttributeKeyRecord) {
 		dp.Attributes().PutStr("record", recordAttributeValue)
 	}
 
@@ -1676,7 +1676,7 @@ func (m *metricFlinkOperatorRecordCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkOperatorRecordCount(cfg FlinkOperatorRecordCountConfig) metricFlinkOperatorRecordCount {
+func newMetricFlinkOperatorRecordCount(cfg FlinkOperatorRecordCountMetricConfig) metricFlinkOperatorRecordCount {
 	m := metricFlinkOperatorRecordCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1687,10 +1687,10 @@ func newMetricFlinkOperatorRecordCount(cfg FlinkOperatorRecordCountConfig) metri
 }
 
 type metricFlinkOperatorWatermarkOutput struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        FlinkOperatorWatermarkOutputConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        FlinkOperatorWatermarkOutputMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills flink.operator.watermark.output metric with initial data.
@@ -1713,7 +1713,7 @@ func (m *metricFlinkOperatorWatermarkOutput) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, FlinkOperatorWatermarkOutputAttributeKeyOperatorName) {
+	if slices.Contains(m.config.EnabledAttributes, FlinkOperatorWatermarkOutputMetricAttributeKeyOperatorName) {
 		dp.Attributes().PutStr("name", operatorNameAttributeValue)
 	}
 
@@ -1767,7 +1767,7 @@ func (m *metricFlinkOperatorWatermarkOutput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkOperatorWatermarkOutput(cfg FlinkOperatorWatermarkOutputConfig) metricFlinkOperatorWatermarkOutput {
+func newMetricFlinkOperatorWatermarkOutput(cfg FlinkOperatorWatermarkOutputMetricConfig) metricFlinkOperatorWatermarkOutput {
 	m := metricFlinkOperatorWatermarkOutput{config: cfg}
 
 	if cfg.Enabled {
@@ -1778,9 +1778,9 @@ func newMetricFlinkOperatorWatermarkOutput(cfg FlinkOperatorWatermarkOutputConfi
 }
 
 type metricFlinkTaskRecordCount struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   FlinkTaskRecordCountConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   FlinkTaskRecordCountMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills flink.task.record.count metric with initial data.
@@ -1821,7 +1821,7 @@ func (m *metricFlinkTaskRecordCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricFlinkTaskRecordCount(cfg FlinkTaskRecordCountConfig) metricFlinkTaskRecordCount {
+func newMetricFlinkTaskRecordCount(cfg FlinkTaskRecordCountMetricConfig) metricFlinkTaskRecordCount {
 	m := metricFlinkTaskRecordCount{config: cfg}
 
 	if cfg.Enabled {
