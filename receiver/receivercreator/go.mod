@@ -17,13 +17,16 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.148.0
 	go.opentelemetry.io/collector/consumer v1.54.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.148.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.148.0
 	go.opentelemetry.io/collector/extension v1.54.0
 	go.opentelemetry.io/collector/otelcol v0.148.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.148.0
 	go.opentelemetry.io/collector/pdata v1.54.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.148.0
 	go.opentelemetry.io/collector/pipeline v1.54.0
 	go.opentelemetry.io/collector/receiver v1.54.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.148.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.148.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.148.0
 	go.opentelemetry.io/otel v1.42.0
 	go.uber.org/goleak v1.3.0
@@ -80,7 +83,6 @@ require (
 	go.opentelemetry.io/collector/connector/connectortest v0.148.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.148.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.148.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.148.0 // indirect
 	go.opentelemetry.io/collector/exporter v1.54.0 // indirect
 	go.opentelemetry.io/collector/exporter/exportertest v0.148.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.148.0 // indirect
@@ -90,14 +92,12 @@ require (
 	go.opentelemetry.io/collector/internal/componentalias v0.148.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.148.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.148.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.148.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.148.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.148.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.148.0 // indirect
 	go.opentelemetry.io/collector/processor v1.54.0 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.148.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.148.0 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.148.0 // indirect
 	go.opentelemetry.io/collector/service v0.148.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.22.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.18.0 // indirect
