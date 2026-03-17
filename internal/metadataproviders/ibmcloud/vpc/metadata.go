@@ -16,9 +16,9 @@ import (
 
 const (
 	metadataHost        = "api.metadata.cloud.ibm.com"
-	tokenPath           = "/instance_identity/v1/token"
+	tokenPath           = "/identity/v1/token"
 	instancePath        = "/metadata/v1/instance"
-	apiVersion          = "2022-03-08"
+	apiVersion          = "2026-01-30"
 	metadataFlavorKey   = "Metadata-Flavor"
 	metadataFlavorValue = "ibm"
 	defaultTokenTTL     = 300 // seconds

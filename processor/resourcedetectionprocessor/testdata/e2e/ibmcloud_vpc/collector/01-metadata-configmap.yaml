@@ -85,7 +85,7 @@ data:
             path = parsed.path
 
             # Token endpoint
-            if path == "/instance_identity/v1/token":
+            if path == "/identity/v1/token":
                 flavor = self.headers.get("Metadata-Flavor", "")
                 if flavor != "ibm":
                     self.send_response(400)

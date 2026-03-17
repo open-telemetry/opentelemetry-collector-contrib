@@ -23,6 +23,23 @@ func TestNewDetector(t *testing.T) {
 	require.NotNil(t, d)
 }
 
+func TestNewDetectorHTTPS(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.Protocol = "https"
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	require.NotNil(t, d)
+}
+
+func TestNewDetectorInvalidProtocol(t *testing.T) {
+	cfg := CreateDefaultConfig()
+	cfg.Protocol = "ftp"
+	d, err := NewDetector(processortest.NewNopSettings(metadata.Type), cfg)
+	require.Error(t, err)
+	require.Nil(t, d)
+	require.Contains(t, err.Error(), `invalid protocol "ftp"`)
+}
+
 func TestDetect(t *testing.T) {
 	mp := &vpcprovider.MockProvider{}
 	mp.On("InstanceMetadata").Return(&vpcprovider.InstanceMetadata{

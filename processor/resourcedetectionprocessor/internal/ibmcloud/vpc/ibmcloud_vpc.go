@@ -5,6 +5,7 @@ package vpc // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -34,6 +35,12 @@ type Detector struct {
 // NewDetector creates an IBM Cloud VPC detector.
 func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
+
+	switch cfg.Protocol {
+	case "http", "https":
+	default:
+		return nil, fmt.Errorf("invalid protocol %q: must be \"http\" or \"https\"", cfg.Protocol)
+	}
 
 	return &Detector{
 		provider: vpcprovider.NewProvider(cfg.Protocol),
