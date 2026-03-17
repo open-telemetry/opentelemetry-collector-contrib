@@ -50,7 +50,9 @@ resourceLogs:
                   intValue: "1234"
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1754284840912240000"
+            spanId: 00f067aa0ba902b7
+            timeUnixNano: "1773756771531234877"
+            traceId: 4bf92f3577b34da6a3ce929d0e0e4736
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest

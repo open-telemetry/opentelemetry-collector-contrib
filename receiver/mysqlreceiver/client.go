@@ -209,6 +209,7 @@ type querySample struct {
 	eventID            int64
 	waitEvent          string
 	waitTime           float64
+	traceparent        string
 }
 
 type topQuery struct {
@@ -776,6 +777,7 @@ func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
 			&s.eventID,
 			&s.waitEvent,
 			&s.waitTime,
+			&s.traceparent,
 		)
 		if err != nil {
 			return nil, err

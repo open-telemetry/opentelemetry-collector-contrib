@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/propagation"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
@@ -746,8 +747,13 @@ func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Times
 			m.logger.Error("Failed to obfuscate query", zap.Error(err))
 		}
 
+		carrier := propagation.MapCarrier{
+			"traceparent": sample.traceparent,
+		}
+		sampleCtx := propagation.TraceContext{}.Extract(ctx, carrier)
+
 		m.lb.RecordDbServerQuerySampleEvent(
-			ctx,
+			sampleCtx,
 			now,
 			metadata.AttributeDbSystemNameMysql,
 			sample.threadID,

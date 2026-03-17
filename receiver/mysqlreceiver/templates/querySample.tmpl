@@ -15,12 +15,16 @@ SELECT
             IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
         )
     ) AS wait_event,
-    COALESCE(wait.timer_wait/1e12, 0)
+    COALESCE(wait.timer_wait/1e12, 0),
+    COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8), '') AS traceparent
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
     LEFT JOIN performance_schema.events_waits_current AS wait ON wait.thread_id = thread.thread_id
     LEFT JOIN information_schema.processlist AS processlist on processlist.id = thread.processlist_id
+    LEFT JOIN performance_schema.user_variables_by_thread AS uvt
+        ON uvt.thread_id = thread.thread_id
+        AND uvt.VARIABLE_NAME = 'traceparent'
 WHERE
     thread.processlist_state IS NOT NULL
     AND thread.processlist_command != 'Sleep'
