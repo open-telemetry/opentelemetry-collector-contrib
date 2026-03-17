@@ -242,7 +242,7 @@ components:
     - receiver/azure_monitor
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoos
+    - receiver/cisco_os
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
