@@ -20,13 +20,13 @@ import (
 // allocations and GC overhead.
 type collector struct {
 	nextConsumer     consumer.Logs
-	eventCh          <-chan event
+	eventCh          <-chan eventWithACK
 	logger           *zap.Logger
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newCollector(eventCh <-chan event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *collector {
+func newCollector(eventCh <-chan eventWithACK, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport, telemetryBuilder *metadata.TelemetryBuilder) *collector {
 	return &collector{
 		nextConsumer:     next,
 		eventCh:          eventCh,
@@ -51,26 +51,40 @@ func (c *collector) processEvents(ctx context.Context) {
 			logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 			e.LogRecords().MoveAndAppendTo(logSlice)
 
+			// Collect ACK channels from this event and any batched events.
+			var ackChs []chan error
+			if e.ackCh != nil {
+				ackChs = append(ackChs, e.ackCh)
+			}
+
 			// Pull out anything waiting on the eventCh to get better
 			// efficiency on LogResource allocations.
-			c.fillBufferUntilChanEmpty(logSlice)
+			ackChs = c.fillBufferUntilChanEmpty(logSlice, ackChs)
 
 			logRecordCount := out.LogRecordCount()
 			c.telemetryBuilder.FluentRecordsGenerated.Add(ctx, int64(logRecordCount))
 			obsCtx := c.obsrecv.StartLogsOp(ctx)
 			err := c.nextConsumer.ConsumeLogs(obsCtx, out)
 			c.obsrecv.EndLogsOp(obsCtx, "fluent", logRecordCount, err)
+
+			// Signal all waiting servers whether processing succeeded.
+			for _, ackCh := range ackChs {
+				ackCh <- err
+			}
 		}
 	}
 }
 
-func (c *collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice) {
+func (c *collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice, ackChs []chan error) []chan error {
 	for {
 		select {
 		case e := <-c.eventCh:
 			e.LogRecords().MoveAndAppendTo(dest)
+			if e.ackCh != nil {
+				ackChs = append(ackChs, e.ackCh)
+			}
 		default:
-			return
+			return ackChs
 		}
 	}
 }

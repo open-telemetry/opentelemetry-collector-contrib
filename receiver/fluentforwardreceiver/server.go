@@ -25,14 +25,14 @@ import (
 const readBufferSize = 10 * 1024
 
 type server struct {
-	outCh            chan<- event
+	outCh            chan<- eventWithACK
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
 	conns            map[net.Conn]struct{}
 	mu               sync.Mutex
 }
 
-func newServer(outCh chan<- event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
+func newServer(outCh chan<- eventWithACK, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
 	return &server{
 		outCh:            outCh,
 		logger:           logger,
@@ -125,16 +125,36 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 
 		s.telemetryBuilder.FluentEventsParsed.Add(ctx, 1)
 
-		s.outCh <- e
+		chunk := e.Chunk()
 
-		// We must acknowledge the 'chunk' option if given. We could do this in
-		// another goroutine if it is too much of a bottleneck to reading
-		// messages -- this is the only thing that sends data back to the
-		// client.
-		if e.Chunk() != "" {
-			err := msgp.Encode(conn, internal.AckResponse{Ack: e.Chunk()})
-			if err != nil {
-				return fmt.Errorf("failed to acknowledge chunk %s: %w", e.Chunk(), err)
+		var ackCh chan error
+		if chunk != "" {
+			ackCh = make(chan error, 1)
+		}
+
+		s.outCh <- eventWithACK{event: e, ackCh: ackCh}
+
+		// Wait for the pipeline to finish processing before sending the ACK.
+		// Per the Fluent Forward Protocol Specification v1, the server MUST
+		// respond with an ACK only after processing the chunk. This enables
+		// proper backpressure: if ConsumeLogs() fails (e.g. memory_limiter
+		// refuses data), we don't ACK, so the client retains the chunk and
+		// can apply backpressure upstream.
+		if ackCh != nil {
+			select {
+			case err := <-ackCh:
+				if err != nil {
+					s.logger.Debug("Pipeline rejected data, not sending ACK",
+						zap.String("chunk", chunk),
+						zap.Error(err))
+					continue
+				}
+				err = msgp.Encode(conn, internal.AckResponse{Ack: chunk})
+				if err != nil {
+					return fmt.Errorf("failed to acknowledge chunk %s: %w", chunk, err)
+				}
+			case <-ctx.Done():
+				return ctx.Err()
 			}
 		}
 	}

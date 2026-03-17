@@ -31,6 +31,15 @@ type event interface {
 	Compressed() string
 }
 
+// eventWithACK wraps an event with an optional channel that the collector
+// uses to signal back to the server whether pipeline processing succeeded.
+// This allows the server to defer sending the Fluent Forward ACK until after
+// ConsumeLogs() completes, enabling proper backpressure.
+type eventWithACK struct {
+	event
+	ackCh chan error // nil if no ACK is needed
+}
+
 type optionsMap map[string]any
 
 // Chunk returns the `chunk` option or blank string if it was not set.

@@ -5,11 +5,13 @@ package fluentforwardreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -435,6 +438,37 @@ func TestReceiverShutdownRefusesNewConnections(t *testing.T) {
 	require.Error(t, err)
 }
 
+func setupServerWithConsumer(t *testing.T, next consumer.Logs) (func() net.Conn, *observer.ObservedLogs, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(t.Context())
+
+	logCore, logObserver := observer.New(zap.DebugLevel)
+	logger := zap.New(logCore)
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.Logger = logger
+
+	conf := &Config{
+		ListenAddress: "127.0.0.1:0",
+	}
+
+	recv, err := newFluentReceiver(set, conf, next)
+	require.NoError(t, err)
+	require.NoError(t, recv.Start(ctx, componenttest.NewNopHost()))
+
+	connect := func() net.Conn {
+		conn, err := net.Dial("tcp", recv.(*fluentReceiver).listener.Addr().String())
+		require.NoError(t, err)
+		return conn
+	}
+
+	go func() {
+		<-ctx.Done()
+		assert.NoError(t, recv.Shutdown(ctx))
+	}()
+
+	return connect, logObserver, cancel
+}
+
 // TestReceiverShutdownClosesExistingConnections verifies the graceful shutdown of a receiver, ensuring existing connections will be closed.
 func TestReceiverShutdownClosesExistingConnections(t *testing.T) {
 	connect, next, _, cancel, receiver := setupServer(t)
@@ -461,4 +495,104 @@ func TestReceiverShutdownClosesExistingConnections(t *testing.T) {
 		_, err := conn.Write(eventBytes)
 		return err != nil
 	}, 5*time.Second, 1*time.Second)
+}
+
+func makeSampleEventWithChunk(tag, chunk string) []byte {
+	var b []byte
+
+	b = msgp.AppendArrayHeader(b, 4)
+	b = msgp.AppendString(b, tag)
+	b = msgp.AppendInt(b, 5000)
+	b = msgp.AppendMapHeader(b, 1)
+	b = msgp.AppendString(b, "a")
+	b = msgp.AppendFloat64(b, 5.0)
+	b = msgp.AppendMapStrStr(b, map[string]string{"chunk": chunk})
+	return b
+}
+
+// TestPipelineRejectionWithholdsACK verifies that when the pipeline rejects
+// data (e.g. memory_limiter refuses it), the ACK is not sent to the client.
+func TestPipelineRejectionWithholdsACK(t *testing.T) {
+	errConsumer := consumertest.NewErr(errors.New("pipeline full"))
+	connect, observedLogs, cancel := setupServerWithConsumer(t, errConsumer)
+	defer cancel()
+
+	conn := connect()
+	eventBytes := makeSampleEventWithChunk("my-tag", "chunk-123")
+	n, err := conn.Write(eventBytes)
+	require.NoError(t, err)
+	require.Equal(t, len(eventBytes), n)
+
+	// Wait for the pipeline to actually reject the data before checking
+	// that no ACK was sent. This ordering ensures the timeout below is
+	// meaningful (the rejection happened, not that processing hasn't started).
+	require.Eventually(t, func() bool {
+		return len(observedLogs.FilterMessageSnippet("Pipeline rejected data").All()) > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	// The server should NOT send an ACK when the pipeline rejects data.
+	// Set a short read deadline — we expect a timeout, not a response.
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(500*time.Millisecond)))
+	resp := make([]byte, 1)
+	_, err = conn.Read(resp)
+	require.Error(t, err)
+	require.True(t, isTimeout(err), "expected timeout, got: %v", err)
+}
+
+// TestContextCancellationDuringACKWait verifies that if the context is
+// cancelled while the server is waiting for the pipeline to process a
+// chunked event, the connection handler exits cleanly.
+func TestContextCancellationDuringACKWait(t *testing.T) {
+	// blockingConsumer blocks until the gate channel is closed.
+	gate := make(chan struct{})
+	t.Cleanup(func() { close(gate) })
+	blockingConsumer := &gatedLogsConsumer{gate: gate}
+
+	connect, _, cancel := setupServerWithConsumer(t, blockingConsumer)
+
+	conn := connect()
+	eventBytes := makeSampleEventWithChunk("my-tag", "chunk-456")
+	n, err := conn.Write(eventBytes)
+	require.NoError(t, err)
+	require.Equal(t, len(eventBytes), n)
+
+	// Wait for the consumer to be called (server is now blocked on ackCh).
+	require.Eventually(t, func() bool {
+		return blockingConsumer.called()
+	}, 5*time.Second, 10*time.Millisecond)
+
+	// Cancel the context — this should unblock the server.
+	cancel()
+
+	// The connection should be closed by the server.
+	waitForConnectionClose(t, conn)
+}
+
+// gatedLogsConsumer blocks ConsumeLogs until the gate channel is closed.
+type gatedLogsConsumer struct {
+	gate      chan struct{}
+	wasCalled atomic.Bool
+}
+
+func (c *gatedLogsConsumer) ConsumeLogs(ctx context.Context, _ plog.Logs) error {
+	c.wasCalled.Store(true)
+	select {
+	case <-c.gate:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (*gatedLogsConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (c *gatedLogsConsumer) called() bool {
+	return c.wasCalled.Load()
+}
+
+func isTimeout(err error) bool {
+	var netErr net.Error
+	return errors.As(err, &netErr) && netErr.Timeout()
 }
