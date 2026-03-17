@@ -3,16 +3,18 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// SystemLinuxMemoryAvailableMetricConfig provides config for the system.linux.memory.available metric.
+type SystemLinuxMemoryAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemLinuxMemoryAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -26,63 +28,423 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// SystemLinuxMemoryDirtyMetricConfig provides config for the system.linux.memory.dirty metric.
+type SystemLinuxMemoryDirtyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemLinuxMemoryDirtyMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryLimitMetricConfig provides config for the system.memory.limit metric.
+type SystemMemoryLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryLinuxHugepagesLimitMetricConfig provides config for the system.memory.linux.hugepages.limit metric.
+type SystemMemoryLinuxHugepagesLimitMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLinuxHugepagesLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryLinuxHugepagesPageSizeMetricConfig provides config for the system.memory.linux.hugepages.page_size metric.
+type SystemMemoryLinuxHugepagesPageSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLinuxHugepagesPageSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryLinuxHugepagesReservedMetricConfig provides config for the system.memory.linux.hugepages.reserved metric.
+type SystemMemoryLinuxHugepagesReservedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLinuxHugepagesReservedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryLinuxHugepagesSurplusMetricConfig provides config for the system.memory.linux.hugepages.surplus metric.
+type SystemMemoryLinuxHugepagesSurplusMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLinuxHugepagesSurplusMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryLinuxHugepagesUsageMetricAttributeKey specifies the key of an attribute for the system.memory.linux.hugepages.usage metric.
+type SystemMemoryLinuxHugepagesUsageMetricAttributeKey string
+
+const (
+	SystemMemoryLinuxHugepagesUsageMetricAttributeKeySystemMemoryLinuxHugepagesState SystemMemoryLinuxHugepagesUsageMetricAttributeKey = "system.memory.linux.hugepages.state"
+)
+
+// SystemMemoryLinuxHugepagesUsageMetricConfig provides config for the system.memory.linux.hugepages.usage metric.
+type SystemMemoryLinuxHugepagesUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemMemoryLinuxHugepagesUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemMemoryLinuxHugepagesUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemMemoryLinuxHugepagesUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemMemoryLinuxHugepagesUsageMetricAttributeKeySystemMemoryLinuxHugepagesState:
+		default:
+			return fmt.Errorf("metric system.memory.linux.hugepages.usage doesn't have an attribute %v, valid attributes: [system.memory.linux.hugepages.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey specifies the key of an attribute for the system.memory.linux.hugepages.utilization metric.
+type SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey string
+
+const (
+	SystemMemoryLinuxHugepagesUtilizationMetricAttributeKeySystemMemoryLinuxHugepagesState SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey = "system.memory.linux.hugepages.state"
+)
+
+// SystemMemoryLinuxHugepagesUtilizationMetricConfig provides config for the system.memory.linux.hugepages.utilization metric.
+type SystemMemoryLinuxHugepagesUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemMemoryLinuxHugepagesUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemMemoryLinuxHugepagesUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemMemoryLinuxHugepagesUtilizationMetricAttributeKeySystemMemoryLinuxHugepagesState:
+		default:
+			return fmt.Errorf("metric system.memory.linux.hugepages.utilization doesn't have an attribute %v, valid attributes: [system.memory.linux.hugepages.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemMemoryLinuxSharedMetricConfig provides config for the system.memory.linux.shared metric.
+type SystemMemoryLinuxSharedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLinuxSharedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryPageSizeMetricConfig provides config for the system.memory.page_size metric.
+type SystemMemoryPageSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryPageSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryUsageMetricAttributeKey specifies the key of an attribute for the system.memory.usage metric.
+type SystemMemoryUsageMetricAttributeKey string
+
+const (
+	SystemMemoryUsageMetricAttributeKeyState SystemMemoryUsageMetricAttributeKey = "state"
+)
+
+// SystemMemoryUsageMetricConfig provides config for the system.memory.usage metric.
+type SystemMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemMemoryUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemMemoryUsageMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.memory.usage doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemMemoryUtilizationMetricAttributeKey specifies the key of an attribute for the system.memory.utilization metric.
+type SystemMemoryUtilizationMetricAttributeKey string
+
+const (
+	SystemMemoryUtilizationMetricAttributeKeyState SystemMemoryUtilizationMetricAttributeKey = "state"
+)
+
+// SystemMemoryUtilizationMetricConfig provides config for the system.memory.utilization metric.
+type SystemMemoryUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemMemoryUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemMemoryUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemMemoryUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemMemoryUtilizationMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.memory.utilization doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for memory metrics.
 type MetricsConfig struct {
-	SystemLinuxMemoryAvailable            MetricConfig `mapstructure:"system.linux.memory.available"`
-	SystemLinuxMemoryDirty                MetricConfig `mapstructure:"system.linux.memory.dirty"`
-	SystemMemoryLimit                     MetricConfig `mapstructure:"system.memory.limit"`
-	SystemMemoryLinuxHugepagesLimit       MetricConfig `mapstructure:"system.memory.linux.hugepages.limit"`
-	SystemMemoryLinuxHugepagesPageSize    MetricConfig `mapstructure:"system.memory.linux.hugepages.page_size"`
-	SystemMemoryLinuxHugepagesReserved    MetricConfig `mapstructure:"system.memory.linux.hugepages.reserved"`
-	SystemMemoryLinuxHugepagesSurplus     MetricConfig `mapstructure:"system.memory.linux.hugepages.surplus"`
-	SystemMemoryLinuxHugepagesUsage       MetricConfig `mapstructure:"system.memory.linux.hugepages.usage"`
-	SystemMemoryLinuxHugepagesUtilization MetricConfig `mapstructure:"system.memory.linux.hugepages.utilization"`
-	SystemMemoryLinuxShared               MetricConfig `mapstructure:"system.memory.linux.shared"`
-	SystemMemoryPageSize                  MetricConfig `mapstructure:"system.memory.page_size"`
-	SystemMemoryUsage                     MetricConfig `mapstructure:"system.memory.usage"`
-	SystemMemoryUtilization               MetricConfig `mapstructure:"system.memory.utilization"`
+	SystemLinuxMemoryAvailable            SystemLinuxMemoryAvailableMetricConfig            `mapstructure:"system.linux.memory.available"`
+	SystemLinuxMemoryDirty                SystemLinuxMemoryDirtyMetricConfig                `mapstructure:"system.linux.memory.dirty"`
+	SystemMemoryLimit                     SystemMemoryLimitMetricConfig                     `mapstructure:"system.memory.limit"`
+	SystemMemoryLinuxHugepagesLimit       SystemMemoryLinuxHugepagesLimitMetricConfig       `mapstructure:"system.memory.linux.hugepages.limit"`
+	SystemMemoryLinuxHugepagesPageSize    SystemMemoryLinuxHugepagesPageSizeMetricConfig    `mapstructure:"system.memory.linux.hugepages.page_size"`
+	SystemMemoryLinuxHugepagesReserved    SystemMemoryLinuxHugepagesReservedMetricConfig    `mapstructure:"system.memory.linux.hugepages.reserved"`
+	SystemMemoryLinuxHugepagesSurplus     SystemMemoryLinuxHugepagesSurplusMetricConfig     `mapstructure:"system.memory.linux.hugepages.surplus"`
+	SystemMemoryLinuxHugepagesUsage       SystemMemoryLinuxHugepagesUsageMetricConfig       `mapstructure:"system.memory.linux.hugepages.usage"`
+	SystemMemoryLinuxHugepagesUtilization SystemMemoryLinuxHugepagesUtilizationMetricConfig `mapstructure:"system.memory.linux.hugepages.utilization"`
+	SystemMemoryLinuxShared               SystemMemoryLinuxSharedMetricConfig               `mapstructure:"system.memory.linux.shared"`
+	SystemMemoryPageSize                  SystemMemoryPageSizeMetricConfig                  `mapstructure:"system.memory.page_size"`
+	SystemMemoryUsage                     SystemMemoryUsageMetricConfig                     `mapstructure:"system.memory.usage"`
+	SystemMemoryUtilization               SystemMemoryUtilizationMetricConfig               `mapstructure:"system.memory.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemLinuxMemoryAvailable: MetricConfig{
+		SystemLinuxMemoryAvailable: SystemLinuxMemoryAvailableMetricConfig{
 			Enabled: false,
 		},
-		SystemLinuxMemoryDirty: MetricConfig{
+		SystemLinuxMemoryDirty: SystemLinuxMemoryDirtyMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLimit: MetricConfig{
+		SystemMemoryLimit: SystemMemoryLimitMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLinuxHugepagesLimit: MetricConfig{
+		SystemMemoryLinuxHugepagesLimit: SystemMemoryLinuxHugepagesLimitMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLinuxHugepagesPageSize: MetricConfig{
+		SystemMemoryLinuxHugepagesPageSize: SystemMemoryLinuxHugepagesPageSizeMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLinuxHugepagesReserved: MetricConfig{
+		SystemMemoryLinuxHugepagesReserved: SystemMemoryLinuxHugepagesReservedMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLinuxHugepagesSurplus: MetricConfig{
+		SystemMemoryLinuxHugepagesSurplus: SystemMemoryLinuxHugepagesSurplusMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLinuxHugepagesUsage: MetricConfig{
+		SystemMemoryLinuxHugepagesUsage: SystemMemoryLinuxHugepagesUsageMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemMemoryLinuxHugepagesUsageMetricAttributeKey{SystemMemoryLinuxHugepagesUsageMetricAttributeKeySystemMemoryLinuxHugepagesState},
+		},
+		SystemMemoryLinuxHugepagesUtilization: SystemMemoryLinuxHugepagesUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemMemoryLinuxHugepagesUtilizationMetricAttributeKey{SystemMemoryLinuxHugepagesUtilizationMetricAttributeKeySystemMemoryLinuxHugepagesState},
+		},
+		SystemMemoryLinuxShared: SystemMemoryLinuxSharedMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLinuxHugepagesUtilization: MetricConfig{
+		SystemMemoryPageSize: SystemMemoryPageSizeMetricConfig{
 			Enabled: false,
 		},
-		SystemMemoryLinuxShared: MetricConfig{
-			Enabled: false,
+		SystemMemoryUsage: SystemMemoryUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 		},
-		SystemMemoryPageSize: MetricConfig{
-			Enabled: false,
-		},
-		SystemMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		SystemMemoryUtilization: MetricConfig{
-			Enabled: false,
+		SystemMemoryUtilization: SystemMemoryUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemMemoryUtilizationMetricAttributeKey{SystemMemoryUtilizationMetricAttributeKeyState},
 		},
 	}
 }

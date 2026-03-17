@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: cloud.platform
           value:
-            stringValue: azure_aks
+            stringValue: azure.aks
         - key: cloud.provider
           value:
             stringValue: azure

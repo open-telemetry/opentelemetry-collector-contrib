@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -173,6 +174,27 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestFetchContainerStatsAsJSONWithSlowResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.Header().Set("Content-Type", "application/json")
+			w.(http.Flusher).Flush()
+			time.Sleep(10 * time.Millisecond)
+			_, _ = w.Write([]byte(`{"cpu_stats":{},"memory_stats":{}}`))
+		}
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+
+	stats, err := cli.FetchContainerStatsAsJSON(t.Context(), Container{
+		ContainerJSON: &ctypes.InspectResponse{ContainerJSONBase: &ctypes.ContainerJSONBase{ID: "test"}},
+	})
+	require.NoError(t, err, "should not fail with context canceled")
+	require.NotNil(t, stats)
+}
+
 func TestEventLoopHandlesError(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2) // confirm retry occurs
@@ -226,4 +248,47 @@ func portableEndpoint(addr string) string {
 		endpoint = fmt.Sprintf("npipe://%s", strings.ReplaceAll(addr, "\\", "/"))
 	}
 	return endpoint
+}
+
+func TestAPIVersionNegotiation(t *testing.T) {
+	listener, addr := testListener(t)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	config := &Config{
+		Endpoint:         portableEndpoint(addr),
+		Timeout:          50 * time.Millisecond,
+		DockerAPIVersion: "", // empty triggers auto-negotiation
+	}
+
+	cli, err := NewDockerClient(config, zap.NewNop())
+	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+	// Simulate a daemon ping response with API version "1.45".
+	cli.client.NegotiateAPIVersionPing(dtypes.Ping{APIVersion: "1.45"})
+	assert.Equal(t, "1.45", cli.client.ClientVersion())
+}
+
+func TestExplicitAPIVersion(t *testing.T) {
+	listener, addr := testListener(t)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	config := &Config{
+		Endpoint:         portableEndpoint(addr),
+		Timeout:          50 * time.Millisecond,
+		DockerAPIVersion: "1.44",
+	}
+
+	cli, err := NewDockerClient(config, zap.NewNop())
+	assert.NotNil(t, cli)
+	assert.NoError(t, err)
+	assert.Equal(t, "1.44", cli.client.ClientVersion())
+}
+
+func TestDefaultConfigUsesNegotiation(t *testing.T) {
+	config := NewDefaultConfig()
+	assert.Empty(t, config.DockerAPIVersion, "Default config should have empty DockerAPIVersion for auto-negotiation")
 }
