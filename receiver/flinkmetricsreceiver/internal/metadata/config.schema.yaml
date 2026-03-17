@@ -193,6 +193,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+                - "record"
+            default:
+              - "name"
+              - "record"
       flink.operator.watermark.output:
         description: "FlinkOperatorWatermarkOutputMetricConfig provides config for the flink.operator.watermark.output metric."
         type: object
@@ -200,6 +218,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "name"
+            default:
+              - "name"
       flink.task.record.count:
         description: "FlinkTaskRecordCountMetricConfig provides config for the flink.task.record.count metric."
         type: object
