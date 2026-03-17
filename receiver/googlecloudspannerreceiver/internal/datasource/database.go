@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"cloud.google.com/go/spanner"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
@@ -34,7 +35,12 @@ func NewDatabase(ctx context.Context, databaseID *DatabaseID, credentialsFilePat
 		if err != nil {
 			return nil, err
 		}
-		client, err = spanner.NewClient(ctx, databaseID.ID(), option.WithCredentialsJSON(credentialsJSON))
+		var creds *google.Credentials
+		creds, err = google.CredentialsFromJSONWithType(ctx, credentialsJSON, google.ServiceAccount, spanner.Scope)
+		if err != nil {
+			return nil, err
+		}
+		client, err = spanner.NewClient(ctx, databaseID.ID(), option.WithCredentials(creds))
 	} else {
 		// Fallback to Application Default Credentials(https://google.aip.dev/auth/4110)
 		client, err = spanner.NewClient(ctx, databaseID.ID())
