@@ -137,3 +137,92 @@ func TestGetMetadata(t *testing.T) {
 		})
 	}
 }
+
+// TestGetMetadataWithDigestOnlyStatus tests the scenario where the container runtime
+// reports only the digest in ContainerStatus.Image (e.g., on EKS), but the full
+// image reference with tag is available in the pod spec.
+// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46541
+func TestGetMetadataWithDigestOnlyStatus(t *testing.T) {
+	refTime := v1.Now()
+
+	// Pod with container spec that has full image reference
+	pod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+			UID:       types.UID("test-pod-uid"),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+			Containers: []corev1.Container{
+				{
+					Name:  "my-container",
+					Image: "registry.example.com/myapp:v1.2.3@sha256:abc123def456",
+				},
+			},
+		},
+	}
+
+	// ContainerStatus with digest-only image (as reported by some runtimes like EKS)
+	cs := corev1.ContainerStatus{
+		State: corev1.ContainerState{
+			Running: &corev1.ContainerStateRunning{
+				StartedAt: refTime,
+			},
+		},
+		Name:        "my-container",
+		ContainerID: "containerd://abc123",
+		Image:       "sha256:abc123def456", // Digest-only, as reported by EKS
+	}
+
+	logger := zap.NewNop()
+	md := GetMetadata(pod, cs, logger)
+
+	require.NotNil(t, md)
+	// Should use the image from spec, not the digest-only status
+	assert.Equal(t, "registry.example.com/myapp", md.Metadata[containerImageName])
+	assert.Equal(t, "v1.2.3", md.Metadata[containerImageTag])
+}
+
+// TestGetMetadataWithInitContainer tests that init containers are also handled correctly.
+func TestGetMetadataWithInitContainer(t *testing.T) {
+	refTime := v1.Now()
+
+	pod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+			UID:       types.UID("test-pod-uid"),
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+			InitContainers: []corev1.Container{
+				{
+					Name:  "init-container",
+					Image: "busybox:1.35",
+				},
+			},
+		},
+	}
+
+	cs := corev1.ContainerStatus{
+		State: corev1.ContainerState{
+			Terminated: &corev1.ContainerStateTerminated{
+				Reason:     "Completed",
+				StartedAt:  refTime,
+				FinishedAt: refTime,
+				ExitCode:   0,
+			},
+		},
+		Name:        "init-container",
+		ContainerID: "containerd://init123",
+		Image:       "sha256:busyboxdigest",
+	}
+
+	logger := zap.NewNop()
+	md := GetMetadata(pod, cs, logger)
+
+	require.NotNil(t, md)
+	assert.Equal(t, "busybox", md.Metadata[containerImageName])
+	assert.Equal(t, "1.35", md.Metadata[containerImageTag])
+}

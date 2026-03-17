@@ -80,14 +80,16 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 
 	rb := mb.NewResourceBuilder()
 	var containerID string
-	var imageStr string
+	// Use the image from container spec, not status.
+	// On some runtimes (e.g., EKS), ContainerStatus.Image may only contain
+	// the digest (sha256:...) instead of the full image reference with tag.
+	imageStr := c.Image
 	for i := range pod.Status.ContainerStatuses {
 		cs := pod.Status.ContainerStatuses[i]
 		if cs.Name != c.Name {
 			continue
 		}
 		containerID = cs.ContainerID
-		imageStr = cs.Image
 		mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount)) //nolint:staticcheck
 		mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))     //nolint:staticcheck
 		if cs.LastTerminationState.Terminated != nil {
@@ -148,8 +150,15 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger) *metadata.KubernetesMetadata {
 	mdata := map[string]string{}
 
-	imageStr := cs.Image
-	image, err := docker.ParseImageName(cs.Image)
+	// Use the image from container spec, not status.
+	// On some runtimes (e.g., EKS), ContainerStatus.Image may only contain
+	// the digest (sha256:...) instead of the full image reference with tag.
+	imageStr := getImageFromSpec(pod, cs.Name)
+	if imageStr == "" {
+		// Fallback to status image if spec not found
+		imageStr = cs.Image
+	}
+	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
 		docker.LogParseError(err, imageStr, logger)
 	} else {
@@ -202,4 +211,21 @@ var re = regexp.MustCompile(`^[\w_-]+://`)
 // stripContainerID returns a pure container id without the runtime scheme://.
 func stripContainerID(id string) string {
 	return re.ReplaceAllString(id, "")
+}
+
+// getImageFromSpec returns the image string from the pod spec for a given container name.
+// This is preferred over ContainerStatus.Image because some runtimes (e.g., EKS) may
+// report only the digest in the status field instead of the full image reference.
+func getImageFromSpec(pod *corev1.Pod, containerName string) string {
+	for i := range pod.Spec.Containers {
+		if pod.Spec.Containers[i].Name == containerName {
+			return pod.Spec.Containers[i].Image
+		}
+	}
+	for i := range pod.Spec.InitContainers {
+		if pod.Spec.InitContainers[i].Name == containerName {
+			return pod.Spec.InitContainers[i].Image
+		}
+	}
+	return ""
 }
