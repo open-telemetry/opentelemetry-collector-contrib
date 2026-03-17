@@ -119,7 +119,7 @@ jobs:
         with:
           go-version: oldstable
       - name: Run `govulncheck`
-        run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
+        run: make gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks:
     runs-on: ubuntu-24.04
