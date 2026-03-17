@@ -85,6 +85,16 @@ var (
 	// TODO: move these to config with default values
 	defaultPodDeleteGracePeriod = time.Second * 120
 	watchSyncPeriod             = time.Minute * 5
+
+	// DeploymentNameFromReplicaSetRegex extracts deployment name from replicaset name by
+	// matching the pod-template-hash suffix (1-10 alphanumeric chars). ReplicaSets created
+	// by Deployments follow the pattern: <deployment-name>-<pod-template-hash>.
+	DeploymentNameFromReplicaSetRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]{1,10}$`)
+
+	// CronJobNameFromJobRegex extracts cronjob name from job name by matching the numeric
+	// suffix (1-11 digits) appended by the CronJob controller. Job names follow the
+	// pattern: <cronjob-name>-<numeric-suffix>.
+	CronJobNameFromJobRegex = regexp.MustCompile(`^(.*)-\d{1,11}$`)
 )
 
 // Client defines the main interface that allows querying pods by metadata.

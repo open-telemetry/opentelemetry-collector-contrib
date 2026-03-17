@@ -4094,19 +4094,19 @@ func TestExtractDeploymentNameFromReplicaSet(t *testing.T) {
 			expected:       "",
 		},
 		{
-			name:           "replicaset name with short hash",
+			name:           "replicaset name with short hash (1-10 chars accepted)",
 			replicaSetName: "my-deployment-7b9f4c",
-			expected:       "",
+			expected:       "my-deployment",
 		},
 		{
-			name:           "replicaset name with long hash",
+			name:           "replicaset name with long hash (suffix >10 chars, regex matches last 1-10)",
 			replicaSetName: "my-deployment-7b9f4c8d5e123",
-			expected:       "",
+			expected:       "my-deployment-7b9f4c8d5",
 		},
 		{
-			name:           "replicaset name with uppercase in hash",
+			name:           "replicaset name with uppercase in hash (alphanumeric 1-10)",
 			replicaSetName: "my-deployment-7B9F4C8D5E",
-			expected:       "",
+			expected:       "my-deployment",
 		},
 		{
 			name:           "replicaset name with special characters in hash",
@@ -4133,6 +4133,27 @@ func TestExtractDeploymentNameFromReplicaSet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := extractDeploymentNameFromReplicaSet(tt.replicaSetName)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestExtractCronJobNameFromJobName(t *testing.T) {
+	tests := []struct {
+		name     string
+		jobName  string
+		expected string
+	}{
+		{"standard numeric suffix", "my-cronjob-1234567890", "my-cronjob"},
+		{"single digit suffix", "job-1", "job"},
+		{"11 digit suffix", "cronjob-12345678901", "cronjob"},
+		{"no suffix", "barejob", ""},
+		{"empty", "", ""},
+		{"suffix with 12 digits (no match for 1-11)", "job-123456789012", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractCronJobNameFromJobName(tt.jobName)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

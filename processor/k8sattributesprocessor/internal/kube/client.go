@@ -95,19 +95,13 @@ type WatchClient struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-// Extract replicaset name from the pod name. Pod name is created using
-// format: [deployment-name]-[Random-String-For-ReplicaSet]
-var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
-
-// Extract CronJob name from the Job name. Job name is created using
-// format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
-
-// Extract Deployment name from the ReplicaSet name. Deployment name is created using
-// format: [deployment-name]-[hash]
-var deploymentHashSuffixPattern = regexp.MustCompile(`^[a-z0-9]{10}$`)
-
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
+
+// jobNameLabel is the standard label set by the Job controller on Pods (batch.kubernetes.io/job-name).
+const jobNameLabel = "batch.kubernetes.io/job-name"
+
+// podTemplateHashLabel is the label set by the ReplicaSet controller on Pods (pod-template-hash).
+const podTemplateHashLabel = "pod-template-hash"
 
 type InformersFactoryList struct {
 	newInformer           InformerProvider
@@ -139,8 +133,8 @@ func New(
 		Filters:                filters,
 		Associations:           associations,
 		Exclude:                exclude,
-		replicasetRegex:        rRegex,
-		cronJobRegex:           cronJobRegex,
+		replicasetRegex:        DeploymentNameFromReplicaSetRegex,
+		cronJobRegex:           CronJobNameFromJobRegex,
 		stopCh:                 make(chan struct{}),
 		telemetryBuilder:       telemetryBuilder,
 		waitForMetadata:        waitForMetadata,
@@ -919,12 +913,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
-					var deploymentName string
-					if c.Rules.DeploymentNameFromReplicaSet {
-						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						deploymentName = replicaset.Deployment.Name
-					}
+					deploymentName := c.resolveDeploymentNameFromReplicaSet(pod, ref)
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {
 							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
@@ -967,22 +956,22 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.JobUID {
 					tags[string(conventions.K8SJobUIDKey)] = string(ref.UID)
 				}
+				jobName := c.resolveJobNameFromPod(pod, ref.Name)
 				if c.Rules.JobName {
-					tags[string(conventions.K8SJobNameKey)] = ref.Name
+					tags[string(conventions.K8SJobNameKey)] = jobName
 				}
 				if c.Rules.ServiceName {
-					tags[string(conventions.ServiceNameKey)] = ref.Name
+					tags[string(conventions.ServiceNameKey)] = jobName
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
-					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-					if len(parts) == 2 {
-						name := parts[1]
+					cronJobName := extractCronJobNameFromJobName(jobName)
+					if cronJobName != "" {
 						if c.Rules.CronJobName {
-							tags[string(conventions.K8SCronJobNameKey)] = name
+							tags[string(conventions.K8SCronJobNameKey)] = cronJobName
 						}
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
-							tags[string(conventions.ServiceNameKey)] = name
+							tags[string(conventions.ServiceNameKey)] = cronJobName
 						}
 					}
 				}
@@ -1133,7 +1122,11 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		}
 	}
 
-	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
+	// Preserve labels when extracting from them (incl. pod-template-hash and job-name for tiered resolution)
+	needLabels := len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion ||
+		(rules.DeploymentNameFromReplicaSet && (rules.DeploymentName || rules.ServiceName)) ||
+		rules.CronJobName || rules.JobName
+	if needLabels {
 		transformedPod.Labels = maps.Clone(pod.Labels)
 	}
 
@@ -1975,25 +1968,56 @@ func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	return strings.Join(resNames, ".")
 }
 
-// extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
-// by trimming the pod template hash suffix. ReplicaSets created by Deployments follow the pattern:
-// <deployment-name>-<pod-template-hash> where pod-template-hash is a 10-character alphanumeric string.
+// resolveDeploymentNameFromReplicaSet returns the deployment name using a tiered approach:
+// 1) cache (ReplicaSet informer) if available, 2) pod-template-hash label with TrimSuffix, 3) regex fallback.
+func (c *WatchClient) resolveDeploymentNameFromReplicaSet(pod *api_v1.Pod, ref meta_v1.OwnerReference) string {
+	// Step 1 (Cache): use informer data when available
+	if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok && replicaset.Deployment.Name != "" {
+		return replicaset.Deployment.Name
+	}
+	// Step 2 (Label heuristic): use pod-template-hash label as exact suffix to trim
+	if c.Rules.DeploymentNameFromReplicaSet {
+		if hash, ok := pod.Labels[podTemplateHashLabel]; ok && hash != "" {
+			suffix := "-" + hash
+			if strings.HasSuffix(ref.Name, suffix) {
+				if name := strings.TrimSuffix(ref.Name, suffix); name != "" {
+					return name
+				}
+			}
+		}
+		// Step 3 (Regex heuristic): variable-length pod-template-hash (1-10 alphanumeric chars)
+		return extractDeploymentNameFromReplicaSet(ref.Name)
+	}
+	return ""
+}
+
+// resolveJobNameFromPod returns the job name: from batch.kubernetes.io/job-name label if present, else owner ref name.
+func (c *WatchClient) resolveJobNameFromPod(pod *api_v1.Pod, ownerJobName string) string {
+	if name, ok := pod.Labels[jobNameLabel]; ok && name != "" {
+		return name
+	}
+	return ownerJobName
+}
+
+// extractCronJobNameFromJobName derives the CronJob name from the job name by trimming the numeric suffix (1-11 digits).
+func extractCronJobNameFromJobName(jobName string) string {
+	parts := CronJobNameFromJobRegex.FindStringSubmatch(jobName)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return ""
+}
+
+// extractDeploymentNameFromReplicaSet extracts deployment name from replicaset name using the variable-length
+// pod-template-hash regex (1-10 alphanumeric chars). ReplicaSets created by Deployments follow the pattern:
+// <deployment-name>-<pod-template-hash>.
 func extractDeploymentNameFromReplicaSet(replicasetName string) string {
 	if replicasetName == "" {
 		return ""
 	}
-
-	parts := strings.Split(replicasetName, "-")
-	if len(parts) < 2 {
-		return ""
+	parts := DeploymentNameFromReplicaSetRegex.FindStringSubmatch(replicasetName)
+	if len(parts) == 2 {
+		return parts[1]
 	}
-
-	// Check if the last part is a valid 10-character alphanumeric hash using the pre-compiled regex.
-	lastPart := parts[len(parts)-1]
-	if deploymentHashSuffixPattern.MatchString(lastPart) {
-		// Return everything except the last part (the hash), joined back by hyphens.
-		return strings.Join(parts[:len(parts)-1], "-")
-	}
-
 	return ""
 }
