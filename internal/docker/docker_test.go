@@ -300,7 +300,7 @@ func TestDefaultConfigUsesNegotiation(t *testing.T) {
 
 func TestTLSClientConfig(t *testing.T) {
 	// Start a TLS test server
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
