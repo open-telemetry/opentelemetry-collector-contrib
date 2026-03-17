@@ -4,14 +4,17 @@
 package pprof // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/google/pprof/profile"
+	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
@@ -33,7 +36,7 @@ const (
 // attr is a helper struct to build pprofile.ProfilesDictionary.attribute_table.
 type attr struct {
 	keyStrIdx  int32
-	value      any
+	valueHash  uint64
 	unitStrIdx int32
 }
 
@@ -89,6 +92,7 @@ type lookupTables struct {
 	lastStringTableIdx int32
 
 	attributeTable        map[attr]int32
+	attributeHashToValue  map[uint64]any
 	lastAttributeTableIdx int32
 
 	stackTable        map[stackKey]stack
@@ -275,6 +279,50 @@ func (lts *lookupTables) getIdxForString(s string) int32 {
 	return lts.lastStringTableIdx
 }
 
+// getValueHash returns a unique hash for the given value.
+func getValueHash(v any) uint64 {
+	switch val := v.(type) {
+	case string:
+		return xxh3.HashString(val)
+	case int64:
+		var b [8]byte
+		binary.LittleEndian.PutUint64(b[:], uint64(val))
+		return xxh3.Hash(b[:])
+	case float64:
+		var b [8]byte
+		binary.LittleEndian.PutUint64(b[:], math.Float64bits(val))
+		return xxh3.Hash(b[:])
+	case bool:
+		if val {
+			return 1
+		}
+		return 0
+	case []int64:
+		// Cast the slice to a byte slice for zero-allocation hashing if possible,
+		// but for safety/simplicity, we process the slice:
+		h := xxh3.New()
+		var b [8]byte
+		for _, x := range val {
+			binary.LittleEndian.PutUint64(b[:], uint64(x))
+			_, _ = h.Write(b[:])
+		}
+		return h.Sum64()
+	case []float64:
+		h := xxh3.New()
+		var b [8]byte
+		for _, x := range val {
+			binary.LittleEndian.PutUint64(b[:], math.Float64bits(x))
+			_, _ = h.Write(b[:])
+		}
+		return h.Sum64()
+	case []byte:
+		return xxh3.Hash(val)
+	default:
+		// Fallback for unexpected types (nil, etc.)
+		return 0
+	}
+}
+
 // getIdxForAttribute returns the corresponding index for the attribute.
 // If the attribute does not yet exist in the cache, it will be added.
 func (lts *lookupTables) getIdxForAttribute(key string, value any) int32 {
@@ -285,31 +333,25 @@ func (lts *lookupTables) getIdxForAttribute(key string, value any) int32 {
 // If the attribute does not yet exist in the cache, it will be added.
 func (lts *lookupTables) getIdxForAttributeWithUnit(key, unit string, value any) int32 {
 	keyStrIdx := lts.getIdxForString(key)
-
+	valueHash := getValueHash(value)
 	unitStrIdx := noAttrUnit
 	if unit != "" {
 		unitStrIdx = lts.getIdxForString(unit)
 	}
 
-	for attr, idx := range lts.attributeTable {
-		if attr.keyStrIdx != keyStrIdx {
-			continue
-		}
-		if attr.unitStrIdx != unitStrIdx {
-			continue
-		}
-		if !isEqualValue(attr.value, value) {
-			continue
-		}
-		return idx
+	attrKey := attr{
+		keyStrIdx:  keyStrIdx,
+		valueHash:  valueHash,
+		unitStrIdx: unitStrIdx,
+	}
+
+	if id, exists := lts.attributeTable[attrKey]; exists {
+		return id
 	}
 
 	lts.lastAttributeTableIdx++
-	lts.attributeTable[attr{
-		keyStrIdx:  keyStrIdx,
-		value:      value,
-		unitStrIdx: unitStrIdx,
-	}] = lts.lastAttributeTableIdx
+	lts.attributeTable[attrKey] = lts.lastAttributeTableIdx
+	lts.attributeHashToValue[valueHash] = value
 	return lts.lastAttributeTableIdx
 }
 
@@ -425,19 +467,16 @@ func (lts *lookupTables) getIdxForLocation(l *profile.Location) int32 {
 	return lts.lastLocationTableIdx
 }
 
-func isEqualValue(a, b any) bool {
-	return reflect.DeepEqual(a, b)
-}
-
 // initLookupTables returns a supporting elements to construct pprofile.ProfilesDictionary.
 func initLookupTables() lookupTables {
 	lts := lookupTables{
-		mappingTable:   make(map[mm]int32),
-		locationTable:  make(map[loc]int32),
-		functionTable:  make(map[fn]int32),
-		stringTable:    make(map[string]int32),
-		attributeTable: make(map[attr]int32),
-		stackTable:     make(map[stackKey]stack),
+		mappingTable:         make(map[mm]int32),
+		locationTable:        make(map[loc]int32),
+		functionTable:        make(map[fn]int32),
+		stringTable:          make(map[string]int32),
+		attributeTable:       make(map[attr]int32),
+		attributeHashToValue: make(map[uint64]any),
+		stackTable:           make(map[stackKey]stack),
 	}
 
 	// mapping_table[0] must always be zero value (Mapping{}) and present.
@@ -530,8 +569,26 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 	}
 	for a, id := range lts.attributeTable {
 		dic.AttributeTable().At(int(id)).SetKeyStrindex(a.keyStrIdx)
-		if err := dic.AttributeTable().At(int(id)).Value().FromRaw(a.value); err != nil {
-			return err
+		attrValue := lts.attributeHashToValue[a.valueHash]
+		if attrValue == nil {
+			if id == 0 {
+				continue
+			}
+			return fmt.Errorf("invalid attribute %#v", a)
+		}
+		if reflect.TypeOf(attrValue).Kind() == reflect.Slice {
+			slice := dic.AttributeTable().At(int(id)).Value().SetEmptySlice()
+			rv := reflect.ValueOf(attrValue)
+			for i := 0; i < rv.Len(); i++ {
+				value := slice.AppendEmpty()
+				if err := value.FromRaw(rv.Index(i).Interface()); err != nil {
+					return err
+				}
+			}
+		} else {
+			if err := dic.AttributeTable().At(int(id)).Value().FromRaw(attrValue); err != nil {
+				return err
+			}
 		}
 		if a.unitStrIdx != noAttrUnit {
 			dic.AttributeTable().At(int(id)).SetUnitStrindex(a.unitStrIdx)

@@ -5,6 +5,7 @@ package datadogextension // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/componentchecker"
@@ -125,6 +127,7 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.configs.extension.API.Site,
 		fullConfig,
 		e.configs.extension.DeploymentType,
+		e.configs.extension.InstallationMethod,
 		buildInfo,
 		int64(payloadTTL),
 	)
@@ -389,6 +392,10 @@ func newExtension(
 			resourceMap[k] = v.AsString()
 			return true
 		})
+	}
+	// Ensure os.type is always present; defer to any value already set by a resource detector
+	if _, ok := resourceMap[string(conventions.OSTypeKey)]; !ok {
+		resourceMap[string(conventions.OSTypeKey)] = runtime.GOOS
 	}
 
 	// configure payloadSender struct

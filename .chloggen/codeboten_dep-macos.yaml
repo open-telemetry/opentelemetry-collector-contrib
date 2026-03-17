@@ -1,0 +1,4 @@
+change_type: 'deprecation'
+component: receiver/macos_unified_logging
+note: Introduce new snake case compliant name `macos_unified_logging`
+issues: [46729]

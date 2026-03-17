@@ -265,7 +265,14 @@ from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/U
 The list of the populated resource attributes can be found at [EC2 Detector Resource Attributes](./internal/aws/ec2/documentation.md).
 
 It also can optionally gather tags for the EC2 instance that the collector is running on.
-Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
+By default, tags are fetched via the EC2 [`DescribeTags`](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeTags.html) API,
+which requires the IAM role assigned to the EC2 instance to include the `ec2:DescribeTags` permission.
+Alternatively, tags can be fetched via the [Instance Metadata Service (IMDS)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html),
+which does not require any IAM permissions but requires [instance metadata tags to be enabled](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#allow-access-to-tags-in-IMDS) on the instance.
+
+Tag retrieval behavior is controlled by the `tags_from_imds` configuration field:
+- `false` (default): tags are fetched via the EC2 `DescribeTags` API — requires `ec2:DescribeTags` IAM permission.
+- `true`: tags are fetched via IMDS — no IAM permissions needed, but requires `InstanceMetadataTags=enabled` on the instance.
 
 EC2 custom configuration example:
 ```yaml
@@ -278,6 +285,9 @@ processors:
         - ^tag1$
         - ^tag2$
         - ^label.*$
+      # Set to true to fetch tags via IMDS instead of the EC2 DescribeTags API.
+      # Requires InstanceMetadataTags=enabled on the instance; no IAM permissions needed.
+      tags_from_imds: false
 ```
 
 If you are using a proxy server on your EC2 instance, it's important that you exempt requests for instance metadata as [described in the AWS cli user guide](https://github.com/awsdocs/aws-cli-user-guide/blob/a2393582590b64bd2a1d9978af15b350e1f9eb8e/doc_source/cli-configure-proxy.md#using-a-proxy-on-amazon-ec2-instances). Failing to do so can result in proxied or missing instance data.

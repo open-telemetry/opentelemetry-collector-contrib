@@ -57,8 +57,8 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventionsv126.DeploymentEnvironmentKey): {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
-	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
-	string(conventions.TelemetrySDKVersionKey):       {skip: true},
+	string(conventions.TelemetrySDKLanguageKey):      {to: "service.language.name"},
+	string(conventions.TelemetrySDKVersionKey):       {to: "service.language.version"},
 	string(conventions.TelemetryDistroNameKey):       {skip: true},
 	string(conventions.TelemetryDistroVersionKey):    {skip: true},
 	string(conventions.CloudPlatformKey):             {to: "cloud.service.name"},
@@ -488,7 +488,12 @@ func (ecsDataPointsEncoder) encodeMetrics(
 			*validationErrors = append(*validationErrors, err)
 			continue
 		}
-		document.AddAttribute(dp.Metric().Name(), value)
+		metric := dp.Metric()
+		metricName := metric.Name()
+		document.AddAttribute(metricName, value)
+		if name := dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeECS); name != "" {
+			document.AddDynamicTemplate(metricName, name)
+		}
 	}
 
 	err := document.Serialize(buf, true, metricsProtectedFields)

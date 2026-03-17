@@ -68,5 +68,9 @@ resourceLogs:
               stringValue: OriginError
             timeUnixNano: "1612250137364074800"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.frontdoor
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

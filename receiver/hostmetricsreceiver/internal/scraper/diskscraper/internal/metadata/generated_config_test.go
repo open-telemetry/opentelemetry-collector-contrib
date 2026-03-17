@@ -26,13 +26,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemDiskIo:                MetricConfig{Enabled: true},
-					SystemDiskIoTime:            MetricConfig{Enabled: true},
-					SystemDiskMerged:            MetricConfig{Enabled: true},
-					SystemDiskOperationTime:     MetricConfig{Enabled: true},
-					SystemDiskOperations:        MetricConfig{Enabled: true},
-					SystemDiskPendingOperations: MetricConfig{Enabled: true},
-					SystemDiskWeightedIoTime:    MetricConfig{Enabled: true},
+					SystemDiskIo: SystemDiskIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskIoMetricAttributeKey{SystemDiskIoMetricAttributeKeyDevice, SystemDiskIoMetricAttributeKeyDirection},
+					},
+					SystemDiskIoTime: SystemDiskIoTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskIoTimeMetricAttributeKey{SystemDiskIoTimeMetricAttributeKeyDevice},
+					},
+					SystemDiskMerged: SystemDiskMergedMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskMergedMetricAttributeKey{SystemDiskMergedMetricAttributeKeyDevice, SystemDiskMergedMetricAttributeKeyDirection},
+					},
+					SystemDiskOperationTime: SystemDiskOperationTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskOperationTimeMetricAttributeKey{SystemDiskOperationTimeMetricAttributeKeyDevice, SystemDiskOperationTimeMetricAttributeKeyDirection},
+					},
+					SystemDiskOperations: SystemDiskOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskOperationsMetricAttributeKey{SystemDiskOperationsMetricAttributeKeyDevice, SystemDiskOperationsMetricAttributeKeyDirection},
+					},
+					SystemDiskPendingOperations: SystemDiskPendingOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskPendingOperationsMetricAttributeKey{SystemDiskPendingOperationsMetricAttributeKeyDevice},
+					},
+					SystemDiskWeightedIoTime: SystemDiskWeightedIoTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskWeightedIoTimeMetricAttributeKey{SystemDiskWeightedIoTimeMetricAttributeKeyDevice},
+					},
 				},
 			},
 		},
@@ -40,13 +68,41 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemDiskIo:                MetricConfig{Enabled: false},
-					SystemDiskIoTime:            MetricConfig{Enabled: false},
-					SystemDiskMerged:            MetricConfig{Enabled: false},
-					SystemDiskOperationTime:     MetricConfig{Enabled: false},
-					SystemDiskOperations:        MetricConfig{Enabled: false},
-					SystemDiskPendingOperations: MetricConfig{Enabled: false},
-					SystemDiskWeightedIoTime:    MetricConfig{Enabled: false},
+					SystemDiskIo: SystemDiskIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskIoMetricAttributeKey{SystemDiskIoMetricAttributeKeyDevice, SystemDiskIoMetricAttributeKeyDirection},
+					},
+					SystemDiskIoTime: SystemDiskIoTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskIoTimeMetricAttributeKey{SystemDiskIoTimeMetricAttributeKeyDevice},
+					},
+					SystemDiskMerged: SystemDiskMergedMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskMergedMetricAttributeKey{SystemDiskMergedMetricAttributeKeyDevice, SystemDiskMergedMetricAttributeKeyDirection},
+					},
+					SystemDiskOperationTime: SystemDiskOperationTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskOperationTimeMetricAttributeKey{SystemDiskOperationTimeMetricAttributeKeyDevice, SystemDiskOperationTimeMetricAttributeKeyDirection},
+					},
+					SystemDiskOperations: SystemDiskOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskOperationsMetricAttributeKey{SystemDiskOperationsMetricAttributeKeyDevice, SystemDiskOperationsMetricAttributeKeyDirection},
+					},
+					SystemDiskPendingOperations: SystemDiskPendingOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskPendingOperationsMetricAttributeKey{SystemDiskPendingOperationsMetricAttributeKeyDevice},
+					},
+					SystemDiskWeightedIoTime: SystemDiskWeightedIoTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemDiskWeightedIoTimeMetricAttributeKey{SystemDiskWeightedIoTimeMetricAttributeKeyDevice},
+					},
 				},
 			},
 		},
@@ -54,7 +110,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemDiskIoMetricConfig{}, SystemDiskIoTimeMetricConfig{}, SystemDiskMergedMetricConfig{}, SystemDiskOperationTimeMetricConfig{}, SystemDiskOperationsMetricConfig{}, SystemDiskPendingOperationsMetricConfig{}, SystemDiskWeightedIoTimeMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
