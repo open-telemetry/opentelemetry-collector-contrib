@@ -5,8 +5,8 @@ go 1.25.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.147.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.53.1-0.20260313183754-7cd8f588399b
-	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260313183754-7cd8f588399b
+	go.opentelemetry.io/collector/pdata v1.53.1-0.20260317033252-665ab5d0143d
+	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260317033252-665ab5d0143d
 	go.uber.org/goleak v1.3.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -20,7 +20,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260313183754-7cd8f588399b // indirect
+	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260317033252-665ab5d0143d // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 )
 
