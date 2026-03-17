@@ -5,6 +5,7 @@ package datasource // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"os"
 
 	"cloud.google.com/go/spanner"
 	"google.golang.org/api/option"
@@ -28,8 +29,12 @@ func NewDatabase(ctx context.Context, databaseID *DatabaseID, credentialsFilePat
 	var err error
 
 	if credentialsFilePath != "" {
-		credentialsFileClientOption := option.WithCredentialsFile(credentialsFilePath)
-		client, err = spanner.NewClient(ctx, databaseID.ID(), credentialsFileClientOption)
+		var credentialsJSON []byte
+		credentialsJSON, err = os.ReadFile(credentialsFilePath)
+		if err != nil {
+			return nil, err
+		}
+		client, err = spanner.NewClient(ctx, databaseID.ID(), option.WithCredentialsJSON(credentialsJSON))
 	} else {
 		// Fallback to Application Default Credentials(https://google.aip.dev/auth/4110)
 		client, err = spanner.NewClient(ctx, databaseID.ID())
