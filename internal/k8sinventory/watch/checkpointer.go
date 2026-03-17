@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package watch
 
 import (
@@ -23,14 +26,13 @@ func newCheckpointer(client storage.Client, logger *zap.Logger) *checkpointer {
 	}
 }
 
-func (c *checkpointer) GetCheckpoint(ctx context.Context,
-	namespace, objectType string) (string, error) {
+func (c *checkpointer) GetCheckpoint(ctx context.Context, namespace, objectType string) (string, error) {
 	if c.client == nil {
 		return "", errors.New("storage client is nil")
 	}
 
 	checkPointKey := c.getCheckpointKey(namespace, objectType)
-	c.logger.Debug("Retrieving checkpoint, key: " + checkPointKey,
+	c.logger.Debug("Retrieving checkpoint, key: "+checkPointKey,
 		zap.String("namespace", namespace),
 		zap.String("objectType", objectType))
 	data, err := c.client.Get(ctx, checkPointKey)
@@ -53,7 +55,8 @@ func (c *checkpointer) GetCheckpoint(ctx context.Context,
 
 func (c *checkpointer) SetCheckpoint(
 	ctx context.Context,
-	namespace, objectType, resourceVersion string) error {
+	namespace, objectType, resourceVersion string,
+) error {
 	if c.client == nil {
 		return errors.New("storage client is nil")
 	}
@@ -67,7 +70,7 @@ func (c *checkpointer) SetCheckpoint(
 		return fmt.Errorf("failed to store resourceVersion with key %s: %w", key, err)
 	}
 
-	c.logger.Debug("Checkpoint saved with key: " + key + " value: " + resourceVersion,
+	c.logger.Debug("Checkpoint saved with key: "+key+" value: "+resourceVersion,
 		zap.String("namespace", namespace),
 		zap.String("objectType", objectType))
 
@@ -78,7 +81,8 @@ func (c *checkpointer) SetCheckpoint(
 // This is used when the persisted resourceVersion is no longer valid (e.g., after a 410 Gone error).
 func (c *checkpointer) DeleteCheckpoint(
 	ctx context.Context,
-	namespace, objectType string) error {
+	namespace, objectType string,
+) error {
 	if c.client == nil {
 		return errors.New("storage client is nil")
 	}
@@ -92,7 +96,7 @@ func (c *checkpointer) DeleteCheckpoint(
 		return fmt.Errorf("failed to delete resourceVersion with key %s: %w", key, err)
 	}
 
-	c.logger.Debug("Checkpoint deleted with key: " + key,
+	c.logger.Debug("Checkpoint deleted with key: "+key,
 		zap.String("namespace", namespace),
 		zap.String("objectType", objectType))
 

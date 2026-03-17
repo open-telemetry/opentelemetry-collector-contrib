@@ -172,7 +172,7 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 }
 
 // doWatch returns true when watching is done, false when watching should be restarted.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion string, namespace string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
+func (o *Observer) doWatch(ctx context.Context, resourceVersion, namespace string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		o.logger.Error("error in watching object",
@@ -246,7 +246,7 @@ func (o *Observer) doWatch(ctx context.Context, resourceVersion string, namespac
 
 // fetchListResourceVersion performs a List operation and returns the latest resourceVersion.
 // Returns defaultResourceVersion if the API returns an empty or zero version.
-func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynamic.ResourceInterface, namespace string) (string, error) {
+func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynamic.ResourceInterface) (string, error) {
 	objects, err := resource.List(ctx, metav1.ListOptions{
 		FieldSelector: o.config.FieldSelector,
 		LabelSelector: o.config.LabelSelector,
@@ -288,10 +288,15 @@ func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.Reso
 		}
 
 		// No valid persisted version found - get from List and persist it
-		listVersion, err := o.fetchListResourceVersion(ctx, resource, namespace)
+		listVersion, err := o.fetchListResourceVersion(ctx, resource)
 		if err != nil {
 			return "", err
 		}
+
+		o.logger.Debug("retrieved resourceVersion from List() API",
+			zap.String("resourceVersion", listVersion),
+			zap.String("namespace", namespace),
+			zap.Error(err))
 
 		// Persist the list version for future use
 		if err := o.checkpointer.SetCheckpoint(ctx, namespace, o.config.Gvr.Resource, listVersion); err != nil {
@@ -311,7 +316,7 @@ func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.Reso
 		return configVersion, nil
 	}
 	// Priority 3: No config version - perform List operation
-	listVersion, err := o.fetchListResourceVersion(ctx, resource, namespace)
+	listVersion, err := o.fetchListResourceVersion(ctx, resource)
 	if err != nil {
 		return "", err
 	}

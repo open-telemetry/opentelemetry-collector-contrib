@@ -4,7 +4,6 @@
 package watch
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ func TestCheckpointerGetAndSet(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test Set
 	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "12345")
@@ -35,48 +34,48 @@ func TestCheckpointerKeyFormat(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
-		name         string
-		namespace    string
-		objectType   string
-		expectedKey  string
+		name            string
+		namespace       string
+		objectType      string
+		expectedKey     string
 		resourceVersion string
 	}{
 		{
-			name:         "cluster-scoped resource (nodes)",
-			namespace:    "",
-			objectType:   "nodes",
-			expectedKey:  "latestResourceVersion/nodes",
+			name:            "cluster-scoped resource (nodes)",
+			namespace:       "",
+			objectType:      "nodes",
+			expectedKey:     "latestResourceVersion/nodes",
 			resourceVersion: "100",
 		},
 		{
-			name:         "cluster-scoped resource (namespaces)",
-			namespace:    "",
-			objectType:   "namespaces",
-			expectedKey:  "latestResourceVersion/namespaces",
+			name:            "cluster-scoped resource (namespaces)",
+			namespace:       "",
+			objectType:      "namespaces",
+			expectedKey:     "latestResourceVersion/namespaces",
 			resourceVersion: "200",
 		},
 		{
-			name:         "namespaced resource in default",
-			namespace:    "default",
-			objectType:   "pods",
-			expectedKey:  "latestResourceVersion/pods.default",
+			name:            "namespaced resource in default",
+			namespace:       "default",
+			objectType:      "pods",
+			expectedKey:     "latestResourceVersion/pods.default",
 			resourceVersion: "300",
 		},
 		{
-			name:         "namespaced resource in kube-system",
-			namespace:    "kube-system",
-			objectType:   "events",
-			expectedKey:  "latestResourceVersion/events.kube-system",
+			name:            "namespaced resource in kube-system",
+			namespace:       "kube-system",
+			objectType:      "events",
+			expectedKey:     "latestResourceVersion/events.kube-system",
 			resourceVersion: "400",
 		},
 		{
-			name:         "cluster-wide watch of pods",
-			namespace:    "",
-			objectType:   "pods",
-			expectedKey:  "latestResourceVersion/pods",
+			name:            "cluster-wide watch of pods",
+			namespace:       "",
+			objectType:      "pods",
+			expectedKey:     "latestResourceVersion/pods",
 			resourceVersion: "500",
 		},
 	}
@@ -103,19 +102,19 @@ func TestCheckpointerGetNonExistent(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Get non-existent key
 	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
-	assert.Equal(t, "", rv)
+	assert.Empty(t, rv)
 }
 
 func TestCheckpointerUpdate(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set initial value
 	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
@@ -135,7 +134,7 @@ func TestCheckpointerMultipleNamespaces(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set different versions for different namespaces
 	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
@@ -157,7 +156,7 @@ func TestCheckpointerMultipleNamespaces(t *testing.T) {
 func TestCheckpointerNilClient(t *testing.T) {
 	checkpointer := newCheckpointer(nil, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Get with nil client should return error
 	_, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
@@ -179,7 +178,7 @@ func TestCheckpointerDelete(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set a value
 	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "12345")
@@ -197,14 +196,14 @@ func TestCheckpointerDelete(t *testing.T) {
 	// Verify it's gone (Get should return empty string)
 	rv, err = checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
-	assert.Equal(t, "", rv)
+	assert.Empty(t, rv)
 }
 
 func TestCheckpointerDeleteNonExistent(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Delete non-existent key should not error
 	err := checkpointer.DeleteCheckpoint(ctx, "default", "pods")
@@ -215,7 +214,7 @@ func TestCheckpointerDeleteMultipleNamespaces(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set values for different namespaces
 	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
@@ -231,7 +230,7 @@ func TestCheckpointerDeleteMultipleNamespaces(t *testing.T) {
 	// Verify only default was deleted
 	rv1, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
-	assert.Equal(t, "", rv1) // Should be empty
+	assert.Empty(t, rv1) // Should be empty
 
 	rv2, err := checkpointer.GetCheckpoint(ctx, "kube-system", "pods")
 	require.NoError(t, err)
@@ -242,7 +241,7 @@ func TestCheckpointerDeleteClusterWide(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set cluster-wide resource (empty namespace)
 	err := checkpointer.SetCheckpoint(ctx, "", "nodes", "500")
@@ -260,5 +259,5 @@ func TestCheckpointerDeleteClusterWide(t *testing.T) {
 	// Verify it's gone
 	rv, err = checkpointer.GetCheckpoint(ctx, "", "nodes")
 	require.NoError(t, err)
-	assert.Equal(t, "", rv)
+	assert.Empty(t, rv)
 }

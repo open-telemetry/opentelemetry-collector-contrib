@@ -443,12 +443,12 @@ func (c *mockDynamicClient) setListResourceVersion(resourceVersion string) {
 	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind)
 
 	// Add reactor to set resourceVersion on list operations
-	fakeClient.Fake.PrependReactor("list", "*", func(action k8s_testing.Action) (handled bool, ret runtime.Object, err error) {
+	fakeClient.PrependReactor("list", "*", func(_ k8s_testing.Action) (handled bool, ret runtime.Object, err error) {
 		// Don't handle, let default action occur
 		return false, nil, nil
 	})
 
-	fakeClient.Fake.PrependWatchReactor("*", func(action k8s_testing.Action) (handled bool, ret apiWatch.Interface, err error) {
+	fakeClient.PrependWatchReactor("*", func(_ k8s_testing.Action) (handled bool, ret apiWatch.Interface, err error) {
 		// Don't handle, let default action occur
 		return false, nil, nil
 	})
@@ -550,7 +550,7 @@ func TestObserverWithPersistence(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(context.Background(), &wg)
+	stopChan := obs.Start(t.Context(), &wg)
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -572,7 +572,7 @@ func TestObserverWithPersistence(t *testing.T) {
 
 	// Verify resourceVersion was persisted
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	rv, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv)
 
@@ -607,7 +607,7 @@ func TestObserverWithoutPersistence(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(context.Background(), &wg)
+	stopChan := obs.Start(t.Context(), &wg)
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -628,9 +628,9 @@ func TestObserverWithoutPersistence(t *testing.T) {
 
 	// Verify resourceVersion was NOT persisted
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	rv, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
-	assert.Equal(t, "", rv) // Should be empty
+	assert.Empty(t, rv) // Should be empty
 
 	close(stopChan)
 	wg.Wait()
@@ -663,7 +663,7 @@ func TestObserverPersistenceNilStorage(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(context.Background(), &wg)
+	stopChan := obs.Start(t.Context(), &wg)
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -710,7 +710,7 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(context.Background(), &wg)
+	stopChan := obs.Start(t.Context(), &wg)
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -721,7 +721,7 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 	)
 
 	// Wait for events
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		select {
 		case <-receivedEventsChan:
 			// success
@@ -734,7 +734,7 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 
 	// Verify single key for cluster-wide watch (no namespace suffix)
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	rv, err := checkpointer.GetCheckpoint(context.Background(), "", "pods")
+	rv, err := checkpointer.GetCheckpoint(t.Context(), "", "pods")
 	require.NoError(t, err)
 	assert.NotEmpty(t, rv) // Should have a value
 
@@ -772,7 +772,7 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 
-	stopChan := obs.Start(context.Background(), &wg)
+	stopChan := obs.Start(t.Context(), &wg)
 
 	time.Sleep(time.Millisecond * 100)
 
@@ -783,7 +783,7 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	)
 
 	// Wait for events
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		select {
 		case <-receivedEventsChan:
 			// success
@@ -797,11 +797,11 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	// Verify separate keys for each namespace
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
 
-	rv1, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
+	rv1, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv1)
 
-	rv2, err := checkpointer.GetCheckpoint(context.Background(), "other", "pods")
+	rv2, err := checkpointer.GetCheckpoint(t.Context(), "other", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "200", rv2)
 
@@ -822,7 +822,7 @@ func TestObserverResourceVersionPriority(t *testing.T) {
 
 	// Pre-populate storage with a persisted resourceVersion
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	err := checkpointer.SetCheckpoint(context.Background(), "default", "pods", "500")
+	err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", "500")
 	require.NoError(t, err)
 
 	// Set list resourceVersion
@@ -875,12 +875,12 @@ func TestObserverResourceVersionPriority(t *testing.T) {
 
 			// Test getResourceVersion directly to verify the logic
 			resource := mockClient.Resource(cfg.Gvr)
-			version, err := obs.getResourceVersion(context.Background(), resource.Namespace("default"), "default")
+			version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectUsedVersion, version, "getResourceVersion should return persisted version when available")
 
 			wg := sync.WaitGroup{}
-			stopChan := obs.Start(context.Background(), &wg)
+			stopChan := obs.Start(t.Context(), &wg)
 
 			time.Sleep(time.Millisecond * 200)
 
@@ -903,18 +903,18 @@ func TestGetResourceVersion(t *testing.T) {
 		enablePersistence bool
 	}{
 		{
-			name:            "list version only (no persistence, no config)",
-			configVersion:   "",
+			name:             "list version only (no persistence, no config)",
+			configVersion:    "",
 			persistedVersion: "",
-			listVersion:     "100",
-			expectedVersion: "100",
+			listVersion:      "100",
+			expectedVersion:  "100",
 		},
 		{
-			name:            "config provided without persistence - config wins",
-			configVersion:   "150",
+			name:             "config provided without persistence - config wins",
+			configVersion:    "150",
 			persistedVersion: "",
-			listVersion:     "100",
-			expectedVersion: "150", // Config used when no persistence
+			listVersion:      "100",
+			expectedVersion:  "150", // Config used when no persistence
 		},
 		{
 			name:              "persisted exists - takes priority over everything",
@@ -941,18 +941,18 @@ func TestGetResourceVersion(t *testing.T) {
 			enablePersistence: true,
 		},
 		{
-			name:            "all empty uses default",
-			configVersion:   "",
+			name:             "all empty uses default",
+			configVersion:    "",
 			persistedVersion: "",
-			listVersion:     "",
-			expectedVersion: "1", // defaultResourceVersion
+			listVersion:      "",
+			expectedVersion:  "1", // defaultResourceVersion
 		},
 		{
-			name:            "zero values ignored - falls back to default",
-			configVersion:   "0",
+			name:             "zero values ignored - falls back to default",
+			configVersion:    "0",
 			persistedVersion: "",
-			listVersion:     "0",
-			expectedVersion: "1", // defaultResourceVersion
+			listVersion:      "0",
+			expectedVersion:  "1", // defaultResourceVersion
 		},
 		{
 			name:              "persistence disabled with config",
@@ -1017,7 +1017,7 @@ func TestGetResourceVersion(t *testing.T) {
 				// Pre-populate persisted version if provided
 				if tt.persistedVersion != "" {
 					checkpointer := newCheckpointer(storageClient, zap.NewNop())
-					err := checkpointer.SetCheckpoint(context.Background(), "default", "pods", tt.persistedVersion)
+					err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", tt.persistedVersion)
 					require.NoError(t, err)
 				}
 			}
@@ -1026,18 +1026,17 @@ func TestGetResourceVersion(t *testing.T) {
 			require.NoError(t, err)
 
 			resource := mockClient.Resource(cfg.Gvr)
-			version, err := obs.getResourceVersion(context.Background(), resource.Namespace("default"), "default")
+			version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedVersion, version)
 
 			// If persistence enabled and no initial persisted value, verify it was persisted
 			if tt.enablePersistence && tt.persistedVersion == "" && tt.listVersion != "" && tt.listVersion != "0" {
 				checkpointer := newCheckpointer(storageClient, zap.NewNop())
-				persistedAfter, err := checkpointer.GetCheckpoint(context.Background(), "default", "pods")
+				persistedAfter, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 				require.NoError(t, err)
 				assert.Equal(t, tt.expectedVersion, persistedAfter, "list version should have been persisted")
 			}
 		})
 	}
 }
-

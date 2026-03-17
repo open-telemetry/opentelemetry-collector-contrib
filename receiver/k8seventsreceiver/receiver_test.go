@@ -4,7 +4,6 @@
 package k8seventsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -427,7 +426,7 @@ func TestK8sEventsReceiverStorageInitialization(t *testing.T) {
 				host = storageHost
 			}
 
-			err = r.Start(context.Background(), host)
+			err = r.Start(t.Context(), host)
 			require.NoError(t, err)
 
 			kr := r.(*k8seventsReceiver)
@@ -438,7 +437,7 @@ func TestK8sEventsReceiverStorageInitialization(t *testing.T) {
 				assert.Nil(t, kr.storageClient, "storage client should be nil")
 			}
 
-			err = r.Shutdown(context.Background())
+			err = r.Shutdown(t.Context())
 			require.NoError(t, err)
 		})
 	}
@@ -467,7 +466,7 @@ func TestK8sEventsReceiverPersistenceDefault(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	err = r.Start(context.Background(), componenttest.NewNopHost())
+	err = r.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	kr := r.(*k8seventsReceiver)
@@ -475,7 +474,7 @@ func TestK8sEventsReceiverPersistenceDefault(t *testing.T) {
 	// Storage client should be nil by default
 	assert.Nil(t, kr.storageClient)
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
