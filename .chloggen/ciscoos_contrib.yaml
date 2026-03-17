@@ -1,0 +1,4 @@
+change_type: 'enhancement'
+component: receiver/cisco_os
+note: Add cisco_os receiver to the contrib distribution
+issues: [46948]

@@ -30,15 +30,17 @@ type BMCHelixOMSample struct {
 
 // MetricsProducer is responsible for converting OpenTelemetry metrics into BMC Helix Operations Management metrics
 type MetricsProducer struct {
-	logger           *zap.Logger
-	previousCounters map[string]BMCHelixOMSample
+	logger                     *zap.Logger
+	previousCounters           map[string]BMCHelixOMSample
+	enrichMetricWithAttributes bool
 }
 
 // NewMetricsProducer creates a new MetricsProducer
-func NewMetricsProducer(logger *zap.Logger) *MetricsProducer {
+func NewMetricsProducer(logger *zap.Logger, enrichMetricWithAttributes bool) *MetricsProducer {
 	return &MetricsProducer{
-		logger:           logger,
-		previousCounters: make(map[string]BMCHelixOMSample),
+		logger:                     logger,
+		previousCounters:           make(map[string]BMCHelixOMSample),
+		enrichMetricWithAttributes: enrichMetricWithAttributes,
 	}
 }
 
@@ -159,6 +161,27 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 				metricPayload.Labels[rateMetricFlag] = "true"
 			}
 
+			// This will create a new enriched metric with distinguishing attributes appended to the metric name
+			// for consistent identification in BMC Helix Operations Management
+			if mp.enrichMetricWithAttributes {
+				if enriched := createEnrichedMetricWithDpAttributes(metricPayload, dp.Attributes().AsRaw()); enriched != nil {
+					// Propagate rate flag if needed (Sum monotonic)
+					if metricPayload.Labels[rateMetricFlag] == "true" {
+						enriched.Labels[rateMetricFlag] = "true"
+					}
+					helixMetrics = append(helixMetrics, *enriched)
+
+					// Remove entityId from the original metric since a derived metric is being created.
+					// Without entityId, the original metric is forwarded to victoriametrics only (not BHOM),
+					// while the enriched metric with its unique name is reported in BHOM.
+					delete(metricPayload.Labels, "entityId")
+
+					// Remove rate flag from the original metric to prevent rate computation with an
+					// empty entityId (":"+metricName key collision)
+					delete(metricPayload.Labels, rateMetricFlag)
+				}
+			}
+
 			helixMetrics = append(helixMetrics, *metricPayload)
 		}
 	case pmetric.MetricTypeGauge:
@@ -171,17 +194,24 @@ func (mp *MetricsProducer) createHelixMetrics(metric pmetric.Metric, resourceAtt
 				mp.logger.Warn("Failed to create Helix metric from datapoint", zap.Error(err))
 				continue
 			}
+			// This will create a new enriched metric with distinguishing attributes appended to the metric name
+			// for consistent identification in BMC Helix Operations Management
+			if mp.enrichMetricWithAttributes {
+				if enriched := createEnrichedMetricWithDpAttributes(metricPayload, dp.Attributes().AsRaw()); enriched != nil {
+					helixMetrics = append(helixMetrics, *enriched)
+
+					// Remove entityId from the original metric since a derived metric is being created.
+					// Without entityId, the original metric is forwarded to victoriametrics only (not BHOM),
+					// while the enriched metric with its unique name is reported in BHOM.
+					delete(metricPayload.Labels, "entityId")
+				}
+			}
+
 			helixMetrics = append(helixMetrics, *metricPayload)
 		}
 	default:
 		return nil, fmt.Errorf("unsupported metric type %s", metric.Type())
 	}
-
-	// Enrich metric names with attributes
-	// This will modify the metric names based on the attributes that have more than one distinct value
-	// across the metrics with the same entityId and metricName
-	// This is done to ensure that the metric names are unique and meaningful in the BMC Helix Operations Management payload
-	helixMetrics = enrichMetricNamesWithAttributes(helixMetrics)
 
 	// Add percentage variants for ratio metrics (unit "1")
 	helixMetrics = addPercentageVariants(helixMetrics)
@@ -220,8 +250,10 @@ func (mp *MetricsProducer) createSingleDatapointMetric(dp pmetric.NumberDataPoin
 	labels := make(map[string]string)
 	labels["source"] = "OTEL"
 
-	// Add resource attributes
-	maps.Copy(labels, resourceAttrs)
+	// Add resource attributes with normalization
+	for k, v := range resourceAttrs {
+		labels[k] = NormalizeLabelValue(v)
+	}
 
 	// Set the metric unit
 	labels["unit"] = metric.Unit()
@@ -233,7 +265,11 @@ func (mp *MetricsProducer) createSingleDatapointMetric(dp pmetric.NumberDataPoin
 	labels["isDeviceMappingEnabled"] = "true"
 
 	// Update the metric name for the BMC Helix Operations Management payload
-	labels["metricName"] = metric.Name()
+	normalizedMetricName := NormalizeMetricName(metric.Name())
+	if normalizedMetricName == "" {
+		return nil, fmt.Errorf("the normalized metric name is empty for metric %s. Metric datapoint will be skipped", metric.Name())
+	}
+	labels["metricName"] = normalizedMetricName
 
 	// Update the entity information
 	err := mp.updateEntityInformation(labels, metric.Name(), resourceAttrs, dp.Attributes().AsRaw())
@@ -268,8 +304,9 @@ func (*MetricsProducer) updateEntityInformation(labels map[string]string, metric
 	// Convert metricAttrs from map[string]any to map[string]string for compatibility
 	stringMetricAttrs := make(map[string]string)
 	for k, v := range dpAttributes {
-		stringMetricAttrs[k] = fmt.Sprintf("%v", v)
-		labels[k] = fmt.Sprintf("%v", v)
+		normalizedValue := NormalizeLabelValue(fmt.Sprint(v))
+		stringMetricAttrs[k] = normalizedValue
+		labels[k] = normalizedValue
 	}
 
 	// Add the resource attributes to the metric attributes
@@ -292,17 +329,12 @@ func (*MetricsProducer) updateEntityInformation(labels map[string]string, metric
 		instanceName = entityName
 	}
 
-	// Trim trailing and leading colons from entityName
-	entityName = strings.Trim(entityName, ":")
-
-	// Remove any colons from the entityName to ensure compatibility with BMC Helix Operations Management
-	entityName = strings.ReplaceAll(entityName, ":", "")
-
 	// Set the entityTypeId, entityId, instanceName and entityName in labels
-	labels["entityTypeId"] = entityTypeID
-	labels["entityName"] = entityName
+	// Use NormalizeEntityValue to ensure ":" is not present as it is the separator in entityId
+	labels["entityTypeId"] = NormalizeEntityValue(entityTypeID)
+	labels["entityName"] = NormalizeEntityValue(entityName)
 	labels["instanceName"] = instanceName
-	labels["entityId"] = fmt.Sprintf("%s:%s:%s:%s", labels["source"], labels["hostname"], entityTypeID, entityName)
+	labels["entityId"] = fmt.Sprintf("%s:%s:%s:%s", labels["source"], labels["hostname"], labels["entityTypeId"], labels["entityName"])
 	return nil
 }
 
@@ -333,87 +365,54 @@ func extractResourceAttributes(resource pcommon.Resource) map[string]string {
 	return attributes
 }
 
-// enrichMetricNamesWithAttributes modifies the metric names by appending distinguishing attributes
-// that have more than one distinct value across the metrics with the same entityId and metricName
-// A copy of the metric is created without entityId, entityTypeId, and entityName attributes
-// to ensure that the original metric is preserved for the BMC Helix VictoriaMetrics.
-// This is done to ensure that the metric names are unique in the BMC Helix Operations Management payload
-func enrichMetricNamesWithAttributes(metrics []BMCHelixOMMetric) []BMCHelixOMMetric {
-	// Step 1: Group metrics by (entityId + metricName)
-	groups := make(map[string][]*BMCHelixOMMetric)
-	for i := range metrics {
-		m := &metrics[i]
-		key := m.Labels["entityId"] + ":" + m.Labels["metricName"]
-		groups[key] = append(groups[key], m)
+// createEnrichedMetricWithDpAttributes creates a copy of the metric with non-core datapoint attribute
+// values appended to the metric name as a dot-separated suffix. Attribute keys are sorted
+// alphabetically and the resulting metric name is normalized (e.g., special chars replaced with "_").
+// Returns nil if no non-core attributes exist. The original metric is not modified.
+func createEnrichedMetricWithDpAttributes(metric *BMCHelixOMMetric, dpAttrs map[string]any) *BMCHelixOMMetric {
+	// Collect dp attribute keys excluding core ones (sorted using insertSorted)
+	var keys []string
+	for k, v := range dpAttrs {
+		if _, shouldSkip := coreAttributes[k]; shouldSkip {
+			continue
+		}
+		if v == nil {
+			continue
+		}
+		s := fmt.Sprint(v)
+		if s == "" {
+			continue
+		}
+		keys = insertSorted(keys, k)
 	}
 
-	finalMetrics := make([]BMCHelixOMMetric, 0, len(metrics)*2)
-
-	// Step 2: Process each group
-	for _, group := range groups {
-		attrValues := make(map[string]map[string]struct{})
-
-		// Collect all attribute values for each key
-		for _, m := range group {
-			for k, v := range m.Labels {
-				if _, shouldSkip := coreAttributes[k]; shouldSkip {
-					continue
-				}
-				if _, exists := attrValues[k]; !exists {
-					attrValues[k] = make(map[string]struct{})
-				}
-				attrValues[k][v] = struct{}{}
-			}
-		}
-
-		// Step 3: Identifying attributes (those with >1 distinct value)
-		var identifyingKeys []string
-		for k, vals := range attrValues {
-			if len(vals) > 1 {
-				identifyingKeys = insertSorted(identifyingKeys, k)
-			}
-		}
-
-		// Step 4: Modify metric names by appending attribute values
-		for _, m := range group {
-			originalMetricName := m.Labels["metricName"]
-
-			// Build suffix
-			var suffixParts []string
-			for _, attrKey := range identifyingKeys {
-				if val, ok := m.Labels[attrKey]; ok {
-					suffixParts = append(suffixParts, val)
-				}
-			}
-
-			// Only create copy + modify metric if there's a suffix to apply
-			if len(suffixParts) > 0 {
-				// Step 1: Raw copy without entityId/entityTypeId/entityName
-				rawCopy := BMCHelixOMMetric{
-					Labels:  make(map[string]string),
-					Samples: m.Samples,
-				}
-				for k, v := range m.Labels {
-					if k != "entityId" && k != "entityTypeId" && k != "entityName" {
-						rawCopy.Labels[k] = v
-					}
-				}
-				rawCopy.Labels["metricName"] = originalMetricName
-				finalMetrics = append(finalMetrics, rawCopy)
-
-				// Step 2: Modify the original metric
-				m.Labels["metricName"] = originalMetricName + "." + strings.Join(suffixParts, ".")
-				for _, attrKey := range identifyingKeys {
-					delete(m.Labels, attrKey) // Remove identifying attributes from the metric labels
-				}
-			}
-
-			// Always keep the (possibly modified) original metric
-			finalMetrics = append(finalMetrics, *m)
-		}
+	if len(keys) == 0 {
+		return nil
 	}
 
-	return finalMetrics
+	// Values-only suffix in sorted key order
+	suffixParts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		suffixParts = append(suffixParts, fmt.Sprint(dpAttrs[k]))
+	}
+
+	dup := BMCHelixOMMetric{
+		Labels:  make(map[string]string, len(metric.Labels)),
+		Samples: metric.Samples,
+	}
+	maps.Copy(dup.Labels, metric.Labels)
+
+	original := dup.Labels["metricName"]
+	enrichedMetricName := NormalizeMetricName(original + "." + strings.Join(suffixParts, "."))
+
+	// If the enriched metric name is empty, skip this enriched metric
+	if enrichedMetricName == "" {
+		return nil
+	}
+
+	dup.Labels["metricName"] = enrichedMetricName
+
+	return &dup
 }
 
 // Binary-inserted sorted slice

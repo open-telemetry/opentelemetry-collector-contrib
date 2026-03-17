@@ -1,0 +1,9 @@
+display_name: Azure Functions Receiver
+type: azure_functions
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [jmacd, MichaelKatsoulis, constanca-m]
