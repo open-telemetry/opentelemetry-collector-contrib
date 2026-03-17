@@ -1351,7 +1351,6 @@ func constructProfilesWithEntityRefs() pprofile.Profiles {
 	sample.Values().FromRaw([]int64{100})
 
 	dic := pd.Dictionary()
-	dic.StringTable().Append("")
 	dic.StringTable().Append("cpu")
 	dic.StringTable().Append("nanoseconds")
 
