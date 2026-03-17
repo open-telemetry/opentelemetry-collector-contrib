@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -69,6 +70,37 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err
+	}
+
+	if !metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() {
+		var deprecated []string
+		oCfg := kp.cfg.(*Config)
+
+		if slices.Contains(oCfg.Extract.Metadata, containerImageTag) {
+			deprecated = append(deprecated, "container.image.tag")
+		}
+
+		for _, label := range oCfg.Extract.Labels {
+			if label.TagName == "" {
+				deprecated = append(deprecated, "k8s.*.labels.<key>")
+				break
+			}
+		}
+
+		for _, annotation := range oCfg.Extract.Annotations {
+			if annotation.TagName == "" {
+				deprecated = append(deprecated, "k8s.*.annotations.<key>")
+				break
+			}
+		}
+
+		if len(deprecated) > 0 {
+			kp.logger.Warn(
+				"Deprecated attributes are enabled. Some attributes are being renamed to follow SemConv. "+
+					"Please see the Semantic Conventions Compatibility section in the README.",
+				zap.Strings("deprecated_attributes", deprecated),
+			)
+		}
 	}
 
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
