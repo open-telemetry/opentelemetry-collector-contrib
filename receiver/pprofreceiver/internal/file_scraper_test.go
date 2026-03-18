@@ -31,7 +31,7 @@ func TestScrapeMultipleFilesMergesDictionaries(t *testing.T) {
 	}
 	result, err := s.Scrape(t.Context())
 	require.NoError(t, err)
-	require.Greater(t, result.ProfileCount(), 0)
+	require.Positive(t, result.ProfileCount())
 
 	// Collect all strings from the merged dictionary.
 	dict := result.Dictionary().StringTable()
