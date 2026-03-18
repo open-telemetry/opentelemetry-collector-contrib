@@ -5,14 +5,9 @@ go 1.25.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
-<<<<<<< HEAD
-	go.opentelemetry.io/collector/featuregate v1.51.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/collector/pdata v1.51.1-0.20260205185216-81bc641f26c0
-	go.opentelemetry.io/otel v1.40.0
-=======
+	go.opentelemetry.io/collector/featuregate v1.54.0
 	go.opentelemetry.io/collector/pdata v1.54.0
 	go.opentelemetry.io/otel v1.42.0
->>>>>>> open-telemetry/main
 	go.uber.org/goleak v1.3.0
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
@@ -25,10 +20,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-<<<<<<< HEAD
-=======
-	go.opentelemetry.io/collector/featuregate v1.54.0 // indirect
->>>>>>> open-telemetry/main
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
