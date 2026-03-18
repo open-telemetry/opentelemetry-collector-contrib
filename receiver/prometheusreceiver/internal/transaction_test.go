@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// github.com/prometheus/prometheus/tsdb/tsdbutil is not suppported on AIX
+//go:build !aix
+
 package internal
 
 import (
