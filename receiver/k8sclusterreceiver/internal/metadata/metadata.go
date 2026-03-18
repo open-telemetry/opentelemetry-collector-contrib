@@ -32,6 +32,7 @@ type KubernetesMetadata struct {
 
 const (
 	K8SClusterEntityType = "k8s.cluster"
+	K8SClusterUIDKey     = "k8s.cluster.uid"
 	K8SClusterNameKey    = "k8s.cluster.name"
 )
 
@@ -86,36 +87,21 @@ func GetOTelNameFromKind(kind string) string {
 	return fmt.Sprintf("k8s.%s.name", kind)
 }
 
-func AddClusterName(metadata map[string]string, clusterName string) {
-	if clusterName == "" || metadata == nil {
-		return
-	}
-	metadata[K8SClusterNameKey] = clusterName
-}
-
-func AddClusterNameToResources(resources map[metadataPkg.ResourceID]*KubernetesMetadata, clusterName string) {
-	if clusterName == "" {
-		return
-	}
-	for _, resource := range resources {
-		if resource == nil {
-			continue
-		}
-		AddClusterName(resource.Metadata, clusterName)
-	}
-}
-
-func NewClusterMetadata(clusterName string) *KubernetesMetadata {
-	if clusterName == "" {
+func NewClusterMetadata(clusterUID, clusterName string) *KubernetesMetadata {
+	if clusterUID == "" {
 		return nil
+	}
+	clusterMetadata := map[string]string{
+		K8SClusterUIDKey: clusterUID,
+	}
+	if clusterName != "" {
+		clusterMetadata[K8SClusterNameKey] = clusterName
 	}
 	return &KubernetesMetadata{
 		EntityType:    K8SClusterEntityType,
-		ResourceIDKey: K8SClusterNameKey,
-		ResourceID:    metadataPkg.ResourceID(clusterName),
-		Metadata: map[string]string{
-			K8SClusterNameKey: clusterName,
-		},
+		ResourceIDKey: K8SClusterUIDKey,
+		ResourceID:    metadataPkg.ResourceID(clusterUID),
+		Metadata:      clusterMetadata,
 	}
 }
 

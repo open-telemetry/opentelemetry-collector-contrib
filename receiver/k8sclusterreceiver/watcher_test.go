@@ -624,20 +624,9 @@ func TestObjMetadata(t *testing.T) {
 	}
 }
 
-func TestObjMetadataAddsClusterName(t *testing.T) {
-	rw := &resourceWatcher{
-		metadataStore: &metadata.Store{},
-		config:        &Config{ClusterName: "test-cluster"},
-	}
-
-	actual := rw.objMetadata(testutils.NewReplicaSet("1"))
-	require.Contains(t, actual, experimentalmetricmetadata.ResourceID("test-replicaset-1-uid"))
-	assert.Equal(t, "test-cluster", actual[experimentalmetricmetadata.ResourceID("test-replicaset-1-uid")].Metadata[metadata.K8SClusterNameKey])
-}
-
 func TestWithClusterEntity(t *testing.T) {
 	rw := &resourceWatcher{
-		config: &Config{ClusterName: "test-cluster"},
+		config: &Config{ClusterUID: "test-cluster-uid", ClusterName: "test-cluster"},
 	}
 
 	oldMetadata, newMetadata := rw.withClusterEntity(nil, map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
@@ -649,12 +638,16 @@ func TestWithClusterEntity(t *testing.T) {
 		},
 	})
 	require.Nil(t, oldMetadata)
-	require.Contains(t, newMetadata, experimentalmetricmetadata.ResourceID("test-cluster"))
-	assert.Equal(t, metadata.K8SClusterEntityType, newMetadata[experimentalmetricmetadata.ResourceID("test-cluster")].EntityType)
+	require.Contains(t, newMetadata, experimentalmetricmetadata.ResourceID("test-cluster-uid"))
+	assert.Equal(t, metadata.K8SClusterEntityType, newMetadata[experimentalmetricmetadata.ResourceID("test-cluster-uid")].EntityType)
+	assert.Equal(t, map[string]string{
+		metadata.K8SClusterUIDKey:  "test-cluster-uid",
+		metadata.K8SClusterNameKey: "test-cluster",
+	}, newMetadata[experimentalmetricmetadata.ResourceID("test-cluster-uid")].Metadata)
 
 	oldMetadata, newMetadata = rw.withClusterEntity(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}, map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{})
-	require.Contains(t, oldMetadata, experimentalmetricmetadata.ResourceID("test-cluster"))
-	require.Contains(t, newMetadata, experimentalmetricmetadata.ResourceID("test-cluster"))
+	require.Contains(t, oldMetadata, experimentalmetricmetadata.ResourceID("test-cluster-uid"))
+	require.Contains(t, newMetadata, experimentalmetricmetadata.ResourceID("test-cluster-uid"))
 }
 
 var allPodMetadata = func(metadata map[string]string) map[string]string {

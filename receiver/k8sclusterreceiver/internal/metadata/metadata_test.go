@@ -58,19 +58,24 @@ func Test_getGenericMetadata(t *testing.T) {
 	}, rm.Metadata)
 }
 
-func TestAddClusterName(t *testing.T) {
-	m := map[string]string{"foo": "bar"}
-	AddClusterName(m, "test-cluster")
-	assert.Equal(t, "test-cluster", m[K8SClusterNameKey])
-}
-
 func TestNewClusterMetadata(t *testing.T) {
-	km := NewClusterMetadata("test-cluster")
+	km := NewClusterMetadata("test-cluster-uid", "test-cluster")
 	require.NotNil(t, km)
 	assert.Equal(t, K8SClusterEntityType, km.EntityType)
-	assert.Equal(t, K8SClusterNameKey, km.ResourceIDKey)
-	assert.Equal(t, experimentalmetricmetadata.ResourceID("test-cluster"), km.ResourceID)
-	assert.Equal(t, map[string]string{K8SClusterNameKey: "test-cluster"}, km.Metadata)
+	assert.Equal(t, K8SClusterUIDKey, km.ResourceIDKey)
+	assert.Equal(t, experimentalmetricmetadata.ResourceID("test-cluster-uid"), km.ResourceID)
+	assert.Equal(t, map[string]string{
+		K8SClusterUIDKey:  "test-cluster-uid",
+		K8SClusterNameKey: "test-cluster",
+	}, km.Metadata)
+}
+
+func TestNewClusterMetadataWithoutClusterName(t *testing.T) {
+	km := NewClusterMetadata("test-cluster-uid", "")
+	require.NotNil(t, km)
+	assert.Equal(t, map[string]string{
+		K8SClusterUIDKey: "test-cluster-uid",
+	}, km.Metadata)
 }
 
 func metadataMap(mdata map[string]string) map[experimentalmetricmetadata.ResourceID]*KubernetesMetadata {

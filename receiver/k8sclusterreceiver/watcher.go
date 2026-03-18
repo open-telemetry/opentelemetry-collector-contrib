@@ -401,7 +401,6 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 	case *corev1.Namespace:
 		out = namespace.GetMetadata(o)
 	}
-	rw.addClusterNameToMetadata(out)
 	return out
 }
 
@@ -500,22 +499,15 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 	}
 }
 
-func (rw *resourceWatcher) addClusterNameToMetadata(resources map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) {
-	if rw.config == nil {
-		return
-	}
-	metadata.AddClusterNameToResources(resources, rw.config.ClusterName)
-}
-
 func (rw *resourceWatcher) withClusterEntity(oldMetadata, newMetadata map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) (
 	map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata,
 	map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata,
 ) {
-	if rw.config == nil || rw.config.ClusterName == "" {
+	if rw.config == nil || rw.config.ClusterUID == "" {
 		return oldMetadata, newMetadata
 	}
 
-	clusterMetadata := metadata.NewClusterMetadata(rw.config.ClusterName)
+	clusterMetadata := metadata.NewClusterMetadata(rw.config.ClusterUID, rw.config.ClusterName)
 	if clusterMetadata == nil {
 		return oldMetadata, newMetadata
 	}

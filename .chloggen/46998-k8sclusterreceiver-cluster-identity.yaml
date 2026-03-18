@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: "k8sclusterreceiver"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add configurable cluster identity to emitted entity metadata and emit a synthetic `k8s.cluster` entity"
+note: "Add configurable cluster identity for emitting a synthetic `k8s.cluster` entity"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46998]
@@ -16,9 +16,9 @@ issues: [46998]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds a new `cluster_name` config option. When it is set, emitted Kubernetes
-  entity metadata includes `k8s.cluster.name`, and the receiver emits a
-  synthetic `k8s.cluster` entity derived from that configured value.
+  Adds a new `cluster_uid` config option and uses it as the identifier for a
+  synthetic `k8s.cluster` entity. An optional `cluster_name` config can be set
+  as descriptive metadata on that synthetic entity.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
