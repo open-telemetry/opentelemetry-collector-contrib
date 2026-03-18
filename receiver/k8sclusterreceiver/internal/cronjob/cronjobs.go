@@ -5,6 +5,7 @@ package cronjob // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	batchv1 "k8s.io/api/batch/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -30,6 +31,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, cj *batchv1.CronJob, ts pcommon.
 
 func GetMetadata(cj *batchv1.CronJob) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	rm := metadata.GetGenericMetadata(&cj.ObjectMeta, constants.K8sKindCronJob)
+	rm.Metadata[string(conventions.K8SCronJobNameKey)] = cj.Name
 	rm.Metadata[cronJobKeySchedule] = cj.Spec.Schedule
 	rm.Metadata[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{experimentalmetricmetadata.ResourceID(cj.UID): rm}

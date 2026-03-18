@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -151,6 +152,7 @@ func GetMetadata(svc *corev1.Service) map[experimentalmetricmetadata.ResourceID]
 // GetPodServiceTags returns a set of services associated with the pod.
 func GetPodServiceTags(pod *corev1.Pod, services map[string]cache.Store) map[string]string {
 	properties := map[string]string{}
+	matchedServices := map[string]struct{}{}
 
 	for _, storeKey := range [2]string{metadata.ClusterWideInformerKey, pod.Namespace} {
 		if servicesStore, ok := services[storeKey]; ok {
@@ -159,10 +161,17 @@ func GetPodServiceTags(pod *corev1.Pod, services map[string]cache.Store) map[str
 				if serObj.Namespace == pod.Namespace &&
 					labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
 					properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
-					return properties
+					matchedServices[serObj.Name] = struct{}{}
 				}
 			}
 		}
 	}
+
+	if len(matchedServices) == 1 {
+		for serviceName := range matchedServices {
+			properties[string(conventions.ServiceNameKey)] = serviceName
+		}
+	}
+
 	return properties
 }

@@ -5,6 +5,7 @@ package replicaset // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -40,7 +41,9 @@ func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommo
 }
 
 func GetMetadata(rs *appsv1.ReplicaSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+	rm := metadata.GetGenericMetadata(&rs.ObjectMeta, constants.K8sKindReplicaSet)
+	rm.Metadata[string(conventions.K8SReplicaSetNameKey)] = rs.Name
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
-		experimentalmetricmetadata.ResourceID(rs.UID): metadata.GetGenericMetadata(&rs.ObjectMeta, constants.K8sKindReplicaSet),
+		experimentalmetricmetadata.ResourceID(rs.UID): rm,
 	}
 }

@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -39,6 +40,29 @@ func TestDaemonsetMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
+	)
+}
+
+func TestDaemonSetMetadata(t *testing.T) {
+	ds := testutils.NewDaemonset("1")
+
+	actualMetadata := GetMetadata(ds)
+
+	require.Len(t, actualMetadata, 1)
+	require.Equal(t,
+		metadata.KubernetesMetadata{
+			EntityType:    "k8s.daemonset",
+			ResourceIDKey: "k8s.daemonset.uid",
+			ResourceID:    "test-daemonset-1-uid",
+			Metadata: map[string]string{
+				"k8s.workload.kind":            "DaemonSet",
+				"k8s.workload.name":            "test-daemonset-1",
+				"k8s.daemonset.name":           "test-daemonset-1",
+				"daemonset.creation_timestamp": "0001-01-01T00:00:00Z",
+				"k8s.namespace.name":           "test-namespace",
+			},
+		},
+		*actualMetadata[experimentalmetricmetadata.ResourceID("test-daemonset-1-uid")],
 	)
 }
 

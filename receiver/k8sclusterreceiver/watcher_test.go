@@ -425,6 +425,7 @@ func TestObjMetadata(t *testing.T) {
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
 						"k8s.service.test-service": "",
+						"service.name":             "test-service",
 						"k8s-app":                  "my-app",
 						"k8s.pod.phase":            "Running",
 						"k8s.namespace.name":       "test-namespace",
@@ -446,6 +447,7 @@ func TestObjMetadata(t *testing.T) {
 					Metadata: map[string]string{
 						"k8s.workload.kind":            "DaemonSet",
 						"k8s.workload.name":            "test-daemonset-1",
+						"k8s.daemonset.name":           "test-daemonset-1",
 						"daemonset.creation_timestamp": "0001-01-01T00:00:00Z",
 						"k8s.namespace.name":           "test-namespace",
 					},
@@ -503,6 +505,7 @@ func TestObjMetadata(t *testing.T) {
 						"foo1":                   "",
 						"k8s.workload.kind":      "Job",
 						"k8s.workload.name":      "test-job-1",
+						"k8s.job.name":           "test-job-1",
 						"job.creation_timestamp": "0001-01-01T00:00:00Z",
 						"k8s.namespace.name":     "test-namespace",
 					},
@@ -546,6 +549,7 @@ func TestObjMetadata(t *testing.T) {
 						"foo1":                          "",
 						"k8s.workload.kind":             "ReplicaSet",
 						"k8s.workload.name":             "test-replicaset-1",
+						"k8s.replicaset.name":           "test-replicaset-1",
 						"replicaset.creation_timestamp": "0001-01-01T00:00:00Z",
 						"k8s.namespace.name":            "test-namespace",
 					},

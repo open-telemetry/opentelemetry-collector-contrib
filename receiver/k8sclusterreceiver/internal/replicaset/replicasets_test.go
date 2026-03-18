@@ -16,6 +16,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -38,6 +39,31 @@ func TestReplicasetMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
+	)
+}
+
+func TestReplicaSetMetadata(t *testing.T) {
+	rs := testutils.NewReplicaSet("1")
+
+	actualMetadata := GetMetadata(rs)
+
+	require.Len(t, actualMetadata, 1)
+	require.Equal(t,
+		metadata.KubernetesMetadata{
+			EntityType:    "k8s.replicaset",
+			ResourceIDKey: "k8s.replicaset.uid",
+			ResourceID:    "test-replicaset-1-uid",
+			Metadata: map[string]string{
+				"foo":                           "bar",
+				"foo1":                          "",
+				"k8s.workload.kind":             "ReplicaSet",
+				"k8s.workload.name":             "test-replicaset-1",
+				"k8s.replicaset.name":           "test-replicaset-1",
+				"replicaset.creation_timestamp": "0001-01-01T00:00:00Z",
+				"k8s.namespace.name":            "test-namespace",
+			},
+		},
+		*actualMetadata[experimentalmetricmetadata.ResourceID("test-replicaset-1-uid")],
 	)
 }
 

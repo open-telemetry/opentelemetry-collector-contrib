@@ -59,6 +59,7 @@ func TestCronJobMetadata(t *testing.T) {
 				"concurrency_policy":         "concurrency_policy",
 				"k8s.workload.kind":          "CronJob",
 				"k8s.workload.name":          "test-cronjob-1",
+				"k8s.cronjob.name":           "test-cronjob-1",
 				"k8s.namespace.name":         "test-namespace",
 			},
 		},

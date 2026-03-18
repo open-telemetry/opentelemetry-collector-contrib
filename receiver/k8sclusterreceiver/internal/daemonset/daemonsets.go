@@ -5,6 +5,7 @@ package daemonset // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -40,7 +41,9 @@ func RecordMetrics(mb *metadata.MetricsBuilder, ds *appsv1.DaemonSet, ts pcommon
 }
 
 func GetMetadata(ds *appsv1.DaemonSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+	rm := metadata.GetGenericMetadata(&ds.ObjectMeta, constants.K8sKindDaemonSet)
+	rm.Metadata[string(conventions.K8SDaemonSetNameKey)] = ds.Name
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
-		experimentalmetricmetadata.ResourceID(ds.UID): metadata.GetGenericMetadata(&ds.ObjectMeta, constants.K8sKindDaemonSet),
+		experimentalmetricmetadata.ResourceID(ds.UID): rm,
 	}
 }

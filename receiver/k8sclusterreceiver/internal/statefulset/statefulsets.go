@@ -5,6 +5,7 @@ package statefulset // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -51,6 +52,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, ss *appsv1.StatefulSet, ts pcomm
 
 func GetMetadata(ss *appsv1.StatefulSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := metadata.GetGenericMetadata(&ss.ObjectMeta, constants.K8sStatefulSet)
+	km.Metadata[string(conventions.K8SStatefulSetNameKey)] = ss.Name
 	km.Metadata[statefulSetCurrentVersion] = ss.Status.CurrentRevision
 	km.Metadata[statefulSetUpdateVersion] = ss.Status.UpdateRevision
 

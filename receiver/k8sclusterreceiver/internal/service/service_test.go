@@ -11,11 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
@@ -408,4 +411,72 @@ func TestGetMetadata(t *testing.T) {
 
 	assert.Equal(t, "true", km.Metadata["k8s.service.annotation.prometheus.io/scrape"])
 	assert.NotContains(t, km.Metadata, "k8s.service.annotation.kubectl.kubernetes.io/last-applied-configuration")
+}
+
+func TestGetPodServiceTagsSingleMatchAddsServiceNameAlias(t *testing.T) {
+	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
+	require.NoError(t, store.Add(&corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service",
+			Namespace: "default",
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{"app": "myapp"},
+		},
+	}))
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Labels:    map[string]string{"app": "myapp"},
+		},
+	}
+
+	properties := GetPodServiceTags(pod, map[string]cache.Store{
+		metadata.ClusterWideInformerKey: store,
+	})
+
+	assert.Equal(t, map[string]string{
+		constants.K8sServicePrefix + "test-service": "",
+		string(conventions.ServiceNameKey):          "test-service",
+	}, properties)
+}
+
+func TestGetPodServiceTagsMultipleMatchesOmitsServiceNameAlias(t *testing.T) {
+	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
+	require.NoError(t, store.Add(&corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service-a",
+			Namespace: "default",
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{"app": "myapp"},
+		},
+	}))
+	require.NoError(t, store.Add(&corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-service-b",
+			Namespace: "default",
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{"app": "myapp"},
+		},
+	}))
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Labels:    map[string]string{"app": "myapp"},
+		},
+	}
+
+	properties := GetPodServiceTags(pod, map[string]cache.Store{
+		metadata.ClusterWideInformerKey: store,
+	})
+
+	assert.Equal(t, map[string]string{
+		constants.K8sServicePrefix + "test-service-a": "",
+		constants.K8sServicePrefix + "test-service-b": "",
+	}, properties)
+	assert.NotContains(t, properties, string(conventions.ServiceNameKey))
 }

@@ -5,6 +5,7 @@ package jobs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 	batchv1 "k8s.io/api/batch/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -49,7 +50,9 @@ func Transform(job *batchv1.Job) *batchv1.Job {
 }
 
 func GetMetadata(j *batchv1.Job) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+	rm := metadata.GetGenericMetadata(&j.ObjectMeta, constants.K8sKindJob)
+	rm.Metadata[string(conventions.K8SJobNameKey)] = j.Name
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
-		experimentalmetricmetadata.ResourceID(j.UID): metadata.GetGenericMetadata(&j.ObjectMeta, constants.K8sKindJob),
+		experimentalmetricmetadata.ResourceID(j.UID): rm,
 	}
 }

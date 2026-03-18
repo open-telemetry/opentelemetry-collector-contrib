@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -55,6 +56,31 @@ func TestJobMetrics(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
+	)
+}
+
+func TestJobMetadata(t *testing.T) {
+	j := testutils.NewJob("1")
+
+	actualMetadata := GetMetadata(j)
+
+	require.Len(t, actualMetadata, 1)
+	require.Equal(t,
+		metadata.KubernetesMetadata{
+			EntityType:    "k8s.job",
+			ResourceIDKey: "k8s.job.uid",
+			ResourceID:    "test-job-1-uid",
+			Metadata: map[string]string{
+				"foo":                    "bar",
+				"foo1":                   "",
+				"k8s.workload.kind":      "Job",
+				"k8s.workload.name":      "test-job-1",
+				"k8s.job.name":           "test-job-1",
+				"job.creation_timestamp": "0001-01-01T00:00:00Z",
+				"k8s.namespace.name":     "test-namespace",
+			},
+		},
+		*actualMetadata[experimentalmetricmetadata.ResourceID("test-job-1-uid")],
 	)
 }
 
