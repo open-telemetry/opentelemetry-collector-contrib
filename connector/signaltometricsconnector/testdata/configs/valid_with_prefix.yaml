@@ -1,9 +1,0 @@
-signal_to_metrics:
-  spans:
-    - name: span.sum
-      include_resource_attributes:
-        - key: service.name
-        - prefix: "labels."
-        - prefix: "numeric_labels."
-      sum:
-        value: "1"

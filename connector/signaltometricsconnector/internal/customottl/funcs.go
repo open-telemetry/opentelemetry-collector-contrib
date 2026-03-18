@@ -32,5 +32,8 @@ func ProfileFuncs() map[string]ottl.Factory[*ottlprofile.TransformContext] {
 }
 
 func commonFuncs[K any]() map[string]ottl.Factory[K] {
-	return ottlfuncs.StandardFuncs[K]()
+	m := ottlfuncs.StandardFuncs[K]()
+	filterFactory := NewFilterMapByKeyListFactory[K]()
+	m[filterFactory.Name()] = filterFactory
+	return m
 }

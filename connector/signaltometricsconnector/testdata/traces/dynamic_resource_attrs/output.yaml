@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signal_to_metrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+    scopeMetrics:
+      - metrics:
+          - description: Span count with dynamically selected resource attributes
+            name: dynamic.span.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "7"
+                  timeUnixNano: "1000000"
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

@@ -5,6 +5,7 @@ package signaltometricsconnector
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -45,6 +46,7 @@ func TestConnectorWithTraces(t *testing.T) {
 		"exponential_histograms",
 		"metric_identity",
 		"gauge",
+		"dynamic_resource_attrs",
 	}
 
 	ctx, cancel := context.WithCancel(t.Context())
@@ -366,6 +368,41 @@ func assertAggregatedMetrics(t *testing.T, expected, actual pmetric.Metrics) {
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreTimestamp(),
 	))
+}
+
+func TestHandleError(t *testing.T) {
+	testErr := errors.New("test error")
+	tests := []struct {
+		name      string
+		errorMode ottl.ErrorMode
+		wantErr   bool
+		wantLog   bool
+	}{
+		{name: "propagate", errorMode: ottl.PropagateError, wantErr: true},
+		{name: "ignore", errorMode: ottl.IgnoreError, wantLog: true},
+		{name: "silent", errorMode: ottl.SilentError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core, logs := observer.New(zap.WarnLevel)
+			sm := &signalToMetrics{
+				logger:    zap.New(core),
+				errorMode: tt.errorMode,
+			}
+			err := sm.handleError(testErr)
+			if tt.wantErr {
+				assert.ErrorIs(t, err, testErr)
+			} else {
+				assert.NoError(t, err)
+			}
+			if tt.wantLog {
+				require.Equal(t, 1, logs.Len())
+				assert.Contains(t, logs.All()[0].Message, "Error processing data")
+			} else {
+				assert.Empty(t, logs.All())
+			}
+		})
+	}
 }
 
 // TestErrorMode tests error handling behavior with different error modes

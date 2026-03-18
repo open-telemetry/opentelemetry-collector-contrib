@@ -287,9 +287,6 @@ by specifying a list of attributes that should be included in the final metrics.
 If no attributes are specified for `include_resource_attributes` then no filtering
 is performed i.e. all resource attributes of the incoming data is considered.
 
-Each entry uses either `key` (exact match) or `prefix` (wildcard match by prefix).
-Exactly one of `key` or `prefix` must be set per entry.
-
 ```yaml
 include_resource_attributes:
   - key: resource.foo # Include resource.foo attribute if present
@@ -297,10 +294,7 @@ include_resource_attributes:
     default_value: bar
   - key: resource.baz # Optional resource.baz attribute is added if present
     optional: true
-  - prefix: "labels." # Include all attributes starting with "labels."
 ```
-
-#### key-based entries
 
 - `resource.foo` will be present for the produced metrics if the incoming data also
   has the attribute defined. If the attribute is missing in the incoming data the
@@ -313,40 +307,8 @@ include_resource_attributes:
   attributes with `optional` set to `true` behaves identical to an attribute configured
   without `default_value` or `optional`.
 
-#### prefix-based entries
-
-A `prefix` entry includes all resource attributes whose key starts with the given
-string. This is useful when the exact attribute names are not known ahead of time
-(e.g. dynamic labels injected by an upstream component).
-
-```yaml
-include_resource_attributes:
-  - key: service.name
-  - prefix: "labels."
-  - prefix: "numeric_labels."
-```
-
-With the above configuration, `service.name` is always included, and any resource
-attributes matching `labels.*` or `numeric_labels.*` are included dynamically.
-
-Prefix entries are implicitly optional -- if no attributes match the prefix, the
-metric is still produced. Prefix entries cannot have `default_value` or `optional`
-set.
-
-The `prefix` field also works for event-level `attributes`. In that context,
-prefix entries are treated as optional: they never block metric production when
-no matching attributes exist.
-
-### Validation
-
-All `include_resource_attributes` and `attributes` entries are validated at
-startup. Each entry must have exactly one of `key` or `prefix` set. Invalid
-entries (missing both, setting both, or using unsupported combinations like
-`prefix` with `default_value`) will cause the connector to fail to start.
-
-> **Note:** Prior versions did not validate `include_resource_attributes`
-> entries. Existing configurations with invalid entries that were previously
-> silently accepted will now be rejected.
+For dynamic attribute inclusion (e.g. when the set of attribute keys is not known at
+configuration time), see [Dynamic resource attributes](#dynamic-resource-attributes).
 
 ### Single writer
 
@@ -361,8 +323,86 @@ resource attribute is added to each produced metric:
 signal_to_metrics.service.instance.id: <service_instance_id_of_the_otel_collector>
 ```
 
+### Dynamic resource attributes
+
+The `dynamic_resource_attributes` object optionally configures an OTTL value
+expression that is evaluated once per signal item (span, log record, datapoint,
+or profile). The expression must return a `pcommon.Map`. The resulting key-value
+pairs are merged into that metric's resource attributes alongside the statically
+configured `include_resource_attributes`.
+
+```yaml
+dynamic_resource_attributes:
+  statement: <ottl_value_expression>  # required -- must return a pcommon.Map
+```
+
+- [**Required**] `statement` is an OTTL value expression that **must evaluate to a
+  `pcommon.Map`**. At config time the connector evaluates the expression against a
+  synthetic (empty) signal to verify the return type — expressions that return a
+  non-Map value (e.g. a bare string literal) will be rejected at startup. If the
+  expression cannot be evaluated with empty data (e.g. it calls a custom function
+  that requires real attributes), the check is deferred to runtime.
+  The expression has access to the
+  [otelcol context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlotelcol)
+  (`otelcol.client.metadata`, `otelcol.client.auth.attributes`, etc.) in addition
+  to the standard signal-specific paths (`resource.attributes`, `attributes`, etc.).
+When `dynamic_resource_attributes` is not set (default), no dynamic evaluation
+occurs and the connector behaves exactly as before.
+
+The merge order is: static `include_resource_attributes` first, then the dynamic
+expression result (which can overwrite static keys), then collector instance info
+(always wins last).
+
+**Example 1 -- prefix-based label forwarding:**
+
+Use the built-in `FilterMapByKeyList` function with a `"*"` wildcard selects all prefix-matched keys dynamically:
+
+```yaml
+signal_to_metrics:
+  spans:
+    - name: tenant.span.count
+      include_resource_attributes:
+        - key: service.name
+      dynamic_resource_attributes:
+        statement: |
+          FilterMapByKeyList(resource.attributes, "*", ["labels.", "numeric_labels."])
+      sum:
+        value: "1"
+```
+
+Given resource attributes `service.name=svc`, `labels.team=platform`, and
+`numeric_labels.cost=42`, the output metric resource will contain
+`service.name` (static), `labels.team`, and `numeric_labels.cost` (dynamic).
+
+**Example 2 -- metadata-driven attribute selection:**
+
+Use the built-in `FilterMapByKeyList` function with an allow-list read from `client.Metadata` to
+select matching resource attributes at runtime:
+
+```yaml
+signal_to_metrics:
+  spans:
+    - name: my.metric
+      include_resource_attributes:
+        - key: service.name
+      dynamic_resource_attributes:
+        statement: |
+          FilterMapByKeyList(resource.attributes, otelcol.client.metadata["x-allowed-attrs"], ["labels.", "numeric_labels."])
+      sum:
+        value: "1"
+```
+
+The expression reads the allow-list from the `x-allowed-attrs` metadata key
+(a comma-separated string of base key names, e.g. `"team,cost"`) and returns
+only prefix-matched resource attributes whose base name is in the list.
+
 ### Custom OTTL functions
 
-The component implements the following custom OTTL functions:
+The component ships the following built-in custom OTTL functions:
 
-1. `AdjustedCount`: a converter capable of calculating [adjusted count for a span](https://github.com/open-telemetry/oteps/blob/main/text/trace/0235-sampling-threshold-in-trace-state.md).
+- `AdjustedCount`: a converter capable of calculating [adjusted count for a span](https://github.com/open-telemetry/oteps/blob/main/text/trace/0235-sampling-threshold-in-trace-state.md).
+- `FilterMapByKeyList(source, key_list, prefixes...)`: filters a map by an allow-list of keys scoped to one or more prefixes. `key_list` is a
+  comma-separated string of base key names (after stripping the prefix), the special value `"*"` to accept all prefix-matched keys, or `nil`/`""` to
+  reject all. Returns a `pcommon.Map`. See [Dynamic resource attributes](#dynamic-resource-attributes) for examples.
+
+These functions are available in all OTTL expressions (conditions, value expressions, and `dynamic_resource_attributes`) for all signal types.

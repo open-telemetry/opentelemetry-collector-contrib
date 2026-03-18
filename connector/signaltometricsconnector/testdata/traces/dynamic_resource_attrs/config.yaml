@@ -1,0 +1,11 @@
+signal_to_metrics:
+  spans:
+    - name: dynamic.span.sum
+      description: Span count with dynamically selected resource attributes
+      unit: "1"
+      include_resource_attributes:
+        - key: resource.foo
+      dynamic_resource_attributes:
+        statement: FilterMapByKeyList(resource.attributes, "*", ["resource."])
+      sum:
+        value: "1"

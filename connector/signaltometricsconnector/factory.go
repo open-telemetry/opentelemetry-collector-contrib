@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/customottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -49,7 +48,7 @@ func createTracesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Traces, error) {
 	c := cfg.(*config.Config)
-	parser, err := ottlspan.NewParser(customottl.SpanFuncs(), set.TelemetrySettings)
+	parser, err := ottlspan.NewParser(c.SpanParserFuncs(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTTL statement parser for spans: %w", err)
 	}
@@ -82,7 +81,7 @@ func createMetricsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
 	c := cfg.(*config.Config)
-	parser, err := ottldatapoint.NewParser(customottl.DatapointFuncs(), set.TelemetrySettings)
+	parser, err := ottldatapoint.NewParser(c.DatapointParserFuncs(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTTL statement parser for datapoints: %w", err)
 	}
@@ -115,7 +114,7 @@ func createLogsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Logs, error) {
 	c := cfg.(*config.Config)
-	parser, err := ottllog.NewParser(customottl.LogFuncs(), set.TelemetrySettings)
+	parser, err := ottllog.NewParser(c.LogParserFuncs(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTTL statement parser for logs: %w", err)
 	}
@@ -148,7 +147,7 @@ func createProfilesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (xconnector.Profiles, error) {
 	c := cfg.(*config.Config)
-	parser, err := ottlprofile.NewParser(customottl.ProfileFuncs(), set.TelemetrySettings)
+	parser, err := ottlprofile.NewParser(c.ProfileParserFuncs(), set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTTL statement parser for profiles: %w", err)
 	}

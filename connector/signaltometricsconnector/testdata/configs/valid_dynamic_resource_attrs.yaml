@@ -1,0 +1,7 @@
+signal_to_metrics:
+  spans:
+    - name: span.sum
+      dynamic_resource_attributes:
+        statement: FilterMapByKeyList(resource.attributes, "*", ["labels.", "numeric_labels."])
+      sum:
+        value: "1"

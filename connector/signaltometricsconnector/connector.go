@@ -44,6 +44,20 @@ func (*signalToMetrics) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
+func (sm *signalToMetrics) handleError(err error) error {
+	switch sm.errorMode {
+	case ottl.PropagateError:
+		return err
+	case ottl.IgnoreError:
+		sm.logger.Warn("Error processing data", zap.Error(err))
+		return nil
+	case ottl.SilentError:
+		return nil
+	default:
+		return err
+	}
+}
+
 func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	if len(sm.spanMetricDefs) == 0 {
 		return nil
@@ -83,8 +97,15 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 						}
 					}
 
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
-					err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1)
+					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo, sm.logger)
+					if err != nil {
+						tCtx.Close()
+						if herr := sm.handleError(err); herr != nil {
+							return herr
+						}
+						continue
+					}
+					err = aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -114,7 +135,6 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 				metrics := scopeMetric.Metrics()
 				metric := metrics.At(k)
 				for _, md := range sm.dpMetricDefs {
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
 					aggregate := func(dp any, dpAttrs pcommon.Map) error {
 						// The transform context is created from original attributes so that the
 						// OTTL expressions are also applied on the original attributes.
@@ -129,6 +149,10 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 								sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
 								return nil
 							}
+						}
+						filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo, sm.logger)
+						if err != nil {
+							return sm.handleError(err)
 						}
 						return aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, dpAttrs, 1)
 					}
@@ -243,8 +267,15 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 							continue
 						}
 					}
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
-					err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1)
+					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo, sm.logger)
+					if err != nil {
+						tCtx.Close()
+						if herr := sm.handleError(err); herr != nil {
+							return herr
+						}
+						continue
+					}
+					err = aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -298,7 +329,14 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 							continue
 						}
 					}
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
+					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo, sm.logger)
+					if err != nil {
+						tCtx.Close()
+						if herr := sm.handleError(err); herr != nil {
+							return herr
+						}
+						continue
+					}
 					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredProfileAttrs, 1); err != nil {
 						tCtx.Close()
 						return err

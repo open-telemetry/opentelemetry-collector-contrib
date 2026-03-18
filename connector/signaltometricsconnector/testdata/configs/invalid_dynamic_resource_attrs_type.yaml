@@ -1,0 +1,25 @@
+signal_to_metrics:
+  spans:
+    - name: span.sum
+      dynamic_resource_attributes:
+        statement: '"not_a_map"'
+      sum:
+        value: "1"
+  datapoints:
+    - name: dp.sum
+      dynamic_resource_attributes:
+        statement: '"not_a_map"'
+      sum:
+        value: "1"
+  logs:
+    - name: log.sum
+      dynamic_resource_attributes:
+        statement: '"not_a_map"'
+      sum:
+        value: "1"
+  profiles:
+    - name: profile.sum
+      dynamic_resource_attributes:
+        statement: '"not_a_map"'
+      sum:
+        value: "1"

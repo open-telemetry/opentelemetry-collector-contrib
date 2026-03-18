@@ -4,13 +4,14 @@
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/model"
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -18,7 +19,6 @@ import (
 
 type AttributeKeyValue struct {
 	Key          string
-	Prefix       string
 	Optional     bool
 	DefaultValue pcommon.Value
 }
@@ -128,10 +128,17 @@ func (s *Gauge[K]) fromConfig(
 	return nil
 }
 
+// DynResAttrConfig groups the parsed dynamic resource attribute settings.
+// A nil value means the feature is disabled for a given MetricDef.
+type DynResAttrConfig[K any] struct {
+	Expression *ottl.ValueExpression[K]
+}
+
 type MetricDef[K any] struct {
 	Key                       MetricKey
 	IncludeResourceAttributes []AttributeKeyValue
 	Attributes                []AttributeKeyValue
+	DynResAttrs               *DynResAttrConfig[K]
 	Conditions                *ottl.ConditionSequence[K]
 	ExponentialHistogram      *ExponentialHistogram[K]
 	ExplicitHistogram         *ExplicitHistogram[K]
@@ -156,6 +163,15 @@ func (md *MetricDef[K]) FromMetricInfo(
 	md.Attributes, err = parseAttributeConfigs(mi.Attributes)
 	if err != nil {
 		return fmt.Errorf("failed to parse attribute config: %w", err)
+	}
+	if mi.DynamicResourceAttributes != nil && mi.DynamicResourceAttributes.Statement != "" {
+		expr, dynErr := parser.ParseValueExpression(mi.DynamicResourceAttributes.Statement)
+		if dynErr != nil {
+			return fmt.Errorf("failed to parse dynamic_resource_attributes OTTL expression: %w", dynErr)
+		}
+		md.DynResAttrs = &DynResAttrConfig[K]{
+			Expression: expr,
+		}
 	}
 	if len(mi.Conditions) > 0 {
 		conditions, err := parser.ParseConditions(mi.Conditions)
@@ -205,10 +221,16 @@ func (md *MetricDef[K]) FromMetricInfo(
 // attributes are only filtered if the list is specified, otherwise all the
 // resource attributes are used for creating the metrics from the metric
 // definition.
+//
+// When DynamicResourceAttributes is set, the OTTL expression is evaluated
+// and any resulting pcommon.Map entries are merged into the output.
 func (md *MetricDef[K]) FilterResourceAttributes(
+	ctx context.Context,
+	tCtx K,
 	attrs pcommon.Map,
 	collectorInfo CollectorInstanceInfo,
-) pcommon.Map {
+	logger *zap.Logger,
+) (pcommon.Map, error) {
 	var filteredAttributes pcommon.Map
 	switch {
 	case len(md.IncludeResourceAttributes) == 0:
@@ -219,8 +241,25 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 		expectedLen := len(md.IncludeResourceAttributes) + collectorInfo.Size()
 		filteredAttributes = filterAttributes(attrs, md.IncludeResourceAttributes, expectedLen)
 	}
+	if dra := md.DynResAttrs; dra != nil {
+		result, err := dra.Expression.Eval(ctx, tCtx)
+		if err != nil {
+			return pcommon.Map{}, fmt.Errorf("evaluating dynamic_resource_attributes expression: %w", err)
+		}
+		dynMap, ok := result.(pcommon.Map)
+		if !ok {
+			return pcommon.Map{}, fmt.Errorf(
+				"dynamic_resource_attributes must return a pcommon.Map, got %T", result,
+			)
+		}
+
+		dynMap.Range(func(k string, v pcommon.Value) bool {
+			v.CopyTo(filteredAttributes.PutEmpty(k))
+			return true
+		})
+	}
 	collectorInfo.Copy(filteredAttributes)
-	return filteredAttributes
+	return filteredAttributes, nil
 }
 
 // FilterAttributes filters event attributes (datapoint, logrecord, spans)
@@ -235,7 +274,7 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 func (md *MetricDef[K]) FilterAttributes(attrs pcommon.Map) (pcommon.Map, bool) {
 	// Figure out if all the attributes are available, saves allocation
 	for _, filter := range md.Attributes {
-		if filter.Prefix != "" || filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
+		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
 			continue
 		}
 		if _, ok := attrs.Get(filter.Key); !ok {
@@ -249,15 +288,6 @@ func filterAttributes(attrs pcommon.Map, filters []AttributeKeyValue, expectedLe
 	filteredAttrs := pcommon.NewMap()
 	filteredAttrs.EnsureCapacity(expectedLen)
 	for _, filter := range filters {
-		if filter.Prefix != "" {
-			attrs.Range(func(k string, v pcommon.Value) bool {
-				if strings.HasPrefix(k, filter.Prefix) {
-					v.CopyTo(filteredAttrs.PutEmpty(k))
-				}
-				return true
-			})
-			continue
-		}
 		if attr, ok := attrs.Get(filter.Key); ok {
 			attr.CopyTo(filteredAttrs.PutEmpty(filter.Key))
 			continue
@@ -279,7 +309,6 @@ func parseAttributeConfigs(cfgs []config.Attribute) ([]AttributeKeyValue, error)
 		}
 		kvs[i] = AttributeKeyValue{
 			Key:          attr.Key,
-			Prefix:       attr.Prefix,
 			Optional:     attr.Optional,
 			DefaultValue: val,
 		}
