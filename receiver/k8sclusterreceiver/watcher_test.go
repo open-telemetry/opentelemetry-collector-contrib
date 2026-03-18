@@ -624,6 +624,39 @@ func TestObjMetadata(t *testing.T) {
 	}
 }
 
+func TestObjMetadataAddsClusterName(t *testing.T) {
+	rw := &resourceWatcher{
+		metadataStore: &metadata.Store{},
+		config:        &Config{ClusterName: "test-cluster"},
+	}
+
+	actual := rw.objMetadata(testutils.NewReplicaSet("1"))
+	require.Contains(t, actual, experimentalmetricmetadata.ResourceID("test-replicaset-1-uid"))
+	assert.Equal(t, "test-cluster", actual[experimentalmetricmetadata.ResourceID("test-replicaset-1-uid")].Metadata[metadata.K8SClusterNameKey])
+}
+
+func TestWithClusterEntity(t *testing.T) {
+	rw := &resourceWatcher{
+		config: &Config{ClusterName: "test-cluster"},
+	}
+
+	oldMetadata, newMetadata := rw.withClusterEntity(nil, map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+		"pod-1": {
+			EntityType:    "k8s.pod",
+			ResourceIDKey: "k8s.pod.uid",
+			ResourceID:    "pod-1",
+			Metadata:      map[string]string{"k8s.pod.name": "pod-1"},
+		},
+	})
+	require.Nil(t, oldMetadata)
+	require.Contains(t, newMetadata, experimentalmetricmetadata.ResourceID("test-cluster"))
+	assert.Equal(t, metadata.K8SClusterEntityType, newMetadata[experimentalmetricmetadata.ResourceID("test-cluster")].EntityType)
+
+	oldMetadata, newMetadata = rw.withClusterEntity(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}, map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{})
+	require.Contains(t, oldMetadata, experimentalmetricmetadata.ResourceID("test-cluster"))
+	require.Contains(t, newMetadata, experimentalmetricmetadata.ResourceID("test-cluster"))
+}
+
 var allPodMetadata = func(metadata map[string]string) map[string]string {
 	out := maps.MergeStringMaps(metadata, commonPodMetadata)
 	return out

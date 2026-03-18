@@ -61,6 +61,7 @@ type resourceWatcher struct {
 	initialTimeout      time.Duration
 	initialSyncDone     *atomic.Bool
 	initialSyncTimedOut *atomic.Bool
+	clusterEntitySent   atomic.Bool
 	config              *Config
 	entityLogConsumer   consumer.Logs
 
@@ -373,33 +374,35 @@ func (rw *resourceWatcher) onDelete(oldObj any) {
 
 // objMetadata returns the metadata for the given object.
 func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+	var out map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		return pod.GetMetadata(o, rw.metadataStore, rw.logger)
+		out = pod.GetMetadata(o, rw.metadataStore, rw.logger)
 	case *corev1.Node:
-		return node.GetMetadata(o)
+		out = node.GetMetadata(o)
 	case *corev1.ReplicationController:
-		return replicationcontroller.GetMetadata(o)
+		out = replicationcontroller.GetMetadata(o)
 	case *corev1.Service:
-		return service.GetMetadata(o)
+		out = service.GetMetadata(o)
 	case *appsv1.Deployment:
-		return deployment.GetMetadata(o)
+		out = deployment.GetMetadata(o)
 	case *appsv1.ReplicaSet:
-		return replicaset.GetMetadata(o)
+		out = replicaset.GetMetadata(o)
 	case *appsv1.DaemonSet:
-		return daemonset.GetMetadata(o)
+		out = daemonset.GetMetadata(o)
 	case *appsv1.StatefulSet:
-		return statefulset.GetMetadata(o)
+		out = statefulset.GetMetadata(o)
 	case *batchv1.Job:
-		return jobs.GetMetadata(o)
+		out = jobs.GetMetadata(o)
 	case *batchv1.CronJob:
-		return cronjob.GetMetadata(o)
+		out = cronjob.GetMetadata(o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
-		return hpa.GetMetadata(o)
+		out = hpa.GetMetadata(o)
 	case *corev1.Namespace:
-		return namespace.GetMetadata(o)
+		out = namespace.GetMetadata(o)
 	}
-	return nil
+	rw.addClusterNameToMetadata(out)
+	return out
 }
 
 func (rw *resourceWatcher) waitForInitialInformerSync() {
@@ -462,6 +465,7 @@ func validateMetadataExporters(metadataExporters map[string]bool, exporters map[
 
 func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	oldMetadata, newMetadata = rw.withClusterEntity(oldMetadata, newMetadata)
 
 	metadataUpdate := metadata.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) != 0 {
@@ -494,6 +498,48 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 			}
 		}
 	}
+}
+
+func (rw *resourceWatcher) addClusterNameToMetadata(resources map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) {
+	if rw.config == nil {
+		return
+	}
+	metadata.AddClusterNameToResources(resources, rw.config.ClusterName)
+}
+
+func (rw *resourceWatcher) withClusterEntity(oldMetadata, newMetadata map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) (
+	map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata,
+	map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata,
+) {
+	if rw.config == nil || rw.config.ClusterName == "" {
+		return oldMetadata, newMetadata
+	}
+
+	clusterMetadata := metadata.NewClusterMetadata(rw.config.ClusterName)
+	if clusterMetadata == nil {
+		return oldMetadata, newMetadata
+	}
+
+	clusterID := clusterMetadata.ResourceID
+	if !rw.clusterEntitySent.Swap(true) {
+		if newMetadata == nil {
+			newMetadata = map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
+		}
+		newMetadata[clusterID] = clusterMetadata
+		return oldMetadata, newMetadata
+	}
+
+	if oldMetadata == nil {
+		oldMetadata = map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
+	}
+	oldMetadata[clusterID] = clusterMetadata
+
+	if newMetadata == nil {
+		newMetadata = map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
+	}
+	newMetadata[clusterID] = clusterMetadata
+
+	return oldMetadata, newMetadata
 }
 
 // stringSliceToMap converts a slice of strings into a map with keys from the slice

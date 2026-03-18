@@ -58,6 +58,21 @@ func Test_getGenericMetadata(t *testing.T) {
 	}, rm.Metadata)
 }
 
+func TestAddClusterName(t *testing.T) {
+	m := map[string]string{"foo": "bar"}
+	AddClusterName(m, "test-cluster")
+	assert.Equal(t, "test-cluster", m[K8SClusterNameKey])
+}
+
+func TestNewClusterMetadata(t *testing.T) {
+	km := NewClusterMetadata("test-cluster")
+	require.NotNil(t, km)
+	assert.Equal(t, K8SClusterEntityType, km.EntityType)
+	assert.Equal(t, K8SClusterNameKey, km.ResourceIDKey)
+	assert.Equal(t, experimentalmetricmetadata.ResourceID("test-cluster"), km.ResourceID)
+	assert.Equal(t, map[string]string{K8SClusterNameKey: "test-cluster"}, km.Metadata)
+}
+
 func metadataMap(mdata map[string]string) map[experimentalmetricmetadata.ResourceID]*KubernetesMetadata {
 	rid := experimentalmetricmetadata.ResourceID("resource_id")
 	return map[experimentalmetricmetadata.ResourceID]*KubernetesMetadata{

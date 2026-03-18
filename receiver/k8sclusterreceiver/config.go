@@ -39,6 +39,9 @@ type Config struct {
 	// metadata collection on changes).
 	MetadataCollectionInterval time.Duration `mapstructure:"metadata_collection_interval"`
 
+	// ClusterName, when configured, is emitted as k8s.cluster.name on entity metadata.
+	ClusterName string `mapstructure:"cluster_name"`
+
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 

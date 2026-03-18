@@ -30,6 +30,11 @@ type KubernetesMetadata struct {
 	Metadata map[string]string
 }
 
+const (
+	K8SClusterEntityType = "k8s.cluster"
+	K8SClusterNameKey    = "k8s.cluster.name"
+)
+
 func TransformObjectMeta(om v1.ObjectMeta) v1.ObjectMeta {
 	newOM := v1.ObjectMeta{
 		Name:              om.Name,
@@ -79,6 +84,39 @@ func GetOTelUIDFromKind(kind string) string {
 
 func GetOTelNameFromKind(kind string) string {
 	return fmt.Sprintf("k8s.%s.name", kind)
+}
+
+func AddClusterName(metadata map[string]string, clusterName string) {
+	if clusterName == "" || metadata == nil {
+		return
+	}
+	metadata[K8SClusterNameKey] = clusterName
+}
+
+func AddClusterNameToResources(resources map[metadataPkg.ResourceID]*KubernetesMetadata, clusterName string) {
+	if clusterName == "" {
+		return
+	}
+	for _, resource := range resources {
+		if resource == nil {
+			continue
+		}
+		AddClusterName(resource.Metadata, clusterName)
+	}
+}
+
+func NewClusterMetadata(clusterName string) *KubernetesMetadata {
+	if clusterName == "" {
+		return nil
+	}
+	return &KubernetesMetadata{
+		EntityType:    K8SClusterEntityType,
+		ResourceIDKey: K8SClusterNameKey,
+		ResourceID:    metadataPkg.ResourceID(clusterName),
+		Metadata: map[string]string{
+			K8SClusterNameKey: clusterName,
+		},
+	}
 }
 
 func getOTelEntityTypeFromKind(kind string) string {
