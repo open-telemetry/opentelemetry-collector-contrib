@@ -19,22 +19,6 @@ subtext: |
   A feature gate `translator.skywalking.useStableSemconv` has been added to control the migration.
   The gate is disabled by default (Alpha stage), so existing behavior is preserved.
 
-  To opt-in to the new semantic conventions, enable the gate:
-  `--feature-gates translator.skywalking.useStableSemconv`
-
-  When enabled, the following output attribute names will change:
-  - `http.url` is now `url.full`
-  - `http.status_code` is now `http.response.status_code`
-  - `db.system` is now `db.system.name`
-  - `db.name` is now `db.namespace`
-  - `net.peer.name` is now `server.address`
-
-  This affects the Skywalking receiver and Skywalking encoding extension.
-
-  See migration guides:
-  - https://opentelemetry.io/docs/specs/semconv/non-normative/http-migration/
-  - https://opentelemetry.io/docs/specs/semconv/non-normative/db-migration/
-
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
