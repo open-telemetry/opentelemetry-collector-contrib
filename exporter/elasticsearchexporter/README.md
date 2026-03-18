@@ -564,28 +564,6 @@ There are ECS fields that are not mapped easily 1 to 1 but require more advanced
 
 Maintains the SemConv Value `host.name` as ECS Value `host.name` and maps it to ECS Value `host.hostname`, if this does not already exist.
 
-#### `host.os.type`
-
-Maps values of `os.type` in the following manner:
-
-| SemConv Value | ECS Value |
-|---------------|-----------|
-| windows       | windows   |
-| linux         | linux     |
-| darwin        | macos     |
-| aix           | unix      |
-| hpux          | unix      |
-| solaris       | unix      |
-
-In case `os.name` is present and falls within the specified range of values:
-
-| SemConv Value | ECS Value |
-|---------------|-----------|
-| Android       | android   |
-| iOS           | ios       |
-
-Otherwise, it is mapped to an empty string ("").
-
 #### `@timestamp`
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
