@@ -267,6 +267,9 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			// Restore base service name as the service name.
 			// Without this, internal spans such as postgresql queries have a service.name set to postgresql
 			if val, ok := span.Meta["_dd.base_service"]; ok {
+				// Preserve original per-span service name so the DD exporter
+				// can recover it via span-level service.name precedence
+				span.Meta["service.name"] = span.Service
 				span.Service = val
 			}
 			slice, exist := groupByService[span.Service]

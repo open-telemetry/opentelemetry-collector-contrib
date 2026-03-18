@@ -221,6 +221,7 @@ processor/resourcedetectionprocessor/internal/azure/             @open-telemetry
 processor/resourcedetectionprocessor/internal/digitalocean/      @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl @evan-bradley
 processor/resourcedetectionprocessor/internal/hetzner/           @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
+processor/resourcedetectionprocessor/internal/ibmcloud/vpc/      @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/openstack/nova/    @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole @geekdave
 processor/resourcedetectionprocessor/internal/scaleway/          @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
@@ -247,6 +248,7 @@ receiver/awss3receiver/                                          @open-telemetry
 receiver/awsxrayreceiver/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi @dyl10s
 receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins @dyl10s
+receiver/azurefunctionsreceiver/                                 @open-telemetry/collector-contrib-approvers @jmacd @MichaelKatsoulis @constanca-m
 receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @celian-garcia @ishleenk17
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
 receiver/chronyreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
