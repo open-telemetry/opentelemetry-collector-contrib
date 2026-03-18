@@ -26,91 +26,95 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FlinkJobCheckpointCount: MetricConfig{
+					FlinkJobCheckpointCount: FlinkJobCheckpointCountMetricConfig{
 						Enabled: true,
 					},
-					FlinkJobCheckpointInProgress: MetricConfig{
+					FlinkJobCheckpointInProgress: FlinkJobCheckpointInProgressMetricConfig{
 						Enabled: true,
 					},
-					FlinkJobLastCheckpointSize: MetricConfig{
+					FlinkJobLastCheckpointSize: FlinkJobLastCheckpointSizeMetricConfig{
 						Enabled: true,
 					},
-					FlinkJobLastCheckpointTime: MetricConfig{
+					FlinkJobLastCheckpointTime: FlinkJobLastCheckpointTimeMetricConfig{
 						Enabled: true,
 					},
-					FlinkJobRestartCount: MetricConfig{
+					FlinkJobRestartCount: FlinkJobRestartCountMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmClassLoaderClassesLoaded: MetricConfig{
+					FlinkJvmClassLoaderClassesLoaded: FlinkJvmClassLoaderClassesLoadedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmCPULoad: MetricConfig{
+					FlinkJvmCPULoad: FlinkJvmCPULoadMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmCPUTime: MetricConfig{
+					FlinkJvmCPUTime: FlinkJvmCPUTimeMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmGcCollectionsCount: MetricConfig{
+					FlinkJvmGcCollectionsCount: FlinkJvmGcCollectionsCountMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmGcCollectionsTime: MetricConfig{
+					FlinkJvmGcCollectionsTime: FlinkJvmGcCollectionsTimeMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryDirectTotalCapacity: MetricConfig{
+					FlinkJvmMemoryDirectTotalCapacity: FlinkJvmMemoryDirectTotalCapacityMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryDirectUsed: MetricConfig{
+					FlinkJvmMemoryDirectUsed: FlinkJvmMemoryDirectUsedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryHeapCommitted: MetricConfig{
+					FlinkJvmMemoryHeapCommitted: FlinkJvmMemoryHeapCommittedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryHeapMax: MetricConfig{
+					FlinkJvmMemoryHeapMax: FlinkJvmMemoryHeapMaxMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryHeapUsed: MetricConfig{
+					FlinkJvmMemoryHeapUsed: FlinkJvmMemoryHeapUsedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryMappedTotalCapacity: MetricConfig{
+					FlinkJvmMemoryMappedTotalCapacity: FlinkJvmMemoryMappedTotalCapacityMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryMappedUsed: MetricConfig{
+					FlinkJvmMemoryMappedUsed: FlinkJvmMemoryMappedUsedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryMetaspaceCommitted: MetricConfig{
+					FlinkJvmMemoryMetaspaceCommitted: FlinkJvmMemoryMetaspaceCommittedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryMetaspaceMax: MetricConfig{
+					FlinkJvmMemoryMetaspaceMax: FlinkJvmMemoryMetaspaceMaxMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryMetaspaceUsed: MetricConfig{
+					FlinkJvmMemoryMetaspaceUsed: FlinkJvmMemoryMetaspaceUsedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryNonheapCommitted: MetricConfig{
+					FlinkJvmMemoryNonheapCommitted: FlinkJvmMemoryNonheapCommittedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryNonheapMax: MetricConfig{
+					FlinkJvmMemoryNonheapMax: FlinkJvmMemoryNonheapMaxMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmMemoryNonheapUsed: MetricConfig{
+					FlinkJvmMemoryNonheapUsed: FlinkJvmMemoryNonheapUsedMetricConfig{
 						Enabled: true,
 					},
-					FlinkJvmThreadsCount: MetricConfig{
+					FlinkJvmThreadsCount: FlinkJvmThreadsCountMetricConfig{
 						Enabled: true,
 					},
-					FlinkMemoryManagedTotal: MetricConfig{
+					FlinkMemoryManagedTotal: FlinkMemoryManagedTotalMetricConfig{
 						Enabled: true,
 					},
-					FlinkMemoryManagedUsed: MetricConfig{
+					FlinkMemoryManagedUsed: FlinkMemoryManagedUsedMetricConfig{
 						Enabled: true,
 					},
-					FlinkOperatorRecordCount: MetricConfig{
-						Enabled: true,
+					FlinkOperatorRecordCount: FlinkOperatorRecordCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FlinkOperatorRecordCountMetricAttributeKey{FlinkOperatorRecordCountMetricAttributeKeyOperatorName, FlinkOperatorRecordCountMetricAttributeKeyRecord},
 					},
-					FlinkOperatorWatermarkOutput: MetricConfig{
-						Enabled: true,
+					FlinkOperatorWatermarkOutput: FlinkOperatorWatermarkOutputMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FlinkOperatorWatermarkOutputMetricAttributeKey{FlinkOperatorWatermarkOutputMetricAttributeKeyOperatorName},
 					},
-					FlinkTaskRecordCount: MetricConfig{
+					FlinkTaskRecordCount: FlinkTaskRecordCountMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -128,91 +132,95 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					FlinkJobCheckpointCount: MetricConfig{
+					FlinkJobCheckpointCount: FlinkJobCheckpointCountMetricConfig{
 						Enabled: false,
 					},
-					FlinkJobCheckpointInProgress: MetricConfig{
+					FlinkJobCheckpointInProgress: FlinkJobCheckpointInProgressMetricConfig{
 						Enabled: false,
 					},
-					FlinkJobLastCheckpointSize: MetricConfig{
+					FlinkJobLastCheckpointSize: FlinkJobLastCheckpointSizeMetricConfig{
 						Enabled: false,
 					},
-					FlinkJobLastCheckpointTime: MetricConfig{
+					FlinkJobLastCheckpointTime: FlinkJobLastCheckpointTimeMetricConfig{
 						Enabled: false,
 					},
-					FlinkJobRestartCount: MetricConfig{
+					FlinkJobRestartCount: FlinkJobRestartCountMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmClassLoaderClassesLoaded: MetricConfig{
+					FlinkJvmClassLoaderClassesLoaded: FlinkJvmClassLoaderClassesLoadedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmCPULoad: MetricConfig{
+					FlinkJvmCPULoad: FlinkJvmCPULoadMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmCPUTime: MetricConfig{
+					FlinkJvmCPUTime: FlinkJvmCPUTimeMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmGcCollectionsCount: MetricConfig{
+					FlinkJvmGcCollectionsCount: FlinkJvmGcCollectionsCountMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmGcCollectionsTime: MetricConfig{
+					FlinkJvmGcCollectionsTime: FlinkJvmGcCollectionsTimeMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryDirectTotalCapacity: MetricConfig{
+					FlinkJvmMemoryDirectTotalCapacity: FlinkJvmMemoryDirectTotalCapacityMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryDirectUsed: MetricConfig{
+					FlinkJvmMemoryDirectUsed: FlinkJvmMemoryDirectUsedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryHeapCommitted: MetricConfig{
+					FlinkJvmMemoryHeapCommitted: FlinkJvmMemoryHeapCommittedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryHeapMax: MetricConfig{
+					FlinkJvmMemoryHeapMax: FlinkJvmMemoryHeapMaxMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryHeapUsed: MetricConfig{
+					FlinkJvmMemoryHeapUsed: FlinkJvmMemoryHeapUsedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryMappedTotalCapacity: MetricConfig{
+					FlinkJvmMemoryMappedTotalCapacity: FlinkJvmMemoryMappedTotalCapacityMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryMappedUsed: MetricConfig{
+					FlinkJvmMemoryMappedUsed: FlinkJvmMemoryMappedUsedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryMetaspaceCommitted: MetricConfig{
+					FlinkJvmMemoryMetaspaceCommitted: FlinkJvmMemoryMetaspaceCommittedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryMetaspaceMax: MetricConfig{
+					FlinkJvmMemoryMetaspaceMax: FlinkJvmMemoryMetaspaceMaxMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryMetaspaceUsed: MetricConfig{
+					FlinkJvmMemoryMetaspaceUsed: FlinkJvmMemoryMetaspaceUsedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryNonheapCommitted: MetricConfig{
+					FlinkJvmMemoryNonheapCommitted: FlinkJvmMemoryNonheapCommittedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryNonheapMax: MetricConfig{
+					FlinkJvmMemoryNonheapMax: FlinkJvmMemoryNonheapMaxMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmMemoryNonheapUsed: MetricConfig{
+					FlinkJvmMemoryNonheapUsed: FlinkJvmMemoryNonheapUsedMetricConfig{
 						Enabled: false,
 					},
-					FlinkJvmThreadsCount: MetricConfig{
+					FlinkJvmThreadsCount: FlinkJvmThreadsCountMetricConfig{
 						Enabled: false,
 					},
-					FlinkMemoryManagedTotal: MetricConfig{
+					FlinkMemoryManagedTotal: FlinkMemoryManagedTotalMetricConfig{
 						Enabled: false,
 					},
-					FlinkMemoryManagedUsed: MetricConfig{
+					FlinkMemoryManagedUsed: FlinkMemoryManagedUsedMetricConfig{
 						Enabled: false,
 					},
-					FlinkOperatorRecordCount: MetricConfig{
-						Enabled: false,
+					FlinkOperatorRecordCount: FlinkOperatorRecordCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FlinkOperatorRecordCountMetricAttributeKey{FlinkOperatorRecordCountMetricAttributeKeyOperatorName, FlinkOperatorRecordCountMetricAttributeKeyRecord},
 					},
-					FlinkOperatorWatermarkOutput: MetricConfig{
-						Enabled: false,
+					FlinkOperatorWatermarkOutput: FlinkOperatorWatermarkOutputMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []FlinkOperatorWatermarkOutputMetricAttributeKey{FlinkOperatorWatermarkOutputMetricAttributeKeyOperatorName},
 					},
-					FlinkTaskRecordCount: MetricConfig{
+					FlinkTaskRecordCount: FlinkTaskRecordCountMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -230,7 +238,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(FlinkJobCheckpointCountMetricConfig{}, FlinkJobCheckpointInProgressMetricConfig{}, FlinkJobLastCheckpointSizeMetricConfig{}, FlinkJobLastCheckpointTimeMetricConfig{}, FlinkJobRestartCountMetricConfig{}, FlinkJvmClassLoaderClassesLoadedMetricConfig{}, FlinkJvmCPULoadMetricConfig{}, FlinkJvmCPUTimeMetricConfig{}, FlinkJvmGcCollectionsCountMetricConfig{}, FlinkJvmGcCollectionsTimeMetricConfig{}, FlinkJvmMemoryDirectTotalCapacityMetricConfig{}, FlinkJvmMemoryDirectUsedMetricConfig{}, FlinkJvmMemoryHeapCommittedMetricConfig{}, FlinkJvmMemoryHeapMaxMetricConfig{}, FlinkJvmMemoryHeapUsedMetricConfig{}, FlinkJvmMemoryMappedTotalCapacityMetricConfig{}, FlinkJvmMemoryMappedUsedMetricConfig{}, FlinkJvmMemoryMetaspaceCommittedMetricConfig{}, FlinkJvmMemoryMetaspaceMaxMetricConfig{}, FlinkJvmMemoryMetaspaceUsedMetricConfig{}, FlinkJvmMemoryNonheapCommittedMetricConfig{}, FlinkJvmMemoryNonheapMaxMetricConfig{}, FlinkJvmMemoryNonheapUsedMetricConfig{}, FlinkJvmThreadsCountMetricConfig{}, FlinkMemoryManagedTotalMetricConfig{}, FlinkMemoryManagedUsedMetricConfig{}, FlinkOperatorRecordCountMetricConfig{}, FlinkOperatorWatermarkOutputMetricConfig{}, FlinkTaskRecordCountMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

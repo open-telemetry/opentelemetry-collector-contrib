@@ -669,6 +669,16 @@ events:
     enabled: false
 ```
 
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
 ### db.server.query_sample
 
 Query sample collection enables monitoring of current running database statements.
@@ -694,16 +704,6 @@ This provides real-time visibility into active queries, helping users monitor da
 | client.port | TCP port used by the client. | Any Int |
 | network.peer.address | IP address of the peer client. | Any Str |
 | network.peer.port | TCP port used by the peer client. | Any Int |
-
-## Optional Events
-
-The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-events:
-  <event_name>:
-    enabled: true
-```
 
 ### db.server.top_query
 
