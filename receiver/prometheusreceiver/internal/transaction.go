@@ -102,94 +102,17 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
 
-	select {
-	case <-t.ctx.Done():
-		return 0, errTransactionAborted
-	default:
-	}
-
-	if t.externalLabels.Len() != 0 {
-		b := labels.NewBuilder(ls)
-		t.externalLabels.Range(func(l labels.Label) {
-			b.Set(l.Name, l.Value)
-		})
-		ls = b.Labels()
-	}
-
-	rKey, err := t.initTransaction(ls)
+	ls, rKey, metricName, err := t.prepareLabels(ls)
 	if err != nil {
 		return 0, err
 	}
 
-	// Any datapoint with duplicate labels MUST be rejected per:
-	// * https://github.com/open-telemetry/wg-prometheus/issues/44
-	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
-	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
-	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
-		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
-	}
-
-	metricName := ls.Get(model.MetricNameLabel)
-	if metricName == "" {
-		return 0, errMetricNameNotFound
-	}
-
-	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
-	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
-	// But it can also be a staleNaN, which is inserted when the target goes away.
-	if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
-		if val == 0.0 {
-			t.logger.Warn("Failed to scrape Prometheus endpoint",
-				zap.Int64("scrape_timestamp", atMs),
-				zap.Stringer("target_labels", ls))
-		} else {
-			t.logger.Warn("The 'up' metric contains invalid value",
-				zap.Float64("value", val),
-				zap.Int64("scrape_timestamp", atMs),
-				zap.Stringer("target_labels", ls))
-		}
-	}
-
-	// For the `target_info` metric we need to convert it to resource attributes.
-	if metricName == prometheus.TargetInfoMetricName {
-		t.AddTargetInfo(*rKey, ls)
-		return 0, nil
-	}
-
-	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	if metricName == prometheus.ScopeInfoMetricName {
-		t.addScopeInfo(*rKey, ls)
-		return 0, nil
-	}
-
-	scope := getScopeID(ls)
-
-	if value.IsStaleNaN(val) {
-		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls) {
-			return 0, nil
-		}
-	}
-
-	curMF := t.getOrCreateMetricFamily(*rKey, scope, metricName)
-
-	seriesRef := t.getSeriesRef(ls, curMF.mtype)
-	cacheRef := ls.Hash()
-	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
-	if err != nil {
-		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
-		// never return errors, as that fails the while scrape
-		// return ref==0 indicating that the series was not added
-		return 0, nil
-	}
-
-	// never return errors, as that fails the whole scrape
-	// return a stable ref so Prometheus can track series staleness
-	return storage.SeriesRef(cacheRef), nil
+	return t.addSampleDatapoint(*rKey, getScopeID(ls), ls, metricName, atMs, val, 0)
 }
 
 // detectAndStoreNativeHistogramStaleness returns true if it detects
 // and stores a native histogram staleness marker.
-func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key *resourceKey, scope scopeID, metricName string, ls labels.Labels) bool {
+func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key resourceKey, scope scopeID, metricName string, ls labels.Labels) bool {
 	// Detect the special case of stale native histogram series.
 	// Currently Prometheus does not store the histogram type in
 	// its staleness tracker.
@@ -210,7 +133,7 @@ func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key *re
 	t.addingNativeHistogram = true
 	t.addingNHCB = false
 
-	curMF := t.getOrCreateMetricFamily(*key, scope, metricName)
+	curMF := t.getOrCreateMetricFamily(key, scope, metricName)
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 
 	_ = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: math.Float64frombits(value.StaleNaN)}, nil)
@@ -285,12 +208,6 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 }
 
 func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
-	select {
-	case <-t.ctx.Done():
-		return 0, errTransactionAborted
-	default:
-	}
-
 	var schema int32
 	if h != nil {
 		schema = h.Schema
@@ -300,58 +217,15 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	t.addingNativeHistogram = true
 	t.addingNHCB = schema == -53
 
-	if t.externalLabels.Len() != 0 {
-		b := labels.NewBuilder(ls)
-		t.externalLabels.Range(func(l labels.Label) {
-			b.Set(l.Name, l.Value)
-		})
-		ls = b.Labels()
-	}
-
-	rKey, err := t.initTransaction(ls)
+	ls, rKey, metricName, err := t.prepareLabels(ls)
 	if err != nil {
 		return 0, err
-	}
-
-	// Any datapoint with duplicate labels MUST be rejected per:
-	// * https://github.com/open-telemetry/wg-prometheus/issues/44
-	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
-	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
-	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
-		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
-	}
-
-	metricName := ls.Get(model.MetricNameLabel)
-	if metricName == "" {
-		return 0, errMetricNameNotFound
 	}
 
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
-	seriesRef := t.getSeriesRef(ls, curMF.mtype)
-	cacheRef := ls.Hash()
-
-	if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {
-		t.logger.Warn("dropping unsupported gauge histogram datapoint", zap.String("metric_name", metricName), zap.Any("labels", ls))
-	}
-
-	if schema == -53 {
-		err = curMF.addNHCBSeries(seriesRef, metricName, ls, atMs, h, fh)
-	} else {
-		err = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, h, fh)
-	}
-	if err != nil {
-		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
-		// never return errors, as that fails the while scrape
-		// return ref==0 indicating that the series was not added
-		return 0, nil
-	}
-
-	// never return errors, as that fails the whole scrape
-	// return a stable ref so Prometheus can track series staleness
-	return storage.SeriesRef(cacheRef), nil
+	return t.addHistogramDatapoint(*rKey, getScopeID(ls), ls, metricName, atMs, h, fh, schema, 0)
 }
 
 func (t *transaction) AppendSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
@@ -372,10 +246,12 @@ func (t *transaction) AppendHistogramSTZeroSample(_ storage.SeriesRef, ls labels
 	return t.setStartTimestamp(ls, atMs, stMs)
 }
 
-func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
+// prepareLabels merges external labels, initializes the transaction, validates
+// labels and extracts the metric name. It is shared by both V1 and V2 appender paths.
+func (t *transaction) prepareLabels(ls labels.Labels) (labels.Labels, *resourceKey, string, error) {
 	select {
 	case <-t.ctx.Done():
-		return 0, errTransactionAborted
+		return labels.EmptyLabels(), nil, "", errTransactionAborted
 	default:
 	}
 
@@ -389,7 +265,7 @@ func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (sto
 
 	rKey, err := t.initTransaction(ls)
 	if err != nil {
-		return 0, err
+		return labels.EmptyLabels(), nil, "", err
 	}
 
 	// Any datapoint with duplicate labels MUST be rejected per:
@@ -397,16 +273,116 @@ func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (sto
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
 	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
 	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
-		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
+		return labels.EmptyLabels(), nil, "", fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
 	}
 
 	metricName := ls.Get(model.MetricNameLabel)
 	if metricName == "" {
-		return 0, errMetricNameNotFound
+		return labels.EmptyLabels(), nil, "", errMetricNameNotFound
+	}
+
+	return ls, rKey, metricName, nil
+}
+
+// addSampleDatapoint adds a regular sample datapoint. It handles special metrics
+// (up, target_info, otel_scope_info) and staleness detection. When stMs > 0,
+// it also records a creation timestamp on the metric family.
+// It is shared by both V1 and V2 appender paths.
+func (t *transaction) addSampleDatapoint(rKey resourceKey, scope scopeID, ls labels.Labels, metricName string, atMs int64, val float64, stMs int64) (storage.SeriesRef, error) {
+	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
+	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
+	// But it can also be a staleNaN, which is inserted when the target goes away.
+	if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
+		if val == 0.0 {
+			t.logger.Warn("Failed to scrape Prometheus endpoint",
+				zap.Int64("scrape_timestamp", atMs),
+				zap.Stringer("target_labels", ls))
+		} else {
+			t.logger.Warn("The 'up' metric contains invalid value",
+				zap.Float64("value", val),
+				zap.Int64("scrape_timestamp", atMs),
+				zap.Stringer("target_labels", ls))
+		}
+	}
+
+	// For the `target_info` metric we need to convert it to resource attributes.
+	if metricName == prometheus.TargetInfoMetricName {
+		t.AddTargetInfo(rKey, ls)
+		return 0, nil
+	}
+
+	// For the `otel_scope_info` metric we need to convert it to scope attributes.
+	if metricName == prometheus.ScopeInfoMetricName {
+		t.addScopeInfo(rKey, ls)
+		return 0, nil
+	}
+
+	if value.IsStaleNaN(val) {
+		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls) {
+			return 0, nil
+		}
+	}
+
+	curMF := t.getOrCreateMetricFamily(rKey, scope, metricName)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+
+	if stMs > 0 {
+		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
+	}
+
+	err := curMF.addSeries(seriesRef, metricName, ls, atMs, val)
+	if err != nil {
+		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+		// never return errors, as that fails the whole scrape
+		// return ref==0 indicating that the series was not added
+		return 0, nil
+	}
+
+	// never return errors, as that fails the whole scrape
+	// return a stable ref so Prometheus can track series staleness
+	return storage.SeriesRef(ls.Hash()), nil
+}
+
+// addHistogramDatapoint adds a native histogram or NHCB datapoint to the appropriate metric family.
+// When stMs > 0, it also records a creation timestamp on the metric family.
+// It is shared by both V1 and V2 appender paths.
+func (t *transaction) addHistogramDatapoint(rKey resourceKey, scope scopeID, ls labels.Labels, metricName string, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, error) {
+	curMF := t.getOrCreateMetricFamily(rKey, scope, metricName)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+
+	if stMs > 0 {
+		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
+	}
+
+	if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {
+		t.logger.Warn("unsupported gauge histogram datapoint", zap.String("metric_name", metricName), zap.Any("labels", ls))
+	}
+
+	var err error
+	if schema == -53 {
+		err = curMF.addNHCBSeries(seriesRef, metricName, ls, atMs, h, fh)
+	} else {
+		err = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, h, fh)
+	}
+	if err != nil {
+		t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+		// never return errors, as that fails the whole scrape
+		// return ref==0 indicating that the series was not added
+		return 0, nil
+	}
+
+	// never return errors, as that fails the whole scrape
+	// return a stable ref so Prometheus can track series staleness
+	return storage.SeriesRef(ls.Hash()), nil
+}
+
+func (t *transaction) setStartTimestamp(ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
+	ls, rKey, metricName, err := t.prepareLabels(ls)
+	if err != nil {
+		return 0, err
 	}
 
 	curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
-
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 	curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 
@@ -641,39 +617,17 @@ func getSeriesRef(bytes []byte, ls labels.Labels, mtype pmetric.MetricType) (uin
 	return ls.HashWithoutLabels(bytes, getSortedNotUsefulLabels(mtype)...)
 }
 
-// Append implements storage.AppenderV2.
+// AppendV2 implements storage.AppenderV2.
 func (t *transaction) AppendV2(_ storage.SeriesRef, ls labels.Labels, stMs, atMs int64, val float64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AOptions) (storage.SeriesRef, error) {
 	originalLS := ls
 	isHistogram := h != nil || fh != nil
-	var sRef storage.SeriesRef
 
-	select {
-	case <-t.ctx.Done():
-		return 0, errTransactionAborted
-	default:
-	}
-
-	if t.externalLabels.Len() != 0 {
-		b := labels.NewBuilder(ls)
-		t.externalLabels.Range(func(l labels.Label) {
-			b.Set(l.Name, l.Value)
-		})
-		ls = b.Labels()
-	}
-
-	rKey, err := t.initTransaction(ls)
+	ls, rKey, metricName, err := t.prepareLabels(ls)
 	if err != nil {
 		return 0, err
 	}
 
-	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
-		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
-	}
-
-	metricName := ls.Get(model.MetricNameLabel)
-	if metricName == "" {
-		return 0, errMetricNameNotFound
-	}
+	var sRef storage.SeriesRef
 
 	if isHistogram {
 		var schema int32
@@ -685,87 +639,18 @@ func (t *transaction) AppendV2(_ storage.SeriesRef, ls labels.Labels, stMs, atMs
 		t.addingNativeHistogram = true
 		t.addingNHCB = schema == -53
 
-		curMF := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
-		seriesRef := t.getSeriesRef(ls, curMF.mtype)
-
-		if stMs > 0 {
-			curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
-		}
-
-		if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {
-			t.logger.Warn("dropping unsupported gauge histogram datapoint", zap.String("metric_name", metricName), zap.Any("labels", ls))
-		}
-
-		if schema == -53 {
-			err = curMF.addNHCBSeries(seriesRef, metricName, ls, atMs, h, fh)
-		} else {
-			err = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, h, fh)
-		}
-		if err != nil {
-			t.logger.Warn("failed to add histogram datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
-			sRef = 0
-		} else {
-			sRef = storage.SeriesRef(ls.Hash())
-		}
+		sRef, _ = t.addHistogramDatapoint(*rKey, getScopeID(ls), ls, metricName, atMs, h, fh, schema, stMs)
 	} else {
 		t.addingNativeHistogram = false
 		t.addingNHCB = false
-		scope := getScopeID(ls)
-		var curMF *metricFamily
-		var seriesRef uint64
 
-		if stMs > 0 {
-			curMF = t.getOrCreateMetricFamily(*rKey, scope, metricName)
-			seriesRef = t.getSeriesRef(ls, curMF.mtype)
-			curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
-		}
-
-		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
-		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
-		// But it can also be a staleNaN, which is inserted when the target goes away.
-		if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
-			if val == 0.0 {
-				t.logger.Warn("Failed to scrape Prometheus endpoint",
-					zap.Int64("scrape_timestamp", atMs),
-					zap.Stringer("target_labels", ls))
-			} else {
-				t.logger.Warn("The 'up' metric contains invalid value",
-					zap.Float64("value", val),
-					zap.Int64("scrape_timestamp", atMs),
-					zap.Stringer("target_labels", ls))
-			}
-		}
-
-		switch {
-		case metricName == prometheus.TargetInfoMetricName:
-			// For the `target_info` metric we need to convert it to resource attributes.
-			t.AddTargetInfo(*rKey, ls)
-			sRef = 0
-		case metricName == prometheus.ScopeInfoMetricName:
-			// For the `otel_scope_info` metric we need to convert it to scope attributes.
-			t.addScopeInfo(*rKey, ls)
-			sRef = 0
-		case value.IsStaleNaN(val) && t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls):
-			sRef = 0
-		default:
-			if curMF == nil {
-				curMF = t.getOrCreateMetricFamily(*rKey, scope, metricName)
-				seriesRef = t.getSeriesRef(ls, curMF.mtype)
-			}
-			err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
-			if err != nil {
-				t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
-				sRef = 0
-			} else {
-				sRef = storage.SeriesRef(ls.Hash())
-			}
-		}
+		sRef, _ = t.addSampleDatapoint(*rKey, getScopeID(ls), ls, metricName, atMs, val, stMs)
 	}
 
-	// append the exemplars
+	// Append the exemplars, continuing on error to try all exemplars.
 	for _, exemplar := range opts.Exemplars {
 		if _, err := t.AppendExemplar(sRef, originalLS, exemplar); err != nil {
-			return 0, err
+			continue
 		}
 	}
 

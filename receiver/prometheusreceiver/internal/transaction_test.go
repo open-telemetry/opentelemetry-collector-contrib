@@ -2018,7 +2018,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 	})
 
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
-	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), &rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
+	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
 		string(model.MetricNameLabel): "foo",
 	}))
 	require.False(t, ok, "expected false when metadata type != histogram")
