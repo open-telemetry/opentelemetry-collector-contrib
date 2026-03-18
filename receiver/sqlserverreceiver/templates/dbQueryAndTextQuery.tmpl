@@ -23,6 +23,14 @@ with qstats as (
 		qs.query_hash,
 		qs.query_plan_hash
 	HAVING MAX(DATEADD(ms, qs.last_elapsed_time / 1000, qs.last_execution_time)) > DATEADD(SECOND, @lookbackTime, GETDATE())
+),
+proc_stats AS (
+	SELECT
+		ps.object_id,
+		ps.database_id,
+		SUM(ps.execution_count) AS procedure_execution_count
+	FROM sys.dm_exec_procedure_stats AS ps
+	GROUP BY ps.object_id, ps.database_id
 )
 SELECT qs.*,
 	SUBSTRING(st.text, (stats.statement_start_offset / 2) + 1,
@@ -34,9 +42,16 @@ SELECT qs.*,
          ISNULL(CASE WHEN qs.object_id > 0
                          THEN QUOTENAME(OBJECT_SCHEMA_NAME(qs.object_id, st.dbid))
                                          + N'.' + QUOTENAME(OBJECT_NAME(qs.object_id, st.dbid))
-                    END, '') AS procedure_name
+                    END, '') AS procedure_name,
+	ISNULL(pst.procedure_execution_count, 0) AS procedure_execution_count
 FROM qstats AS qs
-		INNER JOIN sys.dm_exec_query_stats AS stats on qs.query_plan_handle = stats.plan_handle
+		INNER JOIN sys.dm_exec_query_stats AS stats
+			ON qs.query_plan_handle = stats.plan_handle
+			AND qs.query_hash = stats.query_hash
+			AND qs.query_plan_hash = stats.query_plan_hash
 		CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
 		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st
+		LEFT JOIN proc_stats AS pst
+			ON qs.object_id = pst.object_id
+			AND st.dbid = pst.database_id
 		WHERE st.text IS NOT NULL;

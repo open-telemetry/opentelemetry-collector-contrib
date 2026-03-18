@@ -11,34 +11,43 @@ status:
 
 sem_conv_version: 1.9.0
 
+reaggregation_enabled: true
+
 attributes:
   error.type:
     description: Describes a class of error the operation ended with.
     type: string
     enum: [format, auth, client]
+    requirement_level: recommended
   network.io.direction:
     description: The network IO operation direction.
     type: string
     enum:
       - transmit
       - receive
+    requirement_level: recommended
   network.transport:
     description: OSI transport layer or inter-process communication method.
     type: string
     enum: [udp, tcp]
+    requirement_level: recommended
   nfs.operation.name:
     description: NFSv4+ operation name.
     type: string
+    requirement_level: recommended
   nfs.server.repcache.status:
     description: "NFS Server replies check a Reply Cache (repcache), which can have one of 3 result states: 'hit', 'miss', or 'nocache'."
     type: string
     enum: [hit, miss, nocache]
+    requirement_level: recommended
   onc_rpc.procedure.name:
     description: ONC/Sun RPC procedure name.
     type: string
+    requirement_level: recommended
   onc_rpc.version:
     description: ONC/Sun RPC program version.
     type: int
+    requirement_level: recommended
 
 metrics:
   nfs.client.net.count:
@@ -50,8 +59,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.net.tcp.connection.accepted:
     enabled: true
@@ -61,8 +69,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.operation.count:
     enabled: true
@@ -75,8 +82,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.procedure.count:
     enabled: true
@@ -87,8 +93,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.rpc.authrefresh.count:
     enabled: true
@@ -98,8 +103,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.rpc.count:
     enabled: true
@@ -109,8 +113,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.client.rpc.retransmit.count:
     enabled: true
@@ -120,8 +123,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.fh.stale.count:
     enabled: true
@@ -131,8 +133,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.io:
     enabled: true
@@ -143,8 +144,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.net.count:
     enabled: true
@@ -155,8 +155,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.net.tcp.connection.accepted:
     enabled: true
@@ -166,8 +165,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.operation.count:
     enabled: true
@@ -178,8 +176,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.procedure.count:
     enabled: true
@@ -190,8 +187,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
   nfs.server.repcache.requests:
     enabled: true
     description: Reports the kernel NFS server reply cache request count by cache hit status.
@@ -201,8 +197,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.rpc.count:
     enabled: true
@@ -213,8 +208,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development
 
   nfs.server.thread.count:
     enabled: true
@@ -224,5 +218,4 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    stability:
-      level: development
+    stability: development

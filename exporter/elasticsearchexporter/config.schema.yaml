@@ -68,7 +68,7 @@ $defs:
         items:
           type: string
       mode:
-        description: 'Mode configures the default document mapping mode. The mode may be overridden in two ways: - by the client metadata key X-Elastic-Mapping-Mode, if specified - by the scope attribute elastic.mapping.mode, if specified The order of precedence is: scope attribute > client metadata > default mode.'
+        description: 'Deprecated: [v0.145.0] Mode is ignored. The default mapping mode is "otel". The mode may be overridden in two ways: - by the client metadata key X-Elastic-Mapping-Mode, if specified - by the scope attribute elastic.mapping.mode, if specified The order of precedence is: scope attribute > client metadata > default mode.'
         type: string
   retry_settings:
     description: RetrySettings defines settings for the HTTP request retries in the Elasticsearch exporter. Failed sends are retried with exponential backoff.

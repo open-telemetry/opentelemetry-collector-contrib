@@ -7,13 +7,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-viper/mapstructure/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/noop"
+	yamlsource "github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/yaml"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
@@ -52,7 +57,7 @@ type lookupProcessorFactory struct {
 func defaultSources() map[string]lookupsource.SourceFactory {
 	return map[string]lookupsource.SourceFactory{
 		"noop": noop.NewFactory(),
-		// yaml and dns sources will be added in subsequent branches
+		"yaml": yamlsource.NewFactory(),
 	}
 }
 
@@ -108,7 +113,21 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 		return nil, err
 	}
 
-	proc := newLookupProcessor(source, set.Logger)
+	parser, err := ottllog.NewParser(
+		ottlfuncs.StandardConverters[*ottllog.TransformContext](),
+		set.TelemetrySettings,
+		ottllog.EnablePathContextNames(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OTTL parser: %w", err)
+	}
+
+	lookups, err := parseLookups(parser, processorCfg.Lookups)
+	if err != nil {
+		return nil, err
+	}
+
+	proc := newLookupProcessor(source, lookups, set.Logger)
 
 	return processorhelper.NewLogs(
 		ctx,
@@ -120,6 +139,29 @@ func (f *lookupProcessorFactory) createLogsProcessor(
 		processorhelper.WithStart(proc.Start),
 		processorhelper.WithShutdown(proc.Shutdown),
 	)
+}
+
+// parsedLookup holds a lookup config with its pre-parsed OTTL key expression.
+type parsedLookup struct {
+	keyExpr    *ottl.ValueExpression[*ottllog.TransformContext]
+	context    ContextID
+	attributes []AttributeMapping
+}
+
+func parseLookups(parser ottl.Parser[*ottllog.TransformContext], configs []LookupConfig) ([]parsedLookup, error) {
+	lookups := make([]parsedLookup, len(configs))
+	for i, cfg := range configs {
+		keyExpr, err := parser.ParseValueExpression(cfg.Key)
+		if err != nil {
+			return nil, fmt.Errorf("lookups[%d]: failed to parse key expression %q: %w", i, cfg.Key, err)
+		}
+		lookups[i] = parsedLookup{
+			keyExpr:    keyExpr,
+			context:    cfg.GetContext(),
+			attributes: cfg.Attributes,
+		}
+	}
+	return lookups, nil
 }
 
 func (f *lookupProcessorFactory) createSource(
@@ -137,10 +179,29 @@ func (f *lookupProcessorFactory) createSource(
 		return nil, fmt.Errorf("unknown source type %q", sourceType)
 	}
 
-	// Get the source-specific config from the raw config
-	sourceCfg := cfg.Source.Config
-	if sourceCfg == nil {
-		sourceCfg = factory.CreateDefaultConfig()
+	// Decode the raw source config captured by mapstructure's ",remain" tag
+	// into the source's typed config struct. See SourceConfig for why this
+	// is deferred to factory time rather than config unmarshal time.
+	sourceCfg := factory.CreateDefaultConfig()
+	if len(cfg.Source.Config) > 0 {
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			TagName:          "mapstructure",
+			Result:           sourceCfg,
+			WeaklyTypedInput: true,
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(
+				mapstructure.StringToTimeDurationHookFunc(),
+			),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create decoder for source %q: %w", sourceType, err)
+		}
+		if err := decoder.Decode(cfg.Source.Config); err != nil {
+			return nil, fmt.Errorf("failed to decode config for source %q: %w", sourceType, err)
+		}
+	}
+
+	if err := sourceCfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config for source %q: %w", sourceType, err)
 	}
 
 	createSettings := lookupsource.CreateSettings{

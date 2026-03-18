@@ -110,13 +110,28 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 	}
 
 	for _, e := range entries {
+		// Short circuit if the "if" condition does not match
+		skip, err := t.Skip(ctx, e)
+		if err != nil {
+			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, e, err, collectWrite))
+			continue
+		}
+		if skip {
+			_ = collectWrite(ctx, e)
+			continue
+		}
+
 		// Get the environment for executing the expression
 		env := helper.GetExprEnv(e)
 
 		m, err := expr.Run(t.prog, env)
 		helper.PutExprEnv(env)
 		if err != nil {
-			errs = append(errs, t.HandleEntryErrorWithWrite(ctx, e, err, collectWrite))
+			if handleErr := t.HandleEntryErrorWithWrite(ctx, e, err, collectWrite); handleErr != nil {
+				if !t.isQuietMode() {
+					errs = append(errs, handleErr)
+				}
+			}
 			continue
 		}
 
@@ -160,6 +175,15 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 }
 
 func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
+	// Short circuit if the "if" condition does not match
+	skip, err := t.Skip(ctx, e)
+	if err != nil {
+		return t.HandleEntryError(ctx, e, err)
+	}
+	if skip {
+		return t.Write(ctx, e)
+	}
+
 	// Lock the recombine operator because process can't run concurrently
 	t.Lock()
 	defer t.Unlock()
@@ -173,7 +197,11 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 
 	m, err := expr.Run(t.prog, env)
 	if err != nil {
-		return t.HandleEntryError(ctx, e, err)
+		handleErr := t.HandleEntryError(ctx, e, err)
+		if t.isQuietMode() {
+			return nil
+		}
+		return handleErr
 	}
 
 	// this is guaranteed to be a boolean because of expr.AsBool
@@ -308,4 +336,9 @@ func (t *Transformer) removeBatch(source string) {
 	batch := t.batchMap[source]
 	delete(t.batchMap, source)
 	t.batchPool.Put(batch)
+}
+
+// isQuietMode returns true if the operator is configured to use quiet mode
+func (t *Transformer) isQuietMode() bool {
+	return t.OnError == helper.DropOnErrorQuiet || t.OnError == helper.SendOnErrorQuiet
 }

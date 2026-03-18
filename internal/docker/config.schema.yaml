@@ -3,7 +3,7 @@ $defs:
     type: object
     properties:
       api_version:
-        description: Docker client API version.
+        description: Docker client API version. If empty, the client will auto-negotiate the API version with the Docker daemon using version negotiation.
         type: string
       endpoint:
         description: The URL of the docker server. Default is "unix:///var/run/docker.sock" on non-Windows and "npipe:////./pipe/docker_engine" on Windows

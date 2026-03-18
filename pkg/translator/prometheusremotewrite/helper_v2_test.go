@@ -270,6 +270,7 @@ func TestPrometheusConverterV2_AddSummaryDataPoints(t *testing.T) {
 			err := converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 				m,
@@ -391,6 +392,7 @@ func TestPrometheusConverterV2_AddHistogramDataPoints(t *testing.T) {
 			err := converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
+				pcommon.NewInstrumentationScope(),
 				Settings{},
 				metric.Name(),
 				m,

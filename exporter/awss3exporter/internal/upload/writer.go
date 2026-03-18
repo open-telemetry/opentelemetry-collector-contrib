@@ -9,7 +9,8 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
+	transfermanagertypes "github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/klauspost/compress/zstd"
@@ -31,7 +32,7 @@ type UploadOptions struct {
 type s3manager struct {
 	bucket       string
 	builder      *PartitionKeyBuilder
-	uploader     *manager.Uploader
+	uploader     *transfermanager.Client
 	storageClass s3types.StorageClass
 	acl          s3types.ObjectCannedACL
 }
@@ -42,7 +43,7 @@ func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Clien
 	manager := &s3manager{
 		bucket:       bucket,
 		builder:      builder,
-		uploader:     manager.NewUploader(service),
+		uploader:     transfermanager.New(service),
 		storageClass: storageClass,
 	}
 	for _, opt := range opts {
@@ -83,12 +84,12 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		}
 	}
 
-	uploadInput := &s3.PutObjectInput{
+	uploadInput := &transfermanager.UploadObjectInput{
 		Bucket:       aws.String(overrideBucket),
 		Key:          aws.String(sw.builder.Build(now, overridePrefix)),
 		Body:         content,
-		StorageClass: sw.storageClass,
-		ACL:          sw.acl,
+		StorageClass: transfermanagertypes.StorageClass(sw.storageClass),
+		ACL:          transfermanagertypes.ObjectCannedACL(sw.acl),
 	}
 
 	// Only set ContentEncoding if we have a non-empty encoding value
@@ -96,7 +97,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 		uploadInput.ContentEncoding = aws.String(encoding)
 	}
 
-	_, err = sw.uploader.Upload(ctx, uploadInput)
+	_, err = sw.uploader.UploadObject(ctx, uploadInput)
 	return err
 }
 

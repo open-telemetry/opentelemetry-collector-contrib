@@ -55,6 +55,78 @@ const expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-hostname","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
+func TestDynamicTemplateMode(t *testing.T) {
+	ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+
+	// Build the four metric + DataPoint fixtures once.
+	m := pmetric.NewMetric()
+	m.SetName("g")
+	gauge := m.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(1.0)
+
+	m2 := pmetric.NewMetric()
+	m2.SetName("c")
+	sum := m2.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	dp2 := sum.DataPoints().AppendEmpty()
+	dp2.SetTimestamp(ts)
+	dp2.SetIntValue(2)
+
+	m3 := pmetric.NewMetric()
+	m3.SetName("h")
+	hist := m3.SetEmptyHistogram()
+	histDp := hist.DataPoints().AppendEmpty()
+	histDp.SetTimestamp(ts)
+	histDp.ExplicitBounds().FromRaw([]float64{1, 2})
+	histDp.BucketCounts().FromRaw([]uint64{1, 2, 3})
+
+	m4 := pmetric.NewMetric()
+	m4.SetName("s")
+	summaryDp := m4.SetEmptySummary().DataPoints().AppendEmpty()
+	summaryDp.SetTimestamp(ts)
+	summaryDp.SetSum(10)
+	summaryDp.SetCount(5)
+
+	metrics := []struct {
+		m  pmetric.Metric
+		dp datapoints.DataPoint
+	}{
+		{m, datapoints.NewNumber(m, dp)},
+		{m2, datapoints.NewNumber(m2, dp2)},
+		{m3, datapoints.NewHistogram(m3, histDp)},
+		{m4, datapoints.NewSummary(m4, summaryDp)},
+	}
+
+	tests := []struct {
+		name          string
+		mode          datapoints.DynamicTemplateMode
+		wantTemplates []string
+	}{
+		{
+			name:          "OTel",
+			mode:          datapoints.DynamicTemplateModeOTel,
+			wantTemplates: []string{"gauge_double", "counter_long", "histogram", "summary"},
+		},
+		{
+			name:          "ECS",
+			mode:          datapoints.DynamicTemplateModeECS,
+			wantTemplates: []string{"double_metrics", "double_metrics", "histogram_metrics", "summary_metrics"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			for i, metric := range metrics {
+				got := metric.dp.DynamicTemplate(metric.m, tc.mode)
+				require.Equal(t, tc.wantTemplates[i], got)
+			}
+		})
+	}
+}
+
 func TestEncodeSpan(t *testing.T) {
 	t.Run("non data stream", func(t *testing.T) {
 		encoder, _ := newEncoder(MappingNone)
@@ -417,7 +489,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
 	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
@@ -457,6 +529,8 @@ func TestEncodeSpanECSMode(t *testing.T) {
 		"service.instance.id":         "23",
 		"service.name":                "some-service",
 		"service.version":             "env-version-1234",
+		"telemetry.sdk.version":       "1.2.3",
+		"telemetry.sdk.language":      "go",
 		"process.parent_pid":          "42",
 		"process.executable.name":     "node",
 		"client.address":              "12.53.12.1",
@@ -558,6 +632,10 @@ func TestEncodeSpanECSMode(t *testing.T) {
 	  },
 	  "service": {
 		"environment": "BETA",
+		"language": {
+		  "name": "go",
+		  "version": "1.2.3"
+		},
 		"name": "some-service",
 		"node": {
 		  "name": "23"
@@ -705,8 +783,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		    "platform": "darwin",
 		    "full": "Mac OS Mojave",
 		    "name": "Mac OS X",
-		    "version": "10.14.1",
-		    "type": "macos"
+		    "version": "10.14.1"
 		  }
 		},
 		"process": {
@@ -714,11 +791,15 @@ func TestEncodeLogECSMode(t *testing.T) {
 		  "args": "/usr/bin/ssh -l user 10.0.0.16",
 		  "executable": "/usr/bin/ssh",
           "parent": { "pid": "42" },
-		   "title": "node"
+		  "title": "node"
 		},
 		"service": {
 		  "name": "foo.bar",
 		  "environment": "BETA",
+		  "language": {
+		    "name": "perl",
+		    "version": "7.9.12"
+		  },
 		  "version": "1.1.0",
 		  "node": {"name": "i-103de39e0a"},
 		  "runtime": {
@@ -763,132 +844,6 @@ func TestEncodeLogECSMode(t *testing.T) {
 		     "trigger": { "type": "api-gateway" }
 	  }
 	}`, buf.String())
-}
-
-func TestEncodeLogECSModeHostOSType(t *testing.T) {
-	tests := map[string]struct {
-		osType string
-		osName string
-
-		expectedHostOsName     string
-		expectedHostOsType     string
-		expectedHostOsPlatform string
-	}{
-		"none_set": {
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"type_windows": {
-			osType:                 "windows",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "windows",
-			expectedHostOsPlatform: "windows",
-		},
-		"type_linux": {
-			osType:                 "linux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "linux",
-			expectedHostOsPlatform: "linux",
-		},
-		"type_darwin": {
-			osType:                 "darwin",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "macos",
-			expectedHostOsPlatform: "darwin",
-		},
-		"type_aix": {
-			osType:                 "aix",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "aix",
-		},
-		"type_hpux": {
-			osType:                 "hpux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "hpux",
-		},
-		"type_solaris": {
-			osType:                 "solaris",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "solaris",
-		},
-		"type_unknown": {
-			osType:                 "unknown",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "unknown",
-		},
-		"name_android": {
-			osName:                 "Android",
-			expectedHostOsName:     "Android",
-			expectedHostOsType:     "android",
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"name_ios": {
-			osName:                 "iOS",
-			expectedHostOsName:     "iOS",
-			expectedHostOsType:     "ios",
-			expectedHostOsPlatform: "", // should not be set
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			resource := logs.ResourceLogs().AppendEmpty().Resource()
-			scope := pcommon.NewInstrumentationScope()
-			record := plog.NewLogRecord()
-
-			resource.Attributes().PutStr("agent.name", "custom-agent")
-			resource.Attributes().PutStr("agent.version", "1.2.3")
-			if test.osType != "" {
-				resource.Attributes().PutStr("os.type", test.osType)
-			}
-			if test.osName != "" {
-				resource.Attributes().PutStr("os.name", test.osName)
-			}
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			record.SetTimestamp(timestamp)
-			logs.MarkReadOnly()
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err := encoder.encodeLog(
-				encodingContext{resource: resource, scope: scope},
-				record, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"}`
-			if test.expectedHostOsName != "" ||
-				test.expectedHostOsPlatform != "" ||
-				test.expectedHostOsType != "" {
-				expectedJSON += `, "host":{"os":{`
-
-				first := true
-				maybeAdd := func(k, v string) {
-					if v != "" {
-						if first {
-							first = false
-						} else {
-							expectedJSON += ","
-						}
-						expectedJSON += fmt.Sprintf("%q:%q", k, v)
-					}
-				}
-				maybeAdd("name", test.expectedHostOsName)
-				maybeAdd("type", test.expectedHostOsType)
-				maybeAdd("platform", test.expectedHostOsPlatform)
-				expectedJSON += "}}"
-			}
-			expectedJSON += "}"
-			require.JSONEq(t, expectedJSON, buf.String())
-		})
-	}
 }
 
 func TestEncodeLogECSModeTimestamps(t *testing.T) {
@@ -1076,6 +1031,43 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			require.Equal(t, expectedDoc, doc)
 		})
 	}
+}
+
+func TestEncodeLogECSModeKnownFieldConflict(t *testing.T) {
+	t.Run("protected_field_wins_over_nested_attributes", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resource := logs.ResourceLogs().AppendEmpty().Resource()
+		err := resource.Attributes().FromRaw(map[string]any{
+			"service.name":            "test-service",
+			"process.executable.path": "/usr/bin/ssh",
+		})
+		require.NoError(t, err)
+
+		scope := pcommon.NewInstrumentationScope()
+		record := plog.NewLogRecord()
+		err = record.Attributes().FromRaw(map[string]any{
+			"process.executable.name":    "ssh",
+			"process.executable.foo":     "bar",
+			"process.executable.foo.bar": "baz",
+		})
+		require.NoError(t, err)
+
+		record.SetObservedTimestamp(pcommon.Timestamp(1710273641123456789))
+		logs.MarkReadOnly()
+
+		var buf bytes.Buffer
+		encoder, _ := newEncoder(MappingECS)
+		err = encoder.encodeLog(
+			encodingContext{resource: resource, scope: scope},
+			record, elasticsearch.Index{}, &buf,
+		)
+		require.NoError(t, err)
+
+		// process.executable should be string "/usr/bin/ssh", not an object
+		// any other fields under process.executable should be ignored
+		output := buf.String()
+		assert.Equal(t, "/usr/bin/ssh", gjson.Get(output, "process.executable").String())
+	})
 }
 
 // JSON serializable structs for OTel test convenience

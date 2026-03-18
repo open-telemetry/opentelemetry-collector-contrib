@@ -1,4 +1,9 @@
+display_name: Datadog Receiver
 type: datadog
+
+description: |
+  The Datadog receiver enables translation between Datadog and OpenTelemetry-compatible backends. It currently has
+  support for Datadog's APM traces, metrics, and logs.
 
 status:
   class: receiver

@@ -33,9 +33,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "helix1"),
 			expected: &Config{
-				ClientConfig: createDefaultClientConfig("https://helix1:8080", 10*time.Second),
-				APIKey:       "api_key",
-				RetryConfig:  configretry.NewDefaultBackOffConfig(),
+				ClientConfig:               createDefaultClientConfig("https://helix1:8080", 10*time.Second),
+				APIKey:                     "api_key",
+				RetryConfig:                configretry.NewDefaultBackOffConfig(),
+				EnrichMetricWithAttributes: true,
 			},
 		},
 		{
@@ -51,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         1 * time.Minute,
 					MaxElapsedTime:      8 * time.Minute,
 				},
+				EnrichMetricWithAttributes: true,
 			},
 		},
 	}

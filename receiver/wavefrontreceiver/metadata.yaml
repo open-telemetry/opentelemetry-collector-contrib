@@ -1,9 +1,14 @@
+display_name: Wavefront Receiver
 type: wavefront
 
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    deprecated: [metrics]
   distributions: [contrib]
   codeowners:
     active: [samiura]
+  deprecation:
+    metrics:
+      migration: "There is no replacement. This component will be removed in a future release."
+      date: "2026-02-13"
