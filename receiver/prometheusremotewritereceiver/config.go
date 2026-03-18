@@ -11,6 +11,7 @@ import (
 // Config holds common fields and embedded protocol-specific configurations
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
+	TrimMetricSuffixes      bool `mapstructure:"trim_metric_suffixes"`
 }
 
 var _ component.Config = (*Config)(nil)

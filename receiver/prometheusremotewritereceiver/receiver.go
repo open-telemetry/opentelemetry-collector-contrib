@@ -360,6 +360,27 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		unit := req.Symbols[ts.Metadata.UnitRef]
 		description := req.Symbols[ts.Metadata.HelpRef]
 
+		if unit != "" {
+			if unit == "ratio" {
+				unit = "1"
+			} else {
+				unit = strings.ReplaceAll(unit, "_per_", "/")
+				unit = prometheus.UnitWordToUCUM(unit)
+			}
+		}
+
+		if prw.config.TrimMetricSuffixes {
+			metricName = strings.TrimSuffix(metricName, "_total")
+			metricName = strings.TrimSuffix(metricName, "_sum")
+			metricName = strings.TrimSuffix(metricName, "_count")
+			metricName = strings.TrimSuffix(metricName, "_bucket")
+
+			origUnit := req.Symbols[ts.Metadata.UnitRef]
+			if origUnit != "" {
+				metricName = strings.TrimSuffix(metricName, "_"+origUnit)
+			}
+		}
+
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {

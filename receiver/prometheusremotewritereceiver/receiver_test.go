@@ -579,7 +579,7 @@ func TestTranslateV2(t *testing.T) {
 				// The second metric should have 1 data point.
 				metrics1 := sm1.Metrics().AppendEmpty()
 				metrics1.SetName("test_metric")
-				metrics1.SetUnit("seconds")
+				metrics1.SetUnit("s")
 				metrics1.SetDescription("longer description")
 				metrics1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
@@ -595,7 +595,7 @@ func TestTranslateV2(t *testing.T) {
 
 				metrics2 := sm1.Metrics().AppendEmpty()
 				metrics2.SetName("test_metric")
-				metrics2.SetUnit("milliseconds")
+				metrics2.SetUnit("ms")
 				metrics2.SetDescription("small desc")
 				metrics2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
