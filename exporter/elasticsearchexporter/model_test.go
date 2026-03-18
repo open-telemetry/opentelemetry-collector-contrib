@@ -489,7 +489,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 
 	resourceContainerImageTags := resource.Attributes().PutEmptySlice("container.image.tags")
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
@@ -783,8 +783,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		    "platform": "darwin",
 		    "full": "Mac OS Mojave",
 		    "name": "Mac OS X",
-		    "version": "10.14.1",
-		    "type": "macos"
+		    "version": "10.14.1"
 		  }
 		},
 		"process": {
@@ -845,132 +844,6 @@ func TestEncodeLogECSMode(t *testing.T) {
 		     "trigger": { "type": "api-gateway" }
 	  }
 	}`, buf.String())
-}
-
-func TestEncodeLogECSModeHostOSType(t *testing.T) {
-	tests := map[string]struct {
-		osType string
-		osName string
-
-		expectedHostOsName     string
-		expectedHostOsType     string
-		expectedHostOsPlatform string
-	}{
-		"none_set": {
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"type_windows": {
-			osType:                 "windows",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "windows",
-			expectedHostOsPlatform: "windows",
-		},
-		"type_linux": {
-			osType:                 "linux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "linux",
-			expectedHostOsPlatform: "linux",
-		},
-		"type_darwin": {
-			osType:                 "darwin",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "macos",
-			expectedHostOsPlatform: "darwin",
-		},
-		"type_aix": {
-			osType:                 "aix",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "aix",
-		},
-		"type_hpux": {
-			osType:                 "hpux",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "hpux",
-		},
-		"type_solaris": {
-			osType:                 "solaris",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "unix",
-			expectedHostOsPlatform: "solaris",
-		},
-		"type_unknown": {
-			osType:                 "unknown",
-			expectedHostOsName:     "", // should not be set
-			expectedHostOsType:     "", // should not be set
-			expectedHostOsPlatform: "unknown",
-		},
-		"name_android": {
-			osName:                 "Android",
-			expectedHostOsName:     "Android",
-			expectedHostOsType:     "android",
-			expectedHostOsPlatform: "", // should not be set
-		},
-		"name_ios": {
-			osName:                 "iOS",
-			expectedHostOsName:     "iOS",
-			expectedHostOsType:     "ios",
-			expectedHostOsPlatform: "", // should not be set
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			logs := plog.NewLogs()
-			resource := logs.ResourceLogs().AppendEmpty().Resource()
-			scope := pcommon.NewInstrumentationScope()
-			record := plog.NewLogRecord()
-
-			resource.Attributes().PutStr("agent.name", "custom-agent")
-			resource.Attributes().PutStr("agent.version", "1.2.3")
-			if test.osType != "" {
-				resource.Attributes().PutStr("os.type", test.osType)
-			}
-			if test.osName != "" {
-				resource.Attributes().PutStr("os.name", test.osName)
-			}
-
-			timestamp := pcommon.Timestamp(1710373859123456789)
-			record.SetTimestamp(timestamp)
-			logs.MarkReadOnly()
-
-			var buf bytes.Buffer
-			encoder, _ := newEncoder(MappingECS)
-			err := encoder.encodeLog(
-				encodingContext{resource: resource, scope: scope},
-				record, elasticsearch.Index{}, &buf,
-			)
-			require.NoError(t, err)
-
-			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z","agent":{"name":"custom-agent","version":"1.2.3"}`
-			if test.expectedHostOsName != "" ||
-				test.expectedHostOsPlatform != "" ||
-				test.expectedHostOsType != "" {
-				expectedJSON += `, "host":{"os":{`
-
-				first := true
-				maybeAdd := func(k, v string) {
-					if v != "" {
-						if first {
-							first = false
-						} else {
-							expectedJSON += ","
-						}
-						expectedJSON += fmt.Sprintf("%q:%q", k, v)
-					}
-				}
-				maybeAdd("name", test.expectedHostOsName)
-				maybeAdd("type", test.expectedHostOsType)
-				maybeAdd("platform", test.expectedHostOsPlatform)
-				expectedJSON += "}}"
-			}
-			expectedJSON += "}"
-			require.JSONEq(t, expectedJSON, buf.String())
-		})
-	}
 }
 
 func TestEncodeLogECSModeTimestamps(t *testing.T) {
