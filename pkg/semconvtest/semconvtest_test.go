@@ -13,11 +13,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/semconvtest/internal/samplereceiver"
 )
 
 type findingContext struct {
@@ -217,4 +222,57 @@ func TestWeaverTraces(t *testing.T) {
 	spanAttrViolation := findViolationByAttributeName(violations, "invalid.span.attribute")
 	require.NotNil(t, spanAttrViolation, "expected violation for invalid.span.attribute (tests span traversal)")
 	require.Equal(t, semconvtest.FindingLevelViolation, spanAttrViolation.Level)
+}
+
+// TestWeaverHTTPServerMetrics demonstrates how a receiver author would use
+// semconvtest to validate their component's telemetry against semantic conventions.
+// It creates a sample receiver that emits valid HTTP semconv metrics and asserts
+// that Weaver reports no violations.
+func TestWeaverHTTPServerMetrics(t *testing.T) {
+	outputDir := t.TempDir()
+
+	opts := &semconvtest.WeaverOptions{
+		OutputDir: outputDir,
+	}
+
+	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, weaver.Shutdown()) }()
+
+	factory := samplereceiver.NewFactory()
+	sink := &consumertest.MetricsSink{}
+	settings := receivertest.NewNopSettings(component.MustNewType("sample_http"))
+	recv, err := factory.CreateMetrics(t.Context(), settings, factory.CreateDefaultConfig(), sink)
+	require.NoError(t, err)
+
+	err = recv.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, recv.Shutdown(t.Context())) }()
+
+	require.NotEmpty(t, sink.AllMetrics(), "expected receiver to produce metrics")
+	metrics := sink.AllMetrics()[0]
+
+	time.Sleep(10 * time.Second)
+
+	err = weaver.TestMetrics(metrics)
+	require.NoError(t, err)
+
+	err = weaver.Stop()
+	require.NoError(t, err)
+
+	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer waitCancel()
+	outputFile, err := weaver.WaitForOutput(waitCtx)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(outputFile)
+	require.NoError(t, err)
+
+	report, err := semconvtest.ParseLiveCheckReport(content)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, report.Samples)
+
+	require.False(t, report.HasViolations(),
+		"expected no violations for valid HTTP semconv metrics, got: %v", report.GetViolations())
 }
