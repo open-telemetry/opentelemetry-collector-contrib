@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/skywalking
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update semantic conventions from v1.18.0 to v1.38.0
+note: Add feature gate `translator.skywalking.useStableSemconv` to update semantic conventions from v1.18.0 to v1.38.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44796]
