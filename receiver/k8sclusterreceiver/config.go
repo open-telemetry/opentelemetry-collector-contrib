@@ -42,10 +42,6 @@ type Config struct {
 	// ClusterUID, when configured, is used as the identifier for the synthetic k8s.cluster entity.
 	ClusterUID string `mapstructure:"cluster_uid"`
 
-	// ClusterName, when configured together with ClusterUID, is emitted as descriptive metadata
-	// on the synthetic k8s.cluster entity.
-	ClusterName string `mapstructure:"cluster_name"`
-
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 

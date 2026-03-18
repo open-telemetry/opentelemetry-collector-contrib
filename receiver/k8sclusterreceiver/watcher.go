@@ -507,7 +507,7 @@ func (rw *resourceWatcher) withClusterEntity(oldMetadata, newMetadata map[experi
 		return oldMetadata, newMetadata
 	}
 
-	clusterMetadata := metadata.NewClusterMetadata(rw.config.ClusterUID, rw.config.ClusterName)
+	clusterMetadata := metadata.NewClusterMetadata(rw.config.ClusterUID)
 	if clusterMetadata == nil {
 		return oldMetadata, newMetadata
 	}

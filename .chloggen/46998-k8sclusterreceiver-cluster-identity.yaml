@@ -17,8 +17,7 @@ issues: [46998]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds a new `cluster_uid` config option and uses it as the identifier for a
-  synthetic `k8s.cluster` entity. An optional `cluster_name` config can be set
-  as descriptive metadata on that synthetic entity.
+  synthetic `k8s.cluster` entity emitted by the receiver.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

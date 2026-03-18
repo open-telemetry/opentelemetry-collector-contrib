@@ -59,20 +59,11 @@ func Test_getGenericMetadata(t *testing.T) {
 }
 
 func TestNewClusterMetadata(t *testing.T) {
-	km := NewClusterMetadata("test-cluster-uid", "test-cluster")
+	km := NewClusterMetadata("test-cluster-uid")
 	require.NotNil(t, km)
 	assert.Equal(t, K8SClusterEntityType, km.EntityType)
 	assert.Equal(t, K8SClusterUIDKey, km.ResourceIDKey)
 	assert.Equal(t, experimentalmetricmetadata.ResourceID("test-cluster-uid"), km.ResourceID)
-	assert.Equal(t, map[string]string{
-		K8SClusterUIDKey:  "test-cluster-uid",
-		K8SClusterNameKey: "test-cluster",
-	}, km.Metadata)
-}
-
-func TestNewClusterMetadataWithoutClusterName(t *testing.T) {
-	km := NewClusterMetadata("test-cluster-uid", "")
-	require.NotNil(t, km)
 	assert.Equal(t, map[string]string{
 		K8SClusterUIDKey: "test-cluster-uid",
 	}, km.Metadata)

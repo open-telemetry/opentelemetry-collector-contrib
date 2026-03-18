@@ -626,7 +626,7 @@ func TestObjMetadata(t *testing.T) {
 
 func TestWithClusterEntity(t *testing.T) {
 	rw := &resourceWatcher{
-		config: &Config{ClusterUID: "test-cluster-uid", ClusterName: "test-cluster"},
+		config: &Config{ClusterUID: "test-cluster-uid"},
 	}
 
 	oldMetadata, newMetadata := rw.withClusterEntity(nil, map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
@@ -641,8 +641,7 @@ func TestWithClusterEntity(t *testing.T) {
 	require.Contains(t, newMetadata, experimentalmetricmetadata.ResourceID("test-cluster-uid"))
 	assert.Equal(t, metadata.K8SClusterEntityType, newMetadata[experimentalmetricmetadata.ResourceID("test-cluster-uid")].EntityType)
 	assert.Equal(t, map[string]string{
-		metadata.K8SClusterUIDKey:  "test-cluster-uid",
-		metadata.K8SClusterNameKey: "test-cluster",
+		metadata.K8SClusterUIDKey: "test-cluster-uid",
 	}, newMetadata[experimentalmetricmetadata.ResourceID("test-cluster-uid")].Metadata)
 
 	oldMetadata, newMetadata = rw.withClusterEntity(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}, map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{})
