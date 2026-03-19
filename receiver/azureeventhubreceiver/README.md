@@ -118,6 +118,52 @@ extensions:
     directory: /var/lib/otelcol/eventhub
 ```
 
+#### Distributed Consumption with Blob Checkpoint Store
+
+For deployments with multiple collector instances, the receiver supports distributed consumption using Azure Blob Storage for checkpoint coordination. This uses the Azure SDK's [Processor](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2#Processor) to dynamically assign partitions across instances.
+
+When `blob_checkpoint_store` is configured, the receiver automatically:
+- Coordinates partition ownership across collector instances via blob leases
+- Checkpoints progress to Azure Blob Storage
+- Rebalances partitions when instances are added or removed
+
+**Prerequisites:**
+- The blob container must already exist before starting the collector
+- All collector instances must use the same consumer group and container
+
+**Note:** `blob_checkpoint_store` is mutually exclusive with `partition`, `offset`, and `storage` — the Processor manages partition assignment and checkpointing.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `blob_checkpoint_store.connection` | string | * | | Azure Blob Storage connection string. Required when not using `auth`. |
+| `blob_checkpoint_store.storage_account_url` | string | * | | Blob service URL (e.g., `https://myaccount.blob.core.windows.net`). Required when using `auth`. |
+| `blob_checkpoint_store.container_name` | string | Yes | | Blob container for checkpoint data. |
+
+\* One of `connection` or `storage_account_url` is required depending on authentication method.
+
+```yaml
+# With connection strings
+receivers:
+  azure_event_hub:
+    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+    blob_checkpoint_store:
+      connection: DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net
+      container_name: eventhub-checkpoints
+```
+
+```yaml
+# With auth extension
+receivers:
+  azure_event_hub:
+    event_hub:
+      name: hubName
+      namespace: namespace.servicebus.windows.net
+    auth: azureauth
+    blob_checkpoint_store:
+      storage_account_url: https://myaccount.blob.core.windows.net
+      container_name: eventhub-checkpoints
+```
+
 #### Custom Time Formats and Partitioning
 
 ```yaml

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
@@ -45,6 +46,7 @@ type eventhubHandler struct {
 	settings      receiver.Settings
 	cancel        context.CancelFunc
 	storageClient storage.Client
+	processor     *azeventhubs.Processor // non-nil when in distributed mode
 }
 
 func shouldInitializeStorageClient(storageClient storage.Client, storageID *component.ID) bool {
@@ -53,6 +55,10 @@ func shouldInitializeStorageClient(storageClient storage.Client, storageID *comp
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
+
+	if h.config.BlobCheckpointStore != nil {
+		return h.runDistributed(ctx, host)
+	}
 
 	if shouldInitializeStorageClient(h.storageClient, h.config.StorageID) { // set manually for testing.
 		storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
@@ -95,6 +101,38 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func (h *eventhubHandler) runDistributed(ctx context.Context, host component.Host) error {
+	h.settings.Logger.Info("Starting distributed Event Hub consumption with blob checkpoint store")
+
+	processor, err := createProcessor(h.config, host, h.settings.Logger)
+	if err != nil {
+		return err
+	}
+	h.processor = processor
+
+	// Dispatch partition clients as the Processor assigns them
+	go func() {
+		for {
+			partitionClient := processor.NextPartitionClient(ctx)
+			if partitionClient == nil {
+				// Processor has stopped
+				return
+			}
+			go processPartitionEvents(ctx, partitionClient, h.newMessageHandler, h.config, h.settings.Logger)
+		}
+	}()
+
+	// Run the processor's load balancer in a background goroutine.
+	// It returns when the context is cancelled.
+	go func() {
+		if err := processor.Run(ctx); err != nil {
+			h.settings.Logger.Error("Processor exited with error", zap.Error(err))
+		}
+	}()
+
+	return nil
 }
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
