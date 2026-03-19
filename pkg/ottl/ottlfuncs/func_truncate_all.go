@@ -58,7 +58,9 @@ func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl
 					}
 				}
 				value.SetStr(stringVal[:truncateAt])
-				truncated = append(truncated, fmt.Sprintf("'%s': '%s' -> '%s'", key, stringVal, stringVal[:truncateAt]))
+				if logger.Core().Enabled(zap.DebugLevel) {
+					truncated = append(truncated, key)
+				}
 			}
 		}
 		if len(truncated) != 0 {

@@ -75,11 +75,11 @@ func limit[K any](target ottl.PMapGetSetter[K], limit int64, priorityKeys []stri
 				count++
 				return false
 			}
-			removed = append(removed, key)
+			if logger.Core().Enabled(zap.DebugLevel) {
+				removed = append(removed, key)
+			}
 			return true
 		})
-		// TODO: Write log when limiting is performed
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		if len(removed) != 0 {
 			logger.Debug(fmt.Sprintf("discarded %d values", len(removed)), zap.Strings("discarded", removed))
 		}
