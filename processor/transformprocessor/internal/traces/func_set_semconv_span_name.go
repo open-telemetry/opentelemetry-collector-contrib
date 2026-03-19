@@ -19,14 +19,8 @@ import (
 )
 
 var (
-	semconvVersion1370 = semver.MustParse("1.37.0")
-	semconvVersion1390 = semver.MustParse("1.39.0")
-	semconvVersion1400 = semver.MustParse("1.40.0")
-)
-
-var (
-	minKnownSemConvVersion = semconvVersion1370
-	maxKnownSemConvVersion = semconvVersion1400
+	minKnownSemConvVersion = semver.MustParse("1.37.0")
+	maxKnownSemConvVersion = semver.MustParse("1.40.0")
 )
 
 type setSemconvSpanNameArguments struct {
@@ -57,7 +51,7 @@ func createSetSemconvSpanNameFunctionLegacy(_ ottl.FunctionContext, oArgs ottl.A
 	}
 
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan(), semconvVersion)
+		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
 		return nil, nil
 	}, nil
 }
@@ -85,28 +79,28 @@ func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	}
 
 	return func(_ context.Context, tCtx *ottlspan.TransformContext) (any, error) {
-		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan(), semconvVersion)
+		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
 		return nil, nil
 	}, nil
 }
 
-func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span ptrace.Span, semconvVersion *semver.Version) {
+func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) {
 	originalSpanName := span.Name()
-	semConvSpanName := deriveSemconvSpanName(span, semconvVersion)
+	semConvSpanName := deriveSemconvSpanName(span)
 	span.SetName(semConvSpanName)
 	if originalSpanName != semConvSpanName && !originalSpanNameAttribute.IsEmpty() {
 		span.Attributes().PutStr(originalSpanNameAttribute.Get(), originalSpanName)
 	}
 }
 
-func deriveSemconvSpanName(span ptrace.Span, semconvVersion *semver.Version) string {
+func deriveSemconvSpanName(span ptrace.Span) string {
 	switch span.Kind() {
 	case ptrace.SpanKindServer:
 		spanName := httpSpanName(span, conventions.HTTPRouteKey)
 		if spanName != "" {
 			return spanName
 		}
-		spanName = rpcSpanName(span, semconvVersion)
+		spanName = rpcSpanName(span)
 		if spanName != "" {
 			return spanName
 		}
@@ -124,7 +118,7 @@ func deriveSemconvSpanName(span ptrace.Span, semconvVersion *semver.Version) str
 		if spanName != "" {
 			return spanName
 		}
-		spanName = rpcSpanName(span, semconvVersion)
+		spanName = rpcSpanName(span)
 		if spanName != "" {
 			return spanName
 		}
@@ -158,18 +152,8 @@ func httpSpanName(span ptrace.Span, subject attribute.Key) string {
 }
 
 // https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
-func rpcSpanName(span ptrace.Span, semconvVersion *semver.Version) string {
-	var system pcommon.Value
-	var ok bool
-	if semconvVersion.LessThan(semconvVersion1390) {
-		// semconv < 1.39.0: "rpc.system" takes priority over "rpc.system.name"
-		system, ok = attributeValue(span, "rpc.system", string(conventions.RPCSystemNameKey))
-	} else {
-		// semconv >= 1.39.0: "rpc.system.name" takes priority over the deprecated "rpc.system"
-		system, ok = attributeValue(span, conventions.RPCSystemNameKey, "rpc.system")
-	}
-
-	if ok {
+func rpcSpanName(span ptrace.Span) string {
+	if system, ok := attributeValue(span, conventions.RPCSystemNameKey, "rpc.system"); ok {
 		method, okMethod := attributeValue(span, conventions.RPCMethodKey, "rpc.grpc.method")
 		service, okService := attributeValue(span, "rpc.service", "rpc.grpc.service")
 

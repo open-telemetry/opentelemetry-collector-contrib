@@ -6,7 +6,6 @@ package traces
 import (
 	"testing"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -304,30 +303,6 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 				attrs.PutStr("server.address", "ad")
 			},
 			want: "oteldemo.AdService/GetAds",
-		},
-		{
-			name:                   "RPC <1.39.0 - `rpc.system` takes precedence over `rpc.system.name`",
-			currentSpanName:        "oteldemo.AdService/GetAds",
-			instrumentationLibrary: "io.opentelemetry.grpc-1.6:2.20.0-alpha",
-			kind:                   ptrace.SpanKindServer,
-			semconvVersion:         "1.37.0",
-			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("rpc.system", "apache_dubbo")
-				attrs.PutStr("rpc.system.name", "dubbo")
-			},
-			want: "apache_dubbo",
-		},
-		{
-			name:                   "RPC >=1.39.0 - `rpc.system.name` takes precedence over the deprecated `rpc.system`",
-			currentSpanName:        "oteldemo.AdService/GetAds",
-			instrumentationLibrary: "io.opentelemetry.grpc-1.6:2.20.0-alpha",
-			kind:                   ptrace.SpanKindServer,
-			semconvVersion:         "1.39.0",
-			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("rpc.system", "apache_dubbo")
-				attrs.PutStr("rpc.system.name", "dubbo")
-			},
-			want: "dubbo",
 		},
 		// MESSAGING - KAFKA
 		{
@@ -767,28 +742,6 @@ func Test_rpcSpanName(t *testing.T) {
 			},
 			want: "grpc",
 		},
-		{
-			name:           "semconv 1.38.0: both 'rpc.system' and 'rpc.system.name' present - prioritizes 'rpc.system'",
-			spanName:       "a span name",
-			semconvVersion: "1.38.0",
-			kind:           ptrace.SpanKindServer,
-			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("rpc.system.name", "other_rpc")
-				attrs.PutStr("rpc.system", "grpc")
-			},
-			want: "grpc",
-		},
-		{
-			name:           "semconv 1.37.0: both 'rpc.system' and 'rpc.system.name' present - prioritizes 'rpc.system'",
-			spanName:       "a span name",
-			semconvVersion: "1.37.0",
-			kind:           ptrace.SpanKindServer,
-			addAttributes: func(attrs pcommon.Map) {
-				attrs.PutStr("rpc.system.name", "other_rpc")
-				attrs.PutStr("rpc.system", "grpc")
-			},
-			want: "grpc",
-		},
 	}
 
 	for _, tt := range tests {
@@ -797,15 +750,7 @@ func Test_rpcSpanName(t *testing.T) {
 			span.SetName(tt.spanName)
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
-
-			semconvVersionStr := tt.semconvVersion
-			if semconvVersionStr == "" {
-				semconvVersionStr = "1.40.0"
-			}
-			parsedVersion, err := semver.NewVersion(semconvVersionStr)
-			require.NoError(t, err)
-
-			got := rpcSpanName(span, parsedVersion)
+			got := rpcSpanName(span)
 			assert.Equalf(t, tt.want, got, "getRPCSpanName(%v)", span)
 		})
 	}
