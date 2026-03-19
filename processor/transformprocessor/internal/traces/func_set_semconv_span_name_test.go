@@ -91,7 +91,6 @@ func TestSemconvSpanName(t *testing.T) {
 		name                   string
 		currentSpanName        string // span name currently produced by the instrumentation library
 		instrumentationLibrary string // instrumentation library used to produce the test case data
-		semconvVersion         string // semconv version to use; defaults to defaultSemconvVersion when empty
 		kind                   ptrace.SpanKind
 		addAttributes          func(pcommon.Map)
 		want                   string
@@ -501,13 +500,8 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			span.SetKind(tt.kind)
 			tt.addAttributes(span.Attributes())
 
-			semconvVersion := tt.semconvVersion
-			if semconvVersion == "" {
-				semconvVersion = defaultSemconvVersion
-			}
-
 			setSemconvNameFunction, err := createSetSemconvSpanNameFunction(ottl.FunctionContext{}, &setSemconvSpanNameArguments{
-				SemconvVersion:            semconvVersion,
+				SemconvVersion:            defaultSemconvVersion,
 				OriginalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
 			})
 
@@ -719,9 +713,9 @@ func Test_rpcSpanName(t *testing.T) {
 		},
 		// Version-based priority: when both rpc.system.name and rpc.system are present
 		{
-			name:           "semconv 1.40.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
-			spanName:       "a span name",
-			kind:           ptrace.SpanKindServer,
+			name:     "semconv 1.40.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
+			spanName: "a span name",
+			kind:     ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
 				attrs.PutStr("rpc.system", "other_rpc")
@@ -729,9 +723,9 @@ func Test_rpcSpanName(t *testing.T) {
 			want: "grpc",
 		},
 		{
-			name:           "semconv 1.39.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
-			spanName:       "a span name",
-			kind:           ptrace.SpanKindServer,
+			name:     "semconv 1.39.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
+			spanName: "a span name",
+			kind:     ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
 				attrs.PutStr("rpc.system", "other_rpc")
