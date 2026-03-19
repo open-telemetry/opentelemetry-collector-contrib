@@ -193,11 +193,4 @@ func BenchmarkFingerprintConversion(b *testing.B) {
 			benchSink = fpMap["first_bytes"]
 		}
 	})
-
-	b.Run("direct_bytes", func(b *testing.B) {
-		b.ReportAllocs()
-		for range b.N {
-			benchSink = fp.Bytes()
-		}
-	})
 }

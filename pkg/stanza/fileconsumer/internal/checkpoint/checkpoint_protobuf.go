@@ -116,13 +116,10 @@ func metadataToPb(rmd *reader.Metadata) (*pb.Metadata, error) {
 		FileType:        rmd.FileType,
 	}
 
-	// Convert Fingerprint
+	// Convert Fingerprint — Bytes() already returns a copy
 	if rmd.Fingerprint != nil {
-		src := rmd.Fingerprint.Bytes()
-		dst := make([]byte, len(src))
-		copy(dst, src)
 		pbMeta.Fingerprint = &pb.Fingerprint{
-			FirstBytes: dst,
+			FirstBytes: rmd.Fingerprint.Bytes(),
 		}
 	}
 
