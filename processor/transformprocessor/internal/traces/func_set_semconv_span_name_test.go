@@ -84,9 +84,6 @@ func Test_createSetSemconvSpanNameFunction_parameterChecks(t *testing.T) {
 }
 
 func TestSemconvSpanName(t *testing.T) {
-	// defaultSemconvVersion is the semconv version used by all test cases that do not specify one
-	defaultSemconvVersion := maxKnownSemConvVersion.String()
-
 	tests := []struct {
 		name                   string
 		currentSpanName        string // span name currently produced by the instrumentation library
@@ -501,7 +498,7 @@ VALUES (@p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16);
 			tt.addAttributes(span.Attributes())
 
 			setSemconvNameFunction, err := createSetSemconvSpanNameFunction(ottl.FunctionContext{}, &setSemconvSpanNameArguments{
-				SemconvVersion:            defaultSemconvVersion,
+				SemconvVersion:            maxKnownSemConvVersion.String(),
 				OriginalSpanNameAttribute: ottl.NewTestingOptional("original_span_name"),
 			})
 
