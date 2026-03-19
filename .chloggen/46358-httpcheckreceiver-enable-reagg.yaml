@@ -1,0 +1,16 @@
+change_type: enhancement
+
+component: receiver/httpcheck
+
+note: Enable re-aggregation feature by classifying attributes with requirement_level and setting reaggregation_enabled to true
+
+issues: [46358]
+
+
+subtext: |
+  Attributes are classified as opt_in when aggregating across them produces meaningless results
+  (error.message due to high cardinality), and recommended when totals remain operationally
+  meaningful (http.url, http.method, http.status_class, http.status_code, network.transport,
+  validation.type).
+
+change_logs: [user]

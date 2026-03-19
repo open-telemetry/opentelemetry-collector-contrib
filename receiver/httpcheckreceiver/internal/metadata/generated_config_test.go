@@ -26,41 +26,65 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckClientConnectionDuration: MetricConfig{
-						Enabled: true,
+					HttpcheckClientConnectionDuration: HttpcheckClientConnectionDurationConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientConnectionDurationAttributeKey{HttpcheckClientConnectionDurationAttributeKeyHTTPURL, HttpcheckClientConnectionDurationAttributeKeyNetworkTransport},
 					},
-					HttpcheckClientRequestDuration: MetricConfig{
-						Enabled: true,
+					HttpcheckClientRequestDuration: HttpcheckClientRequestDurationConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientRequestDurationAttributeKey{HttpcheckClientRequestDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckDNSLookupDuration: MetricConfig{
-						Enabled: true,
+					HttpcheckDNSLookupDuration: HttpcheckDNSLookupDurationConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDNSLookupDurationAttributeKey{HttpcheckDNSLookupDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckDuration: MetricConfig{
-						Enabled: true,
+					HttpcheckDuration: HttpcheckDurationConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDurationAttributeKey{HttpcheckDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckError: MetricConfig{
-						Enabled: true,
+					HttpcheckError: HttpcheckErrorConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckErrorAttributeKey{HttpcheckErrorAttributeKeyHTTPURL, HttpcheckErrorAttributeKeyErrorMessage},
 					},
-					HttpcheckResponseDuration: MetricConfig{
-						Enabled: true,
+					HttpcheckResponseDuration: HttpcheckResponseDurationConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseDurationAttributeKey{HttpcheckResponseDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckResponseSize: MetricConfig{
-						Enabled: true,
+					HttpcheckResponseSize: HttpcheckResponseSizeConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseSizeAttributeKey{HttpcheckResponseSizeAttributeKeyHTTPURL},
 					},
-					HttpcheckStatus: MetricConfig{
-						Enabled: true,
+					HttpcheckStatus: HttpcheckStatusConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckStatusAttributeKey{HttpcheckStatusAttributeKeyHTTPURL, HttpcheckStatusAttributeKeyHTTPStatusCode, HttpcheckStatusAttributeKeyHTTPMethod, HttpcheckStatusAttributeKeyHTTPStatusClass},
 					},
-					HttpcheckTLSCertRemaining: MetricConfig{
-						Enabled: true,
+					HttpcheckTLSCertRemaining: HttpcheckTLSCertRemainingConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSCertRemainingAttributeKey{HttpcheckTLSCertRemainingAttributeKeyHTTPURL, HttpcheckTLSCertRemainingAttributeKeyHTTPTLSIssuer, HttpcheckTLSCertRemainingAttributeKeyHTTPTLSCn, HttpcheckTLSCertRemainingAttributeKeyHTTPTLSSan},
 					},
-					HttpcheckTLSHandshakeDuration: MetricConfig{
-						Enabled: true,
+					HttpcheckTLSHandshakeDuration: HttpcheckTLSHandshakeDurationConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSHandshakeDurationAttributeKey{HttpcheckTLSHandshakeDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckValidationFailed: MetricConfig{
-						Enabled: true,
+					HttpcheckValidationFailed: HttpcheckValidationFailedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationFailedAttributeKey{HttpcheckValidationFailedAttributeKeyHTTPURL, HttpcheckValidationFailedAttributeKeyValidationType},
 					},
-					HttpcheckValidationPassed: MetricConfig{
-						Enabled: true,
+					HttpcheckValidationPassed: HttpcheckValidationPassedConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationPassedAttributeKey{HttpcheckValidationPassedAttributeKeyHTTPURL, HttpcheckValidationPassedAttributeKeyValidationType},
 					},
 				},
 			},
@@ -69,41 +93,65 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					HttpcheckClientConnectionDuration: MetricConfig{
-						Enabled: false,
+					HttpcheckClientConnectionDuration: HttpcheckClientConnectionDurationConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientConnectionDurationAttributeKey{HttpcheckClientConnectionDurationAttributeKeyHTTPURL, HttpcheckClientConnectionDurationAttributeKeyNetworkTransport},
 					},
-					HttpcheckClientRequestDuration: MetricConfig{
-						Enabled: false,
+					HttpcheckClientRequestDuration: HttpcheckClientRequestDurationConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckClientRequestDurationAttributeKey{HttpcheckClientRequestDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckDNSLookupDuration: MetricConfig{
-						Enabled: false,
+					HttpcheckDNSLookupDuration: HttpcheckDNSLookupDurationConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDNSLookupDurationAttributeKey{HttpcheckDNSLookupDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckDuration: MetricConfig{
-						Enabled: false,
+					HttpcheckDuration: HttpcheckDurationConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckDurationAttributeKey{HttpcheckDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckError: MetricConfig{
-						Enabled: false,
+					HttpcheckError: HttpcheckErrorConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckErrorAttributeKey{HttpcheckErrorAttributeKeyHTTPURL, HttpcheckErrorAttributeKeyErrorMessage},
 					},
-					HttpcheckResponseDuration: MetricConfig{
-						Enabled: false,
+					HttpcheckResponseDuration: HttpcheckResponseDurationConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseDurationAttributeKey{HttpcheckResponseDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckResponseSize: MetricConfig{
-						Enabled: false,
+					HttpcheckResponseSize: HttpcheckResponseSizeConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckResponseSizeAttributeKey{HttpcheckResponseSizeAttributeKeyHTTPURL},
 					},
-					HttpcheckStatus: MetricConfig{
-						Enabled: false,
+					HttpcheckStatus: HttpcheckStatusConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckStatusAttributeKey{HttpcheckStatusAttributeKeyHTTPURL, HttpcheckStatusAttributeKeyHTTPStatusCode, HttpcheckStatusAttributeKeyHTTPMethod, HttpcheckStatusAttributeKeyHTTPStatusClass},
 					},
-					HttpcheckTLSCertRemaining: MetricConfig{
-						Enabled: false,
+					HttpcheckTLSCertRemaining: HttpcheckTLSCertRemainingConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSCertRemainingAttributeKey{HttpcheckTLSCertRemainingAttributeKeyHTTPURL, HttpcheckTLSCertRemainingAttributeKeyHTTPTLSIssuer, HttpcheckTLSCertRemainingAttributeKeyHTTPTLSCn, HttpcheckTLSCertRemainingAttributeKeyHTTPTLSSan},
 					},
-					HttpcheckTLSHandshakeDuration: MetricConfig{
-						Enabled: false,
+					HttpcheckTLSHandshakeDuration: HttpcheckTLSHandshakeDurationConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []HttpcheckTLSHandshakeDurationAttributeKey{HttpcheckTLSHandshakeDurationAttributeKeyHTTPURL},
 					},
-					HttpcheckValidationFailed: MetricConfig{
-						Enabled: false,
+					HttpcheckValidationFailed: HttpcheckValidationFailedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationFailedAttributeKey{HttpcheckValidationFailedAttributeKeyHTTPURL, HttpcheckValidationFailedAttributeKeyValidationType},
 					},
-					HttpcheckValidationPassed: MetricConfig{
-						Enabled: false,
+					HttpcheckValidationPassed: HttpcheckValidationPassedConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []HttpcheckValidationPassedAttributeKey{HttpcheckValidationPassedAttributeKeyHTTPURL, HttpcheckValidationPassedAttributeKeyValidationType},
 					},
 				},
 			},
@@ -112,7 +160,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HttpcheckClientConnectionDurationConfig{}, HttpcheckClientRequestDurationConfig{}, HttpcheckDNSLookupDurationConfig{}, HttpcheckDurationConfig{}, HttpcheckErrorConfig{}, HttpcheckResponseDurationConfig{}, HttpcheckResponseSizeConfig{}, HttpcheckStatusConfig{}, HttpcheckTLSCertRemainingConfig{}, HttpcheckTLSHandshakeDurationConfig{}, HttpcheckValidationFailedConfig{}, HttpcheckValidationPassedConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
