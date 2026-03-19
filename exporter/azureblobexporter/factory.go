@@ -62,6 +62,7 @@ func createDefaultConfig() component.Config {
 		},
 		Encodings:     Encodings{},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		Compression:   "",
 	}
 }
 

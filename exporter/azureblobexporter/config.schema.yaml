@@ -93,6 +93,9 @@ properties:
   blob_name_format:
     description: BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
     $ref: blob_name_format
+  compression:
+    description: 'Compression sets the algorithm used to process the payload before uploading to Azure Blob Storage. Valid values are: `gzip`, `zstd`, or no value set.'
+    $ref: go.opentelemetry.io/collector/config/configcompression.type
   container:
     description: A container organizes a set of blobs, similar to a directory in a file system.
     $ref: telemetry_config

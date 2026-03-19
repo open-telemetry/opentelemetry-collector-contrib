@@ -59,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
+				Compression: "",
 			},
 		},
 		{
@@ -120,6 +121,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
+				Compression: "",
 			},
 		},
 		{
@@ -153,6 +155,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
+				Compression: "",
 			},
 		},
 		{
@@ -183,6 +186,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:   false,
 					Separator: "\n",
 				},
+				Compression: "",
 			},
 		},
 		{
