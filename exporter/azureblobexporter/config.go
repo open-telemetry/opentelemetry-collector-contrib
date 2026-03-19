@@ -12,9 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 )
 
-var (
-	errUnknownCompression = errors.New("unknown compression type")
-)
+var errUnknownCompression = errors.New("unknown compression type")
 
 type TelemetryConfig struct {
 	Logs    string `mapstructure:"logs"`
