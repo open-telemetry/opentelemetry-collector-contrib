@@ -7,7 +7,7 @@ azure_functions:
       - name: logs
         encoding: azure_encoding
       - name: raw_logs
-        encoding: beats_encoding
+        encoding: azureresourcelogs_encoding
     include_metadata: true
 
 azure_functions/no_auth:
@@ -62,4 +62,4 @@ azure_functions/duplicate_binding_name:
       - name: logs
         encoding: azure_encoding
       - name: logs
-        encoding: beats_encoding
+        encoding: azureresourcelogs_encoding

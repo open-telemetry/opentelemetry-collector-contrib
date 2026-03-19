@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 				EventHub: &EventHubTriggerConfig{
 					Logs: []LogsEncodingConfig{
 						{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
-						{Name: "raw_logs", Encoding: component.MustNewID("beats_encoding")},
+						{Name: "raw_logs", Encoding: component.MustNewID("azureresourcelogs_encoding")},
 					},
 					IncludeMetadata: true,
 				},
