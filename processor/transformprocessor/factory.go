@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
@@ -34,18 +35,20 @@ import (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 type transformProcessorFactory struct {
-	dataPointFunctions                  map[string]ottl.Factory[*ottldatapoint.TransformContext]
-	logFunctions                        map[string]ottl.Factory[*ottllog.TransformContext]
-	metricFunctions                     map[string]ottl.Factory[*ottlmetric.TransformContext]
-	spanEventFunctions                  map[string]ottl.Factory[*ottlspanevent.TransformContext]
-	spanFunctions                       map[string]ottl.Factory[*ottlspan.TransformContext]
-	profileFunctions                    map[string]ottl.Factory[*ottlprofile.TransformContext]
-	defaultDataPointFunctionsOverridden bool
-	defaultLogFunctionsOverridden       bool
-	defaultMetricFunctionsOverridden    bool
-	defaultSpanEventFunctionsOverridden bool
-	defaultSpanFunctionsOverridden      bool
-	defaultProfileFunctionsOverridden   bool
+	dataPointFunctions                   map[string]ottl.Factory[*ottldatapoint.TransformContext]
+	exemplarFunctions                    map[string]ottl.Factory[*ottlexemplar.TransformContext]
+	logFunctions                         map[string]ottl.Factory[*ottllog.TransformContext]
+	metricFunctions                      map[string]ottl.Factory[*ottlmetric.TransformContext]
+	spanEventFunctions                   map[string]ottl.Factory[*ottlspanevent.TransformContext]
+	spanFunctions                        map[string]ottl.Factory[*ottlspan.TransformContext]
+	profileFunctions                     map[string]ottl.Factory[*ottlprofile.TransformContext]
+	defaultDataPointFunctionsOverridden  bool
+	defaultExemplarFunctionsOverridden   bool
+	defaultLogFunctionsOverridden        bool
+	defaultMetricFunctionsOverridden     bool
+	defaultSpanEventFunctionsOverridden  bool
+	defaultSpanFunctionsOverridden       bool
+	defaultProfileFunctionsOverridden    bool
 }
 
 // FactoryOption applies changes to transformProcessorFactory.
@@ -185,6 +188,7 @@ func NewFactory() processor.Factory {
 func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 	f := &transformProcessorFactory{
 		dataPointFunctions: defaultDataPointFunctionsMap(),
+		exemplarFunctions:  defaultExemplarFunctionsMap(),
 		logFunctions:       defaultLogFunctionsMap(),
 		metricFunctions:    defaultMetricFunctionsMap(),
 		spanEventFunctions: defaultSpanEventFunctionsMap(),
@@ -213,6 +217,7 @@ func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 		LogStatements:      []common.ContextStatements{},
 		ProfileStatements:  []common.ContextStatements{},
 		dataPointFunctions: f.dataPointFunctions,
+		exemplarFunctions:  f.exemplarFunctions,
 		logFunctions:       f.logFunctions,
 		metricFunctions:    f.metricFunctions,
 		spanEventFunctions: f.spanEventFunctions,
@@ -284,7 +289,7 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 			zap.Bool("metric", f.defaultMetricFunctionsOverridden),
 		)
 	}
-	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.metricFunctions, f.dataPointFunctions)
+	proc, err := metrics.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings, f.metricFunctions, f.dataPointFunctions, f.exemplarFunctions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
@@ -94,6 +95,10 @@ func defaultMetricFunctionsMap() map[string]ottl.Factory[*ottlmetric.TransformCo
 
 func defaultDataPointFunctionsMap() map[string]ottl.Factory[*ottldatapoint.TransformContext] {
 	return metrics.DataPointFunctions()
+}
+
+func defaultExemplarFunctionsMap() map[string]ottl.Factory[*ottlexemplar.TransformContext] {
+	return metrics.ExemplarFunctions()
 }
 
 func defaultSpanFunctionsMap() map[string]ottl.Factory[*ottlspan.TransformContext] {
