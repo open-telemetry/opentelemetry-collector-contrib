@@ -4,7 +4,6 @@
 package eventhub
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -38,8 +37,6 @@ func makeLogs() plog.Logs {
 }
 
 func TestLogsConsumer_ConsumeEvents(t *testing.T) {
-	ctx := context.Background()
-
 	tests := map[string]struct {
 		content        [][]byte
 		metadata       map[string]string
@@ -103,7 +100,7 @@ func TestLogsConsumer_ConsumeEvents(t *testing.T) {
 				Content:  tt.content,
 				Metadata: tt.metadata,
 			}
-			err := consumer.ConsumeEvents(ctx, req)
+			err := consumer.ConsumeEvents(t.Context(), req)
 
 			if tt.wantErr != "" {
 				require.Error(t, err)

@@ -1,10 +1,6 @@
 display_name: Azure Functions Receiver
 type: azure_functions
 
-tests:
-  # Start requires encoding extensions and event_hub.logs to be configured
-  skip_lifecycle: true
-
 status:
   class: receiver
   stability:

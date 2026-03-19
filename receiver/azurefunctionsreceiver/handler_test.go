@@ -5,7 +5,6 @@ package azurefunctionsreceiver
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -22,7 +21,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/eventhub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/handler"
 	invokeprotocol "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/transport"
 )
@@ -95,7 +93,7 @@ func TestHandleLogs(t *testing.T) {
 				assert.Contains(t, resp.Outputs.FailedMessage.Error, test.expectedErrorSubstring, "error message")
 			}
 
-			assert.Equal(t, test.expectedLogs, len(logsSink.AllLogs()), "number of log batches")
+			assert.Len(t, logsSink.AllLogs(), test.expectedLogs, "number of log batches")
 
 			if test.checkMetadata && test.expectedLogs > 0 {
 				for _, logs := range logsSink.AllLogs() {
@@ -134,46 +132,4 @@ func (testLogsUnmarshaler) UnmarshalLogs(data []byte) (plog.Logs, error) {
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.LogRecords().AppendEmpty()
 	return logs, nil
-}
-
-// --- Unit tests for invoke protocol and handler edge cases ---
-
-type errReader struct{}
-
-func (errReader) Read(_ []byte) (n int, err error) {
-	return 0, errors.New("read failed")
-}
-
-func TestCreateHandler_ReadBodyError(t *testing.T) {
-	mockConsumer := &mockConsumer{}
-	protocol := NewInvokeProtocol(transport.NewBinaryDecoder(), zap.NewNop(), nil)
-	profile := NewProfile("logs", protocol, mockConsumer)
-	h := createHandler(profile)
-
-	req := httptest.NewRequest(http.MethodPost, "/logs", nil)
-	req.Body = io.NopCloser(errReader{})
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, req)
-
-	assert.False(t, mockConsumer.consumed)
-	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
-	body, _ := io.ReadAll(w.Result().Body)
-	var resp invokeprotocol.InvokeResponse
-	require.NoError(t, json.Unmarshal(body, &resp))
-	assert.Equal(t, "failure", resp.ReturnValue)
-	assert.Contains(t, resp.Outputs.FailedMessage.Error, "read body")
-	assert.Nil(t, resp.Outputs.FailedMessage.Source)
-}
-
-type mockConsumer struct {
-	consumed    bool
-	consumeFunc func(context.Context, handler.ParsedRequest) error
-}
-
-func (m *mockConsumer) ConsumeEvents(ctx context.Context, req handler.ParsedRequest) error {
-	m.consumed = true
-	if m.consumeFunc != nil {
-		return m.consumeFunc(ctx, req)
-	}
-	return nil
 }

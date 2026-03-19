@@ -88,7 +88,7 @@ func (p *invokeProtocol) ParseRequest(methodName string, body []byte) (handler.P
 }
 
 // Success implements Protocol.
-func (p *invokeProtocol) Success(w http.ResponseWriter) {
+func (*invokeProtocol) Success(w http.ResponseWriter) {
 	protocol.WriteSuccess(w)
 }
 

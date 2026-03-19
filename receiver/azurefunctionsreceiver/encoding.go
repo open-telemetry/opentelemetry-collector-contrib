@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// loadEncodingExtension loads an extension by ID from the host and type-asserts it to T.
-// Returns a clear error if the extension is missing or does not implement the expected type.
+// loadEncodingExtension loads an extension by ID from the host
+// Returns an error if the extension is missing or does not implement the expected type.
 func loadEncodingExtension[T any](host component.Host, id component.ID, signalType string) (T, error) {
 	var zero T
 	ext, ok := host.GetExtensions()[id]
@@ -26,8 +26,7 @@ func loadEncodingExtension[T any](host component.Host, id component.ID, signalTy
 }
 
 // loadLogsUnmarshalers builds a map of binding name to plog.Unmarshaler by loading
-// each encoding extension from the host. Returns an error if any extension is missing
-// or does not implement plog.Unmarshaler (e.g. wrong encoding type for logs).
+// each encoding extension from the host
 func loadLogsUnmarshalers(host component.Host, bindings []LogsEncodingConfig) (map[string]plog.Unmarshaler, error) {
 	out := make(map[string]plog.Unmarshaler, len(bindings))
 	for _, b := range bindings {

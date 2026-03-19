@@ -6,7 +6,6 @@ package transport
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,8 +51,7 @@ func TestDecode(t *testing.T) {
 
 			decodedMessages, err := decoder.Decode(string(rawMessages))
 			if test.wantErr != nil {
-				require.Error(t, err)
-				assert.True(t, errors.Is(err, test.wantErr), "err should wrap %v", test.wantErr)
+				assert.ErrorIs(t, err, test.wantErr)
 				return
 			}
 			require.NoError(t, err)

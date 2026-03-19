@@ -76,13 +76,11 @@ func (r *functionsReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.NetAddr.Endpoint))
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
+	r.shutdownWG.Go(func() {
 		if errHTTP := r.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
 			r.settings.Logger.Error("HTTP server error", zap.Error(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }
