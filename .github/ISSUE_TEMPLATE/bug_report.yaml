@@ -80,7 +80,6 @@ body:
       - exporter/prometheusremotewrite
       - exporter/pulsar
       - exporter/rabbitmq
-      - exporter/sapm
       - exporter/sematext
       - exporter/sentry
       - exporter/signalfx
@@ -197,7 +196,6 @@ body:
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
-      - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/dnslookup
@@ -225,6 +223,7 @@ body:
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/ibmcloud/vpc
       - processor/resourcedetection/internal/openstack/nova
       - processor/resourcedetection/internal/oraclecloud
       - processor/resourcedetection/internal/scaleway
@@ -250,6 +249,7 @@ body:
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
+      - receiver/azurefunctions
       - receiver/azuremonitor
       - receiver/carbon
       - receiver/chrony
@@ -299,7 +299,6 @@ body:
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents
-      - receiver/k8slog
       - receiver/k8sobjects
       - receiver/kafka
       - receiver/kafkametrics

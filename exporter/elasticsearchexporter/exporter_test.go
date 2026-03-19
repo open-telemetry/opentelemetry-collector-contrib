@@ -315,6 +315,30 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestLogsExporter(t, server.URL)
+		logs := plog.NewLogs()
+		logRecord := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logRecord.Body().SetStr("hello world")
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
+		<-done
+	})
+
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
@@ -1058,6 +1082,28 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		metrics := newMetricsWithAttributes(nil, nil, nil)
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+		<-done
+	})
+
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		index := "someindex"
 		rec := newBulkRecorder()
@@ -1149,11 +1195,11 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}}}`),
 			},
 		}
@@ -1192,7 +1238,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[1,1,2,1,1],"values":[-24.0,-3.0,0.0,6.0,12.0]}}}`),
 			},
 		}
@@ -1295,11 +1341,11 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.bar":"double_metrics","metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"bar":1.0}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"histogram_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}}}`),
 			},
 		}
@@ -1513,6 +1559,38 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
+	t.Run("ecs mode _doc_count hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		gaugeMetric := scopeMetric.Metrics().AppendEmpty()
+		gaugeMetric.SetName("ecs.gauge")
+		gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+		gaugeDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+		gaugeDp.SetDoubleValue(2.5)
+		fillAttributeMap(gaugeDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count"},
+		})
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		docs := rec.WaitItems(1)
+		require.Len(t, docs, 1)
+		doc := docs[0].Document
+		docCount := gjson.GetBytes(doc, "_doc_count")
+		require.True(t, docCount.Exists(), "ECS mode document should include _doc_count when hint is set")
+		assert.Equal(t, uint64(1), docCount.Uint(), "_doc_count value")
+	})
+
 	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1633,15 +1711,112 @@ func TestExporterMetrics(t *testing.T) {
 
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":1.5,"value_count":1}}}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"metric.foo":"summary_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"foo":{"sum":2.0,"value_count":3}}}`),
 			},
 		}
 
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("ecs mode document with only invalid data points sends action without dynamic_templates", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeMetrics.Metrics()
+
+		// Gauge with NaN causes Value() to return error; no attribute or dynamic template is added.
+		invalidGauge := metricSlice.AppendEmpty()
+		invalidGauge.SetName("invalid.gauge")
+		invalidDp := invalidGauge.SetEmptyGauge().DataPoints().AppendEmpty()
+		invalidDp.SetTimestamp(ts)
+		invalidDp.SetDoubleValue(math.NaN())
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		docs := rec.WaitItems(1)
+		require.Len(t, docs, 1)
+		// Action must not contain dynamic_templates (or have empty map); document has no metric fields.
+		var actionMap map[string]any
+		require.NoError(t, json.Unmarshal(docs[0].Action, &actionMap))
+		create, ok := actionMap["create"].(map[string]any)
+		require.True(t, ok)
+		_, hasDynamicTemplates := create["dynamic_templates"]
+		assert.False(t, hasDynamicTemplates, "action should omit dynamic_templates when no metrics are valid")
+		assert.JSONEq(t,
+			`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"}}`,
+			string(docs[0].Document),
+		)
+	})
+
+	t.Run("ecs mode histogram summary gauge counter with dynamic_templates", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+
+		ts := pcommon.NewTimestampFromTime(time.Unix(0, 0))
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metricSlice := scopeMetrics.Metrics()
+
+		gaugeMetric := metricSlice.AppendEmpty()
+		gaugeMetric.SetName("ecs.gauge")
+		gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+		gaugeDp.SetTimestamp(ts)
+		gaugeDp.SetDoubleValue(1.0)
+
+		counterMetric := metricSlice.AppendEmpty()
+		counterMetric.SetName("ecs.counter")
+		counterMetric.SetEmptySum().SetIsMonotonic(true)
+		counterMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		counterDp := counterMetric.Sum().DataPoints().AppendEmpty()
+		counterDp.SetTimestamp(ts)
+		counterDp.SetDoubleValue(2.0)
+
+		histogramMetric := metricSlice.AppendEmpty()
+		histogramMetric.SetName("ecs.histogram")
+		histogram := histogramMetric.SetEmptyHistogram()
+		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		histogramDp := histogram.DataPoints().AppendEmpty()
+		histogramDp.SetTimestamp(ts)
+		histogramDp.ExplicitBounds().FromRaw([]float64{1.0, 2.0, 3.0})
+		histogramDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+
+		summaryMetric := metricSlice.AppendEmpty()
+		summaryMetric.SetName("ecs.summary")
+		summaryDp := summaryMetric.SetEmptySummary().DataPoints().AppendEmpty()
+		summaryDp.SetTimestamp(ts)
+		summaryDp.SetSum(5.0)
+		summaryDp.SetCount(10)
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"ecs.counter":"double_metrics","ecs.gauge":"double_metrics","ecs.histogram":"histogram_metrics","ecs.summary":"summary_metrics"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"ecs":{"counter":2.0,"gauge":1.0,"histogram":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]},"summary":{"sum":5.0,"value_count":10}}}`),
+			},
+		}
 		assertRecordedItems(t, expected, rec, false)
 	})
 }
@@ -1887,11 +2062,11 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
 		expected := []itemRequest{
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"foo":"double_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"foo":1.0,"a":"c"}`),
 			},
 			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default","dynamic_templates":{"bar":"double_metrics","baz":"double_metrics"}}}`),
 				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":1.0,"baz":1.0,"a":"b"}`),
 			},
 		}
@@ -2046,6 +2221,28 @@ func TestExporterTraces(t *testing.T) {
 		mustSendSpans(t, exporter, ptrace.NewSpan())
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestTracesExporter(t, server.URL)
+		traces := newTracesWithAttributes(nil, nil, nil)
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendTracesWithCtx(ctx, t, exporter, traces)
+		<-done
 	})
 
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {

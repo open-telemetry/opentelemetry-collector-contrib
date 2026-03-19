@@ -167,6 +167,7 @@ func TestCompleteOtelCollectorPayload(t *testing.T) {
 		site,
 		fullConfig,
 		deploymentType,
+		"",
 		buildInfo,
 		int64(5*time.Minute*3),
 	)
@@ -435,6 +436,7 @@ func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
 				"datadoghq.com",
 				"{}",
 				tt.deploymentType,
+				"",
 				buildInfo,
 				int64(5*time.Minute*3),
 			)
@@ -459,6 +461,44 @@ func TestPrepareOtelCollectorMetadata_DeploymentType(t *testing.T) {
 			metadataMap, ok := jsonMap["otel_collector"].(map[string]any)
 			require.True(t, ok)
 			assert.Equal(t, tt.deploymentType, metadataMap["collector_deployment_type"])
+		})
+	}
+}
+
+func TestPrepareOtelCollectorMetadata_InstallationMethod(t *testing.T) {
+	tests := []struct {
+		name               string
+		installationMethod string
+	}{
+		{name: "empty installation method", installationMethod: ""},
+		{name: "kubernetes installation method", installationMethod: "kubernetes"},
+		{name: "bare-metal installation method", installationMethod: "bare-metal"},
+		{name: "docker installation method", installationMethod: "docker"},
+		{name: "ecs-fargate installation method", installationMethod: "ecs-fargate"},
+		{name: "eks-fargate installation method", installationMethod: "eks-fargate"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buildInfo := CustomBuildInfo{Command: "otelcol", Description: "Test Collector", Version: "1.0.0"}
+			metadata := PrepareOtelCollectorMetadata(
+				"test-host", "config", "test-uuid", "1.0.0", "datadoghq.com", "{}",
+				"unknown", tt.installationMethod, buildInfo, int64(5*time.Minute*3),
+			)
+
+			assert.Equal(t, tt.installationMethod, metadata.CollectorInstallationMethod)
+
+			payload := &OtelCollectorPayload{Hostname: "test-host", Timestamp: time.Now().UnixNano(), UUID: "test-uuid", Metadata: metadata}
+			jsonData, err := json.Marshal(payload)
+			require.NoError(t, err)
+
+			var jsonMap map[string]any
+			err = json.Unmarshal(jsonData, &jsonMap)
+			require.NoError(t, err)
+
+			metadataMap, ok := jsonMap["otel_collector"].(map[string]any)
+			require.True(t, ok)
+			assert.Equal(t, tt.installationMethod, metadataMap["collector_installation_method"])
 		})
 	}
 }

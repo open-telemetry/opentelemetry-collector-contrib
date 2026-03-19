@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -214,6 +215,7 @@ func (o OpAMPServer) Validate() error {
 
 type Agent struct {
 	Executable              string            `mapstructure:"executable"`
+	InstanceID              string            `mapstructure:"instance_id"`
 	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
@@ -237,6 +239,12 @@ func (a Agent) Validate() error {
 
 	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
 		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
+	if a.InstanceID != "" {
+		if _, err := uuid.Parse(a.InstanceID); err != nil {
+			return fmt.Errorf("agent::instance_id must be a valid UUID string when set: %w", err)
+		}
 	}
 
 	if a.Executable == "" {
