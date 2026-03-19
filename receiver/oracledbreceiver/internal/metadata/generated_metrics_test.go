@@ -761,12 +761,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("session_type")
+						sessionTypeAttrVal, ok := dp.Attributes().Get("session_type")
 						assert.True(t, ok)
-						assert.Equal(t, "session_type-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("session_status")
+						assert.Equal(t, "session_type-val", sessionTypeAttrVal.Str())
+						sessionStatusAttrVal, ok := dp.Attributes().Get("session_status")
 						assert.True(t, ok)
-						assert.Equal(t, "session_status-val", attrVal.Str())
+						assert.Equal(t, "session_status-val", sessionStatusAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["oracledb.sessions.usage"], "Found a duplicate in the metrics slice: oracledb.sessions.usage")
 						validatedMetrics["oracledb.sessions.usage"] = true
@@ -806,9 +806,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("tablespace_name")
+						tablespaceNameAttrVal, ok := dp.Attributes().Get("tablespace_name")
 						assert.True(t, ok)
-						assert.Equal(t, "tablespace_name-val", attrVal.Str())
+						assert.Equal(t, "tablespace_name-val", tablespaceNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")
 						validatedMetrics["oracledb.tablespace_size.limit"] = true
@@ -846,9 +846,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("tablespace_name")
+						tablespaceNameAttrVal, ok := dp.Attributes().Get("tablespace_name")
 						assert.True(t, ok)
-						assert.Equal(t, "tablespace_name-val", attrVal.Str())
+						assert.Equal(t, "tablespace_name-val", tablespaceNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["oracledb.tablespace_size.usage"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.usage")
 						validatedMetrics["oracledb.tablespace_size.usage"] = true
