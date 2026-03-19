@@ -178,6 +178,7 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 	return curMf
 }
 
+//nolint:unparam // return signature kept for consistency with other appender methods
 func (t *transaction) appendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():

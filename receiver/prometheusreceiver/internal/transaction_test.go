@@ -503,7 +503,7 @@ func TestAppendSTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.appendSTZeroSample(0, labels.FromStrings(), 0, 100)
+	_, err := tr.appendSTZeroSample(0, labels.FromStrings(), 0, 50)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -511,7 +511,7 @@ func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.appendHistogramSTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
+	_, err := tr.appendHistogramSTZeroSample(0, labels.FromStrings(), 0, 50, tsdbutil.GenerateTestHistogram(1), nil)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -611,7 +611,7 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
-	), atMs, ctMs, nil, nil)
+	), atMs, ctMs, nil, tsdbutil.GenerateTestFloatHistogram(1))
 	assert.NoError(t, err)
 
 	_, err = tr.appendHistogram(0, labels.FromStrings(
@@ -2228,7 +2228,6 @@ func TestTransactionAppenderV2WrapperAppend(t *testing.T) {
 					require.Equal(t, tt.expectedExemplars, dp.Exemplars().Len())
 				}
 				require.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(tt.stMs)), dp.StartTimestamp())
-
 			}
 		})
 	}
