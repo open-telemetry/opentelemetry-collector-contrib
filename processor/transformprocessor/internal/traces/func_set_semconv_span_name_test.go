@@ -635,7 +635,6 @@ func Test_rpcSpanName(t *testing.T) {
 		name                   string
 		spanName               string
 		instrumentationLibrary string
-		semconvVersion         string // defaults to "1.40.0" when empty
 		kind                   ptrace.SpanKind
 		attributeNames         []string
 		addAttributes          func(pcommon.Map)
@@ -711,7 +710,6 @@ func Test_rpcSpanName(t *testing.T) {
 			name:                   "'rpc.system.name' and 'rpc.method', no 'rpc.service' - semconv 1.39+",
 			spanName:               "a span name",
 			instrumentationLibrary: "hand crafted",
-			semconvVersion:         "1.39.0",
 			kind:                   ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
@@ -723,7 +721,6 @@ func Test_rpcSpanName(t *testing.T) {
 		{
 			name:           "semconv 1.40.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
 			spanName:       "a span name",
-			semconvVersion: "1.40.0",
 			kind:           ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
@@ -734,7 +731,6 @@ func Test_rpcSpanName(t *testing.T) {
 		{
 			name:           "semconv 1.39.0: both 'rpc.system.name' and 'rpc.system' present - prioritizes 'rpc.system.name'",
 			spanName:       "a span name",
-			semconvVersion: "1.39.0",
 			kind:           ptrace.SpanKindServer,
 			addAttributes: func(attrs pcommon.Map) {
 				attrs.PutStr("rpc.system.name", "grpc")
