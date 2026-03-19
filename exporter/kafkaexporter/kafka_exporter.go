@@ -156,19 +156,18 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		}
 	} else {
 		for _, mi := range m.TopicMessages {
-			fields := []zap.Field{
+			e.logger.Error("kafka records export failed",
 				zap.Int("records", len(mi.Messages)),
 				zap.String("topic", mi.Topic),
-			}
-			var msgTooLarge *kafkaclient.MessageTooLargeError
-			if errors.As(err, &msgTooLarge) {
-				fields = append(fields,
-					zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
-					zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
-				)
-			}
-			fields = append(fields, zap.Error(err))
-			e.logger.Error("kafka records export failed", fields...)
+				zap.Error(err),
+			)
+		}
+		var msgTooLarge *kafkaclient.MessageTooLargeError
+		if errors.As(err, &msgTooLarge) {
+			e.logger.Error("kafka record exceeds max message size",
+				zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
+				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
+			)
 		}
 	}
 	return err

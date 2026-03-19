@@ -52,7 +52,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 
 	// Verify the error is permanent and wraps MessageTooLarge.
 	assert.True(t, consumererror.IsPermanent(err), "expected permanent error")
-	require.ErrorAs(t, err, &kerr.MessageTooLarge, "expected MessageTooLarge error")
+	require.ErrorIs(t, err, kerr.MessageTooLarge, "expected MessageTooLarge error")
 
 	// Verify the error wraps MessageTooLargeError with correct sizes.
 	var msgTooLarge *MessageTooLargeError

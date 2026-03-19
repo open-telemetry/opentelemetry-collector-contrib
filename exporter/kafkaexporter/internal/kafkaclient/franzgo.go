@@ -67,21 +67,22 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	result := p.client.ProduceSync(ctx, messages...)
 	var errs []error
 	for _, r := range result {
-		if r.Err != nil {
-			var err error
-			if errors.Is(r.Err, kerr.MessageTooLarge) {
-				err = fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic,
-					&MessageTooLargeError{RecordBytes: recordUserSize(r.Record), MaxMessageBytes: p.maxMessageBytes, Err: r.Err})
-			} else {
-				err = fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic, r.Err)
-			}
-			// check if its defined as a non-retriable error by franzgo
-			kgoErr := &kerr.Error{}
-			if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
-				err = consumererror.NewPermanent(err)
-			}
-			errs = append(errs, err)
+		if r.Err == nil {
+			continue
 		}
+		var err error
+		if errors.Is(r.Err, kerr.MessageTooLarge) {
+			err = fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic,
+				&MessageTooLargeError{RecordBytes: recordUserSize(r.Record), MaxMessageBytes: p.maxMessageBytes, Err: r.Err})
+		} else {
+			err = fmt.Errorf("error exporting to topic %q: %w", r.Record.Topic, r.Err)
+		}
+		// check if its defined as a non-retriable error by franzgo
+		kgoErr := &kerr.Error{}
+		if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
+			err = consumererror.NewPermanent(err)
+		}
+		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
 }
