@@ -349,9 +349,9 @@ dynamic_resource_attributes:
 When `dynamic_resource_attributes` is not set (default), no dynamic evaluation
 occurs and the connector behaves exactly as before.
 
-The merge order is: static `include_resource_attributes` first, then the dynamic
-expression result (which can overwrite static keys), then collector instance info
-(always wins last).
+The merge order is: dynamic expression result first, then static
+`include_resource_attributes` (which can overwrite dynamic keys), then collector
+instance info (always wins last).
 
 **Example 1 -- prefix-based label forwarding:**
 

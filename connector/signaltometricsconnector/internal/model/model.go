@@ -223,7 +223,10 @@ func (md *MetricDef[K]) FromMetricInfo(
 // definition.
 //
 // When DynamicResourceAttributes is set, the OTTL expression is evaluated
-// and any resulting pcommon.Map entries are merged into the output.
+// first and any resulting pcommon.Map entries are placed into the output.
+// Static `IncludeResourceAttributes` are then merged on top, so static
+// includes take precedence over dynamic attributes on key conflicts.
+// CollectorInstanceInfo is always applied last.
 func (md *MetricDef[K]) FilterResourceAttributes(
 	ctx context.Context,
 	tCtx K,
@@ -231,16 +234,9 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 	collectorInfo CollectorInstanceInfo,
 	logger *zap.Logger,
 ) (pcommon.Map, error) {
-	var filteredAttributes pcommon.Map
-	switch {
-	case len(md.IncludeResourceAttributes) == 0:
-		filteredAttributes = pcommon.NewMap()
-		filteredAttributes.EnsureCapacity(attrs.Len() + collectorInfo.Size())
-		attrs.CopyTo(filteredAttributes)
-	default:
-		expectedLen := len(md.IncludeResourceAttributes) + collectorInfo.Size()
-		filteredAttributes = filterAttributes(attrs, md.IncludeResourceAttributes, expectedLen)
-	}
+	filteredAttributes := pcommon.NewMap()
+
+	// Step 1: Apply dynamic resource attributes first
 	if dra := md.DynResAttrs; dra != nil {
 		result, err := dra.Expression.Eval(ctx, tCtx)
 		if err != nil {
@@ -258,6 +254,23 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 			return true
 		})
 	}
+
+	// Step 2: Apply static include_resource_attributes (overwrites dynamic on conflict)
+	switch {
+	case len(md.IncludeResourceAttributes) == 0:
+		attrs.Range(func(k string, v pcommon.Value) bool {
+			v.CopyTo(filteredAttributes.PutEmpty(k))
+			return true
+		})
+	default:
+		filtered := filterAttributes(attrs, md.IncludeResourceAttributes, len(md.IncludeResourceAttributes))
+		filtered.Range(func(k string, v pcommon.Value) bool {
+			v.CopyTo(filteredAttributes.PutEmpty(k))
+			return true
+		})
+	}
+
+	// Step 3: CollectorInstanceInfo last
 	collectorInfo.Copy(filteredAttributes)
 	return filteredAttributes, nil
 }
