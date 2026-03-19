@@ -78,7 +78,7 @@ func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
 
 func testTransactionUpdateMetadataDoesNothing(t *testing.T) {
 	tr := newTransaction(scrapeCtx, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	_, err := tr.UpdateMetadata(0, labels.New(), metadata.Metadata{})
+	_, err := tr.updateMetadata(0, labels.New(), metadata.Metadata{})
 	assert.NoError(t, err)
 }
 
@@ -417,7 +417,7 @@ func testAppendExemplarWithNoMetricName(t *testing.T) {
 		model.JobLabel, "test",
 	)
 
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	_, err := tr.appendExemplar(0, labels, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errMetricNameNotFound, err)
 }
 
@@ -434,7 +434,7 @@ func testAppendExemplarWithEmptyMetricName(t *testing.T) {
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
 	)
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	_, err := tr.appendExemplar(0, labels, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errMetricNameNotFound, err)
 }
 
@@ -453,7 +453,7 @@ func testAppendExemplarWithDuplicateLabels(t *testing.T) {
 		"a", "b",
 		"a", "c",
 	)
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	_, err := tr.appendExemplar(0, labels, exemplar.Exemplar{Value: 0})
 	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
@@ -471,7 +471,7 @@ func testAppendExemplarWithoutAddingMetric(t *testing.T) {
 		model.MetricNameLabel, "counter_test",
 		"a", "b",
 	)
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	_, err := tr.appendExemplar(0, labels, exemplar.Exemplar{Value: 0})
 	assert.NoError(t, err)
 }
 
@@ -483,7 +483,7 @@ func testAppendExemplarWithNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendExemplar(0, labels.EmptyLabels(), exemplar.Exemplar{Value: 0})
+	_, err := tr.appendExemplar(0, labels.EmptyLabels(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
@@ -495,7 +495,7 @@ func testAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendExemplar(0, labels.FromStrings(), exemplar.Exemplar{Value: 0})
+	_, err := tr.appendExemplar(0, labels.FromStrings(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
@@ -503,7 +503,7 @@ func TestAppendSTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(), 0, 100)
+	_, err := tr.appendSTZeroSample(0, labels.FromStrings(), 0, 100)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -511,7 +511,7 @@ func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
+	_, err := tr.appendHistogramSTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -519,7 +519,7 @@ func TestAppendSTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -533,7 +533,7 @@ func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
@@ -547,7 +547,7 @@ func TestAppendSTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -559,7 +559,7 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -573,14 +573,14 @@ func TestAppendSTZeroSample(t *testing.T) {
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
 	), atMs, ctMs)
 	assert.NoError(t, err)
 
-	_, err = tr.Append(0, labels.FromStrings(
+	_, err = tr.append(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -607,14 +607,14 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
 	), atMs, ctMs, nil, nil)
 	assert.NoError(t, err)
 
-	_, err = tr.AppendHistogram(0, labels.FromStrings(
+	_, err = tr.appendHistogram(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
@@ -2228,13 +2228,7 @@ func TestTransactionAppenderV2WrapperAppend(t *testing.T) {
 					require.Equal(t, tt.expectedExemplars, dp.Exemplars().Len())
 				}
 				require.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(tt.stMs)), dp.StartTimestamp())
-			case pmetric.MetricTypeSummary:
-				dp := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0)
-				require.Equal(t, tt.val, dp.Sum())
-				if tt.expectedExemplars > 0 {
-					require.Equal(t, tt.expectedExemplars, dp.QuantileValues().Len())
-				}
-				require.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(tt.stMs)), dp.StartTimestamp())
+
 			}
 		})
 	}

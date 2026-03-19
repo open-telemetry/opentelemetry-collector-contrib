@@ -15,7 +15,7 @@ import (
 )
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
-// It implements both storage.Appendable (v1) and storage.AppendableV2.
+// It implements storage.AppendableV2.
 type appendable struct {
 	sink           consumer.Metrics
 	useMetadata    bool
@@ -26,14 +26,12 @@ type appendable struct {
 	obsrecv  *receiverhelper.ObsReport
 }
 
-// Appendable is a wrapper interface that implements both storage.Appendable and storage.AppendableV2.
+// Appendable is a wrapper interface that implements storage.AppendableV2.
 type Appendable interface {
-	storage.Appendable
 	storage.AppendableV2
 }
 
 // NewAppendable returns an appendable instance that emits metrics to the sink.
-// The returned value implements both storage.Appendable and storage.AppendableV2.
 func NewAppendable(
 	sink consumer.Metrics,
 	set receiver.Settings,
@@ -54,10 +52,6 @@ func NewAppendable(
 		obsrecv:        obsrecv,
 		trimSuffixes:   trimSuffixes,
 	}, nil
-}
-
-func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
 }
 
 func (o *appendable) AppenderV2(ctx context.Context) storage.AppenderV2 {
