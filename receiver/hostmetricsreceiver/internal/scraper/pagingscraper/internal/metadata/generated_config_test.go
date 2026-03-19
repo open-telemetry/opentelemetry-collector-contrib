@@ -26,25 +26,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults: SystemPagingFaultsConfig{
+					SystemPagingFaults: SystemPagingFaultsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemPagingFaultsAttributeKey{SystemPagingFaultsAttributeKeyType},
+						EnabledAttributes:   []SystemPagingFaultsMetricAttributeKey{SystemPagingFaultsMetricAttributeKeyType},
 					},
-					SystemPagingOperations: SystemPagingOperationsConfig{
+					SystemPagingOperations: SystemPagingOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemPagingOperationsAttributeKey{SystemPagingOperationsAttributeKeyDirection, SystemPagingOperationsAttributeKeyType},
+						EnabledAttributes:   []SystemPagingOperationsMetricAttributeKey{SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType},
 					},
-					SystemPagingUsage: SystemPagingUsageConfig{
+					SystemPagingUsage: SystemPagingUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemPagingUsageAttributeKey{SystemPagingUsageAttributeKeyDevice, SystemPagingUsageAttributeKeyState},
+						EnabledAttributes:   []SystemPagingUsageMetricAttributeKey{SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState},
 					},
-					SystemPagingUtilization: SystemPagingUtilizationConfig{
+					SystemPagingUtilization: SystemPagingUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemPagingUtilizationAttributeKey{SystemPagingUtilizationAttributeKeyDevice, SystemPagingUtilizationAttributeKeyState},
+						EnabledAttributes:   []SystemPagingUtilizationMetricAttributeKey{SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -53,25 +53,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults: SystemPagingFaultsConfig{
+					SystemPagingFaults: SystemPagingFaultsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemPagingFaultsAttributeKey{SystemPagingFaultsAttributeKeyType},
+						EnabledAttributes:   []SystemPagingFaultsMetricAttributeKey{SystemPagingFaultsMetricAttributeKeyType},
 					},
-					SystemPagingOperations: SystemPagingOperationsConfig{
+					SystemPagingOperations: SystemPagingOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemPagingOperationsAttributeKey{SystemPagingOperationsAttributeKeyDirection, SystemPagingOperationsAttributeKeyType},
+						EnabledAttributes:   []SystemPagingOperationsMetricAttributeKey{SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType},
 					},
-					SystemPagingUsage: SystemPagingUsageConfig{
+					SystemPagingUsage: SystemPagingUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SystemPagingUsageAttributeKey{SystemPagingUsageAttributeKeyDevice, SystemPagingUsageAttributeKeyState},
+						EnabledAttributes:   []SystemPagingUsageMetricAttributeKey{SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState},
 					},
-					SystemPagingUtilization: SystemPagingUtilizationConfig{
+					SystemPagingUtilization: SystemPagingUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SystemPagingUtilizationAttributeKey{SystemPagingUtilizationAttributeKeyDevice, SystemPagingUtilizationAttributeKeyState},
+						EnabledAttributes:   []SystemPagingUtilizationMetricAttributeKey{SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -80,7 +80,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemPagingFaultsConfig{}, SystemPagingOperationsConfig{}, SystemPagingUsageConfig{}, SystemPagingUtilizationConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemPagingFaultsMetricConfig{}, SystemPagingOperationsMetricConfig{}, SystemPagingUsageMetricConfig{}, SystemPagingUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

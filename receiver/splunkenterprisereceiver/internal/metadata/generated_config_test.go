@@ -26,260 +26,260 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SplunkAggregationQueueRatio: SplunkAggregationQueueRatioConfig{
+					SplunkAggregationQueueRatio: SplunkAggregationQueueRatioMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkAggregationQueueRatioAttributeKey{SplunkAggregationQueueRatioAttributeKeySplunkHost, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkAggregationQueueRatioMetricAttributeKey{SplunkAggregationQueueRatioMetricAttributeKeySplunkHost, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusConfig{
+					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkBucketsSearchableStatusAttributeKey{SplunkBucketsSearchableStatusAttributeKeySplunkHost, SplunkBucketsSearchableStatusAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkBucketsSearchableStatusMetricAttributeKey{SplunkBucketsSearchableStatusMetricAttributeKeySplunkHost, SplunkBucketsSearchableStatusMetricAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketCount: SplunkDataIndexesExtendedBucketCountConfig{
+					SplunkDataIndexesExtendedBucketCount: SplunkDataIndexesExtendedBucketCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketCountAttributeKey{SplunkDataIndexesExtendedBucketCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketCountMetricAttributeKey{SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketEventCount: SplunkDataIndexesExtendedBucketEventCountConfig{
+					SplunkDataIndexesExtendedBucketEventCount: SplunkDataIndexesExtendedBucketEventCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketEventCountAttributeKey{SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey{SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketHotCount: SplunkDataIndexesExtendedBucketHotCountConfig{
+					SplunkDataIndexesExtendedBucketHotCount: SplunkDataIndexesExtendedBucketHotCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketHotCountAttributeKey{SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey{SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketWarmCount: SplunkDataIndexesExtendedBucketWarmCountConfig{
+					SplunkDataIndexesExtendedBucketWarmCount: SplunkDataIndexesExtendedBucketWarmCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketWarmCountAttributeKey{SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey{SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedEventCount: SplunkDataIndexesExtendedEventCountConfig{
+					SplunkDataIndexesExtendedEventCount: SplunkDataIndexesExtendedEventCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedEventCountAttributeKey{SplunkDataIndexesExtendedEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedEventCountMetricAttributeKey{SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedRawSize: SplunkDataIndexesExtendedRawSizeConfig{
+					SplunkDataIndexesExtendedRawSize: SplunkDataIndexesExtendedRawSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedRawSizeAttributeKey{SplunkDataIndexesExtendedRawSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedRawSizeMetricAttributeKey{SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedTotalSize: SplunkDataIndexesExtendedTotalSizeConfig{
+					SplunkDataIndexesExtendedTotalSize: SplunkDataIndexesExtendedTotalSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedTotalSizeAttributeKey{SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedTotalSizeMetricAttributeKey{SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkHealth: SplunkHealthConfig{
+					SplunkHealth: SplunkHealthMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkHealthAttributeKey{SplunkHealthAttributeKeySplunkFeature, SplunkHealthAttributeKeySplunkFeatureHealth, SplunkHealthAttributeKeySplunkSplunkdBuild, SplunkHealthAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkHealthMetricAttributeKey{SplunkHealthMetricAttributeKeySplunkFeature, SplunkHealthMetricAttributeKeySplunkFeatureHealth, SplunkHealthMetricAttributeKeySplunkSplunkdBuild, SplunkHealthMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerAvgRate: SplunkIndexerAvgRateConfig{
+					SplunkIndexerAvgRate: SplunkIndexerAvgRateMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerAvgRateAttributeKey{SplunkIndexerAvgRateAttributeKeySplunkHost, SplunkIndexerAvgRateAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerAvgRateMetricAttributeKey{SplunkIndexerAvgRateMetricAttributeKeySplunkHost, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerCPUTime: SplunkIndexerCPUTimeConfig{
+					SplunkIndexerCPUTime: SplunkIndexerCPUTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerCPUTimeAttributeKey{SplunkIndexerCPUTimeAttributeKeySplunkHost, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerCPUTimeMetricAttributeKey{SplunkIndexerCPUTimeMetricAttributeKeySplunkHost, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerQueueRatio: SplunkIndexerQueueRatioConfig{
+					SplunkIndexerQueueRatio: SplunkIndexerQueueRatioMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerQueueRatioAttributeKey{SplunkIndexerQueueRatioAttributeKeySplunkHost, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerQueueRatioMetricAttributeKey{SplunkIndexerQueueRatioMetricAttributeKeySplunkHost, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerRawWriteTime: SplunkIndexerRawWriteTimeConfig{
+					SplunkIndexerRawWriteTime: SplunkIndexerRawWriteTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerRawWriteTimeAttributeKey{SplunkIndexerRawWriteTimeAttributeKeySplunkHost, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerRawWriteTimeMetricAttributeKey{SplunkIndexerRawWriteTimeMetricAttributeKeySplunkHost, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerRollingrestartStatus: SplunkIndexerRollingrestartStatusConfig{
+					SplunkIndexerRollingrestartStatus: SplunkIndexerRollingrestartStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerRollingrestartStatusAttributeKey{SplunkIndexerRollingrestartStatusAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerRollingrestartStatusMetricAttributeKey{SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerThroughput: SplunkIndexerThroughputConfig{
+					SplunkIndexerThroughput: SplunkIndexerThroughputMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerThroughputAttributeKey{SplunkIndexerThroughputAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerThroughputMetricAttributeKey{SplunkIndexerThroughputMetricAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesAvgSize: SplunkIndexesAvgSizeConfig{
+					SplunkIndexesAvgSize: SplunkIndexesAvgSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesAvgSizeAttributeKey{SplunkIndexesAvgSizeAttributeKeySplunkIndexName, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesAvgSizeMetricAttributeKey{SplunkIndexesAvgSizeMetricAttributeKeySplunkIndexName, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesAvgUsage: SplunkIndexesAvgUsageConfig{
+					SplunkIndexesAvgUsage: SplunkIndexesAvgUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesAvgUsageAttributeKey{SplunkIndexesAvgUsageAttributeKeySplunkIndexName, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesAvgUsageMetricAttributeKey{SplunkIndexesAvgUsageMetricAttributeKeySplunkIndexName, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesBucketCount: SplunkIndexesBucketCountConfig{
+					SplunkIndexesBucketCount: SplunkIndexesBucketCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesBucketCountAttributeKey{SplunkIndexesBucketCountAttributeKeySplunkIndexName, SplunkIndexesBucketCountAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesBucketCountMetricAttributeKey{SplunkIndexesBucketCountMetricAttributeKeySplunkIndexName, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesMedianDataAge: SplunkIndexesMedianDataAgeConfig{
+					SplunkIndexesMedianDataAge: SplunkIndexesMedianDataAgeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesMedianDataAgeAttributeKey{SplunkIndexesMedianDataAgeAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesMedianDataAgeMetricAttributeKey{SplunkIndexesMedianDataAgeMetricAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesSize: SplunkIndexesSizeConfig{
+					SplunkIndexesSize: SplunkIndexesSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesSizeAttributeKey{SplunkIndexesSizeAttributeKeySplunkIndexName, SplunkIndexesSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesSizeMetricAttributeKey{SplunkIndexesSizeMetricAttributeKeySplunkIndexName, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIoAvgIops: SplunkIoAvgIopsConfig{
+					SplunkIoAvgIops: SplunkIoAvgIopsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIoAvgIopsAttributeKey{SplunkIoAvgIopsAttributeKeySplunkHost, SplunkIoAvgIopsAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIoAvgIopsMetricAttributeKey{SplunkIoAvgIopsMetricAttributeKeySplunkHost, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkKvstoreBackupStatus: SplunkKvstoreBackupStatusConfig{
+					SplunkKvstoreBackupStatus: SplunkKvstoreBackupStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreBackupStatusAttributeKey{SplunkKvstoreBackupStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreBackupStatusMetricAttributeKey{SplunkKvstoreBackupStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusConfig{
+					SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreReplicationStatusAttributeKey{SplunkKvstoreReplicationStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkKvstoreStatus: SplunkKvstoreStatusConfig{
+					SplunkKvstoreStatus: SplunkKvstoreStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreStatusAttributeKey{SplunkKvstoreStatusAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreStatusMetricAttributeKey{SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkLicenseExpirationSecondsRemaining: SplunkLicenseExpirationSecondsRemainingConfig{
+					SplunkLicenseExpirationSecondsRemaining: SplunkLicenseExpirationSecondsRemainingMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkLicenseExpirationSecondsRemainingAttributeKey{SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkLicenseExpirationSecondsRemainingMetricAttributeKey{SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkLicenseIndexUsage: SplunkLicenseIndexUsageConfig{
+					SplunkLicenseIndexUsage: SplunkLicenseIndexUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkLicenseIndexUsageAttributeKey{SplunkLicenseIndexUsageAttributeKeySplunkIndexName, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkLicenseIndexUsageMetricAttributeKey{SplunkLicenseIndexUsageMetricAttributeKeySplunkIndexName, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkParseQueueRatio: SplunkParseQueueRatioConfig{
+					SplunkParseQueueRatio: SplunkParseQueueRatioMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkParseQueueRatioAttributeKey{SplunkParseQueueRatioAttributeKeySplunkHost, SplunkParseQueueRatioAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkParseQueueRatioMetricAttributeKey{SplunkParseQueueRatioMetricAttributeKeySplunkHost, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkPipelineSetCount: SplunkPipelineSetCountConfig{
+					SplunkPipelineSetCount: SplunkPipelineSetCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkPipelineSetCountAttributeKey{SplunkPipelineSetCountAttributeKeySplunkHost, SplunkPipelineSetCountAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkPipelineSetCountMetricAttributeKey{SplunkPipelineSetCountMetricAttributeKeySplunkHost, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSchedulerAvgExecutionLatency: SplunkSchedulerAvgExecutionLatencyConfig{
+					SplunkSchedulerAvgExecutionLatency: SplunkSchedulerAvgExecutionLatencyMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSchedulerAvgExecutionLatencyAttributeKey{SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSchedulerAvgExecutionLatencyMetricAttributeKey{SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSchedulerAvgRunTime: SplunkSchedulerAvgRunTimeConfig{
+					SplunkSchedulerAvgRunTime: SplunkSchedulerAvgRunTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSchedulerAvgRunTimeAttributeKey{SplunkSchedulerAvgRunTimeAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSchedulerAvgRunTimeMetricAttributeKey{SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSchedulerCompletionRatio: SplunkSchedulerCompletionRatioConfig{
+					SplunkSchedulerCompletionRatio: SplunkSchedulerCompletionRatioMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSchedulerCompletionRatioAttributeKey{SplunkSchedulerCompletionRatioAttributeKeySplunkHost, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSchedulerCompletionRatioMetricAttributeKey{SplunkSchedulerCompletionRatioMetricAttributeKeySplunkHost, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchDuration: SplunkSearchDurationConfig{
+					SplunkSearchDuration: SplunkSearchDurationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchDurationAttributeKey{SplunkSearchDurationAttributeKeySplunkSplunkdBuild, SplunkSearchDurationAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchDurationMetricAttributeKey{SplunkSearchDurationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchDurationMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchInitiation: SplunkSearchInitiationConfig{
+					SplunkSearchInitiation: SplunkSearchInitiationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchInitiationAttributeKey{SplunkSearchInitiationAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchInitiationMetricAttributeKey{SplunkSearchInitiationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchStatus: SplunkSearchStatusConfig{
+					SplunkSearchStatus: SplunkSearchStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchStatusAttributeKey{SplunkSearchStatusAttributeKeySplunkSearchState, SplunkSearchStatusAttributeKeySplunkSplunkdBuild, SplunkSearchStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchStatusMetricAttributeKey{SplunkSearchStatusMetricAttributeKeySplunkSearchState, SplunkSearchStatusMetricAttributeKeySplunkSplunkdBuild, SplunkSearchStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchSuccess: SplunkSearchSuccessConfig{
+					SplunkSearchSuccess: SplunkSearchSuccessMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchSuccessAttributeKey{SplunkSearchSuccessAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchSuccessMetricAttributeKey{SplunkSearchSuccessMetricAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerIntrospectionQueuesCurrent: SplunkServerIntrospectionQueuesCurrentConfig{
+					SplunkServerIntrospectionQueuesCurrent: SplunkServerIntrospectionQueuesCurrentMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentAttributeKey{SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentMetricAttributeKey{SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerIntrospectionQueuesCurrentBytes: SplunkServerIntrospectionQueuesCurrentBytesConfig{
+					SplunkServerIntrospectionQueuesCurrentBytes: SplunkServerIntrospectionQueuesCurrentBytesMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentBytesAttributeKey{SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey{SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsAdhoc: SplunkServerSearchartifactsAdhocConfig{
+					SplunkServerSearchartifactsAdhoc: SplunkServerSearchartifactsAdhocMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsAdhocAttributeKey{SplunkServerSearchartifactsAdhocAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsAdhocMetricAttributeKey{SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsAdhocSize: SplunkServerSearchartifactsAdhocSizeConfig{
+					SplunkServerSearchartifactsAdhocSize: SplunkServerSearchartifactsAdhocSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsAdhocSizeAttributeKey{SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsAdhocSizeMetricAttributeKey{SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsCompleted: SplunkServerSearchartifactsCompletedConfig{
+					SplunkServerSearchartifactsCompleted: SplunkServerSearchartifactsCompletedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsCompletedAttributeKey{SplunkServerSearchartifactsCompletedAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsCompletedMetricAttributeKey{SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsCompletedSize: SplunkServerSearchartifactsCompletedSizeConfig{
+					SplunkServerSearchartifactsCompletedSize: SplunkServerSearchartifactsCompletedSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsCompletedSizeAttributeKey{SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsCompletedSizeMetricAttributeKey{SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsIncomplete: SplunkServerSearchartifactsIncompleteConfig{
+					SplunkServerSearchartifactsIncomplete: SplunkServerSearchartifactsIncompleteMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteAttributeKey{SplunkServerSearchartifactsIncompleteAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteMetricAttributeKey{SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsIncompleteSize: SplunkServerSearchartifactsIncompleteSizeConfig{
+					SplunkServerSearchartifactsIncompleteSize: SplunkServerSearchartifactsIncompleteSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteSizeAttributeKey{SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey{SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsInvalid: SplunkServerSearchartifactsInvalidConfig{
+					SplunkServerSearchartifactsInvalid: SplunkServerSearchartifactsInvalidMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsInvalidAttributeKey{SplunkServerSearchartifactsInvalidAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsInvalidMetricAttributeKey{SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsJobCacheCount: SplunkServerSearchartifactsJobCacheCountConfig{
+					SplunkServerSearchartifactsJobCacheCount: SplunkServerSearchartifactsJobCacheCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheCountAttributeKey{SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheCountMetricAttributeKey{SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsJobCacheSize: SplunkServerSearchartifactsJobCacheSizeConfig{
+					SplunkServerSearchartifactsJobCacheSize: SplunkServerSearchartifactsJobCacheSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheSizeAttributeKey{SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey{SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsSavedsearches: SplunkServerSearchartifactsSavedsearchesConfig{
+					SplunkServerSearchartifactsSavedsearches: SplunkServerSearchartifactsSavedsearchesMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsSavedsearchesAttributeKey{SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsSavedsearchesMetricAttributeKey{SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsScheduled: SplunkServerSearchartifactsScheduledConfig{
+					SplunkServerSearchartifactsScheduled: SplunkServerSearchartifactsScheduledMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsScheduledAttributeKey{SplunkServerSearchartifactsScheduledAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsScheduledMetricAttributeKey{SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsScheduledSize: SplunkServerSearchartifactsScheduledSizeConfig{
+					SplunkServerSearchartifactsScheduledSize: SplunkServerSearchartifactsScheduledSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsScheduledSizeAttributeKey{SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsScheduledSizeMetricAttributeKey{SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkTypingQueueRatio: SplunkTypingQueueRatioConfig{
+					SplunkTypingQueueRatio: SplunkTypingQueueRatioMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkTypingQueueRatioAttributeKey{SplunkTypingQueueRatioAttributeKeySplunkHost, SplunkTypingQueueRatioAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkTypingQueueRatioMetricAttributeKey{SplunkTypingQueueRatioMetricAttributeKeySplunkHost, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
 				},
 			},
@@ -288,260 +288,260 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SplunkAggregationQueueRatio: SplunkAggregationQueueRatioConfig{
+					SplunkAggregationQueueRatio: SplunkAggregationQueueRatioMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkAggregationQueueRatioAttributeKey{SplunkAggregationQueueRatioAttributeKeySplunkHost, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkAggregationQueueRatioMetricAttributeKey{SplunkAggregationQueueRatioMetricAttributeKeySplunkHost, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkAggregationQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusConfig{
+					SplunkBucketsSearchableStatus: SplunkBucketsSearchableStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkBucketsSearchableStatusAttributeKey{SplunkBucketsSearchableStatusAttributeKeySplunkHost, SplunkBucketsSearchableStatusAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkBucketsSearchableStatusMetricAttributeKey{SplunkBucketsSearchableStatusMetricAttributeKeySplunkHost, SplunkBucketsSearchableStatusMetricAttributeKeySplunkIndexerSearchable, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdBuild, SplunkBucketsSearchableStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketCount: SplunkDataIndexesExtendedBucketCountConfig{
+					SplunkDataIndexesExtendedBucketCount: SplunkDataIndexesExtendedBucketCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketCountAttributeKey{SplunkDataIndexesExtendedBucketCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketCountMetricAttributeKey{SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketEventCount: SplunkDataIndexesExtendedBucketEventCountConfig{
+					SplunkDataIndexesExtendedBucketEventCount: SplunkDataIndexesExtendedBucketEventCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketEventCountAttributeKey{SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketEventCountMetricAttributeKey{SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketEventCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketHotCount: SplunkDataIndexesExtendedBucketHotCountConfig{
+					SplunkDataIndexesExtendedBucketHotCount: SplunkDataIndexesExtendedBucketHotCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketHotCountAttributeKey{SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketHotCountMetricAttributeKey{SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketHotCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedBucketWarmCount: SplunkDataIndexesExtendedBucketWarmCountConfig{
+					SplunkDataIndexesExtendedBucketWarmCount: SplunkDataIndexesExtendedBucketWarmCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedBucketWarmCountAttributeKey{SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKey{SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkBucketDir, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedBucketWarmCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedEventCount: SplunkDataIndexesExtendedEventCountConfig{
+					SplunkDataIndexesExtendedEventCount: SplunkDataIndexesExtendedEventCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedEventCountAttributeKey{SplunkDataIndexesExtendedEventCountAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedEventCountMetricAttributeKey{SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedEventCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedRawSize: SplunkDataIndexesExtendedRawSizeConfig{
+					SplunkDataIndexesExtendedRawSize: SplunkDataIndexesExtendedRawSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedRawSizeAttributeKey{SplunkDataIndexesExtendedRawSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedRawSizeMetricAttributeKey{SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedRawSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkDataIndexesExtendedTotalSize: SplunkDataIndexesExtendedTotalSizeConfig{
+					SplunkDataIndexesExtendedTotalSize: SplunkDataIndexesExtendedTotalSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkDataIndexesExtendedTotalSizeAttributeKey{SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkDataIndexesExtendedTotalSizeMetricAttributeKey{SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkIndexName, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdBuild, SplunkDataIndexesExtendedTotalSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkHealth: SplunkHealthConfig{
+					SplunkHealth: SplunkHealthMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkHealthAttributeKey{SplunkHealthAttributeKeySplunkFeature, SplunkHealthAttributeKeySplunkFeatureHealth, SplunkHealthAttributeKeySplunkSplunkdBuild, SplunkHealthAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkHealthMetricAttributeKey{SplunkHealthMetricAttributeKeySplunkFeature, SplunkHealthMetricAttributeKeySplunkFeatureHealth, SplunkHealthMetricAttributeKeySplunkSplunkdBuild, SplunkHealthMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerAvgRate: SplunkIndexerAvgRateConfig{
+					SplunkIndexerAvgRate: SplunkIndexerAvgRateMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerAvgRateAttributeKey{SplunkIndexerAvgRateAttributeKeySplunkHost, SplunkIndexerAvgRateAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerAvgRateMetricAttributeKey{SplunkIndexerAvgRateMetricAttributeKeySplunkHost, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerAvgRateMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerCPUTime: SplunkIndexerCPUTimeConfig{
+					SplunkIndexerCPUTime: SplunkIndexerCPUTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerCPUTimeAttributeKey{SplunkIndexerCPUTimeAttributeKeySplunkHost, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerCPUTimeMetricAttributeKey{SplunkIndexerCPUTimeMetricAttributeKeySplunkHost, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerCPUTimeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerQueueRatio: SplunkIndexerQueueRatioConfig{
+					SplunkIndexerQueueRatio: SplunkIndexerQueueRatioMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerQueueRatioAttributeKey{SplunkIndexerQueueRatioAttributeKeySplunkHost, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerQueueRatioMetricAttributeKey{SplunkIndexerQueueRatioMetricAttributeKeySplunkHost, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerRawWriteTime: SplunkIndexerRawWriteTimeConfig{
+					SplunkIndexerRawWriteTime: SplunkIndexerRawWriteTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerRawWriteTimeAttributeKey{SplunkIndexerRawWriteTimeAttributeKeySplunkHost, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerRawWriteTimeMetricAttributeKey{SplunkIndexerRawWriteTimeMetricAttributeKeySplunkHost, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRawWriteTimeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerRollingrestartStatus: SplunkIndexerRollingrestartStatusConfig{
+					SplunkIndexerRollingrestartStatus: SplunkIndexerRollingrestartStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerRollingrestartStatusAttributeKey{SplunkIndexerRollingrestartStatusAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerRollingrestartStatusMetricAttributeKey{SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSearchableRestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkRollingorrestart, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerRollingrestartStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexerThroughput: SplunkIndexerThroughputConfig{
+					SplunkIndexerThroughput: SplunkIndexerThroughputMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexerThroughputAttributeKey{SplunkIndexerThroughputAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexerThroughputMetricAttributeKey{SplunkIndexerThroughputMetricAttributeKeySplunkIndexerStatus, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdBuild, SplunkIndexerThroughputMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesAvgSize: SplunkIndexesAvgSizeConfig{
+					SplunkIndexesAvgSize: SplunkIndexesAvgSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesAvgSizeAttributeKey{SplunkIndexesAvgSizeAttributeKeySplunkIndexName, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesAvgSizeMetricAttributeKey{SplunkIndexesAvgSizeMetricAttributeKeySplunkIndexName, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesAvgUsage: SplunkIndexesAvgUsageConfig{
+					SplunkIndexesAvgUsage: SplunkIndexesAvgUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesAvgUsageAttributeKey{SplunkIndexesAvgUsageAttributeKeySplunkIndexName, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesAvgUsageMetricAttributeKey{SplunkIndexesAvgUsageMetricAttributeKeySplunkIndexName, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesAvgUsageMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesBucketCount: SplunkIndexesBucketCountConfig{
+					SplunkIndexesBucketCount: SplunkIndexesBucketCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesBucketCountAttributeKey{SplunkIndexesBucketCountAttributeKeySplunkIndexName, SplunkIndexesBucketCountAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesBucketCountMetricAttributeKey{SplunkIndexesBucketCountMetricAttributeKeySplunkIndexName, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesBucketCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesMedianDataAge: SplunkIndexesMedianDataAgeConfig{
+					SplunkIndexesMedianDataAge: SplunkIndexesMedianDataAgeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesMedianDataAgeAttributeKey{SplunkIndexesMedianDataAgeAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesMedianDataAgeMetricAttributeKey{SplunkIndexesMedianDataAgeMetricAttributeKeySplunkIndexName, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesMedianDataAgeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIndexesSize: SplunkIndexesSizeConfig{
+					SplunkIndexesSize: SplunkIndexesSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIndexesSizeAttributeKey{SplunkIndexesSizeAttributeKeySplunkIndexName, SplunkIndexesSizeAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIndexesSizeMetricAttributeKey{SplunkIndexesSizeMetricAttributeKeySplunkIndexName, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdBuild, SplunkIndexesSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkIoAvgIops: SplunkIoAvgIopsConfig{
+					SplunkIoAvgIops: SplunkIoAvgIopsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkIoAvgIopsAttributeKey{SplunkIoAvgIopsAttributeKeySplunkHost, SplunkIoAvgIopsAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkIoAvgIopsMetricAttributeKey{SplunkIoAvgIopsMetricAttributeKeySplunkHost, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdBuild, SplunkIoAvgIopsMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkKvstoreBackupStatus: SplunkKvstoreBackupStatusConfig{
+					SplunkKvstoreBackupStatus: SplunkKvstoreBackupStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreBackupStatusAttributeKey{SplunkKvstoreBackupStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreBackupStatusMetricAttributeKey{SplunkKvstoreBackupStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreBackupStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusConfig{
+					SplunkKvstoreReplicationStatus: SplunkKvstoreReplicationStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreReplicationStatusAttributeKey{SplunkKvstoreReplicationStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreReplicationStatusMetricAttributeKey{SplunkKvstoreReplicationStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreReplicationStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkKvstoreStatus: SplunkKvstoreStatusConfig{
+					SplunkKvstoreStatus: SplunkKvstoreStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkKvstoreStatusAttributeKey{SplunkKvstoreStatusAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkKvstoreStatusMetricAttributeKey{SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStorageEngine, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreExternal, SplunkKvstoreStatusMetricAttributeKeySplunkKvstoreStatusValue, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdBuild, SplunkKvstoreStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkLicenseExpirationSecondsRemaining: SplunkLicenseExpirationSecondsRemainingConfig{
+					SplunkLicenseExpirationSecondsRemaining: SplunkLicenseExpirationSecondsRemainingMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkLicenseExpirationSecondsRemainingAttributeKey{SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkLicenseExpirationSecondsRemainingMetricAttributeKey{SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseStatus, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseLabel, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkLicenseType, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseExpirationSecondsRemainingMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkLicenseIndexUsage: SplunkLicenseIndexUsageConfig{
+					SplunkLicenseIndexUsage: SplunkLicenseIndexUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkLicenseIndexUsageAttributeKey{SplunkLicenseIndexUsageAttributeKeySplunkIndexName, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkLicenseIndexUsageMetricAttributeKey{SplunkLicenseIndexUsageMetricAttributeKeySplunkIndexName, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdBuild, SplunkLicenseIndexUsageMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkParseQueueRatio: SplunkParseQueueRatioConfig{
+					SplunkParseQueueRatio: SplunkParseQueueRatioMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkParseQueueRatioAttributeKey{SplunkParseQueueRatioAttributeKeySplunkHost, SplunkParseQueueRatioAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkParseQueueRatioMetricAttributeKey{SplunkParseQueueRatioMetricAttributeKeySplunkHost, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkParseQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkPipelineSetCount: SplunkPipelineSetCountConfig{
+					SplunkPipelineSetCount: SplunkPipelineSetCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkPipelineSetCountAttributeKey{SplunkPipelineSetCountAttributeKeySplunkHost, SplunkPipelineSetCountAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkPipelineSetCountMetricAttributeKey{SplunkPipelineSetCountMetricAttributeKeySplunkHost, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdBuild, SplunkPipelineSetCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSchedulerAvgExecutionLatency: SplunkSchedulerAvgExecutionLatencyConfig{
+					SplunkSchedulerAvgExecutionLatency: SplunkSchedulerAvgExecutionLatencyMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSchedulerAvgExecutionLatencyAttributeKey{SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSchedulerAvgExecutionLatencyMetricAttributeKey{SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkHost, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgExecutionLatencyMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSchedulerAvgRunTime: SplunkSchedulerAvgRunTimeConfig{
+					SplunkSchedulerAvgRunTime: SplunkSchedulerAvgRunTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSchedulerAvgRunTimeAttributeKey{SplunkSchedulerAvgRunTimeAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSchedulerAvgRunTimeMetricAttributeKey{SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkHost, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerAvgRunTimeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSchedulerCompletionRatio: SplunkSchedulerCompletionRatioConfig{
+					SplunkSchedulerCompletionRatio: SplunkSchedulerCompletionRatioMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSchedulerCompletionRatioAttributeKey{SplunkSchedulerCompletionRatioAttributeKeySplunkHost, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSchedulerCompletionRatioMetricAttributeKey{SplunkSchedulerCompletionRatioMetricAttributeKeySplunkHost, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdBuild, SplunkSchedulerCompletionRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchDuration: SplunkSearchDurationConfig{
+					SplunkSearchDuration: SplunkSearchDurationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchDurationAttributeKey{SplunkSearchDurationAttributeKeySplunkSplunkdBuild, SplunkSearchDurationAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchDurationMetricAttributeKey{SplunkSearchDurationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchDurationMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchInitiation: SplunkSearchInitiationConfig{
+					SplunkSearchInitiation: SplunkSearchInitiationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchInitiationAttributeKey{SplunkSearchInitiationAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchInitiationMetricAttributeKey{SplunkSearchInitiationMetricAttributeKeySplunkSplunkdBuild, SplunkSearchInitiationMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchStatus: SplunkSearchStatusConfig{
+					SplunkSearchStatus: SplunkSearchStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchStatusAttributeKey{SplunkSearchStatusAttributeKeySplunkSearchState, SplunkSearchStatusAttributeKeySplunkSplunkdBuild, SplunkSearchStatusAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchStatusMetricAttributeKey{SplunkSearchStatusMetricAttributeKeySplunkSearchState, SplunkSearchStatusMetricAttributeKeySplunkSplunkdBuild, SplunkSearchStatusMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkSearchSuccess: SplunkSearchSuccessConfig{
+					SplunkSearchSuccess: SplunkSearchSuccessMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkSearchSuccessAttributeKey{SplunkSearchSuccessAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkSearchSuccessMetricAttributeKey{SplunkSearchSuccessMetricAttributeKeySplunkSplunkdBuild, SplunkSearchSuccessMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerIntrospectionQueuesCurrent: SplunkServerIntrospectionQueuesCurrentConfig{
+					SplunkServerIntrospectionQueuesCurrent: SplunkServerIntrospectionQueuesCurrentMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentAttributeKey{SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentMetricAttributeKey{SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerIntrospectionQueuesCurrentBytes: SplunkServerIntrospectionQueuesCurrentBytesConfig{
+					SplunkServerIntrospectionQueuesCurrentBytes: SplunkServerIntrospectionQueuesCurrentBytesMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentBytesAttributeKey{SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKey{SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkQueueName, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdBuild, SplunkServerIntrospectionQueuesCurrentBytesMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsAdhoc: SplunkServerSearchartifactsAdhocConfig{
+					SplunkServerSearchartifactsAdhoc: SplunkServerSearchartifactsAdhocMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsAdhocAttributeKey{SplunkServerSearchartifactsAdhocAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsAdhocMetricAttributeKey{SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsAdhocSize: SplunkServerSearchartifactsAdhocSizeConfig{
+					SplunkServerSearchartifactsAdhocSize: SplunkServerSearchartifactsAdhocSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsAdhocSizeAttributeKey{SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsAdhocSizeMetricAttributeKey{SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsAdhocSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsCompleted: SplunkServerSearchartifactsCompletedConfig{
+					SplunkServerSearchartifactsCompleted: SplunkServerSearchartifactsCompletedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsCompletedAttributeKey{SplunkServerSearchartifactsCompletedAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsCompletedMetricAttributeKey{SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsCompletedSize: SplunkServerSearchartifactsCompletedSizeConfig{
+					SplunkServerSearchartifactsCompletedSize: SplunkServerSearchartifactsCompletedSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsCompletedSizeAttributeKey{SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsCompletedSizeMetricAttributeKey{SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsCompletedSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsIncomplete: SplunkServerSearchartifactsIncompleteConfig{
+					SplunkServerSearchartifactsIncomplete: SplunkServerSearchartifactsIncompleteMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteAttributeKey{SplunkServerSearchartifactsIncompleteAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteMetricAttributeKey{SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsIncompleteSize: SplunkServerSearchartifactsIncompleteSizeConfig{
+					SplunkServerSearchartifactsIncompleteSize: SplunkServerSearchartifactsIncompleteSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteSizeAttributeKey{SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsIncompleteSizeMetricAttributeKey{SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsIncompleteSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsInvalid: SplunkServerSearchartifactsInvalidConfig{
+					SplunkServerSearchartifactsInvalid: SplunkServerSearchartifactsInvalidMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsInvalidAttributeKey{SplunkServerSearchartifactsInvalidAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsInvalidMetricAttributeKey{SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkHost, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsInvalidMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsJobCacheCount: SplunkServerSearchartifactsJobCacheCountConfig{
+					SplunkServerSearchartifactsJobCacheCount: SplunkServerSearchartifactsJobCacheCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheCountAttributeKey{SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheCountMetricAttributeKey{SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheCountMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsJobCacheSize: SplunkServerSearchartifactsJobCacheSizeConfig{
+					SplunkServerSearchartifactsJobCacheSize: SplunkServerSearchartifactsJobCacheSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheSizeAttributeKey{SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsJobCacheSizeMetricAttributeKey{SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSearchartifactsCacheType, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsJobCacheSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsSavedsearches: SplunkServerSearchartifactsSavedsearchesConfig{
+					SplunkServerSearchartifactsSavedsearches: SplunkServerSearchartifactsSavedsearchesMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsSavedsearchesAttributeKey{SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsSavedsearchesMetricAttributeKey{SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkHost, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsSavedsearchesMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsScheduled: SplunkServerSearchartifactsScheduledConfig{
+					SplunkServerSearchartifactsScheduled: SplunkServerSearchartifactsScheduledMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsScheduledAttributeKey{SplunkServerSearchartifactsScheduledAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsScheduledMetricAttributeKey{SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkServerSearchartifactsScheduledSize: SplunkServerSearchartifactsScheduledSizeConfig{
+					SplunkServerSearchartifactsScheduledSize: SplunkServerSearchartifactsScheduledSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkServerSearchartifactsScheduledSizeAttributeKey{SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkServerSearchartifactsScheduledSizeMetricAttributeKey{SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkHost, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdBuild, SplunkServerSearchartifactsScheduledSizeMetricAttributeKeySplunkSplunkdVersion},
 					},
-					SplunkTypingQueueRatio: SplunkTypingQueueRatioConfig{
+					SplunkTypingQueueRatio: SplunkTypingQueueRatioMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []SplunkTypingQueueRatioAttributeKey{SplunkTypingQueueRatioAttributeKeySplunkHost, SplunkTypingQueueRatioAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioAttributeKeySplunkSplunkdVersion},
+						EnabledAttributes:   []SplunkTypingQueueRatioMetricAttributeKey{SplunkTypingQueueRatioMetricAttributeKeySplunkHost, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdBuild, SplunkTypingQueueRatioMetricAttributeKeySplunkSplunkdVersion},
 					},
 				},
 			},
@@ -550,7 +550,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SplunkAggregationQueueRatioConfig{}, SplunkBucketsSearchableStatusConfig{}, SplunkDataIndexesExtendedBucketCountConfig{}, SplunkDataIndexesExtendedBucketEventCountConfig{}, SplunkDataIndexesExtendedBucketHotCountConfig{}, SplunkDataIndexesExtendedBucketWarmCountConfig{}, SplunkDataIndexesExtendedEventCountConfig{}, SplunkDataIndexesExtendedRawSizeConfig{}, SplunkDataIndexesExtendedTotalSizeConfig{}, SplunkHealthConfig{}, SplunkIndexerAvgRateConfig{}, SplunkIndexerCPUTimeConfig{}, SplunkIndexerQueueRatioConfig{}, SplunkIndexerRawWriteTimeConfig{}, SplunkIndexerRollingrestartStatusConfig{}, SplunkIndexerThroughputConfig{}, SplunkIndexesAvgSizeConfig{}, SplunkIndexesAvgUsageConfig{}, SplunkIndexesBucketCountConfig{}, SplunkIndexesMedianDataAgeConfig{}, SplunkIndexesSizeConfig{}, SplunkIoAvgIopsConfig{}, SplunkKvstoreBackupStatusConfig{}, SplunkKvstoreReplicationStatusConfig{}, SplunkKvstoreStatusConfig{}, SplunkLicenseExpirationSecondsRemainingConfig{}, SplunkLicenseIndexUsageConfig{}, SplunkParseQueueRatioConfig{}, SplunkPipelineSetCountConfig{}, SplunkSchedulerAvgExecutionLatencyConfig{}, SplunkSchedulerAvgRunTimeConfig{}, SplunkSchedulerCompletionRatioConfig{}, SplunkSearchDurationConfig{}, SplunkSearchInitiationConfig{}, SplunkSearchStatusConfig{}, SplunkSearchSuccessConfig{}, SplunkServerIntrospectionQueuesCurrentConfig{}, SplunkServerIntrospectionQueuesCurrentBytesConfig{}, SplunkServerSearchartifactsAdhocConfig{}, SplunkServerSearchartifactsAdhocSizeConfig{}, SplunkServerSearchartifactsCompletedConfig{}, SplunkServerSearchartifactsCompletedSizeConfig{}, SplunkServerSearchartifactsIncompleteConfig{}, SplunkServerSearchartifactsIncompleteSizeConfig{}, SplunkServerSearchartifactsInvalidConfig{}, SplunkServerSearchartifactsJobCacheCountConfig{}, SplunkServerSearchartifactsJobCacheSizeConfig{}, SplunkServerSearchartifactsSavedsearchesConfig{}, SplunkServerSearchartifactsScheduledConfig{}, SplunkServerSearchartifactsScheduledSizeConfig{}, SplunkTypingQueueRatioConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SplunkAggregationQueueRatioMetricConfig{}, SplunkBucketsSearchableStatusMetricConfig{}, SplunkDataIndexesExtendedBucketCountMetricConfig{}, SplunkDataIndexesExtendedBucketEventCountMetricConfig{}, SplunkDataIndexesExtendedBucketHotCountMetricConfig{}, SplunkDataIndexesExtendedBucketWarmCountMetricConfig{}, SplunkDataIndexesExtendedEventCountMetricConfig{}, SplunkDataIndexesExtendedRawSizeMetricConfig{}, SplunkDataIndexesExtendedTotalSizeMetricConfig{}, SplunkHealthMetricConfig{}, SplunkIndexerAvgRateMetricConfig{}, SplunkIndexerCPUTimeMetricConfig{}, SplunkIndexerQueueRatioMetricConfig{}, SplunkIndexerRawWriteTimeMetricConfig{}, SplunkIndexerRollingrestartStatusMetricConfig{}, SplunkIndexerThroughputMetricConfig{}, SplunkIndexesAvgSizeMetricConfig{}, SplunkIndexesAvgUsageMetricConfig{}, SplunkIndexesBucketCountMetricConfig{}, SplunkIndexesMedianDataAgeMetricConfig{}, SplunkIndexesSizeMetricConfig{}, SplunkIoAvgIopsMetricConfig{}, SplunkKvstoreBackupStatusMetricConfig{}, SplunkKvstoreReplicationStatusMetricConfig{}, SplunkKvstoreStatusMetricConfig{}, SplunkLicenseExpirationSecondsRemainingMetricConfig{}, SplunkLicenseIndexUsageMetricConfig{}, SplunkParseQueueRatioMetricConfig{}, SplunkPipelineSetCountMetricConfig{}, SplunkSchedulerAvgExecutionLatencyMetricConfig{}, SplunkSchedulerAvgRunTimeMetricConfig{}, SplunkSchedulerCompletionRatioMetricConfig{}, SplunkSearchDurationMetricConfig{}, SplunkSearchInitiationMetricConfig{}, SplunkSearchStatusMetricConfig{}, SplunkSearchSuccessMetricConfig{}, SplunkServerIntrospectionQueuesCurrentMetricConfig{}, SplunkServerIntrospectionQueuesCurrentBytesMetricConfig{}, SplunkServerSearchartifactsAdhocMetricConfig{}, SplunkServerSearchartifactsAdhocSizeMetricConfig{}, SplunkServerSearchartifactsCompletedMetricConfig{}, SplunkServerSearchartifactsCompletedSizeMetricConfig{}, SplunkServerSearchartifactsIncompleteMetricConfig{}, SplunkServerSearchartifactsIncompleteSizeMetricConfig{}, SplunkServerSearchartifactsInvalidMetricConfig{}, SplunkServerSearchartifactsJobCacheCountMetricConfig{}, SplunkServerSearchartifactsJobCacheSizeMetricConfig{}, SplunkServerSearchartifactsSavedsearchesMetricConfig{}, SplunkServerSearchartifactsScheduledMetricConfig{}, SplunkServerSearchartifactsScheduledSizeMetricConfig{}, SplunkTypingQueueRatioMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

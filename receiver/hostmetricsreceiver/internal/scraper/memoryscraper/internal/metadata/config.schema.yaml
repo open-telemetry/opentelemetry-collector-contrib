@@ -5,56 +5,56 @@ $defs:
     type: object
     properties:
       system.linux.memory.available:
-        description: "SystemLinuxMemoryAvailableConfig provides config for the system.linux.memory.available metric."
+        description: "SystemLinuxMemoryAvailableMetricConfig provides config for the system.linux.memory.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.linux.memory.dirty:
-        description: "SystemLinuxMemoryDirtyConfig provides config for the system.linux.memory.dirty metric."
+        description: "SystemLinuxMemoryDirtyMetricConfig provides config for the system.linux.memory.dirty metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.limit:
-        description: "SystemMemoryLimitConfig provides config for the system.memory.limit metric."
+        description: "SystemMemoryLimitMetricConfig provides config for the system.memory.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.linux.hugepages.limit:
-        description: "SystemMemoryLinuxHugepagesLimitConfig provides config for the system.memory.linux.hugepages.limit metric."
+        description: "SystemMemoryLinuxHugepagesLimitMetricConfig provides config for the system.memory.linux.hugepages.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.linux.hugepages.page_size:
-        description: "SystemMemoryLinuxHugepagesPageSizeConfig provides config for the system.memory.linux.hugepages.page_size metric."
+        description: "SystemMemoryLinuxHugepagesPageSizeMetricConfig provides config for the system.memory.linux.hugepages.page_size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.linux.hugepages.reserved:
-        description: "SystemMemoryLinuxHugepagesReservedConfig provides config for the system.memory.linux.hugepages.reserved metric."
+        description: "SystemMemoryLinuxHugepagesReservedMetricConfig provides config for the system.memory.linux.hugepages.reserved metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.linux.hugepages.surplus:
-        description: "SystemMemoryLinuxHugepagesSurplusConfig provides config for the system.memory.linux.hugepages.surplus metric."
+        description: "SystemMemoryLinuxHugepagesSurplusMetricConfig provides config for the system.memory.linux.hugepages.surplus metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.linux.hugepages.usage:
-        description: "SystemMemoryLinuxHugepagesUsageConfig provides config for the system.memory.linux.hugepages.usage metric."
+        description: "SystemMemoryLinuxHugepagesUsageMetricConfig provides config for the system.memory.linux.hugepages.usage metric."
         type: object
         properties:
           enabled:
@@ -77,7 +77,7 @@ $defs:
             default:
               - "system.memory.linux.hugepages.state"
       system.memory.linux.hugepages.utilization:
-        description: "SystemMemoryLinuxHugepagesUtilizationConfig provides config for the system.memory.linux.hugepages.utilization metric."
+        description: "SystemMemoryLinuxHugepagesUtilizationMetricConfig provides config for the system.memory.linux.hugepages.utilization metric."
         type: object
         properties:
           enabled:
@@ -100,21 +100,21 @@ $defs:
             default:
               - "system.memory.linux.hugepages.state"
       system.memory.linux.shared:
-        description: "SystemMemoryLinuxSharedConfig provides config for the system.memory.linux.shared metric."
+        description: "SystemMemoryLinuxSharedMetricConfig provides config for the system.memory.linux.shared metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.page_size:
-        description: "SystemMemoryPageSizeConfig provides config for the system.memory.page_size metric."
+        description: "SystemMemoryPageSizeMetricConfig provides config for the system.memory.page_size metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.memory.usage:
-        description: "SystemMemoryUsageConfig provides config for the system.memory.usage metric."
+        description: "SystemMemoryUsageMetricConfig provides config for the system.memory.usage metric."
         type: object
         properties:
           enabled:
@@ -137,7 +137,7 @@ $defs:
             default:
               - "state"
       system.memory.utilization:
-        description: "SystemMemoryUtilizationConfig provides config for the system.memory.utilization metric."
+        description: "SystemMemoryUtilizationMetricConfig provides config for the system.memory.utilization metric."
         type: object
         properties:
           enabled:

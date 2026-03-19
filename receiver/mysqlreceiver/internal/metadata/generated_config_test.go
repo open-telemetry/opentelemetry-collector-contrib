@@ -26,148 +26,222 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MysqlBufferPoolDataPages: MetricConfig{
+					MysqlBufferPoolDataPages: MysqlBufferPoolDataPagesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolDataPagesMetricAttributeKey{MysqlBufferPoolDataPagesMetricAttributeKeyBufferPoolData},
+					},
+					MysqlBufferPoolLimit: MysqlBufferPoolLimitMetricConfig{
 						Enabled: true,
 					},
-					MysqlBufferPoolLimit: MetricConfig{
+					MysqlBufferPoolOperations: MysqlBufferPoolOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolOperationsMetricAttributeKey{MysqlBufferPoolOperationsMetricAttributeKeyBufferPoolOperations},
+					},
+					MysqlBufferPoolPageFlushes: MysqlBufferPoolPageFlushesMetricConfig{
 						Enabled: true,
 					},
-					MysqlBufferPoolOperations: MetricConfig{
+					MysqlBufferPoolPages: MysqlBufferPoolPagesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolPagesMetricAttributeKey{MysqlBufferPoolPagesMetricAttributeKeyBufferPoolPages},
+					},
+					MysqlBufferPoolUsage: MysqlBufferPoolUsageMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolUsageMetricAttributeKey{MysqlBufferPoolUsageMetricAttributeKeyBufferPoolData},
+					},
+					MysqlClientNetworkIo: MysqlClientNetworkIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlClientNetworkIoMetricAttributeKey{MysqlClientNetworkIoMetricAttributeKeyDirection},
+					},
+					MysqlCommands: MysqlCommandsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlCommandsMetricAttributeKey{MysqlCommandsMetricAttributeKeyCommand},
+					},
+					MysqlConnectionCount: MysqlConnectionCountMetricConfig{
 						Enabled: true,
 					},
-					MysqlBufferPoolPageFlushes: MetricConfig{
+					MysqlConnectionErrors: MysqlConnectionErrorsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlConnectionErrorsMetricAttributeKey{MysqlConnectionErrorsMetricAttributeKeyConnectionError},
+					},
+					MysqlDoubleWrites: MysqlDoubleWritesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlDoubleWritesMetricAttributeKey{MysqlDoubleWritesMetricAttributeKeyDoubleWrites},
+					},
+					MysqlHandlers: MysqlHandlersMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlHandlersMetricAttributeKey{MysqlHandlersMetricAttributeKeyHandler},
+					},
+					MysqlIndexIoWaitCount: MysqlIndexIoWaitCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlIndexIoWaitCountMetricAttributeKey{MysqlIndexIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitCountMetricAttributeKeyTableName, MysqlIndexIoWaitCountMetricAttributeKeySchema, MysqlIndexIoWaitCountMetricAttributeKeyIndexName},
+					},
+					MysqlIndexIoWaitTime: MysqlIndexIoWaitTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlIndexIoWaitTimeMetricAttributeKey{MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName},
+					},
+					MysqlJoins: MysqlJoinsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlJoinsMetricAttributeKey{MysqlJoinsMetricAttributeKeyJoinKind},
+					},
+					MysqlLocks: MysqlLocksMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlLocksMetricAttributeKey{MysqlLocksMetricAttributeKeyLocks},
+					},
+					MysqlLogOperations: MysqlLogOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlLogOperationsMetricAttributeKey{MysqlLogOperationsMetricAttributeKeyLogOperations},
+					},
+					MysqlMaxUsedConnections: MysqlMaxUsedConnectionsMetricConfig{
 						Enabled: true,
 					},
-					MysqlBufferPoolPages: MetricConfig{
+					MysqlMysqlxConnections: MysqlMysqlxConnectionsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlMysqlxConnectionsMetricAttributeKey{MysqlMysqlxConnectionsMetricAttributeKeyConnectionStatus},
+					},
+					MysqlMysqlxWorkerThreads: MysqlMysqlxWorkerThreadsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlMysqlxWorkerThreadsMetricAttributeKey{MysqlMysqlxWorkerThreadsMetricAttributeKeyMysqlxThreads},
+					},
+					MysqlOpenedResources: MysqlOpenedResourcesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlOpenedResourcesMetricAttributeKey{MysqlOpenedResourcesMetricAttributeKeyOpenedResources},
+					},
+					MysqlOperations: MysqlOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlOperationsMetricAttributeKey{MysqlOperationsMetricAttributeKeyOperations},
+					},
+					MysqlPageOperations: MysqlPageOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlPageOperationsMetricAttributeKey{MysqlPageOperationsMetricAttributeKeyPageOperations},
+					},
+					MysqlPageSize: MysqlPageSizeMetricConfig{
 						Enabled: true,
 					},
-					MysqlBufferPoolUsage: MetricConfig{
+					MysqlPreparedStatements: MysqlPreparedStatementsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlPreparedStatementsMetricAttributeKey{MysqlPreparedStatementsMetricAttributeKeyPreparedStatementsCommand},
+					},
+					MysqlQueryClientCount: MysqlQueryClientCountMetricConfig{
 						Enabled: true,
 					},
-					MysqlClientNetworkIo: MetricConfig{
+					MysqlQueryCount: MysqlQueryCountMetricConfig{
 						Enabled: true,
 					},
-					MysqlCommands: MetricConfig{
+					MysqlQuerySlowCount: MysqlQuerySlowCountMetricConfig{
 						Enabled: true,
 					},
-					MysqlConnectionCount: MetricConfig{
+					MysqlReplicaSQLDelay: MysqlReplicaSQLDelayMetricConfig{
 						Enabled: true,
 					},
-					MysqlConnectionErrors: MetricConfig{
+					MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 						Enabled: true,
 					},
-					MysqlDoubleWrites: MetricConfig{
-						Enabled: true,
+					MysqlRowLocks: MysqlRowLocksMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlRowLocksMetricAttributeKey{MysqlRowLocksMetricAttributeKeyRowLocks},
 					},
-					MysqlHandlers: MetricConfig{
-						Enabled: true,
+					MysqlRowOperations: MysqlRowOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlRowOperationsMetricAttributeKey{MysqlRowOperationsMetricAttributeKeyRowOperations},
 					},
-					MysqlIndexIoWaitCount: MetricConfig{
-						Enabled: true,
+					MysqlSorts: MysqlSortsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlSortsMetricAttributeKey{MysqlSortsMetricAttributeKeySorts},
 					},
-					MysqlIndexIoWaitTime: MetricConfig{
-						Enabled: true,
+					MysqlStatementEventCount: MysqlStatementEventCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlStatementEventCountMetricAttributeKey{MysqlStatementEventCountMetricAttributeKeySchema, MysqlStatementEventCountMetricAttributeKeyDigest, MysqlStatementEventCountMetricAttributeKeyDigestText, MysqlStatementEventCountMetricAttributeKeyEventState},
 					},
-					MysqlJoins: MetricConfig{
-						Enabled: true,
+					MysqlStatementEventWaitTime: MysqlStatementEventWaitTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlStatementEventWaitTimeMetricAttributeKey{MysqlStatementEventWaitTimeMetricAttributeKeySchema, MysqlStatementEventWaitTimeMetricAttributeKeyDigest, MysqlStatementEventWaitTimeMetricAttributeKeyDigestText},
 					},
-					MysqlLocks: MetricConfig{
-						Enabled: true,
+					MysqlTableAverageRowLength: MysqlTableAverageRowLengthMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableAverageRowLengthMetricAttributeKey{MysqlTableAverageRowLengthMetricAttributeKeyTableName, MysqlTableAverageRowLengthMetricAttributeKeySchema},
 					},
-					MysqlLogOperations: MetricConfig{
-						Enabled: true,
+					MysqlTableIoWaitCount: MysqlTableIoWaitCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableIoWaitCountMetricAttributeKey{MysqlTableIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitCountMetricAttributeKeyTableName, MysqlTableIoWaitCountMetricAttributeKeySchema},
 					},
-					MysqlMaxUsedConnections: MetricConfig{
-						Enabled: true,
+					MysqlTableIoWaitTime: MysqlTableIoWaitTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableIoWaitTimeMetricAttributeKey{MysqlTableIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitTimeMetricAttributeKeyTableName, MysqlTableIoWaitTimeMetricAttributeKeySchema},
 					},
-					MysqlMysqlxConnections: MetricConfig{
-						Enabled: true,
+					MysqlTableLockWaitReadCount: MysqlTableLockWaitReadCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitReadCountMetricAttributeKey{MysqlTableLockWaitReadCountMetricAttributeKeySchema, MysqlTableLockWaitReadCountMetricAttributeKeyTableName, MysqlTableLockWaitReadCountMetricAttributeKeyReadLockType},
 					},
-					MysqlMysqlxWorkerThreads: MetricConfig{
-						Enabled: true,
+					MysqlTableLockWaitReadTime: MysqlTableLockWaitReadTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitReadTimeMetricAttributeKey{MysqlTableLockWaitReadTimeMetricAttributeKeySchema, MysqlTableLockWaitReadTimeMetricAttributeKeyTableName, MysqlTableLockWaitReadTimeMetricAttributeKeyReadLockType},
 					},
-					MysqlOpenedResources: MetricConfig{
-						Enabled: true,
+					MysqlTableLockWaitWriteCount: MysqlTableLockWaitWriteCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitWriteCountMetricAttributeKey{MysqlTableLockWaitWriteCountMetricAttributeKeySchema, MysqlTableLockWaitWriteCountMetricAttributeKeyTableName, MysqlTableLockWaitWriteCountMetricAttributeKeyWriteLockType},
 					},
-					MysqlOperations: MetricConfig{
-						Enabled: true,
+					MysqlTableLockWaitWriteTime: MysqlTableLockWaitWriteTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitWriteTimeMetricAttributeKey{MysqlTableLockWaitWriteTimeMetricAttributeKeySchema, MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName, MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType},
 					},
-					MysqlPageOperations: MetricConfig{
-						Enabled: true,
+					MysqlTableRows: MysqlTableRowsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableRowsMetricAttributeKey{MysqlTableRowsMetricAttributeKeyTableName, MysqlTableRowsMetricAttributeKeySchema},
 					},
-					MysqlPageSize: MetricConfig{
-						Enabled: true,
+					MysqlTableSize: MysqlTableSizeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableSizeMetricAttributeKey{MysqlTableSizeMetricAttributeKeyTableName, MysqlTableSizeMetricAttributeKeySchema, MysqlTableSizeMetricAttributeKeyTableSizeType},
 					},
-					MysqlPreparedStatements: MetricConfig{
-						Enabled: true,
+					MysqlTableOpenCache: MysqlTableOpenCacheMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableOpenCacheMetricAttributeKey{MysqlTableOpenCacheMetricAttributeKeyCacheStatus},
 					},
-					MysqlQueryClientCount: MetricConfig{
-						Enabled: true,
+					MysqlThreads: MysqlThreadsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlThreadsMetricAttributeKey{MysqlThreadsMetricAttributeKeyThreads},
 					},
-					MysqlQueryCount: MetricConfig{
-						Enabled: true,
+					MysqlTmpResources: MysqlTmpResourcesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTmpResourcesMetricAttributeKey{MysqlTmpResourcesMetricAttributeKeyTmpResource},
 					},
-					MysqlQuerySlowCount: MetricConfig{
-						Enabled: true,
-					},
-					MysqlReplicaSQLDelay: MetricConfig{
-						Enabled: true,
-					},
-					MysqlReplicaTimeBehindSource: MetricConfig{
-						Enabled: true,
-					},
-					MysqlRowLocks: MetricConfig{
-						Enabled: true,
-					},
-					MysqlRowOperations: MetricConfig{
-						Enabled: true,
-					},
-					MysqlSorts: MetricConfig{
-						Enabled: true,
-					},
-					MysqlStatementEventCount: MetricConfig{
-						Enabled: true,
-					},
-					MysqlStatementEventWaitTime: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableAverageRowLength: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableIoWaitCount: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableIoWaitTime: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableLockWaitReadCount: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableLockWaitReadTime: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableLockWaitWriteCount: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableLockWaitWriteTime: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableRows: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableSize: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTableOpenCache: MetricConfig{
-						Enabled: true,
-					},
-					MysqlThreads: MetricConfig{
-						Enabled: true,
-					},
-					MysqlTmpResources: MetricConfig{
-						Enabled: true,
-					},
-					MysqlUptime: MetricConfig{
+					MysqlUptime: MysqlUptimeMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -180,148 +254,222 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					MysqlBufferPoolDataPages: MetricConfig{
+					MysqlBufferPoolDataPages: MysqlBufferPoolDataPagesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolDataPagesMetricAttributeKey{MysqlBufferPoolDataPagesMetricAttributeKeyBufferPoolData},
+					},
+					MysqlBufferPoolLimit: MysqlBufferPoolLimitMetricConfig{
 						Enabled: false,
 					},
-					MysqlBufferPoolLimit: MetricConfig{
+					MysqlBufferPoolOperations: MysqlBufferPoolOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolOperationsMetricAttributeKey{MysqlBufferPoolOperationsMetricAttributeKeyBufferPoolOperations},
+					},
+					MysqlBufferPoolPageFlushes: MysqlBufferPoolPageFlushesMetricConfig{
 						Enabled: false,
 					},
-					MysqlBufferPoolOperations: MetricConfig{
+					MysqlBufferPoolPages: MysqlBufferPoolPagesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolPagesMetricAttributeKey{MysqlBufferPoolPagesMetricAttributeKeyBufferPoolPages},
+					},
+					MysqlBufferPoolUsage: MysqlBufferPoolUsageMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlBufferPoolUsageMetricAttributeKey{MysqlBufferPoolUsageMetricAttributeKeyBufferPoolData},
+					},
+					MysqlClientNetworkIo: MysqlClientNetworkIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlClientNetworkIoMetricAttributeKey{MysqlClientNetworkIoMetricAttributeKeyDirection},
+					},
+					MysqlCommands: MysqlCommandsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlCommandsMetricAttributeKey{MysqlCommandsMetricAttributeKeyCommand},
+					},
+					MysqlConnectionCount: MysqlConnectionCountMetricConfig{
 						Enabled: false,
 					},
-					MysqlBufferPoolPageFlushes: MetricConfig{
+					MysqlConnectionErrors: MysqlConnectionErrorsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlConnectionErrorsMetricAttributeKey{MysqlConnectionErrorsMetricAttributeKeyConnectionError},
+					},
+					MysqlDoubleWrites: MysqlDoubleWritesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlDoubleWritesMetricAttributeKey{MysqlDoubleWritesMetricAttributeKeyDoubleWrites},
+					},
+					MysqlHandlers: MysqlHandlersMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlHandlersMetricAttributeKey{MysqlHandlersMetricAttributeKeyHandler},
+					},
+					MysqlIndexIoWaitCount: MysqlIndexIoWaitCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlIndexIoWaitCountMetricAttributeKey{MysqlIndexIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitCountMetricAttributeKeyTableName, MysqlIndexIoWaitCountMetricAttributeKeySchema, MysqlIndexIoWaitCountMetricAttributeKeyIndexName},
+					},
+					MysqlIndexIoWaitTime: MysqlIndexIoWaitTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlIndexIoWaitTimeMetricAttributeKey{MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName},
+					},
+					MysqlJoins: MysqlJoinsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlJoinsMetricAttributeKey{MysqlJoinsMetricAttributeKeyJoinKind},
+					},
+					MysqlLocks: MysqlLocksMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlLocksMetricAttributeKey{MysqlLocksMetricAttributeKeyLocks},
+					},
+					MysqlLogOperations: MysqlLogOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlLogOperationsMetricAttributeKey{MysqlLogOperationsMetricAttributeKeyLogOperations},
+					},
+					MysqlMaxUsedConnections: MysqlMaxUsedConnectionsMetricConfig{
 						Enabled: false,
 					},
-					MysqlBufferPoolPages: MetricConfig{
+					MysqlMysqlxConnections: MysqlMysqlxConnectionsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlMysqlxConnectionsMetricAttributeKey{MysqlMysqlxConnectionsMetricAttributeKeyConnectionStatus},
+					},
+					MysqlMysqlxWorkerThreads: MysqlMysqlxWorkerThreadsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlMysqlxWorkerThreadsMetricAttributeKey{MysqlMysqlxWorkerThreadsMetricAttributeKeyMysqlxThreads},
+					},
+					MysqlOpenedResources: MysqlOpenedResourcesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlOpenedResourcesMetricAttributeKey{MysqlOpenedResourcesMetricAttributeKeyOpenedResources},
+					},
+					MysqlOperations: MysqlOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlOperationsMetricAttributeKey{MysqlOperationsMetricAttributeKeyOperations},
+					},
+					MysqlPageOperations: MysqlPageOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlPageOperationsMetricAttributeKey{MysqlPageOperationsMetricAttributeKeyPageOperations},
+					},
+					MysqlPageSize: MysqlPageSizeMetricConfig{
 						Enabled: false,
 					},
-					MysqlBufferPoolUsage: MetricConfig{
+					MysqlPreparedStatements: MysqlPreparedStatementsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlPreparedStatementsMetricAttributeKey{MysqlPreparedStatementsMetricAttributeKeyPreparedStatementsCommand},
+					},
+					MysqlQueryClientCount: MysqlQueryClientCountMetricConfig{
 						Enabled: false,
 					},
-					MysqlClientNetworkIo: MetricConfig{
+					MysqlQueryCount: MysqlQueryCountMetricConfig{
 						Enabled: false,
 					},
-					MysqlCommands: MetricConfig{
+					MysqlQuerySlowCount: MysqlQuerySlowCountMetricConfig{
 						Enabled: false,
 					},
-					MysqlConnectionCount: MetricConfig{
+					MysqlReplicaSQLDelay: MysqlReplicaSQLDelayMetricConfig{
 						Enabled: false,
 					},
-					MysqlConnectionErrors: MetricConfig{
+					MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 						Enabled: false,
 					},
-					MysqlDoubleWrites: MetricConfig{
-						Enabled: false,
+					MysqlRowLocks: MysqlRowLocksMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlRowLocksMetricAttributeKey{MysqlRowLocksMetricAttributeKeyRowLocks},
 					},
-					MysqlHandlers: MetricConfig{
-						Enabled: false,
+					MysqlRowOperations: MysqlRowOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlRowOperationsMetricAttributeKey{MysqlRowOperationsMetricAttributeKeyRowOperations},
 					},
-					MysqlIndexIoWaitCount: MetricConfig{
-						Enabled: false,
+					MysqlSorts: MysqlSortsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlSortsMetricAttributeKey{MysqlSortsMetricAttributeKeySorts},
 					},
-					MysqlIndexIoWaitTime: MetricConfig{
-						Enabled: false,
+					MysqlStatementEventCount: MysqlStatementEventCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlStatementEventCountMetricAttributeKey{MysqlStatementEventCountMetricAttributeKeySchema, MysqlStatementEventCountMetricAttributeKeyDigest, MysqlStatementEventCountMetricAttributeKeyDigestText, MysqlStatementEventCountMetricAttributeKeyEventState},
 					},
-					MysqlJoins: MetricConfig{
-						Enabled: false,
+					MysqlStatementEventWaitTime: MysqlStatementEventWaitTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlStatementEventWaitTimeMetricAttributeKey{MysqlStatementEventWaitTimeMetricAttributeKeySchema, MysqlStatementEventWaitTimeMetricAttributeKeyDigest, MysqlStatementEventWaitTimeMetricAttributeKeyDigestText},
 					},
-					MysqlLocks: MetricConfig{
-						Enabled: false,
+					MysqlTableAverageRowLength: MysqlTableAverageRowLengthMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableAverageRowLengthMetricAttributeKey{MysqlTableAverageRowLengthMetricAttributeKeyTableName, MysqlTableAverageRowLengthMetricAttributeKeySchema},
 					},
-					MysqlLogOperations: MetricConfig{
-						Enabled: false,
+					MysqlTableIoWaitCount: MysqlTableIoWaitCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableIoWaitCountMetricAttributeKey{MysqlTableIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitCountMetricAttributeKeyTableName, MysqlTableIoWaitCountMetricAttributeKeySchema},
 					},
-					MysqlMaxUsedConnections: MetricConfig{
-						Enabled: false,
+					MysqlTableIoWaitTime: MysqlTableIoWaitTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableIoWaitTimeMetricAttributeKey{MysqlTableIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitTimeMetricAttributeKeyTableName, MysqlTableIoWaitTimeMetricAttributeKeySchema},
 					},
-					MysqlMysqlxConnections: MetricConfig{
-						Enabled: false,
+					MysqlTableLockWaitReadCount: MysqlTableLockWaitReadCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitReadCountMetricAttributeKey{MysqlTableLockWaitReadCountMetricAttributeKeySchema, MysqlTableLockWaitReadCountMetricAttributeKeyTableName, MysqlTableLockWaitReadCountMetricAttributeKeyReadLockType},
 					},
-					MysqlMysqlxWorkerThreads: MetricConfig{
-						Enabled: false,
+					MysqlTableLockWaitReadTime: MysqlTableLockWaitReadTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitReadTimeMetricAttributeKey{MysqlTableLockWaitReadTimeMetricAttributeKeySchema, MysqlTableLockWaitReadTimeMetricAttributeKeyTableName, MysqlTableLockWaitReadTimeMetricAttributeKeyReadLockType},
 					},
-					MysqlOpenedResources: MetricConfig{
-						Enabled: false,
+					MysqlTableLockWaitWriteCount: MysqlTableLockWaitWriteCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitWriteCountMetricAttributeKey{MysqlTableLockWaitWriteCountMetricAttributeKeySchema, MysqlTableLockWaitWriteCountMetricAttributeKeyTableName, MysqlTableLockWaitWriteCountMetricAttributeKeyWriteLockType},
 					},
-					MysqlOperations: MetricConfig{
-						Enabled: false,
+					MysqlTableLockWaitWriteTime: MysqlTableLockWaitWriteTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableLockWaitWriteTimeMetricAttributeKey{MysqlTableLockWaitWriteTimeMetricAttributeKeySchema, MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName, MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType},
 					},
-					MysqlPageOperations: MetricConfig{
-						Enabled: false,
+					MysqlTableRows: MysqlTableRowsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableRowsMetricAttributeKey{MysqlTableRowsMetricAttributeKeyTableName, MysqlTableRowsMetricAttributeKeySchema},
 					},
-					MysqlPageSize: MetricConfig{
-						Enabled: false,
+					MysqlTableSize: MysqlTableSizeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableSizeMetricAttributeKey{MysqlTableSizeMetricAttributeKeyTableName, MysqlTableSizeMetricAttributeKeySchema, MysqlTableSizeMetricAttributeKeyTableSizeType},
 					},
-					MysqlPreparedStatements: MetricConfig{
-						Enabled: false,
+					MysqlTableOpenCache: MysqlTableOpenCacheMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTableOpenCacheMetricAttributeKey{MysqlTableOpenCacheMetricAttributeKeyCacheStatus},
 					},
-					MysqlQueryClientCount: MetricConfig{
-						Enabled: false,
+					MysqlThreads: MysqlThreadsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlThreadsMetricAttributeKey{MysqlThreadsMetricAttributeKeyThreads},
 					},
-					MysqlQueryCount: MetricConfig{
-						Enabled: false,
+					MysqlTmpResources: MysqlTmpResourcesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []MysqlTmpResourcesMetricAttributeKey{MysqlTmpResourcesMetricAttributeKeyTmpResource},
 					},
-					MysqlQuerySlowCount: MetricConfig{
-						Enabled: false,
-					},
-					MysqlReplicaSQLDelay: MetricConfig{
-						Enabled: false,
-					},
-					MysqlReplicaTimeBehindSource: MetricConfig{
-						Enabled: false,
-					},
-					MysqlRowLocks: MetricConfig{
-						Enabled: false,
-					},
-					MysqlRowOperations: MetricConfig{
-						Enabled: false,
-					},
-					MysqlSorts: MetricConfig{
-						Enabled: false,
-					},
-					MysqlStatementEventCount: MetricConfig{
-						Enabled: false,
-					},
-					MysqlStatementEventWaitTime: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableAverageRowLength: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableIoWaitCount: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableIoWaitTime: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableLockWaitReadCount: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableLockWaitReadTime: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableLockWaitWriteCount: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableLockWaitWriteTime: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableRows: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableSize: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTableOpenCache: MetricConfig{
-						Enabled: false,
-					},
-					MysqlThreads: MetricConfig{
-						Enabled: false,
-					},
-					MysqlTmpResources: MetricConfig{
-						Enabled: false,
-					},
-					MysqlUptime: MetricConfig{
+					MysqlUptime: MysqlUptimeMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -334,7 +482,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MysqlBufferPoolDataPagesMetricConfig{}, MysqlBufferPoolLimitMetricConfig{}, MysqlBufferPoolOperationsMetricConfig{}, MysqlBufferPoolPageFlushesMetricConfig{}, MysqlBufferPoolPagesMetricConfig{}, MysqlBufferPoolUsageMetricConfig{}, MysqlClientNetworkIoMetricConfig{}, MysqlCommandsMetricConfig{}, MysqlConnectionCountMetricConfig{}, MysqlConnectionErrorsMetricConfig{}, MysqlDoubleWritesMetricConfig{}, MysqlHandlersMetricConfig{}, MysqlIndexIoWaitCountMetricConfig{}, MysqlIndexIoWaitTimeMetricConfig{}, MysqlJoinsMetricConfig{}, MysqlLocksMetricConfig{}, MysqlLogOperationsMetricConfig{}, MysqlMaxUsedConnectionsMetricConfig{}, MysqlMysqlxConnectionsMetricConfig{}, MysqlMysqlxWorkerThreadsMetricConfig{}, MysqlOpenedResourcesMetricConfig{}, MysqlOperationsMetricConfig{}, MysqlPageOperationsMetricConfig{}, MysqlPageSizeMetricConfig{}, MysqlPreparedStatementsMetricConfig{}, MysqlQueryClientCountMetricConfig{}, MysqlQueryCountMetricConfig{}, MysqlQuerySlowCountMetricConfig{}, MysqlReplicaSQLDelayMetricConfig{}, MysqlReplicaTimeBehindSourceMetricConfig{}, MysqlRowLocksMetricConfig{}, MysqlRowOperationsMetricConfig{}, MysqlSortsMetricConfig{}, MysqlStatementEventCountMetricConfig{}, MysqlStatementEventWaitTimeMetricConfig{}, MysqlTableAverageRowLengthMetricConfig{}, MysqlTableIoWaitCountMetricConfig{}, MysqlTableIoWaitTimeMetricConfig{}, MysqlTableLockWaitReadCountMetricConfig{}, MysqlTableLockWaitReadTimeMetricConfig{}, MysqlTableLockWaitWriteCountMetricConfig{}, MysqlTableLockWaitWriteTimeMetricConfig{}, MysqlTableRowsMetricConfig{}, MysqlTableSizeMetricConfig{}, MysqlTableOpenCacheMetricConfig{}, MysqlThreadsMetricConfig{}, MysqlTmpResourcesMetricConfig{}, MysqlUptimeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

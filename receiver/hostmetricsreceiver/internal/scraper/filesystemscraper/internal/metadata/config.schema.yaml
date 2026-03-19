@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       system.filesystem.inodes.usage:
-        description: "SystemFilesystemInodesUsageConfig provides config for the system.filesystem.inodes.usage metric."
+        description: "SystemFilesystemInodesUsageMetricConfig provides config for the system.filesystem.inodes.usage metric."
         type: object
         properties:
           enabled:
@@ -36,7 +36,7 @@ $defs:
               - "type"
               - "state"
       system.filesystem.usage:
-        description: "SystemFilesystemUsageConfig provides config for the system.filesystem.usage metric."
+        description: "SystemFilesystemUsageMetricConfig provides config for the system.filesystem.usage metric."
         type: object
         properties:
           enabled:
@@ -67,7 +67,7 @@ $defs:
               - "type"
               - "state"
       system.filesystem.utilization:
-        description: "SystemFilesystemUtilizationConfig provides config for the system.filesystem.utilization metric."
+        description: "SystemFilesystemUtilizationMetricConfig provides config for the system.filesystem.utilization metric."
         type: object
         properties:
           enabled:

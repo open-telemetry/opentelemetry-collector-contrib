@@ -294,8 +294,11 @@ func flushBulkIndexer(
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
+
+	// Create context with attempt counter to track http requests
+	ctxWithAttempts, counter := newAttemptContext(ctx)
 	startTime := time.Now()
-	stat, err := bi.Flush(ctx)
+	stat, err := bi.Flush(ctxWithAttempts)
 	latency := time.Since(startTime).Seconds()
 	defaultMetaAttrs := getAttributesFromMetadataKeys(ctx, tMetaKeys)
 	defaultAttrsSet := attribute.NewSet(defaultMetaAttrs...)
@@ -306,6 +309,9 @@ func flushBulkIndexer(
 		tb.ElasticsearchFlushedUncompressedBytes.Add(
 			ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet),
 		)
+	}
+	if retryCount := counter.Retries(); retryCount > 0 {
+		tb.ElasticsearchDocsRetriedHTTPRequest.Add(ctx, int64(retryCount*itemsCount), metric.WithAttributeSet(defaultAttrsSet))
 	}
 
 	var fields []zap.Field

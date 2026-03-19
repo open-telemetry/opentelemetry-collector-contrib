@@ -164,11 +164,6 @@ func exporterhelperOptions(
 	startFunc component.StartFunc,
 	shutdownFunc component.ShutdownFunc,
 ) []exporterhelper.Option {
-	if len(cfg.IncludeMetadataKeys) > 0 {
-		partitioner := metadataKeysPartitioner{keys: cfg.IncludeMetadataKeys}
-		qbs.Partitioner = partitioner
-		qbs.MergeCtx = partitioner.MergeCtx
-	}
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,

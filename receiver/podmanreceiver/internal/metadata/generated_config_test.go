@@ -26,37 +26,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead: MetricConfig{
+					ContainerBlockioIoServiceBytesRecursiveRead: ContainerBlockioIoServiceBytesRecursiveReadMetricConfig{
 						Enabled: true,
 					},
-					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{
+					ContainerBlockioIoServiceBytesRecursiveWrite: ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUPercent: MetricConfig{
+					ContainerCPUPercent: ContainerCPUPercentMetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUUsagePercpu: MetricConfig{
+					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerCPUUsagePercpuMetricAttributeKey{ContainerCPUUsagePercpuMetricAttributeKeyCore},
+					},
+					ContainerCPUUsageSystem: ContainerCPUUsageSystemMetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUUsageSystem: MetricConfig{
+					ContainerCPUUsageTotal: ContainerCPUUsageTotalMetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUUsageTotal: MetricConfig{
+					ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryPercent: MetricConfig{
+					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryUsageLimit: MetricConfig{
+					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryUsageTotal: MetricConfig{
+					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesMetricConfig{
 						Enabled: true,
 					},
-					ContainerNetworkIoUsageRxBytes: MetricConfig{
-						Enabled: true,
-					},
-					ContainerNetworkIoUsageTxBytes: MetricConfig{
+					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -72,37 +74,39 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerBlockioIoServiceBytesRecursiveRead: MetricConfig{
+					ContainerBlockioIoServiceBytesRecursiveRead: ContainerBlockioIoServiceBytesRecursiveReadMetricConfig{
 						Enabled: false,
 					},
-					ContainerBlockioIoServiceBytesRecursiveWrite: MetricConfig{
+					ContainerBlockioIoServiceBytesRecursiveWrite: ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUPercent: MetricConfig{
+					ContainerCPUPercent: ContainerCPUPercentMetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUUsagePercpu: MetricConfig{
+					ContainerCPUUsagePercpu: ContainerCPUUsagePercpuMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []ContainerCPUUsagePercpuMetricAttributeKey{ContainerCPUUsagePercpuMetricAttributeKeyCore},
+					},
+					ContainerCPUUsageSystem: ContainerCPUUsageSystemMetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUUsageSystem: MetricConfig{
+					ContainerCPUUsageTotal: ContainerCPUUsageTotalMetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUUsageTotal: MetricConfig{
+					ContainerMemoryPercent: ContainerMemoryPercentMetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryPercent: MetricConfig{
+					ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryUsageLimit: MetricConfig{
+					ContainerMemoryUsageTotal: ContainerMemoryUsageTotalMetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryUsageTotal: MetricConfig{
+					ContainerNetworkIoUsageRxBytes: ContainerNetworkIoUsageRxBytesMetricConfig{
 						Enabled: false,
 					},
-					ContainerNetworkIoUsageRxBytes: MetricConfig{
-						Enabled: false,
-					},
-					ContainerNetworkIoUsageTxBytes: MetricConfig{
+					ContainerNetworkIoUsageTxBytes: ContainerNetworkIoUsageTxBytesMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -118,7 +122,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerBlockioIoServiceBytesRecursiveReadMetricConfig{}, ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig{}, ContainerCPUPercentMetricConfig{}, ContainerCPUUsagePercpuMetricConfig{}, ContainerCPUUsageSystemMetricConfig{}, ContainerCPUUsageTotalMetricConfig{}, ContainerMemoryPercentMetricConfig{}, ContainerMemoryUsageLimitMetricConfig{}, ContainerMemoryUsageTotalMetricConfig{}, ContainerNetworkIoUsageRxBytesMetricConfig{}, ContainerNetworkIoUsageTxBytesMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
