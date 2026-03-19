@@ -11,7 +11,7 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [schmikei]
+    active: [schmikei, dyl10s]
     emeritus: [djaglowski]
     seeking_new: true
 
