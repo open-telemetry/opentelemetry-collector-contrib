@@ -425,7 +425,6 @@ func TestObjMetadata(t *testing.T) {
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
 						"k8s.service.test-service": "",
-						"service.name":             "test-service",
 						"k8s-app":                  "my-app",
 						"k8s.pod.phase":            "Running",
 						"k8s.namespace.name":       "test-namespace",

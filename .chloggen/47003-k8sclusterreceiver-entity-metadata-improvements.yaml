@@ -7,7 +7,7 @@ change_type: "enhancement"
 component: "k8sclusterreceiver"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add exact workload subtype name fields to emitted entity metadata and emit `service.name` for unambiguous pod-to-service matches"
+note: "Add exact workload subtype name fields to emitted entity metadata"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47003]
@@ -17,9 +17,7 @@ issues: [47003]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds subtype-specific entity name fields for ReplicaSet, DaemonSet,
-  StatefulSet, Job, and CronJob entity metadata. Pod service association
-  continues to emit dynamic `k8s.service.<service-name>` keys and now also
-  emits `service.name` when exactly one service matches the pod.
+  StatefulSet, Job, and CronJob entity metadata.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
