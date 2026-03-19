@@ -18,7 +18,7 @@ type Config struct {
 	Logs EncodingConfig `mapstructure:"logs"`
 
 	// Auth is the component.ID of the extension that provides Azure authentication
-	Auth component.ID `mapstructure:"auth"`
+	Auth *component.ID `mapstructure:"auth"`
 
 	// IncludeInvokeMetadata, when true, adds Azure Functions invoke metadata to resource attributes.
 	IncludeInvokeMetadata bool `mapstructure:"include_invoke_metadata"`
@@ -27,8 +27,8 @@ type Config struct {
 // EncodingConfig holds the encoding extension configuration for a signal type.
 type EncodingConfig struct {
 	// Encoding identifies the encoding of log records that triggered azure functions.
-	Encoding component.ID `mapstructure:"encoding"`
-	_        struct{}     // Prevent unkeyed literal initialization
+	Encoding *component.ID `mapstructure:"encoding"`
+	_        struct{}      // Prevent unkeyed literal initialization
 }
 
 // Validate checks if the receiver configuration is valid.
@@ -38,7 +38,7 @@ func (cfg *Config) Validate() error {
 		errs = append(errs, errors.New("missing http server settings"))
 	}
 
-	if cfg.Logs.Encoding == (component.ID{}) {
+	if cfg.Logs.Encoding == nil || *cfg.Logs.Encoding == (component.ID{}) {
 		errs = append(errs, errors.New("logs.encoding must be set"))
 	}
 

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -33,15 +34,15 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(metadata.Type),
 			expected: &Config{
 				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				Auth: component.MustNewID("azureauth"),
-				Logs: EncodingConfig{Encoding: component.MustNewID("azure_encoding")},
+				Auth: componentIDPtr(component.MustNewID("azureauth")),
+				Logs: EncodingConfig{Encoding: componentIDPtr(component.MustNewID("azure_encoding"))},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "no_auth"),
 			expected: &Config{
 				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				Logs: EncodingConfig{Encoding: component.MustNewID("azure_encoding")},
+				Logs: EncodingConfig{Encoding: componentIDPtr(component.MustNewID("azure_encoding"))},
 			},
 		},
 		{
@@ -73,4 +74,21 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestCreateDefaultConfigRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	cfg := createDefaultConfig()
+	cm := confmap.New()
+	require.NoError(t, cm.Marshal(cfg))
+
+	roundTrip := &Config{}
+	require.NoError(t, cm.Unmarshal(roundTrip))
+
+	assert.Equal(t, cfg, roundTrip)
+}
+
+func componentIDPtr(id component.ID) *component.ID {
+	return &id
 }
