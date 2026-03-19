@@ -6,6 +6,9 @@ properties:
     type: array
     items:
       type: string
+  cluster_uid:
+    description: ClusterUID, when configured, is used as the identifier for the synthetic k8s.cluster entity.
+    type: string
   collection_interval:
     description: Collection interval for metrics.
     type: string
