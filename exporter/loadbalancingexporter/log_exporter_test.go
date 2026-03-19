@@ -2116,9 +2116,7 @@ func TestConsumeLogsMissingServiceMultipleEndpoints(t *testing.T) {
 	// Verify determinism: send same batch again, total should double proportionally
 	mu.Lock()
 	firstRound := make(map[string]int, len(receivedByEndpoint))
-	for k, v := range receivedByEndpoint {
-		firstRound[k] = v
-	}
+	maps.Copy(firstRound, receivedByEndpoint)
 	mu.Unlock()
 
 	ld2 := plog.NewLogs()
