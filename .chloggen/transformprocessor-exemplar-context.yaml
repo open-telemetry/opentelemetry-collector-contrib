@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: processor/transform
+
+note: "Wire `ottlexemplar` context into the transform processor, enabling `metric_statements` with `context: exemplar` to manipulate exemplar fields such as timestamps."
+
+issues: [47322]
+
+subtext:
+
+change_logs: [user]

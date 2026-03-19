@@ -51,6 +51,7 @@ To see a list of available Paths for each Open Telemetry Signal, checkout the li
 | `Span Event`            | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent/README.md)         |
 | `Metric`                | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric/README.md)               |
 | `Datapoint`             | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint/README.md)         |
+| `Exemplar`              | [Exemplar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlexemplar/README.md)           |
 | `Log`                   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog/README.md)                     |
 | `Profile`               | [Profile](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlprofile/README.md)             |
 

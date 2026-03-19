@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlexemplar"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
@@ -39,6 +40,9 @@ func assertConfigContainsDefaultFunctions(t *testing.T, config Config) {
 	}
 	for _, f := range DefaultDataPointFunctionsNew() {
 		assert.Contains(t, config.dataPointFunctions, f.Name(), "missing data point function %v", f.Name())
+	}
+	for _, f := range DefaultExemplarFunctionsNew() {
+		assert.Contains(t, config.exemplarFunctions, f.Name(), "missing exemplar function %v", f.Name())
 	}
 	for _, f := range DefaultMetricFunctionsNew() {
 		assert.Contains(t, config.metricFunctions, f.Name(), "missing metric function %v", f.Name())
@@ -1234,6 +1238,57 @@ func Test_FactoryWithFunctions_CreateMetrics(t *testing.T) {
 			wantErrorWith: `undefined function "set"`,
 			factoryOptions: []FactoryOption{
 				WithDataPointFunctionsNew([]ottl.Factory[*ottldatapoint.TransformContext]{createTestFuncFactory[*ottldatapoint.TransformContext]("TestDataPointFunc")}),
+			},
+		},
+		{
+			name: "with exemplar functions : statement with added exemplar func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("exemplar"),
+					Statements: []string{`set(cache["attr"], TestExemplarFunc())`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithExemplarFunctionsNew(DefaultExemplarFunctionsNew()),
+				WithExemplarFunctionsNew([]ottl.Factory[*ottlexemplar.TransformContext]{createTestFuncFactory[*ottlexemplar.TransformContext]("TestExemplarFunc")}),
+			},
+		},
+		{
+			name: "with exemplar functions : statement with missing exemplar func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("exemplar"),
+					Statements: []string{`set(cache["attr"], TestExemplarFunc())`},
+				},
+			},
+			wantErrorWith: `undefined function "TestExemplarFunc"`,
+			factoryOptions: []FactoryOption{
+				WithExemplarFunctionsNew(DefaultExemplarFunctionsNew()),
+			},
+		},
+		{
+			name: "with exemplar functions : only custom functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("exemplar"),
+					Statements: []string{`testExemplarFunc()`},
+				},
+			},
+			factoryOptions: []FactoryOption{
+				WithExemplarFunctionsNew([]ottl.Factory[*ottlexemplar.TransformContext]{createTestFuncFactory[*ottlexemplar.TransformContext]("testExemplarFunc")}),
+			},
+		},
+		{
+			name: "with exemplar functions : missing default functions",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("exemplar"),
+					Statements: []string{`set(filtered_attributes["test"], "TestExemplarFunc()")`},
+				},
+			},
+			wantErrorWith: `undefined function "set"`,
+			factoryOptions: []FactoryOption{
+				WithExemplarFunctionsNew([]ottl.Factory[*ottlexemplar.TransformContext]{createTestFuncFactory[*ottlexemplar.TransformContext]("TestExemplarFunc")}),
 			},
 		},
 	}

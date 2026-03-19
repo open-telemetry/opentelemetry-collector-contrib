@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: pkg/ottl
+
+note: "Add `ottlexemplar` context exposing per-exemplar fields (`time`, `filtered_attributes`, `double_value`, `int_value`, `trace_id`, `span_id`) for use in OTTL statements."
+
+issues: [47322]
+
+subtext:
+
+change_logs: [user, api]

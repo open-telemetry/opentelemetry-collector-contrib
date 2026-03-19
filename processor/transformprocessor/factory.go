@@ -35,20 +35,20 @@ import (
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 type transformProcessorFactory struct {
-	dataPointFunctions                   map[string]ottl.Factory[*ottldatapoint.TransformContext]
-	exemplarFunctions                    map[string]ottl.Factory[*ottlexemplar.TransformContext]
-	logFunctions                         map[string]ottl.Factory[*ottllog.TransformContext]
-	metricFunctions                      map[string]ottl.Factory[*ottlmetric.TransformContext]
-	spanEventFunctions                   map[string]ottl.Factory[*ottlspanevent.TransformContext]
-	spanFunctions                        map[string]ottl.Factory[*ottlspan.TransformContext]
-	profileFunctions                     map[string]ottl.Factory[*ottlprofile.TransformContext]
-	defaultDataPointFunctionsOverridden  bool
-	defaultExemplarFunctionsOverridden   bool
-	defaultLogFunctionsOverridden        bool
-	defaultMetricFunctionsOverridden     bool
-	defaultSpanEventFunctionsOverridden  bool
-	defaultSpanFunctionsOverridden       bool
-	defaultProfileFunctionsOverridden    bool
+	dataPointFunctions                  map[string]ottl.Factory[*ottldatapoint.TransformContext]
+	exemplarFunctions                   map[string]ottl.Factory[*ottlexemplar.TransformContext]
+	logFunctions                        map[string]ottl.Factory[*ottllog.TransformContext]
+	metricFunctions                     map[string]ottl.Factory[*ottlmetric.TransformContext]
+	spanEventFunctions                  map[string]ottl.Factory[*ottlspanevent.TransformContext]
+	spanFunctions                       map[string]ottl.Factory[*ottlspan.TransformContext]
+	profileFunctions                    map[string]ottl.Factory[*ottlprofile.TransformContext]
+	defaultDataPointFunctionsOverridden bool
+	defaultExemplarFunctionsOverridden  bool
+	defaultLogFunctionsOverridden       bool
+	defaultMetricFunctionsOverridden    bool
+	defaultSpanEventFunctionsOverridden bool
+	defaultSpanFunctionsOverridden      bool
+	defaultProfileFunctionsOverridden   bool
 }
 
 // FactoryOption applies changes to transformProcessorFactory.
@@ -72,6 +72,18 @@ func WithDataPointFunctionsNew(dataPointFunctions []ottl.Factory[*ottldatapoint.
 			factory.defaultDataPointFunctionsOverridden = true
 		}
 		factory.dataPointFunctions = mergeFunctionsToMap(factory.dataPointFunctions, dataPointFunctions)
+	}
+}
+
+// WithExemplarFunctionsNew will override the default OTTL exemplar context functions with the provided exemplarFunctions in the resulting processor.
+// Subsequent uses of WithExemplarFunctionsNew will merge the provided exemplarFunctions with the previously registered functions.
+func WithExemplarFunctionsNew(exemplarFunctions []ottl.Factory[*ottlexemplar.TransformContext]) FactoryOption {
+	return func(factory *transformProcessorFactory) {
+		if !factory.defaultExemplarFunctionsOverridden {
+			factory.exemplarFunctions = map[string]ottl.Factory[*ottlexemplar.TransformContext]{}
+			factory.defaultExemplarFunctionsOverridden = true
+		}
+		factory.exemplarFunctions = mergeFunctionsToMap(factory.exemplarFunctions, exemplarFunctions)
 	}
 }
 
@@ -283,9 +295,10 @@ func (f *transformProcessorFactory) createMetricsProcessor(
 ) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 	oCfg.logger = set.Logger
-	if f.defaultDataPointFunctionsOverridden || f.defaultMetricFunctionsOverridden {
+	if f.defaultDataPointFunctionsOverridden || f.defaultExemplarFunctionsOverridden || f.defaultMetricFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"transform\" processor",
 			zap.Bool("datapoint", f.defaultDataPointFunctionsOverridden),
+			zap.Bool("exemplar", f.defaultExemplarFunctionsOverridden),
 			zap.Bool("metric", f.defaultMetricFunctionsOverridden),
 		)
 	}
