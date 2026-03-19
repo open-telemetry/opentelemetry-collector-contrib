@@ -313,6 +313,5 @@ func (cfg *Config) clusterString() string {
 	if cfg.ClusterName == "" {
 		return ""
 	}
-
-	return fmt.Sprintf("ON CLUSTER %s", cfg.ClusterName)
+	return fmt.Sprintf("ON CLUSTER `%s`", cfg.ClusterName)
 }
