@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("googlecloudstorage")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter"
+	Type           = component.MustNewType("google_cloud_storage")
+	DeprecatedType = component.MustNewType("googlecloudstorage")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter"
 )
 
 const (

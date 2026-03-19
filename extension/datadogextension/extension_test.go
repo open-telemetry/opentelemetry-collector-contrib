@@ -6,6 +6,7 @@ package datadogextension
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -227,9 +228,9 @@ func TestCollectorResourceAttributesArePopulated(t *testing.T) {
 	err = ext.NotifyConfig(t.Context(), conf)
 	require.NoError(t, err)
 
-	// Expect map with keys and values
+	// Expect map with keys and values (os.type is always injected as a fallback)
 	require.NotNil(t, ext.otelCollectorMetadata)
-	expected := map[string]string{"a_key": "1", "b_key": "2"}
+	expected := map[string]string{"a_key": "1", "b_key": "2", "os.type": runtime.GOOS}
 	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
 
 	// Cleanup
@@ -274,12 +275,13 @@ func TestCollectorResourceAttributesWithMultipleKeys(t *testing.T) {
 	err = ext.NotifyConfig(t.Context(), conf)
 	require.NoError(t, err)
 
-	// Verify all resource attributes are collected
+	// Verify all resource attributes are collected (os.type is always injected as a fallback)
 	require.NotNil(t, ext.otelCollectorMetadata)
 	expected := map[string]string{
 		"deployment.environment.name": "prod",
 		"cloud.region":                "us-east",
 		"team.name":                   "backend",
+		"os.type":                     runtime.GOOS,
 	}
 	assert.Equal(t, expected, ext.otelCollectorMetadata.CollectorResourceAttributes)
 

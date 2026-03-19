@@ -114,14 +114,16 @@ func InsertMetrics(ctx context.Context, db driver.Conn, metricsMap map[pmetric.M
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
-	var (
-		attrs    clickhouse.ArraySet
-		times    clickhouse.ArraySet
-		values   clickhouse.ArraySet
-		traceIDs clickhouse.ArraySet
-		spanIDs  clickhouse.ArraySet
-	)
-	for i := 0; i < exemplars.Len(); i++ {
+	n := exemplars.Len()
+	if n == 0 {
+		return nil, nil, nil, nil, nil
+	}
+	attrs := make(clickhouse.ArraySet, 0, n)
+	times := make(clickhouse.ArraySet, 0, n)
+	values := make(clickhouse.ArraySet, 0, n)
+	traceIDs := make(clickhouse.ArraySet, 0, n)
+	spanIDs := make(clickhouse.ArraySet, 0, n)
+	for i := range n {
 		exemplar := exemplars.At(i)
 		attrs = append(attrs, AttributesToMap(exemplar.FilteredAttributes()))
 		times = append(times, exemplar.Timestamp().AsTime())
@@ -170,9 +172,9 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 
 func AttributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
 	return orderedmap.CollectN(func(yield func(string, string) bool) {
-		for k, v := range attributes.All() {
-			yield(k, v.AsString())
-		}
+		attributes.Range(func(k string, v pcommon.Value) bool {
+			return yield(k, v.AsString())
+		})
 	}, attributes.Len())
 }
 
@@ -185,7 +187,7 @@ func GetServiceName(resAttr pcommon.Map) string {
 }
 
 func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {
-	var set clickhouse.ArraySet
+	set := make(clickhouse.ArraySet, 0, len(slice))
 	for _, item := range slice {
 		set = append(set, item)
 	}
@@ -193,11 +195,13 @@ func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {
 }
 
 func convertValueAtQuantile(valueAtQuantile pmetric.SummaryDataPointValueAtQuantileSlice) (clickhouse.ArraySet, clickhouse.ArraySet) {
-	var (
-		quantiles clickhouse.ArraySet
-		values    clickhouse.ArraySet
-	)
-	for i := 0; i < valueAtQuantile.Len(); i++ {
+	n := valueAtQuantile.Len()
+	if n == 0 {
+		return nil, nil
+	}
+	quantiles := make(clickhouse.ArraySet, 0, n)
+	values := make(clickhouse.ArraySet, 0, n)
+	for i := range n {
 		value := valueAtQuantile.At(i)
 		quantiles = append(quantiles, value.Quantile())
 		values = append(values, value.Value())

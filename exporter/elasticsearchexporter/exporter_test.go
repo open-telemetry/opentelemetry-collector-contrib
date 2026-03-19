@@ -315,6 +315,30 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestLogsExporter(t, server.URL)
+		logs := plog.NewLogs()
+		logRecord := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logRecord.Body().SetStr("hello world")
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendLogsWithCtx(ctx, t, exporter, logs)
+		<-done
+	})
+
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
@@ -1058,6 +1082,28 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		metrics := newMetricsWithAttributes(nil, nil, nil)
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+		<-done
+	})
+
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		index := "someindex"
 		rec := newBulkRecorder()
@@ -1511,6 +1557,38 @@ func TestExporterMetrics(t *testing.T) {
 		}
 
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("ecs mode _doc_count hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		gaugeMetric := scopeMetric.Metrics().AppendEmpty()
+		gaugeMetric.SetName("ecs.gauge")
+		gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+		gaugeDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+		gaugeDp.SetDoubleValue(2.5)
+		fillAttributeMap(gaugeDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count"},
+		})
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		docs := rec.WaitItems(1)
+		require.Len(t, docs, 1)
+		doc := docs[0].Document
+		docCount := gjson.GetBytes(doc, "_doc_count")
+		require.True(t, docCount.Exists(), "ECS mode document should include _doc_count when hint is set")
+		assert.Equal(t, uint64(1), docCount.Uint(), "_doc_count value")
 	})
 
 	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
@@ -2143,6 +2221,28 @@ func TestExporterTraces(t *testing.T) {
 		mustSendSpans(t, exporter, ptrace.NewSpan())
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with ecs mapping mode sets require_data_stream", func(t *testing.T) {
+		done := make(chan struct{}, 1)
+		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "true", r.URL.Query().Get("require_data_stream"))
+
+			w.WriteHeader(http.StatusOK)
+			select {
+			case done <- struct{}{}:
+			default:
+			}
+		})
+
+		exporter := newTestTracesExporter(t, server.URL)
+		traces := newTracesWithAttributes(nil, nil, nil)
+		ctx := client.NewContext(
+			t.Context(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})},
+		)
+		mustSendTracesWithCtx(ctx, t, exporter, traces)
+		<-done
 	})
 
 	t.Run("publish with elasticsearch.index", func(t *testing.T) {

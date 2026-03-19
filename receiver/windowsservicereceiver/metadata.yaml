@@ -1,4 +1,9 @@
+display_name: Windows Service Receiver
 type: windowsservice
+
+description: |
+  The Windows Service Receiver is a receiver for scraping information about the state of services running on a Windows
+  machine.
 
 status:
   class: receiver

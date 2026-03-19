@@ -77,7 +77,7 @@ resourceMetrics:
                   timeUnixNano: "1581452773000000789"
             name: gauge-double
             unit: "1"
-          - name: counter-int
+          - name: sum-int
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -91,7 +91,7 @@ resourceMetrics:
                         stringValue: bar
                   startTimeUnixNano: "1581452772000000321"
                   timeUnixNano: "1581452773000000789"
-                - asInt: "456"
+                - asInt: "-456"
                   attributes:
                     - key: datapoint.foo
                       value:
@@ -111,7 +111,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1581452772000000321"
                   timeUnixNano: "1581452773000000789"
-              isMonotonic: true
+              isMonotonic: false
             unit: "1"
           - name: counter-double
             sum:
