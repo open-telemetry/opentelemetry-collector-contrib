@@ -660,8 +660,8 @@ func TestClusterString(t *testing.T) {
 			expected: "ON CLUSTER `cluster a b`",
 		},
 		{
-            input:     "ch-cluster",
-			expected:  "ON CLUSTER `ch-cluster`",
+			input:    "ch-cluster",
+			expected: "ON CLUSTER `ch-cluster`",
 		},
 	}
 
