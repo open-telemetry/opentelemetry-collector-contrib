@@ -5,11 +5,17 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+)
+
+var (
+	errUnknownCompression = errors.New("unknown compression type")
 )
 
 type TelemetryConfig struct {
@@ -94,6 +100,11 @@ type Config struct {
 	// AppendBlob configures append blob behavior
 	AppendBlob AppendBlob `mapstructure:"append_blob"`
 
+	// Compression sets the algorithm used to process the payload
+	// before uploading to Azure Blob Storage.
+	// Valid values are: `gzip`, `zstd`, or no value set.
+	Compression configcompression.Type `mapstructure:"compression"`
+
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings Encodings `mapstructure:"encodings"`
 
@@ -126,6 +137,15 @@ func (c *Config) Validate() error {
 
 	if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
 		return errors.New("unknown format type: " + c.FormatType)
+	}
+
+	if c.Compression.IsCompressed() {
+		if c.Compression != configcompression.TypeGzip && c.Compression != configcompression.TypeZstd {
+			return fmt.Errorf(
+				"%w %q, valid values are %q and %q",
+				errUnknownCompression, c.Compression,
+				configcompression.TypeGzip, configcompression.TypeZstd)
+		}
 	}
 
 	return nil

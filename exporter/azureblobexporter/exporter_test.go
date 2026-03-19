@@ -4,6 +4,8 @@
 package azureblobexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -14,11 +16,13 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/appendblob"
+	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap/zaptest"
@@ -152,15 +156,15 @@ func TestGenerateBlobName(t *testing.T) {
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
 	now := time.Now()
-	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	metricsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(metricsBlobName, now.Format(c.BlobNameFormat.MetricsFormat)))
 
-	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs, nil)
+	logsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalLogs, nil)
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(logsBlobName, now.Format(c.BlobNameFormat.LogsFormat)))
 
-	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces, nil)
+	tracesBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalTraces, nil)
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat)))
 }
@@ -189,7 +193,7 @@ func TestGenerateBlobNameTimezoneSpecificLocation(t *testing.T) {
 	ae.timeLocation = loc
 
 	before := time.Now().In(loc)
-	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	metricsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	after := time.Now().In(loc)
 
@@ -230,15 +234,15 @@ func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
 	}
 
 	now := time.Now()
-	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	metricsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	assert.NoError(t, err)
 	assertFormat(metricsBlobName, now.Format(c.BlobNameFormat.MetricsFormat))
 
-	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs, nil)
+	logsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalLogs, nil)
 	assert.NoError(t, err)
 	assertFormat(logsBlobName, now.Format(c.BlobNameFormat.LogsFormat))
 
-	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces, nil)
+	tracesBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalTraces, nil)
 	assert.NoError(t, err)
 	assertFormat(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat))
 }
@@ -263,7 +267,7 @@ func TestGenerateBlobNameWithTemplate(t *testing.T) {
 	// Test metrics
 	metrics := testdata.GenerateMetricsTwoMetrics()
 	metrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("service.name", "test-metrics-service")
-	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics, metrics)
+	metricsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, metrics)
 	assert.NoError(t, err)
 	assert.Contains(t, metricsBlobName, "test-metrics-service")
 	assert.Contains(t, metricsBlobName, "metrics.json")
@@ -271,7 +275,7 @@ func TestGenerateBlobNameWithTemplate(t *testing.T) {
 	// Test logs
 	logs := testdata.GenerateLogsTwoLogRecordsSameResource()
 	logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("scope.name", "test-scope")
-	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs, logs)
+	logsBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalLogs, logs)
 	assert.NoError(t, err)
 	assert.Contains(t, logsBlobName, "test-scope")
 	assert.Contains(t, logsBlobName, "logs.json")
@@ -279,7 +283,7 @@ func TestGenerateBlobNameWithTemplate(t *testing.T) {
 	// Test traces
 	traces := testdata.GenerateTracesTwoSpansSameResource()
 	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetName("test-span")
-	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces, traces)
+	tracesBlobName, err := ae.generateBlobNameWithCompression(pipeline.SignalTraces, traces)
 	assert.NoError(t, err)
 	assert.Contains(t, tracesBlobName, "test-span")
 	assert.Contains(t, tracesBlobName, "traces.json")
@@ -418,7 +422,7 @@ func TestGenerateBlobNameSerialNumberDisabled(t *testing.T) {
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
-	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "static/metrics.json", blobName)
 }
@@ -438,7 +442,7 @@ func TestGenerateBlobNameTimeParserDisabled(t *testing.T) {
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
-	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	assert.Equal(t, layout, blobName)
 }
@@ -459,7 +463,7 @@ func TestGenerateBlobNameTimeParserDisabledWithSerialNumber(t *testing.T) {
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
-	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(blobName, layout+"_"))
 }
@@ -481,7 +485,7 @@ func TestGenerateBlobNameWithTimeParserRanges(t *testing.T) {
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
-	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	// The prefix and suffix should remain unchanged, only 7-17 (date part) should be parsed
 	assert.True(t, strings.HasPrefix(blobName, "prefix_"))
@@ -508,7 +512,7 @@ func TestGenerateBlobNameWithMultipleTimeParserRanges(t *testing.T) {
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
-	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	// "static" should remain, but date/time parts should be parsed
 	assert.Contains(t, blobName, "_static_")
@@ -532,10 +536,111 @@ func TestGenerateBlobNameWithInvalidTimeParserRange(t *testing.T) {
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
 	// Should not error, just skip invalid ranges and log warnings
-	blobName, err := ae.generateBlobName(pipeline.SignalMetrics, nil)
+	blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
 	require.NoError(t, err)
 	// With all ranges invalid or out of bounds, the format should remain unchanged
 	assert.Equal(t, layout, blobName)
+}
+
+func TestCompression(t *testing.T) {
+	t.Parallel()
+
+	testData := []byte(`{"test":"data","value":42}`)
+
+	tests := []struct {
+		name            string
+		compression     configcompression.Type
+		expectExtension string
+	}{
+		{
+			name:            "gzip compression",
+			compression:     configcompression.TypeGzip,
+			expectExtension: ".gz",
+		},
+		{
+			name:            "zstd compression",
+			compression:     configcompression.TypeZstd,
+			expectExtension: ".zst",
+		},
+		{
+			name:            "no compression",
+			compression:     "",
+			expectExtension: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Config{
+				BlobNameFormat: BlobNameFormat{
+					MetricsFormat:    "2006/01/02/metrics.json",
+					SerialNumEnabled: false,
+				},
+				Compression: tt.compression,
+				FormatType:  "json",
+				Auth: Authentication{
+					Type:             ConnectionString,
+					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fake;AccountKey=ZmFrZQ==;EndpointSuffix=core.windows.net",
+				},
+			}
+
+			ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+			require.NoError(t, ae.start(t.Context(), componenttest.NewNopHost()))
+
+			compressedData, err := ae.compressContent(testData)
+			require.NoError(t, err)
+
+			switch tt.compression {
+			case "":
+				assert.Equal(t, testData, compressedData, "Uncompressed content should match original")
+			case configcompression.TypeGzip, configcompression.TypeZstd:
+				decompressed, closer := decompressData(t, compressedData, tt.compression)
+				if closer != nil {
+					defer closer()
+				}
+				assert.Equal(t, testData, decompressed, "Decompressed content should match original")
+				// Note: for very small payloads like our test data, compression may not reduce size due to header overhead.
+				// We still verify correctness via roundtrip.
+			}
+
+			// Test filename includes correct extension
+			blobName, err := ae.generateBlobNameWithCompression(pipeline.SignalMetrics, nil)
+			require.NoError(t, err)
+			if tt.expectExtension != "" {
+				assert.True(t, strings.HasSuffix(blobName, tt.expectExtension),
+					"Generated blob name should end with %q, got %q", tt.expectExtension, blobName)
+			} else {
+				assert.False(t, strings.HasSuffix(blobName, ".gz") || strings.HasSuffix(blobName, ".zst"))
+			}
+		})
+	}
+}
+
+// decompressData decompresses data based on the compression type and returns the decompressed data
+// along with a closer function that should be deferred (or nil if no special closing needed)
+func decompressData(t *testing.T, compressedData []byte, compression configcompression.Type) ([]byte, func()) {
+	switch compression {
+	case configcompression.TypeGzip:
+		reader, err := gzip.NewReader(bytes.NewReader(compressedData))
+		require.NoError(t, err)
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		return decompressed, func() {
+			closeErr := reader.Close()
+			require.NoError(t, closeErr)
+		}
+	case configcompression.TypeZstd:
+		reader, err := zstd.NewReader(bytes.NewReader(compressedData))
+		require.NoError(t, err)
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		return decompressed, func() {
+			reader.Close()
+		}
+	default:
+		t.Fatalf("Unsupported compression type: %s", compression)
+		return nil, nil
+	}
 }
 
 func TestParseRange(t *testing.T) {
