@@ -50,6 +50,14 @@ kafka/per_signal_encoding:
 kafka/metadata_batch_valid:
   include_metadata_keys:
     - metadata_key
+  logs:
+    topic_from_metadata_key: kafka_topic
+  metrics:
+    topic_from_metadata_key: kafka_topic
+  traces:
+    topic_from_metadata_key: kafka_topic
+  profiles:
+    topic_from_metadata_key: kafka_topic
   sending_queue:
     enabled: true
     batch:
@@ -58,3 +66,4 @@ kafka/metadata_batch_valid:
         metadata_keys:
           - metadata_key
           - another_key
+          - kafka_topic
