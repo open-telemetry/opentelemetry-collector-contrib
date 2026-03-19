@@ -71,6 +71,31 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		return err
 	}
 
+	if kp.rules.ContainerImageTag {
+		kp.logger.Warn(
+			"[WARNING] container.image.tag is being renamed to container.image.tags per Semantic Conventions. " +
+				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+				"See processor README section 'Semantic Conventions Compatibility' for details.",
+		)
+	}
+	if len(kp.rules.Labels) > 0 {
+		kp.logger.Warn(
+			"[WARNING] Pod label extraction attributes are being renamed (e.g. k8s.pod.labels.<key> -> k8s.pod.label.<key>) per Semantic Conventions. " +
+				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+				"See processor README section 'Semantic Conventions Compatibility' for details.",
+		)
+	}
+	if len(kp.rules.Annotations) > 0 {
+		kp.logger.Warn(
+			"[WARNING] Pod annotation extraction attributes are being renamed (e.g. k8s.pod.annotations.<key> -> k8s.pod.annotation.<key>) per Semantic Conventions. " +
+				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+				"See processor README section 'Semantic Conventions Compatibility' for details.",
+		)
+	}
+
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {

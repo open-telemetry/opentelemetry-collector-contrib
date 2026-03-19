@@ -169,9 +169,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
+					operationAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "writes", attrVal.Str())
+					assert.Equal(t, "writes", operationAttrVal.Str())
 				case "couchdb.file_descriptor.open":
 					assert.False(t, validatedMetrics["couchdb.file_descriptor.open"], "Found a duplicate in the metrics slice: couchdb.file_descriptor.open")
 					validatedMetrics["couchdb.file_descriptor.open"] = true
@@ -214,9 +214,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("http.method")
+					httpMethodAttrVal, ok := dp.Attributes().Get("http.method")
 					assert.True(t, ok)
-					assert.Equal(t, "COPY", attrVal.Str())
+					assert.Equal(t, "COPY", httpMethodAttrVal.Str())
 				case "couchdb.httpd.responses":
 					assert.False(t, validatedMetrics["couchdb.httpd.responses"], "Found a duplicate in the metrics slice: couchdb.httpd.responses")
 					validatedMetrics["couchdb.httpd.responses"] = true
@@ -231,9 +231,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("http.status_code")
+					httpStatusCodeAttrVal, ok := dp.Attributes().Get("http.status_code")
 					assert.True(t, ok)
-					assert.Equal(t, "http.status_code-val", attrVal.Str())
+					assert.Equal(t, "http.status_code-val", httpStatusCodeAttrVal.Str())
 				case "couchdb.httpd.views":
 					assert.False(t, validatedMetrics["couchdb.httpd.views"], "Found a duplicate in the metrics slice: couchdb.httpd.views")
 					validatedMetrics["couchdb.httpd.views"] = true
@@ -248,9 +248,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("view")
+					viewAttrVal, ok := dp.Attributes().Get("view")
 					assert.True(t, ok)
-					assert.Equal(t, "temporary_view_reads", attrVal.Str())
+					assert.Equal(t, "temporary_view_reads", viewAttrVal.Str())
 				}
 			}
 		})
