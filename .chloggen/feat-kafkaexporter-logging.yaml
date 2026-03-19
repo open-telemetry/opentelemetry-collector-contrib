@@ -1,0 +1,7 @@
+# Use this changelog template to create an entry for release notes.
+change_type: enhancement
+component: exporter/kafka
+note: Include message size and configured max in MessageTooLarge errors
+issues: [46766]
+subtext:
+change_logs: [user]
