@@ -88,7 +88,10 @@ type ResourceProvider struct {
 	// Refresh loop control
 	refreshInterval time.Duration
 	stopCh          chan struct{}
+	cancelFunc      context.CancelFunc
 	wg              sync.WaitGroup
+	startOnce       sync.Once
+	stopOnce        sync.Once
 }
 
 type resourceResult struct {
@@ -278,27 +281,38 @@ func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
 }
 
-// StartRefreshing begins periodic resource refresh if refreshInterval > 0
+// StartRefreshing begins periodic resource refresh if refreshInterval > 0.
+// It is safe to call multiple times; only the first call starts the goroutine.
 func (p *ResourceProvider) StartRefreshing(refreshInterval time.Duration, client *http.Client) {
-	p.refreshInterval = refreshInterval
-	if p.refreshInterval <= 0 {
-		return
-	}
+	p.startOnce.Do(func() {
+		p.refreshInterval = refreshInterval
+		if p.refreshInterval <= 0 {
+			return
+		}
 
-	p.stopCh = make(chan struct{})
-	p.wg.Add(1)
-	go p.refreshLoop(client)
+		p.stopCh = make(chan struct{})
+		ctx, cancel := context.WithCancel(context.Background())
+		p.cancelFunc = cancel
+		p.wg.Add(1)
+		go p.refreshLoop(ctx, client)
+	})
 }
 
-// StopRefreshing stops the periodic refresh goroutine
+// StopRefreshing stops the periodic refresh goroutine.
+// It is safe to call multiple times; only the first call stops the goroutine.
 func (p *ResourceProvider) StopRefreshing() {
-	if p.stopCh != nil {
-		close(p.stopCh)
-		p.wg.Wait()
-	}
+	p.stopOnce.Do(func() {
+		if p.cancelFunc != nil {
+			p.cancelFunc()
+		}
+		if p.stopCh != nil {
+			close(p.stopCh)
+			p.wg.Wait()
+		}
+	})
 }
 
-func (p *ResourceProvider) refreshLoop(client *http.Client) {
+func (p *ResourceProvider) refreshLoop(ctx context.Context, client *http.Client) {
 	defer p.wg.Done()
 	ticker := time.NewTicker(p.refreshInterval)
 	defer ticker.Stop()
@@ -306,7 +320,7 @@ func (p *ResourceProvider) refreshLoop(client *http.Client) {
 	for {
 		select {
 		case <-ticker.C:
-			err := p.Refresh(context.Background(), client)
+			err := p.Refresh(ctx, client)
 			if err != nil {
 				p.logger.Warn("resource refresh failed", zap.Error(err))
 			}

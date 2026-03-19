@@ -1,9 +1,0 @@
-change_type: "enhancement"
-
-component: "pkg/ottl"
-
-note: "Improve unsupported type error diagnostics in the Len() OTTL function by including the runtime type in error messages."
-
-issues: [46476]
-
-change_logs: ["user"]

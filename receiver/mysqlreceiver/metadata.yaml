@@ -271,7 +271,7 @@ attributes:
     requirement_level: recommended
 events:
   db.server.query_sample:
-    enabled: true
+    enabled: false
     description: |
       Query sample collection enables monitoring of current running database statements.
       This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.

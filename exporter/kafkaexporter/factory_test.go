@@ -32,7 +32,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
-	assert.Empty(t, cfg.Topic)
 }
 
 func TestCreateMetricExporter(t *testing.T) {
@@ -55,7 +54,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Metrics.Encoding = "otlp_proto"
 			}),
 		},
 		{
@@ -113,7 +112,7 @@ func TestCreateLogExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Logs.Encoding = "otlp_proto"
 			}),
 		},
 		{
@@ -171,7 +170,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Traces.Encoding = "otlp_proto"
 			}),
 		},
 		{
@@ -229,7 +228,7 @@ func TestCreateProfileExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = "otlp_proto"
+				conf.Profiles.Encoding = "otlp_proto"
 			}),
 		},
 		{
