@@ -84,6 +84,10 @@ func TestLoadConfig(t *testing.T) {
 			id:                 component.NewIDWithName(metadata.Type, "missing_binding_encoding"),
 			expectedErrMessage: "event_hub.logs[0].encoding must be set",
 		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "duplicate_binding_name"),
+			expectedErrMessage: `event_hub.logs: duplicate binding name "logs"`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {

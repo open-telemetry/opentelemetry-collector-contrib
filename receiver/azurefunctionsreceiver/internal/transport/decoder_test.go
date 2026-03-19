@@ -21,7 +21,7 @@ func TestDecode(t *testing.T) {
 		wantDecoded [][]byte
 		wantErr     error
 	}{
-		"TestMessagesWithDelimiter": {
+		"ValidMessages": {
 			messages: []string{
 				base64.StdEncoding.EncodeToString([]byte("Message one")),
 				base64.StdEncoding.EncodeToString([]byte("Message two after delimiter")),
@@ -33,16 +33,14 @@ func TestDecode(t *testing.T) {
 				[]byte("Message three"),
 			},
 		},
-		"TestInvalidBase64": {
-			messages: []string{
-				"Invalid message",
-			},
-			wantDecoded: nil,
-			wantErr:     base64.CorruptInputError(7),
-		},
-		"TestEmptyMessages": {
+		"EmptyMessages": {
 			messages:    []string{},
-			wantDecoded: [][]byte{}, // Decode returns empty slice, not nil
+			wantDecoded: [][]byte{},
+		},
+		"InvalidBase64": {
+			messages:    []string{"Invalid message"},
+			wantDecoded: [][]byte{},
+			wantErr:     base64.CorruptInputError(7),
 		},
 	}
 

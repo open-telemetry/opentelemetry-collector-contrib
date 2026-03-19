@@ -20,7 +20,7 @@ type TriggerPartitionContext struct {
 	FullyQualifiedNamespace        string `json:"FullyQualifiedNamespace"`
 	EventHubName                   string `json:"EventHubName"`
 	ConsumerGroup                  string `json:"ConsumerGroup"`
-	PartitionId                    string `json:"PartitionId"`
+	PartitionID                    string `json:"PartitionId"`
 }
 
 // Metadata is the Event Hub–specific view of the Azure Functions invoke Metadata.
@@ -54,8 +54,8 @@ func (m *Metadata) ResourceAttributes() map[string]string {
 		attrs[AttrEventHubNamespace] = ctx.FullyQualifiedNamespace
 	}
 	attrs[AttrEventHubName] = ctx.EventHubName
-	if ctx.PartitionId != "" {
-		attrs[AttrEventHubPartitionID] = ctx.PartitionId
+	if ctx.PartitionID != "" {
+		attrs[AttrEventHubPartitionID] = ctx.PartitionID
 	}
 	if ctx.ConsumerGroup != "" {
 		attrs[AttrEventHubConsumerGroup] = ctx.ConsumerGroup

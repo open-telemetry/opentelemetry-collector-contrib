@@ -52,3 +52,14 @@ azure_functions/missing_binding_encoding:
   event_hub:
     logs:
       - name: logs
+
+azure_functions/duplicate_binding_name:
+  http_config:
+    endpoint: test:123
+  auth: azureauth
+  event_hub:
+    logs:
+      - name: logs
+        encoding: azure_encoding
+      - name: logs
+        encoding: beats_encoding

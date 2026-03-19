@@ -19,7 +19,7 @@ func TestParseMetadata(t *testing.T) {
 		assert.Equal(t, "ns.servicebus.windows.net", m.TriggerPartitionContext.FullyQualifiedNamespace)
 		assert.Equal(t, "logs", m.TriggerPartitionContext.EventHubName)
 		assert.Equal(t, "$Default", m.TriggerPartitionContext.ConsumerGroup)
-		assert.Equal(t, "0", m.TriggerPartitionContext.PartitionId)
+		assert.Equal(t, "0", m.TriggerPartitionContext.PartitionID)
 	})
 
 	t.Run("empty", func(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMetadata_ResourceAttributes(t *testing.T) {
 				FullyQualifiedNamespace: "ns.servicebus.windows.net",
 				EventHubName:            "logs",
 				ConsumerGroup:           "ecf",
-				PartitionId:             "3",
+				PartitionID:             "3",
 			},
 		}
 		attrs := m.ResourceAttributes()

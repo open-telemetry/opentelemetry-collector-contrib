@@ -45,9 +45,14 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.EventHub != nil {
+		seen := make(map[string]struct{}, len(cfg.EventHub.Logs))
 		for i, log := range cfg.EventHub.Logs {
 			if log.Name == "" {
 				errs = append(errs, fmt.Errorf("event_hub.logs[%d].name must be set", i))
+			} else if _, ok := seen[log.Name]; ok {
+				errs = append(errs, fmt.Errorf("event_hub.logs: duplicate binding name %q", log.Name))
+			} else {
+				seen[log.Name] = struct{}{}
 			}
 			if log.Encoding.String() == "" {
 				errs = append(errs, fmt.Errorf("event_hub.logs[%d].encoding must be set", i))

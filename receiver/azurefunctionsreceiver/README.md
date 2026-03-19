@@ -14,16 +14,16 @@
 
 ## Overview
 
-The Azure Functions receiver is an OpenTelemetry Collector receiver that integrates with Azure Functions as a custom handler. It receives logs from Azure Event Hubs via the Azure Functions runtime and converts them to OpenTelemetry format for further processing and export.
+The Azure Functions receiver is an OpenTelemetry Collector receiver that integrates with Azure Functions as a custom handler. It receives logs from Azure Event Hubs via the Azure Functions runtime and converts them to OpenTelemetry format for further processing and export. The receiver is structured by trigger type (e.g. Event Hub); each trigger can expose multiple log bindings with different encodings.
 
 ## How It Works
 
 The receiver is designed to operate as part of an Azure Functions custom handler:
 
 1. Azure Functions runtime consumes events from Azure Event Hubs (e.g. separate hubs for logs and metrics).
-2. The runtime sends HTTP POST requests to the receiver's endpoint `/logs`.
+2. The runtime sends HTTP POST requests to the receiver's endpoints (e.g. `/logs`, `/raw_logs`) according to the configured bindings.
 3. The receiver decodes Azure Functions invoke requests containing Event Hub messages.
-4. Messages are converted to OpenTelemetry format.
+4. Messages are converted to OpenTelemetry format using the encoding extension configured per binding.
 5. Data is forwarded to the configured pipeline consumers.
 
 ## Configuration
@@ -32,12 +32,13 @@ The following receiver configuration parameters are supported.
 
 | Name | Type | Description |
 |------|------|-------------|
-| `http` | confighttp.ServerConfig | **Required.** HTTP server settings (e.g. `endpoint: :9090`). Typically use `FUNCTIONS_CUSTOMHANDLER_PORT`. |
+| `http_config` | confighttp.ServerConfig | **Required.** HTTP server settings (e.g. `endpoint: :9090`). Typically use `FUNCTIONS_CUSTOMHANDLER_PORT`. |
 | `auth` | component.ID | Optional. Component ID of the extension that provides Azure authentication (e.g. token credential). |
-| `logs.encoding` | component.ID | **Required.** Encoding extension ID for unmarshaling log records. |
-| `include_invoke_metadata` | bool | Optional. When true, add Azure Functions invoke metadata to resource attributes. Default: false. |
+| `event_hub` | object | Optional. Event Hub trigger configuration. When set, defines log bindings and metadata behavior. |
+| `event_hub.logs` | list | List of log bindings. Each entry has `name` (binding name; maps to path `/<name>`) and `encoding` (component.ID). Binding names must be unique. |
+| `event_hub.include_metadata` | bool | Optional. When true, add Azure Functions invoke metadata (e.g. Event Hub partition context) to resource attributes. Default: false. |
 
-Required fields must be set for the receiver to start.
+At least one trigger with at least one log binding must be configured for the receiver to register endpoints. Required fields must be set for the receiver to start.
 
 ### Example configuration
 
@@ -45,27 +46,31 @@ Required fields must be set for the receiver to start.
 receivers:
   azure_functions:
     # HTTP server configuration
-    http:
+    http_config:
       endpoint: :${env:FUNCTIONS_CUSTOMHANDLER_PORT:-9090}
 
-    # Logs configuration
-    logs:
-      # Encoding extension ID for log unmarshaling
-      # Must reference an encoding extension defined in the extensions section
-      encoding: azure_encoding
+    # Optional: Azure auth extension
+    auth: azureauth
 
-    # Include Azure Functions invoke metadata in resource attributes
-    # When enabled, adds partition context and system metadata
-    include_invoke_metadata: true
+    # Event Hub trigger: multiple log bindings, each with its own encoding
+    event_hub:
+      logs:
+        - name: logs
+          encoding: azure_encoding
+        - name: raw_logs
+          encoding: azureresourcelogs_encoding
+      include_metadata: true
 
 extensions:
   azureauth:
     # Azure auth extension configuration
   azure_encoding:
     # Encoding extension configuration
+  azureresourcelogs_encoding:
+    # Encoding extension configuration
 
 service:
-  extensions: [azureauth, azure_encoding]
+  extensions: [azureauth, azure_encoding, azureresourcelogs_encoding]
   pipelines:
     logs:
       receivers: [azure_functions]
@@ -74,11 +79,11 @@ service:
 
 ## Supported Signal Decoders
 
-- **Logs** (Primary support) - Logs are decoded using an encoding extension (typically `azure_encoding`) that converts Azure Resource Logs format to OpenTelemetry logs.
+- **Logs** (Primary support) — Logs are decoded using an encoding extension per binding (e.g. `azure_encoding`) that converts the binding payload to OpenTelemetry logs.
 - **Metrics** (Future consideration)
 
 ## Requirements
 
 - Deployed as an Azure Functions custom handler.
 - Azure Functions host configuration (`host.json`) with custom handler settings.
-- Event Hub trigger bindings configured in `function.json`.
+- Event Hub trigger bindings configured in `function.json`; binding names should match the `event_hub.logs[].name` values (e.g. `logs`, `raw_logs`).

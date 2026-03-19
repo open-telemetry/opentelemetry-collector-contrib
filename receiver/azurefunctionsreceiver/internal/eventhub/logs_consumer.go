@@ -5,6 +5,7 @@ package eventhub
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -47,7 +48,7 @@ func (c *LogsConsumer) ConsumeEvents(ctx context.Context, req handler.ParsedRequ
 		}
 	}
 	if merged.LogRecordCount() == 0 {
-		return fmt.Errorf("no logs to consume")
+		return errors.New("no logs to consume")
 	}
 	return c.nextLogs.ConsumeLogs(ctx, merged)
 }
