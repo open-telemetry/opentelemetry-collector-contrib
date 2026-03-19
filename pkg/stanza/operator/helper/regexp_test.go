@@ -12,11 +12,11 @@ import (
 
 func TestMatchValues(t *testing.T) {
 	testCases := []struct {
-		name          string
-		value         string
-		regexStr      string
-		expected      map[string]any
-		expectError   bool
+		name        string
+		value       string
+		regexStr    string
+		expected    map[string]any
+		expectError bool
 	}{
 		{
 			name:        "match with named groups",
