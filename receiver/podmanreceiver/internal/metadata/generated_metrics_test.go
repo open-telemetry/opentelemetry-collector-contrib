@@ -215,9 +215,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("core")
+						coreAttrVal, ok := dp.Attributes().Get("core")
 						assert.True(t, ok)
-						assert.Equal(t, "core-val", attrVal.Str())
+						assert.Equal(t, "core-val", coreAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["container.cpu.usage.percpu"], "Found a duplicate in the metrics slice: container.cpu.usage.percpu")
 						validatedMetrics["container.cpu.usage.percpu"] = true

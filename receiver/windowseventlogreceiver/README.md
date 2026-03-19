@@ -32,6 +32,7 @@ This receiver tails and parses logs from windows event log API using the
 | `resource`                          | {}           | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                    |
 | `operators`                         | []           | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details                                                            |
 | `raw` | false | If false, the body of emitted log records will contain a structured representation of the event. Otherwise, the body will be the original XML string. |
+| `event_data_format` | `map` | Controls the structure of the `event_data` field when `raw` is false. `map` emits a flat map (named elements as direct keys, anonymous elements as `param1`, `param2`, etc.). `array` emits the legacy format with a nested `data` array of single-key maps. |
 | `include_log_record_original` | false | If false, no additional attributes are added. If true, `log.record.original` is added to the attributes, which stores the original XML string according to the configured `suppress_rendering_info` (see below). 
 | `suppress_rendering_info` | false | If false, [additional syscalls](https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtformatmessage#remarks) may be made to retrieve detailed information about the event. Otherwise, some unresolved values may be present in the event. |
 | `exclude_providers`                 | []           | One or more event log providers to exclude from processing.                                                                                                                                                                                    |
@@ -85,6 +86,11 @@ Output entry sample:
         "id": 10,
         "qualifiers": 0
     },
+    "event_data":
+    {
+        "ProcessId": "7924",
+        "Application": "app.exe"
+    },
     "keywords": "[Classic]",
     "level": "Information",
     "message": "Test log",
@@ -98,6 +104,22 @@ Output entry sample:
     "record_id": 12345,
     "system_time": "2022-04-15T15:28:08.898974100Z",
     "task": ""
+}
+```
+
+The `event_data` field format is controlled by the `event_data_format` setting:
+
+**`event_data_format: map`** (default) — Named `<Data>` elements become direct keys (e.g., `event_data.ProcessId`). Anonymous `<Data>` elements (without a `Name` attribute) use numbered keys: `param1`, `param2`, etc. Fields are directly accessible via OTTL: `body["event_data"]["ProcessId"]`.
+
+**`event_data_format: array`** — Preserves the legacy format where data is stored as a nested `data` array of single-key maps:
+```json
+{
+    "event_data": {
+        "data": [
+            {"ProcessId": "7924"},
+            {"Application": "app.exe"}
+        ]
+    }
 }
 ```
 

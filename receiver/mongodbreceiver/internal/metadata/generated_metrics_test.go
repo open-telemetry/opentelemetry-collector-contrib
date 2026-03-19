@@ -304,9 +304,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
+					typeAttrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
+					assert.Equal(t, "hit", typeAttrVal.Str())
 				case "mongodb.collection.count":
 					assert.False(t, validatedMetrics["mongodb.collection.count"], "Found a duplicate in the metrics slice: mongodb.collection.count")
 					validatedMetrics["mongodb.collection.count"] = true
@@ -321,9 +321,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.commands.rate":
 					assert.False(t, validatedMetrics["mongodb.commands.rate"], "Found a duplicate in the metrics slice: mongodb.commands.rate")
 					validatedMetrics["mongodb.commands.rate"] = true
@@ -350,12 +350,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
+					connectionTypeAttrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "active", connectionTypeAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.cursor.count":
 					assert.False(t, validatedMetrics["mongodb.cursor.count"], "Found a duplicate in the metrics slice: mongodb.cursor.count")
 					validatedMetrics["mongodb.cursor.count"] = true
@@ -398,9 +398,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.database.count":
 					assert.False(t, validatedMetrics["mongodb.database.count"], "Found a duplicate in the metrics slice: mongodb.database.count")
 					validatedMetrics["mongodb.database.count"] = true
@@ -441,12 +441,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
+					operationAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "insert", operationAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.extent.count":
 					assert.False(t, validatedMetrics["mongodb.extent.count"], "Found a duplicate in the metrics slice: mongodb.extent.count")
 					validatedMetrics["mongodb.extent.count"] = true
@@ -461,9 +461,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.flushes.rate":
 					assert.False(t, validatedMetrics["mongodb.flushes.rate"], "Found a duplicate in the metrics slice: mongodb.flushes.rate")
 					validatedMetrics["mongodb.flushes.rate"] = true
@@ -528,12 +528,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("collection")
+					collectionAttrVal, ok := dp.Attributes().Get("collection")
 					assert.True(t, ok)
-					assert.Equal(t, "collection-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "collection-val", collectionAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.index.count":
 					assert.False(t, validatedMetrics["mongodb.index.count"], "Found a duplicate in the metrics slice: mongodb.index.count")
 					validatedMetrics["mongodb.index.count"] = true
@@ -548,9 +548,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.index.size":
 					assert.False(t, validatedMetrics["mongodb.index.size"], "Found a duplicate in the metrics slice: mongodb.index.size")
 					validatedMetrics["mongodb.index.size"] = true
@@ -565,9 +565,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.inserts.rate":
 					assert.False(t, validatedMetrics["mongodb.inserts.rate"], "Found a duplicate in the metrics slice: mongodb.inserts.rate")
 					validatedMetrics["mongodb.inserts.rate"] = true
@@ -594,15 +594,15 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
+					lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
+					assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+					lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "shared", lockModeAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.lock.acquire.time":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.time"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.time")
 					validatedMetrics["mongodb.lock.acquire.time"] = true
@@ -617,15 +617,15 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
+					lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
+					assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+					lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "shared", lockModeAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.lock.acquire.wait_count":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.wait_count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.wait_count")
 					validatedMetrics["mongodb.lock.acquire.wait_count"] = true
@@ -640,15 +640,15 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
+					lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
+					assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+					lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "shared", lockModeAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.lock.deadlock.count":
 					assert.False(t, validatedMetrics["mongodb.lock.deadlock.count"], "Found a duplicate in the metrics slice: mongodb.lock.deadlock.count")
 					validatedMetrics["mongodb.lock.deadlock.count"] = true
@@ -663,15 +663,15 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
+					lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
+					assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+					lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "shared", lockModeAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.memory.usage":
 					assert.False(t, validatedMetrics["mongodb.memory.usage"], "Found a duplicate in the metrics slice: mongodb.memory.usage")
 					validatedMetrics["mongodb.memory.usage"] = true
@@ -686,12 +686,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
+					memoryTypeAttrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "resident", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
+					assert.Equal(t, "resident", memoryTypeAttrVal.Str())
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.network.io.receive":
 					assert.False(t, validatedMetrics["mongodb.network.io.receive"], "Found a duplicate in the metrics slice: mongodb.network.io.receive")
 					validatedMetrics["mongodb.network.io.receive"] = true
@@ -748,9 +748,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.operation.count":
 					assert.False(t, validatedMetrics["mongodb.operation.count"], "Found a duplicate in the metrics slice: mongodb.operation.count")
 					validatedMetrics["mongodb.operation.count"] = true
@@ -765,9 +765,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
+					operationAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
+					assert.Equal(t, "insert", operationAttrVal.Str())
 				case "mongodb.operation.latency.time":
 					assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
 					validatedMetrics["mongodb.operation.latency.time"] = true
@@ -780,9 +780,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
+					operationLatencyAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.Equal(t, "read", operationLatencyAttrVal.Str())
 				case "mongodb.operation.repl.count":
 					assert.False(t, validatedMetrics["mongodb.operation.repl.count"], "Found a duplicate in the metrics slice: mongodb.operation.repl.count")
 					validatedMetrics["mongodb.operation.repl.count"] = true
@@ -797,9 +797,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
+					operationAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
+					assert.Equal(t, "insert", operationAttrVal.Str())
 				case "mongodb.operation.time":
 					assert.False(t, validatedMetrics["mongodb.operation.time"], "Found a duplicate in the metrics slice: mongodb.operation.time")
 					validatedMetrics["mongodb.operation.time"] = true
@@ -814,9 +814,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
+					operationAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
+					assert.Equal(t, "insert", operationAttrVal.Str())
 				case "mongodb.page_faults":
 					assert.False(t, validatedMetrics["mongodb.page_faults"], "Found a duplicate in the metrics slice: mongodb.page_faults")
 					validatedMetrics["mongodb.page_faults"] = true
@@ -943,9 +943,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
+					dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
 					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
 				case "mongodb.updates.rate":
 					assert.False(t, validatedMetrics["mongodb.updates.rate"], "Found a duplicate in the metrics slice: mongodb.updates.rate")
 					validatedMetrics["mongodb.updates.rate"] = true

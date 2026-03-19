@@ -5,21 +5,21 @@ $defs:
     type: object
     properties:
       system.cpu.load_average.15m:
-        description: "SystemCPULoadAverage15mConfig provides config for the system.cpu.load_average.15m metric."
+        description: "SystemCPULoadAverage15mMetricConfig provides config for the system.cpu.load_average.15m metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.cpu.load_average.1m:
-        description: "SystemCPULoadAverage1mConfig provides config for the system.cpu.load_average.1m metric."
+        description: "SystemCPULoadAverage1mMetricConfig provides config for the system.cpu.load_average.1m metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       system.cpu.load_average.5m:
-        description: "SystemCPULoadAverage5mConfig provides config for the system.cpu.load_average.5m metric."
+        description: "SystemCPULoadAverage5mMetricConfig provides config for the system.cpu.load_average.5m metric."
         type: object
         properties:
           enabled:
