@@ -152,7 +152,7 @@ func TestLoadConfig(t *testing.T) {
 						}
 						batch.FlushTimeout = 200 * time.Millisecond
 						batch.MinSize = 8192
-						batch.Partition.MetadataKeys = []string{"metadata_key", "another_key"}
+						batch.Partition.MetadataKeys = []string{"metadata_key", "another_key", "kafka_topic"}
 						return batch
 					}())
 					return queue
@@ -160,20 +160,24 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: configkafka.NewDefaultClientConfig(),
 				Producer:     configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
-					Topic:    "otlp_logs",
-					Encoding: "otlp_proto",
+					Topic:                "otlp_logs",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
 				},
 				Metrics: SignalConfig{
-					Topic:    "otlp_metrics",
-					Encoding: "otlp_proto",
+					Topic:                "otlp_metrics",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
 				},
 				Traces: SignalConfig{
-					Topic:    "otlp_spans",
-					Encoding: "otlp_proto",
+					Topic:                "otlp_spans",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
 				},
 				Profiles: SignalConfig{
-					Topic:    "otlp_profiles",
-					Encoding: "otlp_proto",
+					Topic:                "otlp_profiles",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
 				},
 				IncludeMetadataKeys: []string{"metadata_key"},
 			},
@@ -209,7 +213,7 @@ func TestLoadConfigFailed(t *testing.T) {
 		},
 		{
 			id:            component.NewIDWithName(metadata.Type, ""),
-			errorContains: `logs::topic_from_metadata_key: topic_from_metadata_key must be present in include_metadata_keys: "missing_metadata_key" not found in include_metadata_keys=[]`,
+			errorContains: `logs::topic_from_metadata_key: topic_from_metadata_key must be present in sending_queue::batch::partition::metadata_keys`,
 			configFile:    "config-topic-from-metadata-failed.yaml",
 		},
 		{
