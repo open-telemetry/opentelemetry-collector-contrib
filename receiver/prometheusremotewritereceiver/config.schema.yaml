@@ -1,4 +1,7 @@
 description: Config holds common fields and embedded protocol-specific configurations
 type: object
+properties:
+  trim_metric_suffixes:
+    type: boolean
 allOf:
   - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
