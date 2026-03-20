@@ -21,6 +21,7 @@ import (
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
@@ -39,15 +40,18 @@ type Container struct {
 // A persistent streaming connection is maintained per container so that the latest stats are
 // always available without opening a new connection on every scrape.
 type Client struct {
-	client               *docker.Client
-	config               *Config
-	containers           map[string]Container
-	containersLock       sync.Mutex
-	excludedImageMatcher *stringMatcher
-	logger               *zap.Logger
-	latestStats          sync.Map
-	streamCancels        map[string]context.CancelFunc
-	streamCancelsLock    sync.Mutex
+	client                     *docker.Client
+	config                     *Config
+	containers                 map[string]Container
+	containersLock             sync.Mutex
+	excludedImageMatcher       *stringMatcher
+	logger                     *zap.Logger
+	streamLatestStats          sync.Map
+	streamContainerCancels     map[string]context.CancelFunc
+	streamContainerCancelsLock sync.Mutex
+	streamErrorGroup           *errgroup.Group
+	streamClientCtx            context.Context
+	streamClientCancel         context.CancelFunc
 }
 
 func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
@@ -101,14 +105,17 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 	}
 
 	dc := &Client{
-		client:               client,
-		config:               config,
-		logger:               logger,
-		containers:           make(map[string]Container),
-		containersLock:       sync.Mutex{},
-		excludedImageMatcher: excludedImageMatcher,
-		streamCancels:        make(map[string]context.CancelFunc),
+		client:                 client,
+		config:                 config,
+		logger:                 logger,
+		containers:             make(map[string]Container),
+		containersLock:         sync.Mutex{},
+		excludedImageMatcher:   excludedImageMatcher,
+		streamContainerCancels: make(map[string]context.CancelFunc),
 	}
+
+	dc.streamErrorGroup = &errgroup.Group{}
+	dc.streamClientCtx, dc.streamClientCancel = context.WithCancel(context.Background())
 
 	return dc, nil
 }
@@ -246,7 +253,7 @@ type cachedStats struct {
 // cached entry is older than maxAge (pass 0 to disable expiry).
 // Only populated when stream_stats is enabled.
 func (dc *Client) LatestContainerStats(containerID string, maxAge time.Duration) (*ctypes.StatsResponse, bool) {
-	val, ok := dc.latestStats.Load(containerID)
+	val, ok := dc.streamLatestStats.Load(containerID)
 	if !ok {
 		return nil, false
 	}
@@ -260,26 +267,28 @@ func (dc *Client) LatestContainerStats(containerID string, maxAge time.Duration)
 // startContainerStream opens a persistent streaming stats connection for the container
 // and continuously updates the cached latest stats in the background.
 // Cancels any existing stream for that container first.
-func (dc *Client) startContainerStream(ctx context.Context, containerID string) {
-	dc.streamCancelsLock.Lock()
-	if cancel, ok := dc.streamCancels[containerID]; ok {
+func (dc *Client) startContainerStream(containerID string) {
+	dc.streamContainerCancelsLock.Lock()
+	if cancel, ok := dc.streamContainerCancels[containerID]; ok {
 		cancel()
 	}
-	streamCtx, cancel := context.WithCancel(ctx)
-	dc.streamCancels[containerID] = cancel
-	dc.streamCancelsLock.Unlock()
+	streamCtx, cancel := context.WithCancel(dc.streamClientCtx)
+	dc.streamContainerCancels[containerID] = cancel
+	dc.streamContainerCancelsLock.Unlock()
 
-	go dc.runStatsStream(streamCtx, containerID)
+	dc.streamErrorGroup.Go(func() error {
+		return dc.runStatsStream(streamCtx, containerID)
+	})
 }
 
 // runStatsStream opens a Docker stats stream and keeps the latest stats updated.
 // Reconnects automatically on transient errors. Stops when ctx is cancelled.
-func (dc *Client) runStatsStream(ctx context.Context, containerID string) {
+func (dc *Client) runStatsStream(ctx context.Context, containerID string) error {
 	for {
 		resp, err := dc.client.ContainerStats(ctx, containerID, true)
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				return
+				return nil
 			}
 			if cerrdefs.IsNotFound(err) {
 				dc.logger.Debug(
@@ -287,7 +296,7 @@ func (dc *Client) runStatsStream(ctx context.Context, containerID string) {
 					zap.String("id", containerID),
 				)
 				dc.RemoveContainer(containerID)
-				return
+				return nil
 			}
 			dc.logger.Warn(
 				"Could not open stats stream for container, retrying",
@@ -297,7 +306,7 @@ func (dc *Client) runStatsStream(ctx context.Context, containerID string) {
 			select {
 			case <-time.After(3 * time.Second):
 			case <-ctx.Done():
-				return
+				return nil
 			}
 			continue
 		}
@@ -317,7 +326,7 @@ func (dc *Client) runStatsStream(ctx context.Context, containerID string) {
 				}
 				break
 			}
-			dc.latestStats.Store(containerID, &cachedStats{stats: &stats, recorded: time.Now()})
+			dc.streamLatestStats.Store(containerID, &cachedStats{stats: &stats, recorded: time.Now()})
 		}
 	}
 }
@@ -399,7 +408,7 @@ EVENT_LOOP:
 // running and not excluded.
 func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*ctypes.InspectResponse, bool) {
 	if container, ok := dc.inspectedContainerIsOfInterest(ctx, cid); ok {
-		dc.persistContainer(ctx, container)
+		dc.persistContainer(container)
 		return container, ok
 	}
 	return nil, false
@@ -423,7 +432,7 @@ func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string
 	return nil, false
 }
 
-func (dc *Client) persistContainer(ctx context.Context, containerJSON *ctypes.InspectResponse) {
+func (dc *Client) persistContainer(containerJSON *ctypes.InspectResponse) {
 	if containerJSON == nil {
 		return
 	}
@@ -444,25 +453,33 @@ func (dc *Client) persistContainer(ctx context.Context, containerJSON *ctypes.In
 	dc.containersLock.Unlock()
 
 	if dc.config.StreamStats {
-		dc.startContainerStream(ctx, cid)
+		dc.startContainerStream(cid)
 	}
 }
 
 func (dc *Client) RemoveContainer(cid string) {
-	dc.streamCancelsLock.Lock()
-	if cancel, ok := dc.streamCancels[cid]; ok {
-		cancel()
-		delete(dc.streamCancels, cid)
-	}
-	dc.streamCancelsLock.Unlock()
+	if dc.config.StreamStats {
+		dc.streamContainerCancelsLock.Lock()
+		if cancel, ok := dc.streamContainerCancels[cid]; ok {
+			cancel()
+			delete(dc.streamContainerCancels, cid)
+		}
+		dc.streamContainerCancelsLock.Unlock()
 
-	dc.latestStats.Delete(cid)
+		dc.streamLatestStats.Delete(cid)
+	}
 
 	dc.containersLock.Lock()
 	delete(dc.containers, cid)
 	dc.containersLock.Unlock()
 
 	dc.logger.Debug("Removed container from stores.", zap.String("id", cid))
+}
+
+// Close shuts down the client and waits for all background streams to finish.
+func (dc *Client) Close() error {
+	dc.streamClientCancel()
+	return dc.streamErrorGroup.Wait()
 }
 
 func (dc *Client) shouldBeExcluded(image string) bool {

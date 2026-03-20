@@ -59,6 +59,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	expectedError := "context deadline exceeded"
 
@@ -67,9 +68,11 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.LoadContainerList(t.Context())
 	assert.ErrorContains(t, err, expectedError)
 	observed, logs := observer.New(zapcore.WarnLevel)
+	cli.Close() // close the first one
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	cnt, ofInterest := cli.inspectedContainerIsOfInterest(t.Context(), "SomeContainerId")
 	assert.False(t, ofInterest)
@@ -100,15 +103,18 @@ func TestFetchingTimeouts(t *testing.T) {
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	expectedError := "context deadline exceeded"
 
 	shouldHaveTaken := time.Now().Add(50 * time.Millisecond).UnixNano()
 
 	observed, logs := observer.New(zapcore.WarnLevel)
+	cli.Close()
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		t.Context(),
@@ -213,11 +219,12 @@ func TestStatsStreamUpdatesLatestStats(t *testing.T) {
 
 	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
 	require.NoError(t, err)
+	defer cli.Close()
 
-	ctx, cancel := context.WithCancel(t.Context())
+	_, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	cli.startContainerStream(ctx, containerID)
+	cli.startContainerStream(containerID)
 
 	require.Eventually(t, func() bool {
 		_, ok := cli.LatestContainerStats(containerID, 0)
@@ -244,11 +251,12 @@ func TestStatsStreamHandlesInvalidJSON(t *testing.T) {
 
 	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.New(observed))
 	require.NoError(t, err)
+	defer cli.Close()
 
-	ctx, cancel := context.WithCancel(t.Context())
+	_, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	cli.startContainerStream(ctx, containerID)
+	cli.startContainerStream(containerID)
 
 	require.Eventually(t, func() bool {
 		for _, l := range logs.All() {
@@ -270,6 +278,7 @@ func TestLatestContainerStatsMaxAge(t *testing.T) {
 	defer srv.Close()
 	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
 	require.NoError(t, err)
+	defer cli.Close()
 
 	freshStats := &cachedStats{
 		stats:    &ctypes.StatsResponse{},
@@ -281,25 +290,25 @@ func TestLatestContainerStatsMaxAge(t *testing.T) {
 	}
 
 	t.Run("no expiry when maxAge is zero", func(t *testing.T) {
-		cli.latestStats.Store(containerID, staleStats)
+		cli.streamLatestStats.Store(containerID, staleStats)
 		_, ok := cli.LatestContainerStats(containerID, 0)
 		assert.True(t, ok)
 	})
 
 	t.Run("fresh entry within maxAge is returned", func(t *testing.T) {
-		cli.latestStats.Store(containerID, freshStats)
+		cli.streamLatestStats.Store(containerID, freshStats)
 		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
 		assert.True(t, ok)
 	})
 
 	t.Run("stale entry beyond maxAge is a miss", func(t *testing.T) {
-		cli.latestStats.Store(containerID, staleStats)
+		cli.streamLatestStats.Store(containerID, staleStats)
 		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
 		assert.False(t, ok)
 	})
 
 	t.Run("missing entry is a miss", func(t *testing.T) {
-		cli.latestStats.Delete(containerID)
+		cli.streamLatestStats.Delete(containerID)
 		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
 		assert.False(t, ok)
 	})
@@ -326,6 +335,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 	cli, err := NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	ctx, cancel := context.WithCancel(t.Context())
 	go cli.ContainerEventLoop(ctx)

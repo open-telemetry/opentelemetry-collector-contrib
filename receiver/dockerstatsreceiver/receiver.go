@@ -82,6 +82,9 @@ func (r *metricsReceiver) shutdown(context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}
+	if r.client != nil {
+		return r.client.Close()
+	}
 	return nil
 }
 
