@@ -141,9 +141,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cpu")
+						cpuAttrVal, ok := dp.Attributes().Get("cpu")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", attrVal.Str())
+						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.frequency"], "Found a duplicate in the metrics slice: system.cpu.frequency")
 						validatedMetrics["system.cpu.frequency"] = true
@@ -211,12 +211,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cpu")
+						cpuAttrVal, ok := dp.Attributes().Get("cpu")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
+						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "idle", attrVal.Str())
+						assert.Equal(t, "idle", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
 						validatedMetrics["system.cpu.time"] = true
@@ -258,12 +258,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cpu")
+						cpuAttrVal, ok := dp.Attributes().Get("cpu")
 						assert.True(t, ok)
-						assert.Equal(t, "cpu-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
+						assert.Equal(t, "cpu-val", cpuAttrVal.Str())
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "idle", attrVal.Str())
+						assert.Equal(t, "idle", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.cpu.utilization"], "Found a duplicate in the metrics slice: system.cpu.utilization")
 						validatedMetrics["system.cpu.utilization"] = true

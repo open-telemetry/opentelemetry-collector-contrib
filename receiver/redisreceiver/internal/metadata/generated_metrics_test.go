@@ -538,9 +538,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cluster_state")
+						clusterStateAttrVal, ok := dp.Attributes().Get("cluster_state")
 						assert.True(t, ok)
-						assert.Equal(t, "ok", attrVal.Str())
+						assert.Equal(t, "ok", clusterStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.cluster.state"], "Found a duplicate in the metrics slice: redis.cluster.state")
 						validatedMetrics["redis.cluster.state"] = true
@@ -620,9 +620,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cmd")
+						cmdAttrVal, ok := dp.Attributes().Get("cmd")
 						assert.True(t, ok)
-						assert.Equal(t, "cmd-val", attrVal.Str())
+						assert.Equal(t, "cmd-val", cmdAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.cmd.calls"], "Found a duplicate in the metrics slice: redis.cmd.calls")
 						validatedMetrics["redis.cmd.calls"] = true
@@ -662,12 +662,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("cmd")
+						cmdAttrVal, ok := dp.Attributes().Get("cmd")
 						assert.True(t, ok)
-						assert.Equal(t, "cmd-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("percentile")
+						assert.Equal(t, "cmd-val", cmdAttrVal.Str())
+						percentileAttrVal, ok := dp.Attributes().Get("percentile")
 						assert.True(t, ok)
-						assert.Equal(t, "p50", attrVal.Str())
+						assert.Equal(t, "p50", percentileAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.cmd.latency"], "Found a duplicate in the metrics slice: redis.cmd.latency")
 						validatedMetrics["redis.cmd.latency"] = true
@@ -709,9 +709,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cmd")
+						cmdAttrVal, ok := dp.Attributes().Get("cmd")
 						assert.True(t, ok)
-						assert.Equal(t, "cmd-val", attrVal.Str())
+						assert.Equal(t, "cmd-val", cmdAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.cmd.usec"], "Found a duplicate in the metrics slice: redis.cmd.usec")
 						validatedMetrics["redis.cmd.usec"] = true
@@ -807,9 +807,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("state")
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "sys", attrVal.Str())
+						assert.Equal(t, "sys", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.cpu.time"], "Found a duplicate in the metrics slice: redis.cpu.time")
 						validatedMetrics["redis.cpu.time"] = true
@@ -849,9 +849,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("db")
+						dbAttrVal, ok := dp.Attributes().Get("db")
 						assert.True(t, ok)
-						assert.Equal(t, "db-val", attrVal.Str())
+						assert.Equal(t, "db-val", dbAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.db.avg_ttl"], "Found a duplicate in the metrics slice: redis.db.avg_ttl")
 						validatedMetrics["redis.db.avg_ttl"] = true
@@ -889,9 +889,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("db")
+						dbAttrVal, ok := dp.Attributes().Get("db")
 						assert.True(t, ok)
-						assert.Equal(t, "db-val", attrVal.Str())
+						assert.Equal(t, "db-val", dbAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.db.expires"], "Found a duplicate in the metrics slice: redis.db.expires")
 						validatedMetrics["redis.db.expires"] = true
@@ -929,9 +929,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("db")
+						dbAttrVal, ok := dp.Attributes().Get("db")
 						assert.True(t, ok)
-						assert.Equal(t, "db-val", attrVal.Str())
+						assert.Equal(t, "db-val", dbAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.db.keys"], "Found a duplicate in the metrics slice: redis.db.keys")
 						validatedMetrics["redis.db.keys"] = true
@@ -1137,9 +1137,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("mode")
+						modeAttrVal, ok := dp.Attributes().Get("mode")
 						assert.True(t, ok)
-						assert.Equal(t, "cluster", attrVal.Str())
+						assert.Equal(t, "cluster", modeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.mode"], "Found a duplicate in the metrics slice: redis.mode")
 						validatedMetrics["redis.mode"] = true
@@ -1257,9 +1257,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("role")
+						roleAttrVal, ok := dp.Attributes().Get("role")
 						assert.True(t, ok)
-						assert.Equal(t, "replica", attrVal.Str())
+						assert.Equal(t, "replica", roleAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["redis.role"], "Found a duplicate in the metrics slice: redis.role")
 						validatedMetrics["redis.role"] = true
