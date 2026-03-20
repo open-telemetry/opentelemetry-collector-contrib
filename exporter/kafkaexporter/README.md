@@ -98,7 +98,7 @@ The following settings can be optionally configured:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
-  - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
+  - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes, calculated before compression.
   - `required_acks` (default = 1) controls when a message is regarded as transmitted. <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks>
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type>
   - `compression_params`
