@@ -1,5 +1,9 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeLogs:
       - logRecords:
           - attributes:

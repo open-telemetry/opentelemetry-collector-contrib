@@ -4,6 +4,9 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: SAMBALAM-M-P4X5:5432
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -217,6 +220,9 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: SAMBALAM-M-P4X5:5432
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -380,6 +386,9 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: SAMBALAM-M-P4X5:5432
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -543,6 +552,9 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: SAMBALAM-M-P4X5:5432
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -709,6 +721,9 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: SAMBALAM-M-P4X5:5432
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -746,6 +761,9 @@ resourceMetrics:
         - key: service.instance.id
           value:
             stringValue: SAMBALAM-M-P4X5:5432
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.

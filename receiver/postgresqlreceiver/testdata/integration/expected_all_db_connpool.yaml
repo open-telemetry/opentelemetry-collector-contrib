@@ -4,6 +4,9 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: postgres
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -164,6 +167,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.table2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -324,6 +330,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.table1
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -481,6 +490,9 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -644,6 +656,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table1_pkey
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -678,6 +693,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: table2_pkey
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -709,6 +727,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.test2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -869,6 +890,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: public.test1
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1026,6 +1050,9 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -1189,6 +1216,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: test1_pkey
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1223,6 +1253,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: test2_pkey
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1257,6 +1290,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otelindex
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1291,6 +1327,9 @@ resourceMetrics:
         - key: postgresql.index.name
           value:
             stringValue: otel2index
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1314,7 +1353,11 @@ resourceMetrics:
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
-  - resource: {}
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.

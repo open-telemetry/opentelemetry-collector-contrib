@@ -1,5 +1,9 @@
 resourceMetrics:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -194,6 +198,9 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: Number of times disk blocks were found already in the buffer cache. 
@@ -342,6 +349,9 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: otel2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: Number of times disk blocks were found already in the buffer cache. 
@@ -490,6 +500,9 @@ resourceMetrics:
         - key: postgresql.database.name
           value:
             stringValue: postgres
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of backends.
@@ -653,6 +666,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -816,6 +832,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -979,6 +998,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: test1
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1142,6 +1164,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: test2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of blocks read.
@@ -1308,6 +1333,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table1
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1345,6 +1373,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: table2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1382,6 +1413,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: test2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1419,6 +1453,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: test1
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1456,6 +1493,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: test1
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
@@ -1493,6 +1533,9 @@ resourceMetrics:
         - key: postgresql.table.name
           value:
             stringValue: test2
+        - key: service.name
+          value:
+            stringValue: postgresql
     scopeMetrics:
       - metrics:
           - description: The number of index scans on a table.
