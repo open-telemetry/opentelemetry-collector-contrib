@@ -60,7 +60,7 @@ type Reader struct {
 	acquireFSLock          bool
 	maxBatchSize           int
 	// decompressedBytesToSkip tracks the number of bytes in a decompressed stream
-	// that have already been consumed. When a plaintext file is rotated and compressed,
+	// that have already been consumed. When a plaintext file is compressed,
 	// the gzip file must be decompressed from byte 0, and this value is used to skip
 	// past previously processed content so only new lines are emitted.
 	decompressedBytesToSkip int64
