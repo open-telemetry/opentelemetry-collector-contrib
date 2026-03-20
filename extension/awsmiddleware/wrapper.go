@@ -21,7 +21,7 @@ type (
 func namedRequestHandler(handler RequestHandler) request.NamedHandler {
 	return request.NamedHandler{Name: handler.ID(), Fn: func(r *request.Request) {
 		ctx := mustRequestID(r.Context())
-		ctx = setOperationName(ctx, r.Operation.Name)
+		ctx = SetOperationName(ctx, r.Operation.Name)
 		r.SetContext(ctx)
 		handler.HandleRequest(ctx, r.HTTPRequest)
 	}}
@@ -43,7 +43,7 @@ func (r requestMiddleware) HandleBuild(ctx context.Context, in middleware.BuildI
 	req, ok := in.Request.(*http.Request)
 	if ok {
 		ctx = mustRequestID(ctx)
-		ctx = setOperationName(ctx, sdkmiddleware.GetOperationName(ctx))
+		ctx = SetOperationName(ctx, sdkmiddleware.GetOperationName(ctx))
 		r.HandleRequest(ctx, req.Request)
 	}
 	return next.HandleBuild(ctx, in)
@@ -81,14 +81,16 @@ func mustRequestID(ctx context.Context) context.Context {
 	if requestID != "" {
 		return ctx
 	}
-	return setRequestID(ctx, uuid.NewString())
+	return SetRequestID(ctx, uuid.NewString())
 }
 
-func setRequestID(ctx context.Context, id string) context.Context {
+// SetRequestID stores a request ID on the context.
+func SetRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDKey{}, id)
 }
 
-func setOperationName(ctx context.Context, name string) context.Context {
+// SetOperationName stores the service operation metadata on the context.
+func SetOperationName(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, operationNameKey{}, name)
 }
 
