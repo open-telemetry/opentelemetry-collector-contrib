@@ -617,10 +617,17 @@ func TestTranslateMountpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.WithValue(t.Context(), common.EnvKey, tt.env)
+			env := make(common.EnvMap, len(tt.env))
+			for k, v := range tt.env {
+				env[k] = filepath.FromSlash(v)
+			}
+			ctx := context.WithValue(t.Context(), common.EnvKey, env)
 
-			result := translateMountpoint(ctx, tt.rootPath, tt.mountpoint)
-			assert.Equal(t, tt.expected, result)
+			// translateMountpoint() runs conditionally filepath.Join(), which runs filepath.Clean(),
+			// which replaces / with the platform-specific path separator.
+			// Therefore, use filepath.FromSlash() here to account for differences in path separator between platforms.
+			result := translateMountpoint(ctx, filepath.FromSlash(tt.rootPath), filepath.FromSlash(tt.mountpoint))
+			assert.Equal(t, filepath.FromSlash(tt.expected), result)
 		})
 	}
 }
