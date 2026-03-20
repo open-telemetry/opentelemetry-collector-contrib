@@ -4,41 +4,41 @@ $defs:
     description: MetricsConfig provides config for interfaces metrics.
     type: object
     properties:
-    system.network.errors:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.network.interface.status:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.network.io:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.network.packet.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.network.packet.dropped:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      system.network.errors:
+        description: "SystemNetworkErrorsMetricConfig provides config for the system.network.errors metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.network.interface.status:
+        description: "SystemNetworkInterfaceStatusMetricConfig provides config for the system.network.interface.status metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.network.io:
+        description: "SystemNetworkIoMetricConfig provides config for the system.network.io metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.network.packet.count:
+        description: "SystemNetworkPacketCountMetricConfig provides config for the system.network.packet.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.network.packet.dropped:
+        description: "SystemNetworkPacketDroppedMetricConfig provides config for the system.network.packet.dropped metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for interfaces resource attributes.
     type: object

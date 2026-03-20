@@ -4,13 +4,13 @@ $defs:
     description: MetricsConfig provides config for ntp metrics.
     type: object
     properties:
-    ntp.offset:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      ntp.offset:
+        description: "NtpOffsetMetricConfig provides config for the ntp.offset metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for ntp resource attributes.
     type: object

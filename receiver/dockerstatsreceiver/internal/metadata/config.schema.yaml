@@ -4,503 +4,807 @@ $defs:
     description: MetricsConfig provides config for docker_stats metrics.
     type: object
     properties:
-    container.blockio.io_merged_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.blockio.io_queued_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.blockio.io_service_bytes_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.blockio.io_service_time_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.blockio.io_serviced_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.blockio.io_time_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.blockio.io_wait_time_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.blockio.sectors_recursive:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.logical.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.shares:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.throttling_data.periods:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.throttling_data.throttled_periods:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.throttling_data.throttled_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.usage.kernelmode:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.cpu.usage.percpu:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.usage.system:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.cpu.usage.total:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.cpu.usage.usermode:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.cpu.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.active_anon:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.active_file:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.anon:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.cache:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.dirty:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.fails:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.file:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.hierarchical_memory_limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.hierarchical_memsw_limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.inactive_anon:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.inactive_file:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.mapped_file:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.percent:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.pgfault:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.pgmajfault:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.pgpgin:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.pgpgout:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.rss:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.rss_huge:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_active_anon:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_active_file:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_cache:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.total_dirty:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_inactive_anon:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_inactive_file:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_mapped_file:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_pgfault:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_pgmajfault:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_pgpgin:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_pgpgout:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_rss:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_rss_huge:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_unevictable:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.total_writeback:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.unevictable:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.usage.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.usage.max:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.memory.usage.total:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.writeback:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.network.io.usage.rx_bytes:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.network.io.usage.rx_dropped:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.network.io.usage.rx_errors:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.network.io.usage.rx_packets:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.network.io.usage.tx_bytes:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.network.io.usage.tx_dropped:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.network.io.usage.tx_errors:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.network.io.usage.tx_packets:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.pids.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.pids.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.restarts:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    container.uptime:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
+      container.blockio.io_merged_recursive:
+        description: "ContainerBlockioIoMergedRecursiveMetricConfig provides config for the container.blockio.io_merged_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.blockio.io_queued_recursive:
+        description: "ContainerBlockioIoQueuedRecursiveMetricConfig provides config for the container.blockio.io_queued_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.blockio.io_service_bytes_recursive:
+        description: "ContainerBlockioIoServiceBytesRecursiveMetricConfig provides config for the container.blockio.io_service_bytes_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.blockio.io_service_time_recursive:
+        description: "ContainerBlockioIoServiceTimeRecursiveMetricConfig provides config for the container.blockio.io_service_time_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.blockio.io_serviced_recursive:
+        description: "ContainerBlockioIoServicedRecursiveMetricConfig provides config for the container.blockio.io_serviced_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.blockio.io_time_recursive:
+        description: "ContainerBlockioIoTimeRecursiveMetricConfig provides config for the container.blockio.io_time_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.blockio.io_wait_time_recursive:
+        description: "ContainerBlockioIoWaitTimeRecursiveMetricConfig provides config for the container.blockio.io_wait_time_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.blockio.sectors_recursive:
+        description: "ContainerBlockioSectorsRecursiveMetricConfig provides config for the container.blockio.sectors_recursive metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "device_major"
+                - "device_minor"
+                - "operation"
+            default:
+              - "device_major"
+              - "device_minor"
+              - "operation"
+      container.cpu.limit:
+        description: "ContainerCPULimitMetricConfig provides config for the container.cpu.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.cpu.logical.count:
+        description: "ContainerCPULogicalCountMetricConfig provides config for the container.cpu.logical.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.cpu.shares:
+        description: "ContainerCPUSharesMetricConfig provides config for the container.cpu.shares metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.cpu.throttling_data.periods:
+        description: "ContainerCPUThrottlingDataPeriodsMetricConfig provides config for the container.cpu.throttling_data.periods metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.cpu.throttling_data.throttled_periods:
+        description: "ContainerCPUThrottlingDataThrottledPeriodsMetricConfig provides config for the container.cpu.throttling_data.throttled_periods metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.cpu.throttling_data.throttled_time:
+        description: "ContainerCPUThrottlingDataThrottledTimeMetricConfig provides config for the container.cpu.throttling_data.throttled_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.cpu.usage.kernelmode:
+        description: "ContainerCPUUsageKernelmodeMetricConfig provides config for the container.cpu.usage.kernelmode metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.cpu.usage.percpu:
+        description: "ContainerCPUUsagePercpuMetricConfig provides config for the container.cpu.usage.percpu metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "core"
+            default:
+              - "core"
+      container.cpu.usage.system:
+        description: "ContainerCPUUsageSystemMetricConfig provides config for the container.cpu.usage.system metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.cpu.usage.total:
+        description: "ContainerCPUUsageTotalMetricConfig provides config for the container.cpu.usage.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.cpu.usage.usermode:
+        description: "ContainerCPUUsageUsermodeMetricConfig provides config for the container.cpu.usage.usermode metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.cpu.utilization:
+        description: "ContainerCPUUtilizationMetricConfig provides config for the container.cpu.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.active_anon:
+        description: "ContainerMemoryActiveAnonMetricConfig provides config for the container.memory.active_anon metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.active_file:
+        description: "ContainerMemoryActiveFileMetricConfig provides config for the container.memory.active_file metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.anon:
+        description: "ContainerMemoryAnonMetricConfig provides config for the container.memory.anon metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.cache:
+        description: "ContainerMemoryCacheMetricConfig provides config for the container.memory.cache metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.dirty:
+        description: "ContainerMemoryDirtyMetricConfig provides config for the container.memory.dirty metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.fails:
+        description: "ContainerMemoryFailsMetricConfig provides config for the container.memory.fails metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.file:
+        description: "ContainerMemoryFileMetricConfig provides config for the container.memory.file metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.hierarchical_memory_limit:
+        description: "ContainerMemoryHierarchicalMemoryLimitMetricConfig provides config for the container.memory.hierarchical_memory_limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.hierarchical_memsw_limit:
+        description: "ContainerMemoryHierarchicalMemswLimitMetricConfig provides config for the container.memory.hierarchical_memsw_limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.inactive_anon:
+        description: "ContainerMemoryInactiveAnonMetricConfig provides config for the container.memory.inactive_anon metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.inactive_file:
+        description: "ContainerMemoryInactiveFileMetricConfig provides config for the container.memory.inactive_file metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.mapped_file:
+        description: "ContainerMemoryMappedFileMetricConfig provides config for the container.memory.mapped_file metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.percent:
+        description: "ContainerMemoryPercentMetricConfig provides config for the container.memory.percent metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.pgfault:
+        description: "ContainerMemoryPgfaultMetricConfig provides config for the container.memory.pgfault metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.pgmajfault:
+        description: "ContainerMemoryPgmajfaultMetricConfig provides config for the container.memory.pgmajfault metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.pgpgin:
+        description: "ContainerMemoryPgpginMetricConfig provides config for the container.memory.pgpgin metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.pgpgout:
+        description: "ContainerMemoryPgpgoutMetricConfig provides config for the container.memory.pgpgout metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.rss:
+        description: "ContainerMemoryRssMetricConfig provides config for the container.memory.rss metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.rss_huge:
+        description: "ContainerMemoryRssHugeMetricConfig provides config for the container.memory.rss_huge metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_active_anon:
+        description: "ContainerMemoryTotalActiveAnonMetricConfig provides config for the container.memory.total_active_anon metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_active_file:
+        description: "ContainerMemoryTotalActiveFileMetricConfig provides config for the container.memory.total_active_file metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_cache:
+        description: "ContainerMemoryTotalCacheMetricConfig provides config for the container.memory.total_cache metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.total_dirty:
+        description: "ContainerMemoryTotalDirtyMetricConfig provides config for the container.memory.total_dirty metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_inactive_anon:
+        description: "ContainerMemoryTotalInactiveAnonMetricConfig provides config for the container.memory.total_inactive_anon metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_inactive_file:
+        description: "ContainerMemoryTotalInactiveFileMetricConfig provides config for the container.memory.total_inactive_file metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_mapped_file:
+        description: "ContainerMemoryTotalMappedFileMetricConfig provides config for the container.memory.total_mapped_file metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_pgfault:
+        description: "ContainerMemoryTotalPgfaultMetricConfig provides config for the container.memory.total_pgfault metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_pgmajfault:
+        description: "ContainerMemoryTotalPgmajfaultMetricConfig provides config for the container.memory.total_pgmajfault metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_pgpgin:
+        description: "ContainerMemoryTotalPgpginMetricConfig provides config for the container.memory.total_pgpgin metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_pgpgout:
+        description: "ContainerMemoryTotalPgpgoutMetricConfig provides config for the container.memory.total_pgpgout metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_rss:
+        description: "ContainerMemoryTotalRssMetricConfig provides config for the container.memory.total_rss metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_rss_huge:
+        description: "ContainerMemoryTotalRssHugeMetricConfig provides config for the container.memory.total_rss_huge metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_unevictable:
+        description: "ContainerMemoryTotalUnevictableMetricConfig provides config for the container.memory.total_unevictable metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.total_writeback:
+        description: "ContainerMemoryTotalWritebackMetricConfig provides config for the container.memory.total_writeback metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.unevictable:
+        description: "ContainerMemoryUnevictableMetricConfig provides config for the container.memory.unevictable metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.usage.limit:
+        description: "ContainerMemoryUsageLimitMetricConfig provides config for the container.memory.usage.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.usage.max:
+        description: "ContainerMemoryUsageMaxMetricConfig provides config for the container.memory.usage.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.memory.usage.total:
+        description: "ContainerMemoryUsageTotalMetricConfig provides config for the container.memory.usage.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.writeback:
+        description: "ContainerMemoryWritebackMetricConfig provides config for the container.memory.writeback metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.network.io.usage.rx_bytes:
+        description: "ContainerNetworkIoUsageRxBytesMetricConfig provides config for the container.network.io.usage.rx_bytes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.network.io.usage.rx_dropped:
+        description: "ContainerNetworkIoUsageRxDroppedMetricConfig provides config for the container.network.io.usage.rx_dropped metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.network.io.usage.rx_errors:
+        description: "ContainerNetworkIoUsageRxErrorsMetricConfig provides config for the container.network.io.usage.rx_errors metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.network.io.usage.rx_packets:
+        description: "ContainerNetworkIoUsageRxPacketsMetricConfig provides config for the container.network.io.usage.rx_packets metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.network.io.usage.tx_bytes:
+        description: "ContainerNetworkIoUsageTxBytesMetricConfig provides config for the container.network.io.usage.tx_bytes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.network.io.usage.tx_dropped:
+        description: "ContainerNetworkIoUsageTxDroppedMetricConfig provides config for the container.network.io.usage.tx_dropped metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.network.io.usage.tx_errors:
+        description: "ContainerNetworkIoUsageTxErrorsMetricConfig provides config for the container.network.io.usage.tx_errors metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.network.io.usage.tx_packets:
+        description: "ContainerNetworkIoUsageTxPacketsMetricConfig provides config for the container.network.io.usage.tx_packets metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "interface"
+            default:
+              - "interface"
+      container.pids.count:
+        description: "ContainerPidsCountMetricConfig provides config for the container.pids.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.pids.limit:
+        description: "ContainerPidsLimitMetricConfig provides config for the container.pids.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.restarts:
+        description: "ContainerRestartsMetricConfig provides config for the container.restarts metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      container.uptime:
+        description: "ContainerUptimeMetricConfig provides config for the container.uptime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for docker_stats resource attributes.
     type: object

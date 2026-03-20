@@ -4,83 +4,99 @@ $defs:
     description: MetricsConfig provides config for podman_stats metrics.
     type: object
     properties:
-    container.blockio.io_service_bytes_recursive.read:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.blockio.io_service_bytes_recursive.write:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.cpu.percent:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.cpu.usage.percpu:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.cpu.usage.system:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.cpu.usage.total:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.percent:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.usage.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.memory.usage.total:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.network.io.usage.rx_bytes:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    container.network.io.usage.tx_bytes:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      container.blockio.io_service_bytes_recursive.read:
+        description: "ContainerBlockioIoServiceBytesRecursiveReadMetricConfig provides config for the container.blockio.io_service_bytes_recursive.read metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.blockio.io_service_bytes_recursive.write:
+        description: "ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig provides config for the container.blockio.io_service_bytes_recursive.write metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.cpu.percent:
+        description: "ContainerCPUPercentMetricConfig provides config for the container.cpu.percent metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.cpu.usage.percpu:
+        description: "ContainerCPUUsagePercpuMetricConfig provides config for the container.cpu.usage.percpu metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "core"
+            default:
+              - "core"
+      container.cpu.usage.system:
+        description: "ContainerCPUUsageSystemMetricConfig provides config for the container.cpu.usage.system metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.cpu.usage.total:
+        description: "ContainerCPUUsageTotalMetricConfig provides config for the container.cpu.usage.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.percent:
+        description: "ContainerMemoryPercentMetricConfig provides config for the container.memory.percent metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.usage.limit:
+        description: "ContainerMemoryUsageLimitMetricConfig provides config for the container.memory.usage.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.memory.usage.total:
+        description: "ContainerMemoryUsageTotalMetricConfig provides config for the container.memory.usage.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.network.io.usage.rx_bytes:
+        description: "ContainerNetworkIoUsageRxBytesMetricConfig provides config for the container.network.io.usage.rx_bytes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      container.network.io.usage.tx_bytes:
+        description: "ContainerNetworkIoUsageTxBytesMetricConfig provides config for the container.network.io.usage.tx_bytes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for podman_stats resource attributes.
     type: object

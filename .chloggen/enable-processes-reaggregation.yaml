@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/hostmetrics
-note: Enable re-aggregation for processes scraper
-issues: [46622]
-subtext: Enabled the reaggregation feature gate for the processes scraper and set the status attribute requirement level to recommended.

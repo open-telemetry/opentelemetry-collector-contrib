@@ -61,10 +61,10 @@ resourceLogs:
               - key: user_agent.original
                 value:
                   stringValue: gcp-controller-manager/v0.0.0 (linux/amd64) kubernetes/$Format/leader-election
-              - key: gcp.label.authorization.k8_s.io/reason
+              - key: gcp.label.authorization.k8s.io/reason
                 value:
                   stringValue: 'RBAC: allowed by ClusterRoleBinding "system:gcp-controller-manager" of ClusterRole "system:gcp-controller-manager" to User "system:gcp-controller-manager"'
-              - key: gcp.label.authorization.k8_s.io/decision
+              - key: gcp.label.authorization.k8s.io/decision
                 value:
                   stringValue: allow
               - key: gcp.operation.id

@@ -43,6 +43,9 @@ resourceLogs:
               - key: oracledb.cluster_wait_time
                 value:
                   doubleValue: 0.001
+              - key: oracledb.command_type
+                value:
+                  intValue: "3"
               - key: oracledb.concurrency_wait_time
                 value:
                   doubleValue: 1e-05

@@ -4,23 +4,28 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled             bool `mapstructure:"enabled"`
-	enabledSetByUser    bool
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+// SystemdServiceCPUTimeMetricAttributeKey specifies the key of an attribute for the systemd.service.cpu.time metric.
+type SystemdServiceCPUTimeMetricAttributeKey string
+
+const (
+	SystemdServiceCPUTimeMetricAttributeKeyCPUMode SystemdServiceCPUTimeMetricAttributeKey = "cpu.mode"
+)
+
+// SystemdServiceCPUTimeMetricConfig provides config for the systemd.service.cpu.time metric.
+type SystemdServiceCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemdServiceCPUTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemdServiceCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,54 +34,118 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if len(ms.definedAttributes) > 0 {
-		for _, val := range ms.EnabledAttributes {
-			if !slices.Contains(ms.definedAttributes, val) {
-				return fmt.Errorf("%v is not defined in metadata.yaml", val)
-			}
-		}
 
-		for _, val := range ms.requiredAttributes {
-			if !slices.Contains(ms.EnabledAttributes, val) {
-				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-			}
-		}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
-		if ms.AggregationStrategy != AggregationStrategySum &&
-			ms.AggregationStrategy != AggregationStrategyAvg &&
-			ms.AggregationStrategy != AggregationStrategyMin &&
-			ms.AggregationStrategy != AggregationStrategyMax {
-			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+func (ms *SystemdServiceCPUTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemdServiceCPUTimeMetricAttributeKeyCPUMode:
+		default:
+			return fmt.Errorf("metric systemd.service.cpu.time doesn't have an attribute %v, valid attributes: [cpu.mode]", val)
 		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemdServiceRestartsMetricConfig provides config for the systemd.service.restarts metric.
+type SystemdServiceRestartsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemdServiceRestartsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
+// SystemdUnitStateMetricAttributeKey specifies the key of an attribute for the systemd.unit.state metric.
+type SystemdUnitStateMetricAttributeKey string
+
+const (
+	SystemdUnitStateMetricAttributeKeySystemdUnitActiveState SystemdUnitStateMetricAttributeKey = "systemd.unit.active_state"
+)
+
+// SystemdUnitStateMetricConfig provides config for the systemd.unit.state metric.
+type SystemdUnitStateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemdUnitStateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemdUnitStateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemdUnitStateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemdUnitStateMetricAttributeKeySystemdUnitActiveState:
+		default:
+			return fmt.Errorf("metric systemd.unit.state doesn't have an attribute %v, valid attributes: [systemd.unit.active_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for systemd metrics.
 type MetricsConfig struct {
-	SystemdServiceCPUTime  MetricConfig `mapstructure:"systemd.service.cpu.time"`
-	SystemdServiceRestarts MetricConfig `mapstructure:"systemd.service.restarts"`
-	SystemdUnitState       MetricConfig `mapstructure:"systemd.unit.state"`
+	SystemdServiceCPUTime  SystemdServiceCPUTimeMetricConfig  `mapstructure:"systemd.service.cpu.time"`
+	SystemdServiceRestarts SystemdServiceRestartsMetricConfig `mapstructure:"systemd.service.restarts"`
+	SystemdUnitState       SystemdUnitStateMetricConfig       `mapstructure:"systemd.unit.state"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemdServiceCPUTime: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cpu.mode"},
-			EnabledAttributes:  []string{"cpu.mode"},
+		SystemdServiceCPUTime: SystemdServiceCPUTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
 		},
-		SystemdServiceRestarts: MetricConfig{
+		SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
 			Enabled: false,
 		},
-		SystemdUnitState: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"systemd.unit.active_state"},
-			EnabledAttributes:  []string{"systemd.unit.active_state"},
+		SystemdUnitState: SystemdUnitStateMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemdUnitStateMetricAttributeKey{SystemdUnitStateMetricAttributeKeySystemdUnitActiveState},
 		},
 	}
 }

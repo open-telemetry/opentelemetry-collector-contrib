@@ -5,11 +5,13 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
+	"maps"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -17,7 +19,15 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
-var errLogsPartitionExclusive = errors.New("partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled")
+var errLogsPartitionExclusive = errors.New(
+	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
+)
+
+var (
+	errTopicMetadataKeyNotIncluded        = errors.New("topic_from_metadata_key must be present in sending_queue::batch::partition::metadata_keys if batching is enabled")
+	errBatchPartitionMetadataKeysRequired = errors.New("sending_queue::batch::partition::metadata_keys must be configured when include_metadata_keys is set and batching is enabled")
+	errIncludeMetadataKeysNotPartitioned  = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
+)
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
@@ -39,27 +49,11 @@ type Config struct {
 	// Profiles holds configuration about how profiles should be sent to Kafka.
 	Profiles SignalConfig `mapstructure:"profiles"`
 
-	// Topic holds the name of the Kafka topic to which data should be exported.
-	//
-	// Topic has no default. If explicitly specified, it will take precedence over
-	// the default values of logs::topic, metrics::topic, and traces::topic.
-	//
-	// Deprecated [v0.124.0]: use logs::topic, metrics::topic, and traces::topic instead.
-	Topic string `mapstructure:"topic"`
-
 	// IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
 	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
 
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
-
-	// Encoding holds the encoding of Kafka message values.
-	//
-	// Encoding has no default. If explicitly specified, it will take precedence over
-	// the default values of logs::encoding, metrics::encoding, and traces::encoding.
-	//
-	// Deprecated [v0.124.0]: use logs::encoding, metrics::encoding, and traces::encoding instead.
-	Encoding string `mapstructure:"encoding"`
 
 	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
 	//
@@ -86,53 +80,14 @@ type Config struct {
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
 }
 
-func (c *Config) Validate() (err error) {
+func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
 	}
-	return err
-}
-
-func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(c); err != nil {
+	if err := validateBatchPartitionerKeys(c); err != nil {
 		return err
 	}
-	// Check if deprecated fields have been explicitly set,
-	// in which case they should be used instead of signal-
-	// specific defaults.
-	var zeroConfig Config
-	if err := conf.Unmarshal(&zeroConfig); err != nil {
-		return err
-	}
-	if c.Topic != "" {
-		if zeroConfig.Logs.Topic == "" {
-			c.Logs.Topic = c.Topic
-		}
-		if zeroConfig.Metrics.Topic == "" {
-			c.Metrics.Topic = c.Topic
-		}
-		if zeroConfig.Traces.Topic == "" {
-			c.Traces.Topic = c.Topic
-		}
-		if zeroConfig.Profiles.Topic == "" {
-			c.Profiles.Topic = c.Topic
-		}
-	}
-	if c.Encoding != "" {
-		if zeroConfig.Logs.Encoding == "" {
-			c.Logs.Encoding = c.Encoding
-		}
-		if zeroConfig.Metrics.Encoding == "" {
-			c.Metrics.Encoding = c.Encoding
-		}
-		if zeroConfig.Traces.Encoding == "" {
-			c.Traces.Encoding = c.Encoding
-		}
-		if zeroConfig.Profiles.Encoding == "" {
-			c.Profiles.Encoding = c.Encoding
-		}
-	}
-	return conf.Unmarshal(c)
+	return nil
 }
 
 // SignalConfig holds signal-specific configuration for the Kafka exporter.
@@ -156,4 +111,74 @@ type SignalConfig struct {
 	//
 	// Defaults to "otlp_proto".
 	Encoding string `mapstructure:"encoding"`
+}
+
+// validateBatchPartitionerKeys validates the partition keys if sending_queue::batch is enabled.
+// The exporter relies on a few client metadata keys to be present, if configured, in the final
+// batch that needs to be exported, however, since batching removes all client metadata keys by
+// default we need to ensure proper partitioning is configured to keep the required metadata.
+func validateBatchPartitionerKeys(c *Config) error {
+	if !isBatchingEnabled(c.QueueBatchConfig) {
+		return nil
+	}
+
+	partitionMetadataKeys := c.QueueBatchConfig.Get().Batch.Get().Partition.MetadataKeys
+	partitionMetadataKeySet := make(map[string]struct{}, len(partitionMetadataKeys))
+	for _, key := range partitionMetadataKeys {
+		partitionMetadataKeySet[key] = struct{}{}
+	}
+
+	// Validate if include_metadata_keys are included in partition keys
+	if len(c.IncludeMetadataKeys) != 0 {
+		if len(partitionMetadataKeys) == 0 {
+			return errBatchPartitionMetadataKeysRequired
+		}
+		for _, includeKey := range c.IncludeMetadataKeys {
+			if _, ok := partitionMetadataKeySet[includeKey]; !ok {
+				return fmt.Errorf("%w: missing %q from sending_queue::batch::partition::metadata_keys=%v",
+					errIncludeMetadataKeysNotPartitioned,
+					includeKey,
+					partitionMetadataKeys,
+				)
+			}
+		}
+	}
+
+	// Validate if topic_from_metadata_key is included in partition_keys
+	if err := validateTopicFromMetadataKey(c.Logs.TopicFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("logs::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Metrics.TopicFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("metrics::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Traces.TopicFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("traces::topic_from_metadata_key: %w", err)
+	}
+	if err := validateTopicFromMetadataKey(c.Profiles.TopicFromMetadataKey, partitionMetadataKeySet); err != nil {
+		return fmt.Errorf("profiles::topic_from_metadata_key: %w", err)
+	}
+
+	return nil
+}
+
+func isBatchingEnabled(queueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig]) bool {
+	if !queueBatchConfig.HasValue() {
+		return false
+	}
+
+	return queueBatchConfig.Get().Batch.HasValue()
+}
+
+func validateTopicFromMetadataKey(topicFromMetadataKey string, partitionKeysSet map[string]struct{}) error {
+	if topicFromMetadataKey == "" {
+		return nil
+	}
+	if _, ok := partitionKeysSet[topicFromMetadataKey]; !ok {
+		return fmt.Errorf("%w: %q not found in partition keys=%v",
+			errTopicMetadataKeyNotIncluded,
+			topicFromMetadataKey,
+			slices.Collect(maps.Keys(partitionKeysSet)),
+		)
+	}
+	return nil
 }

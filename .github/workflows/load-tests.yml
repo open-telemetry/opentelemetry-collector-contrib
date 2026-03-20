@@ -23,7 +23,7 @@ permissions: read-all
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
+    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
@@ -45,7 +45,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
-    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
+    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     needs: [setup-environment]
     strategy:
       fail-fast: false
@@ -62,6 +62,14 @@ jobs:
           name: testbed-binaries
           path: bin/
       - run: chmod +x bin/*
+      # Remove any pre-installed kwokctl so the action installs the pinned version
+      - name: Remove existing KWOK binaries
+        run: |
+          sudo rm -f /usr/local/bin/kwokctl /usr/local/bin/kwok
+      - name: Install KWOK (kwokctl)
+        uses: kubernetes-sigs/kwok@c04392afe3cc6929cd3cc79f61d8bdcd83a8ba5d # v0.7.0
+        with:
+          command: kwokctl
       - name: Loadtest
         run: make -C testbed run-tests
         env:
