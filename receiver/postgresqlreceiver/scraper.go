@@ -743,6 +743,7 @@ func (*postgreSQLScraper) retrieveBackends(
 
 func (p *postgreSQLScraper) setupResourceBuilder(rb *metadata.ResourceBuilder, database, schema, table, index string) *metadata.ResourceBuilder {
 	rb.SetServiceInstanceID(p.serviceInstanceID)
+	rb.SetServiceName("postgresql")
 	if database != "" {
 		rb.SetPostgresqlDatabaseName(database)
 	}

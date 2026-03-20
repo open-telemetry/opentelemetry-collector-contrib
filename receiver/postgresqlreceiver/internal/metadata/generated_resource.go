@@ -56,6 +56,13 @@ func (rb *ResourceBuilder) SetServiceInstanceID(val string) {
 	}
 }
 
+// SetServiceName sets provided value as "service.name" attribute.
+func (rb *ResourceBuilder) SetServiceName(val string) {
+	if rb.config.ServiceName.Enabled {
+		rb.res.Attributes().PutStr("service.name", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

@@ -36,6 +36,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 	rb.SetPostgresqlTableName("postgresql.table.name-val")
 	rb.SetServiceInstanceID("service.instance.id-val")
+	rb.SetServiceName("service.name-val")
 	res := rb.Emit()
 
 	// append the first log record
@@ -144,6 +145,7 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 
