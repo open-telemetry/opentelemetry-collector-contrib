@@ -13,6 +13,7 @@ import (
 
 	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/docker/client"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -35,7 +36,7 @@ type Config struct {
 	// TLS holds optional TLS client configuration for connecting to the Docker daemon
 	// over HTTPS. When nil (the default), the connection uses no custom TLS — suitable
 	// for Unix sockets and plain HTTP endpoints.
-	TLS *configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	TLS configoptional.Optional[configtls.ClientConfig] `mapstructure:"tls,omitempty"`
 }
 
 func (config *Config) Unmarshal(conf *confmap.Conf) error {
@@ -58,8 +59,8 @@ func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("endpoint must be specified")
 	}
-	if config.TLS != nil {
-		if _, err := config.TLS.LoadTLSConfig(context.Background()); err != nil {
+	if config.TLS.HasValue() {
+		if _, err := config.TLS.Get().LoadTLSConfig(context.Background()); err != nil {
 			return fmt.Errorf("invalid tls configuration: %w", err)
 		}
 	}

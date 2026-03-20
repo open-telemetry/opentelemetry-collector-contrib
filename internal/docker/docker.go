@@ -64,8 +64,8 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 	}
 
 	// Configure TLS transport when a TLS config is provided.
-	if config.TLS != nil && !config.TLS.Insecure {
-		tlsCfg, err := config.TLS.LoadTLSConfig(context.Background())
+	if config.TLS.HasValue() && !config.TLS.Get().Insecure {
+		tlsCfg, err := config.TLS.Get().LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("could not load docker client TLS config: %w", err)
 		}

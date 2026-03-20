@@ -19,6 +19,7 @@ import (
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -308,9 +309,9 @@ func TestTLSClientConfig(t *testing.T) {
 	config := &Config{
 		Endpoint: srv.URL,
 		Timeout:  5 * time.Second,
-		TLS: &configtls.ClientConfig{
+		TLS: configoptional.Some(configtls.ClientConfig{
 			InsecureSkipVerify: true,
-		},
+		}),
 	}
 
 	cli, err := NewDockerClient(config, zap.NewNop())
@@ -351,11 +352,11 @@ func TestTLSClientConfigInvalidCert(t *testing.T) {
 	config := &Config{
 		Endpoint: "https://example.com/",
 		Timeout:  5 * time.Second,
-		TLS: &configtls.ClientConfig{
+		TLS: configoptional.Some(configtls.ClientConfig{
 			Config: configtls.Config{
 				CAFile: "/nonexistent/ca.pem",
 			},
-		},
+		}),
 	}
 
 	cli, err := NewDockerClient(config, zap.NewNop())

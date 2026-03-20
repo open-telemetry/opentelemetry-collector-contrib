@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -83,12 +84,12 @@ func TestAPIVersion(t *testing.T) {
 
 func TestDefaultConfigHasNoTLS(t *testing.T) {
 	cfg := NewDefaultConfig()
-	assert.Nil(t, cfg.TLS, "default config should have nil TLS for backward compatibility")
+	assert.False(t, cfg.TLS.HasValue(), "default config should have nil TLS for backward compatibility")
 }
 
 func TestNewConfigHasNoTLS(t *testing.T) {
 	cfg := NewConfig("unix:///var/run/docker.sock", 0, nil, "")
-	assert.Nil(t, cfg.TLS, "NewConfig should have nil TLS by default")
+	assert.False(t, cfg.TLS.HasValue(), "NewConfig should have nil TLS by default")
 }
 
 func TestUnmarshalNoTLSKeepsNil(t *testing.T) {
@@ -97,7 +98,7 @@ func TestUnmarshalNoTLSKeepsNil(t *testing.T) {
 	})
 	cfg := &Config{}
 	require.NoError(t, cfg.Unmarshal(conf))
-	assert.Nil(t, cfg.TLS, "omitting tls block should leave TLS nil")
+	assert.False(t, cfg.TLS.HasValue(), "omitting tls block should leave TLS nil")
 }
 
 func TestUnmarshalWithTLSBlock(t *testing.T) {
@@ -109,18 +110,18 @@ func TestUnmarshalWithTLSBlock(t *testing.T) {
 	})
 	cfg := &Config{}
 	require.NoError(t, cfg.Unmarshal(conf))
-	require.NotNil(t, cfg.TLS)
-	assert.True(t, cfg.TLS.InsecureSkipVerify)
+	assert.True(t, cfg.TLS.HasValue())
+	assert.True(t, cfg.TLS.Get().InsecureSkipVerify)
 }
 
 func TestValidateInvalidTLSCertPath(t *testing.T) {
 	cfg := &Config{
 		Endpoint: "https://example.com/",
-		TLS: &configtls.ClientConfig{
+		TLS: configoptional.Some(configtls.ClientConfig{
 			Config: configtls.Config{
 				CAFile: "/nonexistent/ca.pem",
 			},
-		},
+		}),
 	}
 	err := cfg.Validate()
 	require.Error(t, err)
