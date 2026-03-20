@@ -145,7 +145,7 @@ func (r *Reader) createGzipReader() (int64, error) {
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	bufPtr := r.getBufPtrFromPool()
 	defer r.bufPool.Put(bufPtr)
-	s := scanner.New(r, r.maxLogSize, *bufPtr, r.Offset, r.headerSplitFunc)
+	s := scanner.New(r, r.maxLogSize, *bufPtr, r.Offset, r.headerSplitFunc, r.FileType == gzipExtension)
 
 	// Read the tokens from the file until no more header tokens are found or the end of file is reached.
 	for {
@@ -216,7 +216,7 @@ func (r *Reader) readContents(ctx context.Context) {
 		// Usually, expect this to be a rare event so that we don't bother pooling this special buffer size.
 		buf = make([]byte, 0, r.TokenLenState.MinimumLength+1)
 	}
-	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc)
+	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc, r.FileType == gzipExtension)
 
 	tokenBodies := make([][]byte, r.maxBatchSize)
 	tokenOffsets := make([]int64, r.maxBatchSize+1)
