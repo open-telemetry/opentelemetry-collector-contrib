@@ -45,6 +45,7 @@ type s3EventRecord struct {
 
 // s3EventNotification is the top-level structure for S3 event notifications
 type s3EventNotification struct {
+	Event   string          `json:"Event"`
 	Records []s3EventRecord `json:"Records"`
 }
 
@@ -141,33 +142,25 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 				messageBody := *message.Body
 
 				// First try to parse as direct S3 event notification
-				if err = json.Unmarshal([]byte(messageBody), &s3Event); err != nil || len(s3Event.Records) == 0 {
-					var testEvent struct {
-						Event string `json:"Event"`
+				if err = json.Unmarshal([]byte(messageBody), &s3Event); err != nil || (len(s3Event.Records) == 0 && s3Event.Event != "s3:TestEvent") {
+					// If direct parsing failed, try to extract from SNS notification format
+					r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
+
+					var snsMsg snsMessage
+
+					if err = json.Unmarshal([]byte(messageBody), &snsMsg); err != nil {
+						r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))
+						continue
 					}
 
-					if err == nil && json.Unmarshal([]byte(messageBody), &testEvent) == nil && testEvent.Event == "s3:TestEvent" {
-						r.logger.Debug("Received direct s3:TestEvent, acknowledging")
-					} else {
-						// If direct parsing failed and it's not a TestEvent, try to extract from SNS notification format
-						r.logger.Debug("Direct parsing as S3 event failed, trying SNS format", zap.Error(err))
+					if snsMsg.Type != "Notification" {
+						r.logger.Warn("Message is not a valid S3 notification", zap.String("type", snsMsg.Type))
+						continue
+					}
 
-						var snsMsg snsMessage
-
-						if err = json.Unmarshal([]byte(messageBody), &snsMsg); err != nil {
-							r.logger.Warn("Failed to parse message as SNS notification", zap.Error(err))
-							continue
-						}
-
-						if snsMsg.Type != "Notification" {
-							r.logger.Warn("Message is not a valid S3 notification", zap.String("type", snsMsg.Type))
-							continue
-						}
-
-						if err = json.Unmarshal([]byte(snsMsg.Message), &s3Event); err != nil {
-							r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
-							continue
-						}
+					if err = json.Unmarshal([]byte(snsMsg.Message), &s3Event); err != nil {
+						r.logger.Warn("Failed to parse S3 event from SNS message", zap.Error(err))
+						continue
 					}
 				}
 
