@@ -17,7 +17,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,13 +34,6 @@ const (
 	separateSchemaAttrID = "receiver.postgresql.separateSchemaAttr"
 
 	defaultPostgreSQLDatabase = "postgres"
-)
-
-var separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
-	separateSchemaAttrID,
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
 )
 
 type postgreSQLScraper struct {
@@ -94,7 +86,7 @@ func newPostgreSQLScraper(
 	for _, db := range config.ExcludeDatabases {
 		excludes[db] = struct{}{}
 	}
-	separateSchemaAttr := separateSchemaAttrGate.IsEnabled()
+	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
 
 	if !separateSchemaAttr {
 		settings.Logger.Warn(
@@ -640,7 +632,7 @@ func (p *postgreSQLScraper) collectReplicationStats(
 		if rs.pendingBytes >= 0 {
 			p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
 		}
-		if preciseLagMetricsFg.IsEnabled() {
+		if metadata.ReceiverPostgresqlPreciseLagMetricsFeatureGate.IsEnabled() {
 			if rs.writeLag >= 0 {
 				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
 			}
