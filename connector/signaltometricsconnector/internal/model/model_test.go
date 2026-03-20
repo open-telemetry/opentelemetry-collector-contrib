@@ -221,6 +221,17 @@ func TestFilterResourceAttributes_DynamicExpression(t *testing.T) {
 			},
 		},
 		{
+			name: "resource_attribute_driven_allow_list_missing_key",
+			expr: `FilterMapByKeyList(resource.attributes, resource.attributes["labels-does-not-exist"], ["labels.", "numeric_labels."])`,
+			includeResourceAttributes: []AttributeKeyValue{
+				testAttributeKeyValue(t, "service.name", false, nil),
+			},
+			expected: map[string]any{
+				"service.name":                          "svc",
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
+			},
+		},
+		{
 			name: "prefix_based_label_forwarding",
 			expr: `FilterMapByKeyList(resource.attributes, "*", ["labels.", "numeric_labels."])`,
 			includeResourceAttributes: []AttributeKeyValue{

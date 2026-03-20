@@ -417,6 +417,8 @@ If the incoming resource has `allowed.labels="team,cost"`, `labels.team=platform
 `labels.env=prod`, and `numeric_labels.cost=42`, the output metric resource will
 contain `service.name` (static), `labels.team`, and `numeric_labels.cost` (dynamic).
 The `labels.env` key is excluded because `env` is not in the allow-list.
+If the `allowed.labels` resource attribute is missing, the `key_list` resolves
+to `nil` and no dynamic attributes are added.
 
 ### Custom OTTL functions
 
