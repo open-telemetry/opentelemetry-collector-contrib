@@ -13,3 +13,5 @@ status:
 
 tests:
   config:
+    htpasswd:
+      inline: "username:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g="

@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// github.com/DataDog/datadog-agent/comp/core/config is not suppported on AIX
+//go:build !aix
+
 package agentcomponents // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 
 import (

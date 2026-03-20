@@ -197,7 +197,6 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
 		job["scrape_interval"] = "100ms"
-		job["scrape_timeout"] = "50ms"
 		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}

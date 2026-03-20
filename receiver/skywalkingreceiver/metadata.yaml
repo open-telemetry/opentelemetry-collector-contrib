@@ -1,4 +1,7 @@
+display_name: SkyWalking Receiver
 type: skywalking
+
+description: Receives trace data and metric data in [SkyWalking](https://skywalking.apache.org/) format.
 
 status:
   class: receiver

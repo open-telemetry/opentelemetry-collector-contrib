@@ -29,11 +29,11 @@ jobs:
         with:
           path: opentelemetry-collector-contrib
       - run: opentelemetry-collector-contrib/.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
         with:
           go-version: oldstable
           cache: false
-      - uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         id: otelbot-token
         with:
           app-id: ${{ vars.OTELBOT_APP_ID }}
