@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/extension v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/pdata v1.54.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/pdata/pprofile v0.148.1-0.20260319115605-6999c720849c
+	go.opentelemetry.io/collector/pdata/pprofile v0.148.1-0.20260320051400-372cc483b303
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/collector/component v1.54.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260319115605-6999c720849c // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.42.0 // indirect
