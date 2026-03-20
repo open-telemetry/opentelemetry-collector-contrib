@@ -53,7 +53,7 @@ This approach minimizes both latency during active logging and resource usage du
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     max_poll_interval: 30s  # Maximum interval between polls (uses exponential backoff)
     max_log_age: 24h        # How far back to read on startup
 ```
@@ -62,7 +62,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "/path/to/system_logs.logarchive"
     start_time: "2024-01-01 00:00:00"
     end_time: "2024-01-02 00:00:00"
@@ -72,7 +72,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "/logs/**/*.logarchive"  # Matches all .logarchive directories recursively
     format: "ndjson"
 ```
@@ -82,7 +82,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "./logs.logarchive"
     predicate: "subsystem == 'com.apple.systempreferences'"
 ```
@@ -91,7 +91,7 @@ receivers:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     format: ndjson             # Use structured JSON output
     max_poll_interval: 30s
     max_log_age: 24h
@@ -163,7 +163,7 @@ Complete example configuration:
 
 ```yaml
 receivers:
-  macosunifiedlogging:
+  macos_unified_logging:
     archive_path: "./system_logs.logarchive"
     predicate: "subsystem BEGINSWITH 'com.apple'"
     start_time: "2024-01-01 00:00:00"

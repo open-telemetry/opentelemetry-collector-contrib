@@ -26,20 +26,20 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemInodesUsageMetricAttributeKey{SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState},
 					},
-					SystemFilesystemUsage: MetricConfig{
+					SystemFilesystemUsage: SystemFilesystemUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemUsageMetricAttributeKey{SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState},
 					},
-					SystemFilesystemUtilization: MetricConfig{
+					SystemFilesystemUtilization: SystemFilesystemUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type"},
+						EnabledAttributes:   []SystemFilesystemUtilizationMetricAttributeKey{SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType},
 					},
 				},
 			},
@@ -48,20 +48,20 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemFilesystemInodesUsage: MetricConfig{
+					SystemFilesystemInodesUsage: SystemFilesystemInodesUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemInodesUsageMetricAttributeKey{SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState},
 					},
-					SystemFilesystemUsage: MetricConfig{
+					SystemFilesystemUsage: SystemFilesystemUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type", "state"},
+						EnabledAttributes:   []SystemFilesystemUsageMetricAttributeKey{SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState},
 					},
-					SystemFilesystemUtilization: MetricConfig{
+					SystemFilesystemUtilization: SystemFilesystemUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"device", "mode", "mountpoint", "type"},
+						EnabledAttributes:   []SystemFilesystemUtilizationMetricAttributeKey{SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType},
 					},
 				},
 			},
@@ -70,7 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemFilesystemInodesUsageMetricConfig{}, SystemFilesystemUsageMetricConfig{}, SystemFilesystemUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

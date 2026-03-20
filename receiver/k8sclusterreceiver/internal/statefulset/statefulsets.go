@@ -38,15 +38,15 @@ func RecordMetrics(mb *metadata.MetricsBuilder, ss *appsv1.StatefulSet, ts pcomm
 	if ss.Spec.Replicas == nil {
 		return
 	}
-	mb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, int64(*ss.Spec.Replicas))
-	mb.RecordK8sStatefulsetReadyPodsDataPoint(ts, int64(ss.Status.ReadyReplicas))
-	mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, int64(ss.Status.CurrentReplicas))
-	mb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, int64(ss.Status.UpdatedReplicas))
+	mb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, int64(*ss.Spec.Replicas))         //nolint:staticcheck
+	mb.RecordK8sStatefulsetReadyPodsDataPoint(ts, int64(ss.Status.ReadyReplicas))     //nolint:staticcheck
+	mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, int64(ss.Status.CurrentReplicas)) //nolint:staticcheck
+	mb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, int64(ss.Status.UpdatedReplicas)) //nolint:staticcheck
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sStatefulsetUID(string(ss.UID))
 	rb.SetK8sStatefulsetName(ss.Name)
 	rb.SetK8sNamespaceName(ss.Namespace)
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
 }
 
 func GetMetadata(ss *appsv1.StatefulSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

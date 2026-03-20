@@ -53,7 +53,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, 5*time.Second, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval))
 	assert.True(t, r1.TrimMetricSuffixes)
-	assert.True(t, r1.ReportExtraScrapeMetrics)
 
 	ta := r1.TargetAllocator.Get()
 	assert.Equal(t, "http://my-targetallocator-service", ta.Endpoint)

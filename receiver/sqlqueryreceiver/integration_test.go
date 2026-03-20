@@ -21,7 +21,7 @@ import (
 	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
 	_ "github.com/sijms/go-ora/v2"                          // register Db driver
-	_ "github.com/snowflakedb/gosnowflake"                  // register Db driver
+	_ "github.com/snowflakedb/gosnowflake/v2"               // register Db driver
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
