@@ -174,5 +174,15 @@ func translateMountpoint(ctx context.Context, rootPath, mountpoint string) strin
 			return mountpoint
 		}
 	}
+
+	// gopsutil first reads /<rootPath>/proc/1/mountinfo, and if this fails it reads /<rootPath>/proc/self/mountinfo as a fallback.
+	// /<rootPath>/proc/1/mountinfo contains the mountpoints from the perspective of PID 1 on the host (without rootPath prefix)
+	// /<rootPath>/proc/self/mountinfo contains the mountpoints from the perspective of the collector process (with the rootPath prefix)
+	// Therefore, do not add rootPath if the mountpath has already a rootPath prefix.
+	sep := string(filepath.Separator)
+	if rootPath != "" && strings.HasPrefix(filepath.Clean(mountpoint)+sep, filepath.Clean(rootPath)+sep) {
+		return mountpoint
+	}
+
 	return filepath.Join(rootPath, mountpoint)
 }
