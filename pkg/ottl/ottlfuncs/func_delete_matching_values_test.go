@@ -177,5 +177,3 @@ func Test_deleteMatchingValues_get_nil(t *testing.T) {
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
 }
-
-
