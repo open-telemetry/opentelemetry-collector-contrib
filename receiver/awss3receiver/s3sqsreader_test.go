@@ -742,6 +742,83 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
 		mockS3.AssertNotCalled(t, "PutObjectTagging", mock.Anything, mock.Anything)
 	})
+	t.Run("deletes message if object is not found", func(t *testing.T) {
+		mockSQS := new(mockSQSClient)
+		mockS3 := new(mockS3ClientSQS)
+
+		s3Event := s3EventNotification{
+			Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "test-key"},
+					},
+				},
+			},
+		}
+
+		s3EventJSON, err := json.Marshal(s3Event)
+		require.NoError(t, err)
+
+		receiptHandle := "test-receipt-handle"
+
+		// S3 returns object not found
+		mockS3.On("GetObject", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectInput) bool {
+			return *input.Bucket == "test-bucket" && *input.Key == "test-key"
+		})).Return([]byte(""), &s3types.NoSuchKey{Message: aws.String("The specified key does not exist.")})
+
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
+			return *input.QueueUrl == "test-queue-url"
+		})).Return(&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{
+				{
+					Body:          aws.String(string(s3EventJSON)),
+					ReceiptHandle: &receiptHandle,
+				},
+			},
+		}, nil).Once()
+
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			(*sqs.ReceiveMessageOutput)(nil), context.DeadlineExceeded,
+		)
+
+		// Message should be deleted
+		mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+			return *input.QueueUrl == "test-queue-url" && *input.ReceiptHandle == "test-receipt-handle"
+		})).Return(&sqs.DeleteMessageOutput{}, nil)
+
+		reader := &s3SQSNotificationReader{
+			logger:                  zap.NewNop(),
+			s3Client:                mockS3,
+			sqsClient:               mockSQS,
+			queueURL:                "test-queue-url",
+			s3Bucket:                "test-bucket",
+			s3Prefix:                "",
+			maxNumberOfMessages:     10,
+			waitTimeSeconds:         20,
+			tagObjectAfterIngestion: true, // Enable deletion
+		}
+
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+		defer cancel()
+
+		callbackCalled := false
+		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+			callbackCalled = true
+			return nil
+		})
+
+		// Context deadline exceeded is expected
+		assert.Equal(t, context.DeadlineExceeded, err)
+
+		mockSQS.AssertExpectations(t)
+		mockS3.AssertExpectations(t)
+
+		// Callback never called because there is no object to process
+		assert.False(t, callbackCalled, "Callback should have been called")
+	})
 }
 
 func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
@@ -976,30 +1053,6 @@ func TestS3SQSReader_Tag(t *testing.T) {
 				"test-key": []byte("test-content"),
 			},
 			expectedTaggedKeys: []string{},
-		},
-		{
-			name: "object not found",
-			s3Records: []s3EventRecord{
-				{
-					EventSource: "aws:s3",
-					EventName:   "ObjectCreated:Put",
-					S3: s3Data{
-						Bucket: s3BucketData{Name: "test-bucket"},
-						Object: s3ObjectData{Key: "test-key"},
-					},
-				},
-			},
-			setupMocks: func(mockS3 *mockS3ClientSQS, mockSQS *mockSQSClient, _ map[string]bool) {
-				mockS3.On("GetObject", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectInput) bool {
-					return *input.Bucket == "test-bucket" && *input.Key == "test-key"
-				})).Return([]byte(""), &s3types.NoSuchKey{Message: aws.String("The specified key does not exist.")})
-
-				mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
-					return *input.QueueUrl == "test-queue-url" && *input.ReceiptHandle == "test-receipt-handle"
-				})).Return(&sqs.DeleteMessageOutput{}, nil)
-			},
-			expectedProcessedKeys: map[string][]byte{},
-			expectedTaggedKeys:    []string{},
 		},
 		{
 			name: "multiple objects",
