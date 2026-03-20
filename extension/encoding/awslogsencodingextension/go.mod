@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/aws/aws-lambda-go v1.53.0
-	github.com/goccy/go-json v0.10.5
+	github.com/goccy/go-json v0.10.6
 	github.com/klauspost/compress v1.18.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.148.0
