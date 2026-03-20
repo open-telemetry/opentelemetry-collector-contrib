@@ -224,9 +224,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("type")
+						bindTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "server", attrVal.Str())
+						assert.Equal(t, "server", bindTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.bind.rate"], "Found a duplicate in the metrics slice: active_directory.ds.bind.rate")
 						validatedMetrics["active_directory.ds.bind.rate"] = true
@@ -348,9 +348,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("type")
+						operationTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", operationTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.operation.rate"], "Found a duplicate in the metrics slice: active_directory.ds.operation.rate")
 						validatedMetrics["active_directory.ds.operation.rate"] = true
@@ -392,12 +392,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "sent", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("type")
+						assert.Equal(t, "sent", directionAttrVal.Str())
+						networkDataTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "compressed", attrVal.Str())
+						assert.Equal(t, "compressed", networkDataTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.network.io"], "Found a duplicate in the metrics slice: active_directory.ds.replication.network.io")
 						validatedMetrics["active_directory.ds.replication.network.io"] = true
@@ -441,9 +441,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "sent", attrVal.Str())
+						assert.Equal(t, "sent", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.object.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.object.rate")
 						validatedMetrics["active_directory.ds.replication.object.rate"] = true
@@ -499,9 +499,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "sent", attrVal.Str())
+						assert.Equal(t, "sent", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.property.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.property.rate")
 						validatedMetrics["active_directory.ds.replication.property.rate"] = true
@@ -557,9 +557,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("result")
+						syncResultAttrVal, ok := dp.Attributes().Get("result")
 						assert.True(t, ok)
-						assert.Equal(t, "success", attrVal.Str())
+						assert.Equal(t, "success", syncResultAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.sync.request.count"], "Found a duplicate in the metrics slice: active_directory.ds.replication.sync.request.count")
 						validatedMetrics["active_directory.ds.replication.sync.request.count"] = true
@@ -601,12 +601,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("direction")
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "sent", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("type")
+						assert.Equal(t, "sent", directionAttrVal.Str())
+						valueTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "distinguished_names", attrVal.Str())
+						assert.Equal(t, "distinguished_names", valueTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.replication.value.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.value.rate")
 						validatedMetrics["active_directory.ds.replication.value.rate"] = true
@@ -664,9 +664,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("type")
+						suboperationTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "security_descriptor_propagations_event", attrVal.Str())
+						assert.Equal(t, "security_descriptor_propagations_event", suboperationTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["active_directory.ds.suboperation.rate"], "Found a duplicate in the metrics slice: active_directory.ds.suboperation.rate")
 						validatedMetrics["active_directory.ds.suboperation.rate"] = true

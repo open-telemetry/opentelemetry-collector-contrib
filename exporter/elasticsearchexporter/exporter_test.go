@@ -1559,6 +1559,38 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
+	t.Run("ecs mode _doc_count hint", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		gaugeMetric := scopeMetric.Metrics().AppendEmpty()
+		gaugeMetric.SetName("ecs.gauge")
+		gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+		gaugeDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+		gaugeDp.SetDoubleValue(2.5)
+		fillAttributeMap(gaugeDp.Attributes(), map[string]any{
+			"elasticsearch.mapping.hints": []string{"_doc_count"},
+		})
+
+		ctx := client.NewContext(t.Context(), client.Info{Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})})
+		mustSendMetricsWithCtx(ctx, t, exporter, metrics)
+
+		docs := rec.WaitItems(1)
+		require.Len(t, docs, 1)
+		doc := docs[0].Document
+		docCount := gjson.GetBytes(doc, "_doc_count")
+		require.True(t, docCount.Exists(), "ECS mode document should include _doc_count when hint is set")
+		assert.Equal(t, uint64(1), docCount.Uint(), "_doc_count value")
+	})
+
 	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {

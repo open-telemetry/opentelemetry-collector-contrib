@@ -292,10 +292,10 @@ type metricInfo struct {
 }
 
 type metricActiveDirectoryDsBindRate struct {
-	data          pmetric.Metric                  // data buffer for generated metric.
-	config        ActiveDirectoryDsBindRateConfig // metric config provided by user.
-	capacity      int                             // max observed number of data points added to the metric.
-	aggDataPoints []float64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        ActiveDirectoryDsBindRateMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []float64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.bind.rate metric with initial data.
@@ -318,7 +318,7 @@ func (m *metricActiveDirectoryDsBindRate) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsBindRateAttributeKeyBindType) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsBindRateMetricAttributeKeyBindType) {
 		dp.Attributes().PutStr("type", bindTypeAttributeValue)
 	}
 
@@ -372,7 +372,7 @@ func (m *metricActiveDirectoryDsBindRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricActiveDirectoryDsBindRate(cfg ActiveDirectoryDsBindRateConfig) metricActiveDirectoryDsBindRate {
+func newMetricActiveDirectoryDsBindRate(cfg ActiveDirectoryDsBindRateMetricConfig) metricActiveDirectoryDsBindRate {
 	m := metricActiveDirectoryDsBindRate{config: cfg}
 
 	if cfg.Enabled {
@@ -383,9 +383,9 @@ func newMetricActiveDirectoryDsBindRate(cfg ActiveDirectoryDsBindRateConfig) met
 }
 
 type metricActiveDirectoryDsLdapBindLastSuccessfulTime struct {
-	data     pmetric.Metric                                    // data buffer for generated metric.
-	config   ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig // metric config provided by user.
-	capacity int                                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                                          // data buffer for generated metric.
+	config   ActiveDirectoryDsLdapBindLastSuccessfulTimeMetricConfig // metric config provided by user.
+	capacity int                                                     // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.ldap.bind.last_successful.time metric with initial data.
@@ -422,7 +422,7 @@ func (m *metricActiveDirectoryDsLdapBindLastSuccessfulTime) emit(metrics pmetric
 	}
 }
 
-func newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(cfg ActiveDirectoryDsLdapBindLastSuccessfulTimeConfig) metricActiveDirectoryDsLdapBindLastSuccessfulTime {
+func newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(cfg ActiveDirectoryDsLdapBindLastSuccessfulTimeMetricConfig) metricActiveDirectoryDsLdapBindLastSuccessfulTime {
 	m := metricActiveDirectoryDsLdapBindLastSuccessfulTime{config: cfg}
 
 	if cfg.Enabled {
@@ -433,9 +433,9 @@ func newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(cfg ActiveDirectoryDsL
 }
 
 type metricActiveDirectoryDsLdapBindRate struct {
-	data     pmetric.Metric                      // data buffer for generated metric.
-	config   ActiveDirectoryDsLdapBindRateConfig // metric config provided by user.
-	capacity int                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   ActiveDirectoryDsLdapBindRateMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.ldap.bind.rate metric with initial data.
@@ -474,7 +474,7 @@ func (m *metricActiveDirectoryDsLdapBindRate) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricActiveDirectoryDsLdapBindRate(cfg ActiveDirectoryDsLdapBindRateConfig) metricActiveDirectoryDsLdapBindRate {
+func newMetricActiveDirectoryDsLdapBindRate(cfg ActiveDirectoryDsLdapBindRateMetricConfig) metricActiveDirectoryDsLdapBindRate {
 	m := metricActiveDirectoryDsLdapBindRate{config: cfg}
 
 	if cfg.Enabled {
@@ -485,9 +485,9 @@ func newMetricActiveDirectoryDsLdapBindRate(cfg ActiveDirectoryDsLdapBindRateCon
 }
 
 type metricActiveDirectoryDsLdapClientSessionCount struct {
-	data     pmetric.Metric                                // data buffer for generated metric.
-	config   ActiveDirectoryDsLdapClientSessionCountConfig // metric config provided by user.
-	capacity int                                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                                      // data buffer for generated metric.
+	config   ActiveDirectoryDsLdapClientSessionCountMetricConfig // metric config provided by user.
+	capacity int                                                 // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.ldap.client.session.count metric with initial data.
@@ -526,7 +526,7 @@ func (m *metricActiveDirectoryDsLdapClientSessionCount) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricActiveDirectoryDsLdapClientSessionCount(cfg ActiveDirectoryDsLdapClientSessionCountConfig) metricActiveDirectoryDsLdapClientSessionCount {
+func newMetricActiveDirectoryDsLdapClientSessionCount(cfg ActiveDirectoryDsLdapClientSessionCountMetricConfig) metricActiveDirectoryDsLdapClientSessionCount {
 	m := metricActiveDirectoryDsLdapClientSessionCount{config: cfg}
 
 	if cfg.Enabled {
@@ -537,9 +537,9 @@ func newMetricActiveDirectoryDsLdapClientSessionCount(cfg ActiveDirectoryDsLdapC
 }
 
 type metricActiveDirectoryDsLdapSearchRate struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   ActiveDirectoryDsLdapSearchRateConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   ActiveDirectoryDsLdapSearchRateMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.ldap.search.rate metric with initial data.
@@ -578,7 +578,7 @@ func (m *metricActiveDirectoryDsLdapSearchRate) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricActiveDirectoryDsLdapSearchRate(cfg ActiveDirectoryDsLdapSearchRateConfig) metricActiveDirectoryDsLdapSearchRate {
+func newMetricActiveDirectoryDsLdapSearchRate(cfg ActiveDirectoryDsLdapSearchRateMetricConfig) metricActiveDirectoryDsLdapSearchRate {
 	m := metricActiveDirectoryDsLdapSearchRate{config: cfg}
 
 	if cfg.Enabled {
@@ -589,9 +589,9 @@ func newMetricActiveDirectoryDsLdapSearchRate(cfg ActiveDirectoryDsLdapSearchRat
 }
 
 type metricActiveDirectoryDsNameCacheHitRate struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   ActiveDirectoryDsNameCacheHitRateConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   ActiveDirectoryDsNameCacheHitRateMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.name_cache.hit_rate metric with initial data.
@@ -628,7 +628,7 @@ func (m *metricActiveDirectoryDsNameCacheHitRate) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricActiveDirectoryDsNameCacheHitRate(cfg ActiveDirectoryDsNameCacheHitRateConfig) metricActiveDirectoryDsNameCacheHitRate {
+func newMetricActiveDirectoryDsNameCacheHitRate(cfg ActiveDirectoryDsNameCacheHitRateMetricConfig) metricActiveDirectoryDsNameCacheHitRate {
 	m := metricActiveDirectoryDsNameCacheHitRate{config: cfg}
 
 	if cfg.Enabled {
@@ -639,9 +639,9 @@ func newMetricActiveDirectoryDsNameCacheHitRate(cfg ActiveDirectoryDsNameCacheHi
 }
 
 type metricActiveDirectoryDsNotificationQueued struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   ActiveDirectoryDsNotificationQueuedConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   ActiveDirectoryDsNotificationQueuedMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.notification.queued metric with initial data.
@@ -680,7 +680,7 @@ func (m *metricActiveDirectoryDsNotificationQueued) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricActiveDirectoryDsNotificationQueued(cfg ActiveDirectoryDsNotificationQueuedConfig) metricActiveDirectoryDsNotificationQueued {
+func newMetricActiveDirectoryDsNotificationQueued(cfg ActiveDirectoryDsNotificationQueuedMetricConfig) metricActiveDirectoryDsNotificationQueued {
 	m := metricActiveDirectoryDsNotificationQueued{config: cfg}
 
 	if cfg.Enabled {
@@ -691,10 +691,10 @@ func newMetricActiveDirectoryDsNotificationQueued(cfg ActiveDirectoryDsNotificat
 }
 
 type metricActiveDirectoryDsOperationRate struct {
-	data          pmetric.Metric                       // data buffer for generated metric.
-	config        ActiveDirectoryDsOperationRateConfig // metric config provided by user.
-	capacity      int                                  // max observed number of data points added to the metric.
-	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        ActiveDirectoryDsOperationRateMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []float64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.operation.rate metric with initial data.
@@ -717,7 +717,7 @@ func (m *metricActiveDirectoryDsOperationRate) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsOperationRateAttributeKeyOperationType) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsOperationRateMetricAttributeKeyOperationType) {
 		dp.Attributes().PutStr("type", operationTypeAttributeValue)
 	}
 
@@ -771,7 +771,7 @@ func (m *metricActiveDirectoryDsOperationRate) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricActiveDirectoryDsOperationRate(cfg ActiveDirectoryDsOperationRateConfig) metricActiveDirectoryDsOperationRate {
+func newMetricActiveDirectoryDsOperationRate(cfg ActiveDirectoryDsOperationRateMetricConfig) metricActiveDirectoryDsOperationRate {
 	m := metricActiveDirectoryDsOperationRate{config: cfg}
 
 	if cfg.Enabled {
@@ -782,10 +782,10 @@ func newMetricActiveDirectoryDsOperationRate(cfg ActiveDirectoryDsOperationRateC
 }
 
 type metricActiveDirectoryDsReplicationNetworkIo struct {
-	data          pmetric.Metric                              // data buffer for generated metric.
-	config        ActiveDirectoryDsReplicationNetworkIoConfig // metric config provided by user.
-	capacity      int                                         // max observed number of data points added to the metric.
-	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        ActiveDirectoryDsReplicationNetworkIoMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []int64                                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.replication.network.io metric with initial data.
@@ -808,10 +808,10 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) recordDataPoint(start pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationNetworkIoAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationNetworkIoMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationNetworkIoAttributeKeyNetworkDataType) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationNetworkIoMetricAttributeKeyNetworkDataType) {
 		dp.Attributes().PutStr("type", networkDataTypeAttributeValue)
 	}
 
@@ -865,7 +865,7 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricActiveDirectoryDsReplicationNetworkIo(cfg ActiveDirectoryDsReplicationNetworkIoConfig) metricActiveDirectoryDsReplicationNetworkIo {
+func newMetricActiveDirectoryDsReplicationNetworkIo(cfg ActiveDirectoryDsReplicationNetworkIoMetricConfig) metricActiveDirectoryDsReplicationNetworkIo {
 	m := metricActiveDirectoryDsReplicationNetworkIo{config: cfg}
 
 	if cfg.Enabled {
@@ -876,10 +876,10 @@ func newMetricActiveDirectoryDsReplicationNetworkIo(cfg ActiveDirectoryDsReplica
 }
 
 type metricActiveDirectoryDsReplicationObjectRate struct {
-	data          pmetric.Metric                               // data buffer for generated metric.
-	config        ActiveDirectoryDsReplicationObjectRateConfig // metric config provided by user.
-	capacity      int                                          // max observed number of data points added to the metric.
-	aggDataPoints []float64                                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                     // data buffer for generated metric.
+	config        ActiveDirectoryDsReplicationObjectRateMetricConfig // metric config provided by user.
+	capacity      int                                                // max observed number of data points added to the metric.
+	aggDataPoints []float64                                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.replication.object.rate metric with initial data.
@@ -902,7 +902,7 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) recordDataPoint(start pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationObjectRateAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationObjectRateMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -956,7 +956,7 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricActiveDirectoryDsReplicationObjectRate(cfg ActiveDirectoryDsReplicationObjectRateConfig) metricActiveDirectoryDsReplicationObjectRate {
+func newMetricActiveDirectoryDsReplicationObjectRate(cfg ActiveDirectoryDsReplicationObjectRateMetricConfig) metricActiveDirectoryDsReplicationObjectRate {
 	m := metricActiveDirectoryDsReplicationObjectRate{config: cfg}
 
 	if cfg.Enabled {
@@ -967,9 +967,9 @@ func newMetricActiveDirectoryDsReplicationObjectRate(cfg ActiveDirectoryDsReplic
 }
 
 type metricActiveDirectoryDsReplicationOperationPending struct {
-	data     pmetric.Metric                                     // data buffer for generated metric.
-	config   ActiveDirectoryDsReplicationOperationPendingConfig // metric config provided by user.
-	capacity int                                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                                           // data buffer for generated metric.
+	config   ActiveDirectoryDsReplicationOperationPendingMetricConfig // metric config provided by user.
+	capacity int                                                      // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.replication.operation.pending metric with initial data.
@@ -1008,7 +1008,7 @@ func (m *metricActiveDirectoryDsReplicationOperationPending) emit(metrics pmetri
 	}
 }
 
-func newMetricActiveDirectoryDsReplicationOperationPending(cfg ActiveDirectoryDsReplicationOperationPendingConfig) metricActiveDirectoryDsReplicationOperationPending {
+func newMetricActiveDirectoryDsReplicationOperationPending(cfg ActiveDirectoryDsReplicationOperationPendingMetricConfig) metricActiveDirectoryDsReplicationOperationPending {
 	m := metricActiveDirectoryDsReplicationOperationPending{config: cfg}
 
 	if cfg.Enabled {
@@ -1019,10 +1019,10 @@ func newMetricActiveDirectoryDsReplicationOperationPending(cfg ActiveDirectoryDs
 }
 
 type metricActiveDirectoryDsReplicationPropertyRate struct {
-	data          pmetric.Metric                                 // data buffer for generated metric.
-	config        ActiveDirectoryDsReplicationPropertyRateConfig // metric config provided by user.
-	capacity      int                                            // max observed number of data points added to the metric.
-	aggDataPoints []float64                                      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                       // data buffer for generated metric.
+	config        ActiveDirectoryDsReplicationPropertyRateMetricConfig // metric config provided by user.
+	capacity      int                                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.replication.property.rate metric with initial data.
@@ -1045,7 +1045,7 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) recordDataPoint(start p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationPropertyRateAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationPropertyRateMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -1099,7 +1099,7 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricActiveDirectoryDsReplicationPropertyRate(cfg ActiveDirectoryDsReplicationPropertyRateConfig) metricActiveDirectoryDsReplicationPropertyRate {
+func newMetricActiveDirectoryDsReplicationPropertyRate(cfg ActiveDirectoryDsReplicationPropertyRateMetricConfig) metricActiveDirectoryDsReplicationPropertyRate {
 	m := metricActiveDirectoryDsReplicationPropertyRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1110,9 +1110,9 @@ func newMetricActiveDirectoryDsReplicationPropertyRate(cfg ActiveDirectoryDsRepl
 }
 
 type metricActiveDirectoryDsReplicationSyncObjectPending struct {
-	data     pmetric.Metric                                      // data buffer for generated metric.
-	config   ActiveDirectoryDsReplicationSyncObjectPendingConfig // metric config provided by user.
-	capacity int                                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                                            // data buffer for generated metric.
+	config   ActiveDirectoryDsReplicationSyncObjectPendingMetricConfig // metric config provided by user.
+	capacity int                                                       // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.replication.sync.object.pending metric with initial data.
@@ -1151,7 +1151,7 @@ func (m *metricActiveDirectoryDsReplicationSyncObjectPending) emit(metrics pmetr
 	}
 }
 
-func newMetricActiveDirectoryDsReplicationSyncObjectPending(cfg ActiveDirectoryDsReplicationSyncObjectPendingConfig) metricActiveDirectoryDsReplicationSyncObjectPending {
+func newMetricActiveDirectoryDsReplicationSyncObjectPending(cfg ActiveDirectoryDsReplicationSyncObjectPendingMetricConfig) metricActiveDirectoryDsReplicationSyncObjectPending {
 	m := metricActiveDirectoryDsReplicationSyncObjectPending{config: cfg}
 
 	if cfg.Enabled {
@@ -1162,10 +1162,10 @@ func newMetricActiveDirectoryDsReplicationSyncObjectPending(cfg ActiveDirectoryD
 }
 
 type metricActiveDirectoryDsReplicationSyncRequestCount struct {
-	data          pmetric.Metric                                     // data buffer for generated metric.
-	config        ActiveDirectoryDsReplicationSyncRequestCountConfig // metric config provided by user.
-	capacity      int                                                // max observed number of data points added to the metric.
-	aggDataPoints []int64                                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                           // data buffer for generated metric.
+	config        ActiveDirectoryDsReplicationSyncRequestCountMetricConfig // metric config provided by user.
+	capacity      int                                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.replication.sync.request.count metric with initial data.
@@ -1188,7 +1188,7 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) recordDataPoint(sta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationSyncRequestCountAttributeKeySyncResult) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationSyncRequestCountMetricAttributeKeySyncResult) {
 		dp.Attributes().PutStr("result", syncResultAttributeValue)
 	}
 
@@ -1242,7 +1242,7 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) emit(metrics pmetri
 	}
 }
 
-func newMetricActiveDirectoryDsReplicationSyncRequestCount(cfg ActiveDirectoryDsReplicationSyncRequestCountConfig) metricActiveDirectoryDsReplicationSyncRequestCount {
+func newMetricActiveDirectoryDsReplicationSyncRequestCount(cfg ActiveDirectoryDsReplicationSyncRequestCountMetricConfig) metricActiveDirectoryDsReplicationSyncRequestCount {
 	m := metricActiveDirectoryDsReplicationSyncRequestCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1253,10 +1253,10 @@ func newMetricActiveDirectoryDsReplicationSyncRequestCount(cfg ActiveDirectoryDs
 }
 
 type metricActiveDirectoryDsReplicationValueRate struct {
-	data          pmetric.Metric                              // data buffer for generated metric.
-	config        ActiveDirectoryDsReplicationValueRateConfig // metric config provided by user.
-	capacity      int                                         // max observed number of data points added to the metric.
-	aggDataPoints []float64                                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        ActiveDirectoryDsReplicationValueRateMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.replication.value.rate metric with initial data.
@@ -1279,10 +1279,10 @@ func (m *metricActiveDirectoryDsReplicationValueRate) recordDataPoint(start pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationValueRateAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationValueRateMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationValueRateAttributeKeyValueType) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsReplicationValueRateMetricAttributeKeyValueType) {
 		dp.Attributes().PutStr("type", valueTypeAttributeValue)
 	}
 
@@ -1336,7 +1336,7 @@ func (m *metricActiveDirectoryDsReplicationValueRate) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricActiveDirectoryDsReplicationValueRate(cfg ActiveDirectoryDsReplicationValueRateConfig) metricActiveDirectoryDsReplicationValueRate {
+func newMetricActiveDirectoryDsReplicationValueRate(cfg ActiveDirectoryDsReplicationValueRateMetricConfig) metricActiveDirectoryDsReplicationValueRate {
 	m := metricActiveDirectoryDsReplicationValueRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1347,9 +1347,9 @@ func newMetricActiveDirectoryDsReplicationValueRate(cfg ActiveDirectoryDsReplica
 }
 
 type metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued struct {
-	data     pmetric.Metric                                                   // data buffer for generated metric.
-	config   ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig // metric config provided by user.
-	capacity int                                                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                                                         // data buffer for generated metric.
+	config   ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedMetricConfig // metric config provided by user.
+	capacity int                                                                    // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.security_descriptor_propagations_event.queued metric with initial data.
@@ -1388,7 +1388,7 @@ func (m *metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued) emit(
 	}
 }
 
-func newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(cfg ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedConfig) metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued {
+func newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(cfg ActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedMetricConfig) metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued {
 	m := metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued{config: cfg}
 
 	if cfg.Enabled {
@@ -1399,10 +1399,10 @@ func newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(cfg Act
 }
 
 type metricActiveDirectoryDsSuboperationRate struct {
-	data          pmetric.Metric                          // data buffer for generated metric.
-	config        ActiveDirectoryDsSuboperationRateConfig // metric config provided by user.
-	capacity      int                                     // max observed number of data points added to the metric.
-	aggDataPoints []float64                               // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        ActiveDirectoryDsSuboperationRateMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []float64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills active_directory.ds.suboperation.rate metric with initial data.
@@ -1425,7 +1425,7 @@ func (m *metricActiveDirectoryDsSuboperationRate) recordDataPoint(start pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsSuboperationRateAttributeKeySuboperationType) {
+	if slices.Contains(m.config.EnabledAttributes, ActiveDirectoryDsSuboperationRateMetricAttributeKeySuboperationType) {
 		dp.Attributes().PutStr("type", suboperationTypeAttributeValue)
 	}
 
@@ -1479,7 +1479,7 @@ func (m *metricActiveDirectoryDsSuboperationRate) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricActiveDirectoryDsSuboperationRate(cfg ActiveDirectoryDsSuboperationRateConfig) metricActiveDirectoryDsSuboperationRate {
+func newMetricActiveDirectoryDsSuboperationRate(cfg ActiveDirectoryDsSuboperationRateMetricConfig) metricActiveDirectoryDsSuboperationRate {
 	m := metricActiveDirectoryDsSuboperationRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1490,9 +1490,9 @@ func newMetricActiveDirectoryDsSuboperationRate(cfg ActiveDirectoryDsSuboperatio
 }
 
 type metricActiveDirectoryDsThreadCount struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   ActiveDirectoryDsThreadCountConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   ActiveDirectoryDsThreadCountMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills active_directory.ds.thread.count metric with initial data.
@@ -1531,7 +1531,7 @@ func (m *metricActiveDirectoryDsThreadCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricActiveDirectoryDsThreadCount(cfg ActiveDirectoryDsThreadCountConfig) metricActiveDirectoryDsThreadCount {
+func newMetricActiveDirectoryDsThreadCount(cfg ActiveDirectoryDsThreadCountMetricConfig) metricActiveDirectoryDsThreadCount {
 	m := metricActiveDirectoryDsThreadCount{config: cfg}
 
 	if cfg.Enabled {

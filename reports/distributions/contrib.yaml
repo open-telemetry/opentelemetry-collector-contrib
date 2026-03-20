@@ -35,9 +35,9 @@ components:
         - elasticsearch
         - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
-        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
@@ -68,6 +68,7 @@ components:
         - awscloudwatchmetricstreams_encoding
         - awsproxy
         - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
         - cgroup_runtime
@@ -138,6 +139,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awslambda
         - awss3
         - awsxray
         - azure_blob
@@ -145,6 +147,7 @@ components:
         - azure_monitor
         - carbon
         - chrony
+        - cisco_os
         - cloudflare
         - cloudfoundry
         - collectd
@@ -195,6 +198,7 @@ components:
         - otlpjsonfile
         - podman_stats
         - postgresql
+        - pprof
         - prometheus
         - prometheus_remote_write
         - prometheus_simple
