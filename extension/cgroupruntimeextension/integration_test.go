@@ -19,7 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"testing/synctest"
 	"time"
 
 	"github.com/containerd/cgroups/v3/cgroup2"
@@ -377,50 +376,27 @@ func TestDynamicMemoryLimitRefreshSudo(t *testing.T) {
 		memoryCgroupCleanUp()
 	})
 
-	synctest.Test(t, func(t *testing.T) {
-		var initialMem int64 = 4294967296 // 4GB
-		var updatedMem int64 = 2147483648 // 2GB
-		ratio := 0.8
+	var initialMem int64 = 4294967296 // 4GB
+	var updatedMem int64 = 2147483648 // 2GB
+	ratio := 0.8
+	refreshInterval := 100 * time.Millisecond
 
-		refreshInterval := 10 * time.Minute
+	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: pointerInt64(initialMem)}})
+	require.NoError(t, err)
 
-		// Setting the initial cgroup memory limit
-		err = manager.Update(&cgroup2.Resources{
-			Memory: &cgroup2.Memory{
-				Max: pointerInt64(initialMem),
-			},
-		})
-		require.NoError(t, err)
+	config := &Config{
+		GoMaxProcs: GoMaxProcsConfig{Enabled: false},
+		GoMemLimit: GoMemLimitConfig{Enabled: true, Ratio: ratio, RefreshInterval: refreshInterval},
+	}
 
-		config := &Config{
-			GoMaxProcs: GoMaxProcsConfig{Enabled: false},
-			GoMemLimit: GoMemLimitConfig{
-				Enabled:         true,
-				Ratio:           ratio,
-				RefreshInterval: refreshInterval,
-			},
-		}
+	startExtension(t, config)
+	assert.Equal(t, int64(float64(initialMem)*ratio), debug.SetMemoryLimit(-1))
 
-		startExtension(t, config)
-		synctest.Wait() // Wait for initial background goroutines to settle
+	err = manager.Update(&cgroup2.Resources{Memory: &cgroup2.Memory{Max: pointerInt64(updatedMem)}})
+	require.NoError(t, err)
 
-		// Initial verification
-		expectedInitialLimit := int64(float64(initialMem) * ratio)
-		assert.Equal(t, expectedInitialLimit, debug.SetMemoryLimit(-1))
-
-		err = manager.Update(&cgroup2.Resources{
-			Memory: &cgroup2.Memory{
-				Max: pointerInt64(updatedMem),
-			},
-		})
-		require.NoError(t, err)
-
-		time.Sleep(refreshInterval + time.Millisecond)
-
-		synctest.Wait()
-
-		// Verify GOMEMLIMIT updated automatically
-		expectedUpdatedLimit := int64(float64(updatedMem) * ratio)
-		assert.Equal(t, expectedUpdatedLimit, debug.SetMemoryLimit(-1))
-	})
+	expectedUpdatedLimit := int64(float64(updatedMem) * ratio)
+	assert.Eventually(t, func() bool {
+		return debug.SetMemoryLimit(-1) == expectedUpdatedLimit
+	}, 2*time.Second, 50*time.Millisecond, "GOMEMLIMIT was not updated")
 }
