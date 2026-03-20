@@ -479,6 +479,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
+	var docCount uint64
 
 	for _, dp := range dataPoints {
 		value, err := dp.Value()
@@ -492,8 +493,15 @@ func (ecsDataPointsEncoder) encodeMetrics(
 		if name := dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeECS); name != "" {
 			document.AddDynamicTemplate(metricName, name)
 		}
+
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
+			docCount = dp.DocCount()
+		}
 	}
 
+	if docCount != 0 {
+		document.AddUInt("_doc_count", docCount)
+	}
 	err := document.Serialize(buf, true, metricsProtectedFields)
 
 	return document.DynamicTemplates(), err
