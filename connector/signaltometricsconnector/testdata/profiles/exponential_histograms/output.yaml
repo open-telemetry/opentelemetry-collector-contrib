@@ -39,6 +39,7 @@ resourceMetrics:
                   negative: {}
                   positive: {}
                   sum: 0
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                   zeroCount: "1"
             name: profiles.foo.exphistogram
@@ -64,6 +65,7 @@ resourceMetrics:
                   negative: {}
                   positive: {}
                   sum: 0
+                  startTimeUnixNano: "1000000"
                   timeUnixNano: "1000000"
                   zeroCount: "3"
             name: total.profiles.resource.foo.exphistogram

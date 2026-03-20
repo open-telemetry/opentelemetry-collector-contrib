@@ -34,6 +34,7 @@ type Input struct {
 	currentMaxReads          int
 	startAt                  string
 	raw                      bool
+	eventDataFormat          EventDataFormat
 	includeLogRecordOriginal bool
 	excludeProviders         map[string]struct{}
 	pollInterval             time.Duration
@@ -353,7 +354,7 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	var body any = eventXML.Original
 	if !i.raw {
-		body = formattedBody(eventXML)
+		body = formattedBody(eventXML, i.eventDataFormat)
 	}
 
 	e, err := i.NewEntry(body)
@@ -362,7 +363,11 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	}
 
 	e.Timestamp = parseTimestamp(eventXML.TimeCreated.SystemTime)
-	e.Severity = parseSeverity(eventXML.RenderedLevel, eventXML.Level)
+	renderedLevel := ""
+	if eventXML.RenderingInfo != nil {
+		renderedLevel = eventXML.RenderingInfo.Level
+	}
+	e.Severity = parseSeverity(renderedLevel, eventXML.Level)
 
 	if i.remote.Server != "" {
 		e.AddAttribute("server.address", i.remote.Server)

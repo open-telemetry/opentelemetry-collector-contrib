@@ -14,6 +14,8 @@ import (
 type TraceData struct {
 	// SpanCount track the number of spans on the trace.
 	SpanCount int64
+	// SizeBytes is how many bytes we have accumulated for the trace.
+	SizeBytes uint64
 	// ReceivedBatches stores all the batches received for the trace.
 	ReceivedBatches ptrace.Traces
 }
