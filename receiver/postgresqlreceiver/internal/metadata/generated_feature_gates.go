@@ -6,20 +6,20 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var PostgresqlreceiverPreciselagmetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"postgresqlreceiver.preciselagmetrics",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),
+	featuregate.WithRegisterFromVersion("v0.89.0"),
+)
+
 var ReceiverPostgresqlConnectionPoolFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.postgresql.connectionPool",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Use of connection pooling"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),
 	featuregate.WithRegisterFromVersion("v0.96.0"),
-)
-
-var ReceiverPostgresqlPreciseLagMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.postgresql.preciseLagMetrics",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),
-	featuregate.WithRegisterFromVersion("v0.89.0"),
 )
 
 var ReceiverPostgresqlSeparateSchemaAttrFeatureGate = featuregate.GlobalRegistry().MustRegister(

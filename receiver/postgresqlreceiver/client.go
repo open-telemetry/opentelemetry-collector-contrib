@@ -780,7 +780,7 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 }
 
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
-	if !metadata.ReceiverPostgresqlPreciseLagMetricsFeatureGate.IsEnabled() {
+	if !metadata.PostgresqlreceiverPreciselagmetricsFeatureGate.IsEnabled() {
 		return c.getDeprecatedReplicationStats(ctx)
 	}
 

@@ -632,7 +632,7 @@ func (p *postgreSQLScraper) collectReplicationStats(
 		if rs.pendingBytes >= 0 {
 			p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
 		}
-		if metadata.ReceiverPostgresqlPreciseLagMetricsFeatureGate.IsEnabled() {
+		if metadata.PostgresqlreceiverPreciselagmetricsFeatureGate.IsEnabled() {
 			if rs.writeLag >= 0 {
 				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
 			}

@@ -168,7 +168,7 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 
 	runTest := func(separateSchemaAttr bool, file string) {
 		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
-		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlPreciseLagMetricsFeatureGate, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.PostgresqlreceiverPreciselagmetricsFeatureGate, false)()
 
 		cfg := createDefaultConfig().(*Config)
 
