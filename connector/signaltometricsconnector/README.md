@@ -396,6 +396,28 @@ The expression reads the allow-list from the `x-allowed-attrs` metadata key
 (a comma-separated string of base key names, e.g. `"team,cost"`) and returns
 only prefix-matched resource attributes whose base name is in the list.
 
+**Example 3 -- resource-attribute-driven allow-list:**
+
+Read the allow-list from a resource attribute instead of client metadata:
+
+```yaml
+signal_to_metrics:
+  spans:
+    - name: my.metric
+      include_resource_attributes:
+        - key: service.name
+      dynamic_resource_attributes:
+        statement: |
+          FilterMapByKeyList(resource.attributes, resource.attributes["allowed.labels"], ["labels.", "numeric_labels."])
+      sum:
+        value: "1"
+```
+
+If the incoming resource has `allowed.labels="team,cost"`, `labels.team=platform`,
+`labels.env=prod`, and `numeric_labels.cost=42`, the output metric resource will
+contain `service.name` (static), `labels.team`, and `numeric_labels.cost` (dynamic).
+The `labels.env` key is excluded because `env` is not in the allow-list.
+
 ### Custom OTTL functions
 
 The component ships the following built-in custom OTTL functions:

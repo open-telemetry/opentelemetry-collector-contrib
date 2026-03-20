@@ -178,7 +178,9 @@ func TestFilterResourceAttributes_DynamicExpression(t *testing.T) {
 	resourceAttrs := map[string]any{
 		"service.name":        "svc",
 		"labels.team":         "platform",
+		"labels.env":          "prod",
 		"numeric_labels.cost": float64(42),
+		"allowed.labels":      "team,cost",
 	}
 
 	cases := []struct {
@@ -206,6 +208,19 @@ func TestFilterResourceAttributes_DynamicExpression(t *testing.T) {
 			},
 		},
 		{
+			name: "resource_attribute_driven_allow_list",
+			expr: `FilterMapByKeyList(resource.attributes, resource.attributes["allowed.labels"], ["labels.", "numeric_labels."])`,
+			includeResourceAttributes: []AttributeKeyValue{
+				testAttributeKeyValue(t, "service.name", false, nil),
+			},
+			expected: map[string]any{
+				"service.name":                          "svc",
+				"labels.team":                           "platform",
+				"numeric_labels.cost":                   float64(42),
+				"signal_to_metrics.service.instance.id": testServiceInstanceID,
+			},
+		},
+		{
 			name: "prefix_based_label_forwarding",
 			expr: `FilterMapByKeyList(resource.attributes, "*", ["labels.", "numeric_labels."])`,
 			includeResourceAttributes: []AttributeKeyValue{
@@ -214,6 +229,7 @@ func TestFilterResourceAttributes_DynamicExpression(t *testing.T) {
 			expected: map[string]any{
 				"service.name":                          "svc",
 				"labels.team":                           "platform",
+				"labels.env":                            "prod",
 				"numeric_labels.cost":                   float64(42),
 				"signal_to_metrics.service.instance.id": testServiceInstanceID,
 			},
