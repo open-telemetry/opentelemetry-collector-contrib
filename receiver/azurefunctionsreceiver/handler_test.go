@@ -64,10 +64,10 @@ func TestHandleLogs(t *testing.T) {
 			logsSink := consumertest.LogsSink{}
 			unmarshaler := &testLogsUnmarshaler{} // returns one log for "valid", error for "invalid"
 			decoder := transport.NewBinaryDecoder()
-			protocol := NewInvokeProtocol(decoder, zap.NewNop(), eventhub.ExtractMetadata)
+			protocol := newInvokeProtocol(decoder, zap.NewNop(), eventhub.ExtractMetadata)
 			consumer := eventhub.NewLogsConsumer(unmarshaler, &logsSink)
-			profile := NewProfile("logs", protocol, consumer)
-			h := createHandler(profile)
+			prof := newProfile("logs", protocol, consumer)
+			h := createHandler(prof)
 
 			requestBody, err := os.ReadFile(filepath.Join("testdata", test.testDataFile))
 			require.NoError(t, err, "failed to read test data file")

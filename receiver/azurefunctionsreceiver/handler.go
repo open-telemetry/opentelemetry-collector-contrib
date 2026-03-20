@@ -24,17 +24,16 @@ type Protocol interface {
 	Failure(w http.ResponseWriter, err error, body []byte)
 }
 
-// Profile binds a method name (binding/path) to a Protocol and Consumer.
+// profile binds a method name (binding/path) to a Protocol and Consumer.
 // The generic HTTP handler uses it to: parse request with protocol, then consume with consumer.
-type Profile struct {
+type profile struct {
 	method   string
 	protocol Protocol
 	consumer handler.Consumer
 }
 
-// NewProfile returns a Profile for the given method, protocol, and consumer.
-func NewProfile(method string, protocol Protocol, consumer handler.Consumer) Profile {
-	return Profile{
+func newProfile(method string, protocol Protocol, consumer handler.Consumer) profile {
+	return profile{
 		method:   method,
 		protocol: protocol,
 		consumer: consumer,
@@ -53,9 +52,9 @@ type invokeProtocol struct {
 	extractor MetadataExtractor
 }
 
-// NewInvokeProtocol returns a Protocol that parses invoke requests and decodes the binding
+// newInvokeProtocol returns a Protocol that parses invoke requests and decodes the binding
 // payload. If extractor is non-nil and invoke Metadata is present, it is used to fill ParsedRequest.Metadata.
-func NewInvokeProtocol(decoder *transport.BinaryDecoder, logger *zap.Logger, extractor MetadataExtractor) Protocol {
+func newInvokeProtocol(decoder *transport.BinaryDecoder, logger *zap.Logger, extractor MetadataExtractor) Protocol {
 	if logger == nil {
 		logger = zap.NewNop()
 	}
@@ -101,26 +100,26 @@ func (p *invokeProtocol) Failure(w http.ResponseWriter, err error, body []byte) 
 // createHandler returns an HTTP handler for the given profile. It reads the body,
 // parses it with the protocol, consumes with the consumer, and responds with success or failure.
 // The same flow is used for every trigger; no trigger-specific logic here.
-func createHandler(profile Profile) http.Handler {
+func createHandler(p profile) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			profile.protocol.Failure(w, fmt.Errorf("read body: %w", err), nil)
+			p.protocol.Failure(w, fmt.Errorf("read body: %w", err), nil)
 			return
 		}
 		defer r.Body.Close()
 
-		parsed, err := profile.protocol.ParseRequest(profile.method, body)
+		parsed, err := p.protocol.ParseRequest(p.method, body)
 		if err != nil {
-			profile.protocol.Failure(w, err, body)
+			p.protocol.Failure(w, err, body)
 			return
 		}
 
-		if err := profile.consumer.ConsumeEvents(r.Context(), parsed); err != nil {
-			profile.protocol.Failure(w, err, body)
+		if err := p.consumer.ConsumeEvents(r.Context(), parsed); err != nil {
+			p.protocol.Failure(w, err, body)
 			return
 		}
 
-		profile.protocol.Success(w)
+		p.protocol.Success(w)
 	})
 }

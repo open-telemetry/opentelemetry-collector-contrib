@@ -56,11 +56,11 @@ func (r *functionsReceiver) Start(ctx context.Context, host component.Host) erro
 
 		for _, b := range r.cfg.EventHub.Logs {
 			u := unmarshalers[b.Name]
-			protocol := NewInvokeProtocol(decoder, r.settings.Logger, extractor)
+			protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
 			consumer := eventhub.NewLogsConsumer(u, r.nextLogs)
-			profile := NewProfile(b.Name, protocol, consumer)
+			prof := newProfile(b.Name, protocol, consumer)
 			path := "/" + b.Name
-			mux.Handle(path, createHandler(profile))
+			mux.Handle(path, createHandler(prof))
 		}
 	}
 
