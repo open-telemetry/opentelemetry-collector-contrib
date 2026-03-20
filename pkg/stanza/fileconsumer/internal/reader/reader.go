@@ -136,7 +136,7 @@ func (r *Reader) createGzipReader() (int64, error) {
 	currentEOF := info.Size()
 
 	// Determine starting position of compressed file. When a plaintext file has been
-	// rotated (compressed), the entire .gz file is a new byte stream and must be
+	// compressed, the entire .gz file is a new byte stream and must be
 	// decompressed from byte 0. decompressedBytesToSkip holds the number of bytes
 	// already-consumed in the uncompressed stream to discard.
 	compressedStart := r.Offset

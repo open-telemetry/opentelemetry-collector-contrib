@@ -100,7 +100,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
 	// Re-detect file type when compression is enabled.
-	// This handles the case where a file was rotated and then compressed (e.g. test.log → test.log.gz):
+	// This handles the case where a file was compressed (e.g. test.log → test.log.gz):
 	// fingerprint matching succeeds because the decompressed content of the .gz matches the original
 	// plaintext fingerprint, but the file format has changed. Reusing the old FileType and old
 	// plaintext Offset with a gzip-compressed file causes ReadToEnd to seek to the wrong position
@@ -116,7 +116,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 				zap.String("new_file_type", newFileType),
 				zap.Int64("old_offset", m.Offset),
 			)
-			// Plaintext → gzip rotation: the old offset represents the number of
+			// Plaintext → gzip compression: the old offset represents the number of
 			// decompressed bytes already consumed. Decompress the .gz
 			// from byte 0 and skip that many decompressed bytes so we only emit
 			// new lines.

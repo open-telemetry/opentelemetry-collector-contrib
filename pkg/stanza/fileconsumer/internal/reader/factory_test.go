@@ -236,17 +236,17 @@ func TestNewReaderFromMetadataConcurrentAccess(t *testing.T) {
 		"Original FileAttributes map should not be mutated")
 }
 
-// TestNewReaderFromMetadataForRotationWithCompression is a regression test for
+// TestNewReaderFromMetadataAfterCompression is a regression test for
 // https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46105.
 //
-// When a plaintext log file is rotated and compressed (e.g. test.log → test.log.gz),
+// When a plaintext log file is compressed (e.g. test.log → test.log.gz),
 // fingerprint matching succeeds because the decompressed content of the .gz begins with
 // the same bytes as the original plaintext fingerprint. However, the file format has
 // changed. NewReaderFromMetadata must re-detect the file type, store the old plaintext
 // offset as decompressedBytesToSkip, and zero the persisted offset. createGzipReader
 // then decompresses from byte 0 and discards the already-consumed bytes, so only new
 // content is emitted — no corruption and no duplicate log entries.
-func TestNewReaderFromMetadataForRotationWithCompression(t *testing.T) {
+func TestNewReaderFromMetadataAfterCompression(t *testing.T) {
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -299,7 +299,7 @@ func TestNewReaderFromMetadataForRotationWithCompression(t *testing.T) {
 
 	// FileType must be updated and Offset must be zeroed (the stale plaintext
 	// value is moved into decompressedBytesToSkip, not kept as Offset).
-	assert.Equal(t, ".gz", newReader.FileType, "FileType must be updated to .gz after rotation-with-compression")
+	assert.Equal(t, ".gz", newReader.FileType, "FileType must be updated to .gz after compression")
 	assert.Equal(t, int64(0), newReader.Offset, "Offset must be zeroed when transitioning from plaintext to gzip")
 
 	// ReadToEnd must correctly decode only the new lines without corruption or duplicates.
