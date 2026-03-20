@@ -1156,6 +1156,66 @@ func (m *mockClient) initMocks(database, schema string, databases []string, inde
 	}
 }
 
+func TestServiceNameResourceAttribute(t *testing.T) {
+	t.Run("metrics", func(t *testing.T) {
+		factory := new(mockClientFactory)
+		factory.initMocks([]string{"otel"})
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.Databases = []string{"otel"}
+		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+		actualMetrics, err := scraper.scrape(t.Context())
+		require.NoError(t, err)
+
+		for i := range actualMetrics.ResourceMetrics().Len() {
+			res := actualMetrics.ResourceMetrics().At(i).Resource()
+			val, ok := res.Attributes().Get("service.name")
+			require.True(t, ok, "service.name resource attribute missing on resource %d", i)
+			assert.Equal(t, "postgresql", val.Str())
+		}
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Databases = []string{}
+		cfg.Events.DbServerQuerySample.Enabled = true
+
+		db, dbMock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		require.NoError(t, err)
+		defer db.Close()
+
+		factory := mockSimpleClientFactory{db: db}
+		scraper := newPostgreSQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, factory, newCache(1), newTTLCache[string](1, time.Second))
+
+		dbMock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(newQuerySampleRows(t, map[string]any{
+			querySampleColumnDatname:              "postgres",
+			querySampleColumnUsename:              "otelu",
+			querySampleColumnClientAddr:           "11.4.5.14",
+			querySampleColumnClientHostname:       "otel",
+			querySampleColumnClientPort:           "114514",
+			querySampleColumnQueryStart:           "2025-02-12T16:37:54.843+08:00",
+			querySampleColumnQueryID:              "123131231231",
+			querySampleColumnPID:                  "1450",
+			querySampleColumnApplicationName:      "receiver",
+			querySampleColumnQueryStartTimestamp:  "123445.123",
+			querySampleColumnState:                "idle",
+			querySampleColumnQuery:                "select * from pg_stat_activity where id = 32",
+			querySampleColumnDurationMilliseconds: "1.2",
+		}))
+
+		actualLogs, err := scraper.scrapeQuerySamples(t.Context(), 30)
+		require.NoError(t, err)
+
+		for i := range actualLogs.ResourceLogs().Len() {
+			res := actualLogs.ResourceLogs().At(i).Resource()
+			val, ok := res.Attributes().Get("service.name")
+			require.True(t, ok, "service.name resource attribute missing on resource log %d", i)
+			assert.Equal(t, "postgresql", val.Str())
+		}
+	})
+}
+
 func TestGetInstanceId(t *testing.T) {
 	localhostName, _ := os.Hostname()
 
