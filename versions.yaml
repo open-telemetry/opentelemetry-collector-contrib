@@ -19,6 +19,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/genaiadapterconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector
@@ -183,6 +184,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/awscwotlpbatchsplitprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
