@@ -110,6 +110,16 @@ func (ctx Context) Size() int64 {
 	return ctx.total.Load()
 }
 
+// Store is a no-op for in-memory maps. The value is already in the map via
+// the mutable reference returned by LoadOrStore.
+func (*Parallel[K, V]) Store(_ K, _ V) {}
+
+// Range iterates all entries in the map, calling fn for each key-value pair.
+// If fn returns false, iteration stops.
+func (m *Parallel[K, V]) Range(fn func(K, V) bool) {
+	m.elems.Range(fn)
+}
+
 // Exceeded reports whether a [Limited.LoadOrStore] failed due to the limit being exceeded.
 func Exceeded[T comparable](v T, loaded bool) bool {
 	return !loaded && v == *new(T)
