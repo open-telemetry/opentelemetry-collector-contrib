@@ -35,3 +35,9 @@ feature_gates:
       Prevents possible data loss in Stanza-based receivers by emitting logs synchronously.
     from_version: v0.122.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35456
+  - id: stanza.windows.eventDrivenScraping
+    stage: alpha
+    description: >-
+      When enabled, switches the Windows Event receiver to an event-driven scraping model using WaitForSingleObject.
+    from_version: v0.104.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47091

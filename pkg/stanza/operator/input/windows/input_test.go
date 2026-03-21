@@ -17,11 +17,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/sys/windows"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -511,4 +513,53 @@ func TestInputRead_Batching(t *testing.T) {
 	assert.Equal(t, requiredNextCalls, nextCalls)
 	assert.Equal(t, maxEventsToEmit, processedEvents)
 	assert.Equal(t, input.currentMaxReads, input.maxReads)
+}
+
+// TestInput_EventDrivenScraping_Lifecycle ensures that when the event-driven feature gate is enabled,
+// the Input goroutine correctly blocks on the signal event and wakes up gracefully on Stop().
+func TestInput_EventDrivenScraping_Lifecycle(t *testing.T) {
+	// Enable the alpha feature gate for this test
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.StanzaWindowsEventDrivenScrapingFeatureGate.ID(), true))
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.StanzaWindowsEventDrivenScrapingFeatureGate.ID(), false)
+	}()
+
+	// Mock EvtSubscribe and EvtClose to succeed without needing a real Windows Event channel
+	originalEvtSubscribe := evtSubscribe
+	originalEvtClose := evtClose
+	defer func() {
+		evtSubscribe = originalEvtSubscribe
+		evtClose = originalEvtClose
+	}()
+
+	evtSubscribe = func(_ uintptr, _ windows.Handle, _, _ *uint16, _, _, _ uintptr, _ uint32) (uintptr, error) {
+		return 42, nil // Return a dummy handle on success
+	}
+	evtClose = func(_ uintptr) error {
+		return nil
+	}
+
+	input := newTestInput()
+	input.channel = "test-channel"
+	input.startAt = "beginning"
+	input.pollInterval = 1 * time.Second
+
+	persister := testutil.NewMockPersister("")
+
+	err := input.Start(persister)
+	require.NoError(t, err)
+
+	// Verify Stop() correctly unblocks the infinite wait
+	done := make(chan struct{})
+	go func() {
+		err := input.Stop()
+		assert.NoError(t, err)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "Stop() timed out, likely deadlocked on WaitForSingleObject")
+	}
 }

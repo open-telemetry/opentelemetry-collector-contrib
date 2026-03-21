@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -183,6 +184,10 @@ func (i *Input) Stop() error {
 		i.cancel()
 	}
 
+	if i.subscription.signalEvent != 0 {
+		_ = windows.SetEvent(i.subscription.signalEvent)
+	}
+
 	i.wg.Wait()
 
 	var errs error
@@ -204,15 +209,26 @@ func (i *Input) Stop() error {
 func (i *Input) pollAndRead(ctx context.Context) {
 	defer i.wg.Done()
 
+	useEventDriven := metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled()
+
 	for {
 		i.eventsReadInPollCycle = 0
 
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(i.pollInterval):
-			i.read(ctx)
+		if useEventDriven && i.subscription.signalEvent != 0 {
+			_, _ = windows.WaitForSingleObject(i.subscription.signalEvent, windows.INFINITE)
+		} else {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(i.pollInterval):
+			}
 		}
+
+		if ctx.Err() != nil {
+			return
+		}
+
+		i.read(ctx)
 	}
 }
 

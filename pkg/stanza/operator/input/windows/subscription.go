@@ -16,6 +16,7 @@ import (
 // Subscription is a subscription to a windows eventlog channel.
 type Subscription struct {
 	handle        uintptr
+	signalEvent   windows.Handle
 	Server        string
 	startAt       string
 	sessionHandle uintptr
@@ -36,9 +37,6 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 	if err != nil {
 		return fmt.Errorf("failed to create signal handle: %w", err)
 	}
-	defer func() {
-		_ = windows.CloseHandle(signalEvent)
-	}()
 
 	if channel != "" && query != nil {
 		return errors.New("can not supply both query and channel")
@@ -63,6 +61,7 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 	}
 
 	s.handle = subscriptionHandle
+	s.signalEvent = signalEvent
 	s.startAt = startAt
 	s.sessionHandle = sessionHandle
 	s.channel = channel
@@ -79,6 +78,11 @@ func (s *Subscription) Close() error {
 
 	if err := evtClose(s.handle); err != nil {
 		return fmt.Errorf("failed to close subscription handle: %w", err)
+	}
+
+	if s.signalEvent != 0 {
+		_ = windows.CloseHandle(s.signalEvent)
+		s.signalEvent = 0
 	}
 
 	s.handle = 0
