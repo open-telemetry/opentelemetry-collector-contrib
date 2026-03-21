@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"compress/gzip"
 	"io"
 	"net/http"
 	"net/url"
@@ -365,14 +366,16 @@ func TestBulkIndexerLogsStatusCode(t *testing.T) {
 
 func TestQueryParamsParsedFromEndpoints(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline"}
+	cfg.Endpoints = []string{"http://localhost:9200?pipeline=test-pipeline&pretty=false&require_data_stream=true"}
 
 	client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
 	require.NoError(t, err)
 
 	bi := bulkIndexerConfig(client, cfg, true, zaptest.NewLogger(t))
 	require.Equal(t, map[string][]string{
-		"pipeline": {"test-pipeline"},
+		"pipeline":            {"test-pipeline"},
+		"pretty":              {"false"},
+		"require_data_stream": {"true"},
 	}, bi.QueryParams)
 }
 
@@ -458,5 +461,70 @@ func TestGetErrorHint(t *testing.T) {
 			got := getErrorHint(tt.mode, tt.index, tt.errorType)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+// BenchmarkRequireDataStreamPayloadOverhead benchmarks the payload size
+// overhead of encoding require_data_stream at the document level vs
+// omitting it, and reports compression impact on payload size.
+func BenchmarkRequireDataStreamPayloadOverhead(b *testing.B) {
+	for _, tc := range []struct {
+		name              string
+		requireDataStream bool
+		numItems          int
+		compressionLevel  int
+	}{
+		{name: "no_compression/without_rds/10_items", requireDataStream: false, numItems: 10},
+		{name: "no_compression/with_rds/10_items", requireDataStream: true, numItems: 10},
+		{name: "no_compression/without_rds/100_items", requireDataStream: false, numItems: 100},
+		{name: "no_compression/with_rds/100_items", requireDataStream: true, numItems: 100},
+		{name: "no_compression/without_rds/1000_items", requireDataStream: false, numItems: 1000},
+		{name: "no_compression/with_rds/1000_items", requireDataStream: true, numItems: 1000},
+		{name: "gzip_best_speed/without_rds/1000_items", requireDataStream: false, numItems: 1000, compressionLevel: gzip.BestSpeed},
+		{name: "gzip_best_speed/with_rds/1000_items", requireDataStream: true, numItems: 1000, compressionLevel: gzip.BestSpeed},
+		{name: "gzip_best_compression/without_rds/1000_items", requireDataStream: false, numItems: 1000, compressionLevel: gzip.BestCompression},
+		{name: "gzip_best_compression/with_rds/1000_items", requireDataStream: true, numItems: 1000, compressionLevel: gzip.BestCompression},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				biCfg := newBenchBulkIndexerConfig(b, tc.compressionLevel)
+				bi, err := docappender.NewBulkIndexer(biCfg)
+				require.NoError(b, err)
+				for range tc.numItems {
+					doc := strings.NewReader(`{"@timestamp":"2024-01-01T00:00:00Z","message":"test log message with some realistic content"}`)
+					err := bi.Add(docappender.BulkIndexerItem{
+						Index:             "logs-generic-default",
+						Body:              doc,
+						Action:            "create",
+						RequireDataStream: tc.requireDataStream,
+					})
+					require.NoError(b, err)
+				}
+				b.ReportMetric(float64(bi.UncompressedLen()), "uncompressed_payload_bytes")
+				b.ReportMetric(float64(bi.Len()), "payload_bytes")
+			}
+		})
+	}
+}
+
+func newBenchBulkIndexerConfig(tb testing.TB, compressionLevel int) docappender.BulkIndexerConfig {
+	tb.Helper()
+	client, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(_ *http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(`{"items":[]}`)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(tb, err)
+	return docappender.BulkIndexerConfig{
+		Client:           client,
+		CompressionLevel: compressionLevel,
 	}
 }

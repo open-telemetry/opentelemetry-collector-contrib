@@ -194,9 +194,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("connection_state")
+						connectionStateAttrVal, ok := dp.Attributes().Get("connection_state")
 						assert.True(t, ok)
-						assert.Equal(t, "writing", attrVal.Str())
+						assert.Equal(t, "writing", connectionStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["apache.connections.async"], "Found a duplicate in the metrics slice: apache.connections.async")
 						validatedMetrics["apache.connections.async"] = true
@@ -248,12 +248,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("level")
+						cpuLevelAttrVal, ok := dp.Attributes().Get("level")
 						assert.True(t, ok)
-						assert.Equal(t, "self", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("mode")
+						assert.Equal(t, "self", cpuLevelAttrVal.Str())
+						cpuModeAttrVal, ok := dp.Attributes().Get("mode")
 						assert.True(t, ok)
-						assert.Equal(t, "system", attrVal.Str())
+						assert.Equal(t, "system", cpuModeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["apache.cpu.time"], "Found a duplicate in the metrics slice: apache.cpu.time")
 						validatedMetrics["apache.cpu.time"] = true
@@ -375,9 +375,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
+						scoreboardStateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "open", attrVal.Str())
+						assert.Equal(t, "open", scoreboardStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["apache.scoreboard"], "Found a duplicate in the metrics slice: apache.scoreboard")
 						validatedMetrics["apache.scoreboard"] = true
@@ -447,9 +447,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
+						workersStateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "busy", attrVal.Str())
+						assert.Equal(t, "busy", workersStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["apache.workers"], "Found a duplicate in the metrics slice: apache.workers")
 						validatedMetrics["apache.workers"] = true

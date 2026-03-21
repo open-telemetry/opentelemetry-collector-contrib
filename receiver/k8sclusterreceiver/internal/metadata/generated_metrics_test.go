@@ -467,9 +467,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("k8s.container.status.reason")
+					k8sContainerStatusReasonAttrVal, ok := dp.Attributes().Get("k8s.container.status.reason")
 					assert.True(t, ok)
-					assert.Equal(t, "ContainerCreating", attrVal.Str())
+					assert.Equal(t, "ContainerCreating", k8sContainerStatusReasonAttrVal.Str())
 				case "k8s.container.status.state":
 					assert.False(t, validatedMetrics["k8s.container.status.state"], "Found a duplicate in the metrics slice: k8s.container.status.state")
 					validatedMetrics["k8s.container.status.state"] = true
@@ -484,9 +484,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("k8s.container.status.state")
+					k8sContainerStatusStateAttrVal, ok := dp.Attributes().Get("k8s.container.status.state")
 					assert.True(t, ok)
-					assert.Equal(t, "terminated", attrVal.Str())
+					assert.Equal(t, "terminated", k8sContainerStatusStateAttrVal.Str())
 				case "k8s.container.storage_limit":
 					assert.False(t, validatedMetrics["k8s.container.storage_limit"], "Found a duplicate in the metrics slice: k8s.container.storage_limit")
 					validatedMetrics["k8s.container.storage_limit"] = true
@@ -727,9 +727,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("condition")
+					conditionAttrVal, ok := dp.Attributes().Get("condition")
 					assert.True(t, ok)
-					assert.Equal(t, "condition-val", attrVal.Str())
+					assert.Equal(t, "condition-val", conditionAttrVal.Str())
 				case "k8s.pod.phase":
 					assert.False(t, validatedMetrics["k8s.pod.phase"], "Found a duplicate in the metrics slice: k8s.pod.phase")
 					validatedMetrics["k8s.pod.phase"] = true
@@ -814,9 +814,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("resource")
+					resourceAttrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.Equal(t, "resource-val", attrVal.Str())
+					assert.Equal(t, "resource-val", resourceAttrVal.Str())
 				case "k8s.resource_quota.used":
 					assert.False(t, validatedMetrics["k8s.resource_quota.used"], "Found a duplicate in the metrics slice: k8s.resource_quota.used")
 					validatedMetrics["k8s.resource_quota.used"] = true
@@ -829,9 +829,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("resource")
+					resourceAttrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.Equal(t, "resource-val", attrVal.Str())
+					assert.Equal(t, "resource-val", resourceAttrVal.Str())
 				case "k8s.service.endpoint.count":
 					assert.False(t, validatedMetrics["k8s.service.endpoint.count"], "Found a duplicate in the metrics slice: k8s.service.endpoint.count")
 					validatedMetrics["k8s.service.endpoint.count"] = true
@@ -844,15 +844,15 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("k8s.service.endpoint.address_type")
+					k8sServiceEndpointAddressTypeAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.address_type")
 					assert.True(t, ok)
-					assert.Equal(t, "IPv4", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("k8s.service.endpoint.condition")
+					assert.Equal(t, "IPv4", k8sServiceEndpointAddressTypeAttrVal.Str())
+					k8sServiceEndpointConditionAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.condition")
 					assert.True(t, ok)
-					assert.Equal(t, "ready", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("k8s.service.endpoint.zone")
+					assert.Equal(t, "ready", k8sServiceEndpointConditionAttrVal.Str())
+					k8sServiceEndpointZoneAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.zone")
 					assert.True(t, ok)
-					assert.Equal(t, "k8s.service.endpoint.zone-val", attrVal.Str())
+					assert.Equal(t, "k8s.service.endpoint.zone-val", k8sServiceEndpointZoneAttrVal.Str())
 				case "k8s.service.load_balancer.ingress.count":
 					assert.False(t, validatedMetrics["k8s.service.load_balancer.ingress.count"], "Found a duplicate in the metrics slice: k8s.service.load_balancer.ingress.count")
 					validatedMetrics["k8s.service.load_balancer.ingress.count"] = true
@@ -925,12 +925,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("k8s.namespace.name")
+					k8sNamespaceNameAttrVal, ok := dp.Attributes().Get("k8s.namespace.name")
 					assert.True(t, ok)
-					assert.Equal(t, "k8s.namespace.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("resource")
+					assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
+					resourceAttrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.Equal(t, "resource-val", attrVal.Str())
+					assert.Equal(t, "resource-val", resourceAttrVal.Str())
 				case "openshift.appliedclusterquota.used":
 					assert.False(t, validatedMetrics["openshift.appliedclusterquota.used"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.used")
 					validatedMetrics["openshift.appliedclusterquota.used"] = true
@@ -943,12 +943,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("k8s.namespace.name")
+					k8sNamespaceNameAttrVal, ok := dp.Attributes().Get("k8s.namespace.name")
 					assert.True(t, ok)
-					assert.Equal(t, "k8s.namespace.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("resource")
+					assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
+					resourceAttrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.Equal(t, "resource-val", attrVal.Str())
+					assert.Equal(t, "resource-val", resourceAttrVal.Str())
 				case "openshift.clusterquota.limit":
 					assert.False(t, validatedMetrics["openshift.clusterquota.limit"], "Found a duplicate in the metrics slice: openshift.clusterquota.limit")
 					validatedMetrics["openshift.clusterquota.limit"] = true
@@ -961,9 +961,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("resource")
+					resourceAttrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.Equal(t, "resource-val", attrVal.Str())
+					assert.Equal(t, "resource-val", resourceAttrVal.Str())
 				case "openshift.clusterquota.used":
 					assert.False(t, validatedMetrics["openshift.clusterquota.used"], "Found a duplicate in the metrics slice: openshift.clusterquota.used")
 					validatedMetrics["openshift.clusterquota.used"] = true
@@ -976,9 +976,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("resource")
+					resourceAttrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.Equal(t, "resource-val", attrVal.Str())
+					assert.Equal(t, "resource-val", resourceAttrVal.Str())
 				}
 			}
 		})

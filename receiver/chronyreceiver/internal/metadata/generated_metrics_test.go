@@ -122,9 +122,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("leap.status")
+					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.Equal(t, "normal", leapStatusAttrVal.Str())
 				case "ntp.skew":
 					assert.False(t, validatedMetrics["ntp.skew"], "Found a duplicate in the metrics slice: ntp.skew")
 					validatedMetrics["ntp.skew"] = true
@@ -161,9 +161,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("leap.status")
+					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.Equal(t, "normal", leapStatusAttrVal.Str())
 				case "ntp.time.last_offset":
 					assert.False(t, validatedMetrics["ntp.time.last_offset"], "Found a duplicate in the metrics slice: ntp.time.last_offset")
 					validatedMetrics["ntp.time.last_offset"] = true
@@ -176,9 +176,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("leap.status")
+					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.Equal(t, "normal", leapStatusAttrVal.Str())
 				case "ntp.time.rms_offset":
 					assert.False(t, validatedMetrics["ntp.time.rms_offset"], "Found a duplicate in the metrics slice: ntp.time.rms_offset")
 					validatedMetrics["ntp.time.rms_offset"] = true
@@ -191,9 +191,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("leap.status")
+					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.Equal(t, "normal", leapStatusAttrVal.Str())
 				case "ntp.time.root_delay":
 					assert.False(t, validatedMetrics["ntp.time.root_delay"], "Found a duplicate in the metrics slice: ntp.time.root_delay")
 					validatedMetrics["ntp.time.root_delay"] = true
@@ -206,9 +206,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("leap.status")
+					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.Equal(t, "normal", leapStatusAttrVal.Str())
 				}
 			}
 		})
