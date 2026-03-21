@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/xpdata/entity"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -527,50 +526,47 @@ func buildResourceAttributesWithEntityRefs(attrsCount int) pcommon.Resource {
 		key   string
 		value string
 	}{
-		{string(semconv.HostNameKey), "bench-host-01"},
-		{string(semconv.HostIDKey), "i-1234567890abcdef0"},
-		{string(semconv.HostTypeKey), "m5.xlarge"},
-		{string(semconv.HostArchKey), "amd64"},
-		{string(semconv.HostImageNameKey), "trixie"},
+		{"host.name", "bench-host-01"},
+		{"host.id", "i-1234567890abcdef0"},
+		{"host.type", "m5.xlarge"},
+		{"host.arch", "amd64"},
+		{"host.image.name", "trixie"},
 
-		{string(semconv.ServiceNameKey), "bench-service"},
-		{string(semconv.ServiceInstanceIDKey), "instance-abc"},
-		{string(semconv.ServiceNamespaceKey), "foo"},
-		{string(semconv.ServiceVersionKey), "1.4.2"},
+		{"service.name", "bench-service"},
+		{"service.instance.id", "instance-abc"},
+		{"service.namespace", "foo"},
+		{"service.version", "1.4.2"},
 
-		{string(semconv.K8SPodNameKey), "bench-pod-xyz"},
-		{string(semconv.K8SPodUIDKey), "uid-123-abc"},
-		{string(semconv.K8SNodeNameKey), "node-01"},
-		{string(semconv.K8SNamespaceNameKey), "bench"},
-		{string(semconv.K8SClusterNameKey), "bench-cluster"},
+		{"k8s.pod.name", "bench-pod-xyz"},
+		{"k8s.pod.uid", "uid-123-abc"},
+		{"k8s.node.name", "node-01"},
+		{"k8s.namespace.name", "bench"},
+		{"k8s.cluster.name", "bench-cluster"},
 
-		{string(semconv.CloudAccountIDKey), "123456789"},
-		{string(semconv.CloudProviderKey), "bar"},
-		{string(semconv.CloudRegionKey), "us-west-2"},
-		{string(semconv.CloudAvailabilityZoneKey), "us-east-1a"},
-		{string(semconv.CloudPlatformKey), "bar_ec2"},
+		{"cloud.account.id", "123456789"},
+		{"cloud.provider", "bar"},
+		{"cloud.region", "us-west-2"},
+		{"cloud.availability_zone", "us-east-1a"},
+		{"cloud.platform", "bar_ec2"},
 
-		{string(semconv.ContainerNameKey), "bench-container"},
-		{string(semconv.ContainerIDKey), "abc123def456"},
-		{string(semconv.ContainerImageNameKey), "bench-img"},
-		{string(semconv.ContainerImageTagsKey), "v1.2.3"},
+		{"container.name", "bench-container"},
+		{"container.id", "abc123def456"},
+		{"container.image.name", "bench-img"},
+		{"container.image.tags", "v1.2.3"},
 
-		{string(semconv.ProcessPIDKey), "1234"},
-		{string(semconv.ProcessExecutableNameKey), "bench-process"},
-		{string(semconv.ProcessExecutablePathKey), "/usr/bin/bench-process"},
-		{string(semconv.ProcessCommandKey), "bench-process --config /etc/bench.yaml"},
-		{string(semconv.ProcessOwnerKey), "bench-user"},
+		{"process.pid", "1234"},
+		{"process.executable.name", "bench-process"},
+		{"process.executable.path", "/usr/bin/bench-process"},
+		{"process.command", "bench-process --config /etc/bench.yaml"},
+		{"process.owner", "bench-user"},
 
-		{string(semconv.OSTypeKey), "linux"},
-		{string(semconv.OSVersionKey), "6.1.0-debian"},
+		{"os.type", "linux"},
+		{"os.version", "6.1.0-debian"},
 	}
 
 	resourceAttrs := pcommon.NewResource()
 
-	limit := attrsCount
-	if limit > len(attrs) {
-		limit = len(attrs)
-	}
+	limit := min(attrsCount, len(attrs))
 
 	for _, attr := range attrs[:limit] {
 		resourceAttrs.Attributes().PutStr(attr.key, attr.value)
@@ -585,76 +581,76 @@ func addEntityRefsToResource(res pcommon.Resource) {
 	entityRefs := entity.ResourceEntityRefs(res)
 	resAttrs := res.Attributes()
 
-	if _, ok := resAttrs.Get(string(semconv.HostNameKey)); ok {
+	if _, ok := resAttrs.Get("host.name"); ok {
 		ref := entityRefs.AppendEmpty()
 		ref.SetType("host")
 		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
-		ref.IdKeys().Append(string(semconv.HostNameKey))
-		ref.IdKeys().Append(string(semconv.HostIDKey))
-		ref.DescriptionKeys().Append(string(semconv.HostTypeKey))
-		ref.DescriptionKeys().Append(string(semconv.HostArchKey))
-		ref.DescriptionKeys().Append(string(semconv.HostImageNameKey))
+		ref.IdKeys().Append("host.name")
+		ref.IdKeys().Append("host.id")
+		ref.DescriptionKeys().Append("host.type")
+		ref.DescriptionKeys().Append("host.arch")
+		ref.DescriptionKeys().Append("host.image.name")
 	}
 
-	if _, ok := resAttrs.Get(string(semconv.ServiceNameKey)); ok {
+	if _, ok := resAttrs.Get("service.name"); ok {
 		ref := entityRefs.AppendEmpty()
 		ref.SetType("service")
 		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
-		ref.IdKeys().Append(string(semconv.ServiceNameKey))
-		ref.IdKeys().Append(string(semconv.ServiceInstanceIDKey))
-		ref.IdKeys().Append(string(semconv.ServiceNamespaceKey))
-		ref.DescriptionKeys().Append(string(semconv.ServiceVersionKey))
+		ref.IdKeys().Append("service.name")
+		ref.IdKeys().Append("service.instance.id")
+		ref.IdKeys().Append("service.namespace")
+		ref.DescriptionKeys().Append("service.version")
 	}
 
-	if _, ok := resAttrs.Get(string(semconv.K8SPodNameKey)); ok {
+	if _, ok := resAttrs.Get("k8s.pod.name"); ok {
 		ref := entityRefs.AppendEmpty()
 		ref.SetType("k8s.pod")
 		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
-		ref.IdKeys().Append(string(semconv.K8SPodNameKey))
-		ref.IdKeys().Append(string(semconv.K8SPodUIDKey))
-		ref.IdKeys().Append(string(semconv.K8SNodeNameKey))
-		ref.IdKeys().Append(string(semconv.K8SNamespaceNameKey))
-		ref.IdKeys().Append(string(semconv.K8SClusterNameKey))
+		ref.IdKeys().Append("k8s.pod.name")
+		ref.IdKeys().Append("k8s.pod.uid")
+		ref.IdKeys().Append("k8s.node.name")
+		ref.IdKeys().Append("k8s.namespace.name")
+		ref.IdKeys().Append("k8s.cluster.name")
 	}
 
-	if _, ok := resAttrs.Get(string(semconv.CloudAccountIDKey)); ok {
+	if _, ok := resAttrs.Get("cloud.account.id"); ok {
 		ref := entityRefs.AppendEmpty()
 		ref.SetType("cloud")
 		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
-		ref.IdKeys().Append(string(semconv.CloudAccountIDKey))
-		ref.IdKeys().Append(string(semconv.CloudProviderKey))
-		ref.DescriptionKeys().Append(string(semconv.CloudRegionKey))
-		ref.DescriptionKeys().Append(string(semconv.CloudAvailabilityZoneKey))
-		ref.DescriptionKeys().Append(string(semconv.CloudPlatformKey))
+		ref.IdKeys().Append("cloud.account.id")
+		ref.IdKeys().Append("cloud.provider")
+		ref.DescriptionKeys().Append("cloud.region")
+		ref.DescriptionKeys().Append("cloud.availability_zone")
+		ref.DescriptionKeys().Append("cloud.platform")
 	}
 
-	if _, ok := resAttrs.Get(string(semconv.ContainerNameKey)); ok {
+	if _, ok := resAttrs.Get("container.name"); ok {
 		ref := entityRefs.AppendEmpty()
 		ref.SetType("container")
 		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
-		ref.IdKeys().Append(string(semconv.ContainerNameKey))
-		ref.IdKeys().Append(string(semconv.ContainerIDKey))
-		ref.DescriptionKeys().Append(string(semconv.ContainerImageNameKey))
-		ref.DescriptionKeys().Append(string(semconv.ContainerImageTagsKey))
+		ref.IdKeys().Append("container.name")
+		ref.IdKeys().Append("container.id")
+		ref.DescriptionKeys().Append("container.image.name")
+		ref.DescriptionKeys().Append("container.image.tags")
 	}
 
-	if _, ok := resAttrs.Get(string(semconv.ProcessPIDKey)); ok {
+	if _, ok := resAttrs.Get("process.pid"); ok {
 		ref := entityRefs.AppendEmpty()
 		ref.SetType("process")
 		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
-		ref.IdKeys().Append(string(semconv.ProcessPIDKey))
-		ref.IdKeys().Append(string(semconv.ProcessExecutableNameKey))
-		ref.DescriptionKeys().Append(string(semconv.ProcessExecutablePathKey))
-		ref.DescriptionKeys().Append(string(semconv.ProcessCommandKey))
-		ref.DescriptionKeys().Append(string(semconv.ProcessOwnerKey))
+		ref.IdKeys().Append("process.pid")
+		ref.IdKeys().Append("process.executable.name")
+		ref.DescriptionKeys().Append("process.executable.path")
+		ref.DescriptionKeys().Append("process.command")
+		ref.DescriptionKeys().Append("process.owner")
 	}
 
-	if _, ok := resAttrs.Get(string(semconv.OSTypeKey)); ok {
+	if _, ok := resAttrs.Get("os.type"); ok {
 		ref := entityRefs.AppendEmpty()
 		ref.SetType("os")
 		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
-		ref.IdKeys().Append(string(semconv.OSTypeKey))
-		ref.DescriptionKeys().Append(string(semconv.OSVersionKey))
+		ref.IdKeys().Append("os.type")
+		ref.DescriptionKeys().Append("os.version")
 	}
 }
 
