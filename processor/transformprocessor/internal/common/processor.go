@@ -7,12 +7,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -46,7 +44,6 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 				tCtx.Close()
 				return err
 			}
-			syncEntityRefs(rspans.Resource())
 		}
 		tCtx.Close()
 	}
@@ -67,7 +64,6 @@ func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 				tCtx.Close()
 				return err
 			}
-			syncEntityRefs(rmetrics.Resource())
 		}
 		tCtx.Close()
 	}
@@ -88,7 +84,6 @@ func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 				tCtx.Close()
 				return err
 			}
-			syncEntityRefs(rlogs.Resource())
 		}
 		tCtx.Close()
 	}
@@ -109,46 +104,10 @@ func (r resourceStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Pro
 				tCtx.Close()
 				return err
 			}
-			syncEntityRefs(rprofiles.Resource())
 		}
 		tCtx.Close()
 	}
 	return nil
-}
-
-func syncEntityRefs(resource pcommon.Resource) {
-	entityRefs := entity.ResourceEntityRefs(resource)
-
-	if entityRefs.Len() == 0 {
-		return
-	}
-
-	attrs := resource.Attributes()
-
-	for i := entityRefs.Len() - 1; i >= 0; i-- {
-		entityRef := entityRefs.At(i)
-		missingIDKey := false
-
-		for _, IDKey := range entityRef.IdKeys().All() {
-			if _, exist := attrs.Get(IDKey); !exist {
-				missingIDKey = true
-				break
-			}
-		}
-		if missingIDKey {
-			entityRefs.RemoveIf(func(e entity.EntityRef) bool {
-				return e.Type() == entityRef.Type()
-			})
-			continue
-		}
-		for _, descKey := range entityRef.DescriptionKeys().All() {
-			if _, exist := attrs.Get(descKey); !exist {
-				entityRef.DescriptionKeys().RemoveIf(func(dk string) bool {
-					return dk == descKey
-				})
-			}
-		}
-	}
 }
 
 var _ baseContext = &scopeStatements{}
