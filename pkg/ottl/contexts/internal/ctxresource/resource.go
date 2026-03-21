@@ -6,6 +6,9 @@ package ctxresource // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
@@ -36,7 +39,12 @@ func accessResourceAttributes[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetResource().Attributes(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			return ctxutil.SetMap(tCtx.GetResource().Attributes(), val)
+			err := ctxutil.SetMap(tCtx.GetResource().Attributes(), val)
+			if err != nil {
+				return err
+			}
+			syncEntityRefs(tCtx.GetResource())
+			return nil
 		},
 	}
 }
@@ -77,5 +85,36 @@ func accessResourceSchemaURLItem[K Context]() ottl.StandardGetSetter[K] {
 			}
 			return nil
 		},
+	}
+}
+
+func syncEntityRefs(resource pcommon.Resource) {
+	entityRefs := entity.ResourceEntityRefs(resource)
+	if entityRefs.Len() == 0 {
+		return
+	}
+	attrs := resource.Attributes()
+	for i := entityRefs.Len() - 1; i >= 0; i-- {
+		entityRef := entityRefs.At(i)
+		missingIDKey := false
+		for _, IDKey := range entityRef.IdKeys().All() {
+			if _, exist := attrs.Get(IDKey); !exist {
+				missingIDKey = true
+				break
+			}
+		}
+		if missingIDKey {
+			entityRefs.RemoveIf(func(e entity.EntityRef) bool {
+				return e.Type() == entityRef.Type()
+			})
+			continue
+		}
+		for _, descKey := range entityRef.DescriptionKeys().All() {
+			if _, exist := attrs.Get(descKey); !exist {
+				entityRef.DescriptionKeys().RemoveIf(func(dk string) bool {
+					return dk == descKey
+				})
+			}
+		}
 	}
 }

@@ -13,9 +13,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
@@ -249,6 +252,81 @@ func BenchmarkStatementSequenceExecuteMetrics(b *testing.B) {
 	}
 }
 
+func BenchmarkStatementExecute_EntityRefsSync(b *testing.B) {
+	settings := componenttest.NewNopTelemetrySettings()
+	resParser, err := ottlresource.NewParser(ottlfuncs.StandardFuncs[*ottlresource.TransformContext](), settings, ottlresource.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create resource parser: %v", err)
+	}
+	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		b.Fatalf("failed to create log parser: %v", err)
+	}
+	statements := []string{
+		`delete_key(resource.attributes, "host.type")`,    // entityRef-DescKey
+		`delete_key(resource.attributes, "service.name")`, // entityRef-IdKey
+	}
+	scenarios := []struct {
+		name       string
+		attrsCount int
+	}{
+		{name: "small", attrsCount: 10},
+		{name: "medium", attrsCount: 20},
+		{name: "large", attrsCount: 30},
+	}
+
+	ctx := b.Context()
+	for _, scenario := range scenarios {
+		resParsed, err := resParser.ParseStatements(statements)
+		if err != nil {
+			b.Fatalf("failed to parse: %v", err)
+		}
+		logParsed, err := logParser.ParseStatements(statements)
+		if err != nil {
+			b.Fatalf("failed to parse: %v", err)
+		}
+
+		resSequence := ottlresource.NewStatementSequence(resParsed, settings)
+		logSequence := ottllog.NewStatementSequence(logParsed, settings)
+
+		resContexts := make([]*ottlresource.TransformContext, benchmarkContextPoolSize)
+		for i := range resContexts {
+			resContexts[i] = newBenchmarkResourceContext(scenario.attrsCount)
+		}
+		logContexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
+		for i := range logContexts {
+			logContexts[i] = newBenchmarkLogContext(scenario.attrsCount)
+			resContexts[i].GetResource().CopyTo(logContexts[i].GetResource())
+		}
+
+		b.Run(scenario.name+"_resourceContext", func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; b.Loop(); i++ {
+				if err := resSequence.Execute(ctx, resContexts[i%len(resContexts)]); err != nil {
+					b.Fatalf("failed to execute log statements: %v", err)
+				}
+			}
+		})
+		for i := range resContexts {
+			resContexts[i].Close()
+		}
+
+		b.Run(scenario.name+"_logContext", func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; b.Loop(); i++ {
+				if err := logSequence.Execute(ctx, logContexts[i%len(logContexts)]); err != nil {
+					b.Fatalf("failed to execute log statements: %v", err)
+				}
+			}
+		})
+		for i := range logContexts {
+			logContexts[i].Close()
+		}
+	}
+}
+
 func BenchmarkConditionSequenceEvalLogs(b *testing.B) {
 	settings := componenttest.NewNopTelemetrySettings()
 	parser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[*ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
@@ -444,6 +522,142 @@ func buildLogStatements(count int) []string {
 	return result
 }
 
+func buildResourceAttributesWithEntityRefs(attrsCount int) pcommon.Resource {
+	attrs := []struct {
+		key   string
+		value string
+	}{
+		{string(semconv.HostNameKey), "bench-host-01"},
+		{string(semconv.HostIDKey), "i-1234567890abcdef0"},
+		{string(semconv.HostTypeKey), "m5.xlarge"},
+		{string(semconv.HostArchKey), "amd64"},
+		{string(semconv.HostImageNameKey), "trixie"},
+
+		{string(semconv.ServiceNameKey), "bench-service"},
+		{string(semconv.ServiceInstanceIDKey), "instance-abc"},
+		{string(semconv.ServiceNamespaceKey), "foo"},
+		{string(semconv.ServiceVersionKey), "1.4.2"},
+
+		{string(semconv.K8SPodNameKey), "bench-pod-xyz"},
+		{string(semconv.K8SPodUIDKey), "uid-123-abc"},
+		{string(semconv.K8SNodeNameKey), "node-01"},
+		{string(semconv.K8SNamespaceNameKey), "bench"},
+		{string(semconv.K8SClusterNameKey), "bench-cluster"},
+
+		{string(semconv.CloudAccountIDKey), "123456789"},
+		{string(semconv.CloudProviderKey), "bar"},
+		{string(semconv.CloudRegionKey), "us-west-2"},
+		{string(semconv.CloudAvailabilityZoneKey), "us-east-1a"},
+		{string(semconv.CloudPlatformKey), "bar_ec2"},
+
+		{string(semconv.ContainerNameKey), "bench-container"},
+		{string(semconv.ContainerIDKey), "abc123def456"},
+		{string(semconv.ContainerImageNameKey), "bench-img"},
+		{string(semconv.ContainerImageTagsKey), "v1.2.3"},
+
+		{string(semconv.ProcessPIDKey), "1234"},
+		{string(semconv.ProcessExecutableNameKey), "bench-process"},
+		{string(semconv.ProcessExecutablePathKey), "/usr/bin/bench-process"},
+		{string(semconv.ProcessCommandKey), "bench-process --config /etc/bench.yaml"},
+		{string(semconv.ProcessOwnerKey), "bench-user"},
+
+		{string(semconv.OSTypeKey), "linux"},
+		{string(semconv.OSVersionKey), "6.1.0-debian"},
+	}
+
+	resourceAttrs := pcommon.NewResource()
+
+	limit := attrsCount
+	if limit > len(attrs) {
+		limit = len(attrs)
+	}
+
+	for _, attr := range attrs[:limit] {
+		resourceAttrs.Attributes().PutStr(attr.key, attr.value)
+	}
+
+	addEntityRefsToResource(resourceAttrs)
+
+	return resourceAttrs
+}
+
+func addEntityRefsToResource(res pcommon.Resource) {
+	entityRefs := entity.ResourceEntityRefs(res)
+	resAttrs := res.Attributes()
+
+	if _, ok := resAttrs.Get(string(semconv.HostNameKey)); ok {
+		ref := entityRefs.AppendEmpty()
+		ref.SetType("host")
+		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+		ref.IdKeys().Append(string(semconv.HostNameKey))
+		ref.IdKeys().Append(string(semconv.HostIDKey))
+		ref.DescriptionKeys().Append(string(semconv.HostTypeKey))
+		ref.DescriptionKeys().Append(string(semconv.HostArchKey))
+		ref.DescriptionKeys().Append(string(semconv.HostImageNameKey))
+	}
+
+	if _, ok := resAttrs.Get(string(semconv.ServiceNameKey)); ok {
+		ref := entityRefs.AppendEmpty()
+		ref.SetType("service")
+		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+		ref.IdKeys().Append(string(semconv.ServiceNameKey))
+		ref.IdKeys().Append(string(semconv.ServiceInstanceIDKey))
+		ref.IdKeys().Append(string(semconv.ServiceNamespaceKey))
+		ref.DescriptionKeys().Append(string(semconv.ServiceVersionKey))
+	}
+
+	if _, ok := resAttrs.Get(string(semconv.K8SPodNameKey)); ok {
+		ref := entityRefs.AppendEmpty()
+		ref.SetType("k8s.pod")
+		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+		ref.IdKeys().Append(string(semconv.K8SPodNameKey))
+		ref.IdKeys().Append(string(semconv.K8SPodUIDKey))
+		ref.IdKeys().Append(string(semconv.K8SNodeNameKey))
+		ref.IdKeys().Append(string(semconv.K8SNamespaceNameKey))
+		ref.IdKeys().Append(string(semconv.K8SClusterNameKey))
+	}
+
+	if _, ok := resAttrs.Get(string(semconv.CloudAccountIDKey)); ok {
+		ref := entityRefs.AppendEmpty()
+		ref.SetType("cloud")
+		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+		ref.IdKeys().Append(string(semconv.CloudAccountIDKey))
+		ref.IdKeys().Append(string(semconv.CloudProviderKey))
+		ref.DescriptionKeys().Append(string(semconv.CloudRegionKey))
+		ref.DescriptionKeys().Append(string(semconv.CloudAvailabilityZoneKey))
+		ref.DescriptionKeys().Append(string(semconv.CloudPlatformKey))
+	}
+
+	if _, ok := resAttrs.Get(string(semconv.ContainerNameKey)); ok {
+		ref := entityRefs.AppendEmpty()
+		ref.SetType("container")
+		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+		ref.IdKeys().Append(string(semconv.ContainerNameKey))
+		ref.IdKeys().Append(string(semconv.ContainerIDKey))
+		ref.DescriptionKeys().Append(string(semconv.ContainerImageNameKey))
+		ref.DescriptionKeys().Append(string(semconv.ContainerImageTagsKey))
+	}
+
+	if _, ok := resAttrs.Get(string(semconv.ProcessPIDKey)); ok {
+		ref := entityRefs.AppendEmpty()
+		ref.SetType("process")
+		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+		ref.IdKeys().Append(string(semconv.ProcessPIDKey))
+		ref.IdKeys().Append(string(semconv.ProcessExecutableNameKey))
+		ref.DescriptionKeys().Append(string(semconv.ProcessExecutablePathKey))
+		ref.DescriptionKeys().Append(string(semconv.ProcessCommandKey))
+		ref.DescriptionKeys().Append(string(semconv.ProcessOwnerKey))
+	}
+
+	if _, ok := resAttrs.Get(string(semconv.OSTypeKey)); ok {
+		ref := entityRefs.AppendEmpty()
+		ref.SetType("os")
+		ref.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+		ref.IdKeys().Append(string(semconv.OSTypeKey))
+		ref.DescriptionKeys().Append(string(semconv.OSVersionKey))
+	}
+}
+
 func buildSpanStatements(count int) []string {
 	result := make([]string, 0, count)
 	for i := range count {
@@ -474,6 +688,15 @@ func buildLogConditions(count int) []string {
 		}
 	}
 	return result
+}
+
+func newBenchmarkResourceContext(attributeCount int) *ottlresource.TransformContext {
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	res := buildResourceAttributesWithEntityRefs(attributeCount)
+	res.MoveTo(resourceLogs.Resource())
+
+	return ottlresource.NewTransformContextPtr(resourceLogs.Resource(), resourceLogs)
 }
 
 func newBenchmarkLogContext(attributeCount int) *ottllog.TransformContext {
