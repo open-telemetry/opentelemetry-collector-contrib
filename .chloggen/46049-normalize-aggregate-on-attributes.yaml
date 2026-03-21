@@ -1,0 +1,7 @@
+change_type: enhancement
+component: processor/transform
+note: "Introduce the `processor.transform.AggregateOnAttributesRequireAttributes` alpha feature gate to normalize `aggregate_on_attributes` behavior. When the attributes parameter is omitted, a warning is now logged. When the gate is enabled, the parameter is required."
+issues: [46049]
+subtext:
+change_logs: [user]
+

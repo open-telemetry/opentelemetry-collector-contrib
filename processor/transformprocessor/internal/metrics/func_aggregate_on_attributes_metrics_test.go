@@ -9,7 +9,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -464,4 +468,41 @@ func getTestExponentialHistogramMetricMultiple() pmetric.Metric {
 	input2.SetSum(12.66)
 
 	return metricInput
+}
+
+func Test_aggregateOnAttributes_featureGateEnabled_omittedAttributes_returnsError(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(
+		"processor.transform.AggregateOnAttributesRequireAttributes", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(
+			"processor.transform.AggregateOnAttributesRequireAttributes", false))
+	}()
+
+	fCtx := ottl.FunctionContext{
+		Set: componenttest.NewNopTelemetrySettings(),
+	}
+	args := &aggregateOnAttributesArguments{
+		AggregationFunction: "sum",
+		Attributes:          ottl.Optional[[]string]{}, // omitted
+	}
+	_, err := createAggregateOnAttributesFunction(fCtx, args)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "attributes' parameter is required")
+}
+
+func Test_aggregateOnAttributes_featureGateDisabled_omittedAttributes_logsWarning(t *testing.T) {
+	core, observed := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(core)
+
+	fCtx := ottl.FunctionContext{Set: settings}
+	args := &aggregateOnAttributesArguments{
+		AggregationFunction: "sum",
+		Attributes:          ottl.Optional[[]string]{}, // omitted
+	}
+	exprFunc, err := createAggregateOnAttributesFunction(fCtx, args)
+	require.NoError(t, err)
+	assert.NotNil(t, exprFunc)
+	assert.Equal(t, 1, observed.Len())
+	assert.Contains(t, observed.All()[0].Message, "aggregate_on_attributes called without the 'attributes' parameter")
 }

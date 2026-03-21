@@ -545,6 +545,8 @@ The optional `attributes` argument controls which datapoint attributes are kept 
 - `[]` (empty list): all datapoint attributes are removed. Aggregation is performed across all data points in the metric.
 - `[...]` (list of attribute keys): only the specified data point attributes are kept. All other attributes are removed, and aggregation is performed by grouping on the remaining attributes.
 
+**Deprecation notice:** Calling `aggregate_on_attributes` without the `attributes` parameter is deprecated because it is a no-op. A warning is now logged when this is detected. The `processor.transform.AggregateOnAttributesRequireAttributes` feature gate (alpha) can be enabled to make this parameter required. See [#46049](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46049).
+
 **NOTE:** This function is supported only in `metric` context.
 
 The following metric types can be aggregated:
