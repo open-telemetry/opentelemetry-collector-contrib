@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/expvar
+
+note: Enable the re-aggregation feature for the expvar receiver
+
+issues: [45396]
+
+subtext:
+
+change_logs: [user]

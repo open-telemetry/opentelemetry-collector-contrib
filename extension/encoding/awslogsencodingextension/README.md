@@ -181,12 +181,18 @@ This allows streaming implementation to work independently of compression algori
 
 The table below summarizes streaming support details for each log type, along with the offset tracking mechanism,
 
-| Log Type            | Sub Log Type/Source | Offset Tracking             | Notes                                                                                        |
-|---------------------|---------------------|-----------------------------|----------------------------------------------------------------------------------------------|
-| Network Firewall    | Alert/Flow/TLS      | Bytes processed             |                                                                                              |
-| S3 Access Logs      | -                   | Bytes processed             |                                                                                              |
-| Subscription filter | -                   | Number of records processed | Supports processing multi-line inputs and offset tracks number of records that get processed |
-| WAF Logs            | -                   | Bytes processed             |                                                                                              |
+| Log Type            | Sub Log Type/Source            | Offset Tracking             | Notes                                                                                                                 |
+|---------------------|--------------------------------|-----------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| CloudTrail          | Generic records                | Number of records processed | Number of records are used as CloudTrail logs arrives as a JSON. Streaming is done on internal `Records` array        |
+| CloudTrail          | CloudWatch trigger             | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| CloudTrail          | Digest record                  | Number of bytes processed   | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| ELB Access Logs     | ALB/NLB/CLB                    | Bytes processed             |                                                                                                                       |
+| Network Firewall    | Alert/Flow/TLS                 | Bytes processed             |                                                                                                                       |
+| S3 Access Logs      | -                              | Bytes processed             |                                                                                                                       |
+| Subscription filter | -                              | Number of records processed | Supports processing multi-line inputs and offset tracks number of records that get processed                          |
+| VPC Flow Logs       | S3 plain text                  | Bytes processed             |                                                                                                                       |
+| VPC Flow Logs       | CloudWatch subscription filter | Bytes processed             | If non-zero offset is given, then invocation returns EOF with an empty log. The offset carries the full record length |
+| WAF Logs            | -                              | Bytes processed             |                                                                                                                       |
 
 ## Produced Records per Format
 
