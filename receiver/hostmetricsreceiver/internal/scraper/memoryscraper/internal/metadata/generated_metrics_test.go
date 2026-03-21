@@ -264,9 +264,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
+						systemMemoryLinuxHugepagesStateAttrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
 						assert.True(t, ok)
-						assert.Equal(t, "free", attrVal.Str())
+						assert.Equal(t, "free", systemMemoryLinuxHugepagesStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.memory.linux.hugepages.usage"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.usage")
 						validatedMetrics["system.memory.linux.hugepages.usage"] = true
@@ -306,9 +306,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
+						systemMemoryLinuxHugepagesStateAttrVal, ok := dp.Attributes().Get("system.memory.linux.hugepages.state")
 						assert.True(t, ok)
-						assert.Equal(t, "free", attrVal.Str())
+						assert.Equal(t, "free", systemMemoryLinuxHugepagesStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.memory.linux.hugepages.utilization"], "Found a duplicate in the metrics slice: system.memory.linux.hugepages.utilization")
 						validatedMetrics["system.memory.linux.hugepages.utilization"] = true
@@ -374,9 +374,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "buffered", attrVal.Str())
+						assert.Equal(t, "buffered", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.memory.usage"], "Found a duplicate in the metrics slice: system.memory.usage")
 						validatedMetrics["system.memory.usage"] = true
@@ -416,9 +416,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("state")
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "buffered", attrVal.Str())
+						assert.Equal(t, "buffered", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.memory.utilization"], "Found a duplicate in the metrics slice: system.memory.utilization")
 						validatedMetrics["system.memory.utilization"] = true
