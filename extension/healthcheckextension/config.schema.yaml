@@ -1,4 +1,4 @@
 description: Config wraps the shared healthcheck.Config to add extension-specific validation.
 type: object
 allOf:
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck.config
+  - $ref: /internal/healthcheck.config
