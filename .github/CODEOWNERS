@@ -221,6 +221,7 @@ processor/resourcedetectionprocessor/internal/azure/             @open-telemetry
 processor/resourcedetectionprocessor/internal/digitalocean/      @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl @evan-bradley
 processor/resourcedetectionprocessor/internal/hetzner/           @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
+processor/resourcedetectionprocessor/internal/ibmcloud/vpc/      @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/openstack/nova/    @open-telemetry/collector-contrib-approvers @dashpole @paulojmdias
 processor/resourcedetectionprocessor/internal/oraclecloud/       @open-telemetry/collector-contrib-approvers @dashpole @geekdave
 processor/resourcedetectionprocessor/internal/scaleway/          @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @paulojmdias
@@ -238,7 +239,7 @@ receiver/activedirectorydsreceiver/                              @open-telemetry
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
 receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers @colelaven @ishleenk17
 receiver/apachesparkreceiver/                                    @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @mrsillydog
-receiver/awscloudwatchreceiver/                                  @open-telemetry/collector-contrib-approvers @schmikei
+receiver/awscloudwatchreceiver/                                  @open-telemetry/collector-contrib-approvers @schmikei @dyl10s
 receiver/awscontainerinsightreceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsfirehosereceiver/                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @axw

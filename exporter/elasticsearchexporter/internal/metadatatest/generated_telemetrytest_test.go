@@ -24,6 +24,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ElasticsearchDocsProcessed.Add(context.Background(), 1)
 	tb.ElasticsearchDocsReceived.Add(context.Background(), 1)
 	tb.ElasticsearchDocsRetried.Add(context.Background(), 1)
+	tb.ElasticsearchDocsRetriedHTTPRequest.Add(context.Background(), 1)
 	tb.ElasticsearchFlushedBytes.Add(context.Background(), 1)
 	tb.ElasticsearchFlushedUncompressedBytes.Add(context.Background(), 1)
 	AssertEqualElasticsearchBulkRequestsCount(t, testTel,
@@ -39,6 +40,9 @@ func TestSetupTelemetry(t *testing.T) {
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualElasticsearchDocsRetried(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualElasticsearchDocsRetriedHTTPRequest(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualElasticsearchFlushedBytes(t, testTel,

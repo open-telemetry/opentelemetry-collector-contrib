@@ -162,6 +162,7 @@ components:
     - pkg/pdatautil
     - pkg/resourcetotelemetry
     - pkg/sampling
+    - pkg/skywalking
     - pkg/stanza
     - pkg/stanza/operator/input/journald
     - pkg/status
@@ -173,7 +174,6 @@ components:
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
-    - pkg/translator/skywalking
     - pkg/translator/splunk
     - pkg/winperfcounters
     - pkg/xk8stest
@@ -195,6 +195,7 @@ components:
     - processor/groupbyattrs
     - processor/groupbytrace
     - processor/hetznerdetector
+    - processor/ibmcloudvpcdetector
     - processor/interval
     - processor/isolationforest
     - processor/k8s_attributes
@@ -242,7 +243,7 @@ components:
     - receiver/azure_monitor
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoos
+    - receiver/cisco_os
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd

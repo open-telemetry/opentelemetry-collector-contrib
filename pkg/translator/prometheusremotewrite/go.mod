@@ -5,13 +5,13 @@ go 1.25.0
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.147.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.147.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.148.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.148.0
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/prometheus/prometheus v0.310.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/pdata v1.53.1-0.20260313183754-7cd8f588399b
+	go.opentelemetry.io/collector/pdata v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/otel v1.42.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -70,8 +70,8 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/prometheus/sigv4 v0.4.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.53.1-0.20260313183754-7cd8f588399b // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.147.1-0.20260313183754-7cd8f588399b // indirect
+	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260320051400-372cc483b303 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.148.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.42.0 // indirect
@@ -85,7 +85,7 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
-	google.golang.org/grpc v1.79.2 // indirect
+	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apimachinery v0.35.0 // indirect

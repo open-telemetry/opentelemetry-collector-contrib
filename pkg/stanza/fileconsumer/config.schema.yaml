@@ -12,7 +12,7 @@ $defs:
       encoding:
         type: string
       fingerprint_size:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
+        $ref: /pkg/stanza/operator/helper.byte_size
       force_flush_period:
         type: string
         format: duration
@@ -24,15 +24,15 @@ $defs:
       include_file_record_offset:
         type: boolean
       initial_buffer_size:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
+        $ref: /pkg/stanza/operator/helper.byte_size
       max_batches:
         type: integer
       max_concurrent_files:
         type: integer
       max_log_size:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.byte_size
+        $ref: /pkg/stanza/operator/helper.byte_size
       multiline:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split.config
+        $ref: /pkg/stanza/split.config
       poll_interval:
         type: string
         format: duration
@@ -43,7 +43,7 @@ $defs:
     allOf:
       - $ref: ./matcher.criteria
       - $ref: ./attrs.resolver
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim.config
+      - $ref: /pkg/stanza/trim.config
   header_config:
     type: object
     properties:
