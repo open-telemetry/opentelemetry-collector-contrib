@@ -48,6 +48,7 @@ type logsReceiver struct {
 	doneChan                      chan bool
 	storageID                     *component.ID
 	cloudwatchCheckpointPersister *cloudwatchCheckpointPersister
+	mu                            sync.Mutex
 }
 
 type client interface {
@@ -206,7 +207,9 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 					l.settings.Logger.Error("unable to perform discovery of log groups", zap.Error(err))
 					continue
 				}
+				l.mu.Lock()
 				l.groupRequests = group
+				l.mu.Unlock()
 			}
 
 			err := l.poll(ctx)
@@ -219,27 +222,39 @@ func (l *logsReceiver) startPolling(ctx context.Context) {
 
 func (l *logsReceiver) poll(ctx context.Context) error {
 	var errs error
+
+	var mapMu sync.Mutex
 	currentGroups := make(map[string]bool)
+
 	endTime := time.Now()
 
 	var errMu sync.Mutex
 	var wg sync.WaitGroup
 
+	l.mu.Lock()
+	requests := l.groupRequests
+	l.mu.Unlock()
+
 	workers := make(chan int, l.maxConcurrentGroups)
 
-	for _, r := range l.groupRequests {
+	for _, r := range requests {
 		wg.Add(1)
 		workers <- 1
 
-		go func() {
+		go func(r groupRequest) {
 			defer wg.Done()
-			startTime := l.nextStartTime
 			groupName := r.groupName()
+
+			mapMu.Lock()
 			currentGroups[groupName] = true
+			mapMu.Unlock()
+
+			l.mu.Lock()
 			startTime, ok := l.groupNextStartTimes[groupName]
 			if !ok {
 				startTime = l.initialStartTime
 			}
+			l.mu.Unlock()
 
 			// Retrieve the last persisted timestamp for this log group if exists
 			if l.cloudwatchCheckpointPersister != nil {
@@ -290,20 +305,24 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 			}
 
 			// Update the receiver's nextStartTime for the next poll cycle
+			l.mu.Lock()
 			l.groupNextStartTimes[groupName] = nextStartTime
+			l.mu.Unlock()
 
 			<-workers
-		}()
+		}(r)
 	}
 	wg.Wait()
 
 	// Clean up stale entries from groupNextStartTimes map
+	l.mu.Lock()
 	for groupName := range l.groupNextStartTimes {
 		if !currentGroups[groupName] {
 			delete(l.groupNextStartTimes, groupName)
 			l.settings.Logger.Debug("Cleaned up stale timestamp for removed log group", zap.String("logGroup", groupName))
 		}
 	}
+	l.mu.Unlock()
 	return errs
 }
 
@@ -495,6 +514,9 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 }
 
 func (l *logsReceiver) ensureSession() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	if l.client != nil {
 		return nil
 	}
