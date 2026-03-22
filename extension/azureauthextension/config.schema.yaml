@@ -1,0 +1,44 @@
+$defs:
+  managed_identity:
+    type: object
+    properties:
+      client_id:
+        description: if left empty, then it is system managed
+        type: string
+  service_principal:
+    type: object
+    properties:
+      client_certificate_path:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      tenant_id:
+        type: string
+  workload_identity:
+    type: object
+    properties:
+      client_id:
+        type: string
+      federated_token_file:
+        type: string
+      tenant_id:
+        type: string
+type: object
+properties:
+  managed_identity:
+    x-optional: true
+    $ref: managed_identity
+  scopes:
+    type: array
+    items:
+      type: string
+  service_principal:
+    x-optional: true
+    $ref: service_principal
+  use_default:
+    type: boolean
+  workload_identity:
+    x-optional: true
+    $ref: workload_identity
