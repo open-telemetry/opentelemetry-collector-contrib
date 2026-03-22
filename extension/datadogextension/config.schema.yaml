@@ -3,7 +3,7 @@ type: object
 properties:
   api:
     description: Define the site and API key (and whether to fail on invalid API key) in API.
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config.api_config
+    $ref: /pkg/datadog/config.api_config
   deployment_type:
     description: DeploymentType indicates the type of deployment (gateway, daemonset, or unknown). Defaults to "unknown" if not set.
     type: string

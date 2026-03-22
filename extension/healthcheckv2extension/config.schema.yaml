@@ -1,4 +1,4 @@
 type: object
 allOf:
   - description: Config re-exports the internal healthcheck Config type
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck.config
+    $ref: /internal/healthcheck.config
