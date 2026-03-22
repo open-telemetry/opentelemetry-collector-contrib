@@ -109,10 +109,10 @@ type metricInfo struct {
 }
 
 type metricSystemProcessesCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SystemProcessesCountMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.processes.count metric with initial data.
@@ -135,7 +135,7 @@ func (m *metricSystemProcessesCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "status") {
+	if slices.Contains(m.config.EnabledAttributes, SystemProcessesCountMetricAttributeKeyStatus) {
 		dp.Attributes().PutStr("status", statusAttributeValue)
 	}
 
@@ -189,7 +189,7 @@ func (m *metricSystemProcessesCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemProcessesCount(cfg MetricConfig) metricSystemProcessesCount {
+func newMetricSystemProcessesCount(cfg SystemProcessesCountMetricConfig) metricSystemProcessesCount {
 	m := metricSystemProcessesCount{config: cfg}
 
 	if cfg.Enabled {
@@ -200,9 +200,9 @@ func newMetricSystemProcessesCount(cfg MetricConfig) metricSystemProcessesCount 
 }
 
 type metricSystemProcessesCreated struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SystemProcessesCreatedMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills system.processes.created metric with initial data.
@@ -241,7 +241,7 @@ func (m *metricSystemProcessesCreated) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemProcessesCreated(cfg MetricConfig) metricSystemProcessesCreated {
+func newMetricSystemProcessesCreated(cfg SystemProcessesCreatedMetricConfig) metricSystemProcessesCreated {
 	m := metricSystemProcessesCreated{config: cfg}
 
 	if cfg.Enabled {

@@ -63,6 +63,10 @@ func (o *openshiftProvider) OpenShiftClusterVersion(ctx context.Context) (string
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("OpenShift API returned status %s", resp.Status)
+	}
 	res := ocpClusterVersionAPIResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return "", err
@@ -79,6 +83,10 @@ func (o *openshiftProvider) Infrastructure(ctx context.Context) (*Infrastructure
 	resp, err := o.client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OpenShift API returned status %s", resp.Status)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -107,6 +115,10 @@ func (o *openshiftProvider) K8SClusterVersion(ctx context.Context) (string, erro
 	resp, err := o.client.Do(req)
 	if err != nil {
 		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Kubernetes API returned status %s", resp.Status)
 	}
 	res := k8sClusterVersionAPIResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {

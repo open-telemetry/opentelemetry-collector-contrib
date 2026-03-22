@@ -34,36 +34,35 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("spark.application.id")
+			sparkApplicationIDAttrVal, ok := res.Attributes().Get("spark.application.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "spark.application.id-val", val.Str())
+				assert.Equal(t, "spark.application.id-val", sparkApplicationIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("spark.application.name")
+			sparkApplicationNameAttrVal, ok := res.Attributes().Get("spark.application.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "spark.application.name-val", val.Str())
+				assert.Equal(t, "spark.application.name-val", sparkApplicationNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("spark.executor.id")
+			sparkExecutorIDAttrVal, ok := res.Attributes().Get("spark.executor.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "spark.executor.id-val", val.Str())
+				assert.Equal(t, "spark.executor.id-val", sparkExecutorIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("spark.job.id")
+			sparkJobIDAttrVal, ok := res.Attributes().Get("spark.job.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, 12, val.Int())
+				assert.EqualValues(t, 12, sparkJobIDAttrVal.Int())
 			}
-			val, ok = res.Attributes().Get("spark.stage.attempt.id")
+			sparkStageAttemptIDAttrVal, ok := res.Attributes().Get("spark.stage.attempt.id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, 22, val.Int())
+				assert.EqualValues(t, 22, sparkStageAttemptIDAttrVal.Int())
 			}
-			val, ok = res.Attributes().Get("spark.stage.id")
+			sparkStageIDAttrVal, ok := res.Attributes().Get("spark.stage.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, 14, val.Int())
+				assert.EqualValues(t, 14, sparkStageIDAttrVal.Int())
 			}
 		})
 	}

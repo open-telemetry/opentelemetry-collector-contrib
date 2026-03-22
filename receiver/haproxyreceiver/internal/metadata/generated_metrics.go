@@ -207,9 +207,9 @@ type metricInfo struct {
 }
 
 type metricHaproxyActive struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   HaproxyActiveMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.active metric with initial data.
@@ -246,7 +246,7 @@ func (m *metricHaproxyActive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyActive(cfg MetricConfig) metricHaproxyActive {
+func newMetricHaproxyActive(cfg HaproxyActiveMetricConfig) metricHaproxyActive {
 	m := metricHaproxyActive{config: cfg}
 
 	if cfg.Enabled {
@@ -257,9 +257,9 @@ func newMetricHaproxyActive(cfg MetricConfig) metricHaproxyActive {
 }
 
 type metricHaproxyBackup struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   HaproxyBackupMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.backup metric with initial data.
@@ -296,7 +296,7 @@ func (m *metricHaproxyBackup) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyBackup(cfg MetricConfig) metricHaproxyBackup {
+func newMetricHaproxyBackup(cfg HaproxyBackupMetricConfig) metricHaproxyBackup {
 	m := metricHaproxyBackup{config: cfg}
 
 	if cfg.Enabled {
@@ -307,9 +307,9 @@ func newMetricHaproxyBackup(cfg MetricConfig) metricHaproxyBackup {
 }
 
 type metricHaproxyBytesInput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   HaproxyBytesInputMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.bytes.input metric with initial data.
@@ -348,7 +348,7 @@ func (m *metricHaproxyBytesInput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyBytesInput(cfg MetricConfig) metricHaproxyBytesInput {
+func newMetricHaproxyBytesInput(cfg HaproxyBytesInputMetricConfig) metricHaproxyBytesInput {
 	m := metricHaproxyBytesInput{config: cfg}
 
 	if cfg.Enabled {
@@ -359,9 +359,9 @@ func newMetricHaproxyBytesInput(cfg MetricConfig) metricHaproxyBytesInput {
 }
 
 type metricHaproxyBytesOutput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   HaproxyBytesOutputMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.bytes.output metric with initial data.
@@ -400,7 +400,7 @@ func (m *metricHaproxyBytesOutput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyBytesOutput(cfg MetricConfig) metricHaproxyBytesOutput {
+func newMetricHaproxyBytesOutput(cfg HaproxyBytesOutputMetricConfig) metricHaproxyBytesOutput {
 	m := metricHaproxyBytesOutput{config: cfg}
 
 	if cfg.Enabled {
@@ -411,9 +411,9 @@ func newMetricHaproxyBytesOutput(cfg MetricConfig) metricHaproxyBytesOutput {
 }
 
 type metricHaproxyClientsCanceled struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   HaproxyClientsCanceledMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.clients.canceled metric with initial data.
@@ -452,7 +452,7 @@ func (m *metricHaproxyClientsCanceled) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyClientsCanceled(cfg MetricConfig) metricHaproxyClientsCanceled {
+func newMetricHaproxyClientsCanceled(cfg HaproxyClientsCanceledMetricConfig) metricHaproxyClientsCanceled {
 	m := metricHaproxyClientsCanceled{config: cfg}
 
 	if cfg.Enabled {
@@ -463,9 +463,9 @@ func newMetricHaproxyClientsCanceled(cfg MetricConfig) metricHaproxyClientsCance
 }
 
 type metricHaproxyCompressionBypass struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   HaproxyCompressionBypassMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.compression.bypass metric with initial data.
@@ -504,7 +504,7 @@ func (m *metricHaproxyCompressionBypass) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyCompressionBypass(cfg MetricConfig) metricHaproxyCompressionBypass {
+func newMetricHaproxyCompressionBypass(cfg HaproxyCompressionBypassMetricConfig) metricHaproxyCompressionBypass {
 	m := metricHaproxyCompressionBypass{config: cfg}
 
 	if cfg.Enabled {
@@ -515,9 +515,9 @@ func newMetricHaproxyCompressionBypass(cfg MetricConfig) metricHaproxyCompressio
 }
 
 type metricHaproxyCompressionCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   HaproxyCompressionCountMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.compression.count metric with initial data.
@@ -556,7 +556,7 @@ func (m *metricHaproxyCompressionCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyCompressionCount(cfg MetricConfig) metricHaproxyCompressionCount {
+func newMetricHaproxyCompressionCount(cfg HaproxyCompressionCountMetricConfig) metricHaproxyCompressionCount {
 	m := metricHaproxyCompressionCount{config: cfg}
 
 	if cfg.Enabled {
@@ -567,9 +567,9 @@ func newMetricHaproxyCompressionCount(cfg MetricConfig) metricHaproxyCompression
 }
 
 type metricHaproxyCompressionInput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   HaproxyCompressionInputMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.compression.input metric with initial data.
@@ -608,7 +608,7 @@ func (m *metricHaproxyCompressionInput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyCompressionInput(cfg MetricConfig) metricHaproxyCompressionInput {
+func newMetricHaproxyCompressionInput(cfg HaproxyCompressionInputMetricConfig) metricHaproxyCompressionInput {
 	m := metricHaproxyCompressionInput{config: cfg}
 
 	if cfg.Enabled {
@@ -619,9 +619,9 @@ func newMetricHaproxyCompressionInput(cfg MetricConfig) metricHaproxyCompression
 }
 
 type metricHaproxyCompressionOutput struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   HaproxyCompressionOutputMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.compression.output metric with initial data.
@@ -660,7 +660,7 @@ func (m *metricHaproxyCompressionOutput) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyCompressionOutput(cfg MetricConfig) metricHaproxyCompressionOutput {
+func newMetricHaproxyCompressionOutput(cfg HaproxyCompressionOutputMetricConfig) metricHaproxyCompressionOutput {
 	m := metricHaproxyCompressionOutput{config: cfg}
 
 	if cfg.Enabled {
@@ -671,9 +671,9 @@ func newMetricHaproxyCompressionOutput(cfg MetricConfig) metricHaproxyCompressio
 }
 
 type metricHaproxyConnectionsAverageTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   HaproxyConnectionsAverageTimeMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.connections.average_time metric with initial data.
@@ -710,7 +710,7 @@ func (m *metricHaproxyConnectionsAverageTime) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricHaproxyConnectionsAverageTime(cfg MetricConfig) metricHaproxyConnectionsAverageTime {
+func newMetricHaproxyConnectionsAverageTime(cfg HaproxyConnectionsAverageTimeMetricConfig) metricHaproxyConnectionsAverageTime {
 	m := metricHaproxyConnectionsAverageTime{config: cfg}
 
 	if cfg.Enabled {
@@ -721,9 +721,9 @@ func newMetricHaproxyConnectionsAverageTime(cfg MetricConfig) metricHaproxyConne
 }
 
 type metricHaproxyConnectionsErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   HaproxyConnectionsErrorsMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.connections.errors metric with initial data.
@@ -762,7 +762,7 @@ func (m *metricHaproxyConnectionsErrors) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyConnectionsErrors(cfg MetricConfig) metricHaproxyConnectionsErrors {
+func newMetricHaproxyConnectionsErrors(cfg HaproxyConnectionsErrorsMetricConfig) metricHaproxyConnectionsErrors {
 	m := metricHaproxyConnectionsErrors{config: cfg}
 
 	if cfg.Enabled {
@@ -773,9 +773,9 @@ func newMetricHaproxyConnectionsErrors(cfg MetricConfig) metricHaproxyConnection
 }
 
 type metricHaproxyConnectionsRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   HaproxyConnectionsRateMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.connections.rate metric with initial data.
@@ -812,7 +812,7 @@ func (m *metricHaproxyConnectionsRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyConnectionsRate(cfg MetricConfig) metricHaproxyConnectionsRate {
+func newMetricHaproxyConnectionsRate(cfg HaproxyConnectionsRateMetricConfig) metricHaproxyConnectionsRate {
 	m := metricHaproxyConnectionsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -823,9 +823,9 @@ func newMetricHaproxyConnectionsRate(cfg MetricConfig) metricHaproxyConnectionsR
 }
 
 type metricHaproxyConnectionsRetries struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   HaproxyConnectionsRetriesMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.connections.retries metric with initial data.
@@ -864,7 +864,7 @@ func (m *metricHaproxyConnectionsRetries) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyConnectionsRetries(cfg MetricConfig) metricHaproxyConnectionsRetries {
+func newMetricHaproxyConnectionsRetries(cfg HaproxyConnectionsRetriesMetricConfig) metricHaproxyConnectionsRetries {
 	m := metricHaproxyConnectionsRetries{config: cfg}
 
 	if cfg.Enabled {
@@ -875,9 +875,9 @@ func newMetricHaproxyConnectionsRetries(cfg MetricConfig) metricHaproxyConnectio
 }
 
 type metricHaproxyConnectionsTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   HaproxyConnectionsTotalMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.connections.total metric with initial data.
@@ -916,7 +916,7 @@ func (m *metricHaproxyConnectionsTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyConnectionsTotal(cfg MetricConfig) metricHaproxyConnectionsTotal {
+func newMetricHaproxyConnectionsTotal(cfg HaproxyConnectionsTotalMetricConfig) metricHaproxyConnectionsTotal {
 	m := metricHaproxyConnectionsTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -927,9 +927,9 @@ func newMetricHaproxyConnectionsTotal(cfg MetricConfig) metricHaproxyConnections
 }
 
 type metricHaproxyDowntime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric              // data buffer for generated metric.
+	config   HaproxyDowntimeMetricConfig // metric config provided by user.
+	capacity int                         // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.downtime metric with initial data.
@@ -968,7 +968,7 @@ func (m *metricHaproxyDowntime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyDowntime(cfg MetricConfig) metricHaproxyDowntime {
+func newMetricHaproxyDowntime(cfg HaproxyDowntimeMetricConfig) metricHaproxyDowntime {
 	m := metricHaproxyDowntime{config: cfg}
 
 	if cfg.Enabled {
@@ -979,9 +979,9 @@ func newMetricHaproxyDowntime(cfg MetricConfig) metricHaproxyDowntime {
 }
 
 type metricHaproxyFailedChecks struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   HaproxyFailedChecksMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.failed_checks metric with initial data.
@@ -1020,7 +1020,7 @@ func (m *metricHaproxyFailedChecks) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyFailedChecks(cfg MetricConfig) metricHaproxyFailedChecks {
+func newMetricHaproxyFailedChecks(cfg HaproxyFailedChecksMetricConfig) metricHaproxyFailedChecks {
 	m := metricHaproxyFailedChecks{config: cfg}
 
 	if cfg.Enabled {
@@ -1031,9 +1031,9 @@ func newMetricHaproxyFailedChecks(cfg MetricConfig) metricHaproxyFailedChecks {
 }
 
 type metricHaproxyRequestsAverageTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   HaproxyRequestsAverageTimeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.requests.average_time metric with initial data.
@@ -1070,7 +1070,7 @@ func (m *metricHaproxyRequestsAverageTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyRequestsAverageTime(cfg MetricConfig) metricHaproxyRequestsAverageTime {
+func newMetricHaproxyRequestsAverageTime(cfg HaproxyRequestsAverageTimeMetricConfig) metricHaproxyRequestsAverageTime {
 	m := metricHaproxyRequestsAverageTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1081,9 +1081,9 @@ func newMetricHaproxyRequestsAverageTime(cfg MetricConfig) metricHaproxyRequests
 }
 
 type metricHaproxyRequestsDenied struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   HaproxyRequestsDeniedMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.requests.denied metric with initial data.
@@ -1122,7 +1122,7 @@ func (m *metricHaproxyRequestsDenied) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyRequestsDenied(cfg MetricConfig) metricHaproxyRequestsDenied {
+func newMetricHaproxyRequestsDenied(cfg HaproxyRequestsDeniedMetricConfig) metricHaproxyRequestsDenied {
 	m := metricHaproxyRequestsDenied{config: cfg}
 
 	if cfg.Enabled {
@@ -1133,9 +1133,9 @@ func newMetricHaproxyRequestsDenied(cfg MetricConfig) metricHaproxyRequestsDenie
 }
 
 type metricHaproxyRequestsErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   HaproxyRequestsErrorsMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.requests.errors metric with initial data.
@@ -1174,7 +1174,7 @@ func (m *metricHaproxyRequestsErrors) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyRequestsErrors(cfg MetricConfig) metricHaproxyRequestsErrors {
+func newMetricHaproxyRequestsErrors(cfg HaproxyRequestsErrorsMetricConfig) metricHaproxyRequestsErrors {
 	m := metricHaproxyRequestsErrors{config: cfg}
 
 	if cfg.Enabled {
@@ -1185,9 +1185,9 @@ func newMetricHaproxyRequestsErrors(cfg MetricConfig) metricHaproxyRequestsError
 }
 
 type metricHaproxyRequestsQueued struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   HaproxyRequestsQueuedMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.requests.queued metric with initial data.
@@ -1226,7 +1226,7 @@ func (m *metricHaproxyRequestsQueued) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyRequestsQueued(cfg MetricConfig) metricHaproxyRequestsQueued {
+func newMetricHaproxyRequestsQueued(cfg HaproxyRequestsQueuedMetricConfig) metricHaproxyRequestsQueued {
 	m := metricHaproxyRequestsQueued{config: cfg}
 
 	if cfg.Enabled {
@@ -1237,9 +1237,9 @@ func newMetricHaproxyRequestsQueued(cfg MetricConfig) metricHaproxyRequestsQueue
 }
 
 type metricHaproxyRequestsRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   HaproxyRequestsRateMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.requests.rate metric with initial data.
@@ -1276,7 +1276,7 @@ func (m *metricHaproxyRequestsRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyRequestsRate(cfg MetricConfig) metricHaproxyRequestsRate {
+func newMetricHaproxyRequestsRate(cfg HaproxyRequestsRateMetricConfig) metricHaproxyRequestsRate {
 	m := metricHaproxyRequestsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1287,9 +1287,9 @@ func newMetricHaproxyRequestsRate(cfg MetricConfig) metricHaproxyRequestsRate {
 }
 
 type metricHaproxyRequestsRedispatched struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   HaproxyRequestsRedispatchedMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.requests.redispatched metric with initial data.
@@ -1328,7 +1328,7 @@ func (m *metricHaproxyRequestsRedispatched) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyRequestsRedispatched(cfg MetricConfig) metricHaproxyRequestsRedispatched {
+func newMetricHaproxyRequestsRedispatched(cfg HaproxyRequestsRedispatchedMetricConfig) metricHaproxyRequestsRedispatched {
 	m := metricHaproxyRequestsRedispatched{config: cfg}
 
 	if cfg.Enabled {
@@ -1339,10 +1339,10 @@ func newMetricHaproxyRequestsRedispatched(cfg MetricConfig) metricHaproxyRequest
 }
 
 type metricHaproxyRequestsTotal struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        HaproxyRequestsTotalMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills haproxy.requests.total metric with initial data.
@@ -1365,7 +1365,7 @@ func (m *metricHaproxyRequestsTotal) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "status_code") {
+	if slices.Contains(m.config.EnabledAttributes, HaproxyRequestsTotalMetricAttributeKeyStatusCode) {
 		dp.Attributes().PutStr("status_code", statusCodeAttributeValue)
 	}
 
@@ -1419,7 +1419,7 @@ func (m *metricHaproxyRequestsTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyRequestsTotal(cfg MetricConfig) metricHaproxyRequestsTotal {
+func newMetricHaproxyRequestsTotal(cfg HaproxyRequestsTotalMetricConfig) metricHaproxyRequestsTotal {
 	m := metricHaproxyRequestsTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1430,9 +1430,9 @@ func newMetricHaproxyRequestsTotal(cfg MetricConfig) metricHaproxyRequestsTotal 
 }
 
 type metricHaproxyResponsesAverageTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   HaproxyResponsesAverageTimeMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.responses.average_time metric with initial data.
@@ -1469,7 +1469,7 @@ func (m *metricHaproxyResponsesAverageTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyResponsesAverageTime(cfg MetricConfig) metricHaproxyResponsesAverageTime {
+func newMetricHaproxyResponsesAverageTime(cfg HaproxyResponsesAverageTimeMetricConfig) metricHaproxyResponsesAverageTime {
 	m := metricHaproxyResponsesAverageTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1480,9 +1480,9 @@ func newMetricHaproxyResponsesAverageTime(cfg MetricConfig) metricHaproxyRespons
 }
 
 type metricHaproxyResponsesDenied struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   HaproxyResponsesDeniedMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.responses.denied metric with initial data.
@@ -1521,7 +1521,7 @@ func (m *metricHaproxyResponsesDenied) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyResponsesDenied(cfg MetricConfig) metricHaproxyResponsesDenied {
+func newMetricHaproxyResponsesDenied(cfg HaproxyResponsesDeniedMetricConfig) metricHaproxyResponsesDenied {
 	m := metricHaproxyResponsesDenied{config: cfg}
 
 	if cfg.Enabled {
@@ -1532,9 +1532,9 @@ func newMetricHaproxyResponsesDenied(cfg MetricConfig) metricHaproxyResponsesDen
 }
 
 type metricHaproxyResponsesErrors struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   HaproxyResponsesErrorsMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.responses.errors metric with initial data.
@@ -1573,7 +1573,7 @@ func (m *metricHaproxyResponsesErrors) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyResponsesErrors(cfg MetricConfig) metricHaproxyResponsesErrors {
+func newMetricHaproxyResponsesErrors(cfg HaproxyResponsesErrorsMetricConfig) metricHaproxyResponsesErrors {
 	m := metricHaproxyResponsesErrors{config: cfg}
 
 	if cfg.Enabled {
@@ -1584,9 +1584,9 @@ func newMetricHaproxyResponsesErrors(cfg MetricConfig) metricHaproxyResponsesErr
 }
 
 type metricHaproxyServerSelectedTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   HaproxyServerSelectedTotalMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.server_selected.total metric with initial data.
@@ -1625,7 +1625,7 @@ func (m *metricHaproxyServerSelectedTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyServerSelectedTotal(cfg MetricConfig) metricHaproxyServerSelectedTotal {
+func newMetricHaproxyServerSelectedTotal(cfg HaproxyServerSelectedTotalMetricConfig) metricHaproxyServerSelectedTotal {
 	m := metricHaproxyServerSelectedTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1636,9 +1636,9 @@ func newMetricHaproxyServerSelectedTotal(cfg MetricConfig) metricHaproxyServerSe
 }
 
 type metricHaproxySessionsAverage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   HaproxySessionsAverageMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.sessions.average metric with initial data.
@@ -1675,7 +1675,7 @@ func (m *metricHaproxySessionsAverage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxySessionsAverage(cfg MetricConfig) metricHaproxySessionsAverage {
+func newMetricHaproxySessionsAverage(cfg HaproxySessionsAverageMetricConfig) metricHaproxySessionsAverage {
 	m := metricHaproxySessionsAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -1686,9 +1686,9 @@ func newMetricHaproxySessionsAverage(cfg MetricConfig) metricHaproxySessionsAver
 }
 
 type metricHaproxySessionsCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   HaproxySessionsCountMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.sessions.count metric with initial data.
@@ -1725,7 +1725,7 @@ func (m *metricHaproxySessionsCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxySessionsCount(cfg MetricConfig) metricHaproxySessionsCount {
+func newMetricHaproxySessionsCount(cfg HaproxySessionsCountMetricConfig) metricHaproxySessionsCount {
 	m := metricHaproxySessionsCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1736,9 +1736,9 @@ func newMetricHaproxySessionsCount(cfg MetricConfig) metricHaproxySessionsCount 
 }
 
 type metricHaproxySessionsLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   HaproxySessionsLimitMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.sessions.limit metric with initial data.
@@ -1775,7 +1775,7 @@ func (m *metricHaproxySessionsLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxySessionsLimit(cfg MetricConfig) metricHaproxySessionsLimit {
+func newMetricHaproxySessionsLimit(cfg HaproxySessionsLimitMetricConfig) metricHaproxySessionsLimit {
 	m := metricHaproxySessionsLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -1786,9 +1786,9 @@ func newMetricHaproxySessionsLimit(cfg MetricConfig) metricHaproxySessionsLimit 
 }
 
 type metricHaproxySessionsRate struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   HaproxySessionsRateMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.sessions.rate metric with initial data.
@@ -1825,7 +1825,7 @@ func (m *metricHaproxySessionsRate) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxySessionsRate(cfg MetricConfig) metricHaproxySessionsRate {
+func newMetricHaproxySessionsRate(cfg HaproxySessionsRateMetricConfig) metricHaproxySessionsRate {
 	m := metricHaproxySessionsRate{config: cfg}
 
 	if cfg.Enabled {
@@ -1836,9 +1836,9 @@ func newMetricHaproxySessionsRate(cfg MetricConfig) metricHaproxySessionsRate {
 }
 
 type metricHaproxySessionsTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   HaproxySessionsTotalMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.sessions.total metric with initial data.
@@ -1877,7 +1877,7 @@ func (m *metricHaproxySessionsTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal {
+func newMetricHaproxySessionsTotal(cfg HaproxySessionsTotalMetricConfig) metricHaproxySessionsTotal {
 	m := metricHaproxySessionsTotal{config: cfg}
 
 	if cfg.Enabled {
@@ -1888,9 +1888,9 @@ func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal 
 }
 
 type metricHaproxyWeight struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   HaproxyWeightMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
 }
 
 // init fills haproxy.weight metric with initial data.
@@ -1927,7 +1927,7 @@ func (m *metricHaproxyWeight) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricHaproxyWeight(cfg MetricConfig) metricHaproxyWeight {
+func newMetricHaproxyWeight(cfg HaproxyWeightMetricConfig) metricHaproxyWeight {
 	m := metricHaproxyWeight{config: cfg}
 
 	if cfg.Enabled {
@@ -2052,6 +2052,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.HaproxyServerState.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HaproxyServerState.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.server.state"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServerState.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude)

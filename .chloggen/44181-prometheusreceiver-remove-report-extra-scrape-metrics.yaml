@@ -1,0 +1,8 @@
+change_type: breaking
+component: receiver/prometheus
+note: Remove the deprecated `report_extra_scrape_metrics` receiver configuration option and obsolete extra scrape metric feature gates.
+issues: [44181]
+subtext: |
+  `report_extra_scrape_metrics` is no longer accepted in `prometheusreceiver` configuration.
+  Control extra scrape metrics through the PromConfig.ScrapeConfigs.ExtraScrapeMetrics setting instead.
+change_logs: [user]
