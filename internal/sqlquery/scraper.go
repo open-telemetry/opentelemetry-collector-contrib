@@ -92,6 +92,12 @@ func (s *Scraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	for i := range s.Query.Metrics {
 		metricCfg := &s.Query.Metrics[i]
 		for j, row := range rows {
+			if metricCfg.RowCondition != nil {
+				val, found := row[metricCfg.RowCondition.Column]
+				if !found || val != metricCfg.RowCondition.Value {
+					continue
+				}
+			}
 			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), s.StartTime, ts, s.ScrapeCfg); err != nil {
 				err = fmt.Errorf("row %d: %w", j, err)
 				errs = append(errs, err)
