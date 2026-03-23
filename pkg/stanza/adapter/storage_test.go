@@ -105,6 +105,7 @@ func TestFailOnNonStorageExtension(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, "storage client: non-storage extension 'non_storage/non' found", err.Error())
 }
+
 func createReceiver(t *testing.T, storageID component.ID) *receiver {
 	params := rcvr.Settings{
 		ID:                component.MustNewID("test"),
@@ -138,7 +139,7 @@ type mockStorageExtension struct {
 
 var _ storage.Extension = (*mockStorageExtension)(nil)
 
-func (r *mockStorageExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID, storageName string) (storage.Client, error) {
+func (r *mockStorageExtension) GetClient(_ context.Context, kind component.Kind, id component.ID, storageName string) (storage.Client, error) {
 	r.gotKind = kind
 	r.gotComponentID = id
 	r.gotStorageName = storageName
@@ -148,11 +149,11 @@ func (r *mockStorageExtension) GetClient(ctx context.Context, kind component.Kin
 func TestGetStorageClientNormalizesComponentID(t *testing.T) {
 	ctx := t.Context()
 	storageExtID := storagetest.NewStorageID("mock_storage")
-	recExt := &mockStorageExtension{
+	storageExt := &mockStorageExtension{
 		StartFunc:    func(context.Context, component.Host) error { return nil },
 		ShutdownFunc: func(context.Context) error { return nil },
 	}
-	host := storagetest.NewStorageHost().WithExtension(storageExtID, recExt)
+	host := storagetest.NewStorageHost().WithExtension(storageExtID, storageExt)
 
 	tests := []struct {
 		name         string
@@ -194,9 +195,9 @@ func TestGetStorageClientNormalizesComponentID(t *testing.T) {
 			require.NoError(t, client.Close(ctx))
 
 			wantID := component.MustNewIDWithName(tt.wantTypeName, tt.componentID.Name())
-			require.Equal(t, component.KindReceiver, recExt.gotKind)
-			require.Equal(t, wantID, recExt.gotComponentID)
-			require.Equal(t, "", recExt.gotStorageName)
+			require.Equal(t, component.KindReceiver, storageExt.gotKind)
+			require.Equal(t, wantID, storageExt.gotComponentID)
+			require.Empty(t, storageExt.gotStorageName)
 		})
 	}
 }
