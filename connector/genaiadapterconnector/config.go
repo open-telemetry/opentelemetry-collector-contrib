@@ -3,7 +3,7 @@
 
 package genaiadapterconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/genaiadapterconnector"
 
-// Config defines configuration for the thirdpartyconnector.
+// Config defines configuration for the genaiadapterconnector.
 type Config struct{}
 
 // Validate checks the connector configuration for errors.

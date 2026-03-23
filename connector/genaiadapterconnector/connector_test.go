@@ -18,10 +18,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/genaiadapterconnector/internal/metadata"
 )
 
-func resetConnectors() {
-	connectors = &sync.Map{}
-}
-
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	assert.NotNil(t, factory)
@@ -35,32 +31,25 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestGetOrCreateConnector_Singleton(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c1 := getOrCreateConnector(set)
-	c2 := getOrCreateConnector(set)
+	c1 := getOrCreateConnector(connectors, set)
+	c2 := getOrCreateConnector(connectors, set)
 	assert.Same(t, c1, c2)
 }
 
 func TestGetOrCreateConnector_DifferentIDs(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	set1 := connectortest.NewNopSettings(metadata.Type)
 	set2 := connectortest.NewNopSettings(metadata.Type)
 	set2.ID = component.MustNewIDWithName("genai_adapter", "other")
 
-	c1 := getOrCreateConnector(set1)
-	c2 := getOrCreateConnector(set2)
+	c1 := getOrCreateConnector(connectors, set1)
+	c2 := getOrCreateConnector(connectors, set2)
 	assert.NotSame(t, c1, c2)
 }
 
 func TestCreateTracesToTraces(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
 	factory := NewFactory()
 	set := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig()
@@ -74,9 +63,6 @@ func TestCreateTracesToTraces(t *testing.T) {
 }
 
 func TestCreateTracesToLogs(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
 	factory := NewFactory()
 	set := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig()
@@ -90,23 +76,19 @@ func TestCreateTracesToLogs(t *testing.T) {
 }
 
 func TestStartShutdown(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 
 	assert.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
 	assert.NoError(t, c.Shutdown(t.Context()))
 }
 
 func TestConsumeTraces_OISpanTransformed(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	tracesSink := &consumertest.TracesSink{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 	c.tracesConsumer = tracesSink
 
 	td := ptrace.NewTraces()
@@ -127,12 +109,10 @@ func TestConsumeTraces_OISpanTransformed(t *testing.T) {
 }
 
 func TestConsumeTraces_NonOISpanPassthrough(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	tracesSink := &consumertest.TracesSink{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 	c.tracesConsumer = tracesSink
 
 	td := ptrace.NewTraces()
@@ -153,12 +133,10 @@ func TestConsumeTraces_NonOISpanPassthrough(t *testing.T) {
 }
 
 func TestConsumeTraces_LLOEmitsLogs(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	logsSink := &consumertest.LogsSink{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 	c.logsConsumer = logsSink
 
 	td := ptrace.NewTraces()
@@ -182,12 +160,10 @@ func TestConsumeTraces_LLOEmitsLogs(t *testing.T) {
 }
 
 func TestConsumeTraces_ForwardsToTracesConsumer(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	tracesSink := &consumertest.TracesSink{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 	c.tracesConsumer = tracesSink
 
 	td := ptrace.NewTraces()
@@ -199,12 +175,10 @@ func TestConsumeTraces_ForwardsToTracesConsumer(t *testing.T) {
 }
 
 func TestConsumeTraces_ForwardsToLogsConsumer(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	logsSink := &consumertest.LogsSink{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 	c.logsConsumer = logsSink
 
 	td := ptrace.NewTraces()
@@ -220,12 +194,10 @@ func TestConsumeTraces_ForwardsToLogsConsumer(t *testing.T) {
 }
 
 func TestConsumeTraces_NoLogsWhenNoLLO(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	logsSink := &consumertest.LogsSink{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 	c.logsConsumer = logsSink
 
 	td := ptrace.NewTraces()
@@ -238,12 +210,10 @@ func TestConsumeTraces_NoLogsWhenNoLLO(t *testing.T) {
 }
 
 func TestLogsOnlyConnector_ConsumeTracesNoOp(t *testing.T) {
-	resetConnectors()
-	defer resetConnectors()
-
+	connectors := &sync.Map{}
 	tracesSink := &consumertest.TracesSink{}
 	set := connectortest.NewNopSettings(metadata.Type)
-	c := getOrCreateConnector(set)
+	c := getOrCreateConnector(connectors, set)
 	c.tracesConsumer = tracesSink
 
 	wrapper := &logsOnlyConnector{c}

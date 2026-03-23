@@ -39,14 +39,27 @@ func (l *logsOnlyConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 	return nil
 }
 
-var connectors = &sync.Map{}
-
 func NewFactory() connector.Factory {
+	connectors := &sync.Map{}
 	return connector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
-		connector.WithTracesToLogs(createTracesToLogs, metadata.TracesToLogsStability),
+		connector.WithTracesToTraces(
+			func(_ context.Context, set connector.Settings, _ component.Config, tc consumer.Traces) (connector.Traces, error) {
+				c := getOrCreateConnector(connectors, set)
+				c.tracesConsumer = tc
+				return c, nil
+			},
+			metadata.TracesToTracesStability,
+		),
+		connector.WithTracesToLogs(
+			func(_ context.Context, set connector.Settings, _ component.Config, lc consumer.Logs) (connector.Traces, error) {
+				c := getOrCreateConnector(connectors, set)
+				c.logsConsumer = lc
+				return &logsOnlyConnector{c}, nil
+			},
+			metadata.TracesToLogsStability,
+		),
 	)
 }
 
@@ -54,7 +67,7 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func getOrCreateConnector(set connector.Settings) *genAIAdapterConnector {
+func getOrCreateConnector(connectors *sync.Map, set connector.Settings) *genAIAdapterConnector {
 	id := set.ID.String()
 	c := &genAIAdapterConnector{
 		logger:     set.Logger,
@@ -62,30 +75,4 @@ func getOrCreateConnector(set connector.Settings) *genAIAdapterConnector {
 	}
 	actual, _ := connectors.LoadOrStore(id, c)
 	return actual.(*genAIAdapterConnector)
-}
-
-func createTracesToTraces(
-	_ context.Context,
-	set connector.Settings,
-	_ component.Config,
-	tracesConsumer consumer.Traces,
-) (connector.Traces, error) {
-	c := getOrCreateConnector(set)
-	c.mu.Lock()
-	c.tracesConsumer = tracesConsumer
-	c.mu.Unlock()
-	return c, nil
-}
-
-func createTracesToLogs(
-	_ context.Context,
-	set connector.Settings,
-	_ component.Config,
-	logsConsumer consumer.Logs,
-) (connector.Traces, error) {
-	c := getOrCreateConnector(set)
-	c.mu.Lock()
-	c.logsConsumer = logsConsumer
-	c.mu.Unlock()
-	return &logsOnlyConnector{c}, nil
 }

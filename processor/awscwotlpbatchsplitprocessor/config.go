@@ -3,6 +3,8 @@
 
 package awscwotlpbatchsplitprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/awscwotlpbatchsplitprocessor"
 
+import "fmt"
+
 const (
 	// 1 MB request size limit for the CloudWatch OTLP endpoint.
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-OTLPEndpoint.html
@@ -28,5 +30,8 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
+	if cfg.MaxRequestByteSize <= 0 {
+		return fmt.Errorf("max_request_byte_size must be > 0, got %d", cfg.MaxRequestByteSize)
+	}
 	return nil
 }

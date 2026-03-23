@@ -22,12 +22,12 @@ If a single log record exceeds the limit on its own, it is exported as a batch o
 ```yaml
 processors:
   awscwotlpbatchsplit:
-    max_request_byte_size: 1000000  # default: 1MB
+    max_request_byte_size: 1048576  # default: 1MB
 ```
 
 | Setting | Description | Default |
 | ------- | ----------- | ------- |
-| `max_request_byte_size` | Maximum size in bytes for each sub-batch. | `1000000` (1MB) |
+| `max_request_byte_size` | Maximum size in bytes for each sub-batch. | `1048576` (1MB) |
 
 ### Example
 

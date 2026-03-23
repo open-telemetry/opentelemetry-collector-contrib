@@ -34,14 +34,10 @@ func createLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
 	pCfg := cfg.(*Config)
-	maxSize := pCfg.MaxRequestByteSize
-	if maxSize <= 0 {
-		maxSize = defaultMaxRequestByteSize
-	}
 	return &awsCWOTLPBatchLogProcessor{
 		logger:             set.Logger,
 		nextConsumer:       nextConsumer,
-		maxRequestByteSize: maxSize,
+		maxRequestByteSize: pCfg.MaxRequestByteSize,
 		baseLogBufferSize:  defaultBaseLogBufferSize,
 	}, nil
 }

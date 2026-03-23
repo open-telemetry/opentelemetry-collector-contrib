@@ -155,16 +155,17 @@ func TransformOpenInferenceSpan(span ptrace.Span) {
 
 	toRemove := []string{}
 
-	spanKind, _ := attrs.Get("openinference.span.kind")
+	spanKind, ok := attrs.Get("openinference.span.kind")
 	spanKindStr := spanKind.Str()
+	if ok {
+		if op, found := operationMap[spanKindStr]; found {
+			attrs.PutStr(string(semconv.GenAIOperationNameKey), op)
+		}
+		attrs.Remove("openinference.span.kind")
+	}
 
 	attrs.Range(func(key string, value pcommon.Value) bool {
 		switch {
-		case key == "openinference.span.kind":
-			if op, ok := operationMap[value.Str()]; ok {
-				attrs.PutStr(string(semconv.GenAIOperationNameKey), op)
-			}
-			toRemove = append(toRemove, key)
 		case inputMsgPattern.MatchString(key):
 			// see: https://arize-ai.github.io/openinference/spec/semantic_conventions.html#llm-inputoutput-messages
 			// e.g. llm.input_messages.2.message.role → match[1]="2", match[2]="role"

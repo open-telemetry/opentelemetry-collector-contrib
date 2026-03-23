@@ -5,7 +5,6 @@ package genaiadapterconnector // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -20,7 +19,6 @@ type genAIAdapterConnector struct {
 	tracesConsumer consumer.Traces
 	logsConsumer   consumer.Logs
 	lloHandler     *lloHandler
-	mu             sync.Mutex
 }
 
 func (c *genAIAdapterConnector) Capabilities() consumer.Capabilities {

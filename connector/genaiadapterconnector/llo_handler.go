@@ -621,7 +621,7 @@ func (h *lloHandler) processSpans(td ptrace.Traces) plog.Logs {
 				// 3. Remove LLO attributes from span
 				h.removeLLOAttributes(span)
 
-				// 5. Filter span events
+				// 4. Filter span events
 				h.filterSpanEvents(span)
 			}
 		}
