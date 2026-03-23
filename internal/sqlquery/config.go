@@ -125,6 +125,16 @@ func (config LogsCfg) Validate() error {
 	return errors.Join(errs...)
 }
 
+// RowCondition filters query result rows for a metric. Only rows where the
+// specified column equals the specified value are used to produce the metric.
+// This is useful when a single query returns a pivot-style result set (e.g.
+// pgbouncer's SHOW LISTS) where each row represents a different metric and
+// must be selected individually.
+type RowCondition struct {
+	Column string `mapstructure:"column"`
+	Value  string `mapstructure:"value"`
+}
+
 type MetricCfg struct {
 	MetricName       string            `mapstructure:"metric_name"`
 	ValueColumn      string            `mapstructure:"value_column"`
@@ -138,6 +148,7 @@ type MetricCfg struct {
 	StaticAttributes map[string]string `mapstructure:"static_attributes"`
 	StartTsColumn    string            `mapstructure:"start_ts_column"`
 	TsColumn         string            `mapstructure:"ts_column"`
+	RowCondition     *RowCondition     `mapstructure:"row_condition"`
 }
 
 func (c MetricCfg) Validate() error {
@@ -159,6 +170,11 @@ func (c MetricCfg) Validate() error {
 	}
 	if c.DataType == MetricTypeGauge && c.Aggregation != "" {
 		errs = append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
+	}
+	if c.RowCondition != nil {
+		if c.RowCondition.Column == "" {
+			errs = append(errs, errors.New("'row_condition.column' cannot be empty"))
+		}
 	}
 	if errs != nil && c.MetricName != "" {
 		errs = append(errs, fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName))
