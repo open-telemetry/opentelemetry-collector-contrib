@@ -232,7 +232,7 @@ func TestConfigValidate(t *testing.T) {
 				CustomerID:            "customer_id_example",
 				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 			},
-			expectedErr: "raw_log_field is invalid: error while parsing arguments",
+			expectedErr: "invalid raw_log_field: error while parsing arguments",
 		},
 		{
 			desc: "Missing customer ID",

@@ -63,7 +63,7 @@ If there are nested fields in `attributes["secops_ingestion_label"]` or `attribu
 
 ## Credentials
 
-This exporter requires a Google Cloud service account with access to the appropiate APIs.
+This exporter requires a Google Cloud service account with access to the appropriate APIs.
 
 The following IAM permissions are required for the Chronicle API:
 - [chronicle.logs.import](https://docs.cloud.google.com/chronicle/docs/reference/rest/v1alpha/projects.locations.instances.logTypes.logs/import)
@@ -120,7 +120,7 @@ googlesecops:
   namespace: "production"
 ```
 
-### Chronicle API with Overriden Hostname
+### Chronicle API with Overridden Hostname
 
 ```yaml
 googlesecops:

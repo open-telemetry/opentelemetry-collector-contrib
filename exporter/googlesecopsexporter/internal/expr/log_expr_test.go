@@ -4,7 +4,6 @@
 package expr
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -37,7 +36,7 @@ func TestNewOTTLLogRecordExpression(t *testing.T) {
 		lr.Body().SetStr("hello world")
 
 		tCtx := newTestTransformContext(lr, pcommon.NewResource(), pcommon.NewInstrumentationScope())
-		val, err := expr.Execute(context.Background(), tCtx)
+		val, err := expr.Execute(t.Context(), tCtx)
 		require.NoError(t, err)
 		require.Equal(t, "hello world", val)
 	})
@@ -52,7 +51,7 @@ func TestNewOTTLLogRecordExpression(t *testing.T) {
 		res.Attributes().PutStr("service.name", "my-service")
 
 		tCtx := newTestTransformContext(lr, res, pcommon.NewInstrumentationScope())
-		val, err := expr.Execute(context.Background(), tCtx)
+		val, err := expr.Execute(t.Context(), tCtx)
 		require.NoError(t, err)
 		require.Equal(t, "my-service", val)
 	})
@@ -66,7 +65,7 @@ func TestNewOTTLLogRecordExpression(t *testing.T) {
 		lr.Attributes().PutStr("key", "value")
 
 		tCtx := newTestTransformContext(lr, pcommon.NewResource(), pcommon.NewInstrumentationScope())
-		val, err := expr.Execute(context.Background(), tCtx)
+		val, err := expr.Execute(t.Context(), tCtx)
 		require.NoError(t, err)
 		require.Equal(t, "value", val)
 	})
@@ -81,7 +80,7 @@ func TestNewOTTLLogRecordExpression(t *testing.T) {
 		lr.Attributes().PutStr("b", "bar")
 
 		tCtx := newTestTransformContext(lr, pcommon.NewResource(), pcommon.NewInstrumentationScope())
-		val, err := expr.Execute(context.Background(), tCtx)
+		val, err := expr.Execute(t.Context(), tCtx)
 		require.NoError(t, err)
 		require.Equal(t, "foo-bar", val)
 	})
