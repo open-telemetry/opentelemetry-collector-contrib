@@ -7,12 +7,12 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/config/configoptional v1.54.0
-	go.opentelemetry.io/collector/config/configretry v1.54.0
-	go.opentelemetry.io/collector/confmap v1.54.0
-	go.opentelemetry.io/collector/exporter v1.54.0
-	go.opentelemetry.io/collector/exporter/exporterhelper v0.148.0
-	go.opentelemetry.io/collector/exporter/exportertest v0.148.0
+	go.opentelemetry.io/collector/config/configoptional v1.54.1-0.20260320051400-372cc483b303
+	go.opentelemetry.io/collector/config/configretry v1.54.1-0.20260320051400-372cc483b303
+	go.opentelemetry.io/collector/confmap v1.54.1-0.20260320051400-372cc483b303
+	go.opentelemetry.io/collector/exporter v1.54.1-0.20260320051400-372cc483b303
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.148.1-0.20260320051400-372cc483b303
+	go.opentelemetry.io/collector/exporter/exportertest v0.148.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/pdata v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/otel/metric v1.42.0
 	go.opentelemetry.io/otel/sdk/metric v1.42.0
