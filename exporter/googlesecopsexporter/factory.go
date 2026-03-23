@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlesecopsexporter/internal/metadata"
 )
 
-// NewFactory creates a new Chronicle exporter factory.
+// NewFactory creates a new Google SecOps exporter factory.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
