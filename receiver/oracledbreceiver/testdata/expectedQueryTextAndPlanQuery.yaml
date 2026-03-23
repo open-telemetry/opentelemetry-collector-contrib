@@ -10,6 +10,9 @@ resourceLogs:
         - key: service.instance.id
           value:
             stringValue: oraclehost:1521/ORCL
+        - key: service.name
+          value:
+            stringValue: oracle
     scopeLogs:
       - logRecords:
           - attributes:

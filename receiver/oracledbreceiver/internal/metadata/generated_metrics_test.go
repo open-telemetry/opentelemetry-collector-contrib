@@ -243,6 +243,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetHostName("host.name-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
 			rb.SetServiceInstanceID("service.instance.id-val")
+			rb.SetServiceName("service.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {
