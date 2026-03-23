@@ -31,21 +31,20 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("rabbitmq.node.name")
+			rabbitmqNodeNameAttrVal, ok := res.Attributes().Get("rabbitmq.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "rabbitmq.node.name-val", val.Str())
+				assert.Equal(t, "rabbitmq.node.name-val", rabbitmqNodeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("rabbitmq.queue.name")
+			rabbitmqQueueNameAttrVal, ok := res.Attributes().Get("rabbitmq.queue.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "rabbitmq.queue.name-val", val.Str())
+				assert.Equal(t, "rabbitmq.queue.name-val", rabbitmqQueueNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("rabbitmq.vhost.name")
+			rabbitmqVhostNameAttrVal, ok := res.Attributes().Get("rabbitmq.vhost.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "rabbitmq.vhost.name-val", val.Str())
+				assert.Equal(t, "rabbitmq.vhost.name-val", rabbitmqVhostNameAttrVal.Str())
 			}
 		})
 	}
