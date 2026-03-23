@@ -343,7 +343,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			attrs.CopyTo(snapshot.Resource().Attributes())
 			prw.rmCache.Add(hashed, snapshot)
 			// target_info is not stored as a metric but PRW requires the response
-			// to report all received samples, including target_info, to avoid a stats mismat
+			// to report all received samples, including target_info, to avoid a stats mismatch
 			stats.Samples += len(ts.Samples)
 			continue
 		}
