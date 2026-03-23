@@ -1,4 +1,4 @@
-change_type: bugfix
+change_type: bug_fix
 component: receiver/datadog
 note: Fix invalid temporality and type combination for dd.internal.stats.payload metric by setting AggregationTemporality to Cumulative
 issues: [46937]
