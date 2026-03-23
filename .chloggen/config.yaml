@@ -53,6 +53,7 @@ components:
     - exporter/googlecloud
     - exporter/googlecloudpubsub
     - exporter/googlemanagedprometheus
+    - exporter/googlesecops
     - exporter/honeycombmarker
     - exporter/influxdb
     - exporter/kafka
