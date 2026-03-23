@@ -52,13 +52,23 @@ func Transform(service *corev1.Service) *corev1.Service {
 }
 
 func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Service, endpointCounts EndpointCountsByKey, ts pcommon.Timestamp) {
+	e := metadata.NewK8sServiceEntity(string(svc.UID))
+	e.SetK8sServiceName(svc.Name)
+	e.SetK8sNamespaceName(svc.Namespace)
+	e.SetK8sServiceType(string(svc.Spec.Type))
+	if svc.Spec.TrafficDistribution != nil {
+		e.SetK8sServiceTrafficDistribution(*svc.Spec.TrafficDistribution)
+	}
+	e.SetK8sServicePublishNotReadyAddresses(svc.Spec.PublishNotReadyAddresses)
+	eb := mb.ForK8sService(e)
+
 	for key, counts := range endpointCounts {
 		addressTypeEnum, ok := metadata.MapAttributeK8sServiceEndpointAddressType[key.AddressType]
 		if !ok {
 			continue
 		}
 
-		mb.RecordK8sServiceEndpointCountDataPoint( //nolint:staticcheck
+		eb.RecordK8sServiceEndpointCountDataPoint(
 			ts,
 			int64(counts.Ready),
 			addressTypeEnum,
@@ -66,7 +76,7 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 			key.Zone,
 		)
 
-		mb.RecordK8sServiceEndpointCountDataPoint( //nolint:staticcheck
+		eb.RecordK8sServiceEndpointCountDataPoint(
 			ts,
 			int64(counts.Serving),
 			addressTypeEnum,
@@ -74,7 +84,7 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 			key.Zone,
 		)
 
-		mb.RecordK8sServiceEndpointCountDataPoint( //nolint:staticcheck
+		eb.RecordK8sServiceEndpointCountDataPoint(
 			ts,
 			int64(counts.Terminating),
 			addressTypeEnum,
@@ -85,19 +95,10 @@ func RecordMetrics(_ *zap.Logger, mb *metadata.MetricsBuilder, svc *corev1.Servi
 
 	if svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
 		ingressCount := len(svc.Status.LoadBalancer.Ingress)
-		mb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, int64(ingressCount)) //nolint:staticcheck
+		eb.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, int64(ingressCount))
 	}
 
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sServiceName(svc.Name)
-	rb.SetK8sServiceUID(string(svc.UID))
-	rb.SetK8sNamespaceName(svc.Namespace)
-	rb.SetK8sServiceType(string(svc.Spec.Type))
-	if svc.Spec.TrafficDistribution != nil {
-		rb.SetK8sServiceTrafficDistribution(*svc.Spec.TrafficDistribution)
-	}
-	rb.SetK8sServicePublishNotReadyAddresses(svc.Spec.PublishNotReadyAddresses)
-	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
+	eb.Emit()
 }
 
 // EndpointCounts tracks the counts of endpoints in different conditions
