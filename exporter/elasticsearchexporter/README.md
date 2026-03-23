@@ -236,7 +236,7 @@ service:
 > `otel` and `ecs` mapping modes require Elasticsearch 8.12 or above[^1].
 > `otel` mode works best with Elasticsearch 8.16 or above[^2].
 
-[^1]: as OTel and ECS mapping modes rely on the `require_data_stream` bulk API parameter, available since Elasticsearch 8.12
+[^1]: as OTel and ECS mapping modes rely on the `require_data_stream` bulk action metadata, available since Elasticsearch 8.12
 [^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
 
 #### OTel mapping mode
@@ -680,7 +680,7 @@ error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flu
 }
 ```
 
-In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` query parameter is not supported.
+In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` bulk action metadata is not supported.
 This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
 
 To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
