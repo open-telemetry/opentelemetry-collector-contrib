@@ -1,0 +1,18 @@
+description: Config is the configuration for the leader elector extension.
+type: object
+properties:
+  lease_duration:
+    type: string
+    format: duration
+  lease_name:
+    type: string
+  lease_namespace:
+    type: string
+  renew_deadline:
+    type: string
+    format: duration
+  retry_period:
+    type: string
+    format: duration
+allOf:
+  - $ref: /internal/k8sconfig.api_config

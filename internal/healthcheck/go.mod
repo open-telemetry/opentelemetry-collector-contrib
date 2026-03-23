@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/health
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.148.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.148.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.148.1-0.20260320051400-372cc483b303
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.148.1-0.20260320051400-372cc483b303
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/component/componentstatus v0.148.1-0.20260320051400-372cc483b303
@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.148.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/extension/extensiontest v0.148.1-0.20260320051400-372cc483b303
+	go.opentelemetry.io/collector/pdata v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/pipeline v1.54.1-0.20260320051400-372cc483b303
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -63,7 +64,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.148.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/pdata v1.54.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
