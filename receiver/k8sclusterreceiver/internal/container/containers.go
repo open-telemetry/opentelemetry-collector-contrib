@@ -219,16 +219,21 @@ func isBareDigest(image string) bool {
 	if strings.Contains(image, "/") || strings.Contains(image, "@") {
 		return false
 	}
-	parts := strings.SplitN(image, ":", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+	// Require exactly one ":" — bare digests are "algorithm:hex".
+	// Images like "name:tag:extra" are not bare digests.
+	if strings.Count(image, ":") != 1 {
+		return false
+	}
+	algo, hex, _ := strings.Cut(image, ":")
+	if algo == "" || hex == "" {
 		return false
 	}
 	// Algorithm: lowercase alphanumeric with optional separators.
 	// Hex: lowercase hex digits, at least 32 characters.
-	if len(parts[1]) < 32 {
+	if len(hex) < 32 {
 		return false
 	}
-	for _, c := range parts[1] {
+	for _, c := range hex {
 		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			return false
 		}
