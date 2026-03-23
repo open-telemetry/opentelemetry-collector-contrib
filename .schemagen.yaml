@@ -1,3 +1,4 @@
+namespace: github.com/open-telemetry/opentelemetry-collector-contrib
 mappings:
   time:
     Time:

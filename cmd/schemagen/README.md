@@ -67,6 +67,7 @@ the repository root. Although settings file is optional it extends significantly
 A practical example:
 
 ```yaml
+namespace: github.com/open-telemetry/opentelemetry-collector-contrib
 mappings:
   time:
     Duration:
@@ -82,6 +83,8 @@ componentOverrides:
     configName: 'FileLogConfig'
 ```
 
+- `namespace` corresponds to the Go package import path for modules from current repository. 
+  It is used to resolve references to other types within the same repository.
 - `mappings` tell schemagen how to treat specific selector expressions as
   primitive schema fields. Each mapping converts the Go type into a scalar
   `schemaType` and can also set the JSON Schema `format`. The original

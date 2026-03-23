@@ -4,258 +4,442 @@ $defs:
     description: MetricsConfig provides config for postgresql metrics.
     type: object
     properties:
-    postgresql.backends:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.bgwriter.buffers.allocated:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.bgwriter.buffers.writes:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.bgwriter.checkpoint.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.bgwriter.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.bgwriter.maxwritten:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.blks_hit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.blks_read:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.blocks_read:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.commits:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.connection.max:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.database.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.database.locks:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.db_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.deadlocks:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.function.calls:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.index.scans:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.index.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.operations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.replication.data_delay:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.rollbacks:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.rows:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.sequential_scans:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.table.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.table.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.table.vacuum.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.temp.io:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.temp_files:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.tup_deleted:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.tup_fetched:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.tup_inserted:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.tup_returned:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.tup_updated:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.wal.age:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    postgresql.wal.delay:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    postgresql.wal.lag:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      postgresql.backends:
+        description: "PostgresqlBackendsMetricConfig provides config for the postgresql.backends metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.bgwriter.buffers.allocated:
+        description: "PostgresqlBgwriterBuffersAllocatedMetricConfig provides config for the postgresql.bgwriter.buffers.allocated metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.bgwriter.buffers.writes:
+        description: "PostgresqlBgwriterBuffersWritesMetricConfig provides config for the postgresql.bgwriter.buffers.writes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "source"
+            default:
+              - "source"
+      postgresql.bgwriter.checkpoint.count:
+        description: "PostgresqlBgwriterCheckpointCountMetricConfig provides config for the postgresql.bgwriter.checkpoint.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
+      postgresql.bgwriter.duration:
+        description: "PostgresqlBgwriterDurationMetricConfig provides config for the postgresql.bgwriter.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
+      postgresql.bgwriter.maxwritten:
+        description: "PostgresqlBgwriterMaxwrittenMetricConfig provides config for the postgresql.bgwriter.maxwritten metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.blks_hit:
+        description: "PostgresqlBlksHitMetricConfig provides config for the postgresql.blks_hit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.blks_read:
+        description: "PostgresqlBlksReadMetricConfig provides config for the postgresql.blks_read metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.blocks_read:
+        description: "PostgresqlBlocksReadMetricConfig provides config for the postgresql.blocks_read metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "source"
+            default:
+              - "source"
+      postgresql.commits:
+        description: "PostgresqlCommitsMetricConfig provides config for the postgresql.commits metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.connection.max:
+        description: "PostgresqlConnectionMaxMetricConfig provides config for the postgresql.connection.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.database.count:
+        description: "PostgresqlDatabaseCountMetricConfig provides config for the postgresql.database.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.database.locks:
+        description: "PostgresqlDatabaseLocksMetricConfig provides config for the postgresql.database.locks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "relation"
+                - "mode"
+                - "lock_type"
+            default:
+              - "relation"
+              - "mode"
+              - "lock_type"
+      postgresql.db_size:
+        description: "PostgresqlDbSizeMetricConfig provides config for the postgresql.db_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.deadlocks:
+        description: "PostgresqlDeadlocksMetricConfig provides config for the postgresql.deadlocks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.function.calls:
+        description: "PostgresqlFunctionCallsMetricConfig provides config for the postgresql.function.calls metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "function"
+            default:
+              - "function"
+      postgresql.index.scans:
+        description: "PostgresqlIndexScansMetricConfig provides config for the postgresql.index.scans metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.index.size:
+        description: "PostgresqlIndexSizeMetricConfig provides config for the postgresql.index.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.operations:
+        description: "PostgresqlOperationsMetricConfig provides config for the postgresql.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
+      postgresql.replication.data_delay:
+        description: "PostgresqlReplicationDataDelayMetricConfig provides config for the postgresql.replication.data_delay metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "replication_client"
+            default:
+              - "replication_client"
+      postgresql.rollbacks:
+        description: "PostgresqlRollbacksMetricConfig provides config for the postgresql.rollbacks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.rows:
+        description: "PostgresqlRowsMetricConfig provides config for the postgresql.rows metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "state"
+            default:
+              - "state"
+      postgresql.sequential_scans:
+        description: "PostgresqlSequentialScansMetricConfig provides config for the postgresql.sequential_scans metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.table.count:
+        description: "PostgresqlTableCountMetricConfig provides config for the postgresql.table.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.table.size:
+        description: "PostgresqlTableSizeMetricConfig provides config for the postgresql.table.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.table.vacuum.count:
+        description: "PostgresqlTableVacuumCountMetricConfig provides config for the postgresql.table.vacuum.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.temp.io:
+        description: "PostgresqlTempIoMetricConfig provides config for the postgresql.temp.io metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.temp_files:
+        description: "PostgresqlTempFilesMetricConfig provides config for the postgresql.temp_files metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.tup_deleted:
+        description: "PostgresqlTupDeletedMetricConfig provides config for the postgresql.tup_deleted metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.tup_fetched:
+        description: "PostgresqlTupFetchedMetricConfig provides config for the postgresql.tup_fetched metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.tup_inserted:
+        description: "PostgresqlTupInsertedMetricConfig provides config for the postgresql.tup_inserted metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.tup_returned:
+        description: "PostgresqlTupReturnedMetricConfig provides config for the postgresql.tup_returned metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.tup_updated:
+        description: "PostgresqlTupUpdatedMetricConfig provides config for the postgresql.tup_updated metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      postgresql.wal.age:
+        description: "PostgresqlWalAgeMetricConfig provides config for the postgresql.wal.age metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      postgresql.wal.delay:
+        description: "PostgresqlWalDelayMetricConfig provides config for the postgresql.wal.delay metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "replication_client"
+            default:
+              - "operation"
+              - "replication_client"
+      postgresql.wal.lag:
+        description: "PostgresqlWalLagMetricConfig provides config for the postgresql.wal.lag metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+                - "replication_client"
+            default:
+              - "operation"
+              - "replication_client"
   events_config:
     description: EventsConfig provides config for postgresql events.
     type: object
@@ -266,14 +450,14 @@ $defs:
         properties:
           enabled:
             type: boolean
-            default: true
+            default: false
       db.server.top_query:
         description: EventConfig provides common config for a  db.server.top_query event.
         type: object
         properties:
           enabled:
             type: boolean
-            default: true
+            default: false
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for postgresql resource attributes.
     type: object

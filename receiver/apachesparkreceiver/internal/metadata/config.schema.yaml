@@ -4,447 +4,447 @@ $defs:
     description: MetricsConfig provides config for apachespark metrics.
     type: object
     properties:
-    spark.driver.block_manager.disk.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.block_manager.memory.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.compilation.average_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.compilation.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.generated_class.average_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.generated_class.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.generated_method.average_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.generated_method.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.source_code.average_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.code_generator.source_code.operations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.dag_scheduler.job.active:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.dag_scheduler.job.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.dag_scheduler.stage.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.dag_scheduler.stage.failed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.executor.gc.operations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.executor.gc.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.executor.memory.execution:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.executor.memory.jvm:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.executor.memory.pool:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.executor.memory.storage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.hive_external_catalog.file_cache_hits:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.hive_external_catalog.files_discovered:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.hive_external_catalog.hive_client_calls:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.hive_external_catalog.parallel_listing_jobs:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.hive_external_catalog.partitions_fetched:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.jvm_cpu_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.live_listener_bus.dropped:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.live_listener_bus.posted:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.live_listener_bus.processing_time.average:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.driver.live_listener_bus.queue_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.disk.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.gc_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.input_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.memory.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.shuffle.io.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.storage_memory.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.task.active:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.task.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.task.result:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.executor.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.job.stage.active:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.job.stage.result:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.job.task.active:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.job.task.result:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.disk.spilled:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.executor.cpu_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.executor.run_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.io.records:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.io.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.jvm_gc_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.memory.peak:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.memory.spilled:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.shuffle.blocks_fetched:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.shuffle.fetch_wait_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.shuffle.io.disk:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.shuffle.io.read.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.shuffle.io.records:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.shuffle.io.write.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.shuffle.write_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.status:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.task.active:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.task.result:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    spark.stage.task.result_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      spark.driver.block_manager.disk.usage:
+        description: "SparkDriverBlockManagerDiskUsageMetricConfig provides config for the spark.driver.block_manager.disk.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.block_manager.memory.usage:
+        description: "SparkDriverBlockManagerMemoryUsageMetricConfig provides config for the spark.driver.block_manager.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.compilation.average_time:
+        description: "SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig provides config for the spark.driver.code_generator.compilation.average_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.compilation.count:
+        description: "SparkDriverCodeGeneratorCompilationCountMetricConfig provides config for the spark.driver.code_generator.compilation.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.generated_class.average_size:
+        description: "SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig provides config for the spark.driver.code_generator.generated_class.average_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.generated_class.count:
+        description: "SparkDriverCodeGeneratorGeneratedClassCountMetricConfig provides config for the spark.driver.code_generator.generated_class.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.generated_method.average_size:
+        description: "SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig provides config for the spark.driver.code_generator.generated_method.average_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.generated_method.count:
+        description: "SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig provides config for the spark.driver.code_generator.generated_method.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.source_code.average_size:
+        description: "SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig provides config for the spark.driver.code_generator.source_code.average_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.code_generator.source_code.operations:
+        description: "SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig provides config for the spark.driver.code_generator.source_code.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.dag_scheduler.job.active:
+        description: "SparkDriverDagSchedulerJobActiveMetricConfig provides config for the spark.driver.dag_scheduler.job.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.dag_scheduler.job.count:
+        description: "SparkDriverDagSchedulerJobCountMetricConfig provides config for the spark.driver.dag_scheduler.job.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.dag_scheduler.stage.count:
+        description: "SparkDriverDagSchedulerStageCountMetricConfig provides config for the spark.driver.dag_scheduler.stage.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.dag_scheduler.stage.failed:
+        description: "SparkDriverDagSchedulerStageFailedMetricConfig provides config for the spark.driver.dag_scheduler.stage.failed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.executor.gc.operations:
+        description: "SparkDriverExecutorGcOperationsMetricConfig provides config for the spark.driver.executor.gc.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.executor.gc.time:
+        description: "SparkDriverExecutorGcTimeMetricConfig provides config for the spark.driver.executor.gc.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.executor.memory.execution:
+        description: "SparkDriverExecutorMemoryExecutionMetricConfig provides config for the spark.driver.executor.memory.execution metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.executor.memory.jvm:
+        description: "SparkDriverExecutorMemoryJvmMetricConfig provides config for the spark.driver.executor.memory.jvm metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.executor.memory.pool:
+        description: "SparkDriverExecutorMemoryPoolMetricConfig provides config for the spark.driver.executor.memory.pool metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.executor.memory.storage:
+        description: "SparkDriverExecutorMemoryStorageMetricConfig provides config for the spark.driver.executor.memory.storage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.hive_external_catalog.file_cache_hits:
+        description: "SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig provides config for the spark.driver.hive_external_catalog.file_cache_hits metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.hive_external_catalog.files_discovered:
+        description: "SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig provides config for the spark.driver.hive_external_catalog.files_discovered metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.hive_external_catalog.hive_client_calls:
+        description: "SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig provides config for the spark.driver.hive_external_catalog.hive_client_calls metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.hive_external_catalog.parallel_listing_jobs:
+        description: "SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig provides config for the spark.driver.hive_external_catalog.parallel_listing_jobs metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.hive_external_catalog.partitions_fetched:
+        description: "SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig provides config for the spark.driver.hive_external_catalog.partitions_fetched metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.jvm_cpu_time:
+        description: "SparkDriverJvmCPUTimeMetricConfig provides config for the spark.driver.jvm_cpu_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.live_listener_bus.dropped:
+        description: "SparkDriverLiveListenerBusDroppedMetricConfig provides config for the spark.driver.live_listener_bus.dropped metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.live_listener_bus.posted:
+        description: "SparkDriverLiveListenerBusPostedMetricConfig provides config for the spark.driver.live_listener_bus.posted metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.live_listener_bus.processing_time.average:
+        description: "SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig provides config for the spark.driver.live_listener_bus.processing_time.average metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.driver.live_listener_bus.queue_size:
+        description: "SparkDriverLiveListenerBusQueueSizeMetricConfig provides config for the spark.driver.live_listener_bus.queue_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.disk.usage:
+        description: "SparkExecutorDiskUsageMetricConfig provides config for the spark.executor.disk.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.gc_time:
+        description: "SparkExecutorGcTimeMetricConfig provides config for the spark.executor.gc_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.input_size:
+        description: "SparkExecutorInputSizeMetricConfig provides config for the spark.executor.input_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.memory.usage:
+        description: "SparkExecutorMemoryUsageMetricConfig provides config for the spark.executor.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.shuffle.io.size:
+        description: "SparkExecutorShuffleIoSizeMetricConfig provides config for the spark.executor.shuffle.io.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.storage_memory.usage:
+        description: "SparkExecutorStorageMemoryUsageMetricConfig provides config for the spark.executor.storage_memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.task.active:
+        description: "SparkExecutorTaskActiveMetricConfig provides config for the spark.executor.task.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.task.limit:
+        description: "SparkExecutorTaskLimitMetricConfig provides config for the spark.executor.task.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.task.result:
+        description: "SparkExecutorTaskResultMetricConfig provides config for the spark.executor.task.result metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.executor.time:
+        description: "SparkExecutorTimeMetricConfig provides config for the spark.executor.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.job.stage.active:
+        description: "SparkJobStageActiveMetricConfig provides config for the spark.job.stage.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.job.stage.result:
+        description: "SparkJobStageResultMetricConfig provides config for the spark.job.stage.result metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.job.task.active:
+        description: "SparkJobTaskActiveMetricConfig provides config for the spark.job.task.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.job.task.result:
+        description: "SparkJobTaskResultMetricConfig provides config for the spark.job.task.result metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.disk.spilled:
+        description: "SparkStageDiskSpilledMetricConfig provides config for the spark.stage.disk.spilled metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.executor.cpu_time:
+        description: "SparkStageExecutorCPUTimeMetricConfig provides config for the spark.stage.executor.cpu_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.executor.run_time:
+        description: "SparkStageExecutorRunTimeMetricConfig provides config for the spark.stage.executor.run_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.io.records:
+        description: "SparkStageIoRecordsMetricConfig provides config for the spark.stage.io.records metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.io.size:
+        description: "SparkStageIoSizeMetricConfig provides config for the spark.stage.io.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.jvm_gc_time:
+        description: "SparkStageJvmGcTimeMetricConfig provides config for the spark.stage.jvm_gc_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.memory.peak:
+        description: "SparkStageMemoryPeakMetricConfig provides config for the spark.stage.memory.peak metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.memory.spilled:
+        description: "SparkStageMemorySpilledMetricConfig provides config for the spark.stage.memory.spilled metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.shuffle.blocks_fetched:
+        description: "SparkStageShuffleBlocksFetchedMetricConfig provides config for the spark.stage.shuffle.blocks_fetched metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.shuffle.fetch_wait_time:
+        description: "SparkStageShuffleFetchWaitTimeMetricConfig provides config for the spark.stage.shuffle.fetch_wait_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.shuffle.io.disk:
+        description: "SparkStageShuffleIoDiskMetricConfig provides config for the spark.stage.shuffle.io.disk metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.shuffle.io.read.size:
+        description: "SparkStageShuffleIoReadSizeMetricConfig provides config for the spark.stage.shuffle.io.read.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.shuffle.io.records:
+        description: "SparkStageShuffleIoRecordsMetricConfig provides config for the spark.stage.shuffle.io.records metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.shuffle.io.write.size:
+        description: "SparkStageShuffleIoWriteSizeMetricConfig provides config for the spark.stage.shuffle.io.write.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.shuffle.write_time:
+        description: "SparkStageShuffleWriteTimeMetricConfig provides config for the spark.stage.shuffle.write_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.status:
+        description: "SparkStageStatusMetricConfig provides config for the spark.stage.status metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.task.active:
+        description: "SparkStageTaskActiveMetricConfig provides config for the spark.stage.task.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.task.result:
+        description: "SparkStageTaskResultMetricConfig provides config for the spark.stage.task.result metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      spark.stage.task.result_size:
+        description: "SparkStageTaskResultSizeMetricConfig provides config for the spark.stage.task.result_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for apachespark resource attributes.
     type: object

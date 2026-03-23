@@ -4,48 +4,112 @@ $defs:
     description: MetricsConfig provides config for riak metrics.
     type: object
     properties:
-    riak.memory.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    riak.node.operation.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    riak.node.operation.time.mean:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    riak.node.read_repair.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    riak.vnode.index.operation.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    riak.vnode.operation.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      riak.memory.limit:
+        description: "RiakMemoryLimitMetricConfig provides config for the riak.memory.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      riak.node.operation.count:
+        description: "RiakNodeOperationCountMetricConfig provides config for the riak.node.operation.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "request"
+            default:
+              - "request"
+      riak.node.operation.time.mean:
+        description: "RiakNodeOperationTimeMeanMetricConfig provides config for the riak.node.operation.time.mean metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "request"
+            default:
+              - "request"
+      riak.node.read_repair.count:
+        description: "RiakNodeReadRepairCountMetricConfig provides config for the riak.node.read_repair.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      riak.vnode.index.operation.count:
+        description: "RiakVnodeIndexOperationCountMetricConfig provides config for the riak.vnode.index.operation.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "operation"
+            default:
+              - "operation"
+      riak.vnode.operation.count:
+        description: "RiakVnodeOperationCountMetricConfig provides config for the riak.vnode.operation.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "request"
+            default:
+              - "request"
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for riak resource attributes.
     type: object

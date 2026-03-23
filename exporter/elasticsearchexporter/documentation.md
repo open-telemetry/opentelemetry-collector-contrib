@@ -71,6 +71,31 @@ Only document level retries are captured, whole bulk request retries are not cap
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Alpha |
 
+### otelcol.elasticsearch.docs.retried_http_request
+
+Count of documents retried due to HTTP request-level failures.
+
+Counts documents that are retried because an entire bulk HTTP
+request failed with a retryable status code (as configured in
+`retry_on_status`) and was retried by the Elasticsearch client,
+up to the `max_retries` limit.
+
+In contrast, `elasticsearch.docs.retried` counts documents retried
+individually within otherwise successful bulk requests due to
+document-specific failures such as mapping conflicts.
+
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Alpha |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
+| http.response.status_code | HTTP status code. | Any Int |
+
 ### otelcol.elasticsearch.flushed.bytes
 
 Number of bytes flushed by the indexer.

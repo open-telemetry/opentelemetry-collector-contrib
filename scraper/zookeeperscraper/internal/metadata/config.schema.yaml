@@ -4,118 +4,118 @@ $defs:
     description: MetricsConfig provides config for zookeeper metrics.
     type: object
     properties:
-    zookeeper.connection.active:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.data_tree.ephemeral_node.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.data_tree.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.file_descriptor.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.file_descriptor.open:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.follower.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.fsync.exceeded_threshold.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.latency.avg:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.latency.max:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.latency.min:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.packet.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.request.active:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.ruok:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.sync.pending:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.watch.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    zookeeper.znode.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      zookeeper.connection.active:
+        description: "ZookeeperConnectionActiveMetricConfig provides config for the zookeeper.connection.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.data_tree.ephemeral_node.count:
+        description: "ZookeeperDataTreeEphemeralNodeCountMetricConfig provides config for the zookeeper.data_tree.ephemeral_node.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.data_tree.size:
+        description: "ZookeeperDataTreeSizeMetricConfig provides config for the zookeeper.data_tree.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.file_descriptor.limit:
+        description: "ZookeeperFileDescriptorLimitMetricConfig provides config for the zookeeper.file_descriptor.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.file_descriptor.open:
+        description: "ZookeeperFileDescriptorOpenMetricConfig provides config for the zookeeper.file_descriptor.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.follower.count:
+        description: "ZookeeperFollowerCountMetricConfig provides config for the zookeeper.follower.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.fsync.exceeded_threshold.count:
+        description: "ZookeeperFsyncExceededThresholdCountMetricConfig provides config for the zookeeper.fsync.exceeded_threshold.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.latency.avg:
+        description: "ZookeeperLatencyAvgMetricConfig provides config for the zookeeper.latency.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.latency.max:
+        description: "ZookeeperLatencyMaxMetricConfig provides config for the zookeeper.latency.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.latency.min:
+        description: "ZookeeperLatencyMinMetricConfig provides config for the zookeeper.latency.min metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.packet.count:
+        description: "ZookeeperPacketCountMetricConfig provides config for the zookeeper.packet.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.request.active:
+        description: "ZookeeperRequestActiveMetricConfig provides config for the zookeeper.request.active metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.ruok:
+        description: "ZookeeperRuokMetricConfig provides config for the zookeeper.ruok metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.sync.pending:
+        description: "ZookeeperSyncPendingMetricConfig provides config for the zookeeper.sync.pending metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.watch.count:
+        description: "ZookeeperWatchCountMetricConfig provides config for the zookeeper.watch.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      zookeeper.znode.count:
+        description: "ZookeeperZnodeCountMetricConfig provides config for the zookeeper.znode.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for zookeeper resource attributes.
     type: object

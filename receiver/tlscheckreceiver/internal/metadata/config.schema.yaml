@@ -4,13 +4,13 @@ $defs:
     description: MetricsConfig provides config for tlscheck metrics.
     type: object
     properties:
-    tlscheck.time_left:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      tlscheck.time_left:
+        description: "TlscheckTimeLeftMetricConfig provides config for the tlscheck.time_left metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for tlscheck resource attributes.
     type: object

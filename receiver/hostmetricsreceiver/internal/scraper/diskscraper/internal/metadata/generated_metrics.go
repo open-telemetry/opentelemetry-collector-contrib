@@ -85,10 +85,10 @@ type metricInfo struct {
 }
 
 type metricSystemDiskIo struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric           // data buffer for generated metric.
+	config        SystemDiskIoMetricConfig // metric config provided by user.
+	capacity      int                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.disk.io metric with initial data.
@@ -111,10 +111,10 @@ func (m *metricSystemDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskIoMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskIoMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -168,7 +168,7 @@ func (m *metricSystemDiskIo) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemDiskIo(cfg MetricConfig) metricSystemDiskIo {
+func newMetricSystemDiskIo(cfg SystemDiskIoMetricConfig) metricSystemDiskIo {
 	m := metricSystemDiskIo{config: cfg}
 
 	if cfg.Enabled {
@@ -179,10 +179,10 @@ func newMetricSystemDiskIo(cfg MetricConfig) metricSystemDiskIo {
 }
 
 type metricSystemDiskIoTime struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SystemDiskIoTimeMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []float64                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.disk.io_time metric with initial data.
@@ -205,7 +205,7 @@ func (m *metricSystemDiskIoTime) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskIoTimeMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
 
@@ -259,7 +259,7 @@ func (m *metricSystemDiskIoTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemDiskIoTime(cfg MetricConfig) metricSystemDiskIoTime {
+func newMetricSystemDiskIoTime(cfg SystemDiskIoTimeMetricConfig) metricSystemDiskIoTime {
 	m := metricSystemDiskIoTime{config: cfg}
 
 	if cfg.Enabled {
@@ -270,10 +270,10 @@ func newMetricSystemDiskIoTime(cfg MetricConfig) metricSystemDiskIoTime {
 }
 
 type metricSystemDiskMerged struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SystemDiskMergedMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.disk.merged metric with initial data.
@@ -296,10 +296,10 @@ func (m *metricSystemDiskMerged) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskMergedMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskMergedMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -353,7 +353,7 @@ func (m *metricSystemDiskMerged) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemDiskMerged(cfg MetricConfig) metricSystemDiskMerged {
+func newMetricSystemDiskMerged(cfg SystemDiskMergedMetricConfig) metricSystemDiskMerged {
 	m := metricSystemDiskMerged{config: cfg}
 
 	if cfg.Enabled {
@@ -364,10 +364,10 @@ func newMetricSystemDiskMerged(cfg MetricConfig) metricSystemDiskMerged {
 }
 
 type metricSystemDiskOperationTime struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SystemDiskOperationTimeMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.disk.operation_time metric with initial data.
@@ -390,10 +390,10 @@ func (m *metricSystemDiskOperationTime) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskOperationTimeMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskOperationTimeMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -447,7 +447,7 @@ func (m *metricSystemDiskOperationTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemDiskOperationTime(cfg MetricConfig) metricSystemDiskOperationTime {
+func newMetricSystemDiskOperationTime(cfg SystemDiskOperationTimeMetricConfig) metricSystemDiskOperationTime {
 	m := metricSystemDiskOperationTime{config: cfg}
 
 	if cfg.Enabled {
@@ -458,10 +458,10 @@ func newMetricSystemDiskOperationTime(cfg MetricConfig) metricSystemDiskOperatio
 }
 
 type metricSystemDiskOperations struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SystemDiskOperationsMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.disk.operations metric with initial data.
@@ -484,10 +484,10 @@ func (m *metricSystemDiskOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskOperationsMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskOperationsMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -541,7 +541,7 @@ func (m *metricSystemDiskOperations) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemDiskOperations(cfg MetricConfig) metricSystemDiskOperations {
+func newMetricSystemDiskOperations(cfg SystemDiskOperationsMetricConfig) metricSystemDiskOperations {
 	m := metricSystemDiskOperations{config: cfg}
 
 	if cfg.Enabled {
@@ -552,10 +552,10 @@ func newMetricSystemDiskOperations(cfg MetricConfig) metricSystemDiskOperations 
 }
 
 type metricSystemDiskPendingOperations struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SystemDiskPendingOperationsMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.disk.pending_operations metric with initial data.
@@ -578,7 +578,7 @@ func (m *metricSystemDiskPendingOperations) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskPendingOperationsMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
 
@@ -632,7 +632,7 @@ func (m *metricSystemDiskPendingOperations) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemDiskPendingOperations(cfg MetricConfig) metricSystemDiskPendingOperations {
+func newMetricSystemDiskPendingOperations(cfg SystemDiskPendingOperationsMetricConfig) metricSystemDiskPendingOperations {
 	m := metricSystemDiskPendingOperations{config: cfg}
 
 	if cfg.Enabled {
@@ -643,10 +643,10 @@ func newMetricSystemDiskPendingOperations(cfg MetricConfig) metricSystemDiskPend
 }
 
 type metricSystemDiskWeightedIoTime struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SystemDiskWeightedIoTimeMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []float64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.disk.weighted_io_time metric with initial data.
@@ -669,7 +669,7 @@ func (m *metricSystemDiskWeightedIoTime) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemDiskWeightedIoTimeMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
 
@@ -723,7 +723,7 @@ func (m *metricSystemDiskWeightedIoTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemDiskWeightedIoTime(cfg MetricConfig) metricSystemDiskWeightedIoTime {
+func newMetricSystemDiskWeightedIoTime(cfg SystemDiskWeightedIoTimeMetricConfig) metricSystemDiskWeightedIoTime {
 	m := metricSystemDiskWeightedIoTime{config: cfg}
 
 	if cfg.Enabled {

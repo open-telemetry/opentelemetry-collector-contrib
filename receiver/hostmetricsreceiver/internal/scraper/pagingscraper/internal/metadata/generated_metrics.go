@@ -129,10 +129,10 @@ type metricInfo struct {
 }
 
 type metricSystemPagingFaults struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SystemPagingFaultsMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.paging.faults metric with initial data.
@@ -155,7 +155,7 @@ func (m *metricSystemPagingFaults) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "type") {
+	if slices.Contains(m.config.EnabledAttributes, SystemPagingFaultsMetricAttributeKeyType) {
 		dp.Attributes().PutStr("type", typeAttributeValue)
 	}
 
@@ -209,7 +209,7 @@ func (m *metricSystemPagingFaults) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemPagingFaults(cfg MetricConfig) metricSystemPagingFaults {
+func newMetricSystemPagingFaults(cfg SystemPagingFaultsMetricConfig) metricSystemPagingFaults {
 	m := metricSystemPagingFaults{config: cfg}
 
 	if cfg.Enabled {
@@ -220,10 +220,10 @@ func newMetricSystemPagingFaults(cfg MetricConfig) metricSystemPagingFaults {
 }
 
 type metricSystemPagingOperations struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                     // data buffer for generated metric.
+	config        SystemPagingOperationsMetricConfig // metric config provided by user.
+	capacity      int                                // max observed number of data points added to the metric.
+	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.paging.operations metric with initial data.
@@ -246,10 +246,10 @@ func (m *metricSystemPagingOperations) recordDataPoint(start pcommon.Timestamp, 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemPagingOperationsMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "type") {
+	if slices.Contains(m.config.EnabledAttributes, SystemPagingOperationsMetricAttributeKeyType) {
 		dp.Attributes().PutStr("type", typeAttributeValue)
 	}
 
@@ -303,7 +303,7 @@ func (m *metricSystemPagingOperations) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemPagingOperations(cfg MetricConfig) metricSystemPagingOperations {
+func newMetricSystemPagingOperations(cfg SystemPagingOperationsMetricConfig) metricSystemPagingOperations {
 	m := metricSystemPagingOperations{config: cfg}
 
 	if cfg.Enabled {
@@ -314,10 +314,10 @@ func newMetricSystemPagingOperations(cfg MetricConfig) metricSystemPagingOperati
 }
 
 type metricSystemPagingUsage struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SystemPagingUsageMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.paging.usage metric with initial data.
@@ -340,10 +340,10 @@ func (m *metricSystemPagingUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemPagingUsageMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, SystemPagingUsageMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -397,7 +397,7 @@ func (m *metricSystemPagingUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemPagingUsage(cfg MetricConfig) metricSystemPagingUsage {
+func newMetricSystemPagingUsage(cfg SystemPagingUsageMetricConfig) metricSystemPagingUsage {
 	m := metricSystemPagingUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -408,10 +408,10 @@ func newMetricSystemPagingUsage(cfg MetricConfig) metricSystemPagingUsage {
 }
 
 type metricSystemPagingUtilization struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []float64      // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SystemPagingUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.paging.utilization metric with initial data.
@@ -432,10 +432,10 @@ func (m *metricSystemPagingUtilization) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemPagingUtilizationMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, SystemPagingUtilizationMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -489,7 +489,7 @@ func (m *metricSystemPagingUtilization) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemPagingUtilization(cfg MetricConfig) metricSystemPagingUtilization {
+func newMetricSystemPagingUtilization(cfg SystemPagingUtilizationMetricConfig) metricSystemPagingUtilization {
 	m := metricSystemPagingUtilization{config: cfg}
 
 	if cfg.Enabled {

@@ -4,104 +4,104 @@ $defs:
     description: MetricsConfig provides config for process metrics.
     type: object
     properties:
-    process.context_switches:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.cpu.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.cpu.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.disk.io:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.disk.operations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.handles:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.memory.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.memory.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.memory.virtual:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    process.open_file_descriptors:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.paging.faults:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.signals_pending:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.threads:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    process.uptime:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
+      process.context_switches:
+        description: "ProcessContextSwitchesMetricConfig provides config for the process.context_switches metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.cpu.time:
+        description: "ProcessCPUTimeMetricConfig provides config for the process.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.cpu.utilization:
+        description: "ProcessCPUUtilizationMetricConfig provides config for the process.cpu.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.disk.io:
+        description: "ProcessDiskIoMetricConfig provides config for the process.disk.io metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.disk.operations:
+        description: "ProcessDiskOperationsMetricConfig provides config for the process.disk.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.handles:
+        description: "ProcessHandlesMetricConfig provides config for the process.handles metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.memory.usage:
+        description: "ProcessMemoryUsageMetricConfig provides config for the process.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.memory.utilization:
+        description: "ProcessMemoryUtilizationMetricConfig provides config for the process.memory.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.memory.virtual:
+        description: "ProcessMemoryVirtualMetricConfig provides config for the process.memory.virtual metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      process.open_file_descriptors:
+        description: "ProcessOpenFileDescriptorsMetricConfig provides config for the process.open_file_descriptors metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.paging.faults:
+        description: "ProcessPagingFaultsMetricConfig provides config for the process.paging.faults metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.signals_pending:
+        description: "ProcessSignalsPendingMetricConfig provides config for the process.signals_pending metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.threads:
+        description: "ProcessThreadsMetricConfig provides config for the process.threads metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      process.uptime:
+        description: "ProcessUptimeMetricConfig provides config for the process.uptime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for process resource attributes.
     type: object

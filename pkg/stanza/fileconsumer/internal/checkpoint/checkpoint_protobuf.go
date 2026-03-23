@@ -116,19 +116,10 @@ func metadataToPb(rmd *reader.Metadata) (*pb.Metadata, error) {
 		FileType:        rmd.FileType,
 	}
 
-	// Convert Fingerprint
+	// Convert Fingerprint — Bytes() already returns a copy
 	if rmd.Fingerprint != nil {
-		// Extract the first bytes from the fingerprint
-		fpJSON, err := json.Marshal(rmd.Fingerprint)
-		if err != nil {
-			return nil, fmt.Errorf("marshal fingerprint: %w", err)
-		}
-		var fpMap map[string][]byte
-		if err := json.Unmarshal(fpJSON, &fpMap); err != nil {
-			return nil, fmt.Errorf("unmarshal fingerprint: %w", err)
-		}
 		pbMeta.Fingerprint = &pb.Fingerprint{
-			FirstBytes: fpMap["first_bytes"],
+			FirstBytes: rmd.Fingerprint.Bytes(),
 		}
 	}
 

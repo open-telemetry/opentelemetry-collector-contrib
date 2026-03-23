@@ -4,62 +4,62 @@ $defs:
     description: MetricsConfig provides config for couchdb metrics.
     type: object
     properties:
-    couchdb.average_request_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    couchdb.database.open:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    couchdb.database.operations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    couchdb.file_descriptor.open:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    couchdb.httpd.bulk_requests:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    couchdb.httpd.requests:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    couchdb.httpd.responses:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    couchdb.httpd.views:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      couchdb.average_request_time:
+        description: "CouchdbAverageRequestTimeMetricConfig provides config for the couchdb.average_request_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      couchdb.database.open:
+        description: "CouchdbDatabaseOpenMetricConfig provides config for the couchdb.database.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      couchdb.database.operations:
+        description: "CouchdbDatabaseOperationsMetricConfig provides config for the couchdb.database.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      couchdb.file_descriptor.open:
+        description: "CouchdbFileDescriptorOpenMetricConfig provides config for the couchdb.file_descriptor.open metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      couchdb.httpd.bulk_requests:
+        description: "CouchdbHttpdBulkRequestsMetricConfig provides config for the couchdb.httpd.bulk_requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      couchdb.httpd.requests:
+        description: "CouchdbHttpdRequestsMetricConfig provides config for the couchdb.httpd.requests metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      couchdb.httpd.responses:
+        description: "CouchdbHttpdResponsesMetricConfig provides config for the couchdb.httpd.responses metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      couchdb.httpd.views:
+        description: "CouchdbHttpdViewsMetricConfig provides config for the couchdb.httpd.views metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for couchdb resource attributes.
     type: object
