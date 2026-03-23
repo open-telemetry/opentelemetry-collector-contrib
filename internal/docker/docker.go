@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -60,6 +61,25 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 	} else {
 		clientOpts = append(clientOpts, docker.WithAPIVersionNegotiation())
 		logger.Debug("Docker API version not specified, using automatic version negotiation")
+	}
+
+	// Configure TLS transport when a TLS config is provided.
+	if config.TLS.HasValue() && !config.TLS.Get().Insecure {
+		tlsCfg, err := config.TLS.Get().LoadTLSConfig(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("could not load docker client TLS config: %w", err)
+		}
+		transport := &http.Transport{TLSClientConfig: tlsCfg}
+		clientOpts = append(clientOpts, docker.WithHTTPClient(&http.Client{Transport: transport}))
+	} else if isTCPEndpoint(config.Endpoint) {
+		// Unauthenticated TCP connections to the Docker daemon were deprecated in Docker v26.0
+		// and enforcement began in v27.0. Configure the 'tls' block to secure this connection.
+		// See: https://docs.docker.com/engine/deprecated/#unauthenticated-tcp-connections
+		logger.Warn(
+			"Unauthenticated TCP connection to Docker daemon is deprecated since Docker v26.0. "+
+				"Configure the 'tls' option to use a secure connection.",
+			zap.String("endpoint", config.Endpoint),
+		)
 	}
 
 	// Append any additional opts passed by caller
@@ -340,6 +360,13 @@ func (dc *Client) RemoveContainer(cid string) {
 
 func (dc *Client) shouldBeExcluded(image string) bool {
 	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.matches(image)
+}
+
+// isTCPEndpoint reports whether the endpoint uses a plain TCP or HTTP scheme,
+// meaning the connection is not secured by a Unix socket, named pipe, or TLS.
+func isTCPEndpoint(endpoint string) bool {
+	lower := strings.ToLower(endpoint)
+	return strings.HasPrefix(lower, "tcp://") || strings.HasPrefix(lower, "http://")
 }
 
 func ContainerEnvToMap(env []string) map[string]string {

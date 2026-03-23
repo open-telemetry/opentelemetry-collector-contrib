@@ -1,13 +1,23 @@
 SELECT
-    thread.thread_id,
-    COALESCE(thread.processlist_user, ''),
-    COALESCE(processlist.host, ''),
-    COALESCE(thread.processlist_db, ''),
-    COALESCE(thread.processlist_command, ''),
-    COALESCE(thread.processlist_state, ''),
+    thread.processlist_id AS session_id,
+    thread.thread_id AS internal_thread_id,
+    COALESCE(thread.processlist_user, '') AS session_user,
+    COALESCE(processlist.host, '') AS client_address,
+    COALESCE(thread.processlist_db, '') AS current_database,
+    COALESCE(thread.processlist_command, '') AS session_command,
+    COALESCE(thread.processlist_state, '') AS session_state,
     COALESCE(statement.sql_text, COALESCE(thread.PROCESSLIST_info, '')) AS sql_text,
-    COALESCE(statement.digest, ''),
-    COALESCE(wait.event_id, statement.event_id, 0),
+    COALESCE(statement.digest, '') AS fingerprint,
+    COALESCE(wait.event_id, statement.event_id, 0) AS activity_event_id,
+    CASE
+        WHEN wait.thread_id IS NOT NULL
+            AND wait.end_event_id IS NULL THEN 'waiting'
+        -- actively executing on CPU
+         WHEN statement.thread_id IS NOT NULL
+              AND COALESCE(statement.sql_text, thread.processlist_info) <> '' THEN 'running'
+        -- fallback
+        ELSE 'other'
+    END AS session_status,
     IF(wait.thread_id IS NULL,
         'other',
         COALESCE(
@@ -15,7 +25,7 @@ SELECT
             IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
         )
     ) AS wait_event,
-    COALESCE(wait.timer_wait/1e12, 0)
+    COALESCE(wait.timer_wait/1e12, 0) AS wait_time_seconds
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id

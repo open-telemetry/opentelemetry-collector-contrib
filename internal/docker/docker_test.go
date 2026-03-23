@@ -19,6 +19,8 @@ import (
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -222,11 +224,15 @@ func TestEventLoopHandlesError(t *testing.T) {
 	defer cancel()
 
 	assert.EventuallyWithT(t, func(tt *assert.CollectT) {
+		var eventErrLogs []observer.LoggedEntry
 		for _, l := range logs.All() {
-			assert.Contains(tt, l.Message, "Error watching docker container events")
-			assert.Contains(tt, l.ContextMap()["error"], "EOF")
+			if strings.Contains(l.Message, "Error watching docker container events") {
+				eventErrLogs = append(eventErrLogs, l)
+			}
 		}
-		assert.NotEmpty(tt, logs.All())
+		if assert.NotEmpty(tt, eventErrLogs) {
+			assert.Contains(tt, eventErrLogs[0].ContextMap()["error"], "EOF")
+		}
 	}, 1*time.Second, 1*time.Millisecond, "failed to find desired error logs.")
 
 	finished := make(chan struct{})
@@ -291,4 +297,70 @@ func TestExplicitAPIVersion(t *testing.T) {
 func TestDefaultConfigUsesNegotiation(t *testing.T) {
 	config := NewDefaultConfig()
 	assert.Empty(t, config.DockerAPIVersion, "Default config should have empty DockerAPIVersion for auto-negotiation")
+}
+
+func TestTLSClientConfig(t *testing.T) {
+	// Start a TLS test server
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	config := &Config{
+		Endpoint: srv.URL,
+		Timeout:  5 * time.Second,
+		TLS: configoptional.Some(configtls.ClientConfig{
+			InsecureSkipVerify: true,
+		}),
+	}
+
+	cli, err := NewDockerClient(config, zap.NewNop())
+	require.NoError(t, err)
+	assert.NotNil(t, cli)
+}
+
+func TestUnauthenticatedTCPWarning(t *testing.T) {
+	for _, endpoint := range []string{
+		"tcp://192.168.1.1:2375",
+		"http://192.168.1.1:2375",
+		"TCP://192.168.1.1:2375",
+		"HTTP://192.168.1.1:2375",
+	} {
+		t.Run(endpoint, func(t *testing.T) {
+			observed, logs := observer.New(zapcore.WarnLevel)
+			_, _ = NewDockerClient(&Config{Endpoint: endpoint}, zap.New(observed))
+			assert.NotEmpty(t, logs.All(), "expected a deprecation warning for unauthenticated TCP endpoint")
+			assert.Contains(t, logs.All()[0].Message, "deprecated")
+		})
+	}
+}
+
+func TestNoWarningForSecureEndpoints(t *testing.T) {
+	for _, endpoint := range []string{
+		"unix:///var/run/docker.sock",
+		"npipe:////./pipe/docker_engine",
+	} {
+		t.Run(endpoint, func(t *testing.T) {
+			observed, logs := observer.New(zapcore.WarnLevel)
+			_, _ = NewDockerClient(&Config{Endpoint: endpoint}, zap.New(observed))
+			assert.Empty(t, logs.All(), "expected no deprecation warning for non-TCP endpoint")
+		})
+	}
+}
+
+func TestTLSClientConfigInvalidCert(t *testing.T) {
+	config := &Config{
+		Endpoint: "https://example.com/",
+		Timeout:  5 * time.Second,
+		TLS: configoptional.Some(configtls.ClientConfig{
+			Config: configtls.Config{
+				CAFile: "/nonexistent/ca.pem",
+			},
+		}),
+	}
+
+	cli, err := NewDockerClient(config, zap.NewNop())
+	assert.Nil(t, cli)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "could not load docker client TLS config")
 }
