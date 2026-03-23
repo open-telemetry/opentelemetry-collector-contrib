@@ -6,7 +6,7 @@ This exporter facilitates the sending of logs to [Google SecOps](https://cloud.g
 
 This exporter supports sending logs to Google SecOps using either of the following APIs
 - [Chronicle API](https://docs.cloud.google.com/chronicle/docs/reference/ingestion-methods) (Preferred)
-- [(Backstory) Ingestion API](https://docs.cloud.google.com/chronicle/docs/reference/ingestion-api)
+- [Backstory Ingestion API](https://docs.cloud.google.com/chronicle/docs/reference/ingestion-api)
 
 ## How It Works
 
