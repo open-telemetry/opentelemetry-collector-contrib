@@ -1,0 +1,12 @@
+type: awsattributelimit
+
+status:
+  class: processor
+  stability:
+    beta: [metrics]
+
+tests:
+  config:
+    max_total_attributes: 150
+    unconditional_removal_prefixes: []
+    unconditional_removal_keys: []
