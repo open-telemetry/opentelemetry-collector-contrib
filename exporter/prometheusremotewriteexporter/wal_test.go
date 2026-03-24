@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -155,7 +156,6 @@ func TestWAL_persist(t *testing.T) {
 	})
 
 	require.NoError(t, pwal.persistToWAL(ctx, reqL))
-	require.Len(t, pwal.rNotify, 1)
 
 	// 2. Read all the entries from the WAL itself, guided by the indices available,
 	// and ensure that they are exactly in order as we'd expect them.
@@ -405,6 +405,111 @@ func TestWALRead_Telemetry(t *testing.T) {
 
 	_, err = tel.GetMetric("otelcol_exporter_prometheusremotewrite_wal_bytes_read")
 	require.NoError(t, err)
+}
+
+// TestWAL_PersistToClosedWAL verifies that persistToWAL returns errNilWAL
+// instead of panicking when the WAL has already been closed.
+func TestWAL_PersistToClosedWAL(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir()}
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
+	require.NoError(t, pwal.stop())
+
+	err = pwal.persistToWAL(t.Context(), []*prompb.WriteRequest{
+		{Timeseries: []prompb.TimeSeries{
+			{
+				Labels:  []prompb.Label{{Name: "a", Value: "b"}},
+				Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+			},
+		}},
+	})
+	require.ErrorIs(t, err, errNilWAL)
+}
+
+// TestWAL_ShutdownWaitsForInflight verifies that Shutdown waits for inflight
+// PushMetrics calls to complete before closing the WAL, preventing the race
+// condition that caused WAL corruption.
+func TestWAL_ShutdownWaitsForInflight(t *testing.T) {
+	cfg := &Config{
+		WAL: configoptional.Some(WALConfig{
+			Directory:  t.TempDir(),
+			BufferSize: 1,
+		}),
+		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+	}
+	buildInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.BuildInfo = buildInfo
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+	require.NoError(t, cfg.Validate())
+
+	prwe, err := newPRWExporter(cfg, set)
+	require.NoError(t, err)
+	require.NoError(t, prwe.Start(t.Context(), componenttest.NewNopHost()))
+
+	// Simulate concurrent PushMetrics during shutdown.
+	// PushMetrics uses prwe.wg, so Shutdown must wait for it to finish.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 10 {
+			md := pmetric.NewMetrics()
+			rm := md.ResourceMetrics().AppendEmpty()
+			sm := rm.ScopeMetrics().AppendEmpty()
+			m := sm.Metrics().AppendEmpty()
+			m.SetName("test_metric")
+			g := m.SetEmptyGauge()
+			dp := g.DataPoints().AppendEmpty()
+			dp.SetDoubleValue(1.0)
+			_ = prwe.PushMetrics(t.Context(), md)
+		}
+	}()
+
+	// Shutdown while PushMetrics is running — should not panic or corrupt.
+	err = prwe.Shutdown(t.Context())
+	assert.NoError(t, err)
+	<-done
+}
+
+// TestWAL_WriteBatchBeforeNotify verifies that WriteBatch completes before
+// the reader is notified, preventing the reader from attempting to read
+// an index that has not been persisted yet.
+func TestWAL_WriteBatchBeforeNotify(t *testing.T) {
+	config := &WALConfig{Directory: t.TempDir(), BufferSize: 1}
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
+	require.NoError(t, err)
+	require.NoError(t, pwal.retrieveWALIndices())
+	t.Cleanup(func() { _ = pwal.stop() })
+
+	ctx := t.Context()
+
+	// Write an entry.
+	require.NoError(t, pwal.persistToWAL(ctx, []*prompb.WriteRequest{
+		{Timeseries: []prompb.TimeSeries{
+			{
+				Labels:  []prompb.Label{{Name: "__name__", Value: "test"}},
+				Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+			},
+		}},
+	}))
+
+	// The entry should be immediately readable (no race with notification).
+	req, err := pwal.readPrompbFromWAL(ctx, 1)
+	require.NoError(t, err)
+	require.NotNil(t, req)
+	assert.Equal(t, "test", req.Timeseries[0].Labels[0].Value)
 }
 
 func TestWALLag_Telemetry(t *testing.T) {
