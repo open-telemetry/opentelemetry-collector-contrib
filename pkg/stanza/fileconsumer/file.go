@@ -58,16 +58,12 @@ func (m *Manager) Start(persister operator.Persister) error {
 	// initialize runtime-only tracking of unreadable paths
 	m.unreadable = make(map[string]struct{})
 
-	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.set.Logger.Warn("finding files", zap.Error(err))
-	}
-
 	// instantiate the tracker
 	m.instantiateTracker(ctx, persister)
 
 	if persister != nil {
 		m.persister = persister
-		offsets, err := checkpoint.Load(ctx, m.persister)
+		offsets, err := checkpoint.Load(ctx, m.persister, m.set.Logger)
 		if err != nil {
 			return fmt.Errorf("read known files from database: %w", err)
 		}
@@ -107,9 +103,7 @@ func (m *Manager) Stop() error {
 // startPoller kicks off a goroutine that will poll the filesystem periodically,
 // checking if there are new files or new logs in the watched files
 func (m *Manager) startPoller(ctx context.Context) {
-	m.wg.Add(1)
-	go func() {
-		defer m.wg.Done()
+	m.wg.Go(func() {
 		globTicker := time.NewTicker(m.pollInterval)
 		defer globTicker.Stop()
 
@@ -122,7 +116,7 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 			m.poll(ctx)
 		}
-	}()
+	})
 }
 
 // poll checks all the watched paths for new entries

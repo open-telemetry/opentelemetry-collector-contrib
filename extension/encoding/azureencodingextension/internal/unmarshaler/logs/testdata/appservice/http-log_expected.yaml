@@ -56,5 +56,9 @@ resourceLogs:
               stringValue: Success
             timeUnixNano: "1652040855000000000"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.appservice
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

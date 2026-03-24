@@ -20,8 +20,7 @@ telemetry:
       description: Number of datapoints sent to Grafana Cloud
       unit: "1"
       enabled: true
-      stability:
-        level: development
+      stability: development
       sum:
         value_type: int
         monotonic: true
@@ -29,8 +28,7 @@ telemetry:
       description: Number of metrics flushes
       unit: "1"
       enabled: true
-      stability:
-        level: development
+      stability: development
       sum:
         value_type: int
         monotonic: true
@@ -38,8 +36,7 @@ telemetry:
       description: Number of unique hosts
       unit: "1"
       enabled: true
-      stability:
-        level: development
+      stability: development
       gauge:
         value_type: int
         async: true

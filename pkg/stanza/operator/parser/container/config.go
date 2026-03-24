@@ -11,11 +11,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 const (
@@ -64,7 +64,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		switch c.Format {
 		case dockerFormat, crioFormat, containerdFormat:
 		default:
-			return &Parser{}, stanza_errors.NewError(
+			return &Parser{}, stanzaerrors.NewError(
 				"operator config has an invalid `format` field.",
 				"ensure that the `format` field is set to one of `docker`, `crio`, `containerd`.",
 				"format", c.OnError,

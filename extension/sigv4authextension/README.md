@@ -27,6 +27,7 @@ The configuration fields are as follows:
   * `web_identity_token_file`: The path to the file containing the JWT token to be exchanged
   * `sts_region`: The AWS region where STS is used to assumed the configured role
     * Note that if a role is intended to be assumed, and `sts_region` is not provided, then `sts_region` will default to the value for `region` if `region` is provided
+  * `external_id`: **Optional**. A unique identifier used when assuming a role in cross-account scenarios to prevent the confused deputy problem
 * `region`: **Optional**. The AWS region for the service you are exporting to for AWS Sigv4. This is differentiated from `sts_region` to handle cross region authentication
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
@@ -67,7 +68,7 @@ service:
 
 ## Notes
 
-* The collector must have valid AWS credentials as used by the [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials)
+* The collector must have valid AWS credentials as used by the [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-gosdk.html#specifying-credentials)
 
 
 ## Assume Role with Web Identity
@@ -105,4 +106,18 @@ service:
       receivers: [hostmetrics]
       processors: []
       exporters: [prometheusremotewrite]
+```
+
+## Assume Role with External ID
+
+When assuming a role in cross-account authentication scenarios, an External ID can be specified to prevent the [confused deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html).
+
+### Example Configuration:
+```yaml
+extensions:
+  sigv4auth:
+    assume_role:
+      arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
+      sts_region: "us-east-1"
+      external_id: "my-external-id"
 ```

@@ -85,7 +85,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 		// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
 		// dynamic template that is defined in ES mapping, e.g.
 		// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
-		dynamicTemplates["metrics."+metric.Name()] = dp.DynamicTemplate(metric)
+		dynamicTemplates["metrics."+metric.Name()] = dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeOTel)
 	}
 	_ = v.OnObjectFinished()
 	if docCount != 0 {

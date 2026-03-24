@@ -198,7 +198,8 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -216,13 +217,13 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 
 	// Record the results
 	var indexName string
+	var v float64
 	for _, f := range fields {
 		switch fieldName := f.FieldName; fieldName {
 		case "indexname":
 			indexName = f.Value
-			continue
 		case "By":
-			v, err := strconv.ParseFloat(f.Value, 64)
+			v, err = strconv.ParseFloat(f.Value, 64)
 			if err != nil {
 				errs <- err
 				continue
@@ -280,7 +281,8 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -306,7 +308,6 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommo
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "latency_avg_exec":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
@@ -366,7 +367,8 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -391,7 +393,6 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "indexer_avg_kbps":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
@@ -451,7 +452,8 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -481,7 +483,6 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcomm
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "agg_queue_ratio":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
@@ -570,7 +571,8 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -601,10 +603,8 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pco
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "is_searchable":
 			searchable = f.Value
-			continue
 		case "bucket_count":
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			bc = v
@@ -665,7 +665,8 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -691,7 +692,6 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pco
 		switch fieldName := f.FieldName; fieldName {
 		case "title":
 			indexer = f.Value
-			continue
 		case "total_size_gb":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
@@ -781,7 +781,8 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -807,7 +808,6 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, 
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "completion_ratio":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
@@ -867,7 +867,8 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -893,7 +894,6 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, no
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "raw_data_write_seconds":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
@@ -953,7 +953,8 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -979,7 +980,6 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pco
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "service_cpu_seconds":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
@@ -1039,7 +1039,8 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -1065,7 +1066,6 @@ func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Times
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "iops":
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			if err != nil {
@@ -1125,7 +1125,8 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 		// the 200 is coming after the first request which provides a jobId to retrieve results
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -1151,7 +1152,6 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcom
 		switch fieldName := f.FieldName; fieldName {
 		case "host":
 			host = f.Value
-			continue
 		case "run_time_avg":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {

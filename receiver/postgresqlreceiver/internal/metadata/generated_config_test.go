@@ -26,42 +26,136 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PostgresqlBackends:                 MetricConfig{Enabled: true},
-					PostgresqlBgwriterBuffersAllocated: MetricConfig{Enabled: true},
-					PostgresqlBgwriterBuffersWrites:    MetricConfig{Enabled: true},
-					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: true},
-					PostgresqlBgwriterDuration:         MetricConfig{Enabled: true},
-					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: true},
-					PostgresqlBlksHit:                  MetricConfig{Enabled: true},
-					PostgresqlBlksRead:                 MetricConfig{Enabled: true},
-					PostgresqlBlocksRead:               MetricConfig{Enabled: true},
-					PostgresqlCommits:                  MetricConfig{Enabled: true},
-					PostgresqlConnectionMax:            MetricConfig{Enabled: true},
-					PostgresqlDatabaseCount:            MetricConfig{Enabled: true},
-					PostgresqlDatabaseLocks:            MetricConfig{Enabled: true},
-					PostgresqlDbSize:                   MetricConfig{Enabled: true},
-					PostgresqlDeadlocks:                MetricConfig{Enabled: true},
-					PostgresqlFunctionCalls:            MetricConfig{Enabled: true},
-					PostgresqlIndexScans:               MetricConfig{Enabled: true},
-					PostgresqlIndexSize:                MetricConfig{Enabled: true},
-					PostgresqlOperations:               MetricConfig{Enabled: true},
-					PostgresqlReplicationDataDelay:     MetricConfig{Enabled: true},
-					PostgresqlRollbacks:                MetricConfig{Enabled: true},
-					PostgresqlRows:                     MetricConfig{Enabled: true},
-					PostgresqlSequentialScans:          MetricConfig{Enabled: true},
-					PostgresqlTableCount:               MetricConfig{Enabled: true},
-					PostgresqlTableSize:                MetricConfig{Enabled: true},
-					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
-					PostgresqlTempIo:                   MetricConfig{Enabled: true},
-					PostgresqlTempFiles:                MetricConfig{Enabled: true},
-					PostgresqlTupDeleted:               MetricConfig{Enabled: true},
-					PostgresqlTupFetched:               MetricConfig{Enabled: true},
-					PostgresqlTupInserted:              MetricConfig{Enabled: true},
-					PostgresqlTupReturned:              MetricConfig{Enabled: true},
-					PostgresqlTupUpdated:               MetricConfig{Enabled: true},
-					PostgresqlWalAge:                   MetricConfig{Enabled: true},
-					PostgresqlWalDelay:                 MetricConfig{Enabled: true},
-					PostgresqlWalLag:                   MetricConfig{Enabled: true},
+					PostgresqlBackends: PostgresqlBackendsMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBgwriterBuffersWrites: PostgresqlBgwriterBuffersWritesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBgwriterBuffersWritesMetricAttributeKey{PostgresqlBgwriterBuffersWritesMetricAttributeKeyBgBufferSource},
+					},
+					PostgresqlBgwriterCheckpointCount: PostgresqlBgwriterCheckpointCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBgwriterCheckpointCountMetricAttributeKey{PostgresqlBgwriterCheckpointCountMetricAttributeKeyBgCheckpointType},
+					},
+					PostgresqlBgwriterDuration: PostgresqlBgwriterDurationMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBgwriterDurationMetricAttributeKey{PostgresqlBgwriterDurationMetricAttributeKeyBgDurationType},
+					},
+					PostgresqlBgwriterMaxwritten: PostgresqlBgwriterMaxwrittenMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBlksHit: PostgresqlBlksHitMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBlksRead: PostgresqlBlksReadMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlBlocksRead: PostgresqlBlocksReadMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource},
+					},
+					PostgresqlCommits: PostgresqlCommitsMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlConnectionMax: PostgresqlConnectionMaxMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlDatabaseCount: PostgresqlDatabaseCountMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlDatabaseLocks: PostgresqlDatabaseLocksMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
+					},
+					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlDeadlocks: PostgresqlDeadlocksMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlFunctionCalls: PostgresqlFunctionCallsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction},
+					},
+					PostgresqlIndexScans: PostgresqlIndexScansMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlIndexSize: PostgresqlIndexSizeMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlOperations: PostgresqlOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation},
+					},
+					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationDataDelayMetricAttributeKey{PostgresqlReplicationDataDelayMetricAttributeKeyReplicationClient},
+					},
+					PostgresqlRollbacks: PostgresqlRollbacksMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlRows: PostgresqlRowsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState},
+					},
+					PostgresqlSequentialScans: PostgresqlSequentialScansMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTableCount: PostgresqlTableCountMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTableVacuumCount: PostgresqlTableVacuumCountMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTempIo: PostgresqlTempIoMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTempFiles: PostgresqlTempFilesMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupDeleted: PostgresqlTupDeletedMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupFetched: PostgresqlTupFetchedMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupInserted: PostgresqlTupInsertedMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupReturned: PostgresqlTupReturnedMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlTupUpdated: PostgresqlTupUpdatedMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlWalAge: PostgresqlWalAgeMetricConfig{
+						Enabled: true,
+					},
+					PostgresqlWalDelay: PostgresqlWalDelayMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlWalDelayMetricAttributeKey{PostgresqlWalDelayMetricAttributeKeyWalOperationLag, PostgresqlWalDelayMetricAttributeKeyReplicationClient},
+					},
+					PostgresqlWalLag: PostgresqlWalLagMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlWalLagMetricAttributeKey{PostgresqlWalLagMetricAttributeKeyWalOperationLag, PostgresqlWalLagMetricAttributeKeyReplicationClient},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
@@ -76,42 +170,136 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PostgresqlBackends:                 MetricConfig{Enabled: false},
-					PostgresqlBgwriterBuffersAllocated: MetricConfig{Enabled: false},
-					PostgresqlBgwriterBuffersWrites:    MetricConfig{Enabled: false},
-					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: false},
-					PostgresqlBgwriterDuration:         MetricConfig{Enabled: false},
-					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: false},
-					PostgresqlBlksHit:                  MetricConfig{Enabled: false},
-					PostgresqlBlksRead:                 MetricConfig{Enabled: false},
-					PostgresqlBlocksRead:               MetricConfig{Enabled: false},
-					PostgresqlCommits:                  MetricConfig{Enabled: false},
-					PostgresqlConnectionMax:            MetricConfig{Enabled: false},
-					PostgresqlDatabaseCount:            MetricConfig{Enabled: false},
-					PostgresqlDatabaseLocks:            MetricConfig{Enabled: false},
-					PostgresqlDbSize:                   MetricConfig{Enabled: false},
-					PostgresqlDeadlocks:                MetricConfig{Enabled: false},
-					PostgresqlFunctionCalls:            MetricConfig{Enabled: false},
-					PostgresqlIndexScans:               MetricConfig{Enabled: false},
-					PostgresqlIndexSize:                MetricConfig{Enabled: false},
-					PostgresqlOperations:               MetricConfig{Enabled: false},
-					PostgresqlReplicationDataDelay:     MetricConfig{Enabled: false},
-					PostgresqlRollbacks:                MetricConfig{Enabled: false},
-					PostgresqlRows:                     MetricConfig{Enabled: false},
-					PostgresqlSequentialScans:          MetricConfig{Enabled: false},
-					PostgresqlTableCount:               MetricConfig{Enabled: false},
-					PostgresqlTableSize:                MetricConfig{Enabled: false},
-					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
-					PostgresqlTempIo:                   MetricConfig{Enabled: false},
-					PostgresqlTempFiles:                MetricConfig{Enabled: false},
-					PostgresqlTupDeleted:               MetricConfig{Enabled: false},
-					PostgresqlTupFetched:               MetricConfig{Enabled: false},
-					PostgresqlTupInserted:              MetricConfig{Enabled: false},
-					PostgresqlTupReturned:              MetricConfig{Enabled: false},
-					PostgresqlTupUpdated:               MetricConfig{Enabled: false},
-					PostgresqlWalAge:                   MetricConfig{Enabled: false},
-					PostgresqlWalDelay:                 MetricConfig{Enabled: false},
-					PostgresqlWalLag:                   MetricConfig{Enabled: false},
+					PostgresqlBackends: PostgresqlBackendsMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBgwriterBuffersAllocated: PostgresqlBgwriterBuffersAllocatedMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBgwriterBuffersWrites: PostgresqlBgwriterBuffersWritesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBgwriterBuffersWritesMetricAttributeKey{PostgresqlBgwriterBuffersWritesMetricAttributeKeyBgBufferSource},
+					},
+					PostgresqlBgwriterCheckpointCount: PostgresqlBgwriterCheckpointCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBgwriterCheckpointCountMetricAttributeKey{PostgresqlBgwriterCheckpointCountMetricAttributeKeyBgCheckpointType},
+					},
+					PostgresqlBgwriterDuration: PostgresqlBgwriterDurationMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBgwriterDurationMetricAttributeKey{PostgresqlBgwriterDurationMetricAttributeKeyBgDurationType},
+					},
+					PostgresqlBgwriterMaxwritten: PostgresqlBgwriterMaxwrittenMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBlksHit: PostgresqlBlksHitMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBlksRead: PostgresqlBlksReadMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlBlocksRead: PostgresqlBlocksReadMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlBlocksReadMetricAttributeKey{PostgresqlBlocksReadMetricAttributeKeySource},
+					},
+					PostgresqlCommits: PostgresqlCommitsMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlConnectionMax: PostgresqlConnectionMaxMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlDatabaseCount: PostgresqlDatabaseCountMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlDatabaseLocks: PostgresqlDatabaseLocksMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlDatabaseLocksMetricAttributeKey{PostgresqlDatabaseLocksMetricAttributeKeyRelation, PostgresqlDatabaseLocksMetricAttributeKeyMode, PostgresqlDatabaseLocksMetricAttributeKeyLockType},
+					},
+					PostgresqlDbSize: PostgresqlDbSizeMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlDeadlocks: PostgresqlDeadlocksMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlFunctionCalls: PostgresqlFunctionCallsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlFunctionCallsMetricAttributeKey{PostgresqlFunctionCallsMetricAttributeKeyFunction},
+					},
+					PostgresqlIndexScans: PostgresqlIndexScansMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlIndexSize: PostgresqlIndexSizeMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlOperations: PostgresqlOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlOperationsMetricAttributeKey{PostgresqlOperationsMetricAttributeKeyOperation},
+					},
+					PostgresqlReplicationDataDelay: PostgresqlReplicationDataDelayMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlReplicationDataDelayMetricAttributeKey{PostgresqlReplicationDataDelayMetricAttributeKeyReplicationClient},
+					},
+					PostgresqlRollbacks: PostgresqlRollbacksMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlRows: PostgresqlRowsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []PostgresqlRowsMetricAttributeKey{PostgresqlRowsMetricAttributeKeyState},
+					},
+					PostgresqlSequentialScans: PostgresqlSequentialScansMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTableCount: PostgresqlTableCountMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTableSize: PostgresqlTableSizeMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTableVacuumCount: PostgresqlTableVacuumCountMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTempIo: PostgresqlTempIoMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTempFiles: PostgresqlTempFilesMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupDeleted: PostgresqlTupDeletedMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupFetched: PostgresqlTupFetchedMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupInserted: PostgresqlTupInsertedMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupReturned: PostgresqlTupReturnedMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlTupUpdated: PostgresqlTupUpdatedMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlWalAge: PostgresqlWalAgeMetricConfig{
+						Enabled: false,
+					},
+					PostgresqlWalDelay: PostgresqlWalDelayMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlWalDelayMetricAttributeKey{PostgresqlWalDelayMetricAttributeKeyWalOperationLag, PostgresqlWalDelayMetricAttributeKeyReplicationClient},
+					},
+					PostgresqlWalLag: PostgresqlWalLagMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategyAvg,
+						EnabledAttributes:   []PostgresqlWalLagMetricAttributeKey{PostgresqlWalLagMetricAttributeKeyWalOperationLag, PostgresqlWalLagMetricAttributeKeyReplicationClient},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
@@ -126,7 +314,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PostgresqlBackendsMetricConfig{}, PostgresqlBgwriterBuffersAllocatedMetricConfig{}, PostgresqlBgwriterBuffersWritesMetricConfig{}, PostgresqlBgwriterCheckpointCountMetricConfig{}, PostgresqlBgwriterDurationMetricConfig{}, PostgresqlBgwriterMaxwrittenMetricConfig{}, PostgresqlBlksHitMetricConfig{}, PostgresqlBlksReadMetricConfig{}, PostgresqlBlocksReadMetricConfig{}, PostgresqlCommitsMetricConfig{}, PostgresqlConnectionMaxMetricConfig{}, PostgresqlDatabaseCountMetricConfig{}, PostgresqlDatabaseLocksMetricConfig{}, PostgresqlDbSizeMetricConfig{}, PostgresqlDeadlocksMetricConfig{}, PostgresqlFunctionCallsMetricConfig{}, PostgresqlIndexScansMetricConfig{}, PostgresqlIndexSizeMetricConfig{}, PostgresqlOperationsMetricConfig{}, PostgresqlReplicationDataDelayMetricConfig{}, PostgresqlRollbacksMetricConfig{}, PostgresqlRowsMetricConfig{}, PostgresqlSequentialScansMetricConfig{}, PostgresqlTableCountMetricConfig{}, PostgresqlTableSizeMetricConfig{}, PostgresqlTableVacuumCountMetricConfig{}, PostgresqlTempIoMetricConfig{}, PostgresqlTempFilesMetricConfig{}, PostgresqlTupDeletedMetricConfig{}, PostgresqlTupFetchedMetricConfig{}, PostgresqlTupInsertedMetricConfig{}, PostgresqlTupReturnedMetricConfig{}, PostgresqlTupUpdatedMetricConfig{}, PostgresqlWalAgeMetricConfig{}, PostgresqlWalDelayMetricConfig{}, PostgresqlWalLagMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

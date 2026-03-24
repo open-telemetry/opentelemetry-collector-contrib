@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,9 +57,19 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["SystemDiskIo"] = mb.metricSystemDiskIo.config.AggregationStrategy
+			aggMap["SystemDiskIoTime"] = mb.metricSystemDiskIoTime.config.AggregationStrategy
+			aggMap["SystemDiskMerged"] = mb.metricSystemDiskMerged.config.AggregationStrategy
+			aggMap["SystemDiskOperationTime"] = mb.metricSystemDiskOperationTime.config.AggregationStrategy
+			aggMap["SystemDiskOperations"] = mb.metricSystemDiskOperations.config.AggregationStrategy
+			aggMap["SystemDiskPendingOperations"] = mb.metricSystemDiskPendingOperations.config.AggregationStrategy
+			aggMap["SystemDiskWeightedIoTime"] = mb.metricSystemDiskWeightedIoTime.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -61,184 +77,417 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskIoDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemDiskIoDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskIoTimeDataPoint(ts, 1, "device-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemDiskIoTimeDataPoint(ts, 3, "device-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskMergedDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemDiskMergedDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskOperationTimeDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemDiskOperationTimeDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskOperationsDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemDiskOperationsDataPoint(ts, 3, "device-val-2", AttributeDirectionWrite)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskPendingOperationsDataPoint(ts, 1, "device-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemDiskPendingOperationsDataPoint(ts, 3, "device-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "device-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 3, "device-val-2")
+			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricSystemDiskIo.aggDataPoints)
+				assert.Empty(t, mb.metricSystemDiskIoTime.aggDataPoints)
+				assert.Empty(t, mb.metricSystemDiskMerged.aggDataPoints)
+				assert.Empty(t, mb.metricSystemDiskOperationTime.aggDataPoints)
+				assert.Empty(t, mb.metricSystemDiskOperations.aggDataPoints)
+				assert.Empty(t, mb.metricSystemDiskPendingOperations.aggDataPoints)
+				assert.Empty(t, mb.metricSystemDiskWeightedIoTime.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "system.disk.io":
-					assert.False(t, validatedMetrics["system.disk.io"], "Found a duplicate in the metrics slice: system.disk.io")
-					validatedMetrics["system.disk.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Disk bytes transferred.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.disk.io"], "Found a duplicate in the metrics slice: system.disk.io")
+						validatedMetrics["system.disk.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Disk bytes transferred.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.disk.io"], "Found a duplicate in the metrics slice: system.disk.io")
+						validatedMetrics["system.disk.io"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Disk bytes transferred.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.disk.io"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "system.disk.io_time":
-					assert.False(t, validatedMetrics["system.disk.io_time"], "Found a duplicate in the metrics slice: system.disk.io_time")
-					validatedMetrics["system.disk.io_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.disk.io_time"], "Found a duplicate in the metrics slice: system.disk.io_time")
+						validatedMetrics["system.disk.io_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.disk.io_time"], "Found a duplicate in the metrics slice: system.disk.io_time")
+						validatedMetrics["system.disk.io_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Time disk spent activated. On Windows, this is calculated as the inverse of disk idle time.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["system.disk.io_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+					}
 				case "system.disk.merged":
-					assert.False(t, validatedMetrics["system.disk.merged"], "Found a duplicate in the metrics slice: system.disk.merged")
-					validatedMetrics["system.disk.merged"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of disk reads/writes merged into single physical disk access operations.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.disk.merged"], "Found a duplicate in the metrics slice: system.disk.merged")
+						validatedMetrics["system.disk.merged"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of disk reads/writes merged into single physical disk access operations.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.disk.merged"], "Found a duplicate in the metrics slice: system.disk.merged")
+						validatedMetrics["system.disk.merged"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of disk reads/writes merged into single physical disk access operations.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.disk.merged"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "system.disk.operation_time":
-					assert.False(t, validatedMetrics["system.disk.operation_time"], "Found a duplicate in the metrics slice: system.disk.operation_time")
-					validatedMetrics["system.disk.operation_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Time spent in disk operations.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.disk.operation_time"], "Found a duplicate in the metrics slice: system.disk.operation_time")
+						validatedMetrics["system.disk.operation_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Time spent in disk operations.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.disk.operation_time"], "Found a duplicate in the metrics slice: system.disk.operation_time")
+						validatedMetrics["system.disk.operation_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Time spent in disk operations.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["system.disk.operation_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "system.disk.operations":
-					assert.False(t, validatedMetrics["system.disk.operations"], "Found a duplicate in the metrics slice: system.disk.operations")
-					validatedMetrics["system.disk.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Disk operations count.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.disk.operations"], "Found a duplicate in the metrics slice: system.disk.operations")
+						validatedMetrics["system.disk.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Disk operations count.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
+						assert.True(t, ok)
+						assert.Equal(t, "read", directionAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.disk.operations"], "Found a duplicate in the metrics slice: system.disk.operations")
+						validatedMetrics["system.disk.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Disk operations count.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.disk.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("direction")
+						assert.False(t, ok)
+					}
 				case "system.disk.pending_operations":
-					assert.False(t, validatedMetrics["system.disk.pending_operations"], "Found a duplicate in the metrics slice: system.disk.pending_operations")
-					validatedMetrics["system.disk.pending_operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The queue size of pending I/O operations.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.disk.pending_operations"], "Found a duplicate in the metrics slice: system.disk.pending_operations")
+						validatedMetrics["system.disk.pending_operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The queue size of pending I/O operations.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.disk.pending_operations"], "Found a duplicate in the metrics slice: system.disk.pending_operations")
+						validatedMetrics["system.disk.pending_operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The queue size of pending I/O operations.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["system.disk.pending_operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+					}
 				case "system.disk.weighted_io_time":
-					assert.False(t, validatedMetrics["system.disk.weighted_io_time"], "Found a duplicate in the metrics slice: system.disk.weighted_io_time")
-					validatedMetrics["system.disk.weighted_io_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Time disk spent activated multiplied by the queue length.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("device")
-					assert.True(t, ok)
-					assert.Equal(t, "device-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["system.disk.weighted_io_time"], "Found a duplicate in the metrics slice: system.disk.weighted_io_time")
+						validatedMetrics["system.disk.weighted_io_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Time disk spent activated multiplied by the queue length.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						deviceAttrVal, ok := dp.Attributes().Get("device")
+						assert.True(t, ok)
+						assert.Equal(t, "device-val", deviceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["system.disk.weighted_io_time"], "Found a duplicate in the metrics slice: system.disk.weighted_io_time")
+						validatedMetrics["system.disk.weighted_io_time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Time disk spent activated multiplied by the queue length.", mi.Description())
+						assert.Equal(t, "s", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["system.disk.weighted_io_time"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("device")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})

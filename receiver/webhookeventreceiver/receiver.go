@@ -131,13 +131,11 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	er.server.WriteTimeout = writeTimeout
 
 	// shutdown
-	er.shutdownWG.Add(1)
-	go func() {
-		defer er.shutdownWG.Done()
+	er.shutdownWG.Go(func() {
 		if errHTTP := er.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return nil
 }

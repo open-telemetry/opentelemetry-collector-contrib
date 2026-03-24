@@ -81,41 +81,47 @@ func TestMetricsBuilder(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "tlscheck.time_left":
 					assert.False(t, validatedMetrics["tlscheck.time_left"], "Found a duplicate in the metrics slice: tlscheck.time_left")
 					validatedMetrics["tlscheck.time_left"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tlscheck.x509.issuer")
+					tlscheckX509IssuerAttrVal, ok := dp.Attributes().Get("tlscheck.x509.issuer")
 					assert.True(t, ok)
-					assert.Equal(t, "tlscheck.x509.issuer-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("tlscheck.x509.cn")
+					assert.Equal(t, "tlscheck.x509.issuer-val", tlscheckX509IssuerAttrVal.Str())
+					tlscheckX509CnAttrVal, ok := dp.Attributes().Get("tlscheck.x509.cn")
 					assert.True(t, ok)
-					assert.Equal(t, "tlscheck.x509.cn-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("tlscheck.x509.san")
+					assert.Equal(t, "tlscheck.x509.cn-val", tlscheckX509CnAttrVal.Str())
+					tlscheckX509SanAttrVal, ok := dp.Attributes().Get("tlscheck.x509.san")
 					assert.True(t, ok)
-					assert.Equal(t, []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"}, attrVal.Slice().AsRaw())
+					assert.Equal(t, []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"}, tlscheckX509SanAttrVal.Slice().AsRaw())
 				}
 			}
 		})

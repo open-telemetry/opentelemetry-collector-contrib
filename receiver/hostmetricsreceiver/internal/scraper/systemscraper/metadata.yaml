@@ -13,8 +13,7 @@ sem_conv_version: 1.9.0
 metrics:
   system.uptime:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The time the system has been running
     unit: s
     gauge:

@@ -25,8 +25,7 @@ telemetry:
       unit: "1"
       gauge:
         value_type: int
-      stability:
-        level: development
+      stability: development
     processor_groupbytrace_event_latency:
       enabled: true
       description: How long the queue events are taking to be processed
@@ -34,8 +33,7 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
-      stability:
-        level: development
+      stability: development
     processor_groupbytrace_incomplete_releases:
       enabled: true
       description: Releases that are suspected to have been incomplete
@@ -43,24 +41,21 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     processor_groupbytrace_num_events_in_queue:
       enabled: true
       description: Number of events currently in the queue
       unit: "1"
       gauge:
         value_type: int
-      stability:
-        level: development
+      stability: development
     processor_groupbytrace_num_traces_in_memory:
       enabled: true
       description: Number of traces currently in the in-memory storage
       unit: "1"
       gauge:
         value_type: int
-      stability:
-        level: development
+      stability: development
     processor_groupbytrace_spans_released:
       enabled: true
       description: Spans released to the next consumer
@@ -68,8 +63,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     processor_groupbytrace_traces_evicted:
       enabled: true
       description: Traces evicted from the internal buffer
@@ -77,8 +71,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
+      stability: development
     processor_groupbytrace_traces_released:
       enabled: true
       description: Traces released to the next consumer
@@ -86,7 +79,4 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      stability:
-        level: development
-
-
+      stability: development

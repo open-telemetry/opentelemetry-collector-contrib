@@ -9,12 +9,14 @@ import (
 
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 var (
-	errNameRequired  = errors.New("name is required")
-	errFormatInvalid = errors.New("invalid format")
+	errNameRequired       = errors.New("name is required")
+	errFormatInvalid      = errors.New("invalid format")
+	errUnknownCompression = errors.New("unknown compression type")
 )
 
 type Config struct {
@@ -42,16 +44,26 @@ type bucketConfig struct {
 	// Partition configures the time-based partition format and file prefix.
 	Partition partitionConfig `mapstructure:"partition"`
 
-	// ReuseIfExists decides if the bucket should be used if it already
-	// exists. If it is set to false, an error will be thrown if the
-	// bucket already exists. Otherwise, the existent bucket will be
-	// used.
+	// ReuseIfExists controls whether to reuse an existing bucket or create a new one.
+	// When set to true:
+	//   - The exporter checks if the bucket exists (requires storage.buckets.get on the bucket)
+	//   - If the bucket exists, it will be used
+	//   - If the bucket does not exist, an error is returned
+	// When set to false:
+	//   - The exporter attempts to create the bucket (requires storage.buckets.create at project level)
+	//   - If the bucket already exists, an error is returned
+	// Set to true when the service account lacks project-level bucket creation permissions but has bucket-level permissions.
 	ReuseIfExists bool `mapstructure:"reuse_if_exists"`
 
 	// Region where bucket will be created or where it exists. If it is left
 	// empty, it will query the metadata endpoint. It requires the collector
 	// to be running in a Google Cloud environment.
 	Region string `mapstructure:"region"`
+
+	// Compression sets the algorithm used to process the payload
+	// before uploading to GCS.
+	// Valid values are: `gzip`, `zstd`, or no value set.
+	Compression configcompression.Type `mapstructure:"compression"`
 }
 
 type partitionConfig struct {
@@ -84,6 +96,17 @@ func (c *bucketConfig) Validate() error {
 	if c.Name == "" {
 		return errNameRequired
 	}
+
+	compression := c.Compression
+	if compression.IsCompressed() {
+		if compression != configcompression.TypeGzip && compression != configcompression.TypeZstd {
+			return fmt.Errorf(
+				"%w %q, valid values are %q and %q",
+				errUnknownCompression, compression,
+				configcompression.TypeGzip, configcompression.TypeZstd)
+		}
+	}
+
 	return nil
 }
 

@@ -4,11 +4,10 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -24,36 +23,43 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                        metric.Meter
+	mu                           sync.Mutex
+	registrations                []metric.Registration
 	DedupProcessorAggregatedLogs metric.Int64Histogram
-	level                        configtelemetry.Level
 }
 
-// telemetryBuilderOption applies changes to default builder.
-type telemetryBuilderOption func(*TelemetryBuilder)
+// TelemetryBuilderOption applies changes to default builder.
+type TelemetryBuilderOption interface {
+	apply(*TelemetryBuilder)
+}
 
-// WithLevel sets the current telemetry level for the component.
-func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.level = lvl
+type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
+
+func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
+	tbof(mb)
+}
+
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
 	}
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{}
 	for _, op := range options {
-		op(&builder)
+		op.apply(&builder)
 	}
+	builder.meter = Meter(settings)
 	var err, errs error
-	if builder.level >= configtelemetry.LevelBasic {
-		builder.meter = Meter(settings)
-	} else {
-		builder.meter = noop.Meter{}
-	}
 	builder.DedupProcessorAggregatedLogs, err = builder.meter.Int64Histogram(
 		"otelcol_dedup_processor_aggregated_logs",
-		metric.WithDescription("Number of log records that were aggregated together."),
+		metric.WithDescription("Number of log records that were aggregated together. [Development]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
