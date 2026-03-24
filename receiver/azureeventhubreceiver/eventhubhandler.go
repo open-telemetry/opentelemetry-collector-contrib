@@ -6,6 +6,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
@@ -40,13 +41,15 @@ type hubRuntimeInfo struct {
 var errNoConfig = errors.New("Configuration error, hub not accessible")
 
 type eventhubHandler struct {
-	hub           hubWrapper
-	dataConsumer  dataConsumer
-	config        *Config
-	settings      receiver.Settings
-	cancel        context.CancelFunc
-	storageClient storage.Client
-	processor     *azeventhubs.Processor // non-nil when in distributed mode
+	hub            hubWrapper
+	dataConsumer   dataConsumer
+	config         *Config
+	settings       receiver.Settings
+	cancel         context.CancelFunc
+	storageClient  storage.Client
+	processor      *azeventhubs.Processor      // non-nil when in distributed mode
+	consumerClient *azeventhubs.ConsumerClient // non-nil when in distributed mode
+	wg             sync.WaitGroup              // tracks goroutines spawned by runDistributed
 }
 
 func shouldInitializeStorageClient(storageClient storage.Client, storageID *component.ID) bool {
@@ -106,31 +109,35 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 func (h *eventhubHandler) runDistributed(ctx context.Context, host component.Host) error {
 	h.settings.Logger.Info("Starting distributed Event Hub consumption with blob checkpoint store")
 
-	processor, err := createProcessor(h.config, host, h.settings.Logger)
+	processor, consumerClient, err := createProcessor(h.config, host, h.settings.Logger)
 	if err != nil {
 		return err
 	}
 	h.processor = processor
+	h.consumerClient = consumerClient
 
-	// Dispatch partition clients as the Processor assigns them
-	go func() {
+	// Dispatch partition clients as the Processor assigns them.
+	h.wg.Go(func() {
 		for {
 			partitionClient := processor.NextPartitionClient(ctx)
 			if partitionClient == nil {
 				// Processor has stopped
 				return
 			}
-			go processPartitionEvents(ctx, partitionClient, h.newMessageHandler, h.config, h.settings.Logger)
+			h.wg.Go(func() {
+				defer partitionClient.Close(context.Background())
+				processPartitionEvents(ctx, partitionClient, h.newMessageHandler, h.config, h.settings.Logger)
+			})
 		}
-	}()
+	})
 
 	// Run the processor's load balancer in a background goroutine.
 	// It returns when the context is cancelled.
-	go func() {
+	h.wg.Go(func() {
 		if err := processor.Run(ctx); err != nil {
 			h.settings.Logger.Error("Processor exited with error", zap.Error(err))
 		}
-	}()
+	})
 
 	return nil
 }
@@ -179,6 +186,17 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 	}
 	if h.cancel != nil {
 		h.cancel()
+	}
+
+	// Wait for goroutines spawned by runDistributed to finish before closing
+	// the consumer client they depend on.
+	h.wg.Wait()
+
+	if h.consumerClient != nil {
+		if err := h.consumerClient.Close(ctx); err != nil {
+			errs = errors.Join(errs, err)
+		}
+		h.consumerClient = nil
 	}
 
 	return errs

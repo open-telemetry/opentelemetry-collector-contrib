@@ -377,27 +377,28 @@ func createBlobCheckpointStore(config *Config, host component.Host, logger *zap.
 }
 
 // createProcessor creates an Azure Event Hub Processor for distributed consumption.
-func createProcessor(config *Config, host component.Host, logger *zap.Logger) (*azeventhubs.Processor, error) {
+// It returns both the Processor and the ConsumerClient so the caller can close the
+// client on shutdown (the Processor does not take ownership of closing it).
+func createProcessor(config *Config, host component.Host, logger *zap.Logger) (*azeventhubs.Processor, *azeventhubs.ConsumerClient, error) {
 	consumerGroup := getConsumerGroup(config)
 	consumerClient, err := createConsumerClient(config, host, consumerGroup, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create consumer client for processor: %w", err)
+		return nil, nil, fmt.Errorf("failed to create consumer client for processor: %w", err)
 	}
 
 	checkpointStore, err := createBlobCheckpointStore(config, host, logger)
 	if err != nil {
-		// Close the consumer client if checkpoint store creation fails
 		consumerClient.Close(context.Background())
-		return nil, err
+		return nil, nil, err
 	}
 
 	processor, err := azeventhubs.NewProcessor(consumerClient, checkpointStore, nil)
 	if err != nil {
 		consumerClient.Close(context.Background())
-		return nil, fmt.Errorf("failed to create processor: %w", err)
+		return nil, nil, fmt.Errorf("failed to create processor: %w", err)
 	}
 
-	return processor, nil
+	return processor, consumerClient, nil
 }
 
 // processorPartitionClient is an interface for the subset of
@@ -420,9 +421,7 @@ func processPartitionEvents(
 	config *Config,
 	logger *zap.Logger,
 ) {
-	defer partitionClient.Close(context.Background())
-
-	logger.Info("Starting distributed processing for partition", zap.String("partition", partitionClient.PartitionID()))
+	logger.Debug("Starting distributed processing for partition", zap.String("partition", partitionClient.PartitionID()))
 
 	maxPollEvents := 100
 	pollRate := 5
@@ -454,6 +453,7 @@ func processPartitionEvents(
 			continue
 		}
 
+		var lastSuccessful *azeventhubs.ReceivedEventData
 		for _, ev := range events {
 			if err := handler(ctx, &azureEvent{
 				AzEventData: ev,
@@ -461,10 +461,11 @@ func processPartitionEvents(
 				logger.Error("Error processing event in distributed mode", zap.Error(err), zap.String("partition", partitionClient.PartitionID()))
 				continue
 			}
+			lastSuccessful = ev
 		}
 
-		if len(events) > 0 {
-			if err := partitionClient.UpdateCheckpoint(ctx, events[len(events)-1], nil); err != nil {
+		if lastSuccessful != nil {
+			if err := partitionClient.UpdateCheckpoint(ctx, lastSuccessful, nil); err != nil {
 				logger.Error("Error updating checkpoint", zap.Error(err), zap.String("partition", partitionClient.PartitionID()))
 			}
 		}
