@@ -156,6 +156,10 @@ entities:
     extra_attributes:
       - ref: k8s.namespace.name
 
+  # TODO: k8s.service uses the old ResourceBuilder API (not ForK8sService) because
+  # k8s.service.traffic_distribution is an optional field (nil pointer in the K8s API) and
+  # mdatagen-generated copyToResource unconditionally emits enabled string attributes even when
+  # never set. Switch to the entity API once mdatagen supports optional/omitempty string attributes.
   - type: k8s.service
     brief: A Kubernetes service
     stability: development
@@ -167,10 +171,6 @@ entities:
       - ref: k8s.service.publish_not_ready_addresses
     extra_attributes:
       - ref: k8s.namespace.name
-      # TODO: k8s.service.traffic_distribution is an optional field (nil pointer in the K8s API).
-      # mdatagen-generated copyToResource always emits enabled string attributes even when they
-      # were never set (zero value ""). Until mdatagen supports optional/omitempty string descriptors,
-      # keep traffic_distribution as an extra_attribute and guard the nil check in service.go.
       - ref: k8s.service.traffic_distribution
 
   - type: k8s.hpa
