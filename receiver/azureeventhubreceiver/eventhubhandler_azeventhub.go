@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -50,6 +51,19 @@ func (c *checkpointSeqNumber) UnmarshalJSON(data []byte) error {
 type azPartitionClient interface {
 	Close(ctx context.Context) error
 	ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
+}
+
+func getPollConfig(config *Config) (maxPollEvents, pollRate int) {
+	maxPollEvents, pollRate = 100, 5
+	if config != nil {
+		if config.MaxPollEvents != 0 {
+			maxPollEvents = config.MaxPollEvents
+		}
+		if config.PollRate != 0 {
+			pollRate = config.PollRate
+		}
+	}
+	return
 }
 
 func getConsumerGroup(config *Config) string {
@@ -206,21 +220,12 @@ func (h *hubWrapperAzeventhubImpl) Receive(ctx context.Context, partitionID stri
 			defer close(w.done)
 			defer pc.Close(ctx)
 
+			maxPollEvents, pollRate := getPollConfig(h.config)
 			for {
 				if ctx.Err() != nil {
 					return
 				}
 
-				maxPollEvents := 100
-				pollRate := 5
-				if h.config != nil {
-					if h.config.MaxPollEvents != 0 {
-						maxPollEvents = h.config.MaxPollEvents
-					}
-					if h.config.PollRate != 0 {
-						pollRate = h.config.PollRate
-					}
-				}
 				timeout, cancelTimeout := context.WithTimeout(ctx, time.Second*time.Duration(pollRate))
 				events, err := pc.ReceiveEvents(timeout, maxPollEvents, nil)
 				cancelTimeout()
@@ -358,7 +363,10 @@ func createBlobCheckpointStore(config *Config, host component.Host, logger *zap.
 			return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", *config.Auth)
 		}
 
-		containerURL := strings.TrimRight(blobCfg.StorageAccountURL, "/") + "/" + blobCfg.ContainerName
+		containerURL, err := url.JoinPath(blobCfg.StorageAccountURL, blobCfg.ContainerName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct container URL: %w", err)
+		}
 		containerClient, err = container.NewClient(containerURL, credential, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create blob container client with auth: %w", err)
@@ -412,8 +420,7 @@ type processorPartitionClient interface {
 }
 
 // processPartitionEvents receives and processes events from a single partition
-// assigned by the Processor. It mirrors the polling loop in Receive() but uses
-// the Processor's checkpoint mechanism instead of local storage.
+// assigned by the Processor.
 func processPartitionEvents(
 	ctx context.Context,
 	partitionClient processorPartitionClient,
@@ -424,16 +431,7 @@ func processPartitionEvents(
 	logger.Debug("Starting distributed processing for partition", zap.String("partition", partitionClient.PartitionID()))
 	defer partitionClient.Close(context.Background())
 
-	maxPollEvents := 100
-	pollRate := 5
-	if config != nil {
-		if config.MaxPollEvents != 0 {
-			maxPollEvents = config.MaxPollEvents
-		}
-		if config.PollRate != 0 {
-			pollRate = config.PollRate
-		}
-	}
+	maxPollEvents, pollRate := getPollConfig(config)
 
 	for {
 		if ctx.Err() != nil {
