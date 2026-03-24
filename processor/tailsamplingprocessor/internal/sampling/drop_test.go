@@ -117,3 +117,11 @@ func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, samplingpolicy.NotSampled, decision)
 }
+
+func TestDropIsStatefulIfAnySubpolicyIsStateful(t *testing.T) {
+	stateless := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
+	stateful := NewRateLimiting(componenttest.NewNopTelemetrySettings(), 10)
+
+	drop := NewDrop(zap.NewNop(), []samplingpolicy.Evaluator{stateless, stateful})
+	assert.True(t, drop.IsStateful())
+}
