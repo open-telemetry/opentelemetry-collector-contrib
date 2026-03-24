@@ -1,9 +1,6 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: k8s.kubelet.version
-          value:
-            stringValue: v1.25.3
         - key: k8s.node.name
           value:
             stringValue: test-node-1
@@ -13,7 +10,6 @@ resourceMetrics:
       entityRefs:
         - descriptionKeys:
             - k8s.node.name
-            - k8s.kubelet.version
           idKeys:
             - k8s.node.uid
           type: k8s.node

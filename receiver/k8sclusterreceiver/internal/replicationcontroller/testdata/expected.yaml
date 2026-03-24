@@ -13,7 +13,6 @@ resourceMetrics:
       entityRefs:
         - descriptionKeys:
             - k8s.replicationcontroller.name
-            - k8s.namespace.name
           idKeys:
             - k8s.replicationcontroller.uid
           type: k8s.replicationcontroller

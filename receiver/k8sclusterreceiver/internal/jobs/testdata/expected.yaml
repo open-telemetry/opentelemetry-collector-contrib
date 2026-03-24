@@ -13,7 +13,6 @@ resourceMetrics:
       entityRefs:
         - descriptionKeys:
             - k8s.job.name
-            - k8s.namespace.name
           idKeys:
             - k8s.job.uid
           type: k8s.job
