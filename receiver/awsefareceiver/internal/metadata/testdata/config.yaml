@@ -1,0 +1,93 @@
+default:
+all_set:
+  metrics:
+    efa_impaired_remote_conn_events:
+      enabled: true
+    efa_rdma_read_bytes:
+      enabled: true
+    efa_rdma_read_resp_bytes:
+      enabled: true
+    efa_rdma_read_wr_err:
+      enabled: true
+    efa_rdma_read_wrs:
+      enabled: true
+    efa_rdma_write_bytes:
+      enabled: true
+    efa_rdma_write_recv_bytes:
+      enabled: true
+    efa_rdma_write_wr_err:
+      enabled: true
+    efa_rdma_write_wrs:
+      enabled: true
+    efa_recv_bytes:
+      enabled: true
+    efa_recv_wrs:
+      enabled: true
+    efa_retrans_bytes:
+      enabled: true
+    efa_retrans_pkts:
+      enabled: true
+    efa_retrans_timeout_events:
+      enabled: true
+    efa_rx_bytes:
+      enabled: true
+    efa_rx_dropped:
+      enabled: true
+    efa_rx_pkts:
+      enabled: true
+    efa_send_bytes:
+      enabled: true
+    efa_send_wrs:
+      enabled: true
+    efa_tx_bytes:
+      enabled: true
+    efa_tx_pkts:
+      enabled: true
+    efa_unresponsive_remote_events:
+      enabled: true
+none_set:
+  metrics:
+    efa_impaired_remote_conn_events:
+      enabled: false
+    efa_rdma_read_bytes:
+      enabled: false
+    efa_rdma_read_resp_bytes:
+      enabled: false
+    efa_rdma_read_wr_err:
+      enabled: false
+    efa_rdma_read_wrs:
+      enabled: false
+    efa_rdma_write_bytes:
+      enabled: false
+    efa_rdma_write_recv_bytes:
+      enabled: false
+    efa_rdma_write_wr_err:
+      enabled: false
+    efa_rdma_write_wrs:
+      enabled: false
+    efa_recv_bytes:
+      enabled: false
+    efa_recv_wrs:
+      enabled: false
+    efa_retrans_bytes:
+      enabled: false
+    efa_retrans_pkts:
+      enabled: false
+    efa_retrans_timeout_events:
+      enabled: false
+    efa_rx_bytes:
+      enabled: false
+    efa_rx_dropped:
+      enabled: false
+    efa_rx_pkts:
+      enabled: false
+    efa_send_bytes:
+      enabled: false
+    efa_send_wrs:
+      enabled: false
+    efa_tx_bytes:
+      enabled: false
+    efa_tx_pkts:
+      enabled: false
+    efa_unresponsive_remote_events:
+      enabled: false
