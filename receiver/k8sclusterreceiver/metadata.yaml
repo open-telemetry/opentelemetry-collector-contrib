@@ -165,9 +165,13 @@ entities:
       - ref: k8s.service.name
       - ref: k8s.service.type
       - ref: k8s.service.publish_not_ready_addresses
-      - ref: k8s.service.traffic_distribution
     extra_attributes:
       - ref: k8s.namespace.name
+      # TODO: k8s.service.traffic_distribution is an optional field (nil pointer in the K8s API).
+      # mdatagen-generated copyToResource always emits enabled string attributes even when they
+      # were never set (zero value ""). Until mdatagen supports optional/omitempty string descriptors,
+      # keep traffic_distribution as an extra_attribute and guard the nil check in service.go.
+      - ref: k8s.service.traffic_distribution
 
   - type: k8s.hpa
     brief: A Kubernetes horizontal pod autoscaler

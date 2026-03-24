@@ -824,8 +824,8 @@ type K8sServiceEntity struct {
 	k8sServiceName                     string
 	k8sServiceType                     string
 	k8sServicePublishNotReadyAddresses bool
-	k8sServiceTrafficDistribution      string
 	k8sNamespaceName                   string
+	k8sServiceTrafficDistribution      string
 }
 
 // NewK8sServiceEntity creates a new K8sServiceEntity.
@@ -853,17 +853,17 @@ func (e *K8sServiceEntity) SetK8sServicePublishNotReadyAddresses(val bool) {
 	e.k8sServicePublishNotReadyAddresses = val
 }
 
-// SetK8sServiceTrafficDistribution sets the k8s.service.traffic_distribution description attribute.
-func (e *K8sServiceEntity) SetK8sServiceTrafficDistribution(val string) {
-	e.k8sServiceTrafficDistribution = val
-}
-
 // Extra attribute setters for k8s.service.
 // These attributes are contextually relevant but are not part of the entity's identity or description.
 
 // SetK8sNamespaceName sets the k8s.namespace.name extra attribute on the resource.
 func (e *K8sServiceEntity) SetK8sNamespaceName(val string) {
 	e.k8sNamespaceName = val
+}
+
+// SetK8sServiceTrafficDistribution sets the k8s.service.traffic_distribution extra attribute on the resource.
+func (e *K8sServiceEntity) SetK8sServiceTrafficDistribution(val string) {
+	e.k8sServiceTrafficDistribution = val
 }
 
 // copyToResource populates res with the entity's attributes according to cfg.
@@ -882,11 +882,11 @@ func (e *K8sServiceEntity) copyToResource(cfg ResourceAttributesConfig, res pcom
 		if cfg.K8sServicePublishNotReadyAddresses.Enabled {
 			ent.DescriptiveAttributes().PutEmpty("k8s.service.publish_not_ready_addresses").SetBool(e.k8sServicePublishNotReadyAddresses)
 		}
-		if cfg.K8sServiceTrafficDistribution.Enabled {
-			ent.DescriptiveAttributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
-		}
 		if cfg.K8sNamespaceName.Enabled {
 			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+		if cfg.K8sServiceTrafficDistribution.Enabled && e.k8sServiceTrafficDistribution != "" {
+			res.Attributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
 		}
 	} else {
 		if cfg.K8sServiceUID.Enabled {
@@ -901,11 +901,11 @@ func (e *K8sServiceEntity) copyToResource(cfg ResourceAttributesConfig, res pcom
 		if cfg.K8sServicePublishNotReadyAddresses.Enabled {
 			res.Attributes().PutBool("k8s.service.publish_not_ready_addresses", e.k8sServicePublishNotReadyAddresses)
 		}
-		if cfg.K8sServiceTrafficDistribution.Enabled {
-			res.Attributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
-		}
 		if cfg.K8sNamespaceName.Enabled {
 			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+		if cfg.K8sServiceTrafficDistribution.Enabled && e.k8sServiceTrafficDistribution != "" {
+			res.Attributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
 		}
 	}
 }

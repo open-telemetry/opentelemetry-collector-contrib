@@ -690,7 +690,6 @@ A Kubernetes service
 - `k8s.service.name`
 - `k8s.service.type`
 - `k8s.service.publish_not_ready_addresses`
-- `k8s.service.traffic_distribution`
 
 ### k8s.hpa
 

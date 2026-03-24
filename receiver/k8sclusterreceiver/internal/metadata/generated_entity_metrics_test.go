@@ -1145,8 +1145,8 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetK8sServiceName("k8s.service.name-val")
 		e.SetK8sServiceType("k8s.service.type-val")
 		e.SetK8sServicePublishNotReadyAddresses(false)
-		e.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
 		e.SetK8sNamespaceName("k8s.namespace.name-val")
+		e.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
 
 		eb := mb.ForK8sService(e)
 		eb.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
