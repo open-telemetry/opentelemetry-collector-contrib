@@ -289,7 +289,6 @@ func TestEventhubHandler_runDistributed_skipsNonDistributed(t *testing.T) {
 	// BlobCheckpointStore is nil, so it should take the non-distributed path
 	assert.Nil(t, ehHandler.config.BlobCheckpointStore)
 	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
-	assert.Nil(t, ehHandler.processor)
 	assert.NoError(t, ehHandler.close(t.Context()))
 }
 

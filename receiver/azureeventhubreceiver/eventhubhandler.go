@@ -47,7 +47,6 @@ type eventhubHandler struct {
 	settings       receiver.Settings
 	cancel         context.CancelFunc
 	storageClient  storage.Client
-	processor      *azeventhubs.Processor      // non-nil when in distributed mode
 	consumerClient *azeventhubs.ConsumerClient // non-nil when in distributed mode
 	wg             sync.WaitGroup              // tracks goroutines spawned by runDistributed
 }
@@ -113,7 +112,6 @@ func (h *eventhubHandler) runDistributed(ctx context.Context, host component.Hos
 	if err != nil {
 		return err
 	}
-	h.processor = processor
 	h.consumerClient = consumerClient
 
 	// Dispatch partition clients as the Processor assigns them.

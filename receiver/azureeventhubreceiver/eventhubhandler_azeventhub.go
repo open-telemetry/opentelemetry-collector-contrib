@@ -444,7 +444,7 @@ func processPartitionEvents(
 		events, err := partitionClient.ReceiveEvents(timeout, maxPollEvents, nil)
 		cancelTimeout()
 
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			var eventHubError *azeventhubs.Error
 			if errors.As(err, &eventHubError) && eventHubError.Code == azeventhubs.ErrorCodeOwnershipLost {
 				logger.Info("Partition ownership lost, stopping processing", zap.String("partition", partitionClient.PartitionID()))
