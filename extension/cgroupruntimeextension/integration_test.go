@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.uber.org/goleak"
 	"golang.org/x/sys/unix"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata"
@@ -361,6 +362,7 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 }
 
 func TestDynamicMemoryLimitRefreshSudo(t *testing.T) {
+	defer goleak.VerifyNone(t, goleak.IgnoreTopFunction("github.com/KimMachineGun/automemlimit/memlimit.refresh.func1"))
 	checkCgroupSystem(t)
 
 	cgroupPath, err := cgroup2.PidGroupPath(os.Getpid())
