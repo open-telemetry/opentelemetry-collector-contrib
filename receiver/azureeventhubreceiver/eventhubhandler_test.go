@@ -298,11 +298,9 @@ func TestProcessPartitionEvents_contextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // Cancel immediately
 
-	eventsReceived := make(chan struct{})
 	mockPC := &mockProcessorPartitionClient{
 		partitionID: "0",
 		onReceive: func() ([]*azeventhubs.ReceivedEventData, error) {
-			close(eventsReceived)
 			return nil, context.Canceled
 		},
 	}
@@ -394,10 +392,8 @@ func TestProcessPartitionEvents_processesEvents(t *testing.T) {
 	assert.True(t, mockPC.closed)
 }
 
-// mockProcessorPartitionClient implements the methods used by processPartitionEvents
-// via duck-typing. Since processPartitionEvents takes *azeventhubs.ProcessorPartitionClient
-// (a concrete type), we test it indirectly via the real type or use this mock for unit tests
-// by refactoring to use an interface. For now, these are integration-style tests.
+// mockProcessorPartitionClient implements the processorPartitionClient interface
+// for use in unit tests without requiring a real Azure connection.
 type mockProcessorPartitionClient struct {
 	partitionID       string
 	closed            bool

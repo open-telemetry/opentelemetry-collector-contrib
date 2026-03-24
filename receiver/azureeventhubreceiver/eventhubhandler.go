@@ -125,7 +125,6 @@ func (h *eventhubHandler) runDistributed(ctx context.Context, host component.Hos
 				return
 			}
 			h.wg.Go(func() {
-				defer partitionClient.Close(context.Background())
 				processPartitionEvents(ctx, partitionClient, h.newMessageHandler, h.config, h.settings.Logger)
 			})
 		}

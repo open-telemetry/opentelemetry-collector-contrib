@@ -422,6 +422,7 @@ func processPartitionEvents(
 	logger *zap.Logger,
 ) {
 	logger.Debug("Starting distributed processing for partition", zap.String("partition", partitionClient.PartitionID()))
+	defer partitionClient.Close(context.Background())
 
 	maxPollEvents := 100
 	pollRate := 5
@@ -459,7 +460,7 @@ func processPartitionEvents(
 				AzEventData: ev,
 			}); err != nil {
 				logger.Error("Error processing event in distributed mode", zap.Error(err), zap.String("partition", partitionClient.PartitionID()))
-				continue
+				break
 			}
 			lastSuccessful = ev
 		}
