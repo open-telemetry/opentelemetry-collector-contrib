@@ -22,8 +22,8 @@ splunkenterprise:
       enabled: true
     splunk.indexer.throughput:
       enabled: false
-  # Custom SPL queries (optional)
-  queries:
+  # Custom SPL searches (optional)
+  searches:
     # Regular search
     - spl: "index=_internal sourcetype=splunkd | stats count by host"
       target: search_head

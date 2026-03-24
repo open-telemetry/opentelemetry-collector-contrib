@@ -4,11 +4,14 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
+	"net/url"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -103,3 +106,381 @@ func TestEndpointCorrectness(t *testing.T) {
 		})
 	}
 }
+
+func TestCustomSearchConfigValidation(t *testing.T) {
+	validEndpoint := confighttp.ClientConfig{
+		Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
+		Endpoint: "https://localhost:8089",
+	}
+
+	tests := []struct {
+		desc        string
+		search      SearchConfig
+		expectError bool
+		errContains string
+	}{
+		{
+			desc: "valid search config",
+			search: SearchConfig{
+				SPL:    "search index=_internal | stats count",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+						ValueType:   MetricValueTypeInt,
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			desc: "empty SPL",
+			search: SearchConfig{
+				SPL:    "",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "search spl cannot be empty",
+		},
+		{
+			desc: "whitespace only SPL",
+			search: SearchConfig{
+				SPL:    "   ",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "search spl cannot be empty",
+		},
+		{
+			desc: "invalid target",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: "invalid",
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "search target must be one of",
+		},
+		{
+			desc: "no metrics defined",
+			search: SearchConfig{
+				SPL:     "search index=_internal",
+				Target:  TargetClusterMaster,
+				Metrics: []MetricConfig{},
+			},
+			expectError: true,
+			errContains: "at least one metric",
+		},
+		{
+			desc: "metric missing name",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "metric_name cannot be empty",
+		},
+		{
+			desc: "metric missing value column",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "value_column cannot be empty",
+		},
+		{
+			desc: "invalid value type",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetClusterMaster,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+						ValueType:   "string",
+					},
+				},
+			},
+			expectError: true,
+			errContains: "value_type must be one of",
+		},
+		{
+			desc: "valid with indexer target",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetIndexer,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			desc: "valid search head target",
+			search: SearchConfig{
+				SPL:    "search index=_internal",
+				Target: TargetSearchHead,
+				Metrics: []MetricConfig{
+					{
+						MetricName:  "splunk.custom.count",
+						ValueColumn: "count",
+					},
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			err := test.search.Validate()
+			if test.expectError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), test.errContains)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+
+	t.Run("config validates searches", func(t *testing.T) {
+		cfg := &Config{
+			CMEndpoint: validEndpoint,
+			Searches: []SearchConfig{
+				{
+					SPL:     "",
+					Target:  "invalid",
+					Metrics: []MetricConfig{},
+				},
+			},
+		}
+		err := cfg.Validate()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "searches[0]")
+	})
+}
+
+func TestSearchConfigTargetType(t *testing.T) {
+	tests := []struct {
+		target   string
+		expected string
+	}{
+		{TargetIndexer, typeIdx},
+		{TargetSearchHead, typeSh},
+		{TargetClusterMaster, typeCm},
+		{"invalid", ""},
+	}
+
+	for _, test := range tests {
+		t.Run(test.target, func(t *testing.T) {
+			s := SearchConfig{Target: test.target}
+			require.Equal(t, test.expected, s.TargetType())
+		})
+	}
+}
+
+func TestFormatSPLForSearch(t *testing.T) {
+	tests := []struct {
+		name               string
+		spl                string
+		earliest           string
+		latest             string
+		collectionInterval time.Duration
+		expected           string
+	}{
+		{
+			name:               "tstats adds collection interval time range before by",
+			spl:                "| tstats count where index=_* by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-2m latest=now by index",
+		},
+		{
+			name:               "tstats with config earliest and latest",
+			spl:                "| tstats count where index=_introspection by splunk_server",
+			earliest:           "-10m",
+			latest:             "now",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_introspection earliest=-10m latest=now by splunk_server",
+		},
+		{
+			name:               "tstats already has earliest adds latest",
+			spl:                "| tstats count where index=_* earliest=-30m by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-30m latest=now by index",
+		},
+		{
+			name:               "tstats already has latest adds earliest",
+			spl:                "| tstats count where index=_* latest=-10m by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* latest=-10m earliest=-2m by index",
+		},
+		{
+			name:               "tstats already has both time modifiers unchanged",
+			spl:                "| tstats count where index=_* earliest=-30m latest=-10m by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-30m latest=-10m by index",
+		},
+		{
+			name:               "tstats without by clause appends time range",
+			spl:                "| tstats count where index=_*",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-2m latest=now",
+		},
+		{
+			name:               "search adds collection interval time range",
+			spl:                "index=_internal | stats count by host",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search earliest=-2m latest=now index=_internal | stats count by host",
+		},
+		{
+			name:               "search config time range",
+			spl:                "index=_internal | stats count",
+			earliest:           "-1h",
+			latest:             "-5m",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search earliest=-1h latest=-5m index=_internal | stats count",
+		},
+		{
+			name:               "config has earliest we add latest",
+			spl:                "index=_internal earliest=-30m | stats count",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search latest=now index=_internal earliest=-30m | stats count",
+		},
+		{
+			name:               "both earliest and latest",
+			spl:                "index=_internal earliest=-30m latest=-10m | stats count",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search index=_internal earliest=-30m latest=-10m | stats count",
+		},
+		{
+			name:               "has search command needs time range after",
+			spl:                "search index=_internal | stats count",
+			collectionInterval: 5 * time.Minute,
+			expected:           "search=search earliest=-5m latest=now index=_internal | stats count",
+		},
+		{
+			name:               "already fully formatted",
+			spl:                "search=search index=_internal",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search earliest=-2m latest=now index=_internal",
+		},
+		{
+			name:               "rest command",
+			spl:                "| rest /services/server/info",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| rest /services/server/info",
+		},
+		{
+			name:               "urlencoding needed",
+			spl:                `index=_internal | eval x=(a + b) | eval y="100%" | eval z="a:b" | eval q="a^b" | eval r="a\b" | eval s="val" | eval t="a?b"`,
+			collectionInterval: 2 * time.Minute,
+			expected:           `search=search earliest=-2m latest=now index=_internal | eval x=(a + b) | eval y="100%" | eval z="a:b" | eval q="a^b" | eval r="a\b" | eval s="val" | eval t="a?b"`,
+		},
+		{
+			name:               "collection interval in hours",
+			spl:                "index=_internal | stats count",
+			collectionInterval: 1 * time.Hour,
+			expected:           "search=search earliest=-1h latest=now index=_internal | stats count",
+		},
+		{
+			name:               "collection interval in seconds",
+			spl:                "index=_internal | stats count",
+			collectionInterval: 30 * time.Second,
+			expected:           "search=search earliest=-30s latest=now index=_internal | stats count",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := &splunkScraper{
+				conf: &Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: test.collectionInterval,
+					},
+				},
+			}
+		srch := SearchConfig{
+			SPL:      test.spl,
+			Earliest: test.earliest,
+			Latest:   test.latest,
+		}
+		result := s.formatSPLForSearch(srch)
+			decoded, err := url.QueryUnescape(result)
+			require.NoError(t, err)
+			require.Equal(t, test.expected, decoded)
+		})
+	}
+}
+
+func TestFormatSPLURLEncoding(t *testing.T) {
+	s := &splunkScraper{
+		conf: &Config{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 2 * time.Minute,
+			},
+		},
+	}
+
+	result := s.formatSPLForSearch(SearchConfig{
+		SPL: `index=_internal | eval x=(a + b) | eval y="100%" | eval z="a:b" | eval q="a^b" | eval r="a\b" | eval s="val" | eval t="a?b"`,
+	})
+
+	for _, encoded := range []string{"%2B", "%3F", "%28", "%29", "%5E", "%5C", "%22", "%3A", "%25"} {
+		require.Contains(t, result, encoded, "SPL must be URL-encoded before being sent to Splunk, missing %s", encoded)
+	}
+}
+
+func TestFormatDurationForSplunk(t *testing.T) {
+	tests := []struct {
+		duration time.Duration
+		expected string
+	}{
+		{2 * time.Minute, "2m"},
+		{30 * time.Second, "30s"},
+		{1 * time.Hour, "1h"},
+		{90 * time.Minute, "1h30m"},
+		{2*time.Minute + 30*time.Second, "2m30s"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			result := formatDurationForSplunk(test.duration)
+			require.Equal(t, test.expected, result)
+		})
+	}
+}
+
