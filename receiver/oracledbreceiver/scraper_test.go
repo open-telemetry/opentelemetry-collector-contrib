@@ -199,6 +199,96 @@ func TestScraper_Scrape(t *testing.T) {
 	}
 }
 
+func TestServiceNameResourceAttribute(t *testing.T) {
+	t.Run("metrics", func(t *testing.T) {
+		cfg := metadata.DefaultMetricsBuilderConfig()
+		scrpr := oracleScraper{
+			logger: zap.NewNop(),
+			mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+			dbProviderFunc: func() (*sql.DB, error) {
+				return nil, nil
+			},
+			clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
+					},
+				}
+			},
+			id:                   component.ID{},
+			metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		}
+		err := scrpr.start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+		m, err := scrpr.scrape(t.Context())
+		require.NoError(t, err)
+
+		for i := 0; i < m.ResourceMetrics().Len(); i++ {
+			val, ok := m.ResourceMetrics().At(i).Resource().Attributes().Get("service.name")
+			require.True(t, ok, "service.name resource attribute missing on resource %d", i)
+			assert.Equal(t, "oracle", val.Str())
+		}
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		var metricRowData []metricRow
+		metricRowFile := readFile("oracleQueryMetricsData.txt")
+		require.NoError(t, json.Unmarshal(metricRowFile, &metricRowData))
+
+		var logRowData []metricRow
+		logRowFile := readFile("oracleQueryPlanData.txt")
+		require.NoError(t, json.Unmarshal(logRowFile, &logRowData))
+
+		logsCfg := metadata.DefaultLogsBuilderConfig()
+		logsCfg.Events.DbServerTopQuery.Enabled = true
+		metricsCfg := metadata.DefaultMetricsBuilderConfig()
+		cacheValue := map[string]int64{"EXECUTIONS": 0}
+		lruCache, _ := lru.New[string, map[string]int64](500)
+		lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+
+		scrpr := oracleScraper{
+			logger: zap.NewNop(),
+			mb:     metadata.NewMetricsBuilder(metricsCfg, receivertest.NewNopSettings(metadata.Type)),
+			lb:     metadata.NewLogsBuilder(logsCfg, receivertest.NewNopSettings(metadata.Type)),
+			dbProviderFunc: func() (*sql.DB, error) {
+				return nil, nil
+			},
+			clientProviderFunc: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if strings.Contains(s, "V$SQL_PLAN") {
+					return &fakeDbClient{Responses: [][]metricRow{logRowData}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{metricRowData}}
+			},
+			id:                   component.ID{},
+			metricsBuilderConfig: metricsCfg,
+			logsBuilderConfig:    logsCfg,
+			metricCache:          lruCache,
+			topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
+			instanceName:         "oraclehost:1521/ORCL",
+			hostName:             "oraclehost:1521",
+			obfuscator:           newObfuscator(),
+			serviceInstanceID:    getInstanceID("oraclehost:1521/ORCL", zap.NewNop()),
+		}
+		scrpr.logsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+
+		err := scrpr.start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		defer func() { assert.NoError(t, scrpr.shutdown(t.Context())) }()
+
+		logs, err := scrpr.scrapeLogs(t.Context())
+		require.NoError(t, err)
+		require.Greater(t, logs.ResourceLogs().Len(), 0, "expected at least one ResourceLogs")
+
+		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			val, ok := logs.ResourceLogs().At(i).Resource().Attributes().Get("service.name")
+			require.True(t, ok, "service.name resource attribute missing on resource log %d", i)
+			assert.Equal(t, "oracle", val.Str())
+		}
+	})
+}
+
 func TestScraper_ScrapeTopNLogs(t *testing.T) {
 	var metricRowData []metricRow
 	var logRowData []metricRow
