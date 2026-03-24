@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -167,20 +168,66 @@ func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context
 
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	walPath := filepath.Join(wc.Directory, "prom_remotewrite")
-	log, err := wal.Open(walPath, &wal.Options{
+	walOpts := &wal.Options{
 		SegmentCacheSize: wc.bufferSize(),
 		NoCopy:           true,
 		AllowEmpty:       true,
-	})
+	}
+	log, err := wal.Open(walPath, walOpts)
 	if err != nil {
-		return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to open WAL: %w", err)
+		if !errors.Is(err, wal.ErrCorrupt) {
+			return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to open WAL: %w", err)
+		}
+		// WAL segment files are corrupt (e.g. from a crash during write to
+		// hostPath storage). Attempt recovery by removing corrupt segment
+		// files starting from the last (most likely to be truncated from a
+		// crash mid-write) and retrying Open. This preserves as much
+		// buffered data as possible. The WAL is a buffer, not the source
+		// of truth — data loss from the buffer is acceptable compared to
+		// a permanently broken collector.
+		log, err = recoverCorruptWAL(walPath, walOpts)
+		if err != nil {
+			return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to recover WAL: %w", err)
+		}
 	}
 	return log, walPath, nil
 }
 
+// recoverCorruptWAL attempts to recover a corrupt WAL. Corruption is almost
+// always in the last segment (truncated mid-write from a crash/OOM-kill), so
+// we first try removing just that file. If the WAL is still corrupt after
+// that, we remove the entire directory and start fresh rather than iterating
+// through potentially hundreds of segments (O(n²) with wal.Open per removal).
+func recoverCorruptWAL(walPath string, opts *wal.Options) (*wal.Log, error) {
+	entries, err := os.ReadDir(walPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read WAL directory: %w", err)
+	}
+	zap.L().Warn("prometheusremotewriteexporter: WAL is corrupt, attempting recovery by removing corrupt segments",
+		zap.String("wal_path", walPath),
+	)
+	// Try removing just the last segment (covers the common case).
+	if len(entries) > 0 {
+		last := entries[len(entries)-1]
+		if removeErr := os.Remove(filepath.Join(walPath, last.Name())); removeErr != nil {
+			return nil, fmt.Errorf("failed to remove corrupt WAL segment %s: %w", last.Name(), removeErr)
+		}
+		log, openErr := wal.Open(walPath, opts)
+		if openErr == nil {
+			return log, nil
+		}
+	}
+	// Still corrupt or empty — remove everything and start fresh.
+	if removeErr := os.RemoveAll(walPath); removeErr != nil {
+		return nil, fmt.Errorf("failed to remove corrupt WAL directory: %w", removeErr)
+	}
+	return wal.Open(walPath, opts)
+}
+
 var (
-	errAlreadyClosed = errors.New("already closed")
-	errNilWAL        = errors.New("wal is nil")
+	errAlreadyClosed     = errors.New("already closed")
+	errNilWAL            = errors.New("wal is nil")
+	errCorruptedWALEntry = errors.New("corrupted WAL entry")
 )
 
 // retrieveWALIndices queries the WriteAheadLog for its current first and last indices.
@@ -344,6 +391,14 @@ func (prweWAL *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalS
 		var req *prompb.WriteRequest
 		req, err = prweWAL.readPrompbFromWAL(ctx, prweWAL.rWALIndex.Load())
 		if err != nil {
+			if errors.Is(err, errCorruptedWALEntry) {
+				// Skip corrupted entries — readPrompbFromWAL already
+				// advanced rWALIndex past the bad entry.
+				if logger, logErr := loggerFromContext(ctx); logErr == nil {
+					logger.Warn("skipping corrupted WAL entry", zap.Error(err))
+				}
+				continue
+			}
 			return err
 		}
 		reqL = append(reqL, req)
@@ -484,9 +539,15 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		prweWAL.telemetry.recordWALBytesRead(ctx, len(protoBlob))
 		if err == nil { // The read succeeded.
 			req := new(prompb.WriteRequest)
-			err = proto.Unmarshal(protoBlob, req)
-			if err != nil {
-				return nil, err
+			if unmarshalErr := proto.Unmarshal(protoBlob, req); unmarshalErr != nil {
+				// Corrupted WAL entry: skip it and advance to the next index
+				// rather than failing fatally. This prevents a single corrupted
+				// entry (e.g. from a crash during write) from blocking the
+				// entire WAL replay in an infinite retry loop.
+				prweWAL.rWALIndex.Add(1)
+				prweWAL.telemetry.recordWALReadsFailures(ctx)
+				prweWAL.mu.Unlock()
+				return nil, fmt.Errorf("%w: index %d: %w", errCorruptedWALEntry, index, unmarshalErr)
 			}
 
 			// Now increment the WAL's read index.
