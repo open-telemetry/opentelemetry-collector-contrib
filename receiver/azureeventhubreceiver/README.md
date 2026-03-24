@@ -50,6 +50,18 @@ Either `connection` or `auth` must be specified.
 | `offset` | string | No | `""` | Starting offset. Only applicable when `partition` is set. |
 | `storage` | string | No | | ID of a [storage extension] for checkpoint persistence. |
 
+### Distributed Consumption Settings
+
+When `blob_checkpoint_store` is set, the receiver uses the Azure SDK [Processor](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2#Processor) to coordinate partition ownership across multiple collector instances via Azure Blob Storage. This is mutually exclusive with `partition`, `offset`, and `storage`.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `blob_checkpoint_store.connection` | string | * | | Azure Blob Storage connection string. Required when not using `auth`. |
+| `blob_checkpoint_store.storage_account_url` | string | * | | Blob service URL (e.g., `https://myaccount.blob.core.windows.net`). Required when using `auth`. |
+| `blob_checkpoint_store.container_name` | string | Yes | | Blob container for checkpoint data. Must already exist before starting the collector. |
+
+\* One of `connection` or `storage_account_url` is required.
+
 ### Polling Settings
 
 | Field | Type | Required | Default | Description |
@@ -120,8 +132,6 @@ extensions:
 
 #### Distributed Consumption with Blob Checkpoint Store
 
-For deployments with multiple collector instances, the receiver supports distributed consumption using Azure Blob Storage for checkpoint coordination. This uses the Azure SDK's [Processor](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2#Processor) to dynamically assign partitions across instances.
-
 When `blob_checkpoint_store` is configured, the receiver automatically:
 - Coordinates partition ownership across collector instances via blob leases
 - Checkpoints progress to Azure Blob Storage
@@ -130,16 +140,6 @@ When `blob_checkpoint_store` is configured, the receiver automatically:
 **Prerequisites:**
 - The blob container must already exist before starting the collector
 - All collector instances must use the same consumer group and container
-
-**Note:** `blob_checkpoint_store` is mutually exclusive with `partition`, `offset`, and `storage` — the Processor manages partition assignment and checkpointing.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `blob_checkpoint_store.connection` | string | * | | Azure Blob Storage connection string. Required when not using `auth`. |
-| `blob_checkpoint_store.storage_account_url` | string | * | | Blob service URL (e.g., `https://myaccount.blob.core.windows.net`). Required when using `auth`. |
-| `blob_checkpoint_store.container_name` | string | Yes | | Blob container for checkpoint data. |
-
-\* One of `connection` or `storage_account_url` is required depending on authentication method.
 
 ```yaml
 # With connection strings
