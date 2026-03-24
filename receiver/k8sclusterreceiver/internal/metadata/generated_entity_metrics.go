@@ -885,7 +885,7 @@ func (e *K8sServiceEntity) copyToResource(cfg ResourceAttributesConfig, res pcom
 		if cfg.K8sNamespaceName.Enabled {
 			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
 		}
-		if cfg.K8sServiceTrafficDistribution.Enabled && e.k8sServiceTrafficDistribution != "" {
+		if cfg.K8sServiceTrafficDistribution.Enabled {
 			res.Attributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
 		}
 	} else {
@@ -904,7 +904,7 @@ func (e *K8sServiceEntity) copyToResource(cfg ResourceAttributesConfig, res pcom
 		if cfg.K8sNamespaceName.Enabled {
 			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
 		}
-		if cfg.K8sServiceTrafficDistribution.Enabled && e.k8sServiceTrafficDistribution != "" {
+		if cfg.K8sServiceTrafficDistribution.Enabled {
 			res.Attributes().PutStr("k8s.service.traffic_distribution", e.k8sServiceTrafficDistribution)
 		}
 	}
