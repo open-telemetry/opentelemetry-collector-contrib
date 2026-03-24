@@ -8,16 +8,20 @@ status:
   codeowners:
     active: [dmitryax, braydonk]
 
+reaggregation_enabled: true
+
 sem_conv_version: 1.9.0
 
 attributes:
   cpu:
     description: Logical CPU number starting at 0.
     type: string
+    requirement_level: recommended
 
   state:
     description: Breakdown of CPU usage by type.
     type: string
+    requirement_level: recommended
     enum: [idle, interrupt, nice, softirq, steal, system, user, wait]
 
 metrics:

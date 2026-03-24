@@ -139,6 +139,7 @@ The following settings can be optionally configured:
    Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
 - `add_resource_attributes` (default: `false`): Add the resource attributes to the resulting metrics. This option enables the old behavior before the `connector.spanmetrics.excludeResourceMetrics` feature gate was introduced. When set to `true`, resource attributes will be included in the metrics even if the feature gate is enabled. See [GitHub issue #42103](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103) for more context.
+- `enable_metrics_sampling_method` (default: `false`): When enabled, adds the `sampling.method` attribute to metrics with value `"extrapolated"` (when the span has a valid tracestate sampling threshold) or `"counted"` (otherwise).
 
 The feature gate `connector.spanmetrics.legacyMetricNames` (disabled by default) controls the connector to use legacy metric names.
 

@@ -17,3 +17,7 @@ $defs:
         description: The maximum amount of time to wait for docker API responses. Default is 5s
         type: string
         format: duration
+      tls:
+        description: TLS holds optional TLS client configuration for connecting to the Docker daemon over HTTPS. When nil (the default), the connection uses no custom TLS — suitable for Unix sockets and plain HTTP endpoints.
+        x-optional: true
+        $ref: go.opentelemetry.io/collector/config/configtls.client_config

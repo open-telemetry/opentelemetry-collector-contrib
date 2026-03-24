@@ -4,6 +4,10 @@
 package reader
 
 import (
+	"compress/gzip"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -61,6 +65,7 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 		FlushTimeout:      cfg.flushPeriod,
 		EmitFunc:          sink.Callback,
 		Attributes:        cfg.attributes,
+		Compression:       cfg.compression,
 	}, sink
 }
 
@@ -77,6 +82,7 @@ type testFactoryCfg struct {
 	flushPeriod       time.Duration
 	sinkChanSize      int
 	attributes        attrs.Resolver
+	compression       string
 }
 
 func withFingerprintSize(size int) testFactoryOpt {
@@ -118,6 +124,12 @@ func withSinkChanSize(n int) testFactoryOpt {
 func fromEnd() testFactoryOpt {
 	return func(c *testFactoryCfg) {
 		c.fromBeginning = false
+	}
+}
+
+func withCompression(c string) testFactoryOpt {
+	return func(cfg *testFactoryCfg) {
+		cfg.compression = c
 	}
 }
 
@@ -222,4 +234,77 @@ func TestNewReaderFromMetadataConcurrentAccess(t *testing.T) {
 	// (it should still have the same length, though a new map may have been created)
 	require.Len(t, originalAttrs, originalLen,
 		"Original FileAttributes map should not be mutated")
+}
+
+// TestNewReaderFromMetadataAfterCompression is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46105.
+//
+// When a plaintext log file is compressed (e.g. test.log → test.log.gz),
+// fingerprint matching succeeds because the decompressed content of the .gz begins with
+// the same bytes as the original plaintext fingerprint. However, the file format has
+// changed. NewReaderFromMetadata must re-detect the file type, store the old plaintext
+// offset as decompressedBytesToSkip, and zero the persisted offset. createGzipReader
+// then decompresses from byte 0 and discards the already-consumed bytes, so only new
+// content is emitted — no corruption and no duplicate log entries.
+func TestNewReaderFromMetadataAfterCompression(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	lines := []string{
+		"{'message': 'Log line 1'}",
+		"{'message': 'Log line 2'}",
+		"{'message': 'Log line 3'}",
+		"{'message': 'Log line 4'}",
+	}
+
+	// Create and fully read the original plaintext file (lines 1-2).
+	plaintextFile := filetest.OpenTempWithPattern(t, tempDir, "test*.log")
+	filetest.WriteString(t, plaintextFile, lines[0]+"\n"+lines[1]+"\n")
+
+	f, sink := testFactory(t, withCompression("auto"))
+
+	fp, err := f.NewFingerprint(plaintextFile)
+	require.NoError(t, err)
+
+	r, err := f.NewReader(plaintextFile, fp)
+	require.NoError(t, err)
+	assert.Empty(t, r.FileType, "plaintext file should have empty FileType")
+
+	r.ReadToEnd(t.Context())
+	sink.ExpectTokens(t, []byte(lines[0]), []byte(lines[1]))
+
+	// Save metadata: Offset > 0, FileType == "" (plaintext).
+	oldMeta := r.Close()
+	require.Positive(t, oldMeta.Offset, "offset should be > 0 after reading plaintext file")
+	require.Empty(t, oldMeta.FileType, "old FileType should be empty (plaintext)")
+
+	// Simulate rotation+compression — write a .gz containing 4 lines.
+	gzipPath := filepath.Join(tempDir, "test.log.gz")
+	gzipFile, err := os.Create(gzipPath)
+	require.NoError(t, err)
+	gzWriter := gzip.NewWriter(gzipFile)
+	_, err = gzWriter.Write([]byte(strings.Join(lines, "\n") + "\n"))
+	require.NoError(t, err)
+	require.NoError(t, gzWriter.Close())
+	require.NoError(t, gzipFile.Close())
+
+	// Open the .gz file and call NewReaderFromMetadata with the old plaintext metadata,
+	// exactly as the rotation-matching logic does.
+	gzipFileRead, err := os.Open(gzipPath)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, gzipFileRead.Close()) }()
+
+	newReader, err := f.NewReaderFromMetadata(gzipFileRead, oldMeta)
+	require.NoError(t, err)
+
+	// FileType must be updated and Offset must be zeroed (the stale plaintext
+	// value is moved into decompressedBytesToSkip, not kept as Offset).
+	assert.Equal(t, ".gz", newReader.FileType, "FileType must be updated to .gz after compression")
+	assert.Equal(t, int64(0), newReader.Offset, "Offset must be zeroed when transitioning from plaintext to gzip")
+
+	// ReadToEnd must correctly decode only the new lines without corruption or duplicates.
+	// The decompressedBytesToSkip mechanism decompresses from byte 0 and discards the
+	// bytes for lines 1-2 that were already consumed from the plaintext file.
+	newReader.ReadToEnd(t.Context())
+	sink.ExpectTokens(t, []byte(lines[2]), []byte(lines[3]))
 }
