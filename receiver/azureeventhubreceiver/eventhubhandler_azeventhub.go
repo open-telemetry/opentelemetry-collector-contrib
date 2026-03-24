@@ -53,8 +53,8 @@ type azPartitionClient interface {
 	ReceiveEvents(ctx context.Context, maxBatchSize int, options *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error)
 }
 
-func getPollConfig(config *Config) (maxPollEvents, pollRate int) {
-	maxPollEvents, pollRate = 100, 5
+func getPollConfig(config *Config) (int, int) {
+	maxPollEvents, pollRate := 100, 5
 	if config != nil {
 		if config.MaxPollEvents != 0 {
 			maxPollEvents = config.MaxPollEvents
@@ -63,7 +63,7 @@ func getPollConfig(config *Config) (maxPollEvents, pollRate int) {
 			pollRate = config.PollRate
 		}
 	}
-	return
+	return maxPollEvents, pollRate
 }
 
 func getConsumerGroup(config *Config) string {
@@ -346,14 +346,15 @@ func createBlobCheckpointStore(config *Config, host component.Host, logger *zap.
 	blobCfg := config.BlobCheckpointStore
 
 	var containerClient *container.Client
-	var err error
 
-	if blobCfg.Connection != "" {
+	switch {
+	case blobCfg.Connection != "":
+		var err error
 		containerClient, err = container.NewClientFromConnectionString(blobCfg.Connection, blobCfg.ContainerName, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create blob container client from connection string: %w", err)
 		}
-	} else if config.Auth != nil {
+	case config.Auth != nil:
 		ext, ok := host.GetExtensions()[*config.Auth]
 		if !ok {
 			return nil, fmt.Errorf("failed to resolve auth extension %q for blob checkpoint store", *config.Auth)
@@ -362,7 +363,6 @@ func createBlobCheckpointStore(config *Config, host component.Host, logger *zap.
 		if !ok {
 			return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", *config.Auth)
 		}
-
 		containerURL, err := url.JoinPath(blobCfg.StorageAccountURL, blobCfg.ContainerName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct container URL: %w", err)
@@ -371,7 +371,7 @@ func createBlobCheckpointStore(config *Config, host component.Host, logger *zap.
 		if err != nil {
 			return nil, fmt.Errorf("failed to create blob container client with auth: %w", err)
 		}
-	} else {
+	default:
 		return nil, errors.New("blob checkpoint store requires either a connection string or auth extension")
 	}
 
