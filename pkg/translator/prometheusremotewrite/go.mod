@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
 
-go 1.24.11
+go 1.24.13
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.124.1
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.300.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.30.0
 	go.opentelemetry.io/collector/pdata v1.30.0
 	go.opentelemetry.io/collector/semconv v0.124.0
@@ -30,7 +30,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.124.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.1 // indirect

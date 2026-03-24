@@ -63,12 +63,13 @@ func TestExtension(t *testing.T) {
 
 	require.Eventually(t, func() bool {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})
-		require.NoError(t, err)
-		require.NotNil(t, lease)
-		require.Equal(t, expectedLeaseDurationSeconds, lease.Spec.LeaseDurationSeconds)
-		return true
+		if err != nil || lease == nil {
+			return false
+		}
+		if lease.Spec.LeaseDurationSeconds == nil || *lease.Spec.LeaseDurationSeconds != *expectedLeaseDurationSeconds {
+			return false
+		}
+		return onStartLeadingInvoked.Load()
 	}, 10*time.Second, 100*time.Millisecond)
-
-	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }

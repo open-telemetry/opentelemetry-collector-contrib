@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
 
-go 1.24.11
+go 1.24.13
 
 require (
 	github.com/gogo/protobuf v1.3.2
@@ -8,7 +8,7 @@ require (
 	github.com/kr/pretty v0.3.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.124.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.30.0
 	go.opentelemetry.io/collector/semconv v0.124.0
 	go.uber.org/goleak v1.3.0
@@ -27,7 +27,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.124.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.1 // indirect

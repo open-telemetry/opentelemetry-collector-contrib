@@ -6,6 +6,7 @@ package gpu
 import (
 	"context"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -61,7 +62,7 @@ func (m mockHostInfoProvider) GetInstanceType() string {
 
 type mockConsumer struct {
 	t        *testing.T
-	called   *bool
+	called   *atomic.Bool
 	expected map[string]struct {
 		value  float64
 		labels map[string]string
@@ -97,7 +98,7 @@ func (m mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) erro
 		scrapedMetricCnt++
 	}
 	assert.Equal(m.t, len(m.expected), scrapedMetricCnt)
-	*m.called = true
+	m.called.Store(true)
 	return nil
 }
 
@@ -150,7 +151,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 		},
 	}
 
-	consumerCalled := false
+	var consumerCalled atomic.Bool
 	mConsumer := mockConsumer{
 		t:        t,
 		called:   &consumerCalled,
@@ -179,6 +180,8 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 		{
 			Name: "dcgm",
 			Pages: []mocks.MockPrometheusResponse{
+				{Code: 200, Data: renameMetric},
+				{Code: 200, Data: renameMetric},
 				{Code: 200, Data: renameMetric},
 			},
 		},
@@ -234,11 +237,8 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 		scraper.Shutdown()
 	})
 
-	// wait for 2 scrapes, one initiated by us, another by the new scraper process
-	mp.Wg.Wait()
-	mp.Wg.Wait()
-	// make sure the consumer is called at scraping interval
-	assert.True(t, consumerCalled)
+	// wait until the consumer is called with valid metrics
+	assert.Eventually(t, consumerCalled.Load, 15*time.Second, 500*time.Millisecond, "consumer was never called with expected metrics")
 }
 
 func TestDcgmScraperJobName(t *testing.T) {

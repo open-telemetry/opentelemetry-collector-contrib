@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils
 
-go 1.24.11
+go 1.24.13
 
 require (
 	github.com/stretchr/testify v1.10.0

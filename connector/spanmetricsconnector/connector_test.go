@@ -898,7 +898,7 @@ func TestConsumeTraces(t *testing.T) {
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
 
-			for _, traces := range tc.traces {
+			for i, traces := range tc.traces {
 				// Test
 				err = p.ConsumeTraces(ctx, traces)
 				assert.NoError(t, err)
@@ -906,9 +906,9 @@ func TestConsumeTraces(t *testing.T) {
 				// Trigger flush.
 				mockClock.Advance(time.Nanosecond)
 				require.Eventually(t, func() bool {
-					return len(mcon.AllMetrics()) > 0
+					return len(mcon.AllMetrics()) > i
 				}, 1*time.Second, 10*time.Millisecond)
-				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1])
+				tc.verifier(t, mcon.AllMetrics()[i])
 			}
 		})
 	}
