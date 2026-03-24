@@ -447,7 +447,7 @@ func processPartitionEvents(
 		if err != nil && !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			var eventHubError *azeventhubs.Error
 			if errors.As(err, &eventHubError) && eventHubError.Code == azeventhubs.ErrorCodeOwnershipLost {
-				logger.Info("Partition ownership lost, stopping processing", zap.String("partition", partitionClient.PartitionID()))
+				logger.Debug("Partition ownership lost, stopping processing", zap.String("partition", partitionClient.PartitionID()))
 				return
 			}
 			logger.Error("Error receiving events in distributed mode", zap.Error(err), zap.String("partition", partitionClient.PartitionID()))

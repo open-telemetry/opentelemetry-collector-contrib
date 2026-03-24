@@ -57,11 +57,13 @@ func shouldInitializeStorageClient(storageClient storage.Client, storageID *comp
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
-
 	if h.config.BlobCheckpointStore != nil {
 		return h.runDistributed(ctx, host)
 	}
+	return h.runSingle(ctx, host)
+}
 
+func (h *eventhubHandler) runSingle(ctx context.Context, host component.Host) error {
 	if shouldInitializeStorageClient(h.storageClient, h.config.StorageID) { // set manually for testing.
 		storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
 		if err != nil {
