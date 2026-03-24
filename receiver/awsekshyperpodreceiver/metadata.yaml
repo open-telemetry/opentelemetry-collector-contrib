@@ -1,0 +1,12 @@
+type: awsekshyperpodreceiver
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+tests:
+  skip_lifecycle: true

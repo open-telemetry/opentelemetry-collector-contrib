@@ -126,6 +126,7 @@ components:
         - awscontainerinsightreceiver
         - awscontainerinsightskueuereceiver
         - awsecscontainermetrics
+        - awsekshyperpodreceiver
         - awsfirehose
         - awss3
         - awsxray
