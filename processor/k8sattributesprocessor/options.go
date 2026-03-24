@@ -22,6 +22,7 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 	containerImageTag    = "container.image.tag"
+	containerImageTags   = "container.image.tags"
 )
 
 // option represents a configuration option that can be passes.

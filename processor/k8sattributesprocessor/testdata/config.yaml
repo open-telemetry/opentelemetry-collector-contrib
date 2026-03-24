@@ -262,6 +262,7 @@ k8s_attributes/all_metadata_fields:
       - container.id
       - container.image.name
       - container.image.tag
+      - container.image.tags
       - container.image.repo_digests
       - service.namespace
       - service.name
