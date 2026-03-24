@@ -49,7 +49,8 @@ func TestConvertUnstructuredToEndpoint(t *testing.T) {
 	obj.SetGroupVersionKind(obj.GroupVersionKind())
 	obj.SetUID(types.UID("test-uid-12345"))
 
-	endpoint := convertUnstructuredToEndpoint("test-namespace", obj)
+	endpoint, err := unstructuredToEndpoint("test-namespace", obj)
+	require.NoError(t, err)
 
 	assert.Equal(t, observer.EndpointID("test-namespace/test-uid-12345"), endpoint.ID)
 	assert.Equal(t, "my-resource-1", endpoint.Target)
@@ -123,7 +124,8 @@ func TestConvertUnstructuredToEndpointClusterScoped(t *testing.T) {
 	obj.SetGroupVersionKind(obj.GroupVersionKind())
 	obj.SetUID(types.UID("cluster-uid-67890"))
 
-	endpoint := convertUnstructuredToEndpoint("test-observer", obj)
+	endpoint, err := unstructuredToEndpoint("test-observer", obj)
+	require.NoError(t, err)
 
 	assert.Equal(t, observer.EndpointID("test-observer/cluster-uid-67890"), endpoint.ID)
 	assert.Equal(t, "cluster-resource-1", endpoint.Target)
@@ -155,7 +157,8 @@ func TestConvertUnstructuredToEndpointMinimal(t *testing.T) {
 	obj.SetGroupVersionKind(obj.GroupVersionKind())
 	obj.SetUID(types.UID("minimal-uid"))
 
-	endpoint := convertUnstructuredToEndpoint("obs", obj)
+	endpoint, err := unstructuredToEndpoint("obs", obj)
+	require.NoError(t, err)
 
 	crdDetails, ok := endpoint.Details.(*observer.K8sCRD)
 	require.True(t, ok)

@@ -77,7 +77,7 @@ All fields are optional.
 | observe_services  | bool        | `false`          | Whether to report observer k8s.service endpoints.|
 | observe_ingresses | bool        | `false`          | Whether to report observer k8s.ingress endpoints.|
 | observe_crds      | []CRDConfig | `[]`             | List of Custom Resource Definitions to observe. See [Observing Custom Resources](#observing-custom-resources) below. |
-| namespaces        | []string    | `[]`             | List of namespaces to retrieve resources from. If not set, all namespaces will be observed. Does not apply for nodes, as those are not namespaced resources. Applies to pods, services, ingresses, and CRDs. |
+| namespaces        | []string    | `[]`             | List of namespaces to retrieve resources from. If not set, all namespaces will be observed. Does not apply for nodes, as those are not namespaced resources. Applies to pods, services, ingresses, and **namespaced** custom resources. See [Cluster-scoped custom resources](#cluster-scoped-custom-resources) below. |
 
 More complete configuration examples on how to use this observer along with the `receiver_creator`,
 can be found at the [Receiver Creator](../../../receiver/receivercreator/README.md)'s documentation.
@@ -92,6 +92,10 @@ Each CRD configuration requires the following fields:
 | group      | string   | Yes      | The API group of the CRD (e.g., `mycompany.io`). |
 | version    | string   | Yes      | The API version of the CRD (e.g., `v1`, `v1alpha1`). |
 | kind       | string   | Yes      | The kind of the CRD (e.g., `MyResource`). |
+
+#### Cluster-scoped custom resources
+
+If the CRD’s **scope** is `Cluster` (instances have no `metadata.namespace`), the resource is only available at cluster scope in the Kubernetes API. The `namespaces` setting **does not apply** to those kinds: it does not filter cluster-scoped instances, and configuring non-empty `namespaces` still builds namespaced list/watch URLs, which are the wrong shape for cluster-scoped APIs and may fail or behave unexpectedly. **Leave `namespaces` empty (default) when observing cluster-scoped kinds.** Observer endpoints for cluster-scoped objects still expose an empty `namespace` in `k8s.crd` details.
 
 #### CRD Example Config
 

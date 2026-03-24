@@ -78,6 +78,51 @@ func (d *dynamicListerWatcher) Watch(options metav1.ListOptions) (watch.Interfac
 	return d.client.Resource(d.gvr).Namespace(d.namespace).Watch(context.Background(), options)
 }
 
+// buildCRDListerWatchers returns one list/watch pair per (CRD, namespace) when namespaces is set,
+// or a single cluster-wide watcher per CRD when namespaces is empty.
+func buildCRDListerWatchers(dynamicClient dynamic.Interface, cfg *Config, log *zap.Logger) []crdListerWatcher {
+	var crdListerWatchers []crdListerWatcher
+	for _, crdConfig := range cfg.ObserveCRDs {
+		gvk := schema.GroupVersionKind{
+			Group:   crdConfig.Group,
+			Version: crdConfig.Version,
+			Kind:    crdConfig.Kind,
+		}
+		resource := strings.ToLower(crdConfig.Kind) + "s"
+		gvr := schema.GroupVersionResource{
+			Group:    crdConfig.Group,
+			Version:  crdConfig.Version,
+			Resource: resource,
+		}
+
+		if log != nil {
+			log.Debug("observing CRD",
+				zap.String("group", crdConfig.Group),
+				zap.String("version", crdConfig.Version),
+				zap.String("kind", crdConfig.Kind),
+				zap.String("resource", resource))
+		}
+
+		namespaces := cfg.Namespaces
+		if len(namespaces) == 0 {
+			lw := newDynamicListerWatcher(dynamicClient, gvr, v1.NamespaceAll)
+			crdListerWatchers = append(crdListerWatchers, crdListerWatcher{
+				listerWatcher: lw,
+				gvk:           gvk,
+			})
+		} else {
+			for _, namespace := range namespaces {
+				lw := newDynamicListerWatcher(dynamicClient, gvr, namespace)
+				crdListerWatchers = append(crdListerWatchers, crdListerWatcher{
+					listerWatcher: lw,
+					gvk:           gvk,
+				})
+			}
+		}
+	}
+	return crdListerWatchers
+}
+
 // Start will populate the cache.SharedInformers for pods and nodes as configured and run them as goroutines.
 func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 	if k.once == nil {
@@ -224,53 +269,11 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 
 	var crdListerWatchers []crdListerWatcher
 	if len(config.ObserveCRDs) > 0 {
-		// Create dynamic client for CRDs
 		dynamicClient, err := k8sconfig.MakeDynamicClient(config.APIConfig)
 		if err != nil {
 			return nil, err
 		}
-
-		for _, crdConfig := range config.ObserveCRDs {
-			gvk := schema.GroupVersionKind{
-				Group:   crdConfig.Group,
-				Version: crdConfig.Version,
-				Kind:    crdConfig.Kind,
-			}
-			// Convert Kind to resource name (lowercase plural form)
-			// This is a simple pluralization; for more complex cases, you might need discovery API
-			resource := strings.ToLower(crdConfig.Kind) + "s"
-			gvr := schema.GroupVersionResource{
-				Group:    crdConfig.Group,
-				Version:  crdConfig.Version,
-				Resource: resource,
-			}
-
-			set.Logger.Debug("observing CRD",
-				zap.String("group", crdConfig.Group),
-				zap.String("version", crdConfig.Version),
-				zap.String("kind", crdConfig.Kind),
-				zap.String("resource", resource))
-
-			// Use global namespaces setting for CRDs
-			namespaces := config.Namespaces
-
-			if len(namespaces) == 0 {
-				// Watch all namespaces
-				lw := newDynamicListerWatcher(dynamicClient, gvr, v1.NamespaceAll)
-				crdListerWatchers = append(crdListerWatchers, crdListerWatcher{
-					listerWatcher: lw,
-					gvk:           gvk,
-				})
-			} else {
-				for _, namespace := range namespaces {
-					lw := newDynamicListerWatcher(dynamicClient, gvr, namespace)
-					crdListerWatchers = append(crdListerWatchers, crdListerWatcher{
-						listerWatcher: lw,
-						gvk:           gvk,
-					})
-				}
-			}
-		}
+		crdListerWatchers = buildCRDListerWatchers(dynamicClient, config, set.Logger)
 	}
 
 	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.Logger}
