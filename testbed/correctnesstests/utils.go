@@ -6,8 +6,10 @@ package correctnesstests // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -35,6 +37,22 @@ func CreateConfigYaml(
 	connector testbed.DataConnector,
 	processors []ProcessorNameAndConfigBody,
 ) string {
+	var plannedPorts []int
+	if sender != nil {
+		if tcpAddr, ok := sender.GetEndpoint().(*net.TCPAddr); ok {
+			plannedPorts = append(plannedPorts, tcpAddr.Port)
+		}
+	}
+
+	// Avoid picking a telemetry port that is already planned for the sender.
+	// This prevents port collisions between the collector's Prometheus telemetry
+	// and the collector's receivers (sender endpoint), which can happen if CreateConfigYaml
+	// is called before the receivers are started (bound).
+	telemetryPort := testutil.GetAvailablePort(tb)
+	for slices.Contains(plannedPorts, telemetryPort) {
+		telemetryPort = testutil.GetAvailablePort(tb)
+	}
+
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
 	processorsSections := ""
@@ -103,7 +121,7 @@ service:
 			receiver.GenConfigYAMLStr(),
 			processorsSections,
 			connector.GenConfigYAMLStr(),
-			testutil.GetAvailablePort(tb),
+			telemetryPort,
 			pipeline1,
 			sender.ProtocolName(),
 			processorsList,
@@ -146,7 +164,7 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
-		testutil.GetAvailablePort(tb),
+		telemetryPort,
 		pipeline1,
 		sender.ProtocolName(),
 		processorsList,

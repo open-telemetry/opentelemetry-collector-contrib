@@ -153,7 +153,7 @@ func newSyncBulkIndexer(
 		}
 	}
 	return &syncBulkIndexer{
-		config:                bulkIndexerConfig(client, config, requireDataStream, logger),
+		config:                bulkIndexerConfig(client, config, false, logger),
 		maxFlushBytes:         maxFlushBytes,
 		flushTimeout:          config.Timeout,
 		retryConfig:           config.Retry,
@@ -162,6 +162,7 @@ func newSyncBulkIndexer(
 		logger:                logger,
 		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
 		getErrorHintFunc:      getErrorHintFunc,
+		requireDataStream:     requireDataStream,
 	}
 }
 
@@ -175,6 +176,7 @@ type syncBulkIndexer struct {
 	logger                *zap.Logger
 	failedDocsInputLogger *zap.Logger
 	getErrorHintFunc      func(index, errorType string) string
+	requireDataStream     bool
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -204,12 +206,13 @@ type syncBulkIndexerSession struct {
 // Add adds an item to the sync bulk indexer session.
 func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	doc := docappender.BulkIndexerItem{
-		Index:            index,
-		Body:             document,
-		DocumentID:       docID,
-		DynamicTemplates: dynamicTemplates,
-		Action:           action,
-		Pipeline:         pipeline,
+		Index:             index,
+		Body:              document,
+		DocumentID:        docID,
+		DynamicTemplates:  dynamicTemplates,
+		Action:            action,
+		Pipeline:          pipeline,
+		RequireDataStream: s.s.requireDataStream,
 	}
 	err := s.bi.Add(doc)
 	if err != nil {
@@ -294,8 +297,11 @@ func flushBulkIndexer(
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
+
+	// Create context with attempt counter to track http requests
+	ctxWithAttempts, counter := newAttemptContext(ctx)
 	startTime := time.Now()
-	stat, err := bi.Flush(ctx)
+	stat, err := bi.Flush(ctxWithAttempts)
 	latency := time.Since(startTime).Seconds()
 	defaultMetaAttrs := getAttributesFromMetadataKeys(ctx, tMetaKeys)
 	defaultAttrsSet := attribute.NewSet(defaultMetaAttrs...)
@@ -306,6 +312,9 @@ func flushBulkIndexer(
 		tb.ElasticsearchFlushedUncompressedBytes.Add(
 			ctx, int64(flushed), metric.WithAttributeSet(defaultAttrsSet),
 		)
+	}
+	if retryCount := counter.Retries(); retryCount > 0 {
+		tb.ElasticsearchDocsRetriedHTTPRequest.Add(ctx, int64(retryCount*itemsCount), metric.WithAttributeSet(defaultAttrsSet))
 	}
 
 	var fields []zap.Field

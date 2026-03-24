@@ -9,13 +9,13 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// OracledbConsistentGetsConfig provides config for the oracledb.consistent_gets metric.
-type OracledbConsistentGetsConfig struct {
+// OracledbConsistentGetsMetricConfig provides config for the oracledb.consistent_gets metric.
+type OracledbConsistentGetsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbConsistentGetsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbConsistentGetsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,13 +29,13 @@ func (ms *OracledbConsistentGetsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbCPUTimeConfig provides config for the oracledb.cpu_time metric.
-type OracledbCPUTimeConfig struct {
+// OracledbCPUTimeMetricConfig provides config for the oracledb.cpu_time metric.
+type OracledbCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -49,13 +49,13 @@ func (ms *OracledbCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbDbBlockGetsConfig provides config for the oracledb.db_block_gets metric.
-type OracledbDbBlockGetsConfig struct {
+// OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric.
+type OracledbDbBlockGetsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbDbBlockGetsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbDbBlockGetsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -69,13 +69,13 @@ func (ms *OracledbDbBlockGetsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbDdlStatementsParallelizedConfig provides config for the oracledb.ddl_statements_parallelized metric.
-type OracledbDdlStatementsParallelizedConfig struct {
+// OracledbDdlStatementsParallelizedMetricConfig provides config for the oracledb.ddl_statements_parallelized metric.
+type OracledbDdlStatementsParallelizedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbDdlStatementsParallelizedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbDdlStatementsParallelizedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -89,13 +89,13 @@ func (ms *OracledbDdlStatementsParallelizedConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// OracledbDmlLocksLimitConfig provides config for the oracledb.dml_locks.limit metric.
-type OracledbDmlLocksLimitConfig struct {
+// OracledbDmlLocksLimitMetricConfig provides config for the oracledb.dml_locks.limit metric.
+type OracledbDmlLocksLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbDmlLocksLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbDmlLocksLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -109,13 +109,13 @@ func (ms *OracledbDmlLocksLimitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbDmlLocksUsageConfig provides config for the oracledb.dml_locks.usage metric.
-type OracledbDmlLocksUsageConfig struct {
+// OracledbDmlLocksUsageMetricConfig provides config for the oracledb.dml_locks.usage metric.
+type OracledbDmlLocksUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbDmlLocksUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbDmlLocksUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -129,13 +129,13 @@ func (ms *OracledbDmlLocksUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbDmlStatementsParallelizedConfig provides config for the oracledb.dml_statements_parallelized metric.
-type OracledbDmlStatementsParallelizedConfig struct {
+// OracledbDmlStatementsParallelizedMetricConfig provides config for the oracledb.dml_statements_parallelized metric.
+type OracledbDmlStatementsParallelizedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbDmlStatementsParallelizedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbDmlStatementsParallelizedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -149,13 +149,13 @@ func (ms *OracledbDmlStatementsParallelizedConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// OracledbEnqueueDeadlocksConfig provides config for the oracledb.enqueue_deadlocks metric.
-type OracledbEnqueueDeadlocksConfig struct {
+// OracledbEnqueueDeadlocksMetricConfig provides config for the oracledb.enqueue_deadlocks metric.
+type OracledbEnqueueDeadlocksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbEnqueueDeadlocksConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbEnqueueDeadlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -169,13 +169,13 @@ func (ms *OracledbEnqueueDeadlocksConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// OracledbEnqueueLocksLimitConfig provides config for the oracledb.enqueue_locks.limit metric.
-type OracledbEnqueueLocksLimitConfig struct {
+// OracledbEnqueueLocksLimitMetricConfig provides config for the oracledb.enqueue_locks.limit metric.
+type OracledbEnqueueLocksLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbEnqueueLocksLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbEnqueueLocksLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -189,13 +189,13 @@ func (ms *OracledbEnqueueLocksLimitConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// OracledbEnqueueLocksUsageConfig provides config for the oracledb.enqueue_locks.usage metric.
-type OracledbEnqueueLocksUsageConfig struct {
+// OracledbEnqueueLocksUsageMetricConfig provides config for the oracledb.enqueue_locks.usage metric.
+type OracledbEnqueueLocksUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbEnqueueLocksUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbEnqueueLocksUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -209,13 +209,13 @@ func (ms *OracledbEnqueueLocksUsageConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// OracledbEnqueueResourcesLimitConfig provides config for the oracledb.enqueue_resources.limit metric.
-type OracledbEnqueueResourcesLimitConfig struct {
+// OracledbEnqueueResourcesLimitMetricConfig provides config for the oracledb.enqueue_resources.limit metric.
+type OracledbEnqueueResourcesLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbEnqueueResourcesLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbEnqueueResourcesLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -229,13 +229,13 @@ func (ms *OracledbEnqueueResourcesLimitConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// OracledbEnqueueResourcesUsageConfig provides config for the oracledb.enqueue_resources.usage metric.
-type OracledbEnqueueResourcesUsageConfig struct {
+// OracledbEnqueueResourcesUsageMetricConfig provides config for the oracledb.enqueue_resources.usage metric.
+type OracledbEnqueueResourcesUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbEnqueueResourcesUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbEnqueueResourcesUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -249,13 +249,13 @@ func (ms *OracledbEnqueueResourcesUsageConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// OracledbExchangeDeadlocksConfig provides config for the oracledb.exchange_deadlocks metric.
-type OracledbExchangeDeadlocksConfig struct {
+// OracledbExchangeDeadlocksMetricConfig provides config for the oracledb.exchange_deadlocks metric.
+type OracledbExchangeDeadlocksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbExchangeDeadlocksConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbExchangeDeadlocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -269,13 +269,13 @@ func (ms *OracledbExchangeDeadlocksConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// OracledbExecutionsConfig provides config for the oracledb.executions metric.
-type OracledbExecutionsConfig struct {
+// OracledbExecutionsMetricConfig provides config for the oracledb.executions metric.
+type OracledbExecutionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbExecutionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbExecutionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -289,13 +289,13 @@ func (ms *OracledbExecutionsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbHardParsesConfig provides config for the oracledb.hard_parses metric.
-type OracledbHardParsesConfig struct {
+// OracledbHardParsesMetricConfig provides config for the oracledb.hard_parses metric.
+type OracledbHardParsesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbHardParsesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbHardParsesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -309,13 +309,13 @@ func (ms *OracledbHardParsesConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbLogicalReadsConfig provides config for the oracledb.logical_reads metric.
-type OracledbLogicalReadsConfig struct {
+// OracledbLogicalReadsMetricConfig provides config for the oracledb.logical_reads metric.
+type OracledbLogicalReadsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbLogicalReadsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbLogicalReadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -329,13 +329,13 @@ func (ms *OracledbLogicalReadsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbLogonsConfig provides config for the oracledb.logons metric.
-type OracledbLogonsConfig struct {
+// OracledbLogonsMetricConfig provides config for the oracledb.logons metric.
+type OracledbLogonsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbLogonsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbLogonsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -349,13 +349,13 @@ func (ms *OracledbLogonsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbParallelOperationsDowngraded1To25PctConfig provides config for the oracledb.parallel_operations_downgraded_1_to_25_pct metric.
-type OracledbParallelOperationsDowngraded1To25PctConfig struct {
+// OracledbParallelOperationsDowngraded1To25PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_1_to_25_pct metric.
+type OracledbParallelOperationsDowngraded1To25PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbParallelOperationsDowngraded1To25PctConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbParallelOperationsDowngraded1To25PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -369,13 +369,13 @@ func (ms *OracledbParallelOperationsDowngraded1To25PctConfig) Unmarshal(parser *
 	return nil
 }
 
-// OracledbParallelOperationsDowngraded25To50PctConfig provides config for the oracledb.parallel_operations_downgraded_25_to_50_pct metric.
-type OracledbParallelOperationsDowngraded25To50PctConfig struct {
+// OracledbParallelOperationsDowngraded25To50PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_25_to_50_pct metric.
+type OracledbParallelOperationsDowngraded25To50PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbParallelOperationsDowngraded25To50PctConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbParallelOperationsDowngraded25To50PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -389,13 +389,13 @@ func (ms *OracledbParallelOperationsDowngraded25To50PctConfig) Unmarshal(parser 
 	return nil
 }
 
-// OracledbParallelOperationsDowngraded50To75PctConfig provides config for the oracledb.parallel_operations_downgraded_50_to_75_pct metric.
-type OracledbParallelOperationsDowngraded50To75PctConfig struct {
+// OracledbParallelOperationsDowngraded50To75PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_50_to_75_pct metric.
+type OracledbParallelOperationsDowngraded50To75PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbParallelOperationsDowngraded50To75PctConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbParallelOperationsDowngraded50To75PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -409,13 +409,13 @@ func (ms *OracledbParallelOperationsDowngraded50To75PctConfig) Unmarshal(parser 
 	return nil
 }
 
-// OracledbParallelOperationsDowngraded75To99PctConfig provides config for the oracledb.parallel_operations_downgraded_75_to_99_pct metric.
-type OracledbParallelOperationsDowngraded75To99PctConfig struct {
+// OracledbParallelOperationsDowngraded75To99PctMetricConfig provides config for the oracledb.parallel_operations_downgraded_75_to_99_pct metric.
+type OracledbParallelOperationsDowngraded75To99PctMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbParallelOperationsDowngraded75To99PctConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbParallelOperationsDowngraded75To99PctMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -429,13 +429,13 @@ func (ms *OracledbParallelOperationsDowngraded75To99PctConfig) Unmarshal(parser 
 	return nil
 }
 
-// OracledbParallelOperationsDowngradedToSerialConfig provides config for the oracledb.parallel_operations_downgraded_to_serial metric.
-type OracledbParallelOperationsDowngradedToSerialConfig struct {
+// OracledbParallelOperationsDowngradedToSerialMetricConfig provides config for the oracledb.parallel_operations_downgraded_to_serial metric.
+type OracledbParallelOperationsDowngradedToSerialMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbParallelOperationsDowngradedToSerialConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbParallelOperationsDowngradedToSerialMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -449,13 +449,13 @@ func (ms *OracledbParallelOperationsDowngradedToSerialConfig) Unmarshal(parser *
 	return nil
 }
 
-// OracledbParallelOperationsNotDowngradedConfig provides config for the oracledb.parallel_operations_not_downgraded metric.
-type OracledbParallelOperationsNotDowngradedConfig struct {
+// OracledbParallelOperationsNotDowngradedMetricConfig provides config for the oracledb.parallel_operations_not_downgraded metric.
+type OracledbParallelOperationsNotDowngradedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbParallelOperationsNotDowngradedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbParallelOperationsNotDowngradedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -469,13 +469,13 @@ func (ms *OracledbParallelOperationsNotDowngradedConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// OracledbParseCallsConfig provides config for the oracledb.parse_calls metric.
-type OracledbParseCallsConfig struct {
+// OracledbParseCallsMetricConfig provides config for the oracledb.parse_calls metric.
+type OracledbParseCallsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbParseCallsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbParseCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -489,13 +489,13 @@ func (ms *OracledbParseCallsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbPgaMemoryConfig provides config for the oracledb.pga_memory metric.
-type OracledbPgaMemoryConfig struct {
+// OracledbPgaMemoryMetricConfig provides config for the oracledb.pga_memory metric.
+type OracledbPgaMemoryMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbPgaMemoryConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbPgaMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -509,13 +509,13 @@ func (ms *OracledbPgaMemoryConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbPhysicalReadIoRequestsConfig provides config for the oracledb.physical_read_io_requests metric.
-type OracledbPhysicalReadIoRequestsConfig struct {
+// OracledbPhysicalReadIoRequestsMetricConfig provides config for the oracledb.physical_read_io_requests metric.
+type OracledbPhysicalReadIoRequestsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbPhysicalReadIoRequestsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbPhysicalReadIoRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -529,13 +529,13 @@ func (ms *OracledbPhysicalReadIoRequestsConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// OracledbPhysicalReadsConfig provides config for the oracledb.physical_reads metric.
-type OracledbPhysicalReadsConfig struct {
+// OracledbPhysicalReadsMetricConfig provides config for the oracledb.physical_reads metric.
+type OracledbPhysicalReadsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbPhysicalReadsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbPhysicalReadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -549,13 +549,13 @@ func (ms *OracledbPhysicalReadsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbPhysicalReadsDirectConfig provides config for the oracledb.physical_reads_direct metric.
-type OracledbPhysicalReadsDirectConfig struct {
+// OracledbPhysicalReadsDirectMetricConfig provides config for the oracledb.physical_reads_direct metric.
+type OracledbPhysicalReadsDirectMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbPhysicalReadsDirectConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbPhysicalReadsDirectMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -569,13 +569,13 @@ func (ms *OracledbPhysicalReadsDirectConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// OracledbPhysicalWriteIoRequestsConfig provides config for the oracledb.physical_write_io_requests metric.
-type OracledbPhysicalWriteIoRequestsConfig struct {
+// OracledbPhysicalWriteIoRequestsMetricConfig provides config for the oracledb.physical_write_io_requests metric.
+type OracledbPhysicalWriteIoRequestsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbPhysicalWriteIoRequestsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbPhysicalWriteIoRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -589,13 +589,13 @@ func (ms *OracledbPhysicalWriteIoRequestsConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// OracledbPhysicalWritesConfig provides config for the oracledb.physical_writes metric.
-type OracledbPhysicalWritesConfig struct {
+// OracledbPhysicalWritesMetricConfig provides config for the oracledb.physical_writes metric.
+type OracledbPhysicalWritesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbPhysicalWritesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbPhysicalWritesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -609,13 +609,13 @@ func (ms *OracledbPhysicalWritesConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbPhysicalWritesDirectConfig provides config for the oracledb.physical_writes_direct metric.
-type OracledbPhysicalWritesDirectConfig struct {
+// OracledbPhysicalWritesDirectMetricConfig provides config for the oracledb.physical_writes_direct metric.
+type OracledbPhysicalWritesDirectMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbPhysicalWritesDirectConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbPhysicalWritesDirectMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -629,13 +629,13 @@ func (ms *OracledbPhysicalWritesDirectConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// OracledbProcessesLimitConfig provides config for the oracledb.processes.limit metric.
-type OracledbProcessesLimitConfig struct {
+// OracledbProcessesLimitMetricConfig provides config for the oracledb.processes.limit metric.
+type OracledbProcessesLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbProcessesLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbProcessesLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -649,13 +649,13 @@ func (ms *OracledbProcessesLimitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbProcessesUsageConfig provides config for the oracledb.processes.usage metric.
-type OracledbProcessesUsageConfig struct {
+// OracledbProcessesUsageMetricConfig provides config for the oracledb.processes.usage metric.
+type OracledbProcessesUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbProcessesUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbProcessesUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -669,13 +669,13 @@ func (ms *OracledbProcessesUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbQueriesParallelizedConfig provides config for the oracledb.queries_parallelized metric.
-type OracledbQueriesParallelizedConfig struct {
+// OracledbQueriesParallelizedMetricConfig provides config for the oracledb.queries_parallelized metric.
+type OracledbQueriesParallelizedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbQueriesParallelizedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -689,13 +689,13 @@ func (ms *OracledbQueriesParallelizedConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// OracledbSessionsLimitConfig provides config for the oracledb.sessions.limit metric.
-type OracledbSessionsLimitConfig struct {
+// OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric.
+type OracledbSessionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbSessionsLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbSessionsLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -709,24 +709,24 @@ func (ms *OracledbSessionsLimitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbSessionsUsageAttributeKey specifies the key of an attribute for the oracledb.sessions.usage metric.
-type OracledbSessionsUsageAttributeKey string
+// OracledbSessionsUsageMetricAttributeKey specifies the key of an attribute for the oracledb.sessions.usage metric.
+type OracledbSessionsUsageMetricAttributeKey string
 
 const (
-	OracledbSessionsUsageAttributeKeySessionType   OracledbSessionsUsageAttributeKey = "session_type"
-	OracledbSessionsUsageAttributeKeySessionStatus OracledbSessionsUsageAttributeKey = "session_status"
+	OracledbSessionsUsageMetricAttributeKeySessionType   OracledbSessionsUsageMetricAttributeKey = "session_type"
+	OracledbSessionsUsageMetricAttributeKeySessionStatus OracledbSessionsUsageMetricAttributeKey = "session_status"
 )
 
-// OracledbSessionsUsageConfig provides config for the oracledb.sessions.usage metric.
-type OracledbSessionsUsageConfig struct {
+// OracledbSessionsUsageMetricConfig provides config for the oracledb.sessions.usage metric.
+type OracledbSessionsUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbSessionsUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbSessionsUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbSessionsUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbSessionsUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -740,10 +740,10 @@ func (ms *OracledbSessionsUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *OracledbSessionsUsageConfig) Validate() error {
+func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbSessionsUsageAttributeKeySessionType, OracledbSessionsUsageAttributeKeySessionStatus:
+		case OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus:
 		default:
 			return fmt.Errorf("metric oracledb.sessions.usage doesn't have an attribute %v, valid attributes: [session_type, session_status]", val)
 		}
@@ -758,23 +758,23 @@ func (ms *OracledbSessionsUsageConfig) Validate() error {
 	return nil
 }
 
-// OracledbTablespaceSizeLimitAttributeKey specifies the key of an attribute for the oracledb.tablespace_size.limit metric.
-type OracledbTablespaceSizeLimitAttributeKey string
+// OracledbTablespaceSizeLimitMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace_size.limit metric.
+type OracledbTablespaceSizeLimitMetricAttributeKey string
 
 const (
-	OracledbTablespaceSizeLimitAttributeKeyTablespaceName OracledbTablespaceSizeLimitAttributeKey = "tablespace_name"
+	OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName OracledbTablespaceSizeLimitMetricAttributeKey = "tablespace_name"
 )
 
-// OracledbTablespaceSizeLimitConfig provides config for the oracledb.tablespace_size.limit metric.
-type OracledbTablespaceSizeLimitConfig struct {
+// OracledbTablespaceSizeLimitMetricConfig provides config for the oracledb.tablespace_size.limit metric.
+type OracledbTablespaceSizeLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbTablespaceSizeLimitAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbTablespaceSizeLimitMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbTablespaceSizeLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbTablespaceSizeLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -788,10 +788,10 @@ func (ms *OracledbTablespaceSizeLimitConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *OracledbTablespaceSizeLimitConfig) Validate() error {
+func (ms *OracledbTablespaceSizeLimitMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbTablespaceSizeLimitAttributeKeyTablespaceName:
+		case OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName:
 		default:
 			return fmt.Errorf("metric oracledb.tablespace_size.limit doesn't have an attribute %v, valid attributes: [tablespace_name]", val)
 		}
@@ -806,23 +806,23 @@ func (ms *OracledbTablespaceSizeLimitConfig) Validate() error {
 	return nil
 }
 
-// OracledbTablespaceSizeUsageAttributeKey specifies the key of an attribute for the oracledb.tablespace_size.usage metric.
-type OracledbTablespaceSizeUsageAttributeKey string
+// OracledbTablespaceSizeUsageMetricAttributeKey specifies the key of an attribute for the oracledb.tablespace_size.usage metric.
+type OracledbTablespaceSizeUsageMetricAttributeKey string
 
 const (
-	OracledbTablespaceSizeUsageAttributeKeyTablespaceName OracledbTablespaceSizeUsageAttributeKey = "tablespace_name"
+	OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName OracledbTablespaceSizeUsageMetricAttributeKey = "tablespace_name"
 )
 
-// OracledbTablespaceSizeUsageConfig provides config for the oracledb.tablespace_size.usage metric.
-type OracledbTablespaceSizeUsageConfig struct {
+// OracledbTablespaceSizeUsageMetricConfig provides config for the oracledb.tablespace_size.usage metric.
+type OracledbTablespaceSizeUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []OracledbTablespaceSizeUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []OracledbTablespaceSizeUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *OracledbTablespaceSizeUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbTablespaceSizeUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -836,10 +836,10 @@ func (ms *OracledbTablespaceSizeUsageConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *OracledbTablespaceSizeUsageConfig) Validate() error {
+func (ms *OracledbTablespaceSizeUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case OracledbTablespaceSizeUsageAttributeKeyTablespaceName:
+		case OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName:
 		default:
 			return fmt.Errorf("metric oracledb.tablespace_size.usage doesn't have an attribute %v, valid attributes: [tablespace_name]", val)
 		}
@@ -854,13 +854,13 @@ func (ms *OracledbTablespaceSizeUsageConfig) Validate() error {
 	return nil
 }
 
-// OracledbTransactionsLimitConfig provides config for the oracledb.transactions.limit metric.
-type OracledbTransactionsLimitConfig struct {
+// OracledbTransactionsLimitMetricConfig provides config for the oracledb.transactions.limit metric.
+type OracledbTransactionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbTransactionsLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbTransactionsLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -874,13 +874,13 @@ func (ms *OracledbTransactionsLimitConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// OracledbTransactionsUsageConfig provides config for the oracledb.transactions.usage metric.
-type OracledbTransactionsUsageConfig struct {
+// OracledbTransactionsUsageMetricConfig provides config for the oracledb.transactions.usage metric.
+type OracledbTransactionsUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbTransactionsUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbTransactionsUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -894,13 +894,13 @@ func (ms *OracledbTransactionsUsageConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// OracledbUserCommitsConfig provides config for the oracledb.user_commits metric.
-type OracledbUserCommitsConfig struct {
+// OracledbUserCommitsMetricConfig provides config for the oracledb.user_commits metric.
+type OracledbUserCommitsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbUserCommitsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbUserCommitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -914,13 +914,13 @@ func (ms *OracledbUserCommitsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbUserRollbacksConfig provides config for the oracledb.user_rollbacks metric.
-type OracledbUserRollbacksConfig struct {
+// OracledbUserRollbacksMetricConfig provides config for the oracledb.user_rollbacks metric.
+type OracledbUserRollbacksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbUserRollbacksConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbUserRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -936,182 +936,182 @@ func (ms *OracledbUserRollbacksConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
-	OracledbConsistentGets                        OracledbConsistentGetsConfig                        `mapstructure:"oracledb.consistent_gets"`
-	OracledbCPUTime                               OracledbCPUTimeConfig                               `mapstructure:"oracledb.cpu_time"`
-	OracledbDbBlockGets                           OracledbDbBlockGetsConfig                           `mapstructure:"oracledb.db_block_gets"`
-	OracledbDdlStatementsParallelized             OracledbDdlStatementsParallelizedConfig             `mapstructure:"oracledb.ddl_statements_parallelized"`
-	OracledbDmlLocksLimit                         OracledbDmlLocksLimitConfig                         `mapstructure:"oracledb.dml_locks.limit"`
-	OracledbDmlLocksUsage                         OracledbDmlLocksUsageConfig                         `mapstructure:"oracledb.dml_locks.usage"`
-	OracledbDmlStatementsParallelized             OracledbDmlStatementsParallelizedConfig             `mapstructure:"oracledb.dml_statements_parallelized"`
-	OracledbEnqueueDeadlocks                      OracledbEnqueueDeadlocksConfig                      `mapstructure:"oracledb.enqueue_deadlocks"`
-	OracledbEnqueueLocksLimit                     OracledbEnqueueLocksLimitConfig                     `mapstructure:"oracledb.enqueue_locks.limit"`
-	OracledbEnqueueLocksUsage                     OracledbEnqueueLocksUsageConfig                     `mapstructure:"oracledb.enqueue_locks.usage"`
-	OracledbEnqueueResourcesLimit                 OracledbEnqueueResourcesLimitConfig                 `mapstructure:"oracledb.enqueue_resources.limit"`
-	OracledbEnqueueResourcesUsage                 OracledbEnqueueResourcesUsageConfig                 `mapstructure:"oracledb.enqueue_resources.usage"`
-	OracledbExchangeDeadlocks                     OracledbExchangeDeadlocksConfig                     `mapstructure:"oracledb.exchange_deadlocks"`
-	OracledbExecutions                            OracledbExecutionsConfig                            `mapstructure:"oracledb.executions"`
-	OracledbHardParses                            OracledbHardParsesConfig                            `mapstructure:"oracledb.hard_parses"`
-	OracledbLogicalReads                          OracledbLogicalReadsConfig                          `mapstructure:"oracledb.logical_reads"`
-	OracledbLogons                                OracledbLogonsConfig                                `mapstructure:"oracledb.logons"`
-	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
-	OracledbParallelOperationsDowngraded25To50Pct OracledbParallelOperationsDowngraded25To50PctConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
-	OracledbParallelOperationsDowngraded50To75Pct OracledbParallelOperationsDowngraded50To75PctConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
-	OracledbParallelOperationsDowngraded75To99Pct OracledbParallelOperationsDowngraded75To99PctConfig `mapstructure:"oracledb.parallel_operations_downgraded_75_to_99_pct"`
-	OracledbParallelOperationsDowngradedToSerial  OracledbParallelOperationsDowngradedToSerialConfig  `mapstructure:"oracledb.parallel_operations_downgraded_to_serial"`
-	OracledbParallelOperationsNotDowngraded       OracledbParallelOperationsNotDowngradedConfig       `mapstructure:"oracledb.parallel_operations_not_downgraded"`
-	OracledbParseCalls                            OracledbParseCallsConfig                            `mapstructure:"oracledb.parse_calls"`
-	OracledbPgaMemory                             OracledbPgaMemoryConfig                             `mapstructure:"oracledb.pga_memory"`
-	OracledbPhysicalReadIoRequests                OracledbPhysicalReadIoRequestsConfig                `mapstructure:"oracledb.physical_read_io_requests"`
-	OracledbPhysicalReads                         OracledbPhysicalReadsConfig                         `mapstructure:"oracledb.physical_reads"`
-	OracledbPhysicalReadsDirect                   OracledbPhysicalReadsDirectConfig                   `mapstructure:"oracledb.physical_reads_direct"`
-	OracledbPhysicalWriteIoRequests               OracledbPhysicalWriteIoRequestsConfig               `mapstructure:"oracledb.physical_write_io_requests"`
-	OracledbPhysicalWrites                        OracledbPhysicalWritesConfig                        `mapstructure:"oracledb.physical_writes"`
-	OracledbPhysicalWritesDirect                  OracledbPhysicalWritesDirectConfig                  `mapstructure:"oracledb.physical_writes_direct"`
-	OracledbProcessesLimit                        OracledbProcessesLimitConfig                        `mapstructure:"oracledb.processes.limit"`
-	OracledbProcessesUsage                        OracledbProcessesUsageConfig                        `mapstructure:"oracledb.processes.usage"`
-	OracledbQueriesParallelized                   OracledbQueriesParallelizedConfig                   `mapstructure:"oracledb.queries_parallelized"`
-	OracledbSessionsLimit                         OracledbSessionsLimitConfig                         `mapstructure:"oracledb.sessions.limit"`
-	OracledbSessionsUsage                         OracledbSessionsUsageConfig                         `mapstructure:"oracledb.sessions.usage"`
-	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
-	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
-	OracledbTransactionsLimit                     OracledbTransactionsLimitConfig                     `mapstructure:"oracledb.transactions.limit"`
-	OracledbTransactionsUsage                     OracledbTransactionsUsageConfig                     `mapstructure:"oracledb.transactions.usage"`
-	OracledbUserCommits                           OracledbUserCommitsConfig                           `mapstructure:"oracledb.user_commits"`
-	OracledbUserRollbacks                         OracledbUserRollbacksConfig                         `mapstructure:"oracledb.user_rollbacks"`
+	OracledbConsistentGets                        OracledbConsistentGetsMetricConfig                        `mapstructure:"oracledb.consistent_gets"`
+	OracledbCPUTime                               OracledbCPUTimeMetricConfig                               `mapstructure:"oracledb.cpu_time"`
+	OracledbDbBlockGets                           OracledbDbBlockGetsMetricConfig                           `mapstructure:"oracledb.db_block_gets"`
+	OracledbDdlStatementsParallelized             OracledbDdlStatementsParallelizedMetricConfig             `mapstructure:"oracledb.ddl_statements_parallelized"`
+	OracledbDmlLocksLimit                         OracledbDmlLocksLimitMetricConfig                         `mapstructure:"oracledb.dml_locks.limit"`
+	OracledbDmlLocksUsage                         OracledbDmlLocksUsageMetricConfig                         `mapstructure:"oracledb.dml_locks.usage"`
+	OracledbDmlStatementsParallelized             OracledbDmlStatementsParallelizedMetricConfig             `mapstructure:"oracledb.dml_statements_parallelized"`
+	OracledbEnqueueDeadlocks                      OracledbEnqueueDeadlocksMetricConfig                      `mapstructure:"oracledb.enqueue_deadlocks"`
+	OracledbEnqueueLocksLimit                     OracledbEnqueueLocksLimitMetricConfig                     `mapstructure:"oracledb.enqueue_locks.limit"`
+	OracledbEnqueueLocksUsage                     OracledbEnqueueLocksUsageMetricConfig                     `mapstructure:"oracledb.enqueue_locks.usage"`
+	OracledbEnqueueResourcesLimit                 OracledbEnqueueResourcesLimitMetricConfig                 `mapstructure:"oracledb.enqueue_resources.limit"`
+	OracledbEnqueueResourcesUsage                 OracledbEnqueueResourcesUsageMetricConfig                 `mapstructure:"oracledb.enqueue_resources.usage"`
+	OracledbExchangeDeadlocks                     OracledbExchangeDeadlocksMetricConfig                     `mapstructure:"oracledb.exchange_deadlocks"`
+	OracledbExecutions                            OracledbExecutionsMetricConfig                            `mapstructure:"oracledb.executions"`
+	OracledbHardParses                            OracledbHardParsesMetricConfig                            `mapstructure:"oracledb.hard_parses"`
+	OracledbLogicalReads                          OracledbLogicalReadsMetricConfig                          `mapstructure:"oracledb.logical_reads"`
+	OracledbLogons                                OracledbLogonsMetricConfig                                `mapstructure:"oracledb.logons"`
+	OracledbParallelOperationsDowngraded1To25Pct  OracledbParallelOperationsDowngraded1To25PctMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
+	OracledbParallelOperationsDowngraded25To50Pct OracledbParallelOperationsDowngraded25To50PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
+	OracledbParallelOperationsDowngraded50To75Pct OracledbParallelOperationsDowngraded50To75PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
+	OracledbParallelOperationsDowngraded75To99Pct OracledbParallelOperationsDowngraded75To99PctMetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_75_to_99_pct"`
+	OracledbParallelOperationsDowngradedToSerial  OracledbParallelOperationsDowngradedToSerialMetricConfig  `mapstructure:"oracledb.parallel_operations_downgraded_to_serial"`
+	OracledbParallelOperationsNotDowngraded       OracledbParallelOperationsNotDowngradedMetricConfig       `mapstructure:"oracledb.parallel_operations_not_downgraded"`
+	OracledbParseCalls                            OracledbParseCallsMetricConfig                            `mapstructure:"oracledb.parse_calls"`
+	OracledbPgaMemory                             OracledbPgaMemoryMetricConfig                             `mapstructure:"oracledb.pga_memory"`
+	OracledbPhysicalReadIoRequests                OracledbPhysicalReadIoRequestsMetricConfig                `mapstructure:"oracledb.physical_read_io_requests"`
+	OracledbPhysicalReads                         OracledbPhysicalReadsMetricConfig                         `mapstructure:"oracledb.physical_reads"`
+	OracledbPhysicalReadsDirect                   OracledbPhysicalReadsDirectMetricConfig                   `mapstructure:"oracledb.physical_reads_direct"`
+	OracledbPhysicalWriteIoRequests               OracledbPhysicalWriteIoRequestsMetricConfig               `mapstructure:"oracledb.physical_write_io_requests"`
+	OracledbPhysicalWrites                        OracledbPhysicalWritesMetricConfig                        `mapstructure:"oracledb.physical_writes"`
+	OracledbPhysicalWritesDirect                  OracledbPhysicalWritesDirectMetricConfig                  `mapstructure:"oracledb.physical_writes_direct"`
+	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
+	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
+	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
+	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
+	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
+	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
+	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
+	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
+	OracledbTransactionsUsage                     OracledbTransactionsUsageMetricConfig                     `mapstructure:"oracledb.transactions.usage"`
+	OracledbUserCommits                           OracledbUserCommitsMetricConfig                           `mapstructure:"oracledb.user_commits"`
+	OracledbUserRollbacks                         OracledbUserRollbacksMetricConfig                         `mapstructure:"oracledb.user_rollbacks"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		OracledbConsistentGets: OracledbConsistentGetsConfig{
+		OracledbConsistentGets: OracledbConsistentGetsMetricConfig{
 			Enabled: false,
 		},
-		OracledbCPUTime: OracledbCPUTimeConfig{
+		OracledbCPUTime: OracledbCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		OracledbDbBlockGets: OracledbDbBlockGetsConfig{
+		OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
 			Enabled: false,
 		},
-		OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedConfig{
+		OracledbDdlStatementsParallelized: OracledbDdlStatementsParallelizedMetricConfig{
 			Enabled: false,
 		},
-		OracledbDmlLocksLimit: OracledbDmlLocksLimitConfig{
+		OracledbDmlLocksLimit: OracledbDmlLocksLimitMetricConfig{
 			Enabled: true,
 		},
-		OracledbDmlLocksUsage: OracledbDmlLocksUsageConfig{
+		OracledbDmlLocksUsage: OracledbDmlLocksUsageMetricConfig{
 			Enabled: true,
 		},
-		OracledbDmlStatementsParallelized: OracledbDmlStatementsParallelizedConfig{
+		OracledbDmlStatementsParallelized: OracledbDmlStatementsParallelizedMetricConfig{
 			Enabled: false,
 		},
-		OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksConfig{
+		OracledbEnqueueDeadlocks: OracledbEnqueueDeadlocksMetricConfig{
 			Enabled: true,
 		},
-		OracledbEnqueueLocksLimit: OracledbEnqueueLocksLimitConfig{
+		OracledbEnqueueLocksLimit: OracledbEnqueueLocksLimitMetricConfig{
 			Enabled: true,
 		},
-		OracledbEnqueueLocksUsage: OracledbEnqueueLocksUsageConfig{
+		OracledbEnqueueLocksUsage: OracledbEnqueueLocksUsageMetricConfig{
 			Enabled: true,
 		},
-		OracledbEnqueueResourcesLimit: OracledbEnqueueResourcesLimitConfig{
+		OracledbEnqueueResourcesLimit: OracledbEnqueueResourcesLimitMetricConfig{
 			Enabled: true,
 		},
-		OracledbEnqueueResourcesUsage: OracledbEnqueueResourcesUsageConfig{
+		OracledbEnqueueResourcesUsage: OracledbEnqueueResourcesUsageMetricConfig{
 			Enabled: true,
 		},
-		OracledbExchangeDeadlocks: OracledbExchangeDeadlocksConfig{
+		OracledbExchangeDeadlocks: OracledbExchangeDeadlocksMetricConfig{
 			Enabled: true,
 		},
-		OracledbExecutions: OracledbExecutionsConfig{
+		OracledbExecutions: OracledbExecutionsMetricConfig{
 			Enabled: true,
 		},
-		OracledbHardParses: OracledbHardParsesConfig{
+		OracledbHardParses: OracledbHardParsesMetricConfig{
 			Enabled: true,
 		},
-		OracledbLogicalReads: OracledbLogicalReadsConfig{
+		OracledbLogicalReads: OracledbLogicalReadsMetricConfig{
 			Enabled: true,
 		},
-		OracledbLogons: OracledbLogonsConfig{
+		OracledbLogons: OracledbLogonsMetricConfig{
 			Enabled: false,
 		},
-		OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctConfig{
+		OracledbParallelOperationsDowngraded1To25Pct: OracledbParallelOperationsDowngraded1To25PctMetricConfig{
 			Enabled: false,
 		},
-		OracledbParallelOperationsDowngraded25To50Pct: OracledbParallelOperationsDowngraded25To50PctConfig{
+		OracledbParallelOperationsDowngraded25To50Pct: OracledbParallelOperationsDowngraded25To50PctMetricConfig{
 			Enabled: false,
 		},
-		OracledbParallelOperationsDowngraded50To75Pct: OracledbParallelOperationsDowngraded50To75PctConfig{
+		OracledbParallelOperationsDowngraded50To75Pct: OracledbParallelOperationsDowngraded50To75PctMetricConfig{
 			Enabled: false,
 		},
-		OracledbParallelOperationsDowngraded75To99Pct: OracledbParallelOperationsDowngraded75To99PctConfig{
+		OracledbParallelOperationsDowngraded75To99Pct: OracledbParallelOperationsDowngraded75To99PctMetricConfig{
 			Enabled: false,
 		},
-		OracledbParallelOperationsDowngradedToSerial: OracledbParallelOperationsDowngradedToSerialConfig{
+		OracledbParallelOperationsDowngradedToSerial: OracledbParallelOperationsDowngradedToSerialMetricConfig{
 			Enabled: false,
 		},
-		OracledbParallelOperationsNotDowngraded: OracledbParallelOperationsNotDowngradedConfig{
+		OracledbParallelOperationsNotDowngraded: OracledbParallelOperationsNotDowngradedMetricConfig{
 			Enabled: false,
 		},
-		OracledbParseCalls: OracledbParseCallsConfig{
+		OracledbParseCalls: OracledbParseCallsMetricConfig{
 			Enabled: true,
 		},
-		OracledbPgaMemory: OracledbPgaMemoryConfig{
+		OracledbPgaMemory: OracledbPgaMemoryMetricConfig{
 			Enabled: true,
 		},
-		OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsConfig{
+		OracledbPhysicalReadIoRequests: OracledbPhysicalReadIoRequestsMetricConfig{
 			Enabled: false,
 		},
-		OracledbPhysicalReads: OracledbPhysicalReadsConfig{
+		OracledbPhysicalReads: OracledbPhysicalReadsMetricConfig{
 			Enabled: true,
 		},
-		OracledbPhysicalReadsDirect: OracledbPhysicalReadsDirectConfig{
+		OracledbPhysicalReadsDirect: OracledbPhysicalReadsDirectMetricConfig{
 			Enabled: false,
 		},
-		OracledbPhysicalWriteIoRequests: OracledbPhysicalWriteIoRequestsConfig{
+		OracledbPhysicalWriteIoRequests: OracledbPhysicalWriteIoRequestsMetricConfig{
 			Enabled: false,
 		},
-		OracledbPhysicalWrites: OracledbPhysicalWritesConfig{
+		OracledbPhysicalWrites: OracledbPhysicalWritesMetricConfig{
 			Enabled: false,
 		},
-		OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectConfig{
+		OracledbPhysicalWritesDirect: OracledbPhysicalWritesDirectMetricConfig{
 			Enabled: false,
 		},
-		OracledbProcessesLimit: OracledbProcessesLimitConfig{
+		OracledbProcessesLimit: OracledbProcessesLimitMetricConfig{
 			Enabled: true,
 		},
-		OracledbProcessesUsage: OracledbProcessesUsageConfig{
+		OracledbProcessesUsage: OracledbProcessesUsageMetricConfig{
 			Enabled: true,
 		},
-		OracledbQueriesParallelized: OracledbQueriesParallelizedConfig{
+		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
 			Enabled: false,
 		},
-		OracledbSessionsLimit: OracledbSessionsLimitConfig{
+		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 			Enabled: true,
 		},
-		OracledbSessionsUsage: OracledbSessionsUsageConfig{
+		OracledbSessionsUsage: OracledbSessionsUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbSessionsUsageAttributeKey{OracledbSessionsUsageAttributeKeySessionType, OracledbSessionsUsageAttributeKeySessionStatus},
+			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
 		},
-		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitConfig{
+		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbTablespaceSizeLimitAttributeKey{OracledbTablespaceSizeLimitAttributeKeyTablespaceName},
+			EnabledAttributes:   []OracledbTablespaceSizeLimitMetricAttributeKey{OracledbTablespaceSizeLimitMetricAttributeKeyTablespaceName},
 		},
-		OracledbTablespaceSizeUsage: OracledbTablespaceSizeUsageConfig{
+		OracledbTablespaceSizeUsage: OracledbTablespaceSizeUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []OracledbTablespaceSizeUsageAttributeKey{OracledbTablespaceSizeUsageAttributeKeyTablespaceName},
+			EnabledAttributes:   []OracledbTablespaceSizeUsageMetricAttributeKey{OracledbTablespaceSizeUsageMetricAttributeKeyTablespaceName},
 		},
-		OracledbTransactionsLimit: OracledbTransactionsLimitConfig{
+		OracledbTransactionsLimit: OracledbTransactionsLimitMetricConfig{
 			Enabled: true,
 		},
-		OracledbTransactionsUsage: OracledbTransactionsUsageConfig{
+		OracledbTransactionsUsage: OracledbTransactionsUsageMetricConfig{
 			Enabled: true,
 		},
-		OracledbUserCommits: OracledbUserCommitsConfig{
+		OracledbUserCommits: OracledbUserCommitsMetricConfig{
 			Enabled: true,
 		},
-		OracledbUserRollbacks: OracledbUserRollbacksConfig{
+		OracledbUserRollbacks: OracledbUserRollbacksMetricConfig{
 			Enabled: true,
 		},
 	}

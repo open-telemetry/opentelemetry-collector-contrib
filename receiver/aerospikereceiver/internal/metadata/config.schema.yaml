@@ -5,98 +5,204 @@ $defs:
     type: object
     properties:
       aerospike.namespace.disk.available:
-        description: "AerospikeNamespaceDiskAvailableConfig provides config for the aerospike.namespace.disk.available metric."
+        description: "AerospikeNamespaceDiskAvailableMetricConfig provides config for the aerospike.namespace.disk.available metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       aerospike.namespace.geojson.region_query_cells:
-        description: "AerospikeNamespaceGeojsonRegionQueryCellsConfig provides config for the aerospike.namespace.geojson.region_query_cells metric."
+        description: "AerospikeNamespaceGeojsonRegionQueryCellsMetricConfig provides config for the aerospike.namespace.geojson.region_query_cells metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       aerospike.namespace.geojson.region_query_false_positive:
-        description: "AerospikeNamespaceGeojsonRegionQueryFalsePositiveConfig provides config for the aerospike.namespace.geojson.region_query_false_positive metric."
+        description: "AerospikeNamespaceGeojsonRegionQueryFalsePositiveMetricConfig provides config for the aerospike.namespace.geojson.region_query_false_positive metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       aerospike.namespace.geojson.region_query_points:
-        description: "AerospikeNamespaceGeojsonRegionQueryPointsConfig provides config for the aerospike.namespace.geojson.region_query_points metric."
+        description: "AerospikeNamespaceGeojsonRegionQueryPointsMetricConfig provides config for the aerospike.namespace.geojson.region_query_points metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       aerospike.namespace.geojson.region_query_requests:
-        description: "AerospikeNamespaceGeojsonRegionQueryRequestsConfig provides config for the aerospike.namespace.geojson.region_query_requests metric."
+        description: "AerospikeNamespaceGeojsonRegionQueryRequestsMetricConfig provides config for the aerospike.namespace.geojson.region_query_requests metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       aerospike.namespace.memory.free:
-        description: "AerospikeNamespaceMemoryFreeConfig provides config for the aerospike.namespace.memory.free metric."
+        description: "AerospikeNamespaceMemoryFreeMetricConfig provides config for the aerospike.namespace.memory.free metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       aerospike.namespace.memory.usage:
-        description: "AerospikeNamespaceMemoryUsageConfig provides config for the aerospike.namespace.memory.usage metric."
+        description: "AerospikeNamespaceMemoryUsageMetricConfig provides config for the aerospike.namespace.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "component"
+            default:
+              - "component"
       aerospike.namespace.query.count:
-        description: "AerospikeNamespaceQueryCountConfig provides config for the aerospike.namespace.query.count metric."
+        description: "AerospikeNamespaceQueryCountMetricConfig provides config for the aerospike.namespace.query.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "index"
+                - "result"
+            default:
+              - "type"
+              - "index"
+              - "result"
       aerospike.namespace.scan.count:
-        description: "AerospikeNamespaceScanCountConfig provides config for the aerospike.namespace.scan.count metric."
+        description: "AerospikeNamespaceScanCountMetricConfig provides config for the aerospike.namespace.scan.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "result"
+            default:
+              - "type"
+              - "result"
       aerospike.namespace.transaction.count:
-        description: "AerospikeNamespaceTransactionCountConfig provides config for the aerospike.namespace.transaction.count metric."
+        description: "AerospikeNamespaceTransactionCountMetricConfig provides config for the aerospike.namespace.transaction.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "result"
+            default:
+              - "type"
+              - "result"
       aerospike.node.connection.count:
-        description: "AerospikeNodeConnectionCountConfig provides config for the aerospike.node.connection.count metric."
+        description: "AerospikeNodeConnectionCountMetricConfig provides config for the aerospike.node.connection.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+                - "operation"
+            default:
+              - "type"
+              - "operation"
       aerospike.node.connection.open:
-        description: "AerospikeNodeConnectionOpenConfig provides config for the aerospike.node.connection.open metric."
+        description: "AerospikeNodeConnectionOpenMetricConfig provides config for the aerospike.node.connection.open metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       aerospike.node.memory.free:
-        description: "AerospikeNodeMemoryFreeConfig provides config for the aerospike.node.memory.free metric."
+        description: "AerospikeNodeMemoryFreeMetricConfig provides config for the aerospike.node.memory.free metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       aerospike.node.query.tracked:
-        description: "AerospikeNodeQueryTrackedConfig provides config for the aerospike.node.query.tracked metric."
+        description: "AerospikeNodeQueryTrackedMetricConfig provides config for the aerospike.node.query.tracked metric."
         type: object
         properties:
           enabled:

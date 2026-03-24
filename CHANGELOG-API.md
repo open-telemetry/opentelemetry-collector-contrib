@@ -7,6 +7,23 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.148.0
+
+### 💡 Enhancements 💡
+
+- `pkg/azurelogs`: Remove semconv v1.28.0 and v1.34.0 dependencies, migrating to v1.38.0 via paired feature gates (#45033, #45034)
+  Two new alpha feature gates control the migration:
+  `pkg.translator.azurelogs.EmitV1LogConventions` emits stable attribute names (`code.function.name`, `code.file.path`, `eventName` per log record).
+  `pkg.translator.azurelogs.DontEmitV0LogConventions` suppresses the old names (`code.function`, `code.filepath`, `event.name` on resource).
+  Both gates default to off; enable `EmitV1LogConventions` first for a dual-emit migration window.
+  
+- `pkg/datadog`: Expose feature gate to infer intervals for delta metrics. (#46851)
+- `pkg/xstreamencoding`: Add stream decoding adapters for unmarshaler interfaces (#46754)
+- `processor/tail_sampling`: Add hooks to call when a sampling decision is made for a trace. (#46161)
+- `receiver/github`: Enables dynamic metric reaggregation in the GitHub receiver. This does not break existing configuration files. (#46385)
+
+<!-- previous-version -->
+
 ## v0.147.0
 
 ### 💡 Enhancements 💡

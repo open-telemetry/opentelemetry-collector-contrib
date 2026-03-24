@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       kafka.broker.log_retention_period:
-        description: "KafkaBrokerLogRetentionPeriodConfig provides config for the kafka.broker.log_retention_period metric."
+        description: "KafkaBrokerLogRetentionPeriodMetricConfig provides config for the kafka.broker.log_retention_period metric."
         type: object
         properties:
           enabled:
@@ -28,14 +28,14 @@ $defs:
             default:
               - "broker"
       kafka.brokers:
-        description: "KafkaBrokersConfig provides config for the kafka.brokers metric."
+        description: "KafkaBrokersMetricConfig provides config for the kafka.brokers metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       kafka.consumer_group.lag:
-        description: "KafkaConsumerGroupLagConfig provides config for the kafka.consumer_group.lag metric."
+        description: "KafkaConsumerGroupLagMetricConfig provides config for the kafka.consumer_group.lag metric."
         type: object
         properties:
           enabled:
@@ -62,7 +62,7 @@ $defs:
               - "topic"
               - "partition"
       kafka.consumer_group.lag_sum:
-        description: "KafkaConsumerGroupLagSumConfig provides config for the kafka.consumer_group.lag_sum metric."
+        description: "KafkaConsumerGroupLagSumMetricConfig provides config for the kafka.consumer_group.lag_sum metric."
         type: object
         properties:
           enabled:
@@ -87,7 +87,7 @@ $defs:
               - "group"
               - "topic"
       kafka.consumer_group.members:
-        description: "KafkaConsumerGroupMembersConfig provides config for the kafka.consumer_group.members metric."
+        description: "KafkaConsumerGroupMembersMetricConfig provides config for the kafka.consumer_group.members metric."
         type: object
         properties:
           enabled:
@@ -110,7 +110,7 @@ $defs:
             default:
               - "group"
       kafka.consumer_group.offset:
-        description: "KafkaConsumerGroupOffsetConfig provides config for the kafka.consumer_group.offset metric."
+        description: "KafkaConsumerGroupOffsetMetricConfig provides config for the kafka.consumer_group.offset metric."
         type: object
         properties:
           enabled:
@@ -137,7 +137,7 @@ $defs:
               - "topic"
               - "partition"
       kafka.consumer_group.offset_sum:
-        description: "KafkaConsumerGroupOffsetSumConfig provides config for the kafka.consumer_group.offset_sum metric."
+        description: "KafkaConsumerGroupOffsetSumMetricConfig provides config for the kafka.consumer_group.offset_sum metric."
         type: object
         properties:
           enabled:
@@ -162,7 +162,7 @@ $defs:
               - "group"
               - "topic"
       kafka.partition.current_offset:
-        description: "KafkaPartitionCurrentOffsetConfig provides config for the kafka.partition.current_offset metric."
+        description: "KafkaPartitionCurrentOffsetMetricConfig provides config for the kafka.partition.current_offset metric."
         type: object
         properties:
           enabled:
@@ -187,7 +187,7 @@ $defs:
               - "topic"
               - "partition"
       kafka.partition.oldest_offset:
-        description: "KafkaPartitionOldestOffsetConfig provides config for the kafka.partition.oldest_offset metric."
+        description: "KafkaPartitionOldestOffsetMetricConfig provides config for the kafka.partition.oldest_offset metric."
         type: object
         properties:
           enabled:
@@ -212,7 +212,7 @@ $defs:
               - "topic"
               - "partition"
       kafka.partition.replicas:
-        description: "KafkaPartitionReplicasConfig provides config for the kafka.partition.replicas metric."
+        description: "KafkaPartitionReplicasMetricConfig provides config for the kafka.partition.replicas metric."
         type: object
         properties:
           enabled:
@@ -237,7 +237,7 @@ $defs:
               - "topic"
               - "partition"
       kafka.partition.replicas_in_sync:
-        description: "KafkaPartitionReplicasInSyncConfig provides config for the kafka.partition.replicas_in_sync metric."
+        description: "KafkaPartitionReplicasInSyncMetricConfig provides config for the kafka.partition.replicas_in_sync metric."
         type: object
         properties:
           enabled:
@@ -262,7 +262,7 @@ $defs:
               - "topic"
               - "partition"
       kafka.topic.log_retention_period:
-        description: "KafkaTopicLogRetentionPeriodConfig provides config for the kafka.topic.log_retention_period metric."
+        description: "KafkaTopicLogRetentionPeriodMetricConfig provides config for the kafka.topic.log_retention_period metric."
         type: object
         properties:
           enabled:
@@ -285,7 +285,7 @@ $defs:
             default:
               - "topic"
       kafka.topic.log_retention_size:
-        description: "KafkaTopicLogRetentionSizeConfig provides config for the kafka.topic.log_retention_size metric."
+        description: "KafkaTopicLogRetentionSizeMetricConfig provides config for the kafka.topic.log_retention_size metric."
         type: object
         properties:
           enabled:
@@ -308,7 +308,7 @@ $defs:
             default:
               - "topic"
       kafka.topic.min_insync_replicas:
-        description: "KafkaTopicMinInsyncReplicasConfig provides config for the kafka.topic.min_insync_replicas metric."
+        description: "KafkaTopicMinInsyncReplicasMetricConfig provides config for the kafka.topic.min_insync_replicas metric."
         type: object
         properties:
           enabled:
@@ -331,7 +331,7 @@ $defs:
             default:
               - "topic"
       kafka.topic.partitions:
-        description: "KafkaTopicPartitionsConfig provides config for the kafka.topic.partitions metric."
+        description: "KafkaTopicPartitionsMetricConfig provides config for the kafka.topic.partitions metric."
         type: object
         properties:
           enabled:
@@ -354,7 +354,7 @@ $defs:
             default:
               - "topic"
       kafka.topic.replication_factor:
-        description: "KafkaTopicReplicationFactorConfig provides config for the kafka.topic.replication_factor metric."
+        description: "KafkaTopicReplicationFactorMetricConfig provides config for the kafka.topic.replication_factor metric."
         type: object
         properties:
           enabled:

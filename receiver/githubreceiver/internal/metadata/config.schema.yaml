@@ -5,70 +5,268 @@ $defs:
     type: object
     properties:
       vcs.change.count:
-        description: "VcsChangeCountConfig provides config for the vcs.change.count metric."
+        description: "VcsChangeCountMetricConfig provides config for the vcs.change.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.change.state"
+                - "vcs.repository.name"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.change.state"
+              - "vcs.repository.name"
       vcs.change.duration:
-        description: "VcsChangeDurationConfig provides config for the vcs.change.duration metric."
+        description: "VcsChangeDurationMetricConfig provides config for the vcs.change.duration metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+                - "vcs.ref.head.name"
+                - "vcs.change.state"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
+              - "vcs.ref.head.name"
+              - "vcs.change.state"
       vcs.change.time_to_approval:
-        description: "VcsChangeTimeToApprovalConfig provides config for the vcs.change.time_to_approval metric."
+        description: "VcsChangeTimeToApprovalMetricConfig provides config for the vcs.change.time_to_approval metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+                - "vcs.ref.head.name"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
+              - "vcs.ref.head.name"
       vcs.change.time_to_merge:
-        description: "VcsChangeTimeToMergeConfig provides config for the vcs.change.time_to_merge metric."
+        description: "VcsChangeTimeToMergeMetricConfig provides config for the vcs.change.time_to_merge metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+                - "vcs.ref.head.name"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
+              - "vcs.ref.head.name"
       vcs.contributor.count:
-        description: "VcsContributorCountConfig provides config for the vcs.contributor.count metric."
+        description: "VcsContributorCountMetricConfig provides config for the vcs.contributor.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
       vcs.ref.count:
-        description: "VcsRefCountConfig provides config for the vcs.ref.count metric."
+        description: "VcsRefCountMetricConfig provides config for the vcs.ref.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+                - "vcs.ref.type"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
+              - "vcs.ref.type"
       vcs.ref.lines_delta:
-        description: "VcsRefLinesDeltaConfig provides config for the vcs.ref.lines_delta metric."
+        description: "VcsRefLinesDeltaMetricConfig provides config for the vcs.ref.lines_delta metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+                - "vcs.ref.head.name"
+                - "vcs.ref.head.type"
+                - "vcs.ref.base.name"
+                - "vcs.ref.base.type"
+                - "vcs.line_change.type"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
+              - "vcs.ref.head.name"
+              - "vcs.ref.head.type"
+              - "vcs.ref.base.name"
+              - "vcs.ref.base.type"
+              - "vcs.line_change.type"
       vcs.ref.revisions_delta:
-        description: "VcsRefRevisionsDeltaConfig provides config for the vcs.ref.revisions_delta metric."
+        description: "VcsRefRevisionsDeltaMetricConfig provides config for the vcs.ref.revisions_delta metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+                - "vcs.ref.head.name"
+                - "vcs.ref.head.type"
+                - "vcs.ref.base.name"
+                - "vcs.ref.base.type"
+                - "vcs.revision_delta.direction"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
+              - "vcs.ref.head.name"
+              - "vcs.ref.head.type"
+              - "vcs.ref.base.name"
+              - "vcs.ref.base.type"
+              - "vcs.revision_delta.direction"
       vcs.ref.time:
-        description: "VcsRefTimeConfig provides config for the vcs.ref.time metric."
+        description: "VcsRefTimeMetricConfig provides config for the vcs.ref.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "vcs.repository.url.full"
+                - "vcs.repository.name"
+                - "vcs.ref.head.name"
+                - "vcs.ref.head.type"
+            default:
+              - "vcs.repository.url.full"
+              - "vcs.repository.name"
+              - "vcs.ref.head.name"
+              - "vcs.ref.head.type"
       vcs.repository.count:
-        description: "VcsRepositoryCountConfig provides config for the vcs.repository.count metric."
+        description: "VcsRepositoryCountMetricConfig provides config for the vcs.repository.count metric."
         type: object
         properties:
           enabled:
