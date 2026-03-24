@@ -5,7 +5,6 @@ package googlesecopsexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -25,29 +24,12 @@ func NewFactory() exporter.Factory {
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
-const (
-	defaultHostname              = "chronicle.googleapis.com"
-	defaultBatchRequestSizeLimit = 4000000
-	defaultMetricsInterval       = 1 * time.Minute
-	defaultCollectorID           = "aaaa1111-aaaa-1111-aaaa-1111aaaa1111"
-)
-
 // createDefaultConfig creates the default configuration for the google secops exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		API:                   chronicleAPI,
-		Hostname:              defaultHostname,
-		OverrideLogType:       true,
-		CollectAgentMetrics:   true,
-		MetricsInterval:       defaultMetricsInterval,
-		LogErroredPayloads:    false,
-		ValidateLogTypes:      false,
-		Compression:           noCompression,
-		BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
-		TimeoutConfig:         exporterhelper.NewDefaultTimeoutConfig(),
-		QueueBatchConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		BackOffConfig:         configretry.NewDefaultBackOffConfig(),
-		CollectorID:           defaultCollectorID,
+		TimeoutConfig:    exporterhelper.NewDefaultTimeoutConfig(),
+		QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 	}
 }
 
