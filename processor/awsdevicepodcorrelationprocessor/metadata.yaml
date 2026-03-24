@@ -1,0 +1,15 @@
+type: awsdevicepodcorrelation
+
+status:
+  class: processor
+  stability:
+    beta: [metrics]
+
+tests:
+  config:
+    kubelet_socket_path: "/var/lib/kubelet/pod-resources/kubelet.sock"
+    device_types:
+      - name: test
+        device_id_attribute: device
+        resource_names:
+          - test.resource
