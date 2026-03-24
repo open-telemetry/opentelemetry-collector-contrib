@@ -37,6 +37,9 @@ properties:
   add_metric_suffixes:
     description: AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
     type: boolean
+  disable_scope_info:
+    description: DisableScopeInfo allows disabling the export of the scope info labels
+    type: boolean
   external_labels:
     description: ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
     type: object
@@ -60,7 +63,7 @@ properties:
     $ref: remote_write_queue
   resource_to_telemetry_conversion:
     description: ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes. "Enabled" - A boolean field to enable/disable this option. Default is `false`. If enabled, all the resource attributes will be converted to metric labels by default. "ExcludeServiceAttributes" - If set to `true`, the `service.name`, `service.instance.id` and `service.namespace` resource attributes, which are already converted to `job` and `instance` labels respectively, will be excluded from the final metrics.
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry.settings
+    $ref: /pkg/resourcetotelemetry.settings
   send_metadata:
     description: SendMetadata controls whether prometheus metadata will be generated and sent, this option is ignored when using PRW 2.0, which always includes metadata.
     type: boolean

@@ -1,0 +1,66 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.region
+          value:
+            stringValue: West US
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.INSIGHTS/COMPONENTS/APPI1
+        - key: telemetry.sdk.name
+          value:
+            stringValue: gsm
+        - key: telemetry.sdk.version
+          value:
+            stringValue: 1.0.0
+    scopeSpans:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+        spans:
+          - attributes:
+              - key: geo.locality.name
+                value:
+                  stringValue: Quincy
+              - key: geo.country.name
+                value:
+                  stringValue: United States
+              - key: geo.state.name
+                value:
+                  stringValue: Washington
+              - key: device.type
+                value:
+                  stringValue: PC
+              - key: azure.category
+                value:
+                  stringValue: AppAvailabilityResults
+              - key: FullTestResultAvailable
+                value:
+                  stringValue: "true"
+              - key: SourceId
+                value:
+                  stringValue: sid://1661c923-1507-4313-85ee-b16641fefb1e.visualstudio.com/applications/APPI1/features/ui-endpoint/locations/us-ca-sjc-azr
+              - key: _MS.altIds
+                value:
+                  stringValue: b3b628283f087ba7
+              - key: WebtestArmResourceName
+                value:
+                  stringValue: ui-endpoint
+              - key: SyntheticMonitorId
+                value:
+                  stringValue: default_ui-endpoint_us-ca-sjc-azr
+              - key: WebtestLocationId
+                value:
+                  stringValue: us-ca-sjc-azr
+            endTimeUnixNano: "1681808580042000000"
+            kind: 1
+            name: ui-endpoint
+            spanId: b3db42bad2724155
+            startTimeUnixNano: "1681808580000000000"
+            status:
+              code: 2
+              message: '''403 - Forbidden'' does not match the expected status ''200 - OK''.'
+            traceId: b3db42bad2724155bc3e47344aa1e863

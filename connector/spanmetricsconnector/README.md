@@ -139,6 +139,7 @@ The following settings can be optionally configured:
    Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
 - `add_resource_attributes` (default: `false`): Add the resource attributes to the resulting metrics. This option enables the old behavior before the `connector.spanmetrics.excludeResourceMetrics` feature gate was introduced. When set to `true`, resource attributes will be included in the metrics even if the feature gate is enabled. See [GitHub issue #42103](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42103) for more context.
+- `enable_metrics_sampling_method` (default: `false`): When enabled, adds the `sampling.method` attribute to metrics with value `"extrapolated"` (when the span has a valid tracestate sampling threshold) or `"counted"` (otherwise).
 
 The feature gate `connector.spanmetrics.legacyMetricNames` (disabled by default) controls the connector to use legacy metric names.
 
@@ -367,7 +368,8 @@ Aggressive span name sanitization may be overly restrictive for instrumentations
 
 To preserve operation granularity, you can manually set the `http.route` attribute when detailed operation names are required. The missing `http.route` value can typically be derived through pattern matching on other span attributes such as `http.target` or `url.full`.
 
-Example OpenTelemetry Collector configuration that prevents cardinality explosion while preserving meaningful operation names:
+Example OpenTelemetry Collector configuration that prevents cardinality explosion
+while preserving meaningful operation names on a service `webshop/frontend`:
 
 ```yaml
 receivers:
@@ -376,25 +378,31 @@ receivers:
 
 processors:
   transform/sanitize_spans:
+    # Sanitize spans to prevent span metrics cardinality explosion caused by
+    # non-compliant high cardinality span names:
+    # 1. Fix incomplete semconv of critical operation spans to keep meaningful
+    #    span metrics operation names, adding missing `http.route` and
+    #    `http.request.method`.
+    # 2. Sanitize all span names, note that http server spans lacking
+    #    `http.route` will default to operations `GET`, `POST`, etc.
+
     error_mode: ignore
     trace_statements:
-      # Fix incomplete semconv of critical operation spans to keep meaningful span metrics operation names, 
-      # fix missing `http.route`, `http.request.method`...
+      # 1. Fix incomplete semconv on the critical http operations of the `frontend` service
+      - context: span
+        conditions:
+          - span.kind == SPAN_KIND_SERVER and resource.attributes["service.name"] == "frontend" and resource.attributes["service.namespace"] == "webshop" and span.attributes["http.route"] == nil
+        statements:
+          - set(span.attributes["http.route"], "/api/checkout") where IsMatch(span.attributes["http.target"], "\\/api\\/checkout")  # e.g. # /api/checkout
+          - set(span.attributes["http.route"], "/api/products/{productId}") where IsMatch(span.attributes["http.target"], "\\/api\\/products\\/.*")  # e.g. /api/products/1YMWWN1N4O
 
-      # Fix operation `GET /api/products/{productId}` on service `frontend` adding missing `http.route` 
-      - set(span.attributes["http.route"], "/api/products/{productId}") where 
-        span.kind == SPAN_KIND_SERVER and
-        resource.attributes["service.name"] == "frontend" and 
-        resource.attributes["service.namespace"] == "astroshop" and
-        span.attributes["http.route"] == nil and
-        IsMatch(span.attributes["http.target"], "\\/api\\/products\\/.*") # e.g. /api/products/1YMWWN1N4O
+      # 1. Fix incomplete semconv on the critical http operations of other services...
 
-      # Fix other critical operations
-      ...
-
-      # Sanitize all span names to prevent span metrics cardinality explosion
-      # caused by non-compliant high cardinality span names
-      - set_semconv_span_name("1.37.0")
+      # 2. Sanitize all span names to prevent span metrics cardinality explosion.
+      #    Unsanitized span names, when different, are kept in the `unsanitized_span_name` attribute
+      - context: span
+        statements:
+          - set_semconv_span_name("1.37.0", "unsanitized_span_name")
   ...
 
 connectors:

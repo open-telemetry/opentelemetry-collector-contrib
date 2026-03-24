@@ -40,6 +40,10 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, errors.New("the `start_at` field must be set to `beginning` or `end`")
 	}
 
+	if c.EventDataFormat != EventDataFormatMap && c.EventDataFormat != EventDataFormatArray {
+		return nil, errors.New("the `event_data_format` field must be set to `map` or `array`")
+	}
+
 	if (c.Remote.Server != "" || c.Remote.Username != "" || c.Remote.Password != "") && // any not empty
 		(c.Remote.Server == "" || c.Remote.Username == "" || c.Remote.Password == "") { // any empty
 		return nil, errors.New("remote configuration must have non-empty `username` and `password`")
@@ -56,6 +60,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		startAt:                  c.StartAt,
 		pollInterval:             c.PollInterval,
 		raw:                      c.Raw,
+		eventDataFormat:          c.EventDataFormat,
 		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
 		excludeProviders:         excludeProvidersSet(c.ExcludeProviders),
 		remote:                   c.Remote,

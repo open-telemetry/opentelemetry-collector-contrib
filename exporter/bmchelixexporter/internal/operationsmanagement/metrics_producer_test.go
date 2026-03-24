@@ -74,7 +74,7 @@ func TestProduceHelixPayload(t *testing.T) {
 
 	expectedPayload := []BMCHelixOMMetric{parent, metric1, metric2}
 
-	producer := NewMetricsProducer(zap.NewExample())
+	producer := NewMetricsProducer(zap.NewExample(), true)
 
 	tests := []struct {
 		name                string
@@ -118,10 +118,57 @@ func TestProduceHelixPayload(t *testing.T) {
 	}
 }
 
+// TestProduceHelixPayloadWithEnrichmentDisabled verifies that when enrichMetricWithAttributes is false,
+// no enriched metrics are created and the original metrics retain their entityId.
+func TestProduceHelixPayloadWithEnrichmentDisabled(t *testing.T) {
+	t.Parallel()
+
+	producer := NewMetricsProducer(zap.NewExample(), false)
+
+	// Generate metrics with non-core attributes that would normally trigger enrichment
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("host.name", "test-hostname")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("system.cpu.time")
+	metric.SetUnit("s")
+
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(1750926531000000000)
+	dp.SetDoubleValue(42.0)
+	dp.Attributes().PutStr("entityTypeId", "cpu")
+	dp.Attributes().PutStr("entityName", "cpu0")
+	dp.Attributes().PutStr("cpu.mode", "idle") // Non-core attribute that would trigger enrichment
+
+	payload, err := producer.ProduceHelixPayload(metrics)
+	assert.NoError(t, err)
+
+	// With enrichment disabled, we should get:
+	// 1. Parent entity (identity metric)
+	// 2. Original metric with entityId preserved (no enriched variant)
+	// Total: 2 metrics (not 3 as would be with enrichment enabled)
+	assert.Len(t, payload, 2, "Should have parent + original metric only, no enriched variant")
+
+	// Find the actual metric (not the parent identity)
+	var actualMetric *BMCHelixOMMetric
+	for i := range payload {
+		if payload[i].Labels["metricName"] != "identity" {
+			actualMetric = &payload[i]
+			break
+		}
+	}
+
+	assert.NotNil(t, actualMetric, "Should have found the actual metric")
+	assert.Equal(t, "system.cpu.time", actualMetric.Labels["metricName"], "Metric name should not be enriched")
+	assert.NotEmpty(t, actualMetric.Labels["entityId"], "entityId should be preserved when enrichment is disabled")
+}
+
 // Mock data generation for testing
 func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.NumberDataPointSlice) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("host.name", "test-hostname")
 	il := rm.ScopeMetrics().AppendEmpty().Metrics()
 	metric := il.AppendEmpty()
 	metric.SetName("test_metric")
@@ -132,7 +179,6 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 
 	// First datapoint
 	dp1 := dps.AppendEmpty()
-	dp1.Attributes().PutStr("host.name", "test-hostname")
 	dp1.Attributes().PutStr("entityName", "test-entity-1")
 	dp1.Attributes().PutStr("entityTypeId", "test-entity-type-id")
 	dp1.Attributes().PutStr("instanceName", "test-entity-Name-1")
@@ -141,7 +187,6 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 
 	// Second datapoint
 	dp2 := dps.AppendEmpty()
-	dp2.Attributes().PutStr("host.name", "test-hostname")
 	dp2.Attributes().PutStr("entityName", "test-entity-2")
 	dp2.Attributes().PutStr("entityTypeId", "test-entity-type-id")
 	dp2.Attributes().PutStr("instanceName", "test-entity-Name-2")
@@ -151,133 +196,117 @@ func generateMockMetrics(setMetricType func(metric pmetric.Metric) pmetric.Numbe
 	return metrics
 }
 
-func TestEnrichMetricNamesWithAttributes(t *testing.T) {
+func TestCreateEnrichedMetricWithDpAttributes(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name           string
-		inputMetrics   []BMCHelixOMMetric
-		expectedLabels []map[string]string
+		name               string
+		inputMetric        *BMCHelixOMMetric
+		dpAttrs            map[string]any
+		expectedMetricName string
+		expectNil          bool
 	}{
 		{
-			name: "Single metric without varying attributes",
-			inputMetrics: []BMCHelixOMMetric{
-				{
-					Labels: map[string]string{
-						"entityId":           "host:cpu:core0",
-						"metricName":         "system.cpu.time",
-						"cpu.mode":           "idle",
-						"cpu.logical_number": "0",
-					},
+			name: "No non-core attributes returns nil",
+			inputMetric: &BMCHelixOMMetric{
+				Labels: map[string]string{
+					"entityId":   "host:cpu:core0",
+					"metricName": "system.cpu.time",
+					"hostname":   "myhost",
 				},
 			},
-			expectedLabels: []map[string]string{
-				{
-					"entityId":           "host:cpu:core0",
-					"metricName":         "system.cpu.time",
-					"cpu.mode":           "idle",
-					"cpu.logical_number": "0",
-				},
+			dpAttrs: map[string]any{
+				"hostname": "myhost", // core attribute only
 			},
+			expectNil: true,
 		},
 		{
-			name: "Metrics with different state values",
-			inputMetrics: []BMCHelixOMMetric{
-				{
-					Labels: map[string]string{
-						"entityId":   "host:cpu:core0",
-						"metricName": "system.cpu.time",
-						"cpu.mode":   "idle",
-					},
-				},
-				{
-					Labels: map[string]string{
-						"entityId":   "host:cpu:core0",
-						"metricName": "system.cpu.time",
-						"cpu.mode":   "user",
-					},
+			name: "Single non-core attribute appends normalized value",
+			inputMetric: &BMCHelixOMMetric{
+				Labels: map[string]string{
+					"entityId":   "host:cpu:core0",
+					"metricName": "system.cpu.time",
 				},
 			},
-			expectedLabels: []map[string]string{
-				{
-					"metricName": "system.cpu.time",
-					"cpu.mode":   "idle",
-				},
-				{
-					"entityId":   "host:cpu:core0",
-					"metricName": "system.cpu.time.idle",
-				},
-				{
-					"metricName": "system.cpu.time",
-					"cpu.mode":   "user",
-				},
-				{
-					"entityId":   "host:cpu:core0",
-					"metricName": "system.cpu.time.user",
-				},
+			dpAttrs: map[string]any{
+				"cpu.mode": "idle",
 			},
+			expectedMetricName: "system.cpu.time.idle",
 		},
 		{
-			name: "Metrics with multiple varying attributes",
-			inputMetrics: []BMCHelixOMMetric{
-				{
-					Labels: map[string]string{
-						"entityId":           "host:cpu:core0",
-						"metricName":         "system.cpu.time",
-						"cpu.mode":           "system",
-						"cpu.mode.code":      "0",
-						"cpu.logical_number": "0",
-					},
-				},
-				{
-					Labels: map[string]string{
-						"entityId":           "host:cpu:core0",
-						"metricName":         "system.cpu.time",
-						"cpu.mode":           "user",
-						"cpu.mode.code":      "1",
-						"cpu.logical_number": "0",
-					},
+			name: "Multiple non-core attributes sorted by key",
+			inputMetric: &BMCHelixOMMetric{
+				Labels: map[string]string{
+					"entityId":   "host:cpu:core0",
+					"metricName": "system.cpu.time",
 				},
 			},
-			expectedLabels: []map[string]string{
-				{
-					"metricName":         "system.cpu.time",
-					"cpu.mode":           "system",
-					"cpu.mode.code":      "0",
-					"cpu.logical_number": "0",
-				},
-				{
-					"entityId":           "host:cpu:core0",
-					"metricName":         "system.cpu.time.system.0",
-					"cpu.logical_number": "0",
-				},
-				{
-					"metricName":         "system.cpu.time",
-					"cpu.mode":           "user",
-					"cpu.mode.code":      "1",
-					"cpu.logical_number": "0",
-				},
-				{
-					"entityId":           "host:cpu:core0",
-					"metricName":         "system.cpu.time.user.1",
-					"cpu.logical_number": "0",
+			dpAttrs: map[string]any{
+				"cpu.mode": "user",
+				"cpu.core": "0",
+			},
+			expectedMetricName: "system.cpu.time.0.user", // cpu.core < cpu.mode
+		},
+		{
+			name: "Attribute values are normalized",
+			inputMetric: &BMCHelixOMMetric{
+				Labels: map[string]string{
+					"metricName": "my.metric",
 				},
 			},
+			dpAttrs: map[string]any{
+				"state": "Read/Write (Active)",
+			},
+			expectedMetricName: "my.metric.Read_Write_Active_",
+		},
+		{
+			name: "Empty and nil attribute values are skipped",
+			inputMetric: &BMCHelixOMMetric{
+				Labels: map[string]string{
+					"metricName": "my.metric",
+				},
+			},
+			dpAttrs: map[string]any{
+				"valid": "ok",
+				"empty": "",
+				"nil":   nil,
+			},
+			expectedMetricName: "my.metric.ok",
+		},
+		{
+			name: "All attributes empty or nil returns nil",
+			inputMetric: &BMCHelixOMMetric{
+				Labels: map[string]string{
+					"metricName": "my.metric",
+				},
+			},
+			dpAttrs: map[string]any{
+				"empty": "",
+				"nil":   nil,
+			},
+			expectNil: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := enrichMetricNamesWithAttributes(tt.inputMetrics)
+			// Snapshot input labels before the call to verify immutability
+			originalLabels := make(map[string]string, len(tt.inputMetric.Labels))
+			maps.Copy(originalLabels, tt.inputMetric.Labels)
 
-			var actualLabels []map[string]string
-			for _, m := range result {
-				// Copy to a new map to avoid mutation side-effects
-				labelsCopy := make(map[string]string)
-				maps.Copy(labelsCopy, m.Labels)
-				actualLabels = append(actualLabels, labelsCopy)
+			result := createEnrichedMetricWithDpAttributes(tt.inputMetric, tt.dpAttrs)
+
+			// Ensure the input metric is not mutated (including entityId and all other labels)
+			assert.Equal(t, originalLabels, tt.inputMetric.Labels, "input metric labels must not be mutated")
+
+			if tt.expectNil {
+				assert.Nil(t, result)
+				return
 			}
 
-			assert.ElementsMatch(t, tt.expectedLabels, actualLabels)
+			assert.NotNil(t, result)
+			assert.Equal(t, tt.expectedMetricName, result.Labels["metricName"])
+			// Ensure the enriched metric name differs from the original
+			assert.NotEqual(t, originalLabels["metricName"], result.Labels["metricName"])
 		})
 	}
 }
@@ -409,7 +438,7 @@ func TestAddPercentageVariants(t *testing.T) {
 func TestAddRateVariants(t *testing.T) {
 	t.Parallel()
 
-	producer := NewMetricsProducer(zap.NewExample())
+	producer := NewMetricsProducer(zap.NewExample(), true)
 
 	// Create a base counter metric
 	originalLabels := map[string]string{
@@ -455,4 +484,88 @@ func TestAddRateVariants(t *testing.T) {
 	expectedRate := 1000.0 // (2000 - 1000) / 1s
 	assert.InDelta(t, expectedRate, rate.Samples[0].Value, 0.001)
 	assert.Equal(t, t2, rate.Samples[0].Timestamp)
+}
+
+func TestEmptyMetricNameSkipsPayload(t *testing.T) {
+	t.Parallel()
+
+	producer := NewMetricsProducer(zap.NewExample(), true)
+
+	// Test 1: Metric with empty name (normalizes to empty string and should be skipped)
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	resource := rm.Resource()
+	resource.Attributes().PutStr("host.name", "test-host")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("") // Empty name normalizes to empty and should be skipped
+
+	gauge := metric.SetEmptyGauge()
+	dp := gauge.DataPoints().AppendEmpty()
+	dp.SetTimestamp(1750926531000000000)
+	dp.SetDoubleValue(42.0)
+	dp.Attributes().PutStr("entityTypeId", "test-entity")
+	dp.Attributes().PutStr("entityName", "test-name")
+
+	payload, err := producer.ProduceHelixPayload(metrics)
+
+	// Should not return an error, but the payload should be empty since the metric was skipped
+	assert.NoError(t, err)
+	assert.Empty(t, payload, "Metrics with empty normalized names should be skipped")
+}
+
+func TestCreateEnrichedMetricWithEmptyName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		metricName  string
+		dpAttrs     map[string]any
+		expectNil   bool
+		description string
+	}{
+		{
+			name:       "Enriched metric name becomes empty",
+			metricName: "valid.metric",
+			dpAttrs: map[string]any{
+				"attribute": "!@#$%", // This will normalize to empty, making the whole enriched name potentially empty
+			},
+			expectNil:   false, // The enriched name would be "valid.metric." which is not empty
+			description: "Even if attribute value normalizes poorly, base metric name keeps it non-empty",
+		},
+		{
+			name:       "Base metric name empty, enrichment attempted",
+			metricName: "", // Empty base metric name
+			dpAttrs: map[string]any{
+				"attribute": "value",
+			},
+			expectNil:   false, // Will create ".value" which normalizes to "value"
+			description: "Empty base with valid attribute creates enriched metric",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputMetric := &BMCHelixOMMetric{
+				Labels: map[string]string{
+					"metricName": tt.metricName,
+					"entityId":   "test:entity:id",
+				},
+				Samples: []BMCHelixOMSample{{Value: 1.0, Timestamp: 1000}},
+			}
+
+			result := createEnrichedMetricWithDpAttributes(inputMetric, tt.dpAttrs)
+
+			if tt.expectNil {
+				assert.Nil(t, result, tt.description)
+			} else {
+				assert.NotNil(t, result, tt.description)
+				if result != nil {
+					// Verify the metric name is not empty
+					assert.NotEmpty(t, result.Labels["metricName"], "Enriched metric name should not be empty")
+				}
+			}
+		})
+	}
 }

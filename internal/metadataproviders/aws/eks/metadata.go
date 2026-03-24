@@ -5,6 +5,7 @@ package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -25,6 +26,7 @@ const (
 
 type Provider interface {
 	ClusterVersion() (string, error)
+	OIDCIssuer(ctx context.Context) (string, error)
 	GetK8sInstanceMetadata(ctx context.Context) (InstanceMetadata, error)
 	GetInstanceMetadata(ctx context.Context) (InstanceMetadata, error)
 	SetRegionInstanceID(region, instanceID string)
@@ -79,6 +81,20 @@ func (c *metadataClient) ClusterVersion() (string, error) {
 		return "", fmt.Errorf("failed to retrieve cluster version: %w", err)
 	}
 	return serverVersion.GitVersion, nil
+}
+
+func (c *metadataClient) OIDCIssuer(ctx context.Context) (string, error) {
+	data, err := c.clientset.Discovery().RESTClient().Get().AbsPath("/.well-known/openid-configuration").Do(ctx).Raw()
+	if err != nil {
+		return "", fmt.Errorf("failed to retrieve OIDC configuration: %w", err)
+	}
+	var oidcConfig struct {
+		Issuer string `json:"issuer"`
+	}
+	if err := json.Unmarshal(data, &oidcConfig); err != nil {
+		return "", fmt.Errorf("failed to parse OIDC configuration: %w", err)
+	}
+	return oidcConfig.Issuer, nil
 }
 
 // GetK8sInstanceMetadata retrieves region, instanceID, and availabilityZone attributes from the K8s node's providerID.

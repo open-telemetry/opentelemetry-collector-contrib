@@ -60,7 +60,7 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 
 	err = e.detectSchemaFeatures(ctx)
 	if err != nil {
-		return fmt.Errorf("schema detection: %w", err)
+		e.logger.Error("schema detection failed", zap.Error(err))
 	}
 
 	e.renderInsertLogsSQL()
@@ -130,6 +130,9 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			scopeAttrMap := internal.AttributesToMap(scopeLogScope.Attributes())
 
 			slrLen := scopeLogRecords.Len()
+			// 16 matches the max number of columns in the insert statement.
+			// If you add or remove columns, update this value.
+			columnValues := make([]any, 0, 16)
 			for k := range slrLen {
 				r := scopeLogRecords.At(k)
 				logAttrMap := internal.AttributesToMap(r.Attributes())
@@ -139,7 +142,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					timestamp = r.ObservedTimestamp()
 				}
 
-				columnValues := make([]any, 0, 16)
+				columnValues = columnValues[:0]
 				columnValues = append(columnValues,
 					timestamp.AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
