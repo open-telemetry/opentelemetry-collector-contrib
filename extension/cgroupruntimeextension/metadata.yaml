@@ -13,3 +13,7 @@ status:
 
 tests:
   config:
+  goleak:
+    ignore:
+      top:
+        - "github.com/KimMachineGun/automemlimit/memlimit.refresh.func1"
