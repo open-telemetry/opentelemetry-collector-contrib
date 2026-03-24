@@ -112,13 +112,11 @@ func BenchmarkAccumulatorConcurrent(b *testing.B) {
 			iterations := max(b.N/concurrency, 1)
 
 			for range concurrency {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					for range iterations {
 						accumulator.Accumulate(resourceMetrics)
 					}
-				}()
+				})
 			}
 
 			wg.Wait()

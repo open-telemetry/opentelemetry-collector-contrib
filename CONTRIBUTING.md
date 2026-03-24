@@ -7,7 +7,7 @@ before you begin your work with the contrib Collector.
 ## Local Testing
 
 To manually test your changes, follow these steps to build and run the contrib
-Collector locally. Ensure that you execute these commands from the root of the 
+Collector locally. Ensure that you execute these commands from the root of the
 repository:
 
 1. Build the Collector:
@@ -115,13 +115,16 @@ change. For instance:
 
     [processor/tailsampling] fix AND policy
 
+Alternatively, if you have already written a changelog entry, you can set your PR title to `as per changelog` and a
+GitHub Action will automatically generate the PR title and description from your changelog entry YAML file(s). This
+avoids duplicating effort between the changelog entry and the PR description.
+
 ### Description guidelines
 
 When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
 following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
 [here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 This will automatically close the issue once your PR has been merged.
-
 
 ## Issue Triaging
 
@@ -171,11 +174,21 @@ Example rerun comment:
 /rerun
 ```
 
+### Approving Workflows for Outside Contributors
+
+Members of the [triagers](./README.md#triagers), [approvers](./README.md#approvers), or [maintainers](./README.md#maintainers) teams can approve pending GitHub Actions workflow runs for outside contributors by commenting `/workflow-approve` on the pull request. This will approve all workflow runs with an `action_required` conclusion for the PR's latest commit.
+
+Example approve comment:
+
+```
+/workflow-approve
+```
+
 ## Portable Code
 
 In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
 
-* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions. 
+* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions.
 
 * Avoid hard-coding platform-specific values. Use environment variables or configuration files for storing platform-specific values.
 
@@ -193,13 +206,13 @@ In order to ensure compatibility with different operating systems, code should b
     filePath := Configuration.Get("data_file_path")
     ```
 
-* Be mindful of 
-  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
+* Be mindful of
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths.
   - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
 
-* Test your implementation thoroughly on different platforms if possible and fix any issues. 
+* Test your implementation thoroughly on different platforms if possible and fix any issues.
 
-With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
+With above guidelines, you can write code that is more portable and easier to maintain across different platforms.
 
 ## Donating New Components
 
@@ -248,8 +261,7 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 
 - The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
-- An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The component was never assigned a Code Owner.
+- An existing Code Owner has become unresponsive.
 
 Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
@@ -275,11 +287,25 @@ Be sure to tag the existing Code Owners, if any, within the PR to ensure they re
 
 ### Emeritus roles
 
-Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github.
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github. In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via GitHub, the CNCF Slack, or other available communication channels (such as email or through a coworker) to confirm their status.
 
-In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment.
+#### Approvers and maintainers
 
-If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
+If the contributor has not replied to maintainer communications after two weeks, they may be removed from the Github review auto-assignment. If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
+
+#### Code Owners
+
+The OpenTelemetry community strives to foster and maintain a high-trust community. As result, rules below are more discretionary than strictly procedural.
+
+It's highly encouraged for Code Owners who know they will be unavailable for a prolonged period of time (1+ months) to inform other Code Owners for their components in advance. If a Code Owner expects they may be unavailable for a long, undetermined period of time, they should consider moving themselves to emeritus status, and may request to be made active again once they can devote time to maintaining the component.
+
+If a Code Owner has not replied to communications from a maintainer or another Code Owner after two weeks, they may be moved to emeritus status following the majority vote of other Code Owners and with the agreement of a maintainer. If a majority cannot be reached because of unresponsive Code Owners, the active Code Owners can move the unresponsive Code Owners to emeritus status after a 6 week period with no reply, following a majority vote of known-active Code Owners and the agreement of a maintainer.
+
+If a component is seen as at risk of being unmaintained by maintainers, the maintainers may reach out to Code Owners to ensure they are still active. If none of a component's Code Owners respond to communication after a two week period, maintainers may add a new Code Owner to the component at their discretion. Similar to the policy in the preceding paragraph, the unresponsive Code Owners may be removed if a response has not been received after an additional four weeks. This is to ensure the ongoing maintenance of components within the repository.
+
+Following the steps outlined in the documentation for the [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#unmaintained), if no code owners are responsive for the documented period of time and there is not another contributor available to become a Code Owner, the component may be marked as unmaintained. In this situation, all existing code owners will be moved to emeritus status and the component will be open for new Code Owners.
+
+Code Owners who are moved to emeritus status without their direct involvement are welcome to request to be moved back to an active status.
 
 ## Makefile Guidelines
 

@@ -4,8 +4,8 @@ on:
     branches: [main]
     paths:
       - .github/CODEOWNERS
-      - ./.github/workflows/generate-component-labels.yml
-      - ./.github/workflows/scripts/generate-component-labels.sh
+      - .github/workflows/generate-component-labels.yml
+      - .github/workflows/scripts/generate-component-labels.sh
   workflow_dispatch:
 
 permissions:

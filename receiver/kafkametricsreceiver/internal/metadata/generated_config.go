@@ -3,17 +3,29 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// KafkaBrokerLogRetentionPeriodMetricAttributeKey specifies the key of an attribute for the kafka.broker.log_retention_period metric.
+type KafkaBrokerLogRetentionPeriodMetricAttributeKey string
+
+const (
+	KafkaBrokerLogRetentionPeriodMetricAttributeKeyBroker KafkaBrokerLogRetentionPeriodMetricAttributeKey = "broker"
+)
+
+// KafkaBrokerLogRetentionPeriodMetricConfig provides config for the kafka.broker.log_retention_period metric.
+type KafkaBrokerLogRetentionPeriodMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
+
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaBrokerLogRetentionPeriodMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *KafkaBrokerLogRetentionPeriodMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -27,75 +39,825 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+func (ms *KafkaBrokerLogRetentionPeriodMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaBrokerLogRetentionPeriodMetricAttributeKeyBroker:
+		default:
+			return fmt.Errorf("metric kafka.broker.log_retention_period doesn't have an attribute %v, valid attributes: [broker]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaBrokersMetricConfig provides config for the kafka.brokers metric.
+type KafkaBrokersMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *KafkaBrokersMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// KafkaConsumerGroupLagMetricAttributeKey specifies the key of an attribute for the kafka.consumer_group.lag metric.
+type KafkaConsumerGroupLagMetricAttributeKey string
+
+const (
+	KafkaConsumerGroupLagMetricAttributeKeyGroup     KafkaConsumerGroupLagMetricAttributeKey = "group"
+	KafkaConsumerGroupLagMetricAttributeKeyTopic     KafkaConsumerGroupLagMetricAttributeKey = "topic"
+	KafkaConsumerGroupLagMetricAttributeKeyPartition KafkaConsumerGroupLagMetricAttributeKey = "partition"
+)
+
+// KafkaConsumerGroupLagMetricConfig provides config for the kafka.consumer_group.lag metric.
+type KafkaConsumerGroupLagMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaConsumerGroupLagMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaConsumerGroupLagMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaConsumerGroupLagMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaConsumerGroupLagMetricAttributeKeyGroup, KafkaConsumerGroupLagMetricAttributeKeyTopic, KafkaConsumerGroupLagMetricAttributeKeyPartition:
+		default:
+			return fmt.Errorf("metric kafka.consumer_group.lag doesn't have an attribute %v, valid attributes: [group, topic, partition]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaConsumerGroupLagSumMetricAttributeKey specifies the key of an attribute for the kafka.consumer_group.lag_sum metric.
+type KafkaConsumerGroupLagSumMetricAttributeKey string
+
+const (
+	KafkaConsumerGroupLagSumMetricAttributeKeyGroup KafkaConsumerGroupLagSumMetricAttributeKey = "group"
+	KafkaConsumerGroupLagSumMetricAttributeKeyTopic KafkaConsumerGroupLagSumMetricAttributeKey = "topic"
+)
+
+// KafkaConsumerGroupLagSumMetricConfig provides config for the kafka.consumer_group.lag_sum metric.
+type KafkaConsumerGroupLagSumMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaConsumerGroupLagSumMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaConsumerGroupLagSumMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaConsumerGroupLagSumMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaConsumerGroupLagSumMetricAttributeKeyGroup, KafkaConsumerGroupLagSumMetricAttributeKeyTopic:
+		default:
+			return fmt.Errorf("metric kafka.consumer_group.lag_sum doesn't have an attribute %v, valid attributes: [group, topic]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaConsumerGroupMembersMetricAttributeKey specifies the key of an attribute for the kafka.consumer_group.members metric.
+type KafkaConsumerGroupMembersMetricAttributeKey string
+
+const (
+	KafkaConsumerGroupMembersMetricAttributeKeyGroup KafkaConsumerGroupMembersMetricAttributeKey = "group"
+)
+
+// KafkaConsumerGroupMembersMetricConfig provides config for the kafka.consumer_group.members metric.
+type KafkaConsumerGroupMembersMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaConsumerGroupMembersMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaConsumerGroupMembersMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaConsumerGroupMembersMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaConsumerGroupMembersMetricAttributeKeyGroup:
+		default:
+			return fmt.Errorf("metric kafka.consumer_group.members doesn't have an attribute %v, valid attributes: [group]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaConsumerGroupOffsetMetricAttributeKey specifies the key of an attribute for the kafka.consumer_group.offset metric.
+type KafkaConsumerGroupOffsetMetricAttributeKey string
+
+const (
+	KafkaConsumerGroupOffsetMetricAttributeKeyGroup     KafkaConsumerGroupOffsetMetricAttributeKey = "group"
+	KafkaConsumerGroupOffsetMetricAttributeKeyTopic     KafkaConsumerGroupOffsetMetricAttributeKey = "topic"
+	KafkaConsumerGroupOffsetMetricAttributeKeyPartition KafkaConsumerGroupOffsetMetricAttributeKey = "partition"
+)
+
+// KafkaConsumerGroupOffsetMetricConfig provides config for the kafka.consumer_group.offset metric.
+type KafkaConsumerGroupOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaConsumerGroupOffsetMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaConsumerGroupOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaConsumerGroupOffsetMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaConsumerGroupOffsetMetricAttributeKeyGroup, KafkaConsumerGroupOffsetMetricAttributeKeyTopic, KafkaConsumerGroupOffsetMetricAttributeKeyPartition:
+		default:
+			return fmt.Errorf("metric kafka.consumer_group.offset doesn't have an attribute %v, valid attributes: [group, topic, partition]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaConsumerGroupOffsetSumMetricAttributeKey specifies the key of an attribute for the kafka.consumer_group.offset_sum metric.
+type KafkaConsumerGroupOffsetSumMetricAttributeKey string
+
+const (
+	KafkaConsumerGroupOffsetSumMetricAttributeKeyGroup KafkaConsumerGroupOffsetSumMetricAttributeKey = "group"
+	KafkaConsumerGroupOffsetSumMetricAttributeKeyTopic KafkaConsumerGroupOffsetSumMetricAttributeKey = "topic"
+)
+
+// KafkaConsumerGroupOffsetSumMetricConfig provides config for the kafka.consumer_group.offset_sum metric.
+type KafkaConsumerGroupOffsetSumMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaConsumerGroupOffsetSumMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaConsumerGroupOffsetSumMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaConsumerGroupOffsetSumMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaConsumerGroupOffsetSumMetricAttributeKeyGroup, KafkaConsumerGroupOffsetSumMetricAttributeKeyTopic:
+		default:
+			return fmt.Errorf("metric kafka.consumer_group.offset_sum doesn't have an attribute %v, valid attributes: [group, topic]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaPartitionCurrentOffsetMetricAttributeKey specifies the key of an attribute for the kafka.partition.current_offset metric.
+type KafkaPartitionCurrentOffsetMetricAttributeKey string
+
+const (
+	KafkaPartitionCurrentOffsetMetricAttributeKeyTopic     KafkaPartitionCurrentOffsetMetricAttributeKey = "topic"
+	KafkaPartitionCurrentOffsetMetricAttributeKeyPartition KafkaPartitionCurrentOffsetMetricAttributeKey = "partition"
+)
+
+// KafkaPartitionCurrentOffsetMetricConfig provides config for the kafka.partition.current_offset metric.
+type KafkaPartitionCurrentOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaPartitionCurrentOffsetMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaPartitionCurrentOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaPartitionCurrentOffsetMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaPartitionCurrentOffsetMetricAttributeKeyTopic, KafkaPartitionCurrentOffsetMetricAttributeKeyPartition:
+		default:
+			return fmt.Errorf("metric kafka.partition.current_offset doesn't have an attribute %v, valid attributes: [topic, partition]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaPartitionOldestOffsetMetricAttributeKey specifies the key of an attribute for the kafka.partition.oldest_offset metric.
+type KafkaPartitionOldestOffsetMetricAttributeKey string
+
+const (
+	KafkaPartitionOldestOffsetMetricAttributeKeyTopic     KafkaPartitionOldestOffsetMetricAttributeKey = "topic"
+	KafkaPartitionOldestOffsetMetricAttributeKeyPartition KafkaPartitionOldestOffsetMetricAttributeKey = "partition"
+)
+
+// KafkaPartitionOldestOffsetMetricConfig provides config for the kafka.partition.oldest_offset metric.
+type KafkaPartitionOldestOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaPartitionOldestOffsetMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaPartitionOldestOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaPartitionOldestOffsetMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaPartitionOldestOffsetMetricAttributeKeyTopic, KafkaPartitionOldestOffsetMetricAttributeKeyPartition:
+		default:
+			return fmt.Errorf("metric kafka.partition.oldest_offset doesn't have an attribute %v, valid attributes: [topic, partition]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaPartitionReplicasMetricAttributeKey specifies the key of an attribute for the kafka.partition.replicas metric.
+type KafkaPartitionReplicasMetricAttributeKey string
+
+const (
+	KafkaPartitionReplicasMetricAttributeKeyTopic     KafkaPartitionReplicasMetricAttributeKey = "topic"
+	KafkaPartitionReplicasMetricAttributeKeyPartition KafkaPartitionReplicasMetricAttributeKey = "partition"
+)
+
+// KafkaPartitionReplicasMetricConfig provides config for the kafka.partition.replicas metric.
+type KafkaPartitionReplicasMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaPartitionReplicasMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaPartitionReplicasMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaPartitionReplicasMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaPartitionReplicasMetricAttributeKeyTopic, KafkaPartitionReplicasMetricAttributeKeyPartition:
+		default:
+			return fmt.Errorf("metric kafka.partition.replicas doesn't have an attribute %v, valid attributes: [topic, partition]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaPartitionReplicasInSyncMetricAttributeKey specifies the key of an attribute for the kafka.partition.replicas_in_sync metric.
+type KafkaPartitionReplicasInSyncMetricAttributeKey string
+
+const (
+	KafkaPartitionReplicasInSyncMetricAttributeKeyTopic     KafkaPartitionReplicasInSyncMetricAttributeKey = "topic"
+	KafkaPartitionReplicasInSyncMetricAttributeKeyPartition KafkaPartitionReplicasInSyncMetricAttributeKey = "partition"
+)
+
+// KafkaPartitionReplicasInSyncMetricConfig provides config for the kafka.partition.replicas_in_sync metric.
+type KafkaPartitionReplicasInSyncMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaPartitionReplicasInSyncMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaPartitionReplicasInSyncMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaPartitionReplicasInSyncMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaPartitionReplicasInSyncMetricAttributeKeyTopic, KafkaPartitionReplicasInSyncMetricAttributeKeyPartition:
+		default:
+			return fmt.Errorf("metric kafka.partition.replicas_in_sync doesn't have an attribute %v, valid attributes: [topic, partition]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaTopicLogRetentionPeriodMetricAttributeKey specifies the key of an attribute for the kafka.topic.log_retention_period metric.
+type KafkaTopicLogRetentionPeriodMetricAttributeKey string
+
+const (
+	KafkaTopicLogRetentionPeriodMetricAttributeKeyTopic KafkaTopicLogRetentionPeriodMetricAttributeKey = "topic"
+)
+
+// KafkaTopicLogRetentionPeriodMetricConfig provides config for the kafka.topic.log_retention_period metric.
+type KafkaTopicLogRetentionPeriodMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaTopicLogRetentionPeriodMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaTopicLogRetentionPeriodMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaTopicLogRetentionPeriodMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaTopicLogRetentionPeriodMetricAttributeKeyTopic:
+		default:
+			return fmt.Errorf("metric kafka.topic.log_retention_period doesn't have an attribute %v, valid attributes: [topic]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaTopicLogRetentionSizeMetricAttributeKey specifies the key of an attribute for the kafka.topic.log_retention_size metric.
+type KafkaTopicLogRetentionSizeMetricAttributeKey string
+
+const (
+	KafkaTopicLogRetentionSizeMetricAttributeKeyTopic KafkaTopicLogRetentionSizeMetricAttributeKey = "topic"
+)
+
+// KafkaTopicLogRetentionSizeMetricConfig provides config for the kafka.topic.log_retention_size metric.
+type KafkaTopicLogRetentionSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaTopicLogRetentionSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaTopicLogRetentionSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaTopicLogRetentionSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaTopicLogRetentionSizeMetricAttributeKeyTopic:
+		default:
+			return fmt.Errorf("metric kafka.topic.log_retention_size doesn't have an attribute %v, valid attributes: [topic]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaTopicMinInsyncReplicasMetricAttributeKey specifies the key of an attribute for the kafka.topic.min_insync_replicas metric.
+type KafkaTopicMinInsyncReplicasMetricAttributeKey string
+
+const (
+	KafkaTopicMinInsyncReplicasMetricAttributeKeyTopic KafkaTopicMinInsyncReplicasMetricAttributeKey = "topic"
+)
+
+// KafkaTopicMinInsyncReplicasMetricConfig provides config for the kafka.topic.min_insync_replicas metric.
+type KafkaTopicMinInsyncReplicasMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaTopicMinInsyncReplicasMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaTopicMinInsyncReplicasMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaTopicMinInsyncReplicasMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaTopicMinInsyncReplicasMetricAttributeKeyTopic:
+		default:
+			return fmt.Errorf("metric kafka.topic.min_insync_replicas doesn't have an attribute %v, valid attributes: [topic]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaTopicPartitionsMetricAttributeKey specifies the key of an attribute for the kafka.topic.partitions metric.
+type KafkaTopicPartitionsMetricAttributeKey string
+
+const (
+	KafkaTopicPartitionsMetricAttributeKeyTopic KafkaTopicPartitionsMetricAttributeKey = "topic"
+)
+
+// KafkaTopicPartitionsMetricConfig provides config for the kafka.topic.partitions metric.
+type KafkaTopicPartitionsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaTopicPartitionsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaTopicPartitionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaTopicPartitionsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaTopicPartitionsMetricAttributeKeyTopic:
+		default:
+			return fmt.Errorf("metric kafka.topic.partitions doesn't have an attribute %v, valid attributes: [topic]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// KafkaTopicReplicationFactorMetricAttributeKey specifies the key of an attribute for the kafka.topic.replication_factor metric.
+type KafkaTopicReplicationFactorMetricAttributeKey string
+
+const (
+	KafkaTopicReplicationFactorMetricAttributeKeyTopic KafkaTopicReplicationFactorMetricAttributeKey = "topic"
+)
+
+// KafkaTopicReplicationFactorMetricConfig provides config for the kafka.topic.replication_factor metric.
+type KafkaTopicReplicationFactorMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []KafkaTopicReplicationFactorMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *KafkaTopicReplicationFactorMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *KafkaTopicReplicationFactorMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case KafkaTopicReplicationFactorMetricAttributeKeyTopic:
+		default:
+			return fmt.Errorf("metric kafka.topic.replication_factor doesn't have an attribute %v, valid attributes: [topic]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for kafkametrics metrics.
 type MetricsConfig struct {
-	KafkaBrokerLogRetentionPeriod MetricConfig `mapstructure:"kafka.broker.log_retention_period"`
-	KafkaBrokers                  MetricConfig `mapstructure:"kafka.brokers"`
-	KafkaConsumerGroupLag         MetricConfig `mapstructure:"kafka.consumer_group.lag"`
-	KafkaConsumerGroupLagSum      MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
-	KafkaConsumerGroupMembers     MetricConfig `mapstructure:"kafka.consumer_group.members"`
-	KafkaConsumerGroupOffset      MetricConfig `mapstructure:"kafka.consumer_group.offset"`
-	KafkaConsumerGroupOffsetSum   MetricConfig `mapstructure:"kafka.consumer_group.offset_sum"`
-	KafkaPartitionCurrentOffset   MetricConfig `mapstructure:"kafka.partition.current_offset"`
-	KafkaPartitionOldestOffset    MetricConfig `mapstructure:"kafka.partition.oldest_offset"`
-	KafkaPartitionReplicas        MetricConfig `mapstructure:"kafka.partition.replicas"`
-	KafkaPartitionReplicasInSync  MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
-	KafkaTopicLogRetentionPeriod  MetricConfig `mapstructure:"kafka.topic.log_retention_period"`
-	KafkaTopicLogRetentionSize    MetricConfig `mapstructure:"kafka.topic.log_retention_size"`
-	KafkaTopicMinInsyncReplicas   MetricConfig `mapstructure:"kafka.topic.min_insync_replicas"`
-	KafkaTopicPartitions          MetricConfig `mapstructure:"kafka.topic.partitions"`
-	KafkaTopicReplicationFactor   MetricConfig `mapstructure:"kafka.topic.replication_factor"`
+	KafkaBrokerLogRetentionPeriod KafkaBrokerLogRetentionPeriodMetricConfig `mapstructure:"kafka.broker.log_retention_period"`
+	KafkaBrokers                  KafkaBrokersMetricConfig                  `mapstructure:"kafka.brokers"`
+	KafkaConsumerGroupLag         KafkaConsumerGroupLagMetricConfig         `mapstructure:"kafka.consumer_group.lag"`
+	KafkaConsumerGroupLagSum      KafkaConsumerGroupLagSumMetricConfig      `mapstructure:"kafka.consumer_group.lag_sum"`
+	KafkaConsumerGroupMembers     KafkaConsumerGroupMembersMetricConfig     `mapstructure:"kafka.consumer_group.members"`
+	KafkaConsumerGroupOffset      KafkaConsumerGroupOffsetMetricConfig      `mapstructure:"kafka.consumer_group.offset"`
+	KafkaConsumerGroupOffsetSum   KafkaConsumerGroupOffsetSumMetricConfig   `mapstructure:"kafka.consumer_group.offset_sum"`
+	KafkaPartitionCurrentOffset   KafkaPartitionCurrentOffsetMetricConfig   `mapstructure:"kafka.partition.current_offset"`
+	KafkaPartitionOldestOffset    KafkaPartitionOldestOffsetMetricConfig    `mapstructure:"kafka.partition.oldest_offset"`
+	KafkaPartitionReplicas        KafkaPartitionReplicasMetricConfig        `mapstructure:"kafka.partition.replicas"`
+	KafkaPartitionReplicasInSync  KafkaPartitionReplicasInSyncMetricConfig  `mapstructure:"kafka.partition.replicas_in_sync"`
+	KafkaTopicLogRetentionPeriod  KafkaTopicLogRetentionPeriodMetricConfig  `mapstructure:"kafka.topic.log_retention_period"`
+	KafkaTopicLogRetentionSize    KafkaTopicLogRetentionSizeMetricConfig    `mapstructure:"kafka.topic.log_retention_size"`
+	KafkaTopicMinInsyncReplicas   KafkaTopicMinInsyncReplicasMetricConfig   `mapstructure:"kafka.topic.min_insync_replicas"`
+	KafkaTopicPartitions          KafkaTopicPartitionsMetricConfig          `mapstructure:"kafka.topic.partitions"`
+	KafkaTopicReplicationFactor   KafkaTopicReplicationFactorMetricConfig   `mapstructure:"kafka.topic.replication_factor"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		KafkaBrokerLogRetentionPeriod: MetricConfig{
-			Enabled: false,
+		KafkaBrokerLogRetentionPeriod: KafkaBrokerLogRetentionPeriodMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaBrokerLogRetentionPeriodMetricAttributeKey{KafkaBrokerLogRetentionPeriodMetricAttributeKeyBroker},
 		},
-		KafkaBrokers: MetricConfig{
+		KafkaBrokers: KafkaBrokersMetricConfig{
 			Enabled: true,
 		},
-		KafkaConsumerGroupLag: MetricConfig{
-			Enabled: true,
+		KafkaConsumerGroupLag: KafkaConsumerGroupLagMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaConsumerGroupLagMetricAttributeKey{KafkaConsumerGroupLagMetricAttributeKeyGroup, KafkaConsumerGroupLagMetricAttributeKeyTopic, KafkaConsumerGroupLagMetricAttributeKeyPartition},
 		},
-		KafkaConsumerGroupLagSum: MetricConfig{
-			Enabled: true,
+		KafkaConsumerGroupLagSum: KafkaConsumerGroupLagSumMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaConsumerGroupLagSumMetricAttributeKey{KafkaConsumerGroupLagSumMetricAttributeKeyGroup, KafkaConsumerGroupLagSumMetricAttributeKeyTopic},
 		},
-		KafkaConsumerGroupMembers: MetricConfig{
-			Enabled: true,
+		KafkaConsumerGroupMembers: KafkaConsumerGroupMembersMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []KafkaConsumerGroupMembersMetricAttributeKey{KafkaConsumerGroupMembersMetricAttributeKeyGroup},
 		},
-		KafkaConsumerGroupOffset: MetricConfig{
-			Enabled: true,
+		KafkaConsumerGroupOffset: KafkaConsumerGroupOffsetMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaConsumerGroupOffsetMetricAttributeKey{KafkaConsumerGroupOffsetMetricAttributeKeyGroup, KafkaConsumerGroupOffsetMetricAttributeKeyTopic, KafkaConsumerGroupOffsetMetricAttributeKeyPartition},
 		},
-		KafkaConsumerGroupOffsetSum: MetricConfig{
-			Enabled: true,
+		KafkaConsumerGroupOffsetSum: KafkaConsumerGroupOffsetSumMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaConsumerGroupOffsetSumMetricAttributeKey{KafkaConsumerGroupOffsetSumMetricAttributeKeyGroup, KafkaConsumerGroupOffsetSumMetricAttributeKeyTopic},
 		},
-		KafkaPartitionCurrentOffset: MetricConfig{
-			Enabled: true,
+		KafkaPartitionCurrentOffset: KafkaPartitionCurrentOffsetMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaPartitionCurrentOffsetMetricAttributeKey{KafkaPartitionCurrentOffsetMetricAttributeKeyTopic, KafkaPartitionCurrentOffsetMetricAttributeKeyPartition},
 		},
-		KafkaPartitionOldestOffset: MetricConfig{
-			Enabled: true,
+		KafkaPartitionOldestOffset: KafkaPartitionOldestOffsetMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaPartitionOldestOffsetMetricAttributeKey{KafkaPartitionOldestOffsetMetricAttributeKeyTopic, KafkaPartitionOldestOffsetMetricAttributeKeyPartition},
 		},
-		KafkaPartitionReplicas: MetricConfig{
-			Enabled: true,
+		KafkaPartitionReplicas: KafkaPartitionReplicasMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []KafkaPartitionReplicasMetricAttributeKey{KafkaPartitionReplicasMetricAttributeKeyTopic, KafkaPartitionReplicasMetricAttributeKeyPartition},
 		},
-		KafkaPartitionReplicasInSync: MetricConfig{
-			Enabled: true,
+		KafkaPartitionReplicasInSync: KafkaPartitionReplicasInSyncMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []KafkaPartitionReplicasInSyncMetricAttributeKey{KafkaPartitionReplicasInSyncMetricAttributeKeyTopic, KafkaPartitionReplicasInSyncMetricAttributeKeyPartition},
 		},
-		KafkaTopicLogRetentionPeriod: MetricConfig{
-			Enabled: false,
+		KafkaTopicLogRetentionPeriod: KafkaTopicLogRetentionPeriodMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaTopicLogRetentionPeriodMetricAttributeKey{KafkaTopicLogRetentionPeriodMetricAttributeKeyTopic},
 		},
-		KafkaTopicLogRetentionSize: MetricConfig{
-			Enabled: false,
+		KafkaTopicLogRetentionSize: KafkaTopicLogRetentionSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaTopicLogRetentionSizeMetricAttributeKey{KafkaTopicLogRetentionSizeMetricAttributeKeyTopic},
 		},
-		KafkaTopicMinInsyncReplicas: MetricConfig{
-			Enabled: false,
+		KafkaTopicMinInsyncReplicas: KafkaTopicMinInsyncReplicasMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaTopicMinInsyncReplicasMetricAttributeKey{KafkaTopicMinInsyncReplicasMetricAttributeKeyTopic},
 		},
-		KafkaTopicPartitions: MetricConfig{
-			Enabled: true,
+		KafkaTopicPartitions: KafkaTopicPartitionsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []KafkaTopicPartitionsMetricAttributeKey{KafkaTopicPartitionsMetricAttributeKeyTopic},
 		},
-		KafkaTopicReplicationFactor: MetricConfig{
-			Enabled: false,
+		KafkaTopicReplicationFactor: KafkaTopicReplicationFactorMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []KafkaTopicReplicationFactorMetricAttributeKey{KafkaTopicReplicationFactorMetricAttributeKeyTopic},
 		},
 	}
 }

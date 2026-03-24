@@ -31,21 +31,20 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("redis.version")
+			redisVersionAttrVal, ok := res.Attributes().Get("redis.version")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "redis.version-val", val.Str())
+				assert.Equal(t, "redis.version-val", redisVersionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("server.address")
+			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "server.address-val", val.Str())
+				assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("server.port")
+			serverPortAttrVal, ok := res.Attributes().Get("server.port")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "server.port-val", val.Str())
+				assert.Equal(t, "server.port-val", serverPortAttrVal.Str())
 			}
 		})
 	}

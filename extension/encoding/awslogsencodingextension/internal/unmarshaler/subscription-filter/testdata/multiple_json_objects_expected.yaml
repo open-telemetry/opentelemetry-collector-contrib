@@ -1,0 +1,59 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+        - key: aws.log.group.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: /my/first/log/group
+        - key: aws.log.stream.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: /my/first/log/stream
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: some text
+            timeUnixNano: "1771015786034000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudwatch
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+        - key: aws.log.group.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: /my/second/log/group
+        - key: aws.log.stream.names
+          value:
+            arrayValue:
+              values:
+                - stringValue: /my/second/log/stream
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: some other text
+            timeUnixNano: "1771015671000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: aws.cloudwatch
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

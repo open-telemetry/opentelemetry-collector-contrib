@@ -26,20 +26,48 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ProcessContextSwitches:     MetricConfig{Enabled: true},
-					ProcessCPUTime:             MetricConfig{Enabled: true},
-					ProcessCPUUtilization:      MetricConfig{Enabled: true},
-					ProcessDiskIo:              MetricConfig{Enabled: true},
-					ProcessDiskOperations:      MetricConfig{Enabled: true},
-					ProcessHandles:             MetricConfig{Enabled: true},
-					ProcessMemoryUsage:         MetricConfig{Enabled: true},
-					ProcessMemoryUtilization:   MetricConfig{Enabled: true},
-					ProcessMemoryVirtual:       MetricConfig{Enabled: true},
-					ProcessOpenFileDescriptors: MetricConfig{Enabled: true},
-					ProcessPagingFaults:        MetricConfig{Enabled: true},
-					ProcessSignalsPending:      MetricConfig{Enabled: true},
-					ProcessThreads:             MetricConfig{Enabled: true},
-					ProcessUptime:              MetricConfig{Enabled: true},
+					ProcessContextSwitches: MetricConfig{
+						Enabled: true,
+					},
+					ProcessCPUTime: MetricConfig{
+						Enabled: true,
+					},
+					ProcessCPUUtilization: MetricConfig{
+						Enabled: true,
+					},
+					ProcessDiskIo: MetricConfig{
+						Enabled: true,
+					},
+					ProcessDiskOperations: MetricConfig{
+						Enabled: true,
+					},
+					ProcessHandles: MetricConfig{
+						Enabled: true,
+					},
+					ProcessMemoryUsage: MetricConfig{
+						Enabled: true,
+					},
+					ProcessMemoryUtilization: MetricConfig{
+						Enabled: true,
+					},
+					ProcessMemoryVirtual: MetricConfig{
+						Enabled: true,
+					},
+					ProcessOpenFileDescriptors: MetricConfig{
+						Enabled: true,
+					},
+					ProcessPagingFaults: MetricConfig{
+						Enabled: true,
+					},
+					ProcessSignalsPending: MetricConfig{
+						Enabled: true,
+					},
+					ProcessThreads: MetricConfig{
+						Enabled: true,
+					},
+					ProcessUptime: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: true},
@@ -57,20 +85,48 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ProcessContextSwitches:     MetricConfig{Enabled: false},
-					ProcessCPUTime:             MetricConfig{Enabled: false},
-					ProcessCPUUtilization:      MetricConfig{Enabled: false},
-					ProcessDiskIo:              MetricConfig{Enabled: false},
-					ProcessDiskOperations:      MetricConfig{Enabled: false},
-					ProcessHandles:             MetricConfig{Enabled: false},
-					ProcessMemoryUsage:         MetricConfig{Enabled: false},
-					ProcessMemoryUtilization:   MetricConfig{Enabled: false},
-					ProcessMemoryVirtual:       MetricConfig{Enabled: false},
-					ProcessOpenFileDescriptors: MetricConfig{Enabled: false},
-					ProcessPagingFaults:        MetricConfig{Enabled: false},
-					ProcessSignalsPending:      MetricConfig{Enabled: false},
-					ProcessThreads:             MetricConfig{Enabled: false},
-					ProcessUptime:              MetricConfig{Enabled: false},
+					ProcessContextSwitches: MetricConfig{
+						Enabled: false,
+					},
+					ProcessCPUTime: MetricConfig{
+						Enabled: false,
+					},
+					ProcessCPUUtilization: MetricConfig{
+						Enabled: false,
+					},
+					ProcessDiskIo: MetricConfig{
+						Enabled: false,
+					},
+					ProcessDiskOperations: MetricConfig{
+						Enabled: false,
+					},
+					ProcessHandles: MetricConfig{
+						Enabled: false,
+					},
+					ProcessMemoryUsage: MetricConfig{
+						Enabled: false,
+					},
+					ProcessMemoryUtilization: MetricConfig{
+						Enabled: false,
+					},
+					ProcessMemoryVirtual: MetricConfig{
+						Enabled: false,
+					},
+					ProcessOpenFileDescriptors: MetricConfig{
+						Enabled: false,
+					},
+					ProcessPagingFaults: MetricConfig{
+						Enabled: false,
+					},
+					ProcessSignalsPending: MetricConfig{
+						Enabled: false,
+					},
+					ProcessThreads: MetricConfig{
+						Enabled: false,
+					},
+					ProcessUptime: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCgroup:         ResourceAttributeConfig{Enabled: false},

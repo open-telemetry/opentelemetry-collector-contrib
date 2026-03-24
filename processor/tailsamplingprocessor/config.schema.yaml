@@ -262,7 +262,7 @@ $defs:
     type: object
     properties:
       error_mode:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
+        $ref: /pkg/ottl.error_mode
       span:
         type: array
         items:

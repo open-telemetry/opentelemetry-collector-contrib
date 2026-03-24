@@ -232,6 +232,10 @@ func (c Config) validate() error {
 		return errors.New("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported on Windows")
 	}
 
+	if runtime.GOOS == "windows" && c.IncludeFilePermissions {
+		return errors.New("'include_file_permissions' is not supported on Windows")
+	}
+
 	return nil
 }
 
