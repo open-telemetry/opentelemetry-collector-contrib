@@ -117,8 +117,8 @@ func BenchmarkSerializeLog(b *testing.B) {
 
 func BenchmarkSerializeMetrics(b *testing.B) {
 	for _, bb := range []struct {
-		name           string
-		buildMetrics   func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index)
+		name         string
+		buildMetrics func() (pmetric.Metrics, []datapoints.DataPoint, elasticsearch.Index)
 	}{
 		{
 			name: "single gauge",

@@ -276,7 +276,7 @@ func (w *jsonWriter) writeDataStream(idx elasticsearch.Index, first bool) bool {
 	return first
 }
 
-func (w *jsonWriter) writeResource(resource pcommon.Resource, resourceSchemaURL string, stringifyMapAttributes bool, first bool) bool {
+func (w *jsonWriter) writeResource(resource pcommon.Resource, resourceSchemaURL string, stringifyMapAttributes, first bool) bool {
 	first = w.key("resource", first)
 	w.startObject()
 	firstField := true
@@ -287,7 +287,7 @@ func (w *jsonWriter) writeResource(resource pcommon.Resource, resourceSchemaURL 
 	return first
 }
 
-func (w *jsonWriter) writeScope(scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyMapAttributes bool, first bool) bool {
+func (w *jsonWriter) writeScope(scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyMapAttributes, first bool) bool {
 	first = w.key("scope", first)
 	w.startObject()
 	firstField := true
@@ -300,7 +300,7 @@ func (w *jsonWriter) writeScope(scope pcommon.InstrumentationScope, scopeSchemaU
 	return first
 }
 
-func (w *jsonWriter) writeAttributes(attributes pcommon.Map, stringifyMapValues bool, first bool) bool {
+func (w *jsonWriter) writeAttributes(attributes pcommon.Map, stringifyMapValues, first bool) bool {
 	if attributes.Len() == 0 {
 		return first
 	}
