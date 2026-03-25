@@ -56,6 +56,8 @@ const (
 type Evaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
+	// IsStateful reports whether decisions can depend on prior evaluations/state.
+	IsStateful() bool
 }
 
 type Extension interface {
