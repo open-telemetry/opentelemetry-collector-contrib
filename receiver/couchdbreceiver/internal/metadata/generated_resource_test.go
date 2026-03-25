@@ -37,20 +37,20 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "couchdb.node.name-val", couchdbNodeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("couchdb.version")
+			couchdbVersionAttrVal, ok := res.Attributes().Get("couchdb.version")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "couchdb.version-val", val.Str())
+				assert.Equal(t, "couchdb.version-val", couchdbVersionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.instance.id")
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.instance.id-val", val.Str())
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.name")
+			serviceNameAttrVal, ok := res.Attributes().Get("service.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.name-val", val.Str())
+				assert.Equal(t, "service.name-val", serviceNameAttrVal.Str())
 			}
 		})
 	}

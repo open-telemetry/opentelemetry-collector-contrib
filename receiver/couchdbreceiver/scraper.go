@@ -54,7 +54,8 @@ func (c *couchdbScraper) start(ctx context.Context, host component.Host) error {
 	c.client = httpClient
 	err = c.scrapeResourceAttributes()
 	if err != nil {
-		return err
+		// Do not fail to start for being unable to scrape resource attributes, we will try again when we scrape
+		c.settings.Logger.Warn("Failed to scrape resource attributes on startup, will try again later", zap.String("endpoint", c.config.Endpoint), zap.Error(err))
 	}
 	return nil
 }
@@ -68,18 +69,20 @@ func (c *couchdbScraper) scrapeResourceAttributes() error {
 			zap.String("endpoint", c.config.Endpoint),
 			zap.Error(err),
 		)
-	} else {
-		if uuid, ok := rootInfo["uuid"].(string); ok {
-			c.resourceAttributes.serviceInstanceID = uuid
-		}
-		if version, ok := rootInfo["version"].(string); ok {
-			c.resourceAttributes.couchDbVersion = version
-		}
+		return fmt.Errorf("failed to fetch couchdb root info: %w", err)
+	}
+
+	if uuid, ok := rootInfo["uuid"].(string); ok {
+		c.resourceAttributes.serviceInstanceID = uuid
+	}
+	if version, ok := rootInfo["version"].(string); ok {
+		c.resourceAttributes.couchDbVersion = version
 	}
 
 	nodeInfo, err := c.client.GetNodeInfo(localNode)
 	if err != nil {
 		c.settings.Logger.Error("Failed to fetch couchdb node info for the local node", zap.String("endpoint", c.config.Endpoint), zap.Error(err))
+		return fmt.Errorf("failed to fetch couchdb node info for the local node: %w", err)
 	} else if name, ok := nodeInfo["name"].(string); ok {
 		c.resourceAttributes.serviceName = name
 	}
