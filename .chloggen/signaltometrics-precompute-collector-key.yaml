@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: connector/signaltometrics
+component: connector/signal_to_metrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Pre-compute prefixed collector key to avoid a string allocation on every signal processed.
