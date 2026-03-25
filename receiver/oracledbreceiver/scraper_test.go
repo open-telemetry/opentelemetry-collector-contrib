@@ -244,9 +244,9 @@ func TestServiceNameResourceAttribute(t *testing.T) {
 		logsCfg := metadata.DefaultLogsBuilderConfig()
 		logsCfg.Events.DbServerTopQuery.Enabled = true
 		metricsCfg := metadata.DefaultMetricsBuilderConfig()
-		cacheValue := map[string]int64{"EXECUTIONS": 0}
+		logsCacheValue := map[string]int64{"EXECUTIONS": 0}
 		lruCache, _ := lru.New[string, map[string]int64](500)
-		lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
+		lruCache.Add("fxk8aq3nds8aw:0", logsCacheValue)
 
 		scrpr := oracleScraper{
 			logger: zap.NewNop(),
@@ -279,7 +279,7 @@ func TestServiceNameResourceAttribute(t *testing.T) {
 
 		logs, err := scrpr.scrapeLogs(t.Context())
 		require.NoError(t, err)
-		require.Greater(t, logs.ResourceLogs().Len(), 0, "expected at least one ResourceLogs")
+		require.Positive(t, logs.ResourceLogs().Len(), "expected at least one ResourceLogs")
 
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
 			val, ok := logs.ResourceLogs().At(i).Resource().Attributes().Get("service.name")
