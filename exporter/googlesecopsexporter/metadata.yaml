@@ -1,4 +1,4 @@
-type: googlesecops
+type: google_secops
 
 status:
   class: exporter

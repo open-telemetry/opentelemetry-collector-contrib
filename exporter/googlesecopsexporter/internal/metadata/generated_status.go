@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("googlesecops")
+	Type      = component.MustNewType("google_secops")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlesecopsexporter"
 )
 

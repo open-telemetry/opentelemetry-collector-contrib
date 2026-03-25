@@ -87,7 +87,7 @@ Besides the default hostnames, there are also regional hostnames which can be us
 ### Basic Chronicle API Configuration
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
@@ -100,7 +100,7 @@ googlesecops:
 ### Basic Backstory API Configuration
 
 ```yaml
-googlesecops:
+google_secops:
   api: "backstory"
   hostname: malachiteingestion-pa.googleapis.com
   customer_id: "customer-123"
@@ -111,7 +111,7 @@ googlesecops:
 ### Backstory API with Regional Hostname
 
 ```yaml
-googlesecops:
+google_secops:
   api: "backstory"
   hostname: europe-malachiteingestion-pa.googleapis.com
   customer_id: "customer-123"
@@ -123,7 +123,7 @@ googlesecops:
 ### Chronicle API with Overridden Hostname
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.eu.rep.googleapis.com
   override_hostname: true
@@ -137,7 +137,7 @@ googlesecops:
 ### Chronicle API with v1beta
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   api_version: "v1beta"
@@ -151,7 +151,7 @@ googlesecops:
 ### Configuration with Ingestion Labels
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
@@ -169,7 +169,7 @@ googlesecops:
 ### Configuration with Inline Credentials
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
@@ -182,7 +182,7 @@ googlesecops:
 ### Configuration with Gzip Compression
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
@@ -196,7 +196,7 @@ googlesecops:
 ### Configuration with Raw Log Field
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
@@ -210,7 +210,7 @@ googlesecops:
 ### Configuration with Log Type Override Disabled
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
@@ -224,7 +224,7 @@ googlesecops:
 ### Configuration with Custom Batch Size and Metrics
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
@@ -240,7 +240,7 @@ googlesecops:
 ### Full Configuration with All Options
 
 ```yaml
-googlesecops:
+google_secops:
   api: "chronicle"
   hostname: chronicle.googleapis.com
   location: "us"
