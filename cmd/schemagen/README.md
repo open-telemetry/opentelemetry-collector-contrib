@@ -35,22 +35,10 @@ In package mode every exported struct becomes a definition under `$defs` and the
 
 ## Usage
 
-Build a local binary:
+Run schemagen via the `schemagen` Make target:
 
 ```bash
-make install-tools
-```
-
-After installing the tool you can execute it directly or through the helper Make target.
-
-```bash
-schemagen [flags] path/to/your/package/dir
-```
-
-The repository also provides a convenient wrapper:
-
-```bash
-make schemagen SRC=receiver/foo/somecomponent/
+make schemagen SRC=path/to/your/package/dir
 ```
 
 You can pass any CLI flags through the `FLAGS` variable:
@@ -79,6 +67,7 @@ the repository root. Although settings file is optional it extends significantly
 A practical example:
 
 ```yaml
+namespace: github.com/open-telemetry/opentelemetry-collector-contrib
 mappings:
   time:
     Duration:
@@ -94,6 +83,8 @@ componentOverrides:
     configName: 'FileLogConfig'
 ```
 
+- `namespace` corresponds to the Go package import path for modules from current repository. 
+  It is used to resolve references to other types within the same repository.
 - `mappings` tell schemagen how to treat specific selector expressions as
   primitive schema fields. Each mapping converts the Go type into a scalar
   `schemaType` and can also set the JSON Schema `format`. The original

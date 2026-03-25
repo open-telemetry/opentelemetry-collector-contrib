@@ -67,6 +67,8 @@ type MetricsConfig struct {
 	K8sReplicationControllerDesired     MetricConfig `mapstructure:"k8s.replication_controller.desired"`
 	K8sResourceQuotaHardLimit           MetricConfig `mapstructure:"k8s.resource_quota.hard_limit"`
 	K8sResourceQuotaUsed                MetricConfig `mapstructure:"k8s.resource_quota.used"`
+	K8sServiceEndpointCount             MetricConfig `mapstructure:"k8s.service.endpoint.count"`
+	K8sServiceLoadBalancerIngressCount  MetricConfig `mapstructure:"k8s.service.load_balancer.ingress.count"`
 	K8sStatefulsetCurrentPods           MetricConfig `mapstructure:"k8s.statefulset.current_pods"`
 	K8sStatefulsetDesiredPods           MetricConfig `mapstructure:"k8s.statefulset.desired_pods"`
 	K8sStatefulsetReadyPods             MetricConfig `mapstructure:"k8s.statefulset.ready_pods"`
@@ -193,6 +195,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sResourceQuotaUsed: MetricConfig{
 			Enabled: true,
 		},
+		K8sServiceEndpointCount: MetricConfig{
+			Enabled: false,
+		},
+		K8sServiceLoadBalancerIngressCount: MetricConfig{
+			Enabled: false,
+		},
 		K8sStatefulsetCurrentPods: MetricConfig{
 			Enabled: true,
 		},
@@ -282,6 +290,11 @@ type ResourceAttributesConfig struct {
 	K8sReplicationcontrollerUID            ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.uid"`
 	K8sResourcequotaName                   ResourceAttributeConfig `mapstructure:"k8s.resourcequota.name"`
 	K8sResourcequotaUID                    ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
+	K8sServiceName                         ResourceAttributeConfig `mapstructure:"k8s.service.name"`
+	K8sServicePublishNotReadyAddresses     ResourceAttributeConfig `mapstructure:"k8s.service.publish_not_ready_addresses"`
+	K8sServiceTrafficDistribution          ResourceAttributeConfig `mapstructure:"k8s.service.traffic_distribution"`
+	K8sServiceType                         ResourceAttributeConfig `mapstructure:"k8s.service.type"`
+	K8sServiceUID                          ResourceAttributeConfig `mapstructure:"k8s.service.uid"`
 	K8sStatefulsetName                     ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID                      ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
 	OpenshiftClusterquotaName              ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
@@ -392,6 +405,21 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sResourcequotaUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServicePublishNotReadyAddresses: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sServiceTrafficDistribution: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sServiceType: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sStatefulsetName: ResourceAttributeConfig{

@@ -24,7 +24,7 @@ The number of checkpoints completed or failed.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| checkpoint | The number of checkpoints completed or that failed. | Str: ``completed``, ``failed`` | Recommended |
+| checkpoint | The number of checkpoints completed or that failed. | Str: ``completed``, ``failed`` | Required |
 
 ### flink.job.checkpoint.in_progress
 
@@ -94,7 +94,7 @@ The total number of collections that have occurred.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Recommended |
+| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Required |
 
 ### flink.jvm.gc.collections.time
 
@@ -108,7 +108,7 @@ The total time spent performing garbage collection.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Recommended |
+| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Required |
 
 ### flink.jvm.memory.direct.total_capacity
 
@@ -251,7 +251,7 @@ The number of records an operator has.
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
 | name | The operator name. | Any Str | Recommended |
-| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Recommended |
+| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Required |
 
 ### flink.operator.watermark.output
 
@@ -279,7 +279,7 @@ The number of records a task has.
 
 | Name | Description | Values | Requirement Level |
 | ---- | ----------- | ------ | -------- |
-| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Recommended |
+| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Required |
 
 ## Resource Attributes
 

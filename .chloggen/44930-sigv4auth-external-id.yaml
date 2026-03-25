@@ -1,0 +1,8 @@
+change_type: enhancement
+component: extension/sigv4auth
+note: Add support for External IDs when assuming roles in cross-account authentication scenarios
+issues: [44930]
+subtext: |
+  Added external_id field to the AssumeRole configuration, allowing users to specify
+  an External ID when assuming roles for enhanced cross-account security.
+change_logs: [user]

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -76,14 +77,18 @@ type ClientConfig struct {
 	//
 	// NOTE: this is experimental and may be removed in a future release.
 	UseLeaderEpoch bool `mapstructure:"use_leader_epoch"`
+
+	// ConnIdleTimeout specifies the time after which idle connections are not reused and may be closed.
+	ConnIdleTimeout time.Duration `mapstructure:"conn_idle_timeout"`
 }
 
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Brokers:        []string{"localhost:9092"},
-		ClientID:       "otel-collector",
-		Metadata:       NewDefaultMetadataConfig(),
-		UseLeaderEpoch: true,
+		Brokers:         []string{"localhost:9092"},
+		ClientID:        "otel-collector",
+		Metadata:        NewDefaultMetadataConfig(),
+		UseLeaderEpoch:  true,
+		ConnIdleTimeout: 9 * time.Minute,
 	}
 }
 
@@ -95,6 +100,9 @@ func (c ClientConfig) Validate() error {
 		if _, err := sarama.ParseKafkaVersion(c.ProtocolVersion); err != nil {
 			return fmt.Errorf("invalid protocol version: %w", err)
 		}
+	}
+	if c.ConnIdleTimeout <= 0 {
+		return fmt.Errorf("conn_idle_timeout (%s) must be positive", c.ConnIdleTimeout)
 	}
 	return nil
 }
@@ -397,12 +405,16 @@ type SASLConfig struct {
 	Username string `mapstructure:"username"`
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
-	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).
+	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER,
+	// SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
 	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+	// ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism,
+	// typically named "oauth2client"
+	OAuthBearerTokenSource component.ID `mapstructure:"oauthbearer_token_source,omitempty"`
 }
 
 func (c SASLConfig) Validate() error {
@@ -416,6 +428,10 @@ func (c SASLConfig) Validate() error {
 		}
 		if c.Password == "" {
 			return errors.New("password is required")
+		}
+	case "OAUTHBEARER":
+		if c.OAuthBearerTokenSource == (component.ID{}) {
+			return errors.New("oauth2authclient extension is required")
 		}
 	default:
 		return fmt.Errorf(

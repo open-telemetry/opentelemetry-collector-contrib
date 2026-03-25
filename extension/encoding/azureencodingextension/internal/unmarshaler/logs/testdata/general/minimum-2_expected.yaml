@@ -31,5 +31,9 @@ resourceLogs:
             body: {}
             timeUnixNano: "1668142107676714500"
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.generic
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

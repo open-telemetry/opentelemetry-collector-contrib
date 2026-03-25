@@ -65,7 +65,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 
 	expected := map[string]any{
 		"cloud.provider":           "azure",
-		"cloud.platform":           "azure_vm",
+		"cloud.platform":           "azure.vm",
 		"host.name":                "computerName",
 		"cloud.region":             "location",
 		"host.id":                  "vmID",

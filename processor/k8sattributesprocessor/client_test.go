@@ -108,11 +108,9 @@ func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
 func (f *fakeClient) Start() error {
 	startInformer := func(informer cache.SharedInformer) {
 		if informer != nil {
-			f.stopWg.Add(1)
-			go func() {
-				defer f.stopWg.Done()
+			f.stopWg.Go(func() {
 				informer.Run(f.StopCh)
-			}()
+			})
 		}
 	}
 

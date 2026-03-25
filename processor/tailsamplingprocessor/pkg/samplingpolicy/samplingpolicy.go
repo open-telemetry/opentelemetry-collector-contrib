@@ -14,6 +14,8 @@ import (
 type TraceData struct {
 	// SpanCount track the number of spans on the trace.
 	SpanCount int64
+	// SizeBytes is how many bytes we have accumulated for the trace.
+	SizeBytes uint64
 	// ReceivedBatches stores all the batches received for the trace.
 	ReceivedBatches ptrace.Traces
 }
@@ -54,6 +56,8 @@ const (
 type Evaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
+	// IsStateful reports whether decisions can depend on prior evaluations/state.
+	IsStateful() bool
 }
 
 type Extension interface {

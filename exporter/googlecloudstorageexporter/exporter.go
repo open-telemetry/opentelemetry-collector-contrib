@@ -4,26 +4,34 @@
 package googlecloudstorageexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
+	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	"github.com/klauspost/compress/zstd"
 	"github.com/lestrrat-go/strftime"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"google.golang.org/api/googleapi"
 )
 
+type poolItem interface {
+	io.WriteCloser
+	Reset(io.Writer)
+}
 type signalType string
 
 const (
@@ -46,6 +54,8 @@ type storageExporter struct {
 	bucketHandle    *storage.BucketHandle
 	logger          *zap.Logger
 	partitionFormat *strftime.Strftime
+	gzipWriterPool  *sync.Pool
+	zstdWriterPool  *sync.Pool
 	signal          signalType
 }
 
@@ -116,15 +126,29 @@ func newStorageExporter(
 		logger:          logger,
 		partitionFormat: partitionFormat,
 		signal:          signal,
+		gzipWriterPool: &sync.Pool{
+			New: func() any {
+				// Create a new gzip writer that writes to a dummy buffer initially
+				// It will be reset to the actual destination when used
+				writer := gzip.NewWriter(io.Discard)
+				return writer
+			},
+		},
+		zstdWriterPool: &sync.Pool{
+			New: func() any {
+				// Create a new zstd writer that writes to a dummy buffer initially
+				// It will be reset to the actual destination when used
+				writer, err := zstd.NewWriter(io.Discard)
+				if err != nil {
+					logger.Error("failed to create zstd writer for pool, falling back to on-demand creation",
+						zap.Error(err))
+					// Return nil on error - sync.Pool will handle this gracefully
+					return nil
+				}
+				return writer
+			},
+		},
 	}, nil
-}
-
-func isBucketConflictError(err error) bool {
-	var gErr *googleapi.Error
-	if !errors.As(err, &gErr) {
-		return false
-	}
-	return gErr.Code == http.StatusConflict
 }
 
 func (s *storageExporter) Start(ctx context.Context, host component.Host) error {
@@ -159,21 +183,31 @@ func (s *storageExporter) Start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return fmt.Errorf("failed to create storage client: %w", err)
 	}
-	err = client.Bucket(s.cfg.Bucket.Name).Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
-		Location: s.cfg.Bucket.Region,
-	})
-	if err != nil {
-		if !s.cfg.Bucket.ReuseIfExists {
+
+	bucketHandle := client.Bucket(s.cfg.Bucket.Name)
+
+	if s.cfg.Bucket.ReuseIfExists {
+		// Check if bucket exists without attempting to create it
+		_, err = bucketHandle.Attrs(ctx)
+		if err != nil {
+			if errors.Is(err, storage.ErrBucketNotExist) {
+				return fmt.Errorf("bucket %q does not exist and reuse_if_exists is true (bucket must be created externally): %w", s.cfg.Bucket.Name, err)
+			}
+			// Return error if it's a permission issue or network failure
+			return fmt.Errorf("failed to get bucket attributes: %w", err)
+		}
+		s.logger.Info("Using existing bucket", zap.String("bucket", s.cfg.Bucket.Name))
+	} else {
+		// Attempt to create the bucket
+		err = bucketHandle.Create(ctx, s.cfg.Bucket.ProjectID, &storage.BucketAttrs{
+			Location: s.cfg.Bucket.Region,
+		})
+		if err != nil {
 			return fmt.Errorf("failed to create storage bucket %q: %w", s.cfg.Bucket.Name, err)
 		}
-		if !isBucketConflictError(err) {
-			return fmt.Errorf("unexpected error creating the storage bucket %q: %w", s.cfg.Bucket.Name, err)
-		}
-		// otherwise bucket exists and will be reused
-		s.logger.Info("Existing bucket will be used", zap.String("bucket", s.cfg.Bucket.Name))
-	} else {
 		s.logger.Info("Created bucket", zap.String("bucket", s.cfg.Bucket.Name))
 	}
+
 	s.bucketHandle = client.Bucket(s.cfg.Bucket.Name)
 	s.storageClient = client
 	return nil
@@ -218,6 +252,7 @@ func (s *storageExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 // It starts from a unique ID, and prepends the partitionFormat and the prefix to it.
 func generateFilename(
 	uniqueID, filePrefix, partitionPrefix string,
+	compression configcompression.Type,
 	partitionFormat *strftime.Strftime,
 	now time.Time,
 ) string {
@@ -244,6 +279,15 @@ func generateFilename(
 		}
 		filename = partitionPrefix + filename
 	}
+
+	// Add compression extension
+	switch compression {
+	case configcompression.TypeGzip:
+		filename += ".gz"
+	case configcompression.TypeZstd:
+		filename += ".zst"
+	}
+
 	return filename
 }
 
@@ -253,6 +297,12 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		return nil
 	}
 
+	// Compress the content if compression is configured
+	compressedContent, err := s.compressContent(content)
+	if err != nil {
+		return fmt.Errorf("failed to compress content: %w", err)
+	}
+
 	// if we have multiple files coming, we need to make sure the name is unique so they do
 	// not overwrite each other
 	uniqueID := uuid.New().String()
@@ -260,6 +310,7 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 		uniqueID,
 		s.cfg.Bucket.FilePrefix,
 		s.cfg.Bucket.Partition.Prefix,
+		s.cfg.Bucket.Compression,
 		s.partitionFormat,
 		time.Now().UTC(),
 	)
@@ -276,16 +327,75 @@ func (s *storageExporter) uploadFile(ctx context.Context, content []byte) (err e
 			)
 		}
 	}()
-	if _, err = writer.Write(content); err != nil {
+	if _, err = writer.Write(compressedContent); err != nil {
 		return fmt.Errorf("failed to write to file: %w", err)
 	}
 	s.logger.Info(
 		"New file uploaded",
 		zap.String("filename", filename),
 		zap.String("bucket", s.cfg.Bucket.Name),
-		zap.Int("size", len(content)),
+		zap.Int("size", len(compressedContent)),
 	)
 	return nil
+}
+
+func (s *storageExporter) compressContent(raw []byte) ([]byte, error) {
+	switch s.cfg.Bucket.Compression {
+	case configcompression.TypeGzip:
+		return compress[*gzip.Writer](s.gzipWriterPool, raw, func(w io.Writer) (*gzip.Writer, error) {
+			return gzip.NewWriter(w), nil
+		})
+	case configcompression.TypeZstd:
+		return compress[*zstd.Encoder](s.zstdWriterPool, raw, func(w io.Writer) (*zstd.Encoder, error) {
+			return zstd.NewWriter(w)
+		})
+	default:
+		return raw, nil
+	}
+}
+
+func compress[T poolItem](pool *sync.Pool, raw []byte, newItem func(io.Writer) (T, error)) ([]byte, error) {
+	if pool == nil {
+		return nil, errors.New("unexpected: compress pool is nil")
+	}
+
+	content := bytes.NewBuffer(nil)
+
+	// Get writer from pool or create new one
+	pooled := pool.Get()
+	var zipper T
+	var fromPool bool
+	if pooled != nil {
+		if w, ok := pooled.(T); ok {
+			zipper = w
+			zipper.Reset(content)
+			fromPool = true
+		}
+	}
+	if !fromPool {
+		var err error
+		zipper, err = newItem(content)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Write the data
+	if _, err := zipper.Write(raw); err != nil {
+		// Always close to release resources, but ignore close error on write failure
+		_ = zipper.Close()
+		return nil, err
+	}
+
+	// Close the writer
+	if err := zipper.Close(); err != nil {
+		return nil, err
+	}
+
+	// Only return the writer to the pool after successful write and close
+	pool.Put(zipper)
+
+	return content.Bytes(), nil
 }
 
 // loadExtension tries to load an available extension for the given id.

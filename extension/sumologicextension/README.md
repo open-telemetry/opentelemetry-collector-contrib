@@ -77,7 +77,10 @@ and can be used as an authenticator for the
   - `initial_interval` - initial interval of backoff (default: `500ms`)
   - `max_interval` - maximum interval of backoff (default: `1m`)
   - `max_elapsed_time` - time after which registration fails definitely (default: `15m`)
-  - `sticky_session_enabled` - enable sticky session support (default: `false`)
+- `sticky_session_enabled` - enable sticky session support (default: `false`)
+- `update_metadata`: defines whether the collector will update its metadata on startup.
+  This includes host details, collector details, network details, and optionally discovered tags.
+  (default: `true`)
 
 [credentials_help]: https://help.sumologic.com/docs/manage/security/installation-tokens
 [fields_help]: https://help.sumologic.com/docs/manage/fields

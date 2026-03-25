@@ -81,3 +81,6 @@ kafka/regex_topic_with_exclusion:
     exclude_topics:
     - "^traces-debug-.*$"
     encoding: otlp_proto
+
+kafka/conn_idle_timeout:
+  conn_idle_timeout: 5m
