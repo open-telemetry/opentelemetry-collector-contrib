@@ -160,11 +160,18 @@ func TestHistogramValueRaw(t *testing.T) {
 			wantCounts:     []any{3},
 		},
 		{
-			name:           "overflow bucket uses last bound",
+			name:           "overflow bucket merged into last real bucket",
 			explicitBounds: []float64{10.0, 20.0},
 			bucketCounts:   []uint64{1, 2, 3},
-			wantValues:     []any{10.0, 20.0, 20.0},
-			wantCounts:     []any{1, 2, 3},
+			wantValues:     []any{10.0, 20.0},
+			wantCounts:     []any{1, 5},
+		},
+		{
+			name:           "overflow bucket with zero count",
+			explicitBounds: []float64{10.0, 20.0},
+			bucketCounts:   []uint64{1, 2, 0},
+			wantValues:     []any{10.0, 20.0},
+			wantCounts:     []any{1, 2},
 		},
 		{
 			name:           "no explicit bounds with count and sum",

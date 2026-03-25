@@ -90,6 +90,17 @@ func histogramToValue(dp pmetric.HistogramDataPoint, metric pmetric.Metric, raw 
 		if count == 0 {
 			continue
 		}
+		if raw && i == explicitBounds.Len() {
+			// In raw mode, the overflow bucket would have the same value
+			// as the last real bucket. Merge the overflow count into the
+			// last real bucket to avoid duplicate values, which violates
+			// ES histogram's strictly increasing values requirement.
+			lastIdx := counts.Len() - 1
+			if lastIdx >= 0 && count > 0 {
+				counts.At(lastIdx).SetInt(counts.At(lastIdx).Int() + safeUint64ToInt64(count))
+			}
+			break
+		}
 
 		var value float64
 		if raw {
@@ -128,11 +139,7 @@ func midpointBucketValue(explicitBounds pcommon.Float64Slice, i int) float64 {
 }
 
 // rawBucketValue returns the explicit bound for bucket at index i without
-// any midpoint approximation. For the overflow bucket (i >= len(explicitBounds)),
-// the last explicit bound is used.
+// any midpoint approximation.
 func rawBucketValue(explicitBounds pcommon.Float64Slice, i int) float64 {
-	if i < explicitBounds.Len() {
-		return explicitBounds.At(i)
-	}
-	return explicitBounds.At(explicitBounds.Len() - 1)
+	return explicitBounds.At(i)
 }
