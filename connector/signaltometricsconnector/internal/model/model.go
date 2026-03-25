@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -135,15 +136,28 @@ type AttributeEntry[K any] struct {
 	DefaultValue pcommon.Value
 }
 
+// AttributeKeyValue represents a static-key attribute entry used for
+// deterministic hash computation and unchecked filtering. It does not
+// support OTTL expressions.
+type AttributeKeyValue struct {
+	Key          string
+	Optional     bool
+	DefaultValue pcommon.Value
+}
+
 type MetricDef[K any] struct {
 	Key                       MetricKey
 	IncludeResourceAttributes []AttributeEntry[K]
 	Attributes                []AttributeEntry[K]
-	Conditions                *ottl.ConditionSequence[K]
-	ExponentialHistogram      *ExponentialHistogram[K]
-	ExplicitHistogram         *ExplicitHistogram[K]
-	Sum                       *Sum[K]
-	Gauge                     *Gauge[K]
+	// sortedAttrs is the static-key subset of Attributes sorted
+	// alphabetically by key, used for deterministic hash computation
+	// in FilterAttributesID.
+	sortedAttrs          []AttributeKeyValue
+	Conditions           *ottl.ConditionSequence[K]
+	ExponentialHistogram *ExponentialHistogram[K]
+	ExplicitHistogram    *ExplicitHistogram[K]
+	Sum                  *Sum[K]
+	Gauge                *Gauge[K]
 }
 
 func (md *MetricDef[K]) FromMetricInfo(
@@ -163,6 +177,26 @@ func (md *MetricDef[K]) FromMetricInfo(
 	md.Attributes, err = parseAttributeEntries(mi.Attributes, parser)
 	if err != nil {
 		return fmt.Errorf("failed to parse attribute config: %w", err)
+	}
+	// Pre-sort a copy of static-key Attributes by key for deterministic hash
+	// computation in FilterAttributesID. OTTL expression entries are excluded
+	// because they are resolved at runtime.
+	staticEntries := make([]AttributeKeyValue, 0, len(md.Attributes))
+	for _, entry := range md.Attributes {
+		if entry.Expression != nil {
+			continue
+		}
+		staticEntries = append(staticEntries, AttributeKeyValue{
+			Key:          entry.Key,
+			Optional:     entry.Optional,
+			DefaultValue: entry.DefaultValue,
+		})
+	}
+	if len(staticEntries) > 0 {
+		md.sortedAttrs = staticEntries
+		sort.Slice(md.sortedAttrs, func(i, j int) bool {
+			return md.sortedAttrs[i].Key < md.sortedAttrs[j].Key
+		})
 	}
 	if len(mi.Conditions) > 0 {
 		conditions, err := parser.ParseConditions(mi.Conditions)
@@ -256,6 +290,55 @@ func (md *MetricDef[K]) MatchAttributes(attrs pcommon.Map) bool {
 	return true
 }
 
+// FilterAttributesID returns a 128-bit hash that identifies the filtered
+// attribute set for the given source attributes, without allocating a
+// pcommon.Map. The returned hash is equivalent in purpose to
+// pdatautil.MapHash applied to the result of FilterAttributes, but uses a
+// different (internal-only) encoding. Returns false if any required
+// static-key attribute is absent.
+//
+// This only considers static-key entries in Attributes (not OTTL
+// expression entries). It is used in conjunction with
+// FilterAttributesUnchecked: call FilterAttributesID first to check
+// presence and compute the DP lookup key, then call
+// FilterAttributesUnchecked only when a new DP must be created.
+func (md *MetricDef[K]) FilterAttributesID(attrs pcommon.Map) ([16]byte, bool) {
+	for _, filter := range md.Attributes {
+		if filter.Expression != nil || filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
+			continue
+		}
+		if _, ok := attrs.Get(filter.Key); !ok {
+			return [16]byte{}, false
+		}
+	}
+	hb := attrHashBufPool.Get().(*attrHashBuf)
+	hb.buf = hb.buf[:0]
+	for _, filter := range md.sortedAttrs {
+		v, ok := attrs.Get(filter.Key)
+		if ok {
+			hb.buf = append(hb.buf, filter.Key...)
+			hb.buf = append(hb.buf, 0) // key-value separator
+			hb.buf = appendAttrValue(hb.buf, v)
+		} else if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty {
+			hb.buf = append(hb.buf, filter.Key...)
+			hb.buf = append(hb.buf, 0)
+			hb.buf = appendAttrValue(hb.buf, filter.DefaultValue)
+		}
+		// Optional key absent: not included in hash
+	}
+	id := hb.sum128()
+	attrHashBufPool.Put(hb)
+	return id, true
+}
+
+// FilterAttributesUnchecked creates a filtered pcommon.Map from attrs
+// using only the static-key entries in Attributes, without re-checking
+// for required attribute presence. It must only be called after
+// FilterAttributesID has returned true for the same attrs.
+func (md *MetricDef[K]) FilterAttributesUnchecked(attrs pcommon.Map) pcommon.Map {
+	return filterAttributes(attrs, md.sortedAttrs, len(md.sortedAttrs))
+}
+
 // FilterAttributes filters event attributes (datapoint, logrecord, spans)
 // based on the `Attributes` selected for the metric definition. If no
 // attributes are selected then an empty `pcommon.Map` is returned.
@@ -288,6 +371,24 @@ func filterByEntries[K any](
 		copyAttribute(entry.Key, entry.DefaultValue, src, dst)
 	}
 	return dst, nil
+}
+
+// filterAttributes creates a filtered pcommon.Map from attrs using only
+// static-key AttributeKeyValue entries. This is used by
+// FilterAttributesUnchecked for the lazy-allocation path.
+func filterAttributes(attrs pcommon.Map, filters []AttributeKeyValue, expectedLen int) pcommon.Map {
+	filteredAttrs := pcommon.NewMap()
+	filteredAttrs.EnsureCapacity(expectedLen)
+	for _, filter := range filters {
+		if attr, ok := attrs.Get(filter.Key); ok {
+			attr.CopyTo(filteredAttrs.PutEmpty(filter.Key))
+			continue
+		}
+		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty {
+			filter.DefaultValue.CopyTo(filteredAttrs.PutEmpty(filter.Key))
+		}
+	}
+	return filteredAttrs
 }
 
 func parseAttributeEntries[K any](
