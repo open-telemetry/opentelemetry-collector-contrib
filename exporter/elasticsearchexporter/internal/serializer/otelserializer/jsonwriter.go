@@ -181,7 +181,7 @@ func init() {
 	for i := range htmlSafeSet {
 		htmlSafeSet[i] = true
 	}
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		htmlSafeSet[i] = false
 	}
 	for _, c := range `\"` {
