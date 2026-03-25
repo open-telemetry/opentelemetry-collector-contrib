@@ -75,7 +75,8 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 					}
 
 					if md.Conditions != nil {
-						match, err := md.Conditions.Eval(ctx, tCtx)
+						var match bool
+						match, err = md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
 							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
@@ -136,7 +137,8 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						}
 
 						if md.Conditions != nil {
-							match, err := md.Conditions.Eval(ctx, tCtx)
+							var match bool
+							match, err = md.Conditions.Eval(ctx, tCtx)
 							if err != nil {
 								return fmt.Errorf("failed to evaluate conditions: %w", err)
 							}
@@ -230,7 +232,8 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 					}
 
 					if md.Conditions != nil {
-						match, err := md.Conditions.Eval(ctx, tCtx)
+						var match bool
+						match, err = md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
 							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
@@ -293,7 +296,8 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 					}
 
 					if md.Conditions != nil {
-						match, err := md.Conditions.Eval(ctx, tCtx)
+						var match bool
+						match, err = md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
 							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
