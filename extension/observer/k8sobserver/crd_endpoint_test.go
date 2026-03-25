@@ -133,7 +133,7 @@ func TestConvertUnstructuredToEndpointClusterScoped(t *testing.T) {
 	crdDetails, ok := endpoint.Details.(*observer.K8sCRD)
 	require.True(t, ok)
 
-	assert.Equal(t, "", crdDetails.Namespace) // Cluster-scoped, no namespace
+	assert.Empty(t, crdDetails.Namespace, "cluster-scoped resources have no namespace")
 	assert.Equal(t, "cluster.example.com", crdDetails.Group)
 	assert.Equal(t, "v1", crdDetails.Version)
 	assert.Equal(t, "ClusterResource", crdDetails.Kind)

@@ -192,7 +192,7 @@ func TestHandlerOnAddClusterScopedCustomResourceRegistersEndpoint(t *testing.T) 
 
 	details, ok := ep.Details.(*observer.K8sCRD)
 	require.True(t, ok)
-	assert.Equal(t, "", details.Namespace, "cluster-scoped instances have no metadata.namespace")
+	assert.Empty(t, details.Namespace, "cluster-scoped instances have no metadata.namespace")
 	assert.Equal(t, "cluster.example.com", details.Group)
 	assert.Equal(t, "v1", details.Version)
 	assert.Equal(t, "ClusterPolicy", details.Kind)
