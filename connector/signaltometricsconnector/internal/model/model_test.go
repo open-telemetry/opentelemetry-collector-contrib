@@ -4,7 +4,6 @@
 package model
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -86,7 +85,7 @@ func TestFilterResourceAttributes(t *testing.T) {
 			inputResourceAttrsM := pcommon.NewMap()
 			require.NoError(t, inputResourceAttrsM.FromRaw(inputAttributes))
 			actual, err := md.FilterResourceAttributes(
-				context.Background(),
+				t.Context(),
 				nil, // no transform context needed for static key tests
 				inputResourceAttrsM,
 				testCollectorInstanceInfo(t),
@@ -160,7 +159,7 @@ func TestFilterAttributes(t *testing.T) {
 			ok := md.MatchAttributes(inputAttrM)
 			assert.Equal(t, tc.expectedDecision, ok)
 			if ok {
-				actual, err := md.FilterAttributes(context.Background(), nil, inputAttrM)
+				actual, err := md.FilterAttributes(t.Context(), nil, inputAttrM)
 				require.NoError(t, err)
 				assert.Empty(t, cmp.Diff(tc.expectedAttributes, actual.AsRaw()))
 			}
@@ -205,10 +204,8 @@ func TestExtractStringSlice(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty_pcommon_slice",
-			input: func() pcommon.Slice {
-				return pcommon.NewSlice()
-			}(),
+			name:     "empty_pcommon_slice",
+			input:    pcommon.NewSlice(),
 			expected: []string{},
 		},
 	} {
