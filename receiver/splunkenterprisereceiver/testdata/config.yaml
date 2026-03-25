@@ -38,7 +38,7 @@ splunkenterprise:
     # Custom time range
     - spl: "index=_audit | stats count by action"
       target: search_head
-      earliest: "-1h"
+      earliest: "-42m"
       latest: "now"
       metrics:
         - metric_name: splunk.custom.audit.count

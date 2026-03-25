@@ -259,3 +259,21 @@ func TestScrapeError(t *testing.T) {
 	require.Error(t, err, "scrape failed")
 	require.True(t, scrapererror.IsPartialScrapeError(err), "scrape error is PartialScrapeError")
 }
+
+func TestIsTstatsCommand(t *testing.T) {
+	tests := []struct {
+		spl  string
+		want bool
+	}{
+		{"| tstats count where index=_internal", true},
+		{"| TSTATS count where index=_internal", true},
+		{"| stats count", false},
+		{"| search index=_internal", false},
+		{"| rest index=_internal", false},
+		{"| makeresults index=_internal", false},
+	}
+	for _, tt := range tests {
+		require.Equal(t, tt.want, isTstatsCommand(tt.spl), "spl: %q", tt.spl)
+	}
+}
+

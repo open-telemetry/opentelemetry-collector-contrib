@@ -2283,3 +2283,119 @@ func (s *splunkScraper) scrapeLicenses(_ context.Context, now pcommon.Timestamp,
 		s.mb.RecordSplunkLicenseExpirationSecondsRemainingDataPoint(now, timeRemaining, entry.Content.Status, entry.Content.Label, entry.Content.Type, i.Build, i.Version)
 	}
 }
+
+func (s *splunkScraper) formatSPLForSearch(search SearchConfig) string {
+	spl := strings.TrimSpace(search.SPL)
+
+	// Strip "search=" prefix so we don't duplicate
+	spl = strings.TrimPrefix(spl, "search=")
+	spl = strings.TrimSpace(spl)
+
+	if strings.HasPrefix(spl, "|") {
+		if isTstatsCommand(spl) {
+			spl = s.injectTstatsTimeRange(spl, search)
+		}
+		return "search=" + url.QueryEscape(spl)
+	}
+
+	timeRange := ""
+	splLower := strings.ToLower(spl)
+	hasEarliest := strings.Contains(splLower, "earliest=")
+	hasLatest := strings.Contains(splLower, "latest=")
+
+	if !hasEarliest || !hasLatest {
+		earliest := search.Earliest
+		latest := search.Latest
+
+		if earliest == "" {
+			earliest = "-" + formatDurationForSplunk(s.conf.CollectionInterval)
+		}
+		if latest == "" {
+			latest = "now"
+		}
+
+		if !hasEarliest && !hasLatest {
+			timeRange = fmt.Sprintf("earliest=%s latest=%s ", earliest, latest)
+		} else if !hasEarliest {
+			timeRange = fmt.Sprintf("earliest=%s ", earliest)
+		} else {
+			timeRange = fmt.Sprintf("latest=%s ", latest)
+		}
+	}
+
+	if strings.HasPrefix(splLower, "search ") {
+		if timeRange != "" {
+			spl = "search " + timeRange + spl[7:]
+		}
+		return "search=" + url.QueryEscape(spl)
+	}
+
+	return "search=" + url.QueryEscape("search "+timeRange+spl)
+}
+
+// `| tstats` doesn't get time window normally so we need to check for it and treat it with specialness
+func isTstatsCommand(spl string) bool {
+	fields := strings.Fields(spl[1:])
+	return len(fields) > 0 && strings.ToLower(fields[0]) == "tstats"
+}
+
+func (s *splunkScraper) injectTstatsTimeRange(spl string, search SearchConfig) string {
+	splLower := strings.ToLower(spl)
+	hasEarliest := strings.Contains(splLower, "earliest=")
+	hasLatest := strings.Contains(splLower, "latest=")
+
+	if hasEarliest && hasLatest {
+		return spl
+	}
+
+	earliest := search.Earliest
+	latest := search.Latest
+	if earliest == "" {
+		earliest = "-" + formatDurationForSplunk(s.conf.CollectionInterval)
+	}
+	if latest == "" {
+		latest = "now"
+	}
+
+	var timeRange string
+	if !hasEarliest && !hasLatest {
+		timeRange = fmt.Sprintf("earliest=%s latest=%s", earliest, latest)
+	} else if !hasEarliest {
+		timeRange = fmt.Sprintf("earliest=%s", earliest)
+	} else {
+		timeRange = fmt.Sprintf("latest=%s", latest)
+	}
+
+	// Inject before "by" in bare tstats if present
+	byIdx := strings.Index(splLower, " by ")
+	if byIdx >= 0 {
+		return spl[:byIdx] + " " + timeRange + spl[byIdx:]
+	}
+	return strings.TrimRight(spl, " ") + " " + timeRange
+}
+
+func formatDurationForSplunk(d time.Duration) string {
+	if d >= time.Hour {
+		hours := int(d.Hours())
+		remaining := d - time.Duration(hours)*time.Hour
+		if remaining == 0 {
+			return fmt.Sprintf("%dh", hours)
+		}
+		mins := int(remaining.Minutes())
+		return fmt.Sprintf("%dh%dm", hours, mins)
+	}
+
+	if d >= time.Minute {
+		mins := int(d.Minutes())
+		remaining := d - time.Duration(mins)*time.Minute
+		if remaining == 0 {
+			return fmt.Sprintf("%dm", mins)
+		}
+		secs := int(remaining.Seconds())
+		return fmt.Sprintf("%dm%ds", mins, secs)
+	}
+
+	secs := int(d.Seconds())
+	return fmt.Sprintf("%ds", secs)
+}
+
