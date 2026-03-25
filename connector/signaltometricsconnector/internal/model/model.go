@@ -230,16 +230,9 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 		return filteredAttributes, nil
 	}
 
-	filteredAttributes := pcommon.NewMap()
-	filteredAttributes.EnsureCapacity(len(md.IncludeResourceAttributes) + collectorInfo.Size())
-	for _, entry := range md.IncludeResourceAttributes {
-		if entry.Expression != nil {
-			if err := resolveOTTLResourceAttributes(ctx, tCtx, entry, attrs, filteredAttributes); err != nil {
-				return pcommon.Map{}, err
-			}
-			continue
-		}
-		copyResourceAttribute(entry.Key, entry.DefaultValue, attrs, filteredAttributes)
+	filteredAttributes, err := filterByEntries(ctx, tCtx, md.IncludeResourceAttributes, attrs, collectorInfo.Size())
+	if err != nil {
+		return pcommon.Map{}, err
 	}
 	collectorInfo.Copy(filteredAttributes)
 	return filteredAttributes, nil
@@ -269,18 +262,32 @@ func (md *MetricDef[K]) MatchAttributes(attrs pcommon.Map) bool {
 // MatchAttributes should be called before this method to avoid unnecessary
 // transform context creation.
 func (md *MetricDef[K]) FilterAttributes(ctx context.Context, tCtx K, attrs pcommon.Map) (pcommon.Map, error) {
-	filteredAttrs := pcommon.NewMap()
-	filteredAttrs.EnsureCapacity(len(md.Attributes))
-	for _, entry := range md.Attributes {
+	return filterByEntries(ctx, tCtx, md.Attributes, attrs, 0)
+}
+
+// filterByEntries iterates over attribute entries, resolving OTTL
+// expressions and copying static keys from src into a new map.
+// extraCapacity is added to the initial map capacity for entries
+// like CollectorInstanceInfo that are appended after filtering.
+func filterByEntries[K any](
+	ctx context.Context,
+	tCtx K,
+	entries []AttributeEntry[K],
+	src pcommon.Map,
+	extraCapacity int,
+) (pcommon.Map, error) {
+	dst := pcommon.NewMap()
+	dst.EnsureCapacity(len(entries) + extraCapacity)
+	for _, entry := range entries {
 		if entry.Expression != nil {
-			if err := resolveOTTLAttributes(ctx, tCtx, entry, attrs, filteredAttrs); err != nil {
+			if err := resolveOTTLExpression(ctx, tCtx, entry, src, dst); err != nil {
 				return pcommon.Map{}, err
 			}
 			continue
 		}
-		copyResourceAttribute(entry.Key, entry.DefaultValue, attrs, filteredAttrs)
+		copyAttribute(entry.Key, entry.DefaultValue, src, dst)
 	}
-	return filteredAttrs, nil
+	return dst, nil
 }
 
 func parseAttributeEntries[K any](
@@ -319,7 +326,9 @@ func parseAttributeEntries[K any](
 	return entries, nil
 }
 
-func resolveOTTLAttributes[K any](
+// resolveOTTLExpression evaluates the OTTL expression to get a list of
+// attribute keys and copies matching attributes from src to dst.
+func resolveOTTLExpression[K any](
 	ctx context.Context,
 	tCtx K,
 	entry AttributeEntry[K],
@@ -327,45 +336,22 @@ func resolveOTTLAttributes[K any](
 ) error {
 	result, err := entry.Expression.Eval(ctx, tCtx)
 	if err != nil {
-		return fmt.Errorf("failed to evaluate ottl_expression for attributes: %w", err)
+		return fmt.Errorf("failed to evaluate ottl_expression: %w", err)
 	}
 	if result == nil {
 		return nil
 	}
 	keys, err := extractStringSlice(result)
 	if err != nil {
-		return fmt.Errorf("ottl_expression for attributes must return a list of strings: %w", err)
+		return fmt.Errorf("ottl_expression must return a list of strings: %w", err)
 	}
 	for _, key := range keys {
-		copyResourceAttribute(key, entry.DefaultValue, src, dst)
+		copyAttribute(key, entry.DefaultValue, src, dst)
 	}
 	return nil
 }
 
-func resolveOTTLResourceAttributes[K any](
-	ctx context.Context,
-	tCtx K,
-	entry AttributeEntry[K],
-	src, dst pcommon.Map,
-) error {
-	result, err := entry.Expression.Eval(ctx, tCtx)
-	if err != nil {
-		return fmt.Errorf("failed to evaluate ottl_expression for include_resource_attributes: %w", err)
-	}
-	if result == nil {
-		return nil
-	}
-	keys, err := extractStringSlice(result)
-	if err != nil {
-		return fmt.Errorf("ottl_expression for include_resource_attributes must return a list of strings: %w", err)
-	}
-	for _, key := range keys {
-		copyResourceAttribute(key, entry.DefaultValue, src, dst)
-	}
-	return nil
-}
-
-func copyResourceAttribute(key string, defaultValue pcommon.Value, src, dst pcommon.Map) {
+func copyAttribute(key string, defaultValue pcommon.Value, src, dst pcommon.Map) {
 	if attr, ok := src.Get(key); ok {
 		attr.CopyTo(dst.PutEmpty(key))
 		return
