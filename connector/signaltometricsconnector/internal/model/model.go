@@ -6,6 +6,7 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -132,11 +133,14 @@ type MetricDef[K any] struct {
 	Key                       MetricKey
 	IncludeResourceAttributes []AttributeKeyValue
 	Attributes                []AttributeKeyValue
-	Conditions                *ottl.ConditionSequence[K]
-	ExponentialHistogram      *ExponentialHistogram[K]
-	ExplicitHistogram         *ExplicitHistogram[K]
-	Sum                       *Sum[K]
-	Gauge                     *Gauge[K]
+	// sortedAttrs is Attributes sorted alphabetically by key, used for
+	// deterministic hash computation in FilterAttributesID.
+	sortedAttrs          []AttributeKeyValue
+	Conditions           *ottl.ConditionSequence[K]
+	ExponentialHistogram *ExponentialHistogram[K]
+	ExplicitHistogram    *ExplicitHistogram[K]
+	Sum                  *Sum[K]
+	Gauge                *Gauge[K]
 }
 
 func (md *MetricDef[K]) FromMetricInfo(
@@ -156,6 +160,15 @@ func (md *MetricDef[K]) FromMetricInfo(
 	md.Attributes, err = parseAttributeConfigs(mi.Attributes)
 	if err != nil {
 		return fmt.Errorf("failed to parse attribute config: %w", err)
+	}
+	// Pre-sort a copy of Attributes by key for deterministic hash computation
+	// in FilterAttributesID.
+	if len(md.Attributes) > 0 {
+		md.sortedAttrs = make([]AttributeKeyValue, len(md.Attributes))
+		copy(md.sortedAttrs, md.Attributes)
+		sort.Slice(md.sortedAttrs, func(i, j int) bool {
+			return md.sortedAttrs[i].Key < md.sortedAttrs[j].Key
+		})
 	}
 	if len(mi.Conditions) > 0 {
 		conditions, err := parser.ParseConditions(mi.Conditions)
@@ -243,6 +256,52 @@ func (md *MetricDef[K]) FilterAttributes(attrs pcommon.Map) (pcommon.Map, bool) 
 		}
 	}
 	return filterAttributes(attrs, md.Attributes, len(md.Attributes)), true
+}
+
+// FilterAttributesID returns a 128-bit hash that identifies the filtered
+// attribute set for the given source attributes, without allocating a
+// pcommon.Map. The returned hash is equivalent in purpose to
+// pdatautil.MapHash applied to the result of FilterAttributes, but uses a
+// different (internal-only) encoding. Returns false if any required attribute
+// is absent.
+//
+// This is used in conjunction with FilterAttributesUnchecked: call
+// FilterAttributesID first to check presence and compute the DP lookup key,
+// then call FilterAttributesUnchecked only when a new DP must be created.
+func (md *MetricDef[K]) FilterAttributesID(attrs pcommon.Map) ([16]byte, bool) {
+	for _, filter := range md.Attributes {
+		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
+			continue
+		}
+		if _, ok := attrs.Get(filter.Key); !ok {
+			return [16]byte{}, false
+		}
+	}
+	hb := attrHashBufPool.Get().(*attrHashBuf)
+	hb.buf = hb.buf[:0]
+	for _, filter := range md.sortedAttrs {
+		v, ok := attrs.Get(filter.Key)
+		if ok {
+			hb.buf = append(hb.buf, filter.Key...)
+			hb.buf = append(hb.buf, 0) // key-value separator
+			hb.buf = appendAttrValue(hb.buf, v)
+		} else if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty {
+			hb.buf = append(hb.buf, filter.Key...)
+			hb.buf = append(hb.buf, 0)
+			hb.buf = appendAttrValue(hb.buf, filter.DefaultValue)
+		}
+		// Optional key absent: not included in hash
+	}
+	id := hb.sum128()
+	attrHashBufPool.Put(hb)
+	return id, true
+}
+
+// FilterAttributesUnchecked creates a filtered pcommon.Map from attrs without
+// re-checking for required attribute presence. It must only be called after
+// FilterAttributesID has returned true for the same attrs.
+func (md *MetricDef[K]) FilterAttributesUnchecked(attrs pcommon.Map) pcommon.Map {
+	return filterAttributes(attrs, md.Attributes, len(md.Attributes))
 }
 
 func filterAttributes(attrs pcommon.Map, filters []AttributeKeyValue, expectedLen int) pcommon.Map {
