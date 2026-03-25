@@ -39,6 +39,7 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePathResolved)
 	assert.False(t, cfg.IncludeFileOwnerName)
 	assert.False(t, cfg.IncludeFileOwnerGroupName)
+	assert.False(t, cfg.IncludeFilePermissions)
 	assert.False(t, cfg.IncludeFileRecordNumber)
 	assert.False(t, cfg.AcquireFSLock)
 }

@@ -1,0 +1,52 @@
+{
+    "records": [
+        {
+            "Level": 5,
+            "category": "ServiceHealth",
+            "location": "global",
+            "resourceId": "/subscriptions/11111111-1111-1111-1111-111111111111",
+            "resultType": "Resolved",
+            "time": "2025-04-23T15:01:23.3361261Z",
+            "level": "Informational",
+            "correlationId": "aaaaaaaa-bbbb-cccc-dddd-666666666666",
+            "operationName": "Microsoft.ServiceHealth/maintenance/action",
+            "resultDescription": "Resolved: End of Routine Planned Maintenance for App Service in East US 2",
+            "properties": {
+                "title": "End of Routine Planned Maintenance for App Service in East US 2",
+                "service": "App Service",
+                "region": "East US 2",
+                "communication": "This notification is for previously scheduled maintenance to your Azure App Service instance(s) in East US 2. The maintenance has now completed. During this time, your Azure App Service application(s) may have seen a brief drop in connectivity for a few seconds. Please see frequently asked questions for maintenance notifications: <a href=\"https://learn.microsoft.com/en-us/azure/app-service/routine-maintenance\">Routine maintenance for App Service</a>. For maximum availability and minimal disruption to your service, follow our list of best practices outlined here: <a href=\"https://azure.github.io/AppService/2020/05/15/Robust-Apps-for-the-cloud.html\">The Ultimate Guide to Running Healthy Apps in the Cloud</a>. Feel free to refer to <a href=\"https://aka.ms/servicehealthpm\" target=\"_blank\">your Azure portal</a> for more information, <a href=\"https://learn.microsoft.com/en-us/azure/app-service/routine-maintenance\" target=\"_blank\">FAQs regarding routine maintenance notifications</a>, and for any additional questions, please <a href=\"https://portal.azure.com/#blade/Microsoft_Azure_Support/HelpAndSupportBlade/overview\">contact support</a>. Release Notes <a href=\"https://github.com/Azure/AppService/releases\">Release - Azure/AppService</a><br>To view your resource list in the region, <a href=\"https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/Microsoft.Web%2Fsites/view/%7b%22id%22%3a%22962d1741-9ee9-4834-b716-fb4d367c5008%22%2c%22name%22%3a%22962d1741-9ee9-4834-b716-fb4d367c5008%22%2c%22filterFacets%22%3a%5b%7b%22key%22%3a%22resourceGroup%22%2c%22uniqueId%22%3a%22962d1741-9ee9-4834-b716-fb4d367c5002%22%2c%22display%22%3a%22Resource%20group%22%2c%22operator%22%3a1%2c%22value%22%3anull%2c%22isAllValues%22%3atrue%2c%22facetKind%22%3a1%7d%2c%7b%22key%22%3a%22location%22%2c%22uniqueId%22%3a%22%22%2c%22display%22%3a%22Location%22%2c%22operator%22%3a1%2c%22value%22%3a%5b%7b%22name%22%3a%22eastus2%22%2c%22displayName%22%3a%22East%20US%202%22%2c%22count%22%3a%22(20)%22%7d%5d%2c%22isAllValues%22%3afalse%2c%22facetKind%22%3a1%7d%5d%2c%22groupByValue%22%3a%22%22%2c%22sortedColumns%22%3a%5b%7b%22sortBy%22%3a%22name%22%2c%22order%22%3a1%2c%22castFunction%22%3a2%7d%5d%2c%22showAll%22%3afalse%2c%22gridColumns%22%3a%5b%7b%22id%22%3a%22status%22%2c%22name%22%3a%22Status%22%2c%22visible%22%3atrue%2c%22description%22%3a%22Status%22%2c%22index%22%3a0%7d%2c%7b%22id%22%3a%22location%22%2c%22name%22%3a%22Location%22%2c%22visible%22%3atrue%2c%22description%22%3a%22The%20supported%20Azure%20location%20where%20the%20resource%20exists.%22%2c%22index%22%3a1%7d%2c%7b%22id%22%3a%22pricingTier%22%2c%22name%22%3a%22Pricing%20Tier%22%2c%22visible%22%3atrue%2c%22description%22%3a%22Pricing%20Tier%22%2c%22index%22%3a2%7d%2c%7b%22id%22%3a%22appServicePlanId%22%2c%22name%22%3a%22App%20Service%20Plan%22%2c%22visible%22%3atrue%2c%22description%22%3a%22App%20Service%20Plan%22%2c%22index%22%3a3%7d%2c%7b%22id%22%3a%22subscription%22%2c%22name%22%3a%22Subscription%22%2c%22visible%22%3atrue%2c%22description%22%3anull%2c%22index%22%3a4%7d%2c%7b%22id%22%3a%22appType%22%2c%22name%22%3a%22App%20Type%22%2c%22visible%22%3atrue%2c%22description%22%3a%22App%20Type%22%2c%22index%22%3a5%7d%5d%2c%22gridColumnWidths%22%3a%7b%22status%22%3a%2290px%22%2c%22location%22%3a%22100fr%22%2c%22pricingTier%22%3a%22150px%22%2c%22appServicePlanId%22%3a%22340px%22%2c%22subscription%22%3a%22100fr%22%2c%22appType%22%3a%2290px%22%7d%2c%22currentView%22%3a1%2c%22visualizationId%22%3a%22location%22%2c%22visualizationType%22%3a4%2c%22visualizationThreshold%22%3a1%7d\">click here</a>. The resource list with maintenance status is now also available within <strong>Impacted Resources</strong> tab of this event from <a href=\"https://portal.azure.com/#view/Microsoft_Azure_Health/AzureHealthBrowseBlade/~/plannedMaintenance\">Service Health</a>.",
+                "incidentType": "Maintenance",
+                "trackingId": "1_6N-3XG",
+                "impactStartTime": "2025-04-22T18:04:08.4705934Z",
+                "impactMitigationTime": "2025-05-06T18:04:08.4705934Z",
+                "impactedServices": "[{\"ImpactedRegions\":[{\"RegionName\":\"East US 2\",\"RegionId\":\"eastus2\"}],\"ServiceName\":\"App Service\",\"ServiceId\":\"appservice\",\"ServiceGuid\":\"75a8fc46-5105-4973-9aff-d070081824b4\"}]",
+                "impactedServicesTableRows": "<tr>\r\n<td align='center' style='padding: 5px 10px; border-right:1px solid black; border-bottom:1px solid black'>App Service</td>\r\n<td align='center' style='padding: 5px 10px; border-bottom:1px solid black'>East US 2<br></td>\r\n</tr>\r\n",
+                "defaultLanguageTitle": "End of Routine Planned Maintenance for App Service in East US 2",
+                "defaultLanguageContent": "This notification is for previously scheduled maintenance to your Azure App Service instance(s) in East US 2. The maintenance has now completed. During this time, your Azure App Service application(s) may have seen a brief drop in connectivity for a few seconds. Please see frequently asked questions for maintenance notifications: <a href=\"https://learn.microsoft.com/en-us/azure/app-service/routine-maintenance\">Routine maintenance for App Service</a>. For maximum availability and minimal disruption to your service, follow our list of best practices outlined here: <a href=\"https://azure.github.io/AppService/2020/05/15/Robust-Apps-for-the-cloud.html\">The Ultimate Guide to Running Healthy Apps in the Cloud</a>. Feel free to refer to <a href=\"https://aka.ms/servicehealthpm\" target=\"_blank\">your Azure portal</a> for more information, <a href=\"https://learn.microsoft.com/en-us/azure/app-service/routine-maintenance\" target=\"_blank\">FAQs regarding routine maintenance notifications</a>, and for any additional questions, please <a href=\"https://portal.azure.com/#blade/Microsoft_Azure_Support/HelpAndSupportBlade/overview\">contact support</a>. Release Notes <a href=\"https://github.com/Azure/AppService/releases\">Release - Azure/AppService</a><br>To view your resource list in the region, <a href=\"https://portal.azure.com/#blade/HubsExtension/BrowseResource/resourceType/Microsoft.Web%2Fsites/view/%7b%22id%22%3a%22962d1741-9ee9-4834-b716-fb4d367c5008%22%2c%22name%22%3a%22962d1741-9ee9-4834-b716-fb4d367c5008%22%2c%22filterFacets%22%3a%5b%7b%22key%22%3a%22resourceGroup%22%2c%22uniqueId%22%3a%22962d1741-9ee9-4834-b716-fb4d367c5002%22%2c%22display%22%3a%22Resource%20group%22%2c%22operator%22%3a1%2c%22value%22%3anull%2c%22isAllValues%22%3atrue%2c%22facetKind%22%3a1%7d%2c%7b%22key%22%3a%22location%22%2c%22uniqueId%22%3a%22%22%2c%22display%22%3a%22Location%22%2c%22operator%22%3a1%2c%22value%22%3a%5b%7b%22name%22%3a%22eastus2%22%2c%22displayName%22%3a%22East%20US%202%22%2c%22count%22%3a%22(20)%22%7d%5d%2c%22isAllValues%22%3afalse%2c%22facetKind%22%3a1%7d%5d%2c%22groupByValue%22%3a%22%22%2c%22sortedColumns%22%3a%5b%7b%22sortBy%22%3a%22name%22%2c%22order%22%3a1%2c%22castFunction%22%3a2%7d%5d%2c%22showAll%22%3afalse%2c%22gridColumns%22%3a%5b%7b%22id%22%3a%22status%22%2c%22name%22%3a%22Status%22%2c%22visible%22%3atrue%2c%22description%22%3a%22Status%22%2c%22index%22%3a0%7d%2c%7b%22id%22%3a%22location%22%2c%22name%22%3a%22Location%22%2c%22visible%22%3atrue%2c%22description%22%3a%22The%20supported%20Azure%20location%20where%20the%20resource%20exists.%22%2c%22index%22%3a1%7d%2c%7b%22id%22%3a%22pricingTier%22%2c%22name%22%3a%22Pricing%20Tier%22%2c%22visible%22%3atrue%2c%22description%22%3a%22Pricing%20Tier%22%2c%22index%22%3a2%7d%2c%7b%22id%22%3a%22appServicePlanId%22%2c%22name%22%3a%22App%20Service%20Plan%22%2c%22visible%22%3atrue%2c%22description%22%3a%22App%20Service%20Plan%22%2c%22index%22%3a3%7d%2c%7b%22id%22%3a%22subscription%22%2c%22name%22%3a%22Subscription%22%2c%22visible%22%3atrue%2c%22description%22%3anull%2c%22index%22%3a4%7d%2c%7b%22id%22%3a%22appType%22%2c%22name%22%3a%22App%20Type%22%2c%22visible%22%3atrue%2c%22description%22%3a%22App%20Type%22%2c%22index%22%3a5%7d%5d%2c%22gridColumnWidths%22%3a%7b%22status%22%3a%2290px%22%2c%22location%22%3a%22100fr%22%2c%22pricingTier%22%3a%22150px%22%2c%22appServicePlanId%22%3a%22340px%22%2c%22subscription%22%3a%22100fr%22%2c%22appType%22%3a%2290px%22%7d%2c%22currentView%22%3a1%2c%22visualizationId%22%3a%22location%22%2c%22visualizationType%22%3a4%2c%22visualizationThreshold%22%3a1%7d\">click here</a>. The resource list with maintenance status is now also available within <strong>Impacted Resources</strong> tab of this event from <a href=\"https://portal.azure.com/#view/Microsoft_Azure_Health/AzureHealthBrowseBlade/~/plannedMaintenance\">Service Health</a>.",
+                "stage": "Complete",
+                "communicationId": "11000201860740",
+                "maintenanceId": "202504221704/bn1",
+                "maintenanceType": "",
+                "isHIR": false,
+                "IsSynthetic": "False",
+                "impactType": "SubscriptionList",
+                "emailTemplateId": "tem_jCfXGkcx9fMD8p4hq6XVdGv9",
+                "emailTemplateFullVersion": "ver_YmZvWy6k7MwmcYj3KYg8MloA",
+                "emailTemplateLocale": "en-US",
+                "smsText": "Resolved:End of Routine Planned Maintenance for App Service in East US 2",
+                "impactCategory": "Other",
+                "communicationRouteType": "Normal",
+                "version": "0.1.1",
+                "argQuery": "",
+                "oldRate": 0.0,
+                "newRate": 0.0
+            },
+            "identity": {
+                "claims": {
+                    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": "AcmClient@microsoft.com"
+                }
+            }
+        }
+    ]
+}

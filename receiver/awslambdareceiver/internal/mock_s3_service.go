@@ -11,6 +11,7 @@ package internal
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 
 	s3 "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -137,6 +138,21 @@ func (m *MockS3Service) DeleteObject(ctx context.Context, bucketName, objectKey 
 func (mr *MockS3ServiceMockRecorder) DeleteObject(ctx, bucketName, objectKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*MockS3Service)(nil).DeleteObject), ctx, bucketName, objectKey)
+}
+
+// GetReader mocks base method.
+func (m *MockS3Service) GetReader(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetReader", ctx, bucketName, objectKey)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetReader indicates an expected call of GetReader.
+func (mr *MockS3ServiceMockRecorder) GetReader(ctx, bucketName, objectKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReader", reflect.TypeOf((*MockS3Service)(nil).GetReader), ctx, bucketName, objectKey)
 }
 
 // ListObjects mocks base method.

@@ -20,5 +20,5 @@ $defs:
     description: Config is the configuration of a syslog parser operator.
     type: object
     allOf:
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.parser_config
+      - $ref: /pkg/stanza/operator/helper.parser_config
       - $ref: base_config
