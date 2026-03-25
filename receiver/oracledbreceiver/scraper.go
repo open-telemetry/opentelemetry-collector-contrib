@@ -873,7 +873,7 @@ func (s *oracleScraper) setupResourceBuilder(rb *metadata.ResourceBuilder) *meta
 	rb.SetOracledbInstanceName(s.instanceName)
 	rb.SetHostName(s.hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
-	rb.SetServiceName("oracle")
+	rb.SetServiceName("oracle.db")
 	return rb
 }
 

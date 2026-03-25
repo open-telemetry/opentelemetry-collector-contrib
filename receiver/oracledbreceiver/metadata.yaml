@@ -29,7 +29,7 @@ resource_attributes:
     enabled: true
     type: string
   service.name:
-    description: "Logical name of the service. Defaults to the db.system.name value: oracle."
+    description: "Logical name of the service. Defaults to the db.system.name value: oracle.db."
     enabled: true
     type: string
 

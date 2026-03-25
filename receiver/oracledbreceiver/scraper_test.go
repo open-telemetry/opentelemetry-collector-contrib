@@ -228,7 +228,7 @@ func TestServiceNameResourceAttribute(t *testing.T) {
 		for i := 0; i < m.ResourceMetrics().Len(); i++ {
 			val, ok := m.ResourceMetrics().At(i).Resource().Attributes().Get("service.name")
 			require.True(t, ok, "service.name resource attribute missing on resource %d", i)
-			assert.Equal(t, "oracle", val.Str())
+			assert.Equal(t, "oracle.db", val.Str())
 		}
 	})
 
@@ -284,7 +284,7 @@ func TestServiceNameResourceAttribute(t *testing.T) {
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
 			val, ok := logs.ResourceLogs().At(i).Resource().Attributes().Get("service.name")
 			require.True(t, ok, "service.name resource attribute missing on resource log %d", i)
-			assert.Equal(t, "oracle", val.Str())
+			assert.Equal(t, "oracle.db", val.Str())
 		}
 	})
 }
