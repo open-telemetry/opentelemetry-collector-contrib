@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: enhancement
+
+component: extension/k8s_observer
+
+note: Add observe_crds to k8s_observer to discover custom resources as k8s.crd endpoints, validate unstructured objects before creating endpoints, and document cluster-scoped CRD behavior for the namespaces setting
+
+issues: [47168]
+
+subtext:
+
+change_logs: [user]
