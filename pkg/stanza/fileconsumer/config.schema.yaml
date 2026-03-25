@@ -31,6 +31,8 @@ $defs:
         type: integer
       max_log_size:
         $ref: /pkg/stanza/operator/helper.byte_size
+      max_log_size_behavior:
+        type: string
       multiline:
         $ref: /pkg/stanza/split.config
       poll_interval:
