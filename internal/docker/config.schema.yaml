@@ -13,6 +13,9 @@ $defs:
         type: array
         items:
           type: string
+      stream_stats:
+        description: StreamStats enables a persistent streaming connection per container to collect stats. When true, each container maintains an open Docker stats stream and the scraper reads from the cached latest value, which reduces connection overhead.  When false (default), a new connection is opened and closed on every scrape cycle, matching the original behavior.
+        type: boolean
       timeout:
         description: The maximum amount of time to wait for docker API responses. Default is 5s
         type: string
