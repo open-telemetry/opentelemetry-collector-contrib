@@ -39,7 +39,7 @@ func tryLoadProtobuf(encoded []byte) ([]*reader.Metadata, error) {
 	return rmds, nil
 }
 
-func SaveKeyProto(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
+func saveKeyProto(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
 	pbList := &pb.MetadataList{
 		Metadata: make([]*pb.Metadata, 0, len(rmds)),
 	}
