@@ -193,10 +193,10 @@ func (s *syncBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
 	// Compute the docs received attribute set once per session.
 	// Metadata keys are constant within a single request context,
 	// so recomputing them per document is wasteful.
-   docsReceivedAttr := metric.WithAttributeSet(attribute.NewSet(
-       getAttributesFromMetadataKeys(ctx, s.metadataKeys)...,
-   ))
-   return &syncBulkIndexerSession{s: s, bi: bi, docsReceivedAttr: docsReceivedAttr}
+	docsReceivedAttr := metric.WithAttributeSet(attribute.NewSet(
+		getAttributesFromMetadataKeys(ctx, s.metadataKeys)...,
+	))
+	return &syncBulkIndexerSession{s: s, bi: bi, docsReceivedAttr: docsReceivedAttr}
 }
 
 // Close is a no-op.
@@ -205,8 +205,8 @@ func (*syncBulkIndexer) Close(context.Context) error {
 }
 
 type syncBulkIndexerSession struct {
-	s  *syncBulkIndexer
-	bi *docappender.BulkIndexer
+	s                *syncBulkIndexer
+	bi               *docappender.BulkIndexer
 	docsReceivedAttr metric.MeasurementOption
 }
 
