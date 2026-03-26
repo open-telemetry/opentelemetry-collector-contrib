@@ -92,6 +92,12 @@ func (fpm *FranzProducerMetrics) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ n
 			attribute.String("server.address", meta.Host),
 		)),
 	)
+	// Evict cached attribute sets for this broker so that nodes which come
+	// and go over time do not cause unbounded growth of brokerE2EOpts.
+	fpm.brokerE2EMu.Lock()
+	delete(fpm.brokerE2EOpts, brokerKey{nodeID: meta.NodeID, host: meta.Host, outcome: "success"})
+	delete(fpm.brokerE2EOpts, brokerKey{nodeID: meta.NodeID, host: meta.Host, outcome: "failure"})
+	fpm.brokerE2EMu.Unlock()
 }
 
 var _ kgo.HookBrokerThrottle = (*FranzProducerMetrics)(nil)
