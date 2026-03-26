@@ -27,5 +27,5 @@ var ReceiverPostgresqlSeparateSchemaAttrFeatureGate = featuregate.GlobalRegistry
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
-	featuregate.WithRegisterFromVersion("v0.0.0"),
+	featuregate.WithRegisterFromVersion("v0.122.0"),
 )
