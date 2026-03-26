@@ -55,9 +55,11 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	// resAttrsCache lazily caches the filtered resource attributes per
 	// metric definition within a resource. Since resource attributes are
 	// constant for all signals within a resource, the result only needs
-	// to be computed once per metric definition per resource. A zero-value
-	// pcommon.Map indicates the entry has not been computed yet.
-	resAttrsCache := make([]pcommon.Map, len(sm.spanMetricDefs))
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
@@ -94,6 +96,9 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 						}
 					}
 
+					if len(resAttrsCache) == 0 {
+						resAttrsCache = make([]pcommon.Map, len(sm.spanMetricDefs))
+					}
 					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
 						if resErr != nil {
@@ -130,9 +135,11 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 	// resAttrsCache lazily caches the filtered resource attributes per
 	// metric definition within a resource. Since resource attributes are
 	// constant for all signals within a resource, the result only needs
-	// to be computed once per metric definition per resource. A zero-value
-	// pcommon.Map indicates the entry has not been computed yet.
-	resAttrsCache := make([]pcommon.Map, len(sm.dpMetricDefs))
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
 
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		resourceMetric := m.ResourceMetrics().At(i)
@@ -156,6 +163,9 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						}
 						attrID := md.ComputeAttributesHash(dpAttrs, resolvedAttrs)
 
+						if len(resAttrsCache) == 0 {
+							resAttrsCache = make([]pcommon.Map, len(sm.dpMetricDefs))
+						}
 						if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 							resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
 							if resErr != nil {
@@ -240,9 +250,11 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	// resAttrsCache lazily caches the filtered resource attributes per
 	// metric definition within a resource. Since resource attributes are
 	// constant for all signals within a resource, the result only needs
-	// to be computed once per metric definition per resource. A zero-value
-	// pcommon.Map indicates the entry has not been computed yet.
-	resAttrsCache := make([]pcommon.Map, len(sm.logMetricDefs))
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
 
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		resourceLog := logs.ResourceLogs().At(i)
@@ -279,6 +291,9 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 						}
 					}
 
+					if len(resAttrsCache) == 0 {
+						resAttrsCache = make([]pcommon.Map, len(sm.logMetricDefs))
+					}
 					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
 						if resErr != nil {
@@ -315,9 +330,11 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 	// resAttrsCache lazily caches the filtered resource attributes per
 	// metric definition within a resource. Since resource attributes are
 	// constant for all signals within a resource, the result only needs
-	// to be computed once per metric definition per resource. A zero-value
-	// pcommon.Map indicates the entry has not been computed yet.
-	resAttrsCache := make([]pcommon.Map, len(sm.profileMetricDefs))
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
 
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		resourceProfile := profiles.ResourceProfiles().At(i)
@@ -355,6 +372,9 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 						}
 					}
 
+					if len(resAttrsCache) == 0 {
+						resAttrsCache = make([]pcommon.Map, len(sm.profileMetricDefs))
+					}
 					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
 						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
 						if resErr != nil {
