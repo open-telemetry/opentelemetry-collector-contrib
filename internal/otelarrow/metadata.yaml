@@ -7,6 +7,7 @@ status:
     beta: [traces, metrics, logs]
   codeowners:
     active: [jmacd, JakeDern]
+    emeritus: [moh-osman3]
 
 telemetry:
   metrics:

@@ -15,3 +15,4 @@ status:
   distributions: [contrib, k8s]
   codeowners:
     active: [jmacd, JakeDern]
+    emeritus: [moh-osman3]
