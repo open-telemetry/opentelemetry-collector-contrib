@@ -45,24 +45,27 @@ func recordUserSize(r *kgo.Record) int {
 type FranzSyncProducer struct {
 	client          *kgo.Client
 	metadataKeys    []string
+	recordHeaders   map[string]string
 	maxMessageBytes int
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
+	recordHeaders map[string]string,
 	maxMessageBytes int,
 ) *FranzSyncProducer {
 	return &FranzSyncProducer{
 		client:          client,
 		metadataKeys:    metadataKeys,
+		recordHeaders:   recordHeaders,
 		maxMessageBytes: maxMessageBytes,
 	}
 }
 
 // ExportData sends a batch of messages to Kafka
 func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
-	messages := makeFranzMessages(msgs)
+	messages := makeFranzMessages(msgs, p.recordHeaders)
 	setMessageHeaders(ctx, messages, p.metadataKeys)
 	result := p.client.ProduceSync(ctx, messages...)
 	var errs []error
@@ -93,18 +96,24 @@ func (p *FranzSyncProducer) Close() error {
 	return nil
 }
 
-func makeFranzMessages(messages Messages) []*kgo.Record {
+func makeFranzMessages(messages Messages, recordHeaders map[string]string) []*kgo.Record {
 	msgs := make([]*kgo.Record, 0, messages.Count)
 	for _, msg := range messages.TopicMessages {
 		for _, message := range msg.Messages {
-			msg := &kgo.Record{Topic: msg.Topic}
+			record := &kgo.Record{Topic: msg.Topic}
 			if message.Key != nil {
-				msg.Key = message.Key
+				record.Key = message.Key
 			}
 			if message.Value != nil {
-				msg.Value = message.Value
+				record.Value = message.Value
 			}
-			msgs = append(msgs, msg)
+			for k, v := range recordHeaders {
+				record.Headers = append(record.Headers, kgo.RecordHeader{
+					Key:   k,
+					Value: []byte(v),
+				})
+			}
+			msgs = append(msgs, record)
 		}
 	}
 	return msgs

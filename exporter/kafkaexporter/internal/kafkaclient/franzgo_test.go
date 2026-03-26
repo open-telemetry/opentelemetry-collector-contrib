@@ -33,7 +33,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 
-	producer := NewFranzSyncProducer(client, nil, maxMessageBytes)
+	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes)
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
@@ -63,4 +63,40 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	// Verify sizes appear in the error string for pipeline-level visibility.
 	assert.Contains(t, err.Error(), "record size")
 	assert.Contains(t, err.Error(), "exceeds max")
+}
+
+func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
+	recordHeaders := map[string]string{
+		"custom-header-1": "value-1",
+		"custom-header-2": "value-2",
+	}
+
+	msgs := Messages{
+		Count: 1,
+		TopicMessages: []TopicMessages{{
+			Topic: "test-topic",
+			Messages: []marshaler.Message{{
+				Value: []byte("test-payload"),
+			}},
+		}},
+	}
+
+	records := makeFranzMessages(msgs, recordHeaders)
+
+	require.Len(t, records, 1, "expected exactly 1 record")
+	record := records[0]
+
+	assert.Equal(t, "test-topic", record.Topic)
+	assert.Equal(t, []byte("test-payload"), record.Value)
+
+	// Headers verification
+	require.Len(t, record.Headers, 2, "expected exactly 2 headers")
+
+	headerMap := make(map[string]string)
+	for _, h := range record.Headers {
+		headerMap[h.Key] = string(h.Value)
+	}
+
+	assert.Equal(t, "value-1", headerMap["custom-header-1"])
+	assert.Equal(t, "value-2", headerMap["custom-header-2"])
 }
