@@ -698,22 +698,6 @@ func commonSplunkMetric(
 	}
 }
 
-func TestTimestampFormat(t *testing.T) {
-	ts := pcommon.Timestamp(32001000345)
-	assert.Equal(t, 32.001000345, nanoToEpochSeconds(ts))
-}
-
-func TestTimestampFormatNoRounding(t *testing.T) {
-	// Sub-millisecond precision is preserved, no rounding applied
-	ts := pcommon.Timestamp(32001999345)
-	assert.Equal(t, 32.001999345, nanoToEpochSeconds(ts))
-}
-
-func TestNilTimeWhenTimestampIsZero(t *testing.T) {
-	ts := pcommon.Timestamp(0)
-	assert.Zero(t, nanoToEpochSeconds(ts))
-}
-
 func TestMergeEvents(t *testing.T) {
 	json1 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test":3411}}`
 	json2 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test2":26059}}`

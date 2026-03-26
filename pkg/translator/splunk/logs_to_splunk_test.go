@@ -460,16 +460,6 @@ func Test_emptyLogRecord(t *testing.T) {
 	assert.Nil(t, event)
 }
 
-func Test_nanoToEpochSeconds(t *testing.T) {
-	splunkTs := nanoToEpochSeconds(1001000000)
-	assert.Equal(t, 1.001, splunkTs)
-	// No rounding: sub-millisecond precision is preserved
-	splunkTs = nanoToEpochSeconds(1001990000)
-	assert.Equal(t, 1.00199, splunkTs)
-	splunkTs = nanoToEpochSeconds(0)
-	assert.Zero(t, splunkTs)
-}
-
 func Test_mergeValue(t *testing.T) {
 	tests := []struct {
 		name     string

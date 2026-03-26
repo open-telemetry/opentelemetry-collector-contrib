@@ -151,3 +151,13 @@ func TestDecodeJsonWithInvalidNumberTime(t *testing.T) {
 	err := dec.Decode(&msg)
 	assert.Error(t, err)
 }
+
+func TestNanoToEpochSeconds(t *testing.T) {
+	// zero timestamp returns zero
+	assert.Zero(t, nanoToEpochSeconds(0))
+	// sub-millisecond precision is preserved, no rounding applied
+	assert.Equal(t, 1.001, nanoToEpochSeconds(1001000000))
+	assert.Equal(t, 1.00199, nanoToEpochSeconds(1001990000))
+	assert.Equal(t, 32.001000345, nanoToEpochSeconds(32001000345))
+	assert.Equal(t, 32.001999345, nanoToEpochSeconds(32001999345))
+}
