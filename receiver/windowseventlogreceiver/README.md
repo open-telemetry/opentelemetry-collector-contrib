@@ -91,7 +91,7 @@ Output entry sample:
         "ProcessId": "7924",
         "Application": "app.exe"
     },
-    "keywords": "[Classic]",
+    "keywords": ["Classic"],
     "level": "Information",
     "message": "Test log",
     "opcode": "Info",
@@ -102,6 +102,17 @@ Output entry sample:
         "name": "otel"
     },
     "record_id": 12345,
+    "rendering_info":
+    {
+        "channel": "Application",
+        "culture": "en-US",
+        "keywords": ["Classic"],
+        "level": "Information",
+        "message": "Test log",
+        "opcode": "Info",
+        "provider": "otel",
+        "task": ""
+    },
     "system_time": "2022-04-15T15:28:08.898974100Z",
     "task": ""
 }
@@ -119,6 +130,21 @@ The `event_data` field format is controlled by the `event_data_format` setting:
             {"ProcessId": "7924"},
             {"Application": "app.exe"}
         ]
+    }
+}
+```
+
+The `rendering_info` key is populated when `suppress_rendering_info` is false (the default). It contains the human-readable strings for `level`, `task`, `opcode`, `keywords`, `message`, `channel`, `provider`, and `culture` as rendered by the publisher manifest. The top-level `level`, `task`, `opcode`, and `keywords` fields are derived from `rendering_info` when present, falling back to the raw system values otherwise.
+
+For events that use `UserData` instead of `EventData` (e.g., Security event 1102 — audit log cleared), a `user_data` key is emitted instead of (or alongside) `event_data`:
+```json
+{
+    "user_data": {
+        "name": "LogFileCleared",
+        "data": {
+            "SubjectUserName": "SYSTEM",
+            "SubjectLogonId": "0x3e7"
+        }
     }
 }
 ```
