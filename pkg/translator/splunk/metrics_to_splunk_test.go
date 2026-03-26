@@ -23,7 +23,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
 	ts := pcommon.NewTimestampFromTime(tsUnix)
-	tsNSecs := timestampToSecondsWithNanosecondPrecision(ts)
+	tsNSecs := nanoToEpochSeconds(ts)
 
 	doubleVal := 1234.5678
 	int64Val := int64(123)
@@ -700,18 +700,18 @@ func commonSplunkMetric(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := pcommon.Timestamp(32001000345)
-	assert.Equal(t, 32.001000345, timestampToSecondsWithNanosecondPrecision(ts))
+	assert.Equal(t, 32.001000345, nanoToEpochSeconds(ts))
 }
 
 func TestTimestampFormatNoRounding(t *testing.T) {
 	// Sub-millisecond precision is preserved, no rounding applied
 	ts := pcommon.Timestamp(32001999345)
-	assert.Equal(t, 32.001999345, timestampToSecondsWithNanosecondPrecision(ts))
+	assert.Equal(t, 32.001999345, nanoToEpochSeconds(ts))
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pcommon.Timestamp(0)
-	assert.Zero(t, timestampToSecondsWithNanosecondPrecision(ts))
+	assert.Zero(t, nanoToEpochSeconds(ts))
 }
 
 func TestMergeEvents(t *testing.T) {

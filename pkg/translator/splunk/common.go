@@ -9,10 +9,17 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+// nanoToEpochSeconds transforms nanoseconds into epoch seconds with nanosecond precision,
+// as supported by Splunk HEC.
+func nanoToEpochSeconds(ts pcommon.Timestamp) float64 {
+	return float64(ts) / 1e9
+}
 
 const (
 	// hecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.

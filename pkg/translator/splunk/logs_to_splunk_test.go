@@ -446,7 +446,7 @@ func commonLogSplunkEvent(
 	sourcetype string,
 ) *Event {
 	return &Event{
-		Time:       nanoTimestampToEpochNanoseconds(ts),
+		Time:       nanoToEpochSeconds(ts),
 		Host:       host,
 		Event:      event,
 		Source:     source,
@@ -460,13 +460,13 @@ func Test_emptyLogRecord(t *testing.T) {
 	assert.Nil(t, event)
 }
 
-func Test_nanoTimestampToEpochNanoseconds(t *testing.T) {
-	splunkTs := nanoTimestampToEpochNanoseconds(1001000000)
+func Test_nanoToEpochSeconds(t *testing.T) {
+	splunkTs := nanoToEpochSeconds(1001000000)
 	assert.Equal(t, 1.001, splunkTs)
 	// No rounding: sub-millisecond precision is preserved
-	splunkTs = nanoTimestampToEpochNanoseconds(1001990000)
+	splunkTs = nanoToEpochSeconds(1001990000)
 	assert.Equal(t, 1.00199, splunkTs)
-	splunkTs = nanoTimestampToEpochNanoseconds(0)
+	splunkTs = nanoToEpochSeconds(0)
 	assert.Zero(t, splunkTs)
 }
 

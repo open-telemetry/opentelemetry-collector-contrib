@@ -6,7 +6,6 @@ package splunk // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"encoding/hex"
 	"fmt"
-	"time"
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -84,7 +83,7 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 	}
 
 	return &Event{
-		Time:       nanoTimestampToEpochNanoseconds(ts),
+		Time:       nanoToEpochSeconds(ts),
 		Host:       host,
 		Source:     source,
 		SourceType: sourceType,
@@ -92,10 +91,6 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 		Event:      body,
 		Fields:     fields,
 	}
-}
-
-func nanoTimestampToEpochNanoseconds(ts pcommon.Timestamp) float64 {
-	return time.Duration(ts).Seconds()
 }
 
 func mergeValue(dst map[string]any, k string, v any) {
