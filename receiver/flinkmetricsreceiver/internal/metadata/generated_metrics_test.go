@@ -253,9 +253,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("checkpoint")
+					checkpointAttrVal, ok := dp.Attributes().Get("checkpoint")
 					assert.True(t, ok)
-					assert.Equal(t, "completed", attrVal.Str())
+					assert.Equal(t, "completed", checkpointAttrVal.Str())
 				case "flink.job.checkpoint.in_progress":
 					assert.False(t, validatedMetrics["flink.job.checkpoint.in_progress"], "Found a duplicate in the metrics slice: flink.job.checkpoint.in_progress")
 					validatedMetrics["flink.job.checkpoint.in_progress"] = true
@@ -364,9 +364,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("name")
+					garbageCollectorNameAttrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.Equal(t, "PS_MarkSweep", attrVal.Str())
+					assert.Equal(t, "PS_MarkSweep", garbageCollectorNameAttrVal.Str())
 				case "flink.jvm.gc.collections.time":
 					assert.False(t, validatedMetrics["flink.jvm.gc.collections.time"], "Found a duplicate in the metrics slice: flink.jvm.gc.collections.time")
 					validatedMetrics["flink.jvm.gc.collections.time"] = true
@@ -381,9 +381,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("name")
+					garbageCollectorNameAttrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.Equal(t, "PS_MarkSweep", attrVal.Str())
+					assert.Equal(t, "PS_MarkSweep", garbageCollectorNameAttrVal.Str())
 				case "flink.jvm.memory.direct.total_capacity":
 					assert.False(t, validatedMetrics["flink.jvm.memory.direct.total_capacity"], "Found a duplicate in the metrics slice: flink.jvm.memory.direct.total_capacity")
 					validatedMetrics["flink.jvm.memory.direct.total_capacity"] = true
@@ -623,12 +623,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
+						operatorNameAttrVal, ok := dp.Attributes().Get("name")
 						assert.True(t, ok)
-						assert.Equal(t, "operator_name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("record")
+						assert.Equal(t, "operator_name-val", operatorNameAttrVal.Str())
+						recordAttrVal, ok := dp.Attributes().Get("record")
 						assert.True(t, ok)
-						assert.Equal(t, "in", attrVal.Str())
+						assert.Equal(t, "in", recordAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["flink.operator.record.count"], "Found a duplicate in the metrics slice: flink.operator.record.count")
 						validatedMetrics["flink.operator.record.count"] = true
@@ -672,9 +672,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
+						operatorNameAttrVal, ok := dp.Attributes().Get("name")
 						assert.True(t, ok)
-						assert.Equal(t, "operator_name-val", attrVal.Str())
+						assert.Equal(t, "operator_name-val", operatorNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["flink.operator.watermark.output"], "Found a duplicate in the metrics slice: flink.operator.watermark.output")
 						validatedMetrics["flink.operator.watermark.output"] = true
@@ -715,9 +715,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("record")
+					recordAttrVal, ok := dp.Attributes().Get("record")
 					assert.True(t, ok)
-					assert.Equal(t, "in", attrVal.Str())
+					assert.Equal(t, "in", recordAttrVal.Str())
 				}
 			}
 		})
