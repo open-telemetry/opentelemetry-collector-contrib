@@ -194,6 +194,11 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
   sum.
 - `ts_column` (optional): the name of the column containing the timestamp, the value of which is applied to the
   metric's timestamp. This can be current timestamp depending upon the time of last recorded metric's datapoint.
+- `row_condition` (optional): when set, only rows where the specified column equals the specified value are used
+  to produce this metric. Rows that do not match are silently skipped. This is useful for pivot-style result
+  sets where each row encodes a different metric (e.g. `SHOW LISTS` in pgbouncer).
+  - `column` (required): the column name to evaluate.
+  - `value` (required): the expected string value the column must equal for the row to be included.
 
 ### Example
 
@@ -257,6 +262,54 @@ Data point attributes:
      -> dbinstance: STRING(mydbinstance)
 Value: 1
 ```
+
+#### Row Condition Example
+
+Some databases expose pivot-style views where each row represents a different metric, identified by a name column.
+For example, pgbouncer's `SHOW LISTS` command returns:
+
+```
+     list      | items
+---------------+-------
+ databases     |     8
+ pools         |     4
+ users         |     2
+ free_clients  |    25
+ used_servers  |     5
+```
+
+Use `row_condition` to extract a single row as a dedicated metric:
+
+```yaml
+receivers:
+  sqlquery:
+    driver: postgres
+    datasource: "host=pgbouncer port=5432 user=pgbouncer dbname=pgbouncer sslmode=disable"
+    queries:
+      - sql: "SHOW LISTS"
+        metrics:
+          - metric_name: pgbouncer.lists.pools
+            value_column: items
+            value_type: int
+            row_condition:
+              column: list
+              value: pools
+          - metric_name: pgbouncer.lists.databases
+            value_column: items
+            value_type: int
+            row_condition:
+              column: list
+              value: databases
+          - metric_name: pgbouncer.lists.users
+            value_column: items
+            value_type: int
+            row_condition:
+              column: list
+              value: users
+```
+
+This produces three separate metrics (`pgbouncer.lists.pools`, `pgbouncer.lists.databases`,
+`pgbouncer.lists.users`), each sourced from the matching row only.
 
 #### NULL values
 
