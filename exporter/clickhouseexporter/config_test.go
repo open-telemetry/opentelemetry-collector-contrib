@@ -663,6 +663,10 @@ func TestClusterString(t *testing.T) {
 			input:    "ch-cluster",
 			expected: "ON CLUSTER `ch-cluster`",
 		},
+		{
+			input:    "my`cluster",
+			expected: "ON CLUSTER `my``cluster`",
+		},
 	}
 
 	for i, tt := range tests {
