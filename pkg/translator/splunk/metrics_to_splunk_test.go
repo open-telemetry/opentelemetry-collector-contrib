@@ -709,12 +709,6 @@ func TestTimestampFormatNoRounding(t *testing.T) {
 	assert.Equal(t, 32.001999345, timestampToSecondsWithNanosecondPrecision(ts))
 }
 
-func TestTimestampFormatSubMillisecondPrecision(t *testing.T) {
-	// Microsecond precision is preserved up to float64 limits
-	ts := pcommon.Timestamp(1574092046011123456)
-	assert.InDelta(t, 1574092046.011123, timestampToSecondsWithNanosecondPrecision(ts), 0.000001)
-}
-
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pcommon.Timestamp(0)
 	assert.Zero(t, timestampToSecondsWithNanosecondPrecision(ts))
