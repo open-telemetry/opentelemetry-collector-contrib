@@ -85,8 +85,7 @@ func serializeDataPoints(w *jsonWriter, dataPoints []datapoints.DataPoint, valid
 	}
 	w.endObject()
 	if docCount != 0 {
-		_ = w.writeUIntField("_doc_count", docCount, first)
-		first = false
+		first = w.writeUIntField("_doc_count", docCount, first)
 	}
 	sort.Strings(metricNames)
 	hasher := xxhash.New()
