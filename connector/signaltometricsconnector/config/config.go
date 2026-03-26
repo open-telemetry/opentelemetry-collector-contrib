@@ -169,11 +169,11 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 
 type Attribute struct {
 	Key string `mapstructure:"key"`
-	// OTTLExpression is an OTTL value expression that resolves to a list
+	// KeysExpression is an OTTL value expression that resolves to a list
 	// of attribute keys at runtime. The expression must return a
-	// pcommon.Slice or []string. Exactly one of Key or OTTLExpression
+	// pcommon.Slice or []string. Exactly one of Key or KeysExpression
 	// must be set.
-	OTTLExpression string `mapstructure:"ottl_expression"`
+	KeysExpression string `mapstructure:"keys_expression"`
 	Optional       bool   `mapstructure:"optional"`
 	DefaultValue   any    `mapstructure:"default_value"`
 	// prevent unkeyed literal initialization
@@ -247,20 +247,20 @@ func (mi *MetricInfo) ensureDefaults() {
 }
 
 // validateAttributeConfigs validates a list of Attribute configs. Each entry
-// must have exactly one of Key or OTTLExpression set. OTTL expressions are
+// must have exactly one of Key or KeysExpression set. OTTL expressions are
 // parsed to verify syntax. The label parameter is used in error messages.
 func validateAttributeConfigs[K any](attrs []Attribute, parser ottl.Parser[K], label string) error {
 	tmp := pcommon.NewValueEmpty()
 	duplicate := map[string]struct{}{}
 	for _, attr := range attrs {
 		hasKey := attr.Key != ""
-		hasExpr := attr.OTTLExpression != ""
+		hasExpr := attr.KeysExpression != ""
 		if hasKey == hasExpr {
-			return fmt.Errorf("exactly one of key or ottl_expression must be set for %s", label)
+			return fmt.Errorf("exactly one of key or keys_expression must be set for %s", label)
 		}
 		if hasExpr {
-			if _, err := parser.ParseValueExpression(attr.OTTLExpression); err != nil {
-				return fmt.Errorf("failed to parse ottl_expression for %s: %w", label, err)
+			if _, err := parser.ParseValueExpression(attr.KeysExpression); err != nil {
+				return fmt.Errorf("failed to parse keys_expression for %s: %w", label, err)
 			}
 		}
 		if hasKey {

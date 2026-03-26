@@ -7,7 +7,7 @@ change_type: enhancement
 component: connector/signal_to_metrics
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `ottl_expression` support in `include_resource_attributes` and `attributes` for dynamic attribute key resolution at runtime
+note: Add `keys_expression` support in `include_resource_attributes` and `attributes` for dynamic attribute key resolution at runtime
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46884]
@@ -16,9 +16,9 @@ issues: [46884]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `ottl_expression` field allows specifying an OTTL value expression that resolves to a list
+  The `keys_expression` field allows specifying an OTTL value expression that resolves to a list
   of attribute keys at runtime. This enables dynamic resource attribute filtering based on runtime
-  data such as client metadata. Exactly one of `key` or `ottl_expression` must be set per entry.
+  data such as client metadata. Exactly one of `key` or `keys_expression` must be set per entry.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

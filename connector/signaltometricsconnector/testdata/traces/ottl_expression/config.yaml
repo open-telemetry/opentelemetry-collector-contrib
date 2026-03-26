@@ -4,7 +4,7 @@ signal_to_metrics:
       description: Spans with dynamically resolved resource attributes from client metadata
       unit: s
       include_resource_attributes:
-        - ottl_expression: otelcol.client.metadata["x-dynamic-resource-attributes"]
+        - keys_expression: otelcol.client.metadata["x-dynamic-resource-attributes"]
       sum:
         value: Int(Seconds(end_time - start_time))
         monotonic: true

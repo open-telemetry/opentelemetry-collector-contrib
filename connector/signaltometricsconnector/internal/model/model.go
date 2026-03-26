@@ -280,7 +280,7 @@ func filterByEntries[K any](
 	dst.EnsureCapacity(len(entries) + extraCapacity)
 	for _, entry := range entries {
 		if entry.Expression != nil {
-			if err := resolveOTTLExpression(ctx, tCtx, entry, src, dst); err != nil {
+			if err := resolveKeysExpression(ctx, tCtx, entry, src, dst); err != nil {
 				return pcommon.Map{}, err
 			}
 			continue
@@ -306,11 +306,11 @@ func parseAttributeEntries[K any](
 			Optional:     attr.Optional,
 			DefaultValue: val,
 		}
-		if attr.OTTLExpression != "" {
-			expr, err := parser.ParseValueExpression(attr.OTTLExpression)
+		if attr.KeysExpression != "" {
+			expr, err := parser.ParseValueExpression(attr.KeysExpression)
 			if err != nil {
 				errs = append(errs, fmt.Errorf(
-					"failed to parse ottl_expression %q: %w", attr.OTTLExpression, err,
+					"failed to parse keys_expression %q: %w", attr.KeysExpression, err,
 				))
 				continue
 			}
@@ -326,9 +326,9 @@ func parseAttributeEntries[K any](
 	return entries, nil
 }
 
-// resolveOTTLExpression evaluates the OTTL expression to get a list of
+// resolveKeysExpression evaluates the OTTL expression to get a list of
 // attribute keys and copies matching attributes from src to dst.
-func resolveOTTLExpression[K any](
+func resolveKeysExpression[K any](
 	ctx context.Context,
 	tCtx K,
 	entry AttributeEntry[K],
@@ -336,14 +336,14 @@ func resolveOTTLExpression[K any](
 ) error {
 	result, err := entry.Expression.Eval(ctx, tCtx)
 	if err != nil {
-		return fmt.Errorf("failed to evaluate ottl_expression: %w", err)
+		return fmt.Errorf("failed to evaluate keys_expression: %w", err)
 	}
 	if result == nil {
 		return nil
 	}
 	keys, err := extractStringSlice(result)
 	if err != nil {
-		return fmt.Errorf("ottl_expression must return a list of strings: %w", err)
+		return fmt.Errorf("keys_expression must return a list of strings: %w", err)
 	}
 	for _, key := range keys {
 		copyAttribute(key, entry.DefaultValue, src, dst)
