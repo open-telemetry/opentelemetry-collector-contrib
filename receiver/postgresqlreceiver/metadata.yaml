@@ -33,7 +33,7 @@ feature_gates:
   - id: receiver.postgresql.separateSchemaAttr
     description: Moves Schema Names into dedicated Attribute
     stage: alpha
-    from_version: "v0.0.0"
+    from_version: "v0.122.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
 
 resource_attributes:
