@@ -147,11 +147,30 @@ type MetricDef[K any] struct {
 	Key                       MetricKey
 	includeResourceAttributes []attributeEntry[K]
 	attributes                []attributeEntry[K]
-	Conditions                *ottl.ConditionSequence[K]
-	ExponentialHistogram      *ExponentialHistogram[K]
-	ExplicitHistogram         *ExplicitHistogram[K]
-	Sum                       *Sum[K]
-	Gauge                     *Gauge[K]
+	// hasExprResAttrs is true if any includeResourceAttributes entry
+	// has a keys_expression. When false, the static-only fast path
+	// skips OTTL evaluation and dedup overhead in
+	// ResolveIncludeResourceAttributes.
+	hasExprResAttrs bool
+	// hasExprAttrs is true if any attributes entry has a
+	// keys_expression. When false, the static-only fast path skips
+	// OTTL evaluation and dedup overhead in ResolveAttributes, and
+	// sortedStaticAttrs is used directly by ComputeAttributesHash
+	// to avoid per-call sorting.
+	hasExprAttrs bool
+	// sortedStaticAttrs is a pre-sorted copy of the static-key
+	// attributes, built at construction time. Used by
+	// ResolveAttributes (static fast path) and ComputeAttributesHash
+	// to avoid per-call allocation and sorting when there are no
+	// keys_expression entries.
+	sortedStaticAttrs []AttributeKeyValue
+	// sortedStaticResAttrs is the same for includeResourceAttributes.
+	sortedStaticResAttrs []AttributeKeyValue
+	Conditions           *ottl.ConditionSequence[K]
+	ExponentialHistogram *ExponentialHistogram[K]
+	ExplicitHistogram    *ExplicitHistogram[K]
+	Sum                  *Sum[K]
+	Gauge                *Gauge[K]
 }
 
 func (md *MetricDef[K]) FromMetricInfo(
@@ -172,6 +191,10 @@ func (md *MetricDef[K]) FromMetricInfo(
 	if err != nil {
 		return fmt.Errorf("failed to parse attribute config: %w", err)
 	}
+	// Detect whether any entries use keys_expression and pre-build
+	// sorted static attribute lists for the fast path.
+	md.hasExprResAttrs, md.sortedStaticResAttrs = buildStaticAttrs(md.includeResourceAttributes)
+	md.hasExprAttrs, md.sortedStaticAttrs = buildStaticAttrs(md.attributes)
 	if len(mi.Conditions) > 0 {
 		conditions, err := parser.ParseConditions(mi.Conditions)
 		if err != nil {
@@ -217,16 +240,25 @@ func (md *MetricDef[K]) FromMetricInfo(
 
 // ResolveIncludeResourceAttributes evaluates OTTL expressions in
 // include_resource_attributes and returns a flat, ordered list of
-// AttributeKeyValue entries. Static entries are passed through as-is;
-// OTTL expression entries are evaluated and each resolved key becomes
-// a separate entry, preserving config ordering.
+// AttributeKeyValue entries. When no keys_expression entries are
+// configured, the pre-built sortedStaticResAttrs is returned directly
+// without allocation or OTTL evaluation.
 func (md *MetricDef[K]) ResolveIncludeResourceAttributes(ctx context.Context, tCtx K) ([]AttributeKeyValue, error) {
+	if !md.hasExprResAttrs {
+		return md.sortedStaticResAttrs, nil
+	}
 	return resolveEntries(ctx, tCtx, md.includeResourceAttributes)
 }
 
 // ResolveAttributes evaluates OTTL expressions in attributes and
-// returns a flat, ordered list of AttributeKeyValue entries.
+// returns a flat, ordered list of AttributeKeyValue entries. When no
+// keys_expression entries are configured, the pre-built
+// sortedStaticAttrs is returned directly without allocation or OTTL
+// evaluation.
 func (md *MetricDef[K]) ResolveAttributes(ctx context.Context, tCtx K) ([]AttributeKeyValue, error) {
+	if !md.hasExprAttrs {
+		return md.sortedStaticAttrs, nil
+	}
 	return resolveEntries(ctx, tCtx, md.attributes)
 }
 
@@ -251,18 +283,13 @@ func (md *MetricDef[K]) MatchAttributes(attrs pcommon.Map) bool {
 }
 
 // ComputeAttributesHash returns a 128-bit hash that identifies the
-// filtered attribute set. The resolved list is sorted alphabetically
-// by key before hashing for determinism.
+// filtered attribute set. The resolved list is expected to be sorted
+// alphabetically by key (guaranteed by both resolveEntries and the
+// pre-sorted sortedStaticAttrs).
 func (*MetricDef[K]) ComputeAttributesHash(attrs pcommon.Map, resolved []AttributeKeyValue) [16]byte {
-	sorted := make([]AttributeKeyValue, len(resolved))
-	copy(sorted, resolved)
-	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].Key < sorted[j].Key
-	})
-
 	hb := attrHashBufPool.Get().(*attrHashBuf)
 	hb.buf = hb.buf[:0]
-	for _, kv := range sorted {
+	for _, kv := range resolved {
 		v, ok := attrs.Get(kv.Key)
 		if ok {
 			hb.buf = append(hb.buf, kv.Key...)
@@ -320,33 +347,72 @@ func filterByResolved(attrs pcommon.Map, resolved []AttributeKeyValue, extraCapa
 }
 
 // resolveEntries evaluates OTTL expressions in entries and returns a
-// flat, ordered list of AttributeKeyValue. Static entries are passed
-// through; expression entries are expanded into one AttributeKeyValue
-// per resolved key.
+// flat, deduplicated, sorted list of AttributeKeyValue. Entries are
+// processed in reverse so the last occurrence of each key (highest
+// priority) is kept and earlier duplicates are discarded. The result
+// is sorted alphabetically by key for deterministic hashing — this is
+// safe because dedup guarantees unique keys and pcommon.Map is
+// order-independent.
 func resolveEntries[K any](ctx context.Context, tCtx K, entries []attributeEntry[K]) ([]AttributeKeyValue, error) {
+	seen := make(map[string]struct{}, len(entries))
 	resolved := make([]AttributeKeyValue, 0, len(entries))
-	for _, entry := range entries {
+	for i := len(entries) - 1; i >= 0; i-- {
+		entry := entries[i]
 		if entry.Expression != nil {
 			keys, err := evalKeysExpression(ctx, tCtx, entry)
 			if err != nil {
 				return nil, err
 			}
-			for _, key := range keys {
+			for j := len(keys) - 1; j >= 0; j-- {
+				if _, ok := seen[keys[j]]; ok {
+					continue
+				}
+				seen[keys[j]] = struct{}{}
 				resolved = append(resolved, AttributeKeyValue{
-					Key:          key,
+					Key:          keys[j],
 					Optional:     entry.Optional,
 					DefaultValue: entry.DefaultValue,
 				})
 			}
 			continue
 		}
+		if _, ok := seen[entry.Key]; ok {
+			continue
+		}
+		seen[entry.Key] = struct{}{}
 		resolved = append(resolved, AttributeKeyValue{
 			Key:          entry.Key,
 			Optional:     entry.Optional,
 			DefaultValue: entry.DefaultValue,
 		})
 	}
+	sort.Slice(resolved, func(i, j int) bool {
+		return resolved[i].Key < resolved[j].Key
+	})
 	return resolved, nil
+}
+
+// buildStaticAttrs checks if any entries have OTTL expressions and
+// builds a pre-sorted list of static-key AttributeKeyValue entries.
+// Returns (hasExpr, sortedStaticAttrs).
+func buildStaticAttrs[K any](entries []attributeEntry[K]) (bool, []AttributeKeyValue) {
+	hasExpr := false
+	static := make([]AttributeKeyValue, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Expression != nil {
+			hasExpr = true
+			continue
+		}
+		static = append(static, AttributeKeyValue{
+			Key:          entry.Key,
+			Optional:     entry.Optional,
+			DefaultValue: entry.DefaultValue,
+		})
+	}
+	sort.Slice(static, func(i, j int) bool {
+		return static[i].Key < static[j].Key
+	})
+	return hasExpr, static
 }
 
 func parseAttributeEntries[K any](
