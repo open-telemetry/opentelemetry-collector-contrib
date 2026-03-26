@@ -84,7 +84,7 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 	}
 
 	return &Event{
-		Time:       nanoTimestampToEpochMilliseconds(ts),
+		Time:       nanoTimestampToEpochNanoseconds(ts),
 		Host:       host,
 		Source:     source,
 		SourceType: sourceType,
@@ -94,9 +94,8 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 	}
 }
 
-// nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) float64 {
-	return time.Duration(ts).Round(time.Millisecond).Seconds()
+func nanoTimestampToEpochNanoseconds(ts pcommon.Timestamp) float64 {
+	return time.Duration(ts).Seconds()
 }
 
 func mergeValue(dst map[string]any, k string, v any) {

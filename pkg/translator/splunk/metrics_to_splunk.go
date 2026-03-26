@@ -215,7 +215,7 @@ func MetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, logger *zap.Log
 
 func createEvent(timestamp pcommon.Timestamp, host, source, sourceType, index string, fields map[string]any) *Event {
 	return &Event{
-		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
+		Time:       timestampToSecondsWithNanosecondPrecision(timestamp),
 		Host:       host,
 		Source:     source,
 		SourceType: sourceType,
@@ -261,8 +261,8 @@ func cloneMapWithSelector(fields map[string]any, selector func(string) bool) map
 	return newFields
 }
 
-func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) float64 {
-	return math.Round(float64(ts)/1e6) / 1e3
+func timestampToSecondsWithNanosecondPrecision(ts pcommon.Timestamp) float64 {
+	return float64(ts) / 1e9
 }
 
 func float64ToDimValue(f float64) string {
