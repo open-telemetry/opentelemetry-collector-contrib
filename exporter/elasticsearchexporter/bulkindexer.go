@@ -103,6 +103,7 @@ func bulkIndexerConfig(client elastictransport.Interface, config *Config, requir
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
 		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 		QueryParams:             getQueryParamsFromEndpoint(config, logger),
+		FilterPath:              config.FilterPath,
 	}
 }
 
