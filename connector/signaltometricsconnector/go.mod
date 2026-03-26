@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.148.0
 	github.com/stretchr/testify v1.11.1
+	go.opentelemetry.io/collector/client v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/component v1.54.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260320051400-372cc483b303
 	go.opentelemetry.io/collector/config/configoptional v1.54.1-0.20260320051400-372cc483b303
@@ -63,7 +64,6 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20251207011819-db9adb27a0b8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/client v1.54.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.148.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260320051400-372cc483b303 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260320051400-372cc483b303 // indirect
