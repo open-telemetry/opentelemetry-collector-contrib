@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 
@@ -99,6 +100,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	}
 	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
+		e.cfg.Producer.MaxMessageBytes,
 	)
 	return nil
 }
@@ -158,6 +160,13 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.Int("records", len(mi.Messages)),
 				zap.String("topic", mi.Topic),
 				zap.Error(err),
+			)
+		}
+		var msgTooLarge *kafkaclient.MessageTooLargeError
+		if errors.As(err, &msgTooLarge) {
+			e.logger.Error("kafka record exceeds max message size",
+				zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
+				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
 			)
 		}
 	}
