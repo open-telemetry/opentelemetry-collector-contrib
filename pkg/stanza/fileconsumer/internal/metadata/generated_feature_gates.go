@@ -44,7 +44,7 @@ var FilelogProtobufCheckpointEncodingFeatureGate = featuregate.GlobalRegistry().
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Use protobuf encoding for checkpoint storage instead of JSON."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/43266"),
-	featuregate.WithRegisterFromVersion("v0.145.0"),
+	featuregate.WithRegisterFromVersion("v0.148.0"),
 )
 
 var FilelogWindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(

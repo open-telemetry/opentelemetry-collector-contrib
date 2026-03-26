@@ -470,10 +470,22 @@ service:
 
 ## Experimental JSON support
 
-A feature gate is available for testing the experimental JSON pipeline.
-Enable the `clickhouse.json` feature gate by following the [feature gate documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md).
-You may also need to add `enable_json_type=1` to your `endpoint` query string parameters.
-DDL has been updated, but feel free to tune the schema as needed. DDL can be found in the `internal/sqltemplates` package.
+JSON column types can be enabled per-exporter using the `json` config option:
+
+```yaml
+exporters:
+  clickhouse:
+    endpoint: clickhouse://localhost:9000?enable_json_type=1
+    json: true
+```
+
+Previously, the `clickhouse.json` feature gate was used to enable JSON for all
+ClickHouse exporter instances. This feature gate is now deprecated. Use the `json`
+config option instead, which allows per-pipeline control.
+
+You may also need to add `enable_json_type=1` to your endpoint or `connection_params`.
+DDL has been updated, but feel free to tune the schema as needed.
+DDL can be found in the `internal/sqltemplates` package.
 All `Map` columns have been replaced with `JSON`.
 ClickHouse v25+ is recommended for reliable JSON support.
 

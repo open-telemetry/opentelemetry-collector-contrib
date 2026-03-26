@@ -66,7 +66,8 @@ func createDefaultConfig() component.Config {
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
 	return &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
 				NetAddr:      netAddr,
