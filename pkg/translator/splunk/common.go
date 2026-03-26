@@ -15,8 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-// nanoToEpochSeconds transforms nanoseconds into epoch seconds with nanosecond precision,
-// as supported by Splunk HEC.
+// nanoToEpochSeconds converts a nanosecond timestamp to epoch seconds.
 func nanoToEpochSeconds(ts pcommon.Timestamp) float64 {
 	return float64(ts) / 1e9
 }
