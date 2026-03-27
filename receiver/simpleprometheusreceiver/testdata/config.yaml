@@ -2,6 +2,7 @@ prometheus_simple:
 prometheus_simple/all_settings:
   endpoint: "localhost:1234"
   collection_interval: 30s
+  trim_metric_suffixes: true
   metrics_path: /v2/metrics
   job_name: "job123"
   params:

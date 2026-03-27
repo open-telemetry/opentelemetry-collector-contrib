@@ -87,7 +87,9 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		}
 	}
 
-	out := &prometheusreceiver.Config{}
+	out := &prometheusreceiver.Config{
+		TrimMetricSuffixes: cfg.TrimMetricSuffixes,
+	}
 	httpConfig := configutil.HTTPClientConfig{}
 
 	scheme := "http"

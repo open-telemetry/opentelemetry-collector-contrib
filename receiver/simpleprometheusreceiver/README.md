@@ -35,6 +35,7 @@ be emitted by this receiver.
 - `labels` (default = `{}`): Static prometheus labels to assign to all metrics scraped from this endpoint.
 - `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
 - `params` (default = `{}`): The query parameters to pass to the metrics endpoint. If specified, params are appended to `metrics_path` to form the URL with which the target is scraped.
+- `trim_metric_suffixes` (default = `false`): [Experimental] When set to true, trims unit and some counter type suffixes from metric names. For example, `singing_duration_seconds_total` becomes `singing_duration`.
 - `use_service_account` (default = `false`): Whether or not to use the
 Kubernetes Pod service account for authentication.
 - `tls_enabled` (default = `false`): Whether or not to use TLS. Only if
@@ -60,6 +61,7 @@ Example:
     receivers:
       prometheus_simple:
         collection_interval: 10s
+        trim_metric_suffixes: true
         use_service_account: true
         endpoint: "172.17.0.5:9153"
         tls:
