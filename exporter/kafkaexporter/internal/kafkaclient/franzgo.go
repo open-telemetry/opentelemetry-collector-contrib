@@ -10,6 +10,8 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -46,17 +48,20 @@ type FranzSyncProducer struct {
 	client          *kgo.Client
 	metadataKeys    []string
 	maxMessageBytes int
+	host            component.Host
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
 	maxMessageBytes int,
+	host component.Host,
 ) *FranzSyncProducer {
 	return &FranzSyncProducer{
 		client:          client,
 		metadataKeys:    metadataKeys,
 		maxMessageBytes: maxMessageBytes,
+		host:            host,
 	}
 }
 
@@ -68,6 +73,7 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	var errs []error
 	for _, r := range result {
 		if r.Err == nil {
+			componentstatus.ReportStatus(p.host, componentstatus.NewEvent(componentstatus.StatusOK))
 			continue
 		}
 		var err error
@@ -80,6 +86,7 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 		// check if its defined as a non-retriable error by franzgo
 		kgoErr := &kerr.Error{}
 		if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
+			componentstatus.ReportStatus(p.host, componentstatus.NewRecoverableErrorEvent(err))
 			err = consumererror.NewPermanent(err)
 		}
 		errs = append(errs, err)

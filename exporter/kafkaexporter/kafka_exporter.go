@@ -12,6 +12,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -57,6 +58,7 @@ type kafkaExporter[T any] struct {
 	set          exporter.Settings
 	tb           *metadata.TelemetryBuilder
 	logger       *zap.Logger
+	host         component.Host
 	newMessenger func(host component.Host) (messenger[T], error)
 	messenger    messenger[T]
 	producer     producer
@@ -76,6 +78,8 @@ func newKafkaExporter[T any](
 }
 
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err error) {
+	e.host = host
+
 	tb, err := metadata.NewTelemetryBuilder(e.set.TelemetrySettings)
 	if err != nil {
 		return err
@@ -101,6 +105,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
 		e.cfg.Producer.MaxMessageBytes,
+		e.host,
 	)
 	return nil
 }
@@ -129,6 +134,8 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.String("topic", topic),
 				zap.Error(err),
 			)
+			componentstatus.ReportStatus(
+				e.host, componentstatus.NewRecoverableErrorEvent(err))
 			return consumererror.NewPermanent(err)
 		}
 		for i := range partitionMessages {

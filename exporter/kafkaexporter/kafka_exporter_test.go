@@ -6,6 +6,7 @@ package kafkaexporter
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -124,6 +126,68 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 		}, record.Headers, "message headers mismatch")
 		assert.Nil(t, record.Key, "expected nil key for this test case")
 	})
+}
+
+func TestKafkaExporter_ComponentStatus(t *testing.T) {
+	statusChan := make(chan *componentstatus.Event, 2)
+	reporter := &kafkaTestStatusReporter{statusChan: statusChan}
+
+	t.Run("when status is OK", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config, reporter, config.Logs.Topic)
+		t.Cleanup(func() { fakeCluster.Close() })
+
+		logs := testdata.GenerateLogs(1)
+		require.NoError(t, exp.exportData(t.Context(), logs))
+
+		select {
+		case event := <-statusChan:
+			assert.NoError(t, event.Err())
+			assert.Equal(t, componentstatus.StatusOK, event.Status())
+		default:
+			require.Fail(t, "successful export should report StatusOK")
+		}
+	})
+
+	t.Run("when large message value is used", func(t *testing.T) {
+		maxMessageBytes := 512
+		config := createDefaultConfig().(*Config)
+		config.Producer.MaxMessageBytes = maxMessageBytes
+
+		logs := testdata.GenerateLogs(1)
+		for _, scopeLogs := range logs.ResourceLogs().All() {
+			for _, logs := range scopeLogs.ScopeLogs().All() {
+				logs.LogRecords().At(0).Body().SetStr(strings.Repeat("x", maxMessageBytes*2))
+			}
+		}
+
+		exp, fakeCluster := newKgoMockLogsExporter(t, *config, reporter, config.Logs.Topic)
+		t.Cleanup(func() { fakeCluster.Close() })
+
+		err := exp.exportData(t.Context(), logs)
+		require.Error(t, err)
+		select {
+		case event := <-statusChan:
+			assert.Error(t, event.Err())
+			assert.Equal(t, componentstatus.StatusRecoverableError, event.Status())
+		default:
+			require.Fail(t, "not successful export should report StatusRecoverable Error")
+		}
+
+		t.Cleanup(func() { assert.NoError(t, exp.Close(t.Context())) })
+	})
+}
+
+type kafkaTestStatusReporter struct {
+	statusChan chan *componentstatus.Event
+}
+
+func (k *kafkaTestStatusReporter) Report(event *componentstatus.Event) {
+	k.statusChan <- event
+}
+
+func (k *kafkaTestStatusReporter) GetExtensions() map[component.ID]component.Component {
+	return make(map[component.ID]component.Component)
 }
 
 func TestTracesPusher_conf_err(t *testing.T) {
@@ -1283,6 +1347,8 @@ func newKgoMockProfilesExporter(t *testing.T, cfg Config, host component.Host, t
 func configureExporter[T any](tb testing.TB,
 	exp *kafkaExporter[T], cfg Config, host component.Host, topics ...string,
 ) *kfake.Cluster {
+	exp.host = host
+
 	cluster, kcfg := kafkatest.NewCluster(tb, kfake.SeedTopics(1, topics...))
 
 	// Create a kgo.Client using the broker addresses from the fake cluster.
@@ -1299,7 +1365,7 @@ func configureExporter[T any](tb testing.TB,
 	require.NoError(tb, err, "failed to create messenger for metrics")
 
 	exp.messenger = messenger
-	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.Producer.MaxMessageBytes)
+	exp.producer = kafkaclient.NewFranzSyncProducer(client, cfg.IncludeMetadataKeys, cfg.Producer.MaxMessageBytes, host)
 
 	tb.Cleanup(func() { assert.NoError(tb, exp.Close(tb.Context())) })
 	return cluster
