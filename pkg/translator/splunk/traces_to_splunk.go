@@ -68,7 +68,7 @@ func SpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, mapping HecT
 	}
 
 	se := &Event{
-		Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),
+		Time:       nanoToEpochSeconds(span.StartTimestamp()),
 		Host:       host,
 		Source:     source,
 		SourceType: sourceType,
