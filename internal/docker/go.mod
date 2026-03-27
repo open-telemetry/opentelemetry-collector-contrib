@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.54.1-0.20260320051400-372cc483b303
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
+	golang.org/x/sync v0.19.0
 )
 
 require (

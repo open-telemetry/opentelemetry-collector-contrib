@@ -62,16 +62,21 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 				span := scopeSpan.Spans().At(k)
 				spanAttrs := span.Attributes()
 				for _, md := range sm.spanMetricDefs {
-					filteredSpanAttrs, ok := md.FilterAttributes(spanAttrs)
-					if !ok {
+					if !md.MatchAttributes(spanAttrs) {
 						continue
 					}
-
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
+					filteredSpanAttrs, err := md.FilterAttributes(ctx, tCtx, spanAttrs)
+					if err != nil {
+						tCtx.Close()
+						return fmt.Errorf("failed to filter attributes: %w", err)
+					}
+
 					if md.Conditions != nil {
-						match, err := md.Conditions.Eval(ctx, tCtx)
+						var match bool
+						match, err = md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
 							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
@@ -83,8 +88,12 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 						}
 					}
 
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
-					err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1)
+					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
+					if err != nil {
+						tCtx.Close()
+						return fmt.Errorf("failed to filter resource attributes: %w", err)
+					}
+					err = aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -114,14 +123,22 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 				metrics := scopeMetric.Metrics()
 				metric := metrics.At(k)
 				for _, md := range sm.dpMetricDefs {
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
 					aggregate := func(dp any, dpAttrs pcommon.Map) error {
+						if !md.MatchAttributes(dpAttrs) {
+							return nil
+						}
 						// The transform context is created from original attributes so that the
 						// OTTL expressions are also applied on the original attributes.
 						tCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetric, metric, dp)
 						defer tCtx.Close()
+						filteredDPAttrs, err := md.FilterAttributes(ctx, tCtx, dpAttrs)
+						if err != nil {
+							return fmt.Errorf("failed to filter attributes: %w", err)
+						}
+
 						if md.Conditions != nil {
-							match, err := md.Conditions.Eval(ctx, tCtx)
+							var match bool
+							match, err = md.Conditions.Eval(ctx, tCtx)
 							if err != nil {
 								return fmt.Errorf("failed to evaluate conditions: %w", err)
 							}
@@ -130,7 +147,11 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 								return nil
 							}
 						}
-						return aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, dpAttrs, 1)
+						filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
+						if err != nil {
+							return fmt.Errorf("failed to filter resource attributes: %w", err)
+						}
+						return aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredDPAttrs, 1)
 					}
 
 					//exhaustive:enforce
@@ -138,60 +159,35 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 					case pmetric.MetricTypeGauge:
 						dps := metric.Gauge().DataPoints()
 						for l := 0; l < dps.Len(); l++ {
-							dp := dps.At(l)
-							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
-							if !ok {
-								continue
-							}
-							if err := aggregate(dp, filteredDPAttrs); err != nil {
+							if err := aggregate(dps.At(l), dps.At(l).Attributes()); err != nil {
 								return err
 							}
 						}
 					case pmetric.MetricTypeSum:
 						dps := metric.Sum().DataPoints()
 						for l := 0; l < dps.Len(); l++ {
-							dp := dps.At(l)
-							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
-							if !ok {
-								continue
-							}
-							if err := aggregate(dp, filteredDPAttrs); err != nil {
+							if err := aggregate(dps.At(l), dps.At(l).Attributes()); err != nil {
 								return err
 							}
 						}
 					case pmetric.MetricTypeSummary:
 						dps := metric.Summary().DataPoints()
 						for l := 0; l < dps.Len(); l++ {
-							dp := dps.At(l)
-							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
-							if !ok {
-								continue
-							}
-							if err := aggregate(dp, filteredDPAttrs); err != nil {
+							if err := aggregate(dps.At(l), dps.At(l).Attributes()); err != nil {
 								return err
 							}
 						}
 					case pmetric.MetricTypeHistogram:
 						dps := metric.Histogram().DataPoints()
 						for l := 0; l < dps.Len(); l++ {
-							dp := dps.At(l)
-							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
-							if !ok {
-								continue
-							}
-							if err := aggregate(dp, filteredDPAttrs); err != nil {
+							if err := aggregate(dps.At(l), dps.At(l).Attributes()); err != nil {
 								return err
 							}
 						}
 					case pmetric.MetricTypeExponentialHistogram:
 						dps := metric.ExponentialHistogram().DataPoints()
 						for l := 0; l < dps.Len(); l++ {
-							dp := dps.At(l)
-							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
-							if !ok {
-								continue
-							}
-							if err := aggregate(dp, filteredDPAttrs); err != nil {
+							if err := aggregate(dps.At(l), dps.At(l).Attributes()); err != nil {
 								return err
 							}
 						}
@@ -223,16 +219,21 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 				log := scopeLog.LogRecords().At(k)
 				logAttrs := log.Attributes()
 				for _, md := range sm.logMetricDefs {
-					filteredLogAttrs, ok := md.FilterAttributes(logAttrs)
-					if !ok {
+					if !md.MatchAttributes(logAttrs) {
 						continue
 					}
-
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLog, log)
+					filteredLogAttrs, err := md.FilterAttributes(ctx, tCtx, logAttrs)
+					if err != nil {
+						tCtx.Close()
+						return fmt.Errorf("failed to filter attributes: %w", err)
+					}
+
 					if md.Conditions != nil {
-						match, err := md.Conditions.Eval(ctx, tCtx)
+						var match bool
+						match, err = md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
 							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
@@ -243,8 +244,12 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 							continue
 						}
 					}
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
-					err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1)
+					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
+					if err != nil {
+						tCtx.Close()
+						return fmt.Errorf("failed to filter resource attributes: %w", err)
+					}
+					err = aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -278,16 +283,21 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 				profileAttrs := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile, profiles.Dictionary())
 
 				for _, md := range sm.profileMetricDefs {
-					filteredProfileAttrs, ok := md.FilterAttributes(profileAttrs)
-					if !ok {
+					if !md.MatchAttributes(profileAttrs) {
 						continue
 					}
-
 					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, profiles.Dictionary())
+					filteredProfileAttrs, err := md.FilterAttributes(ctx, tCtx, profileAttrs)
+					if err != nil {
+						tCtx.Close()
+						return fmt.Errorf("failed to filter attributes: %w", err)
+					}
+
 					if md.Conditions != nil {
-						match, err := md.Conditions.Eval(ctx, tCtx)
+						var match bool
+						match, err = md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
 							tCtx.Close()
 							return fmt.Errorf("failed to evaluate conditions: %w", err)
@@ -298,7 +308,11 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 							continue
 						}
 					}
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
+					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
+					if err != nil {
+						tCtx.Close()
+						return fmt.Errorf("failed to filter resource attributes: %w", err)
+					}
 					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredProfileAttrs, 1); err != nil {
 						tCtx.Close()
 						return err
