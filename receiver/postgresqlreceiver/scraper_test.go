@@ -49,7 +49,7 @@ func TestScraper(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 		cfg.Databases = []string{"otel"}
@@ -89,7 +89,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	runTest := func(separateSchemaAttr bool, file, fileDefault string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -167,8 +167,8 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
-		defer testutil.SetFeatureGateForTest(t, preciseLagMetricsFg, false)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.PostgresqlreceiverPreciselagmetricsFeatureGate, false)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -220,7 +220,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -273,7 +273,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -327,7 +327,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 
@@ -380,7 +380,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	factory.initMocks([]string{"otel", "telemetry"})
 
 	runTest := func(separateSchemaAttr bool, file string) {
-		defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, separateSchemaAttr)()
+		defer testutil.SetFeatureGateForTest(t, metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate, separateSchemaAttr)()
 
 		cfg := createDefaultConfig().(*Config)
 		cfg.ExcludeDatabases = []string{"open"}
