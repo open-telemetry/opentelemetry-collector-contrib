@@ -68,12 +68,13 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 
 The metrics path uses the collector's scraper pattern. Configure under `metrics`:
 
-| Parameter             | Type     | Default   | Description                                                                 |
-| --------------------- | -------- | --------- | --------------------------------------------------------------------------- |
-| `collection_interval` | Duration | 5 minutes | How often to scrape CloudWatch metrics.                                     |
-| `period`              | Duration | 300s      | CloudWatch metric period for each GetMetricData query.                      |
-| `metrics`             | List     | —         | Explicit list of metric queries (namespace, metric_name, dimensions, stat). |
-| `discovery`           | Optional | —         | Use ListMetrics to discover metrics (mutually exclusive with `metrics`).    |
+| Parameter             | Type     | Default    | Description                                                                                                                                                                                  |
+| --------------------- | -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `collection_interval` | Duration | 5 minutes  | How often to scrape CloudWatch metrics.                                                                                                                                                      |
+| `period`              | Duration | 300s       | CloudWatch metric period for each GetMetricData query.                                                                                                                                       |
+| `delay`               | Duration | 10 minutes | How far back from now to set the query end time. CloudWatch metrics are typically available within 3–10 minutes of being recorded; this offset ensures the query window contains published data. Each scrape fetches exactly one `collection_interval` worth of data ending at `now - delay`, so consecutive scrapes do not overlap. |
+| `metrics`             | List     | —          | Explicit list of metric queries (namespace, metric_name, dimensions, stat).                                                                                                                  |
+| `discovery`           | Optional | —          | Use ListMetrics to discover metrics (mutually exclusive with `metrics`).                                                                                                                     |
 
 When using `discovery`, set `namespace`, optional `metric_name`, `limit`, and `stat`. When using an explicit `metrics` list, each entry must have `namespace` and `metric_name`; for EC2 metrics include the `InstanceId` dimension.
 
