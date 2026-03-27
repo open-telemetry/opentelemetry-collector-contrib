@@ -15,13 +15,14 @@ import (
 )
 
 var (
-	defaultPollInterval          = time.Minute
-	defaultEventLimit            = 1000
-	defaultLogGroupLimit         = 50
-	defaultMetricsPeriod         = 300 * time.Second
-	defaultMetricsStat           = "Average"
-	defaultMetricsCollectionInt  = 5 * time.Minute
-	defaultMetricsDiscoverLimit  = 100
+	defaultPollInterval         = time.Minute
+	defaultEventLimit           = 1000
+	defaultLogGroupLimit        = 50
+	defaultMetricsPeriod        = 300 * time.Second
+	defaultMetricsStat          = "Average"
+	defaultMetricsCollectionInt = 5 * time.Minute
+	defaultMetricsDiscoverLimit = 100
+	defaultMetricsDelay         = 10 * time.Minute
 )
 
 // Config is the overall config structure for the awscloudwatchreceiver
@@ -39,9 +40,14 @@ type Config struct {
 // Collection interval and scraper behavior are controlled via the embedded ControllerConfig.
 type MetricsConfig struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Period                         time.Duration             `mapstructure:"period"`
-	Metrics                        []MetricQuery             `mapstructure:"metrics"`
-	Discovery                      *MetricsDiscoveryConfig  `mapstructure:"discovery,omitempty"`
+	// Period is the CloudWatch statistics aggregation window. Defaults to 5m.
+	Period time.Duration `mapstructure:"period"`
+	// Delay shifts the query window back from now to account for CloudWatch metric publication latency.
+	// CloudWatch metrics are typically available within 3–10 minutes of being recorded.
+	// Defaults to 10m.
+	Delay     time.Duration           `mapstructure:"delay"`
+	Metrics   []MetricQuery           `mapstructure:"metrics"`
+	Discovery *MetricsDiscoveryConfig `mapstructure:"discovery,omitempty"`
 }
 
 // MetricsDiscoveryConfig configures automatic discovery of metrics via ListMetrics.
@@ -92,19 +98,30 @@ type StreamConfig struct {
 }
 
 var (
-	errNoRegion                       = errors.New("no region was specified")
-	errInvalidEventLimit              = errors.New("event limit is improperly configured, value must be greater than 0")
-	errInvalidPollInterval            = errors.New("poll interval is incorrect, it must be a duration greater than one second")
-	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
-	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
-	errPrefixAndPatternConfigured     = errors.New("cannot specify both prefix and pattern")
-	errInvalidMetricsPeriod           = errors.New("metrics period must be at least 1 second")
+	errNoRegion                         = errors.New("no region was specified")
+	errInvalidEventLimit                = errors.New("event limit is improperly configured, value must be greater than 0")
+	errInvalidPollInterval              = errors.New("poll interval is incorrect, it must be a duration greater than one second")
+	errInvalidAutodiscoverLimit         = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
+	errAutodiscoverAndNamedConfigured   = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
+	errPrefixAndPatternConfigured       = errors.New("cannot specify both prefix and pattern")
+	errInvalidMetricsPeriod             = errors.New("metrics period must be at least 1 second")
+	errInvalidMetricsDelay              = errors.New("metrics delay must be at least 1 second")
 	errInvalidMetricsCollectionInterval = errors.New("metrics collection_interval must be at least 1 second")
-	errMetricMissingNamespace         = errors.New("metric must have namespace")
-	errMetricMissingName              = errors.New("metric must have metric_name")
-	errMetricsAndDiscoveryConfigured  = errors.New("metrics and discovery are mutually exclusive; set one or the other")
-	errInvalidDiscoveryLimit          = errors.New("metrics discovery limit must be greater than 0")
+	errMetricMissingNamespace           = errors.New("metric must have namespace")
+	errMetricMissingName                = errors.New("metric must have metric_name")
+	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
+	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
 )
+
+// Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
+// does not cause a validation error when metrics collection is not configured. The scraper
+// framework requires a positive CollectionInterval only when the metrics controller is started.
+func (m *MetricsConfig) Validate() error {
+	if len(m.Metrics) == 0 && m.Discovery == nil {
+		return nil
+	}
+	return m.ControllerConfig.Validate()
+}
 
 // Validate validates all portions of the relevant config
 func (c *Config) Validate() error {
@@ -133,22 +150,28 @@ func (c *Config) validateMetricsConfig() error {
 		if c.Metrics.Discovery.Limit <= 0 {
 			return errInvalidDiscoveryLimit
 		}
-		if c.Metrics.ControllerConfig.CollectionInterval != 0 && c.Metrics.ControllerConfig.CollectionInterval < time.Second {
+		if c.Metrics.CollectionInterval != 0 && c.Metrics.CollectionInterval < time.Second {
 			return errInvalidMetricsCollectionInterval
 		}
 		if c.Metrics.Period != 0 && c.Metrics.Period < time.Second {
 			return errInvalidMetricsPeriod
+		}
+		if c.Metrics.Delay != 0 && c.Metrics.Delay < time.Second {
+			return errInvalidMetricsDelay
 		}
 		return nil
 	}
 	if len(c.Metrics.Metrics) == 0 {
 		return nil
 	}
-	if c.Metrics.ControllerConfig.CollectionInterval != 0 && c.Metrics.ControllerConfig.CollectionInterval < time.Second {
+	if c.Metrics.CollectionInterval != 0 && c.Metrics.CollectionInterval < time.Second {
 		return errInvalidMetricsCollectionInterval
 	}
-	if c.Metrics.Period < time.Second {
+	if c.Metrics.Period != 0 && c.Metrics.Period < time.Second {
 		return errInvalidMetricsPeriod
+	}
+	if c.Metrics.Delay != 0 && c.Metrics.Delay < time.Second {
+		return errInvalidMetricsDelay
 	}
 	for i, m := range c.Metrics.Metrics {
 		if m.Namespace == "" {

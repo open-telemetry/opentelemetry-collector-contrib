@@ -68,8 +68,10 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Metrics: MetricsConfig{
+			// CollectionInterval is required to be positive by scraperhelper.ControllerConfig.Validate().
+			// Metrics are only collected when a metrics pipeline is configured; this default does not
+			// enable metrics collection on its own.
 			ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: defaultMetricsCollectionInt},
-			Period:           defaultMetricsPeriod,
 		},
 	}
 }

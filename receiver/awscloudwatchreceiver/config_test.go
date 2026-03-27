@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
@@ -153,9 +154,13 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestLoadConfig(t *testing.T) {
+func TestLoadLogsConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
+
+	// defaultMetrics is the metrics config that results from createDefaultConfig() when no metrics
+	// section is present in the YAML. CollectionInterval must be positive for scraperhelper validation.
+	defaultMetrics := createDefaultConfig().(*Config).Metrics
 
 	cases := []struct {
 		name           string
@@ -164,7 +169,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "default",
 			expectedConfig: &Config{
-				Region: "us-west-1",
+				Region:  "us-west-1",
+				Metrics: defaultMetrics,
 				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -179,7 +185,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "prefix-log-group-autodiscover",
 			expectedConfig: &Config{
-				Region: "us-west-1",
+				Region:  "us-west-1",
+				Metrics: defaultMetrics,
 				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -195,7 +202,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "name-pattern-log-group-autodiscover",
 			expectedConfig: &Config{
-				Region: "us-west-1",
+				Region:  "us-west-1",
+				Metrics: defaultMetrics,
 				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -211,25 +219,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
-				Region: "us-west-1",
-				Logs: LogsConfig{
-					PollInterval:        time.Minute,
-					MaxEventsPerRequest: defaultEventLimit,
-					Groups: GroupConfig{
-						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit: 100,
-							Streams: StreamConfig{
-								Prefixes: []*string{aws.String("kube-api-controller")},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "autodiscover-filter-streams",
-			expectedConfig: &Config{
-				Region: "us-west-1",
+				Region:  "us-west-1",
+				Metrics: defaultMetrics,
 				Logs: LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -249,6 +240,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedConfig: &Config{
 				Profile: "my-profile",
 				Region:  "us-west-1",
+				Metrics: defaultMetrics,
 				Logs: LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -265,6 +257,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedConfig: &Config{
 				Profile: "my-profile",
 				Region:  "us-west-1",
+				Metrics: defaultMetrics,
 				Logs: LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -290,6 +283,219 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, loaded.Unmarshal(cfg))
 			require.Equal(t, tc.expectedConfig, cfg)
 			require.NoError(t, xconfmap.Validate(cfg))
+		})
+	}
+}
+
+func TestLoadMetricsConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	defaultLogs := func() LogsConfig {
+		return createDefaultConfig().(*Config).Logs
+	}
+
+	cases := []struct {
+		name           string
+		expectedConfig component.Config
+	}{
+		{
+			name: "metrics-explicit",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute},
+					Period:           60 * time.Second,
+					Metrics: []MetricQuery{
+						{
+							Namespace:  "AWS/EC2",
+							MetricName: "CPUUtilization",
+							Stat:       "Average",
+							Dimensions: map[string]string{"InstanceId": "i-1234567890abcdef0"},
+						},
+						{
+							Namespace:  "AWS/EC2",
+							MetricName: "NetworkIn",
+							Stat:       "Sum",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "metrics-discovery",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute},
+					Period:           300 * time.Second,
+					Discovery: &MetricsDiscoveryConfig{
+						Namespace: "AWS/EC2",
+						Limit:     200,
+						Stat:      "Maximum",
+					},
+				},
+			},
+		},
+		{
+			name: "metrics-discovery-no-namespace",
+			expectedConfig: &Config{
+				Region: "us-west-2",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 2 * time.Minute},
+					Period:           120 * time.Second,
+					Discovery: &MetricsDiscoveryConfig{
+						Limit: 50,
+						Stat:  "Sum",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			loaded, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
+			require.NoError(t, err)
+			require.NoError(t, loaded.Unmarshal(cfg))
+			require.Equal(t, tc.expectedConfig, cfg)
+			require.NoError(t, xconfmap.Validate(cfg))
+		})
+	}
+}
+
+func TestValidateMetricsConfig(t *testing.T) {
+	defaultLogs := createDefaultConfig().(*Config).Logs
+
+	validBase := func() Config {
+		return Config{
+			Region: "us-east-1",
+			Logs:   defaultLogs,
+		}
+	}
+
+	withMetrics := func(m MetricsConfig) Config {
+		c := validBase()
+		c.Metrics = m
+		return c
+	}
+
+	cases := []struct {
+		name        string
+		config      Config
+		expectedErr error
+	}{
+		{
+			name:   "no metrics config is valid",
+			config: validBase(),
+		},
+		{
+			name: "explicit metrics valid",
+			config: withMetrics(MetricsConfig{
+				Period: 60 * time.Second,
+				Metrics: []MetricQuery{
+					{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},
+				},
+			}),
+		},
+		{
+			name: "discovery valid",
+			config: withMetrics(MetricsConfig{
+				Period:    300 * time.Second,
+				Discovery: &MetricsDiscoveryConfig{Limit: 100},
+			}),
+		},
+		{
+			name: "metrics and discovery mutually exclusive",
+			config: withMetrics(MetricsConfig{
+				Metrics:   []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+				Discovery: &MetricsDiscoveryConfig{Limit: 10},
+			}),
+			expectedErr: errMetricsAndDiscoveryConfigured,
+		},
+		{
+			name: "discovery limit zero",
+			config: withMetrics(MetricsConfig{
+				Discovery: &MetricsDiscoveryConfig{Limit: 0},
+			}),
+			expectedErr: errInvalidDiscoveryLimit,
+		},
+		{
+			name: "collection interval too short",
+			config: withMetrics(MetricsConfig{
+				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 500 * time.Millisecond},
+				Metrics:          []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+			}),
+			expectedErr: errInvalidMetricsCollectionInterval,
+		},
+		{
+			name: "period too short",
+			config: withMetrics(MetricsConfig{
+				Period:  500 * time.Millisecond,
+				Metrics: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+			}),
+			expectedErr: errInvalidMetricsPeriod,
+		},
+		{
+			name: "delay too short",
+			config: withMetrics(MetricsConfig{
+				Delay:   500 * time.Millisecond,
+				Metrics: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+			}),
+			expectedErr: errInvalidMetricsDelay,
+		},
+		{
+			name: "delay too short in discovery",
+			config: withMetrics(MetricsConfig{
+				Delay:     500 * time.Millisecond,
+				Discovery: &MetricsDiscoveryConfig{Limit: 100},
+			}),
+			expectedErr: errInvalidMetricsDelay,
+		},
+		{
+			name: "metric missing namespace",
+			config: withMetrics(MetricsConfig{
+				Metrics: []MetricQuery{{MetricName: "CPUUtilization"}},
+			}),
+			expectedErr: errMetricMissingNamespace,
+		},
+		{
+			name: "metric missing name",
+			config: withMetrics(MetricsConfig{
+				Metrics: []MetricQuery{{Namespace: "AWS/EC2"}},
+			}),
+			expectedErr: errMetricMissingName,
+		},
+		{
+			name: "period zero uses default (valid)",
+			config: withMetrics(MetricsConfig{
+				Period:  0,
+				Metrics: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+			}),
+		},
+		{
+			name: "collection interval zero uses default (valid)",
+			config: withMetrics(MetricsConfig{
+				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 0},
+				Metrics:          []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+			}),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.config.Validate()
+			if tc.expectedErr != nil {
+				require.ErrorContains(t, err, tc.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
