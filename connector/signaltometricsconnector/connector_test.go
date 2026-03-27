@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
@@ -39,32 +40,44 @@ import (
 const testDataDir = "testdata"
 
 func TestConnectorWithTraces(t *testing.T) {
-	testCases := []string{
-		"sum",
-		"histograms",
-		"exponential_histograms",
-		"metric_identity",
-		"gauge",
+	testCases := []struct {
+		name           string
+		clientMetadata map[string][]string
+	}{
+		{name: "sum"},
+		{name: "histograms"},
+		{name: "exponential_histograms"},
+		{name: "metric_identity"},
+		{name: "gauge"},
+		{
+			name: "ottl_expression",
+			clientMetadata: map[string][]string{
+				"x-dynamic-resource-attributes": {"resource.foo"},
+			},
+		},
 	}
 
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
 	for _, tc := range testCases {
-		t.Run(tc, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			traceTestDataDir := filepath.Join(testDataDir, "traces")
 			inputTraces, err := golden.ReadTraces(filepath.Join(traceTestDataDir, "traces.yaml"))
 			require.NoError(t, err)
 
 			next := &consumertest.MetricsSink{}
-			tcTestDataDir := filepath.Join(traceTestDataDir, tc)
+			tcTestDataDir := filepath.Join(traceTestDataDir, tc.name)
 			factory, settings, cfg := setupConnector(t, tcTestDataDir)
-			connector, err := factory.CreateTracesToMetrics(ctx, settings, cfg, next)
+			connector, err := factory.CreateTracesToMetrics(t.Context(), settings, cfg, next)
 			require.NoError(t, err)
 			require.IsType(t, &signalToMetrics{}, connector)
 			expectedMetrics, err := golden.ReadMetrics(filepath.Join(tcTestDataDir, "output.yaml"))
 			require.NoError(t, err)
 
+			ctx := t.Context()
+			if tc.clientMetadata != nil {
+				ctx = client.NewContext(ctx, client.Info{
+					Metadata: client.NewMetadata(tc.clientMetadata),
+				})
+			}
 			require.NoError(t, connector.ConsumeTraces(ctx, inputTraces))
 			require.Len(t, next.AllMetrics(), 1)
 			assertAggregatedMetrics(t, expectedMetrics, next.AllMetrics()[0])
