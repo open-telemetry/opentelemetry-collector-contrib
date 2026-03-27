@@ -1,4 +1,10 @@
+display_name: SNMP Receiver
 type: snmp
+
+description: |
+  This receiver fetches stats from an SNMP enabled host using a [golang
+  snmp client](https://github.com/gosnmp/gosnmp). Metrics are collected
+  based upon different configurations in the config file.
 
 status:
   class: receiver

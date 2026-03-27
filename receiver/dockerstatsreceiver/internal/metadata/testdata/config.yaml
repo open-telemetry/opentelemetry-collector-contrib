@@ -3,20 +3,28 @@ all_set:
   metrics:
     container.blockio.io_merged_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_queued_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_service_bytes_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_service_time_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_serviced_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_time_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_wait_time_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.sectors_recursive:
       enabled: true
+      attributes: ["device_major","device_minor","operation"]
     container.cpu.limit:
       enabled: true
     container.cpu.logical.count:
@@ -33,6 +41,7 @@ all_set:
       enabled: true
     container.cpu.usage.percpu:
       enabled: true
+      attributes: ["core"]
     container.cpu.usage.system:
       enabled: true
     container.cpu.usage.total:
@@ -121,20 +130,204 @@ all_set:
       enabled: true
     container.network.io.usage.rx_bytes:
       enabled: true
+      attributes: ["interface"]
     container.network.io.usage.rx_dropped:
       enabled: true
+      attributes: ["interface"]
     container.network.io.usage.rx_errors:
       enabled: true
+      attributes: ["interface"]
     container.network.io.usage.rx_packets:
       enabled: true
+      attributes: ["interface"]
     container.network.io.usage.tx_bytes:
       enabled: true
+      attributes: ["interface"]
     container.network.io.usage.tx_dropped:
       enabled: true
+      attributes: ["interface"]
     container.network.io.usage.tx_errors:
       enabled: true
+      attributes: ["interface"]
     container.network.io.usage.tx_packets:
       enabled: true
+      attributes: ["interface"]
+    container.pids.count:
+      enabled: true
+    container.pids.limit:
+      enabled: true
+    container.restarts:
+      enabled: true
+    container.uptime:
+      enabled: true
+  resource_attributes:
+    container.command_line:
+      enabled: true
+    container.hostname:
+      enabled: true
+    container.id:
+      enabled: true
+    container.image.id:
+      enabled: true
+    container.image.name:
+      enabled: true
+    container.name:
+      enabled: true
+    container.runtime:
+      enabled: true
+reaggregate_set:
+  metrics:
+    container.blockio.io_merged_recursive:
+      enabled: true
+      attributes: []
+    container.blockio.io_queued_recursive:
+      enabled: true
+      attributes: []
+    container.blockio.io_service_bytes_recursive:
+      enabled: true
+      attributes: []
+    container.blockio.io_service_time_recursive:
+      enabled: true
+      attributes: []
+    container.blockio.io_serviced_recursive:
+      enabled: true
+      attributes: []
+    container.blockio.io_time_recursive:
+      enabled: true
+      attributes: []
+    container.blockio.io_wait_time_recursive:
+      enabled: true
+      attributes: []
+    container.blockio.sectors_recursive:
+      enabled: true
+      attributes: []
+    container.cpu.limit:
+      enabled: true
+    container.cpu.logical.count:
+      enabled: true
+    container.cpu.shares:
+      enabled: true
+    container.cpu.throttling_data.periods:
+      enabled: true
+    container.cpu.throttling_data.throttled_periods:
+      enabled: true
+    container.cpu.throttling_data.throttled_time:
+      enabled: true
+    container.cpu.usage.kernelmode:
+      enabled: true
+    container.cpu.usage.percpu:
+      enabled: true
+      attributes: []
+    container.cpu.usage.system:
+      enabled: true
+    container.cpu.usage.total:
+      enabled: true
+    container.cpu.usage.usermode:
+      enabled: true
+    container.cpu.utilization:
+      enabled: true
+    container.memory.active_anon:
+      enabled: true
+    container.memory.active_file:
+      enabled: true
+    container.memory.anon:
+      enabled: true
+    container.memory.cache:
+      enabled: true
+    container.memory.dirty:
+      enabled: true
+    container.memory.fails:
+      enabled: true
+    container.memory.file:
+      enabled: true
+    container.memory.hierarchical_memory_limit:
+      enabled: true
+    container.memory.hierarchical_memsw_limit:
+      enabled: true
+    container.memory.inactive_anon:
+      enabled: true
+    container.memory.inactive_file:
+      enabled: true
+    container.memory.mapped_file:
+      enabled: true
+    container.memory.percent:
+      enabled: true
+    container.memory.pgfault:
+      enabled: true
+    container.memory.pgmajfault:
+      enabled: true
+    container.memory.pgpgin:
+      enabled: true
+    container.memory.pgpgout:
+      enabled: true
+    container.memory.rss:
+      enabled: true
+    container.memory.rss_huge:
+      enabled: true
+    container.memory.total_active_anon:
+      enabled: true
+    container.memory.total_active_file:
+      enabled: true
+    container.memory.total_cache:
+      enabled: true
+    container.memory.total_dirty:
+      enabled: true
+    container.memory.total_inactive_anon:
+      enabled: true
+    container.memory.total_inactive_file:
+      enabled: true
+    container.memory.total_mapped_file:
+      enabled: true
+    container.memory.total_pgfault:
+      enabled: true
+    container.memory.total_pgmajfault:
+      enabled: true
+    container.memory.total_pgpgin:
+      enabled: true
+    container.memory.total_pgpgout:
+      enabled: true
+    container.memory.total_rss:
+      enabled: true
+    container.memory.total_rss_huge:
+      enabled: true
+    container.memory.total_unevictable:
+      enabled: true
+    container.memory.total_writeback:
+      enabled: true
+    container.memory.unevictable:
+      enabled: true
+    container.memory.usage.limit:
+      enabled: true
+    container.memory.usage.max:
+      enabled: true
+    container.memory.usage.total:
+      enabled: true
+    container.memory.writeback:
+      enabled: true
+    container.network.io.usage.rx_bytes:
+      enabled: true
+      attributes: []
+    container.network.io.usage.rx_dropped:
+      enabled: true
+      attributes: []
+    container.network.io.usage.rx_errors:
+      enabled: true
+      attributes: []
+    container.network.io.usage.rx_packets:
+      enabled: true
+      attributes: []
+    container.network.io.usage.tx_bytes:
+      enabled: true
+      attributes: []
+    container.network.io.usage.tx_dropped:
+      enabled: true
+      attributes: []
+    container.network.io.usage.tx_errors:
+      enabled: true
+      attributes: []
+    container.network.io.usage.tx_packets:
+      enabled: true
+      attributes: []
     container.pids.count:
       enabled: true
     container.pids.limit:
@@ -162,20 +355,28 @@ none_set:
   metrics:
     container.blockio.io_merged_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_queued_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_service_bytes_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_service_time_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_serviced_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_time_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.io_wait_time_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.blockio.sectors_recursive:
       enabled: false
+      attributes: ["device_major","device_minor","operation"]
     container.cpu.limit:
       enabled: false
     container.cpu.logical.count:
@@ -192,6 +393,7 @@ none_set:
       enabled: false
     container.cpu.usage.percpu:
       enabled: false
+      attributes: ["core"]
     container.cpu.usage.system:
       enabled: false
     container.cpu.usage.total:
@@ -280,20 +482,28 @@ none_set:
       enabled: false
     container.network.io.usage.rx_bytes:
       enabled: false
+      attributes: ["interface"]
     container.network.io.usage.rx_dropped:
       enabled: false
+      attributes: ["interface"]
     container.network.io.usage.rx_errors:
       enabled: false
+      attributes: ["interface"]
     container.network.io.usage.rx_packets:
       enabled: false
+      attributes: ["interface"]
     container.network.io.usage.tx_bytes:
       enabled: false
+      attributes: ["interface"]
     container.network.io.usage.tx_dropped:
       enabled: false
+      attributes: ["interface"]
     container.network.io.usage.tx_errors:
       enabled: false
+      attributes: ["interface"]
     container.network.io.usage.tx_packets:
       enabled: false
+      attributes: ["interface"]
     container.pids.count:
       enabled: false
     container.pids.limit:

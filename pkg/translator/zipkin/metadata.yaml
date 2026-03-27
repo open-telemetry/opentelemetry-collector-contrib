@@ -1,5 +1,27 @@
+type: zipkin
+
 status:
   disable_codecov_badge: true
+  stability:
+    alpha: [traces]
   codeowners:
     active: [MovieStoreGuy, andrzej-stencel, crobert-1]
   class: pkg
+
+feature_gates:
+  - id: pkg.translator.zipkin.DontEmitV0NetworkConventions
+    stage: alpha
+    description: >-
+      When enabled, the Zipkin translator no longer emits the deprecated
+      net.host.ip and net.peer.ip (semconv v1.12.0) attributes.
+      Requires pkg.translator.zipkin.EmitV1NetworkConventions to also be enabled.
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
+  - id: pkg.translator.zipkin.EmitV1NetworkConventions
+    stage: alpha
+    description: >-
+      When enabled, the Zipkin translator emits network.local.address and
+      network.peer.address (semconv v1.38.0) instead of the deprecated
+      net.host.ip and net.peer.ip (semconv v1.12.0).
+    from_version: v0.147.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
