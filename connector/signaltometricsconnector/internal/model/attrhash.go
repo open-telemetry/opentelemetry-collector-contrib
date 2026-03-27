@@ -30,9 +30,9 @@ func (b *attrHashBuf) sum128() [16]byte {
 	var d xxhash.Digest
 	var result [16]byte
 	d.Reset()
-	d.Write(b.buf)
+	_, _ = d.Write(b.buf)
 	d.Sum(result[:0])
-	d.Write([]byte{0})
+	_, _ = d.Write([]byte{0})
 	d.Sum(result[:8])
 	return result
 }
