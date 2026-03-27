@@ -27,13 +27,13 @@ var attrHashBufPool = sync.Pool{
 // sum128 returns a 128-bit hash of b.buf using the same two-pass xxhash
 // algorithm as pdatautil.MapHash.
 func (b *attrHashBuf) sum128() [16]byte {
+	var d xxhash.Digest
 	var result [16]byte
-	h := xxhash.Sum64(b.buf)
-	binary.LittleEndian.PutUint64(result[:8], h)
-	b.buf = append(b.buf, 0)
-	h = xxhash.Sum64(b.buf)
-	b.buf = b.buf[:len(b.buf)-1]
-	binary.LittleEndian.PutUint64(result[8:], h)
+	d.Reset()
+	d.Write(b.buf)
+	d.Sum(result[:0])
+	d.Write([]byte{0})
+	d.Sum(result[:8])
 	return result
 }
 
@@ -43,20 +43,14 @@ func appendAttrValue(buf []byte, v pcommon.Value) []byte {
 	case pcommon.ValueTypeStr:
 		buf = append(buf, 'S')
 		s := v.Str()
-		var l [4]byte
-		binary.LittleEndian.PutUint32(l[:], uint32(len(s)))
-		buf = append(buf, l[:]...)
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(s)))
 		buf = append(buf, s...)
 	case pcommon.ValueTypeInt:
 		buf = append(buf, 'I')
-		var b [8]byte
-		binary.LittleEndian.PutUint64(b[:], uint64(v.Int()))
-		buf = append(buf, b[:]...)
+		buf = binary.LittleEndian.AppendUint64(buf, uint64(v.Int()))
 	case pcommon.ValueTypeDouble:
 		buf = append(buf, 'D')
-		var b [8]byte
-		binary.LittleEndian.PutUint64(b[:], math.Float64bits(v.Double()))
-		buf = append(buf, b[:]...)
+		buf = binary.LittleEndian.AppendUint64(buf, math.Float64bits(v.Double()))
 	case pcommon.ValueTypeBool:
 		buf = append(buf, 'B')
 		if v.Bool() {
@@ -68,9 +62,7 @@ func appendAttrValue(buf []byte, v pcommon.Value) []byte {
 		// bytes, map, slice: encode as string representation (rare for attributes)
 		buf = append(buf, 'O')
 		s := v.AsString()
-		var l [4]byte
-		binary.LittleEndian.PutUint32(l[:], uint32(len(s)))
-		buf = append(buf, l[:]...)
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(s)))
 		buf = append(buf, s...)
 	}
 	return buf
