@@ -52,27 +52,35 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
 	aggregator := aggregator.NewAggregator[*ottlspan.TransformContext](processedMetrics, sm.errorMode, sm.logger)
+	// resAttrsCache lazily caches the filtered resource attributes per
+	// metric definition within a resource. Since resource attributes are
+	// constant for all signals within a resource, the result only needs
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
 		resourceAttrs := resourceSpan.Resource().Attributes()
+		clear(resAttrsCache)
 		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
 			scopeSpan := resourceSpan.ScopeSpans().At(j)
 			for k := 0; k < scopeSpan.Spans().Len(); k++ {
 				span := scopeSpan.Spans().At(k)
 				spanAttrs := span.Attributes()
-				for _, md := range sm.spanMetricDefs {
+				for mdIdx, md := range sm.spanMetricDefs {
 					if !md.MatchAttributes(spanAttrs) {
 						continue
 					}
-					// The transform context is created from original attributes so that the
-					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
-					filteredSpanAttrs, err := md.FilterAttributes(ctx, tCtx, spanAttrs)
+					resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
-						return fmt.Errorf("failed to filter attributes: %w", err)
+						return fmt.Errorf("failed to resolve attributes: %w", err)
 					}
+					attrID := md.ComputeAttributesHash(spanAttrs, resolvedAttrs)
 
 					if md.Conditions != nil {
 						var match bool
@@ -88,12 +96,22 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 						}
 					}
 
-					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
-					if err != nil {
-						tCtx.Close()
-						return fmt.Errorf("failed to filter resource attributes: %w", err)
+					if len(resAttrsCache) == 0 {
+						resAttrsCache = make([]pcommon.Map, len(sm.spanMetricDefs))
 					}
-					err = aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1)
+					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
+						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
+						if resErr != nil {
+							tCtx.Close()
+							return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
+						}
+						resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+					}
+
+					filterAttrs := func() (pcommon.Map, error) {
+						return md.FilterAttributes(spanAttrs, resolvedAttrs), nil
+					}
+					err = aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -114,26 +132,46 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(m.ResourceMetrics().Len())
 	aggregator := aggregator.NewAggregator[*ottldatapoint.TransformContext](processedMetrics, sm.errorMode, sm.logger)
+	// resAttrsCache lazily caches the filtered resource attributes per
+	// metric definition within a resource. Since resource attributes are
+	// constant for all signals within a resource, the result only needs
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
+
 	for i := 0; i < m.ResourceMetrics().Len(); i++ {
 		resourceMetric := m.ResourceMetrics().At(i)
 		resourceAttrs := resourceMetric.Resource().Attributes()
+		clear(resAttrsCache)
 		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
 			scopeMetric := resourceMetric.ScopeMetrics().At(j)
 			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
 				metrics := scopeMetric.Metrics()
 				metric := metrics.At(k)
-				for _, md := range sm.dpMetricDefs {
+				for mdIdx, md := range sm.dpMetricDefs {
 					aggregate := func(dp any, dpAttrs pcommon.Map) error {
 						if !md.MatchAttributes(dpAttrs) {
 							return nil
 						}
-						// The transform context is created from original attributes so that the
-						// OTTL expressions are also applied on the original attributes.
 						tCtx := ottldatapoint.NewTransformContextPtr(resourceMetric, scopeMetric, metric, dp)
 						defer tCtx.Close()
-						filteredDPAttrs, err := md.FilterAttributes(ctx, tCtx, dpAttrs)
+						resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 						if err != nil {
-							return fmt.Errorf("failed to filter attributes: %w", err)
+							return fmt.Errorf("failed to resolve attributes: %w", err)
+						}
+						attrID := md.ComputeAttributesHash(dpAttrs, resolvedAttrs)
+
+						if len(resAttrsCache) == 0 {
+							resAttrsCache = make([]pcommon.Map, len(sm.dpMetricDefs))
+						}
+						if resAttrsCache[mdIdx] == (pcommon.Map{}) {
+							resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
+							if resErr != nil {
+								return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
+							}
+							resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
 						}
 
 						if md.Conditions != nil {
@@ -147,11 +185,10 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 								return nil
 							}
 						}
-						filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
-						if err != nil {
-							return fmt.Errorf("failed to filter resource attributes: %w", err)
+						filterAttrs := func() (pcommon.Map, error) {
+							return md.FilterAttributes(dpAttrs, resolvedAttrs), nil
 						}
-						return aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredDPAttrs, 1)
+						return aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1)
 					}
 
 					//exhaustive:enforce
@@ -210,26 +247,35 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(logs.ResourceLogs().Len())
 	aggregator := aggregator.NewAggregator[*ottllog.TransformContext](processedMetrics, sm.errorMode, sm.logger)
+	// resAttrsCache lazily caches the filtered resource attributes per
+	// metric definition within a resource. Since resource attributes are
+	// constant for all signals within a resource, the result only needs
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
+
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		resourceLog := logs.ResourceLogs().At(i)
 		resourceAttrs := resourceLog.Resource().Attributes()
+		clear(resAttrsCache)
 		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
 			scopeLog := resourceLog.ScopeLogs().At(j)
 			for k := 0; k < scopeLog.LogRecords().Len(); k++ {
 				log := scopeLog.LogRecords().At(k)
 				logAttrs := log.Attributes()
-				for _, md := range sm.logMetricDefs {
+				for mdIdx, md := range sm.logMetricDefs {
 					if !md.MatchAttributes(logAttrs) {
 						continue
 					}
-					// The transform context is created from original attributes so that the
-					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLog, log)
-					filteredLogAttrs, err := md.FilterAttributes(ctx, tCtx, logAttrs)
+					resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
-						return fmt.Errorf("failed to filter attributes: %w", err)
+						return fmt.Errorf("failed to resolve attributes: %w", err)
 					}
+					attrID := md.ComputeAttributesHash(logAttrs, resolvedAttrs)
 
 					if md.Conditions != nil {
 						var match bool
@@ -244,12 +290,23 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 							continue
 						}
 					}
-					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
-					if err != nil {
-						tCtx.Close()
-						return fmt.Errorf("failed to filter resource attributes: %w", err)
+
+					if len(resAttrsCache) == 0 {
+						resAttrsCache = make([]pcommon.Map, len(sm.logMetricDefs))
 					}
-					err = aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1)
+					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
+						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
+						if resErr != nil {
+							tCtx.Close()
+							return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
+						}
+						resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+					}
+
+					filterAttrs := func() (pcommon.Map, error) {
+						return md.FilterAttributes(logAttrs, resolvedAttrs), nil
+					}
+					err = aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1)
 					tCtx.Close()
 					if err != nil {
 						return err
@@ -270,30 +327,36 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(profiles.ResourceProfiles().Len())
 	aggregator := aggregator.NewAggregator[*ottlprofile.TransformContext](processedMetrics, sm.errorMode, sm.logger)
+	// resAttrsCache lazily caches the filtered resource attributes per
+	// metric definition within a resource. Since resource attributes are
+	// constant for all signals within a resource, the result only needs
+	// to be computed once per metric definition per resource. The slice
+	// is allocated on the first match and reused across resources via
+	// clear(). A zero-value pcommon.Map entry indicates it has not been
+	// computed yet for the current resource.
+	var resAttrsCache []pcommon.Map
 
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		resourceProfile := profiles.ResourceProfiles().At(i)
 		resourceAttrs := resourceProfile.Resource().Attributes()
-
+		clear(resAttrsCache)
 		for j := 0; j < resourceProfile.ScopeProfiles().Len(); j++ {
 			scopeProfile := resourceProfile.ScopeProfiles().At(j)
 
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
 				profileAttrs := pprofile.FromAttributeIndices(profiles.Dictionary().AttributeTable(), profile, profiles.Dictionary())
-
-				for _, md := range sm.profileMetricDefs {
+				for mdIdx, md := range sm.profileMetricDefs {
 					if !md.MatchAttributes(profileAttrs) {
 						continue
 					}
-					// The transform context is created from original attributes so that the
-					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, profiles.Dictionary())
-					filteredProfileAttrs, err := md.FilterAttributes(ctx, tCtx, profileAttrs)
+					resolvedAttrs, err := md.ResolveAttributes(ctx, tCtx)
 					if err != nil {
 						tCtx.Close()
-						return fmt.Errorf("failed to filter attributes: %w", err)
+						return fmt.Errorf("failed to resolve attributes: %w", err)
 					}
+					attrID := md.ComputeAttributesHash(profileAttrs, resolvedAttrs)
 
 					if md.Conditions != nil {
 						var match bool
@@ -308,12 +371,23 @@ func (sm *signalToMetrics) ConsumeProfiles(ctx context.Context, profiles pprofil
 							continue
 						}
 					}
-					filteredResAttrs, err := md.FilterResourceAttributes(ctx, tCtx, resourceAttrs, sm.collectorInstanceInfo)
-					if err != nil {
-						tCtx.Close()
-						return fmt.Errorf("failed to filter resource attributes: %w", err)
+
+					if len(resAttrsCache) == 0 {
+						resAttrsCache = make([]pcommon.Map, len(sm.profileMetricDefs))
 					}
-					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredProfileAttrs, 1); err != nil {
+					if resAttrsCache[mdIdx] == (pcommon.Map{}) {
+						resolvedResAttrs, resErr := md.ResolveIncludeResourceAttributes(ctx, tCtx)
+						if resErr != nil {
+							tCtx.Close()
+							return fmt.Errorf("failed to resolve resource attributes: %w", resErr)
+						}
+						resAttrsCache[mdIdx] = md.FilterResourceAttributes(resourceAttrs, resolvedResAttrs, sm.collectorInstanceInfo)
+					}
+
+					filterAttrs := func() (pcommon.Map, error) {
+						return md.FilterAttributes(profileAttrs, resolvedAttrs), nil
+					}
+					if err := aggregator.Aggregate(ctx, tCtx, md, resAttrsCache[mdIdx], attrID, filterAttrs, 1); err != nil {
 						tCtx.Close()
 						return err
 					}
