@@ -315,40 +315,45 @@ func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
 	return g, nil
 }
 
-func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
+func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], bool, error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
-		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
+		return Expr[K]{}, false, fmt.Errorf("undefined function %q", ed.Function)
 	}
 	defaultArgs := f.CreateDefaultArguments()
 	var args Arguments
 
 	// A nil value indicates the function takes no arguments.
+	allLiteral := true
+	var err error
 	if defaultArgs != nil {
 		// Pointer values are necessary to fulfill the Go reflection
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
 		if reflect.TypeOf(defaultArgs).Kind() != reflect.Pointer {
-			return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
+			return Expr[K]{}, false, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
 
 		args = reflect.New(reflect.ValueOf(defaultArgs).Elem().Type()).Interface()
 
-		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
+		allLiteral, err = p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
-			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to %q: %w", ed.Function, err)
+			return Expr[K]{}, false, fmt.Errorf("error while parsing arguments for call to %q: %w", ed.Function, err)
 		}
 	}
 
 	fn, err := f.CreateFunction(FunctionContext{Set: p.telemetrySettings}, args)
 	if err != nil {
-		return Expr[K]{}, fmt.Errorf("couldn't create function: %w", err)
+		return Expr[K]{}, false, fmt.Errorf("couldn't create function: %w", err)
 	}
 
-	return Expr[K]{exprFunc: fn}, err
+	isPureLiteral := f.isDeterministic() && allLiteral
+
+	return Expr[K]{exprFunc: fn}, isPureLiteral, err
 }
 
-func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
+func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) (bool, error) {
+	allLiteral := true
 	requiredArgs := 0
 	seenNamed := false
 
@@ -356,7 +361,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		if !seenNamed && ed.Arguments[i].Name != "" {
 			seenNamed = true
 		} else if seenNamed && ed.Arguments[i].Name == "" {
-			return errors.New("unnamed argument used after named argument")
+			return false, errors.New("unnamed argument used after named argument")
 		}
 	}
 
@@ -367,7 +372,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	}
 
 	if len(ed.Arguments) < requiredArgs || len(ed.Arguments) > argsVal.NumField() {
-		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
+		return false, fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
 	}
 
 	for i, edArg := range ed.Arguments {
@@ -384,7 +389,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		} else {
 			field = argsVal.FieldByName(strcase.ToCamel(edArg.Name))
 			if !field.IsValid() {
-				return fmt.Errorf("no such parameter: %s", edArg.Name)
+				return false, fmt.Errorf("no such parameter: %s", edArg.Name)
 			}
 			fieldType = field.Type()
 			isOptional = strings.HasPrefix(fieldType.Name(), "Optional")
@@ -399,7 +404,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			manager, ok = field.Interface().(optionalManager)
 
 			if !ok {
-				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
+				return false, errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
 			}
 
 			fieldType = manager.get().Type()
@@ -414,11 +419,11 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			case arg.FunctionName != nil:
 				name = *arg.FunctionName
 			default:
-				return errors.New("invalid function name given")
+				return false, errors.New("invalid function name given")
 			}
 			f, ok := p.functions[name]
 			if !ok {
-				return fmt.Errorf("undefined function %s", name)
+				return false, fmt.Errorf("undefined function %s", name)
 			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case fieldType.Kind() == reflect.Slice:
@@ -427,16 +432,35 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			val, err = p.buildArg(arg.Value, fieldType)
 		}
 		if err != nil {
-			return fmt.Errorf("invalid argument at position %v: %w", i, err)
+			return false, fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
+
 		if isOptional {
 			field.Set(manager.set(val))
 		} else {
 			field.Set(reflect.ValueOf(val))
 		}
+
+		// Minimal literal detection: prefer the internal `literalGetter` marker.
+		// If the constructed value itself implements the marker it's literal.
+		// Also accept slices of untyped getters where each element implements
+		// the marker. Anything else is conservatively non-literal.
+		if _, ok := val.(literalGetter); !ok {
+			if sget, ok := val.([]Getter[K]); ok {
+				for _, el := range sget {
+					if _, lok := el.(literalGetter); !lok {
+						allLiteral = false
+						break
+					}
+				}
+			} else {
+				allLiteral = false
+			}
+		}
 	}
 
-	return nil
+	// Return whether all args were literal
+	return allLiteral, nil
 }
 
 func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {

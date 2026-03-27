@@ -23,5 +23,5 @@ func createUUIDFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.E
 }
 
 func NewUUIDFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("UUID", nil, createUUIDFunction[K])
+	return ottl.NewFactory("UUID", nil, createUUIDFunction[K], ottl.NonDeterministicConverter[K]())
 }

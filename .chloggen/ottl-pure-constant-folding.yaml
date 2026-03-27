@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/ottl
+note: "Implement AST constant folding for deterministic OTTL converters receiving literal arguments."
+subtext: "Deterministic converters (e.g., Concat, Substring) with all-literal arguments are now evaluated once at parse time. Non-deterministic converters (Now, UUID, UUIDv7, IsRootSpan) are excluded via NonDeterministicConverter option."
+issues: [42522]

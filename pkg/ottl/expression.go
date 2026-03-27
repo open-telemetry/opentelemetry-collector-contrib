@@ -1163,14 +1163,30 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 }
 
 func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
-	call, err := p.newFunctionCall(editor(c))
+	call, canFold, err := p.newFunctionCall(editor(c))
 	if err != nil {
 		return nil, err
 	}
-	return &exprGetter[K]{
+
+	exprG := &exprGetter[K]{
 		expr: call,
 		keys: c.Keys,
-	}, nil
+	}
+
+	if canFold && len(c.Keys) == 0 {
+		// If the converter is deterministic and all its arguments are literals,
+		// we can evaluate it statically at parse time. We skip folding when keys
+		// are present because the returned value might not support extracting
+		// literal keys at parse time easily.
+		// We also skip folding when the result is nil, as that typically indicates
+		// the converter needs actual runtime context to produce a meaningful value.
+		val, err := exprG.Get(context.Background(), *new(K))
+		if err == nil && val != nil {
+			return newLiteral[K, any](val), nil
+		}
+	}
+
+	return exprG, nil
 }
 
 // TimeGetter is a Getter that must return a time.Time.

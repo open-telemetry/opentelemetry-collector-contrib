@@ -591,7 +591,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newFunctionCall(tt.inv)
+			_, _, err := p.newFunctionCall(tt.inv)
 			t.Log(err)
 			assert.Error(t, err)
 		})
@@ -1909,7 +1909,7 @@ func Test_NewFunctionCall(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fn, err := p.newFunctionCall(tt.inv)
+			fn, _, err := p.newFunctionCall(tt.inv)
 			require.NoError(t, err)
 
 			result, err := fn.Eval(t.Context(), nil)
@@ -1996,12 +1996,12 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 		},
 	}
 
-	fn, err := p.newFunctionCall(invWithOptArg)
+	fn, _, err := p.newFunctionCall(invWithOptArg)
 	require.NoError(t, err)
 	res, _ := fn.Eval(t.Context(), nil)
 	require.Equal(t, 4, res)
 
-	fn, err = p.newFunctionCall(invWithoutOptArg)
+	fn, _, err = p.newFunctionCall(invWithoutOptArg)
 	require.NoError(t, err)
 	res, _ = fn.Eval(t.Context(), nil)
 	require.Equal(t, 2, res)
@@ -3037,4 +3037,61 @@ func Test_Optional_GetOr(t *testing.T) {
 
 	setOpt := NewTestingOptional[string]("foo")
 	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
+
+func Test_NonDeterministicConverter_PreventsConstantFolding(t *testing.T) {
+	callCount := 0
+
+	// A factory with no arguments and no NonDeterministicConverter option.
+	// Because all converters are deterministic by default, newFunctionCall
+	// should report canFold=true when there are no arguments (trivially
+	// "all-literal").
+	deterministicFactory := NewFactory(
+		"testing_deterministic",
+		nil,
+		func(FunctionContext, Arguments) (ExprFunc[any], error) {
+			return func(context.Context, any) (any, error) {
+				callCount++
+				return callCount, nil
+			}, nil
+		},
+	)
+
+	// A factory with NonDeterministicConverter. Even though it has no
+	// arguments, newFunctionCall should report canFold=false so the
+	// parser never evaluates it at parse time.
+	nonDeterministicFactory := NewFactory(
+		"testing_nondeterministic",
+		nil,
+		func(FunctionContext, Arguments) (ExprFunc[any], error) {
+			return func(context.Context, any) (any, error) {
+				callCount++
+				return callCount, nil
+			}, nil
+		},
+		NonDeterministicConverter[any](),
+	)
+
+	p, _ := NewParser(
+		CreateFactoryMap(deterministicFactory, nonDeterministicFactory),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	// Deterministic converter with no arguments → canFold must be true.
+	_, canFold, err := p.newFunctionCall(editor{
+		Function:  "testing_deterministic",
+		Arguments: []argument{},
+	})
+	require.NoError(t, err)
+	assert.True(t, canFold, "deterministic converter with no args should be foldable")
+
+	// Non-deterministic converter with no arguments → canFold must be false.
+	_, canFold, err = p.newFunctionCall(editor{
+		Function:  "testing_nondeterministic",
+		Arguments: []argument{},
+	})
+	require.NoError(t, err)
+	assert.False(t, canFold, "non-deterministic converter should never be foldable")
 }
