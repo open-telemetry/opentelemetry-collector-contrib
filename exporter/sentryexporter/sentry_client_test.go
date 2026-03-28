@@ -15,11 +15,11 @@ func TestGetAllProjectsPagination(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	var callCount int32
+	var callCount atomic.Int32
 
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&callCount, 1)
+		callCount.Add(1)
 
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET request, got %s", r.Method)
@@ -65,7 +65,7 @@ func TestGetAllProjectsPagination(t *testing.T) {
 		t.Fatalf("unexpected project order %+v", projects)
 	}
 
-	if got := atomic.LoadInt32(&callCount); got != 2 {
+	if got := callCount.Load(); got != 2 {
 		t.Fatalf("expected 2 requests, got %d", got)
 	}
 }
@@ -74,11 +74,11 @@ func TestGetProjectKeysPagination(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	var callCount int32
+	var callCount atomic.Int32
 
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		atomic.AddInt32(&callCount, 1)
+		callCount.Add(1)
 
 		if r.Method != http.MethodGet {
 			t.Fatalf("expected GET request, got %s", r.Method)
@@ -124,7 +124,7 @@ func TestGetProjectKeysPagination(t *testing.T) {
 		t.Fatalf("unexpected key order %+v", keys)
 	}
 
-	if got := atomic.LoadInt32(&callCount); got != 2 {
+	if got := callCount.Load(); got != 2 {
 		t.Fatalf("expected 2 requests, got %d", got)
 	}
 }
