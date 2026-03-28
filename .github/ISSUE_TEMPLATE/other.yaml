@@ -160,6 +160,7 @@ body:
       - pkg/core/xidutils
       - pkg/datadog
       - pkg/experimentalmetricmetadata
+      - pkg/expohisto
       - pkg/golden
       - pkg/kafka/configkafka
       - pkg/kafka/topic
