@@ -2,7 +2,7 @@ SELECT
     thread.processlist_id AS session_id,
     thread.thread_id AS internal_thread_id,
     COALESCE(thread.processlist_user, '') AS session_user,
-    COALESCE(processlist.host, '') AS client_address,
+    COALESCE(thread.processlist_host, '') AS client_address,
     COALESCE(thread.processlist_db, '') AS current_database,
     COALESCE(thread.processlist_command, '') AS session_command,
     COALESCE(thread.processlist_state, '') AS session_state,
@@ -30,7 +30,6 @@ FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
     LEFT JOIN performance_schema.events_waits_current AS wait ON wait.thread_id = thread.thread_id
-    LEFT JOIN information_schema.processlist AS processlist on processlist.id = thread.processlist_id
 WHERE
     thread.processlist_state IS NOT NULL
     AND thread.processlist_command != 'Sleep'
