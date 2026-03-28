@@ -14,6 +14,8 @@ status:
     active: [JonathanWamsley]
     seeking_new: true
 
+reaggregation_enabled: true
+
 resource_attributes:
   # These resource attributes are Flinks system scope variables, which contains context information about metrics. These are required to uniquely identify incoming metrics as the same job can run multiple times concurrently. See https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#system-scope for more information.
   flink.job.name:
@@ -47,19 +49,23 @@ attributes:
     description: The number of checkpoints completed or that failed.
     type: string
     enum: [completed, failed]
+    requirement_level: required
   garbage_collector_name:
     name_override: name
     description: The names for the parallel scavenge and garbage first garbage collectors.
     type: string
     enum: [PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation]
+    requirement_level: required
   operator_name:
     name_override: name
     description: The operator name.
     type: string
+    requirement_level: recommended
   record:
     description: The number of records received in, sent out or dropped due to arriving late.
     type: string
     enum: [in, out, dropped]
+    requirement_level: required
 
 metrics:
   flink.job.checkpoint.count:

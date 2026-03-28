@@ -43,30 +43,16 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "All metrics enabled",
-			config: &Config{
-				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
-					Metrics: metadata.MetricsConfig{
-						SystemMemoryUtilization: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemMemoryUsage: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemMemoryPageSize: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemMemoryLinuxShared: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemLinuxMemoryAvailable: metadata.MetricConfig{
-							Enabled: true,
-						},
-						SystemLinuxMemoryDirty: metadata.MetricConfig{
-							Enabled: true,
-						},
-					},
-				},
-			},
+			config: func() *Config {
+				mbc := metadata.DefaultMetricsBuilderConfig()
+				mbc.Metrics.SystemMemoryUtilization.Enabled = true
+				mbc.Metrics.SystemMemoryUsage.Enabled = true
+				mbc.Metrics.SystemMemoryPageSize.Enabled = true
+				mbc.Metrics.SystemMemoryLinuxShared.Enabled = true
+				mbc.Metrics.SystemLinuxMemoryAvailable.Enabled = true
+				mbc.Metrics.SystemLinuxMemoryDirty.Enabled = true
+				return &Config{MetricsBuilderConfig: mbc}
+			}(),
 			expectedMetricCount: func() int {
 				if runtime.GOOS == "linux" {
 					return 6

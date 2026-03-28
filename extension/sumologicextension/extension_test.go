@@ -84,7 +84,7 @@ func TestBasicStart(t *testing.T) {
 	t.Parallel()
 
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
@@ -145,7 +145,7 @@ func TestStoreCredentials(t *testing.T) {
 	t.Parallel()
 
 	getServer := func() *httptest.Server {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
@@ -296,11 +296,11 @@ func TestStoreCredentials(t *testing.T) {
 func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	t.Parallel()
 
-	var reqCount int32
+	var reqCount atomic.Int32
 	getServer := func() *httptest.Server {
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				reqNum := atomic.AddInt32(&reqCount, 1)
+				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// heartbeat
@@ -376,7 +376,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	// Depending on timing, the periodic heartbeat can result in more than
 	// two requests being made. Testing that at least two requests were made
 	// should be sufficient to satisfy this test.
-	require.GreaterOrEqual(t, atomic.LoadInt32(&reqCount), int32(2))
+	require.GreaterOrEqual(t, reqCount.Load(), int32(2))
 }
 
 func TestStoreCredentials_V2CredentialsAreUsed(t *testing.T) {
@@ -469,7 +469,7 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 	t.Parallel()
 
 	getServer := func() *httptest.Server {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
@@ -572,7 +572,7 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 	hostname, err := getHostname(zap.NewNop())
 	require.NoError(t, err)
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
@@ -640,7 +640,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 	hostname, err := getHostname(zap.NewNop())
 	require.NoError(t, err)
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
@@ -739,7 +739,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 	require.NoError(t, err)
 
 	srv := httptest.NewServer(func() http.HandlerFunc {
-		var reqCount int32
+		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
@@ -1226,10 +1226,10 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 func TestRegistrationRedirect(t *testing.T) {
 	t.Parallel()
 
-	var destReqCount int32
+	var destReqCount atomic.Int32
 	destSrv := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			switch atomic.AddInt32(&destReqCount, 1) {
+			switch destReqCount.Add(1) {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -1283,10 +1283,10 @@ func TestRegistrationRedirect(t *testing.T) {
 	))
 	t.Cleanup(func() { destSrv.Close() })
 
-	var origReqCount int32
+	var origReqCount atomic.Int32
 	origSrv := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			switch atomic.AddInt32(&origReqCount, 1) {
+			switch origReqCount.Add(1) {
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -1320,11 +1320,11 @@ func TestRegistrationRedirect(t *testing.T) {
 		se, err := newSumologicExtension(configFn(), logger, component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
 		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&origReqCount) == 1 },
+		assert.Eventually(t, func() bool { return origReqCount.Load() == 1 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should only make 1 request to the original server before redirect",
 		)
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&destReqCount) == 3 },
+		assert.Eventually(t, func() bool { return destReqCount.Load() == 3 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should make 3 requests (registration + metadata + heartbeat) to the destination server",
 		)
@@ -1336,12 +1336,12 @@ func TestRegistrationRedirect(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, se.Start(t.Context(), componenttest.NewNopHost()))
 
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&origReqCount) == 1 },
+		assert.Eventually(t, func() bool { return origReqCount.Load() == 1 },
 			5*time.Second, 100*time.Millisecond,
 			"after restarting with locally stored credentials extension shouldn't call the original server",
 		)
 
-		assert.Eventually(t, func() bool { return atomic.LoadInt32(&destReqCount) == 6 },
+		assert.Eventually(t, func() bool { return destReqCount.Load() == 6 },
 			5*time.Second, 100*time.Millisecond,
 			"extension should make 6 requests (registration + metadata + heartbeat, after restart "+
 				"heartbeat to validate credentials, metadata update, and then the first heartbeat on "+
@@ -1355,10 +1355,10 @@ func TestRegistrationRedirect(t *testing.T) {
 func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 	t.Parallel()
 
-	var reqCount int32
+	var reqCount atomic.Int32
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			t.Logf("request: (#%d) %s", reqNum, req.URL.Path)
 			handlerRegister := func() {
@@ -1434,12 +1434,12 @@ func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 	const expectedReqCount = 10
 	if !assert.Eventually(t,
 		func() bool {
-			return atomic.LoadInt32(&reqCount) == expectedReqCount
+			return reqCount.Load() == expectedReqCount
 		},
 		5*time.Second, 50*time.Millisecond,
 	) {
 		t.Logf("the expected number of requests (%d) wasn't reached, got %d",
-			expectedReqCount, atomic.LoadInt32(&reqCount),
+			expectedReqCount, reqCount.Load(),
 		)
 	}
 
@@ -1451,10 +1451,10 @@ func TestRegistrationRequestPayload(t *testing.T) {
 
 	hostname, err := getHostname(zap.NewNop())
 	require.NoError(t, err)
-	var reqCount int32
+	var reqCount atomic.Int32
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register

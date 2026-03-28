@@ -863,6 +863,25 @@ func TestLogSeverity_severityValidate(t *testing.T) {
 	}
 }
 
+func TestLoadingConfigLogsInvalidSeverity(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_invalid_severity.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	for k := range cm.ToStringMap() {
+		t.Run(k, func(t *testing.T) {
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(k)
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			err = cfg.(*Config).Validate()
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "not a valid severity")
+		})
+	}
+}
+
 func TestLoadingConfigOTTL(t *testing.T) {
 	tests := []struct {
 		id           component.ID

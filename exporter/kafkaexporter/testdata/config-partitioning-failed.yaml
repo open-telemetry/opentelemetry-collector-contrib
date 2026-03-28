@@ -1,5 +1,12 @@
 kafka:
-  topic: spans
+  logs:
+    topic: spans
+  metrics:
+    topic: spans
+  traces:
+    topic: spans
+  profiles:
+    topic: spans
   brokers:
     - "foo:123"
     - "bar:456"
@@ -20,13 +27,21 @@ kafka:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
-kafka/legacy_topic:
-  topic: legacy_topic
+kafka/per_signal_topic:
+  logs:
+    topic: per_signal_topic
   metrics:
     topic: metrics_topic
+  traces:
+    topic: per_signal_topic
+  profiles:
+    topic: per_signal_topic
+kafka/per_signal_encoding:
   logs:
-    topic_from_metadata_key: metadata_key
-kafka/legacy_encoding:
-  encoding: legacy_encoding
+    encoding: per_signal_encoding
   metrics:
     encoding: metrics_encoding
+  traces:
+    encoding: per_signal_encoding
+  profiles:
+    encoding: per_signal_encoding
