@@ -52,12 +52,26 @@ Sections below summarize how each event source is handled.
 
 S3 events are handled in the following manner:
 
-- Received S3 event notification (for example, using Lambda trigger on `s3:ObjectCreated:*`)
+- Receive S3 event notification (for example, using Lambda trigger on `s3:ObjectCreated:*`)
 - Download S3 object payload
 - Decode payload using the configured encoding extension
   - Default encoding: Preserve S3 object content as-is
   - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
   - Metrics use `awscloudwatchmetricstreams_encoding` extension by default
+
+The following metadata is available through `client.Info` for both logs and metrics S3 events.
+This metadata is added to the request context and can be accessed by any downstream component in the pipeline (for example, processors):
+
+| Metadata Key       | Description          |
+|--------------------|----------------------|
+| cloud.region       | The S3 bucket region |
+| aws.s3.bucket.name | The S3 bucket name   |
+| aws.s3.bucket.arn  | The S3 bucket ARN    |
+| aws.s3.key         | The S3 object key    |
+
+> [!NOTE]
+> Static metadata such as `cloud.provider` are not available through `client.Info`.
+> These can be added using processors (for example, the resource processor).
 
 ### CloudWatch Logs subscription
 
