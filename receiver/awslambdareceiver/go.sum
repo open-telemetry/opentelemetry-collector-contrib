@@ -97,6 +97,8 @@ github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
+go.opentelemetry.io/collector/client v1.54.1-0.20260326211300-c04f6776a74c h1:3pUN1DiHqBazEKEYBIbsm99FcnrWctUcLtMMKFrOoqg=
+go.opentelemetry.io/collector/client v1.54.1-0.20260326211300-c04f6776a74c/go.mod h1:4ODFLlgYmMEA+GNy96Qsn6Gi2PwFQFNUScvv5vVTyfE=
 go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c h1:Clo4qT+1/PX74Qys9ImDcuyay9LQ744yzXf3MC2rWio=
 go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c/go.mod h1:yUMBYsySY/sDcXm8kOzEoZxt+JLdala6hxzSW0npOxY=
 go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260326211300-c04f6776a74c h1:y4xCKelni0EL8/No6P5NKiEwvbhsCX8cVVzfknWe/y8=

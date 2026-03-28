@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.148.0
 	github.com/stretchr/testify v1.11.1
+	go.opentelemetry.io/collector/client v1.54.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/collector/confmap v1.54.1-0.20260326211300-c04f6776a74c
