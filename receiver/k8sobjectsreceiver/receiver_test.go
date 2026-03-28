@@ -648,7 +648,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 				host = storageHost
 			}
 
-			err = r.Start(context.Background(), host)
+			err = r.Start(t.Context(), host)
 			require.NoError(t, err)
 
 			kr := r.(*k8sobjectsreceiver)
@@ -659,7 +659,7 @@ func TestReceiverStorageInitialization(t *testing.T) {
 				assert.Nil(t, kr.storageClient, "storage client should be nil")
 			}
 
-			err = r.Shutdown(context.Background())
+			err = r.Shutdown(t.Context())
 			require.NoError(t, err)
 		})
 	}
@@ -698,7 +698,7 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 
 	host := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
 
-	err = r.Start(context.Background(), host)
+	err = r.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	kr := r.(*k8sobjectsreceiver)
@@ -706,7 +706,7 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 	// Storage client should be initialized because at least one object has persistence enabled
 	assert.NotNil(t, kr.storageClient)
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
@@ -738,7 +738,7 @@ func TestReceiverNoObjectsWithPersistence(t *testing.T) {
 
 	host := storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
 
-	err = r.Start(context.Background(), host)
+	err = r.Start(t.Context(), host)
 	require.NoError(t, err)
 
 	kr := r.(*k8sobjectsreceiver)
@@ -746,7 +746,7 @@ func TestReceiverNoObjectsWithPersistence(t *testing.T) {
 	// Storage client should NOT be initialized because no object has persistence enabled
 	assert.Nil(t, kr.storageClient)
 
-	err = r.Shutdown(context.Background())
+	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 

@@ -165,9 +165,9 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		if kr.config.Storage == nil {
 			kr.setting.Logger.Warn("persist_resource_version is enabled for one or more objects but no storage extension configured, persistence will not work")
 		} else {
-			storageClient, err := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
-			if err != nil {
-				return fmt.Errorf("failed to get storage client: %w", err)
+			storageClient, storageErr := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
+			if storageErr != nil {
+				return fmt.Errorf("failed to get storage client: %w", storageErr)
 			}
 			kr.storageClient = storageClient
 		}
