@@ -87,7 +87,7 @@ func TestBasicStart(t *testing.T) {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
@@ -149,7 +149,7 @@ func TestStoreCredentials(t *testing.T) {
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				reqNum := atomic.AddInt32(&reqCount, 1)
+				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// register
@@ -473,7 +473,7 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 		return httptest.NewServer(http.HandlerFunc(
 			func(w http.ResponseWriter, req *http.Request) {
-				reqNum := atomic.AddInt32(&reqCount, 1)
+				reqNum := reqCount.Add(1)
 
 				switch reqNum {
 				// register
@@ -575,7 +575,7 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
@@ -643,7 +643,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
@@ -742,7 +742,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 		var reqCount atomic.Int32
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			reqNum := atomic.AddInt32(&reqCount, 1)
+			reqNum := reqCount.Add(1)
 
 			switch reqNum {
 			// register
