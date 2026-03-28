@@ -354,7 +354,7 @@ type fileLogGenerator struct {
 	tmpDir      string
 	filePattern string
 	tmpFile     *os.File
-	sequenceNum int64
+	sequenceNum atomic.Int64
 }
 
 func (g *fileLogGenerator) Start() {
@@ -369,7 +369,7 @@ func (g *fileLogGenerator) Stop() {
 }
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
-	seq := atomic.AddInt64(&g.sequenceNum, 1)
+	seq := g.sequenceNum.Add(1)
 	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(seq, 10))
 	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)

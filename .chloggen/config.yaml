@@ -152,6 +152,7 @@ components:
     - pkg/coreinternal
     - pkg/datadog
     - pkg/experimentalmetricmetadata
+    - pkg/expohisto
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden

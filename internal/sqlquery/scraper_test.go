@@ -853,6 +853,36 @@ func TestBuildDataSourceString(t *testing.T) {
 			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
 			expected:    "oracle://user%40domain%3C:pass%23word%40123@localhost:2484/service_name?app=my%23app&sslmode=disable",
 		},
+		{
+			name:     "clickhouse basic",
+			driver:   "clickhouse",
+			host:     "localhost",
+			port:     9000,
+			database: "default",
+			expected: "clickhouse://localhost:9000/default",
+		},
+		{
+			name:        "clickhouse with username and password",
+			driver:      "clickhouse",
+			host:        "localhost",
+			port:        9000,
+			database:    "default",
+			username:    "user",
+			password:    "pass",
+			queryParams: map[string]any{"dial_timeout": "10s", "compress": true},
+			expected:    "clickhouse://user:pass@localhost:9000/default?compress=true&dial_timeout=10s",
+		},
+		{
+			name:        "clickhouse with invalid username and password",
+			driver:      "clickhouse",
+			host:        "localhost",
+			port:        9000,
+			database:    "default",
+			username:    "user@domain%",
+			password:    "pass#word@123",
+			queryParams: map[string]any{"debug": true},
+			expected:    "clickhouse://user%40domain%25:pass%23word%40123@localhost:9000/default?debug=true",
+		},
 	}
 
 	for _, tt := range tests {
