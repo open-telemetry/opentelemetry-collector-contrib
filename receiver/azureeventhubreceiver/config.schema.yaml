@@ -1,4 +1,17 @@
 $defs:
+  blob_checkpoint_store_config:
+    description: BlobCheckpointStoreConfig defines the configuration for Azure Blob Storage based checkpoint coordination used in distributed consumption mode.
+    type: object
+    properties:
+      connection:
+        description: Connection is the connection string for Azure Blob Storage. Required when the parent config does not use auth.
+        type: string
+      container_name:
+        description: ContainerName is the blob container used for checkpoint data. Required.
+        type: string
+      storage_account_url:
+        description: StorageAccountURL is the blob service URL (e.g., https://myaccount.blob.core.windows.net). Required when the parent config uses auth.
+        type: string
   event_hub_config:
     description: EventHubConfig defines the configuration for an Azure Event Hub when using authentication.
     type: object
@@ -32,6 +45,10 @@ properties:
     x-pointer: true
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
+  blob_checkpoint_store:
+    description: BlobCheckpointStore enables distributed consumption using Azure Blob Storage for checkpoint coordination. When configured, the receiver uses the Azure SDK Processor for dynamic partition assignment across multiple collector instances.
+    x-pointer: true
+    $ref: blob_checkpoint_store_config
   connection:
     type: string
   event_hub:

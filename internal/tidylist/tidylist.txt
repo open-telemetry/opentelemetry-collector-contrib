@@ -205,6 +205,7 @@ internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
+pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
