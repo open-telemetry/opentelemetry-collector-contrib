@@ -1,0 +1,19 @@
+signal_to_metrics:
+  spans:
+    - name: with_priority_override
+      description: Test that static key defined after keys_expression overrides dynamic resolution
+      unit: s
+      include_resource_attributes:
+        - key: resource.foo
+      attributes:
+        # Dynamic entry first: resolves to ["db.system"]. For spans that
+        # have db.system, this picks up the actual value (e.g. "mysql").
+        - keys_expression: otelcol.client.metadata["x-dynamic-attrs"]
+          default_value: dynamic_override
+        # Static entry second: overrides db.system with a fixed default.
+        # Since this appears AFTER the dynamic entry, it should win.
+        - key: db.system
+          default_value: static_override
+      sum:
+        value: "1"
+        monotonic: true
