@@ -6,52 +6,47 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 
-	"github.com/elastic/go-structform"
-	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
 func (*Serializer) SerializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, idx elasticsearch.Index, buf *bytes.Buffer) error {
-	v := json.NewVisitor(buf)
-	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
-	// This is required to generate the correct dynamic mapping in ES.
-	v.SetExplicitRadixPoint(true)
-	_ = v.OnObjectStart(-1, structform.AnyType)
+	w := newJSONWriter(buf)
+	w.startObject()
 	docTimeStamp := record.Timestamp()
 	if docTimeStamp.AsTime().UnixNano() == 0 {
 		docTimeStamp = record.ObservedTimestamp()
 	}
-	writeTimestampField(v, "@timestamp", docTimeStamp)
-	writeTimestampField(v, "observed_timestamp", record.ObservedTimestamp())
-	writeDataStream(v, idx)
-	writeStringFieldSkipDefault(v, "severity_text", record.SeverityText())
-	writeIntFieldSkipDefault(v, "severity_number", int64(record.SeverityNumber()))
-	writeTraceIDField(v, record.TraceID())
-	writeSpanIDField(v, "span_id", record.SpanID())
-	writeAttributes(v, record.Attributes(), false)
-	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount()))
+	first := true
+	first = w.writeTimestampField("@timestamp", docTimeStamp, first)
+	first = w.writeTimestampField("observed_timestamp", record.ObservedTimestamp(), first)
+	first = w.writeDataStream(idx, first)
+	first = w.writeStringFieldSkipDefault("severity_text", record.SeverityText(), first)
+	first = w.writeIntFieldSkipDefault("severity_number", int64(record.SeverityNumber()), first)
+	first = w.writeTraceIDField(record.TraceID(), first)
+	first = w.writeSpanIDField("span_id", record.SpanID(), first)
+	first = w.writeAttributes(record.Attributes(), false, first)
+	first = w.writeIntFieldSkipDefault("dropped_attributes_count", int64(record.DroppedAttributesCount()), first)
 	if record.EventName() != "" {
-		writeStringFieldSkipDefault(v, "event_name", record.EventName())
+		first = w.writeStringFieldSkipDefault("event_name", record.EventName(), first)
 	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
-		writeStringFieldSkipDefault(v, "event_name", eventNameAttr.Str())
+		first = w.writeStringFieldSkipDefault("event_name", eventNameAttr.Str(), first)
 	}
-	writeResource(v, resource, resourceSchemaURL, false)
-	writeScope(v, scope, scopeSchemaURL, false)
-	writeLogBody(v, record)
-	_ = v.OnObjectFinished()
+	first = w.writeResource(resource, resourceSchemaURL, false, first)
+	first = w.writeScope(scope, scopeSchemaURL, false, first)
+	writeLogBody(&w, record, first)
+	w.endObject()
 	return nil
 }
 
-func writeLogBody(v *json.Visitor, record plog.LogRecord) {
+func writeLogBody(w *jsonWriter, record plog.LogRecord, first bool) bool {
 	if record.Body().Type() == pcommon.ValueTypeEmpty {
-		return
+		return first
 	}
-	_ = v.OnKey("body")
-	_ = v.OnObjectStart(-1, structform.AnyType)
+	first = w.key("body", first)
+	w.startObject()
 
 	bodyType := "structured"
 	body := record.Body()
@@ -75,7 +70,10 @@ func writeLogBody(v *json.Visitor, record plog.LogRecord) {
 	default:
 		bodyType = "text"
 	}
-	_ = v.OnKey(bodyType)
-	serializer.WriteValue(v, body, false)
-	_ = v.OnObjectFinished()
+	firstField := true
+	firstField = w.key(bodyType, firstField)
+	_ = firstField
+	w.writeValue(body, false)
+	w.endObject()
+	return first
 }

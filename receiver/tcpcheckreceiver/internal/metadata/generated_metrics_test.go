@@ -110,9 +110,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
+					tcpcheckEndpointAttrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
 					assert.True(t, ok)
-					assert.Equal(t, "tcpcheck.endpoint-val", attrVal.Str())
+					assert.Equal(t, "tcpcheck.endpoint-val", tcpcheckEndpointAttrVal.Str())
 				case "tcpcheck.error":
 					assert.False(t, validatedMetrics["tcpcheck.error"], "Found a duplicate in the metrics slice: tcpcheck.error")
 					validatedMetrics["tcpcheck.error"] = true
@@ -127,12 +127,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
+					tcpcheckEndpointAttrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
 					assert.True(t, ok)
-					assert.Equal(t, "tcpcheck.endpoint-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error.code")
+					assert.Equal(t, "tcpcheck.endpoint-val", tcpcheckEndpointAttrVal.Str())
+					errorCodeAttrVal, ok := dp.Attributes().Get("error.code")
 					assert.True(t, ok)
-					assert.Equal(t, "connection_refused", attrVal.Str())
+					assert.Equal(t, "connection_refused", errorCodeAttrVal.Str())
 				case "tcpcheck.status":
 					assert.False(t, validatedMetrics["tcpcheck.status"], "Found a duplicate in the metrics slice: tcpcheck.status")
 					validatedMetrics["tcpcheck.status"] = true
@@ -145,9 +145,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
+					tcpcheckEndpointAttrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
 					assert.True(t, ok)
-					assert.Equal(t, "tcpcheck.endpoint-val", attrVal.Str())
+					assert.Equal(t, "tcpcheck.endpoint-val", tcpcheckEndpointAttrVal.Str())
 				}
 			}
 		})

@@ -12,14 +12,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -248,12 +245,6 @@ func newLogsHandler(
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
 
-	// Wrapper function that sets observed timestamp for S3 logs
-	logsConsumer := func(ctx context.Context, event events.S3EventRecord, logs plog.Logs) error {
-		enrichS3Logs(logs, event)
-		return next.ConsumeLogs(ctx, logs)
-	}
-
 	cwDecoder := internal.NewDefaultCWLogsDecoder()
 	if cfg.CloudWatch.Encoding != "" {
 		logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
@@ -266,8 +257,8 @@ func newLogsHandler(
 
 	// Register handlers. Logs supports S3 and CloudWatch Logs subscription events.
 	registry := make(handlerRegistry)
-	registry[s3Event] = newS3LogsHandler(s3Service, logger, s3LogsDecoder, logsConsumer)
-	registry[cwEvent] = newCWLogsSubscriptionHandler(cwDecoder, next.ConsumeLogs)
+	registry[s3Event] = newS3LogsHandler(s3Service, logger, s3LogsDecoder, next)
+	registry[cwEvent] = newCWLogsSubscriptionHandler(cwDecoder, next)
 
 	return newHandlerProvider(registry), nil
 }
@@ -310,13 +301,9 @@ func newMetricsHandler(
 		return nil, fmt.Errorf("unable to load the S3 service: %w", err)
 	}
 
-	metricConsumer := func(ctx context.Context, _ events.S3EventRecord, metrics pmetric.Metrics) error {
-		return next.ConsumeMetrics(ctx, metrics)
-	}
-
 	// Register handlers. Metrics supports S3 events.
 	registry := make(handlerRegistry)
-	registry[s3Event] = newS3MetricsHandler(s3Service, set.Logger, decoder, metricConsumer)
+	registry[s3Event] = newS3MetricsHandler(s3Service, set.Logger, decoder, next)
 
 	return newHandlerProvider(registry), nil
 }
