@@ -155,7 +155,7 @@ For example, here are the contents of the file created by the File Storage exten
 for the File Log receiver.
 
 ```sh
-$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_file_log_
+$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
 default
 file_input.knownFiles2
 {"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
