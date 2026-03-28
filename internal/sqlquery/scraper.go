@@ -135,6 +135,9 @@ func BuildDataSourceString(config Config) (string, error) {
 
 	var connStr string
 	switch config.Driver {
+	case DriverClickHouse:
+		// ClickHouse connection string format: clickhouse://user:pass@host:port/db?param1=value1&param2=value2
+		connStr = fmt.Sprintf("clickhouse://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
 	case DriverHDB:
 		// HDB connection string format: hdb://user:pass@host:port?param1=value1
 		connStr = fmt.Sprintf("hdb://%s%s:%d", auth, config.Host, config.Port)
