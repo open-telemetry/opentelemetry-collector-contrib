@@ -1715,6 +1715,10 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 		filetest.WriteString(t, log, line+"\n")
 	}
 
+	// Remove the rotated file so op2 only sees the truncated original.
+	// This avoids ambiguity from two files sharing the same fingerprint.
+	require.NoError(t, os.Remove(rotated))
+
 	// Manager #2 (manual polling) resumes from persisted metadata
 	op2, sink2 := testManager(t, cfg)
 	op2.persister = testutil.NewUnscopedMockPersister()

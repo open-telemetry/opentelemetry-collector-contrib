@@ -270,8 +270,9 @@ func (c Config) validate() error {
 		// Valid values
 	default:
 		return fmt.Errorf("'on_truncate' must be one of: %s, %s, %s", OnTruncateIgnore, OnTruncateReadWholeFile, OnTruncateReadNew)
+	}
 
-		if runtime.GOOS == "windows" && c.IncludeFilePermissions {
+	if runtime.GOOS == "windows" && c.IncludeFilePermissions {
 		return errors.New("'include_file_permissions' is not supported on Windows")
 	}
 
