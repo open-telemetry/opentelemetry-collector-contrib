@@ -125,9 +125,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("status")
+						statusAttrVal, ok := dp.Attributes().Get("status")
 						assert.True(t, ok)
-						assert.Equal(t, "blocked", attrVal.Str())
+						assert.Equal(t, "blocked", statusAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["system.processes.count"], "Found a duplicate in the metrics slice: system.processes.count")
 						validatedMetrics["system.processes.count"] = true

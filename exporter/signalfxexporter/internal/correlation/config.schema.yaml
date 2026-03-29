@@ -14,4 +14,4 @@ $defs:
           type: string
     allOf:
       - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations.config
+      - $ref: /exporter/signalfxexporter/internal/apm/correlations.config

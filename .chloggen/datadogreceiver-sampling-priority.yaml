@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/datadog
+
+note: Propagate Datadog trace sampling priority to all spans translated from a trace chunk.
+
+issues: [45402]
+
+subtext:
+
+change_logs: [user]
