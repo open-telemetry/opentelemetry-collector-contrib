@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/mysql
+
+note: Remove deprecated `information_schema.processlist` JOIN from query samples template; use `thread.processlist_host` instead.
+
+issues: [47041]
+
+subtext:
+
+change_logs: [user]
