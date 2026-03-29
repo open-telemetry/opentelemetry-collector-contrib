@@ -93,7 +93,7 @@ func (o *Observer) Start(ctx context.Context, wg *sync.WaitGroup) chan struct{} 
 //   - stop: must be deferred by the caller; stops the ticker and does a final flush.
 //
 // If no checkpointer is configured, all returned functions are no-ops.
-func (o *Observer) startCheckpointFlusher(ctx context.Context, namespace string) (setLatestRV func(string), flush func(), stop func()) {
+func (o *Observer) startCheckpointFlusher(ctx context.Context, namespace string) (setLatestRV func(string), flush, stop func()) {
 	if o.checkpointer == nil {
 		return func(string) {}, func() {}, func() {}
 	}
@@ -132,7 +132,7 @@ func (o *Observer) startCheckpointFlusher(ctx context.Context, namespace string)
 
 	stop = func() {
 		ticker.Stop()
-		flush() // final flush to minimise replay window on restart
+		flush() // final flush to minimize replay window on restart
 	}
 
 	return setLatestRV, flush, stop
@@ -278,7 +278,7 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 // doWatch returns true when watching is done, false when watching should be restarted.
 // setLatestRV is called with each new resourceVersion to update the in-memory value
 // that the periodic checkpoint flush will persist.
-func (o *Observer) doWatch(ctx context.Context, resourceVersion, namespace string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
+func (o *Observer) doWatch(ctx context.Context, resourceVersion, _ string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}, setLatestRV func(string)) bool {
 	watcher, err := watch.NewRetryWatcherWithContext(ctx, resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		o.logger.Error("error in watching object",
