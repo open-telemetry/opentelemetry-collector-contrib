@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_exporter_batch_size
+### otelcol_google_secops_exporter_batch_size
 
 The number of logs in a batch.
 
@@ -14,7 +14,7 @@ The number of logs in a batch.
 | ---- | ----------- | ---------- | --------- |
 | {logs} | Histogram | Int | Alpha |
 
-### otelcol_exporter_logs_send_failed
+### otelcol_google_secops_exporter_logs_send_failed
 
 The number of times ConsumeLogs failed, triggering a retry by the collector pipeline.
 
@@ -22,7 +22,7 @@ The number of times ConsumeLogs failed, triggering a retry by the collector pipe
 | ---- | ----------- | ---------- | --------- | --------- |
 | {failures} | Sum | Int | true | Alpha |
 
-### otelcol_exporter_payload_size
+### otelcol_google_secops_exporter_payload_size
 
 The size of the payload in bytes.
 
@@ -30,7 +30,7 @@ The size of the payload in bytes.
 | ---- | ----------- | ---------- | --------- |
 | B | Histogram | Int | Alpha |
 
-### otelcol_exporter_raw_bytes
+### otelcol_google_secops_exporter_raw_bytes
 
 The total number of raw bytes sent.
 
@@ -38,7 +38,7 @@ The total number of raw bytes sent.
 | ---- | ----------- | ---------- | --------- | --------- |
 | B | Sum | Int | false | Alpha |
 
-### otelcol_exporter_request_count
+### otelcol_google_secops_exporter_request_count
 
 The total number of requests made.
 
@@ -46,7 +46,7 @@ The total number of requests made.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {requests} | Sum | Int | false | Alpha |
 
-### otelcol_exporter_request_latency
+### otelcol_google_secops_exporter_request_latency
 
 The latency of the request in milliseconds.
 

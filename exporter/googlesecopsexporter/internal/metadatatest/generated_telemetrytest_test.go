@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlesecopsexporter/internal/metadata"
 )
@@ -19,28 +20,28 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ExporterBatchSize.Record(context.Background(), 1)
-	tb.ExporterLogsSendFailed.Add(context.Background(), 1)
-	tb.ExporterPayloadSize.Record(context.Background(), 1)
-	tb.ExporterRawBytes.Add(context.Background(), 1)
-	tb.ExporterRequestCount.Add(context.Background(), 1)
-	tb.ExporterRequestLatency.Record(context.Background(), 1)
-	AssertEqualExporterBatchSize(t, testTel,
+	tb.GoogleSecopsExporterBatchSize.Record(context.Background(), 1)
+	tb.GoogleSecopsExporterLogsSendFailed.Add(context.Background(), 1)
+	tb.GoogleSecopsExporterPayloadSize.Record(context.Background(), 1)
+	tb.GoogleSecopsExporterRawBytes.Add(context.Background(), 1)
+	tb.GoogleSecopsExporterRequestCount.Add(context.Background(), 1)
+	tb.GoogleSecopsExporterRequestLatency.Record(context.Background(), 1)
+	AssertEqualGoogleSecopsExporterBatchSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterLogsSendFailed(t, testTel,
+	AssertEqualGoogleSecopsExporterLogsSendFailed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterPayloadSize(t, testTel,
+	AssertEqualGoogleSecopsExporterPayloadSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterRawBytes(t, testTel,
+	AssertEqualGoogleSecopsExporterRawBytes(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterRequestCount(t, testTel,
+	AssertEqualGoogleSecopsExporterRequestCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterRequestLatency(t, testTel,
+	AssertEqualGoogleSecopsExporterRequestLatency(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 
