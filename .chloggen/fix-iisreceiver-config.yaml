@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/iis
-note: Enable re-aggregation and set requirement levels for attributes.
-issues: [46360]
-sub_components: []

@@ -20,7 +20,7 @@ This receiver periodically queries an Oracle Database host to collect metrics.
 
 ## Getting Started
 
-To use the OracleDB receiver you must define how to connect to your DB. This can be done in two ways,
+To use the Oracle DB receiver you must define how to connect to your DB. This can be done in two ways,
 defined in the [Primary](#primary-configuration-option) and [Secondary](#secondary-configuration-option) configuration
 option sections. Defining one of the two configurations is required. If both are defined, the primary
 option will be used.
@@ -28,7 +28,7 @@ option will be used.
 ### Primary Configuration Option
 
 Required options:
-- `datasource`: Oracle database connection string. Special characters must be encoded. Refer to Oracle Go Driver go_ora documentation for full connection string options.
+- `datasource`: Oracle database connection string. Special characters must be encoded. Refer to [Oracle Go Driver go_ora documentation](https://github.com/sijms/go-ora) for full connection string options.
 
 Example:
 
@@ -41,10 +41,10 @@ receivers:
 ### Secondary Configuration Option
 
 Required options:
-- `endpoint`: Endpoint used to connect to the OracleDB server. Must be in the format of `host:port`
-- `password`: Password for the OracleDB connection. Special characters are allowed.
-- `service`: OracleDB Service that the receiver should connect to.
-- `username`: Username for the OracleDB connection.
+- `endpoint`: Endpoint used to connect to the Oracle DB server. Must be in the format of `host:port`
+- `password`: Password for the Oracle DB connection. Special characters are allowed.
+- `service`: Oracle DB service that the receiver should connect to.
+- `username`: Username for the Oracle DB connection.
 
 Example:
 ```yaml
@@ -97,7 +97,7 @@ receivers:
 
 
 The following is a generic configuration that can be used for the default logs and metrics scraped
-by the oracledb receiver.
+by the Oracle DB receiver.
 
 ```yaml
 receivers:

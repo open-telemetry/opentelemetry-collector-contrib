@@ -3,17 +3,640 @@
 package metadata
 
 import (
+	"fmt"
+	"slices"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// FlinkJobCheckpointCountMetricConfig provides config for the flink.job.checkpoint.count metric.
+type FlinkJobCheckpointCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *FlinkJobCheckpointCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJobCheckpointInProgressMetricConfig provides config for the flink.job.checkpoint.in_progress metric.
+type FlinkJobCheckpointInProgressMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJobCheckpointInProgressMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJobLastCheckpointSizeMetricConfig provides config for the flink.job.last_checkpoint.size metric.
+type FlinkJobLastCheckpointSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJobLastCheckpointSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJobLastCheckpointTimeMetricConfig provides config for the flink.job.last_checkpoint.time metric.
+type FlinkJobLastCheckpointTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJobLastCheckpointTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJobRestartCountMetricConfig provides config for the flink.job.restart.count metric.
+type FlinkJobRestartCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJobRestartCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmClassLoaderClassesLoadedMetricConfig provides config for the flink.jvm.class_loader.classes_loaded metric.
+type FlinkJvmClassLoaderClassesLoadedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmClassLoaderClassesLoadedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmCPULoadMetricConfig provides config for the flink.jvm.cpu.load metric.
+type FlinkJvmCPULoadMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmCPULoadMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmCPUTimeMetricConfig provides config for the flink.jvm.cpu.time metric.
+type FlinkJvmCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmGcCollectionsCountMetricConfig provides config for the flink.jvm.gc.collections.count metric.
+type FlinkJvmGcCollectionsCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmGcCollectionsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmGcCollectionsTimeMetricConfig provides config for the flink.jvm.gc.collections.time metric.
+type FlinkJvmGcCollectionsTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmGcCollectionsTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryDirectTotalCapacityMetricConfig provides config for the flink.jvm.memory.direct.total_capacity metric.
+type FlinkJvmMemoryDirectTotalCapacityMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryDirectTotalCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryDirectUsedMetricConfig provides config for the flink.jvm.memory.direct.used metric.
+type FlinkJvmMemoryDirectUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryDirectUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryHeapCommittedMetricConfig provides config for the flink.jvm.memory.heap.committed metric.
+type FlinkJvmMemoryHeapCommittedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryHeapCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryHeapMaxMetricConfig provides config for the flink.jvm.memory.heap.max metric.
+type FlinkJvmMemoryHeapMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryHeapMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryHeapUsedMetricConfig provides config for the flink.jvm.memory.heap.used metric.
+type FlinkJvmMemoryHeapUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryHeapUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryMappedTotalCapacityMetricConfig provides config for the flink.jvm.memory.mapped.total_capacity metric.
+type FlinkJvmMemoryMappedTotalCapacityMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryMappedTotalCapacityMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryMappedUsedMetricConfig provides config for the flink.jvm.memory.mapped.used metric.
+type FlinkJvmMemoryMappedUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryMappedUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryMetaspaceCommittedMetricConfig provides config for the flink.jvm.memory.metaspace.committed metric.
+type FlinkJvmMemoryMetaspaceCommittedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryMetaspaceCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryMetaspaceMaxMetricConfig provides config for the flink.jvm.memory.metaspace.max metric.
+type FlinkJvmMemoryMetaspaceMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryMetaspaceMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryMetaspaceUsedMetricConfig provides config for the flink.jvm.memory.metaspace.used metric.
+type FlinkJvmMemoryMetaspaceUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryMetaspaceUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryNonheapCommittedMetricConfig provides config for the flink.jvm.memory.nonheap.committed metric.
+type FlinkJvmMemoryNonheapCommittedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryNonheapCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryNonheapMaxMetricConfig provides config for the flink.jvm.memory.nonheap.max metric.
+type FlinkJvmMemoryNonheapMaxMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryNonheapMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmMemoryNonheapUsedMetricConfig provides config for the flink.jvm.memory.nonheap.used metric.
+type FlinkJvmMemoryNonheapUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmMemoryNonheapUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkJvmThreadsCountMetricConfig provides config for the flink.jvm.threads.count metric.
+type FlinkJvmThreadsCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkJvmThreadsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkMemoryManagedTotalMetricConfig provides config for the flink.memory.managed.total metric.
+type FlinkMemoryManagedTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkMemoryManagedTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkMemoryManagedUsedMetricConfig provides config for the flink.memory.managed.used metric.
+type FlinkMemoryManagedUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkMemoryManagedUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FlinkOperatorRecordCountMetricAttributeKey specifies the key of an attribute for the flink.operator.record.count metric.
+type FlinkOperatorRecordCountMetricAttributeKey string
+
+const (
+	FlinkOperatorRecordCountMetricAttributeKeyOperatorName FlinkOperatorRecordCountMetricAttributeKey = "name"
+	FlinkOperatorRecordCountMetricAttributeKeyRecord       FlinkOperatorRecordCountMetricAttributeKey = "record"
+)
+
+// FlinkOperatorRecordCountMetricConfig provides config for the flink.operator.record.count metric.
+type FlinkOperatorRecordCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []FlinkOperatorRecordCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *FlinkOperatorRecordCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *FlinkOperatorRecordCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case FlinkOperatorRecordCountMetricAttributeKeyOperatorName, FlinkOperatorRecordCountMetricAttributeKeyRecord:
+		default:
+			return fmt.Errorf("metric flink.operator.record.count doesn't have an attribute %v, valid attributes: [name, record]", val)
+		}
+	}
+	if !slices.Contains(ms.EnabledAttributes, FlinkOperatorRecordCountMetricAttributeKeyRecord) {
+		return fmt.Errorf("record is a required attribute for flink.operator.record.count metric and must be included")
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// FlinkOperatorWatermarkOutputMetricAttributeKey specifies the key of an attribute for the flink.operator.watermark.output metric.
+type FlinkOperatorWatermarkOutputMetricAttributeKey string
+
+const (
+	FlinkOperatorWatermarkOutputMetricAttributeKeyOperatorName FlinkOperatorWatermarkOutputMetricAttributeKey = "name"
+)
+
+// FlinkOperatorWatermarkOutputMetricConfig provides config for the flink.operator.watermark.output metric.
+type FlinkOperatorWatermarkOutputMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []FlinkOperatorWatermarkOutputMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *FlinkOperatorWatermarkOutputMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *FlinkOperatorWatermarkOutputMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case FlinkOperatorWatermarkOutputMetricAttributeKeyOperatorName:
+		default:
+			return fmt.Errorf("metric flink.operator.watermark.output doesn't have an attribute %v, valid attributes: [name]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// FlinkTaskRecordCountMetricConfig provides config for the flink.task.record.count metric.
+type FlinkTaskRecordCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FlinkTaskRecordCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,124 +652,128 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for flinkmetrics metrics.
 type MetricsConfig struct {
-	FlinkJobCheckpointCount           MetricConfig `mapstructure:"flink.job.checkpoint.count"`
-	FlinkJobCheckpointInProgress      MetricConfig `mapstructure:"flink.job.checkpoint.in_progress"`
-	FlinkJobLastCheckpointSize        MetricConfig `mapstructure:"flink.job.last_checkpoint.size"`
-	FlinkJobLastCheckpointTime        MetricConfig `mapstructure:"flink.job.last_checkpoint.time"`
-	FlinkJobRestartCount              MetricConfig `mapstructure:"flink.job.restart.count"`
-	FlinkJvmClassLoaderClassesLoaded  MetricConfig `mapstructure:"flink.jvm.class_loader.classes_loaded"`
-	FlinkJvmCPULoad                   MetricConfig `mapstructure:"flink.jvm.cpu.load"`
-	FlinkJvmCPUTime                   MetricConfig `mapstructure:"flink.jvm.cpu.time"`
-	FlinkJvmGcCollectionsCount        MetricConfig `mapstructure:"flink.jvm.gc.collections.count"`
-	FlinkJvmGcCollectionsTime         MetricConfig `mapstructure:"flink.jvm.gc.collections.time"`
-	FlinkJvmMemoryDirectTotalCapacity MetricConfig `mapstructure:"flink.jvm.memory.direct.total_capacity"`
-	FlinkJvmMemoryDirectUsed          MetricConfig `mapstructure:"flink.jvm.memory.direct.used"`
-	FlinkJvmMemoryHeapCommitted       MetricConfig `mapstructure:"flink.jvm.memory.heap.committed"`
-	FlinkJvmMemoryHeapMax             MetricConfig `mapstructure:"flink.jvm.memory.heap.max"`
-	FlinkJvmMemoryHeapUsed            MetricConfig `mapstructure:"flink.jvm.memory.heap.used"`
-	FlinkJvmMemoryMappedTotalCapacity MetricConfig `mapstructure:"flink.jvm.memory.mapped.total_capacity"`
-	FlinkJvmMemoryMappedUsed          MetricConfig `mapstructure:"flink.jvm.memory.mapped.used"`
-	FlinkJvmMemoryMetaspaceCommitted  MetricConfig `mapstructure:"flink.jvm.memory.metaspace.committed"`
-	FlinkJvmMemoryMetaspaceMax        MetricConfig `mapstructure:"flink.jvm.memory.metaspace.max"`
-	FlinkJvmMemoryMetaspaceUsed       MetricConfig `mapstructure:"flink.jvm.memory.metaspace.used"`
-	FlinkJvmMemoryNonheapCommitted    MetricConfig `mapstructure:"flink.jvm.memory.nonheap.committed"`
-	FlinkJvmMemoryNonheapMax          MetricConfig `mapstructure:"flink.jvm.memory.nonheap.max"`
-	FlinkJvmMemoryNonheapUsed         MetricConfig `mapstructure:"flink.jvm.memory.nonheap.used"`
-	FlinkJvmThreadsCount              MetricConfig `mapstructure:"flink.jvm.threads.count"`
-	FlinkMemoryManagedTotal           MetricConfig `mapstructure:"flink.memory.managed.total"`
-	FlinkMemoryManagedUsed            MetricConfig `mapstructure:"flink.memory.managed.used"`
-	FlinkOperatorRecordCount          MetricConfig `mapstructure:"flink.operator.record.count"`
-	FlinkOperatorWatermarkOutput      MetricConfig `mapstructure:"flink.operator.watermark.output"`
-	FlinkTaskRecordCount              MetricConfig `mapstructure:"flink.task.record.count"`
+	FlinkJobCheckpointCount           FlinkJobCheckpointCountMetricConfig           `mapstructure:"flink.job.checkpoint.count"`
+	FlinkJobCheckpointInProgress      FlinkJobCheckpointInProgressMetricConfig      `mapstructure:"flink.job.checkpoint.in_progress"`
+	FlinkJobLastCheckpointSize        FlinkJobLastCheckpointSizeMetricConfig        `mapstructure:"flink.job.last_checkpoint.size"`
+	FlinkJobLastCheckpointTime        FlinkJobLastCheckpointTimeMetricConfig        `mapstructure:"flink.job.last_checkpoint.time"`
+	FlinkJobRestartCount              FlinkJobRestartCountMetricConfig              `mapstructure:"flink.job.restart.count"`
+	FlinkJvmClassLoaderClassesLoaded  FlinkJvmClassLoaderClassesLoadedMetricConfig  `mapstructure:"flink.jvm.class_loader.classes_loaded"`
+	FlinkJvmCPULoad                   FlinkJvmCPULoadMetricConfig                   `mapstructure:"flink.jvm.cpu.load"`
+	FlinkJvmCPUTime                   FlinkJvmCPUTimeMetricConfig                   `mapstructure:"flink.jvm.cpu.time"`
+	FlinkJvmGcCollectionsCount        FlinkJvmGcCollectionsCountMetricConfig        `mapstructure:"flink.jvm.gc.collections.count"`
+	FlinkJvmGcCollectionsTime         FlinkJvmGcCollectionsTimeMetricConfig         `mapstructure:"flink.jvm.gc.collections.time"`
+	FlinkJvmMemoryDirectTotalCapacity FlinkJvmMemoryDirectTotalCapacityMetricConfig `mapstructure:"flink.jvm.memory.direct.total_capacity"`
+	FlinkJvmMemoryDirectUsed          FlinkJvmMemoryDirectUsedMetricConfig          `mapstructure:"flink.jvm.memory.direct.used"`
+	FlinkJvmMemoryHeapCommitted       FlinkJvmMemoryHeapCommittedMetricConfig       `mapstructure:"flink.jvm.memory.heap.committed"`
+	FlinkJvmMemoryHeapMax             FlinkJvmMemoryHeapMaxMetricConfig             `mapstructure:"flink.jvm.memory.heap.max"`
+	FlinkJvmMemoryHeapUsed            FlinkJvmMemoryHeapUsedMetricConfig            `mapstructure:"flink.jvm.memory.heap.used"`
+	FlinkJvmMemoryMappedTotalCapacity FlinkJvmMemoryMappedTotalCapacityMetricConfig `mapstructure:"flink.jvm.memory.mapped.total_capacity"`
+	FlinkJvmMemoryMappedUsed          FlinkJvmMemoryMappedUsedMetricConfig          `mapstructure:"flink.jvm.memory.mapped.used"`
+	FlinkJvmMemoryMetaspaceCommitted  FlinkJvmMemoryMetaspaceCommittedMetricConfig  `mapstructure:"flink.jvm.memory.metaspace.committed"`
+	FlinkJvmMemoryMetaspaceMax        FlinkJvmMemoryMetaspaceMaxMetricConfig        `mapstructure:"flink.jvm.memory.metaspace.max"`
+	FlinkJvmMemoryMetaspaceUsed       FlinkJvmMemoryMetaspaceUsedMetricConfig       `mapstructure:"flink.jvm.memory.metaspace.used"`
+	FlinkJvmMemoryNonheapCommitted    FlinkJvmMemoryNonheapCommittedMetricConfig    `mapstructure:"flink.jvm.memory.nonheap.committed"`
+	FlinkJvmMemoryNonheapMax          FlinkJvmMemoryNonheapMaxMetricConfig          `mapstructure:"flink.jvm.memory.nonheap.max"`
+	FlinkJvmMemoryNonheapUsed         FlinkJvmMemoryNonheapUsedMetricConfig         `mapstructure:"flink.jvm.memory.nonheap.used"`
+	FlinkJvmThreadsCount              FlinkJvmThreadsCountMetricConfig              `mapstructure:"flink.jvm.threads.count"`
+	FlinkMemoryManagedTotal           FlinkMemoryManagedTotalMetricConfig           `mapstructure:"flink.memory.managed.total"`
+	FlinkMemoryManagedUsed            FlinkMemoryManagedUsedMetricConfig            `mapstructure:"flink.memory.managed.used"`
+	FlinkOperatorRecordCount          FlinkOperatorRecordCountMetricConfig          `mapstructure:"flink.operator.record.count"`
+	FlinkOperatorWatermarkOutput      FlinkOperatorWatermarkOutputMetricConfig      `mapstructure:"flink.operator.watermark.output"`
+	FlinkTaskRecordCount              FlinkTaskRecordCountMetricConfig              `mapstructure:"flink.task.record.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		FlinkJobCheckpointCount: MetricConfig{
+		FlinkJobCheckpointCount: FlinkJobCheckpointCountMetricConfig{
 			Enabled: true,
 		},
-		FlinkJobCheckpointInProgress: MetricConfig{
+		FlinkJobCheckpointInProgress: FlinkJobCheckpointInProgressMetricConfig{
 			Enabled: true,
 		},
-		FlinkJobLastCheckpointSize: MetricConfig{
+		FlinkJobLastCheckpointSize: FlinkJobLastCheckpointSizeMetricConfig{
 			Enabled: true,
 		},
-		FlinkJobLastCheckpointTime: MetricConfig{
+		FlinkJobLastCheckpointTime: FlinkJobLastCheckpointTimeMetricConfig{
 			Enabled: true,
 		},
-		FlinkJobRestartCount: MetricConfig{
+		FlinkJobRestartCount: FlinkJobRestartCountMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmClassLoaderClassesLoaded: MetricConfig{
+		FlinkJvmClassLoaderClassesLoaded: FlinkJvmClassLoaderClassesLoadedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmCPULoad: MetricConfig{
+		FlinkJvmCPULoad: FlinkJvmCPULoadMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmCPUTime: MetricConfig{
+		FlinkJvmCPUTime: FlinkJvmCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmGcCollectionsCount: MetricConfig{
+		FlinkJvmGcCollectionsCount: FlinkJvmGcCollectionsCountMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmGcCollectionsTime: MetricConfig{
+		FlinkJvmGcCollectionsTime: FlinkJvmGcCollectionsTimeMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryDirectTotalCapacity: MetricConfig{
+		FlinkJvmMemoryDirectTotalCapacity: FlinkJvmMemoryDirectTotalCapacityMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryDirectUsed: MetricConfig{
+		FlinkJvmMemoryDirectUsed: FlinkJvmMemoryDirectUsedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryHeapCommitted: MetricConfig{
+		FlinkJvmMemoryHeapCommitted: FlinkJvmMemoryHeapCommittedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryHeapMax: MetricConfig{
+		FlinkJvmMemoryHeapMax: FlinkJvmMemoryHeapMaxMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryHeapUsed: MetricConfig{
+		FlinkJvmMemoryHeapUsed: FlinkJvmMemoryHeapUsedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMappedTotalCapacity: MetricConfig{
+		FlinkJvmMemoryMappedTotalCapacity: FlinkJvmMemoryMappedTotalCapacityMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMappedUsed: MetricConfig{
+		FlinkJvmMemoryMappedUsed: FlinkJvmMemoryMappedUsedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMetaspaceCommitted: MetricConfig{
+		FlinkJvmMemoryMetaspaceCommitted: FlinkJvmMemoryMetaspaceCommittedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMetaspaceMax: MetricConfig{
+		FlinkJvmMemoryMetaspaceMax: FlinkJvmMemoryMetaspaceMaxMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryMetaspaceUsed: MetricConfig{
+		FlinkJvmMemoryMetaspaceUsed: FlinkJvmMemoryMetaspaceUsedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonheapCommitted: MetricConfig{
+		FlinkJvmMemoryNonheapCommitted: FlinkJvmMemoryNonheapCommittedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonheapMax: MetricConfig{
+		FlinkJvmMemoryNonheapMax: FlinkJvmMemoryNonheapMaxMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmMemoryNonheapUsed: MetricConfig{
+		FlinkJvmMemoryNonheapUsed: FlinkJvmMemoryNonheapUsedMetricConfig{
 			Enabled: true,
 		},
-		FlinkJvmThreadsCount: MetricConfig{
+		FlinkJvmThreadsCount: FlinkJvmThreadsCountMetricConfig{
 			Enabled: true,
 		},
-		FlinkMemoryManagedTotal: MetricConfig{
+		FlinkMemoryManagedTotal: FlinkMemoryManagedTotalMetricConfig{
 			Enabled: true,
 		},
-		FlinkMemoryManagedUsed: MetricConfig{
+		FlinkMemoryManagedUsed: FlinkMemoryManagedUsedMetricConfig{
 			Enabled: true,
 		},
-		FlinkOperatorRecordCount: MetricConfig{
-			Enabled: true,
+		FlinkOperatorRecordCount: FlinkOperatorRecordCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []FlinkOperatorRecordCountMetricAttributeKey{FlinkOperatorRecordCountMetricAttributeKeyOperatorName, FlinkOperatorRecordCountMetricAttributeKeyRecord},
 		},
-		FlinkOperatorWatermarkOutput: MetricConfig{
-			Enabled: true,
+		FlinkOperatorWatermarkOutput: FlinkOperatorWatermarkOutputMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []FlinkOperatorWatermarkOutputMetricAttributeKey{FlinkOperatorWatermarkOutputMetricAttributeKeyOperatorName},
 		},
-		FlinkTaskRecordCount: MetricConfig{
+		FlinkTaskRecordCount: FlinkTaskRecordCountMetricConfig{
 			Enabled: true,
 		},
 	}

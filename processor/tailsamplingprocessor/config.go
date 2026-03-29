@@ -4,6 +4,7 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -52,6 +53,17 @@ const (
 	// TraceFlags sample traces which have specific trace flags set.
 	TraceFlags PolicyType = "trace_flags"
 )
+
+const (
+	// samplingStrategyTraceComplete keeps the current tail-sampling behavior:
+	// accumulate spans and decide on full trace data after decision timing.
+	samplingStrategyTraceComplete samplingStrategy = "trace-complete"
+	// samplingStrategySpanIngest evaluates each incoming span batch on ingest.
+	// Non-terminal outcomes remain pending until cleanup finalization.
+	samplingStrategySpanIngest samplingStrategy = "span-ingest"
+)
+
+type samplingStrategy string
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
 // such as the and & composite policies.
@@ -301,11 +313,13 @@ type DecisionCacheConfig struct {
 
 // Config holds the configuration for tail-based sampling.
 type Config struct {
-	// DecisionWait is the desired wait time from the arrival of the first span of
-	// trace until the decision about sampling it or not is evaluated.
+	// DecisionWait is the time before timer handling for a trace.
+	// When sampling_strategy is "trace-complete", this controls decision timing.
+	// When sampling_strategy is "span-ingest", this controls pending cleanup finalization timing.
 	DecisionWait time.Duration `mapstructure:"decision_wait"`
-	// DecisionWaitAfterRootReceived is the desired wait time from the arrival of the root span of
-	// trace until the decision about sampling it or not is evaluated.
+	// DecisionWaitAfterRootReceived adds root-span-based acceleration for timer handling.
+	// When sampling_strategy is "trace-complete", this can make decisions earlier.
+	// When sampling_strategy is "span-ingest", this can finalize pending traces earlier on cleanup.
 	DecisionWaitAfterRootReceived time.Duration `mapstructure:"decision_wait_after_root_received"`
 	// NumTraces is the number of traces kept on memory. Typically most of the data
 	// of a trace is released after a sampling decision is taken.
@@ -325,6 +339,11 @@ type Config struct {
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
 	SampleOnFirstMatch bool `mapstructure:"sample_on_first_match"`
+	// SamplingStrategy controls how/when sampling decisions are made.
+	// "trace-complete" (default) evaluates accumulated trace data on timer handling.
+	// "span-ingest" evaluates each incoming batch on ingest; terminal outcomes
+	// finalize immediately, and non-terminal traces are finalized on cleanup.
+	SamplingStrategy samplingStrategy `mapstructure:"sampling_strategy"`
 	// DropPendingTracesOnShutdown will drop all traces that are part of batches that have not yet reached the decision
 	// wait when the processor is shutdown.
 	DropPendingTracesOnShutdown bool `mapstructure:"drop_pending_traces_on_shutdown"`
@@ -332,4 +351,18 @@ type Config struct {
 	// If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable.
 	// A 0 value disables dropping large traces early.
 	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
+}
+
+func (cfg *Config) Validate() error {
+	switch cfg.SamplingStrategy {
+	case samplingStrategyTraceComplete, samplingStrategySpanIngest:
+		return nil
+	default:
+		return fmt.Errorf(
+			"invalid sampling_strategy %q, expected one of %q or %q",
+			cfg.SamplingStrategy,
+			samplingStrategyTraceComplete,
+			samplingStrategySpanIngest,
+		)
+	}
 }

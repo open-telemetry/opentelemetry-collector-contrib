@@ -162,7 +162,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	eventDataMap, ok := eventData.(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, map[string]any{
-		"data": []any{map[string]any{"": "Test log"}},
+		"param1": "Test log",
 	}, eventDataMap)
 
 	eventID := body["event_id"]
@@ -215,7 +215,7 @@ func TestReadWindowsEventLoggerWithQuery(t *testing.T) {
 	eventDataMap, ok := eventData.(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, map[string]any{
-		"data": []any{map[string]any{"": "Test log"}},
+		"param1": "Test log",
 	}, eventDataMap)
 
 	eventID := body["event_id"]

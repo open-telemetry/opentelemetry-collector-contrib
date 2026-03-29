@@ -404,9 +404,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
+						messageStateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "ready", attrVal.Str())
+						assert.Equal(t, "ready", messageStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["rabbitmq.message.current"], "Found a duplicate in the metrics slice: rabbitmq.message.current")
 						validatedMetrics["rabbitmq.message.current"] = true

@@ -6,7 +6,7 @@ status:
   stability:
     beta: [logs]
   codeowners:
-    active: [andrzej-stencel]
+    active: [andrzej-stencel, paulojmdias, VihasMakwana, braydonk]
     emeritus: [djaglowski]
 
 feature_gates:
