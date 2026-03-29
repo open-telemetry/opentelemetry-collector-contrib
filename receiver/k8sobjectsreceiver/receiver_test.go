@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"context"
 	"testing"
 	"time"
 

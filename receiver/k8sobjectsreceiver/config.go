@@ -105,6 +105,10 @@ func (c *Config) Validate() error {
 			return errors.New("persist_resource_version can only be used with watch mode")
 		}
 
+		if object.PersistResourceVersion && object.ResourceVersion != "" {
+			return errors.New("resource_version cannot be set when persist_resource_version is enabled; the persisted version takes priority")
+		}
+
 		if len(object.ExcludeNamespaces) != 0 && len(object.Namespaces) != 0 {
 			return errors.New("namespaces and exclude_namespaces cannot both be set at the same time")
 		}

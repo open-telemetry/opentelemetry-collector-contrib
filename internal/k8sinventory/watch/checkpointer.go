@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"sync"
 
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
@@ -15,14 +17,20 @@ import (
 type checkpointer struct {
 	client storage.Client
 	logger *zap.Logger
+
+	// pending holds the latest resourceVersion per storage key, buffered in
+	// memory across all watch streams. Flush() drains it to persistent storage.
+	mu      sync.Mutex
+	pending map[string]string
 }
 
 const checkpointKeyFormat = "latestResourceVersion/%s"
 
 func newCheckpointer(client storage.Client, logger *zap.Logger) *checkpointer {
 	return &checkpointer{
-		client: client,
-		logger: logger,
+		client:  client,
+		logger:  logger,
+		pending: make(map[string]string),
 	}
 }
 
@@ -53,27 +61,70 @@ func (c *checkpointer) GetCheckpoint(ctx context.Context, namespace, objectType 
 	return string(data), nil
 }
 
+// SetCheckpoint buffers the latest resourceVersion for the given namespace and
+// objectType in memory. Call Flush to persist all buffered values to storage.
+// Only updates the in-memory value if the new resourceVersion is numerically
+// greater than the current one, acting as a high-watermark. This guards against
+// out-of-order resourceVersions from List() responses (which are ordered by
+// object key, not by resourceVersion).
 func (c *checkpointer) SetCheckpoint(
-	ctx context.Context,
+	_ context.Context,
 	namespace, objectType, resourceVersion string,
 ) error {
-	if c.client == nil {
-		return errors.New("storage client is nil")
-	}
-
 	key := c.getCheckpointKey(namespace, objectType)
 	if key == "" {
 		return fmt.Errorf("checkpoint key is empty: %s, %s", namespace, objectType)
 	}
 
-	if err := c.client.Set(ctx, key, []byte(resourceVersion)); err != nil {
-		return fmt.Errorf("failed to store resourceVersion with key %s: %w", key, err)
+	newRV, err := strconv.ParseInt(resourceVersion, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid resourceVersion %q: %w", resourceVersion, err)
 	}
 
-	c.logger.Debug("Checkpoint saved with key: "+key+" value: "+resourceVersion,
-		zap.String("namespace", namespace),
-		zap.String("objectType", objectType))
+	c.mu.Lock()
+	if existing, ok := c.pending[key]; ok {
+		if existingRV, err := strconv.ParseInt(existing, 10, 64); err == nil && newRV <= existingRV {
+			c.mu.Unlock()
+			return nil
+		}
+	}
+	c.pending[key] = resourceVersion
+	c.mu.Unlock()
 
+	c.logger.Debug("buffered resourceVersion checkpoint",
+		zap.String("key", key),
+		zap.String("resourceVersion", resourceVersion))
+
+	return nil
+}
+
+// Flush writes all buffered checkpoints to persistent storage. Only the latest
+// value per key is written, discarding any intermediate updates since the last
+// flush. It is safe to call concurrently from multiple goroutines.
+func (c *checkpointer) Flush(ctx context.Context) error {
+	if c.client == nil {
+		return errors.New("storage client is nil")
+	}
+
+	c.mu.Lock()
+	if len(c.pending) == 0 {
+		c.mu.Unlock()
+		return nil
+	}
+	snapshot := c.pending
+	// Setting c.pending to an empty map to avoid unnecessary writes when there are no pending updates
+	// to be flushed to the disk.
+	c.pending = make(map[string]string)
+	c.mu.Unlock()
+
+	for key, rv := range snapshot {
+		if err := c.client.Set(ctx, key, []byte(rv)); err != nil {
+			return fmt.Errorf("failed to flush checkpoint with key %s: %w", key, err)
+		}
+		c.logger.Debug("flushed resourceVersion checkpoint",
+			zap.String("key", key),
+			zap.String("resourceVersion", rv))
+	}
 	return nil
 }
 

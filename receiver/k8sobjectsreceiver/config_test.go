@@ -202,6 +202,83 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestConfigValidationPersistResourceVersion(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			desc: "persist_resource_version with watch mode and no resource_version is valid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:                   "pods",
+						Mode:                   k8sinventory.WatchMode,
+						PersistResourceVersion: true,
+					},
+				},
+			},
+		},
+		{
+			desc: "persist_resource_version with pull mode is invalid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:                   "pods",
+						Mode:                   k8sinventory.PullMode,
+						PersistResourceVersion: true,
+					},
+				},
+			},
+			expectedErr: "persist_resource_version can only be used with watch mode",
+		},
+		{
+			desc: "persist_resource_version with resource_version set is invalid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:                   "pods",
+						Mode:                   k8sinventory.WatchMode,
+						PersistResourceVersion: true,
+						ResourceVersion:        "100",
+					},
+				},
+			},
+			expectedErr: "resource_version cannot be set when persist_resource_version is enabled; the persisted version takes priority",
+		},
+		{
+			desc: "resource_version set without persist_resource_version is valid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:            "pods",
+						Mode:            k8sinventory.WatchMode,
+						ResourceVersion: "100",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func TestDeepCopy(t *testing.T) {
 	t.Parallel()
 

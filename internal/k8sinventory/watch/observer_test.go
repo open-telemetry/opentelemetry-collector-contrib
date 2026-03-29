@@ -567,17 +567,16 @@ func TestObserverWithPersistence(t *testing.T) {
 		t.Fatal("timeout waiting for event")
 	}
 
-	// Give time for persistence to complete
-	time.Sleep(time.Millisecond * 100)
+	// Stop the observer; the deferred final flush in startCheckpointFlusher
+	// ensures the latest resourceVersion is persisted before wg.Wait() returns.
+	close(stopChan)
+	wg.Wait()
 
 	// Verify resourceVersion was persisted
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv)
-
-	close(stopChan)
-	wg.Wait()
 }
 
 func TestObserverWithoutPersistence(t *testing.T) {
@@ -732,6 +731,9 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 100)
 
+	close(stopChan)
+	wg.Wait()
+
 	// Verify single key for cluster-wide watch (no namespace suffix)
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
 	rv, err := checkpointer.GetCheckpoint(t.Context(), "", "pods")
@@ -741,9 +743,6 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 	// Verify key format
 	key := checkpointer.getCheckpointKey("", "pods")
 	assert.Equal(t, "latestResourceVersion/pods", key)
-
-	close(stopChan)
-	wg.Wait()
 }
 
 func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
@@ -792,7 +791,10 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 		}
 	}
 
-	time.Sleep(time.Millisecond * 100)
+	// Stop the observer; the deferred final flush in startCheckpointFlusher
+	// ensures the latest resourceVersion is persisted before wg.Wait() returns.
+	close(stopChan)
+	wg.Wait()
 
 	// Verify separate keys for each namespace
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
@@ -811,9 +813,6 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 
 	key2 := checkpointer.getCheckpointKey("other", "pods")
 	assert.Equal(t, "latestResourceVersion/pods.other", key2)
-
-	close(stopChan)
-	wg.Wait()
 }
 
 func TestObserverResourceVersionPriority(t *testing.T) {
@@ -824,6 +823,7 @@ func TestObserverResourceVersionPriority(t *testing.T) {
 	checkpointer := newCheckpointer(storageClient, zap.NewNop())
 	err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", "500")
 	require.NoError(t, err)
+	require.NoError(t, checkpointer.Flush(t.Context()))
 
 	// Set list resourceVersion
 	mockClient.setListResourceVersion("100")
@@ -1019,6 +1019,7 @@ func TestGetResourceVersion(t *testing.T) {
 					checkpointer := newCheckpointer(storageClient, zap.NewNop())
 					err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", tt.persistedVersion)
 					require.NoError(t, err)
+					require.NoError(t, checkpointer.Flush(t.Context()))
 				}
 			}
 

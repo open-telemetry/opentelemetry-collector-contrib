@@ -20,11 +20,11 @@ func TestCheckpointerGetAndSet(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Test Set
 	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "12345")
 	require.NoError(t, err)
 
-	// Test Get
+	require.NoError(t, checkpointer.Flush(ctx))
+
 	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "12345", rv)
@@ -82,16 +82,15 @@ func TestCheckpointerKeyFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set the resourceVersion
 			err := checkpointer.SetCheckpoint(ctx, tt.namespace, tt.objectType, tt.resourceVersion)
 			require.NoError(t, err)
 
-			// Verify the key format by getting it back
+			require.NoError(t, checkpointer.Flush(ctx))
+
 			rv, err := checkpointer.GetCheckpoint(ctx, tt.namespace, tt.objectType)
 			require.NoError(t, err)
 			assert.Equal(t, tt.resourceVersion, rv)
 
-			// Verify the actual key in storage
 			key := checkpointer.getCheckpointKey(tt.namespace, tt.objectType)
 			assert.Equal(t, tt.expectedKey, key)
 		})
@@ -102,10 +101,7 @@ func TestCheckpointerGetNonExistent(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := t.Context()
-
-	// Get non-existent key
-	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 	assert.Empty(t, rv)
 }
@@ -116,18 +112,59 @@ func TestCheckpointerUpdate(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Set initial value
-	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
-	require.NoError(t, err)
+	// Buffer two updates — only the latest should be written on Flush.
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "200"))
+	require.NoError(t, checkpointer.Flush(ctx))
 
-	// Update to new value
-	err = checkpointer.SetCheckpoint(ctx, "default", "pods", "200")
-	require.NoError(t, err)
-
-	// Verify updated value
 	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "200", rv)
+}
+
+func TestCheckpointerFlushBatches(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := t.Context()
+
+	// Simulate multiple watch streams writing without flushing.
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "150"))
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "kube-system", "pods", "200"))
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "", "nodes", "300"))
+
+	// Single Flush writes the latest value for each key.
+	require.NoError(t, checkpointer.Flush(ctx))
+
+	rv1, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "150", rv1)
+
+	rv2, err := checkpointer.GetCheckpoint(ctx, "kube-system", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "200", rv2)
+
+	rv3, err := checkpointer.GetCheckpoint(ctx, "", "nodes")
+	require.NoError(t, err)
+	assert.Equal(t, "300", rv3)
+}
+
+func TestCheckpointerFlushClearsPending(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := t.Context()
+
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, checkpointer.Flush(ctx))
+
+	// Second flush with no new writes should be a no-op.
+	require.NoError(t, checkpointer.Flush(ctx))
+
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "100", rv)
 }
 
 func TestCheckpointerMultipleNamespaces(t *testing.T) {
@@ -136,14 +173,10 @@ func TestCheckpointerMultipleNamespaces(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Set different versions for different namespaces
-	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
-	require.NoError(t, err)
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "kube-system", "pods", "200"))
+	require.NoError(t, checkpointer.Flush(ctx))
 
-	err = checkpointer.SetCheckpoint(ctx, "kube-system", "pods", "200")
-	require.NoError(t, err)
-
-	// Verify they are independent
 	rv1, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "100", rv1)
@@ -158,17 +191,21 @@ func TestCheckpointerNilClient(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Get with nil client should return error
+	// Get with nil client should return error.
 	_, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "storage client is nil")
 
-	// Set with nil client should return error
+	// SetCheckpoint only buffers in memory — no error even with nil client.
 	err = checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
+	assert.NoError(t, err)
+
+	// Flush with nil client should return error.
+	err = checkpointer.Flush(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "storage client is nil")
 
-	// Delete with nil client should return error
+	// Delete with nil client should return error.
 	err = checkpointer.DeleteCheckpoint(ctx, "default", "pods")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "storage client is nil")
@@ -180,20 +217,15 @@ func TestCheckpointerDelete(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Set a value
-	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "12345")
-	require.NoError(t, err)
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "12345"))
+	require.NoError(t, checkpointer.Flush(ctx))
 
-	// Verify it exists
 	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Equal(t, "12345", rv)
 
-	// Delete it
-	err = checkpointer.DeleteCheckpoint(ctx, "default", "pods")
-	require.NoError(t, err)
+	require.NoError(t, checkpointer.DeleteCheckpoint(ctx, "default", "pods"))
 
-	// Verify it's gone (Get should return empty string)
 	rv, err = checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
 	assert.Empty(t, rv)
@@ -203,10 +235,7 @@ func TestCheckpointerDeleteNonExistent(t *testing.T) {
 	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 	checkpointer := newCheckpointer(client, zap.NewNop())
 
-	ctx := t.Context()
-
-	// Delete non-existent key should not error
-	err := checkpointer.DeleteCheckpoint(ctx, "default", "pods")
+	err := checkpointer.DeleteCheckpoint(t.Context(), "default", "pods")
 	require.NoError(t, err)
 }
 
@@ -216,25 +245,19 @@ func TestCheckpointerDeleteMultipleNamespaces(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Set values for different namespaces
-	err := checkpointer.SetCheckpoint(ctx, "default", "pods", "100")
-	require.NoError(t, err)
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "kube-system", "pods", "200"))
+	require.NoError(t, checkpointer.Flush(ctx))
 
-	err = checkpointer.SetCheckpoint(ctx, "kube-system", "pods", "200")
-	require.NoError(t, err)
+	require.NoError(t, checkpointer.DeleteCheckpoint(ctx, "default", "pods"))
 
-	// Delete only one namespace
-	err = checkpointer.DeleteCheckpoint(ctx, "default", "pods")
-	require.NoError(t, err)
-
-	// Verify only default was deleted
 	rv1, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
 	require.NoError(t, err)
-	assert.Empty(t, rv1) // Should be empty
+	assert.Empty(t, rv1)
 
 	rv2, err := checkpointer.GetCheckpoint(ctx, "kube-system", "pods")
 	require.NoError(t, err)
-	assert.Equal(t, "200", rv2) // Should still exist
+	assert.Equal(t, "200", rv2)
 }
 
 func TestCheckpointerDeleteClusterWide(t *testing.T) {
@@ -243,21 +266,57 @@ func TestCheckpointerDeleteClusterWide(t *testing.T) {
 
 	ctx := t.Context()
 
-	// Set cluster-wide resource (empty namespace)
-	err := checkpointer.SetCheckpoint(ctx, "", "nodes", "500")
-	require.NoError(t, err)
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "", "nodes", "500"))
+	require.NoError(t, checkpointer.Flush(ctx))
 
-	// Verify it exists
 	rv, err := checkpointer.GetCheckpoint(ctx, "", "nodes")
 	require.NoError(t, err)
 	assert.Equal(t, "500", rv)
 
-	// Delete it
-	err = checkpointer.DeleteCheckpoint(ctx, "", "nodes")
-	require.NoError(t, err)
+	require.NoError(t, checkpointer.DeleteCheckpoint(ctx, "", "nodes"))
 
-	// Verify it's gone
 	rv, err = checkpointer.GetCheckpoint(ctx, "", "nodes")
 	require.NoError(t, err)
 	assert.Empty(t, rv)
+}
+
+func TestCheckpointerHighWatermark(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := t.Context()
+
+	// Simulate out-of-order resourceVersions from List() API.
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "500"))
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100")) // lower — should be ignored
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "300")) // lower — should be ignored
+	require.NoError(t, checkpointer.Flush(ctx))
+
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "500", rv)
+}
+
+func TestCheckpointerHighWatermarkFirstEntry(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	ctx := t.Context()
+
+	// Key absent — any value should be accepted.
+	require.NoError(t, checkpointer.SetCheckpoint(ctx, "default", "pods", "100"))
+	require.NoError(t, checkpointer.Flush(ctx))
+
+	rv, err := checkpointer.GetCheckpoint(ctx, "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "100", rv)
+}
+
+func TestCheckpointerInvalidResourceVersion(t *testing.T) {
+	client := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+	checkpointer := newCheckpointer(client, zap.NewNop())
+
+	err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", "not-a-number")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid resourceVersion")
 }

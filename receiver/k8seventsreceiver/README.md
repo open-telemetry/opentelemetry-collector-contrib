@@ -245,7 +245,8 @@ spec:
           configMap:
             name: otelcontribcol
         - name: storage
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: otelcol-storage
 EOF
 ```
 
