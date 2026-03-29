@@ -741,6 +741,14 @@ metrics:
     gauge:
       value_type: int
 
+feature_gates:
+  - id: receiver.sqlserver.RemoveServerResourceAttribute
+    stage: alpha
+    description: >-
+      When enabled, the server.address and server.port resource attributes are removed from metrics.
+    from_version: v0.129.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141      
+
 tests:
   config:
   goleak:
