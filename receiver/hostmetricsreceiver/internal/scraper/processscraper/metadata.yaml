@@ -1,5 +1,7 @@
 type: process
 
+reaggregation_enabled: true
+
 status:
   class: scraper
   stability:
@@ -14,6 +16,7 @@ resource_attributes:
   process.cgroup:
     description: cgroup associated with the process (Linux only).
     enabled: false
+    requirement_level: opt_in
     type: string
   process.command:
     description: >-
@@ -21,6 +24,7 @@ resource_attributes:
       systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can
       be set to the first parameter extracted from GetCommandLineW.
     enabled: true
+    requirement_level: recommended
     type: string
   process.command_line:
     description: >-
@@ -29,6 +33,7 @@ resource_attributes:
       set this if you have to assemble it just for monitoring; use
       process.command_args instead.
     enabled: true
+    requirement_level: opt_in
     type: string
   process.executable.name:
     description: >-
@@ -36,6 +41,7 @@ resource_attributes:
       Name in proc/[pid]/status. On Windows, can be set to the base name of
       GetProcessImageFileNameW.
     enabled: true
+    requirement_level: required
     type: string
   process.executable.path:
     description: >-
@@ -43,18 +49,22 @@ resource_attributes:
       the target of proc/[pid]/exe. On Windows, can be set to the result of
       GetProcessImageFileNameW.
     enabled: true
+    requirement_level: recommended
     type: string
   process.owner:
     description: The username of the user that owns the process.
     enabled: true
+    requirement_level: recommended
     type: string
   process.parent_pid:
     description: Parent Process identifier (PPID).
     enabled: true
+    requirement_level: opt_in
     type: int
   process.pid:
     description: Process identifier (PID).
     enabled: true
+    requirement_level: required
     type: int
 
 attributes:
@@ -63,20 +73,24 @@ attributes:
     description: Type of context switched.
     type: string
     enum: [involuntary, voluntary]
+    requirement_level: recommended
   direction:
     description: Direction of flow of bytes (read or write).
     type: string
     enum: [read, write]
+    requirement_level: recommended
 
   paging_fault_type:
     name_override: type
     description: Type of memory paging fault.
     type: string
     enum: [major, minor]
+    requirement_level: recommended
   state:
     description: Breakdown of CPU usage by type.
     type: string
     enum: [system, user, wait]
+    requirement_level: recommended
 
 metrics:
   process.context_switches:

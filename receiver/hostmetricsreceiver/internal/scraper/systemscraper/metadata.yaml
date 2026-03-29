@@ -1,5 +1,7 @@
 type: system
 
+reaggregation_enabled: true
+
 status:
   class: scraper
   stability:
