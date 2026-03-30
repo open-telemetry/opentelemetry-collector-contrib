@@ -7,16 +7,18 @@ resourceLogs:
         - key: cloud.region
           value:
             stringValue: us-east-1
-        - key: aws.s3.bucket
+        - key: aws.s3.bucket.name
           value:
             stringValue: test-bucket
+        - key: aws.s3.bucket.arn
+          value:
+            stringValue: arn:aws:s3:::test-bucket
         - key: aws.s3.key
           value:
             stringValue: test-file.txt
     scopeLogs:
       - logRecords:
-          - attributes:
-            body:
+          - body:
               stringValue: Logs in Gzip S3 object
             observedTimeUnixNano: "1764625361000000000"
         scope:
