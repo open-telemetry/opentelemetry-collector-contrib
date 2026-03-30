@@ -19,6 +19,11 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
+var (
+	errRecordPartitionerUnknownType = errors.New("unknown partitioner type")
+	errRecordPartitionerExtRequired = errors.New("partitioner.extension must be set when type is \"extension\"")
+)
+
 var errLogsPartitionExclusive = errors.New(
 	"partition_logs_by_resource_attributes and partition_logs_by_trace_id cannot both be enabled",
 )
@@ -28,6 +33,36 @@ var (
 	errBatchPartitionMetadataKeysRequired = errors.New("sending_queue::batch::partition::metadata_keys must be configured when include_metadata_keys is set and batching is enabled")
 	errIncludeMetadataKeysNotPartitioned  = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
 )
+
+// RecordPartitionerConfig configures the strategy used to assign Kafka records to partitions.
+type RecordPartitionerConfig struct {
+	// Type is the partitioning strategy. Valid values are:
+	//   - "" or "sarama_compatible" (default): sticky key partitioner with Sarama-compatible FNV-1a hashing
+	//   - "sticky": franz-go StickyKeyPartitioner with murmur2 hashing
+	//   - "round_robin": round-robin across all available partitions
+	//   - "least_backup": routes to the partition with fewest in-flight records
+	//   - "extension": delegates to an extension implementing RecordPartitionerExtension
+	Type string `mapstructure:"type"`
+
+	// Extension is the component ID of an extension implementing RecordPartitionerExtension.
+	// Required when Type is "extension"; must be empty for all other types.
+	Extension *component.ID `mapstructure:"extension,omitempty"`
+}
+
+func (c *RecordPartitionerConfig) Validate() error {
+	switch c.Type {
+	case "", RecordPartitionerTypeSaramaCompatible,
+		RecordPartitionerTypeRoundRobin,
+		RecordPartitionerTypeLeastBackup:
+	case RecordPartitionerTypeExtension:
+		if c.Extension == nil {
+			return errRecordPartitionerExtRequired
+		}
+	default:
+		return fmt.Errorf("%w: %q", errRecordPartitionerUnknownType, c.Type)
+	}
+	return nil
+}
 
 // Config defines configuration for Kafka exporter.
 type Config struct {
@@ -78,11 +113,20 @@ type Config struct {
 	// selection falls back to the Kafka client’s default strategy. Resource
 	// attributes are not used for the key when this option is enabled.
 	PartitionLogsByTraceID bool `mapstructure:"partition_logs_by_trace_id"`
+
+	// RecordPartitioner configures how Kafka records are assigned to partitions.
+	// The default ("sarama_compatible") retains the legacy Sarama-compatible hashing
+	// behaviour. Set to "sticky", "round_robin", or "least_backup" to use one of the
+	// built-in franz-go partitioners, or "extension" to delegate to a custom extension.
+	RecordPartitioner RecordPartitionerConfig `mapstructure:"record_partitioner"`
 }
 
 func (c *Config) Validate() error {
 	if c.PartitionLogsByResourceAttributes && c.PartitionLogsByTraceID {
 		return errLogsPartitionExclusive
+	}
+	if err := c.RecordPartitioner.Validate(); err != nil {
+		return fmt.Errorf("record_partitioner: %w", err)
 	}
 	if err := validateBatchPartitionerKeys(c); err != nil {
 		return err

@@ -84,6 +84,40 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "round_robin_partitioner"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: RecordPartitionerConfig{
+					Type: RecordPartitionerTypeRoundRobin,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "least_backup_partitioner"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: RecordPartitionerConfig{
+					Type: RecordPartitionerTypeLeastBackup,
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "per_signal_topic"),
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),

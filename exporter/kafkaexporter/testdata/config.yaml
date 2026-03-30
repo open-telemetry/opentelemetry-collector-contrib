@@ -47,6 +47,21 @@ kafka/per_signal_encoding:
     encoding: per_signal_encoding
   profiles:
     encoding: per_signal_encoding
+kafka/round_robin_partitioner:
+  brokers:
+    - "localhost:9092"
+  record_partitioner:
+    type: round_robin
+kafka/least_backup_partitioner:
+  brokers:
+    - "localhost:9092"
+  record_partitioner:
+    type: least_backup
+kafka/sticky_partitioner:
+  brokers:
+    - "localhost:9092"
+  record_partitioner:
+    type: sticky
 kafka/metadata_batch_valid:
   include_metadata_keys:
     - metadata_key

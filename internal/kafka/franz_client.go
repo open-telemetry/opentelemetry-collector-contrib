@@ -60,14 +60,13 @@ func NewFranzSyncProducer(
 	default:
 		codec = codec.WithLevel(int(cfg.CompressionParams.Level))
 	}
+	// Prepend a default sarama-compatible partitioner so that callers can override
+	// it by appending their own kgo.RecordPartitioner option in opts.
+	opts = append([]kgo.Opt{kgo.RecordPartitioner(NewSaramaCompatPartitioner())}, opts...)
 	opts, err := commonOpts(ctx, host, clientCfg, logger, append(
 		opts,
 		kgo.ProduceRequestTimeout(timeout),
 		kgo.ProducerBatchCompression(codec),
-		// Use the UniformBytesPartitioner that is the default in franz-go with
-		// the legacy compatibility sarama hashing to avoid hashing to different
-		// partitions in case partitioning is enabled.
-		kgo.RecordPartitioner(newSaramaCompatPartitioner()),
 		kgo.ProducerLinger(cfg.Linger),
 		kgo.ProducerBatchMaxBytes(int32(cfg.MaxMessageBytes)),
 		kgo.MaxBufferedRecords(cfg.FlushMaxMessages),
@@ -373,7 +372,7 @@ func compressionCodec(compression string) kgo.CompressionCodec {
 	}
 }
 
-func newSaramaCompatPartitioner() kgo.Partitioner {
+func NewSaramaCompatPartitioner() kgo.Partitioner {
 	return kgo.StickyKeyPartitioner(kgo.SaramaCompatHasher(saramaHashFn))
 }
 
