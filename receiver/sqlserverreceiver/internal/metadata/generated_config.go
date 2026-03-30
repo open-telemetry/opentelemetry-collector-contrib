@@ -44,7 +44,12 @@ type MetricsConfig struct {
 	SqlserverDatabaseTempdbSpace                MetricConfig `mapstructure:"sqlserver.database.tempdb.space"`
 	SqlserverDatabaseTempdbVersionStoreSize     MetricConfig `mapstructure:"sqlserver.database.tempdb.version_store.size"`
 	SqlserverDeadlockRate                       MetricConfig `mapstructure:"sqlserver.deadlock.rate"`
+	SqlserverIndexFragmentationPercent          MetricConfig `mapstructure:"sqlserver.index.fragmentation.percent"`
+	SqlserverIndexOperationCount                MetricConfig `mapstructure:"sqlserver.index.operation.count"`
+	SqlserverIndexPageCount                     MetricConfig `mapstructure:"sqlserver.index.page.count"`
+	SqlserverIndexRecordCount                   MetricConfig `mapstructure:"sqlserver.index.record.count"`
 	SqlserverIndexSearchRate                    MetricConfig `mapstructure:"sqlserver.index.search.rate"`
+	SqlserverIndexSizeMb                        MetricConfig `mapstructure:"sqlserver.index.size.mb"`
 	SqlserverLockTimeoutRate                    MetricConfig `mapstructure:"sqlserver.lock.timeout.rate"`
 	SqlserverLockWaitCount                      MetricConfig `mapstructure:"sqlserver.lock.wait.count"`
 	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
@@ -128,7 +133,22 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverDeadlockRate: MetricConfig{
 			Enabled: false,
 		},
+		SqlserverIndexFragmentationPercent: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverIndexOperationCount: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverIndexPageCount: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverIndexRecordCount: MetricConfig{
+			Enabled: false,
+		},
 		SqlserverIndexSearchRate: MetricConfig{
+			Enabled: false,
+		},
+		SqlserverIndexSizeMb: MetricConfig{
 			Enabled: false,
 		},
 		SqlserverLockTimeoutRate: MetricConfig{
@@ -257,8 +277,9 @@ func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
 
 // EventsConfig provides config for sqlserver events.
 type EventsConfig struct {
-	DbServerQuerySample EventConfig `mapstructure:"db.server.query_sample"`
-	DbServerTopQuery    EventConfig `mapstructure:"db.server.top_query"`
+	DbServerQuerySample      EventConfig `mapstructure:"db.server.query_sample"`
+	DbServerTopQuery         EventConfig `mapstructure:"db.server.top_query"`
+	DbSqlserverIndexMetadata EventConfig `mapstructure:"db.sqlserver.index.metadata"`
 }
 
 func DefaultEventsConfig() EventsConfig {
@@ -267,6 +288,9 @@ func DefaultEventsConfig() EventsConfig {
 			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{
+			Enabled: false,
+		},
+		DbSqlserverIndexMetadata: EventConfig{
 			Enabled: false,
 		},
 	}

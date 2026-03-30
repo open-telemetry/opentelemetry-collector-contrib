@@ -363,6 +363,79 @@ Total number of deadlocks.
 | ---- | ----------- | ---------- | --------- |
 | “{deadlocks}/s” | Gauge | Double | Development |
 
+### sqlserver.index.fragmentation.percent
+
+Percentage of fragmentation in the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server. This metric uses SAMPLED mode and may take 5-60 seconds per collection. It is recommended to use a longer collection_interval (5-15 minutes).
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| “%” | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| sqlserver.database.name | The name of the SQL Server database where the index resides. | Any Str | Recommended |
+| sqlserver.object.name | The schema-qualified name (schema.object) of the object associated with the index. | Any Str | Recommended |
+| sqlserver.index.id | The SQL Server ID of the index. | Any Str | Recommended |
+
+### sqlserver.index.operation.count
+
+Number of index operations performed (seeks, scans, lookups, updates).
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| “{operations}” | Sum | Int | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| sqlserver.database.name | The name of the SQL Server database where the index resides. | Any Str | Recommended |
+| sqlserver.object.name | The schema-qualified name (schema.object) of the object associated with the index. | Any Str | Recommended |
+| sqlserver.index.id | The SQL Server ID of the index. | Any Str | Recommended |
+| index.operation.type | The type of index operation being performed. | Str: ``user_seek``, ``user_scan``, ``user_lookup``, ``user_update``, ``system_seek``, ``system_scan``, ``system_lookup``, ``system_update`` | Recommended |
+
+### sqlserver.index.page.count
+
+Number of pages in the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| “{pages}” | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| sqlserver.database.name | The name of the SQL Server database where the index resides. | Any Str | Recommended |
+| sqlserver.object.name | The schema-qualified name (schema.object) of the object associated with the index. | Any Str | Recommended |
+| sqlserver.index.id | The SQL Server ID of the index. | Any Str | Recommended |
+
+### sqlserver.index.record.count
+
+Number of records in the index.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| “{records}” | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| sqlserver.database.name | The name of the SQL Server database where the index resides. | Any Str | Recommended |
+| sqlserver.object.name | The schema-qualified name (schema.object) of the object associated with the index. | Any Str | Recommended |
+| sqlserver.index.id | The SQL Server ID of the index. | Any Str | Recommended |
+
 ### sqlserver.index.search.rate
 
 Total number of index searches.
@@ -370,6 +443,24 @@ Total number of index searches.
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
 | “{searches}/s” | Gauge | Double | Development |
+
+### sqlserver.index.size.mb
+
+Size of the index in megabytes.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| “MB” | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level |
+| ---- | ----------- | ------ | -------- |
+| sqlserver.database.name | The name of the SQL Server database where the index resides. | Any Str | Recommended |
+| sqlserver.object.name | The schema-qualified name (schema.object) of the object associated with the index. | Any Str | Recommended |
+| sqlserver.index.id | The SQL Server ID of the index. | Any Str | Recommended |
 
 ### sqlserver.lock.timeout.rate
 
@@ -635,6 +726,30 @@ top query
 | sqlserver.procedure_execution_count | Number of times that the procedure has been executed since it was last compiled, reported in delta value. | Any Int |
 | sqlserver.procedure_id | The SQL Server ID of the stored procedure, if any | Any Str |
 | sqlserver.procedure_name | The name of the stored procedure, if any | Any Str |
+
+### db.sqlserver.index.metadata
+
+Structural metadata for SQL Server indexes, emitted once per index per collection cycle. Use a long collection_interval (30m or more) since index definitions change infrequently.
+
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| sqlserver.database.name | The name of the SQL Server database where the index resides. | Any Str |
+| sqlserver.object.name | The schema-qualified name (schema.object) of the object associated with the index. | Any Str |
+| sqlserver.object.type | The type of the object associated with the index (e.g. USER_TABLE). | Any Str |
+| sqlserver.index.id | The SQL Server ID of the index. | Any Str |
+| sqlserver.index.name | The name of the index. | Any Str |
+| sqlserver.index.type | The type of the index. | Str: ``heap``, ``clustered``, ``nonclustered``, ``xml``, ``spatial``, ``clustered_columnstore``, ``nonclustered_columnstore``, ``nonclustered_hash`` |
+| sqlserver.index.columns | Comma-separated list of key column names in index key order. | Any Str |
+| sqlserver.index.include_columns | Comma-separated list of included (non-key) column names. | Any Str |
+| sqlserver.index.is_unique | Whether the index enforces uniqueness. | Any Bool |
+| sqlserver.index.is_primary_key | Whether the index is the primary key for the table. | Any Bool |
+| sqlserver.index.is_disabled | Whether the index is disabled. | Any Bool |
+| sqlserver.index.fill_factor | Fill factor percentage for the index; 0 means server default. | Any Int |
+| sqlserver.index.has_filter | Whether the index has a filter predicate. | Any Bool |
+| sqlserver.index.filter_definition | Filter predicate for a filtered index; empty string if not filtered. | Any Str |
 
 ## Resource Attributes
 

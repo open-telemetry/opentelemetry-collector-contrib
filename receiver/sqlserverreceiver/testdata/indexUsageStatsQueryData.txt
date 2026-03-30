@@ -1,0 +1,50 @@
+[
+    {
+        "measurement": "sqlserver_index_usage_stats",
+        "sql_instance": "localhost:1433",
+        "computer_name": "testhost",
+        "database_name": "AdventureWorks",
+        "table_name": "Orders",
+        "index_id": "2",
+        "user_seeks": "1000",
+        "user_scans": "50",
+        "user_lookups": "100",
+        "user_updates": "500",
+        "system_seeks": "25",
+        "system_scans": "5",
+        "system_lookups": "10",
+        "system_updates": "0"
+    },
+    {
+        "measurement": "sqlserver_index_usage_stats",
+        "sql_instance": "localhost:1433",
+        "computer_name": "testhost",
+        "database_name": "AdventureWorks",
+        "table_name": "Orders",
+        "index_id": "3",
+        "user_seeks": "500",
+        "user_scans": "200",
+        "user_lookups": "50",
+        "user_updates": "300",
+        "system_seeks": "0",
+        "system_scans": "0",
+        "system_lookups": "0",
+        "system_updates": "0"
+    },
+    {
+        "measurement": "sqlserver_index_usage_stats",
+        "sql_instance": "localhost:1433",
+        "computer_name": "testhost",
+        "database_name": "AdventureWorks",
+        "table_name": "Products",
+        "index_id": "1",
+        "user_seeks": "5000",
+        "user_scans": "0",
+        "user_lookups": "0",
+        "user_updates": "100",
+        "system_seeks": "100",
+        "system_scans": "50",
+        "system_lookups": "30",
+        "system_updates": "5"
+    }
+]

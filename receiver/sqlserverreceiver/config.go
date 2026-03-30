@@ -32,6 +32,14 @@ type TopQueryCollection struct {
 	CollectionInterval  time.Duration `mapstructure:"collection_interval"`
 }
 
+type IndexMetadataCollection struct {
+	// Enabled enables the collection of index metadata logs.
+	// Index metadata (name, columns, configuration) is collected at a longer interval
+	// than metrics since it changes infrequently.
+	Enabled            bool          `mapstructure:"enabled"`
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+}
+
 // Config defines configuration for a sqlserver receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
@@ -45,6 +53,8 @@ type Config struct {
 	TopQueryCollection `mapstructure:"top_query_collection"`
 
 	QuerySample `mapstructure:"query_sample_collection"`
+
+	IndexMetadataCollection `mapstructure:"index_metadata_collection"`
 
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
@@ -81,6 +91,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.TopQueryCollection.CollectionInterval < 0 {
 		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
+	}
+
+	if cfg.IndexMetadataCollection.CollectionInterval < 0 {
+		return errors.New("`index_metadata_collection.collection_interval` must not be less than 0")
 	}
 
 	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)

@@ -1,0 +1,149 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.computer.name
+          value:
+            stringValue: 0.0.0.0
+        - key: sqlserver.database.name
+          value:
+            stringValue: AdventureWorks
+        - key: sqlserver.instance.name
+          value:
+            stringValue: localhost:1433
+    scopeLogs:
+      - scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+        logRecords:
+          - attributes:
+              - key: sqlserver.database.name
+                value:
+                  stringValue: AdventureWorks
+              - key: sqlserver.index.columns
+                value:
+                  stringValue: ProductID
+              - key: sqlserver.index.fill_factor
+                value:
+                  intValue: "0"
+              - key: sqlserver.index.filter_definition
+                value:
+                  stringValue: ""
+              - key: sqlserver.index.has_filter
+                value:
+                  boolValue: false
+              - key: sqlserver.index.id
+                value:
+                  stringValue: "1"
+              - key: sqlserver.index.include_columns
+                value:
+                  stringValue: ""
+              - key: sqlserver.index.is_disabled
+                value:
+                  boolValue: false
+              - key: sqlserver.index.is_primary_key
+                value:
+                  boolValue: true
+              - key: sqlserver.index.is_unique
+                value:
+                  boolValue: true
+              - key: sqlserver.index.name
+                value:
+                  stringValue: PK_Products
+              - key: sqlserver.index.type
+                value:
+                  stringValue: clustered
+              - key: sqlserver.table.name
+                value:
+                  stringValue: Products
+          - attributes:
+              - key: sqlserver.database.name
+                value:
+                  stringValue: AdventureWorks
+              - key: sqlserver.index.columns
+                value:
+                  stringValue: CustomerID
+              - key: sqlserver.index.fill_factor
+                value:
+                  intValue: "90"
+              - key: sqlserver.index.filter_definition
+                value:
+                  stringValue: ""
+              - key: sqlserver.index.has_filter
+                value:
+                  boolValue: false
+              - key: sqlserver.index.id
+                value:
+                  stringValue: "2"
+              - key: sqlserver.index.include_columns
+                value:
+                  stringValue: OrderDate
+              - key: sqlserver.index.is_disabled
+                value:
+                  boolValue: false
+              - key: sqlserver.index.is_primary_key
+                value:
+                  boolValue: false
+              - key: sqlserver.index.is_unique
+                value:
+                  boolValue: false
+              - key: sqlserver.index.name
+                value:
+                  stringValue: IX_Orders_CustomerID
+              - key: sqlserver.index.type
+                value:
+                  stringValue: nonclustered
+              - key: sqlserver.table.name
+                value:
+                  stringValue: Orders
+          - attributes:
+              - key: sqlserver.database.name
+                value:
+                  stringValue: AdventureWorks
+              - key: sqlserver.index.columns
+                value:
+                  stringValue: Status
+              - key: sqlserver.index.fill_factor
+                value:
+                  intValue: "0"
+              - key: sqlserver.index.filter_definition
+                value:
+                  stringValue: "[Status] = 'Active'"
+              - key: sqlserver.index.has_filter
+                value:
+                  boolValue: true
+              - key: sqlserver.index.id
+                value:
+                  stringValue: "3"
+              - key: sqlserver.index.include_columns
+                value:
+                  stringValue: OrderAmount
+              - key: sqlserver.index.is_disabled
+                value:
+                  boolValue: false
+              - key: sqlserver.index.is_primary_key
+                value:
+                  boolValue: false
+              - key: sqlserver.index.is_unique
+                value:
+                  boolValue: false
+              - key: sqlserver.index.name
+                value:
+                  stringValue: IX_Orders_Filtered
+              - key: sqlserver.index.type
+                value:
+                  stringValue: nonclustered
+              - key: sqlserver.table.name
+                value:
+                  stringValue: Orders

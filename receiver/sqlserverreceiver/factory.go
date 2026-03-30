@@ -60,6 +60,10 @@ func createDefaultConfig() component.Config {
 			TopQueryCount:       250,
 			CollectionInterval:  time.Minute,
 		},
+		IndexMetadataCollection: IndexMetadataCollection{
+			Enabled:            false,
+			CollectionInterval: 30 * time.Minute,
+		},
 	}
 }
 
@@ -82,6 +86,14 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerWaitStatsQuery(cfg.InstanceName))
 	}
 
+	if isIndexUsageStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerIndexUsageStatsQuery(cfg.InstanceName))
+	}
+
+	if isIndexPhysicalStatsQueryEnabled(&cfg.Metrics) {
+		queries = append(queries, getSQLServerIndexPhysicalStatsQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
@@ -94,6 +106,10 @@ func setupLogQueries(cfg *Config) []string {
 
 	if cfg.Events.DbServerTopQuery.Enabled {
 		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
+	}
+
+	if cfg.Events.DbSqlserverIndexMetadata.Enabled {
+		queries = append(queries, getSQLServerIndexMetadataQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -296,4 +312,23 @@ func isWaitStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
 	}
 
 	return metrics.SqlserverOsWaitDuration.Enabled
+}
+
+func isIndexUsageStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverIndexOperationCount.Enabled
+}
+
+func isIndexPhysicalStatsQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverIndexFragmentationPercent.Enabled ||
+		metrics.SqlserverIndexPageCount.Enabled ||
+		metrics.SqlserverIndexRecordCount.Enabled ||
+		metrics.SqlserverIndexSizeMb.Enabled
 }

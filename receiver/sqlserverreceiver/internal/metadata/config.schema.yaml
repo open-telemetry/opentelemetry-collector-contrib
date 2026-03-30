@@ -109,8 +109,43 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.index.fragmentation.percent:
+        description: "SqlserverIndexFragmentationPercentMetricConfig provides config for the sqlserver.index.fragmentation.percent metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.index.operation.count:
+        description: "SqlserverIndexOperationCountMetricConfig provides config for the sqlserver.index.operation.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.index.page.count:
+        description: "SqlserverIndexPageCountMetricConfig provides config for the sqlserver.index.page.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.index.record.count:
+        description: "SqlserverIndexRecordCountMetricConfig provides config for the sqlserver.index.record.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       sqlserver.index.search.rate:
         description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sqlserver.index.size.mb:
+        description: "SqlserverIndexSizeMbMetricConfig provides config for the sqlserver.index.size.mb metric."
         type: object
         properties:
           enabled:
@@ -367,6 +402,13 @@ $defs:
             default: false
       db.server.top_query:
         description: EventConfig provides common config for a  db.server.top_query event.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      db.sqlserver.index.metadata:
+        description: EventConfig provides common config for a  db.sqlserver.index.metadata event.
         type: object
         properties:
           enabled:

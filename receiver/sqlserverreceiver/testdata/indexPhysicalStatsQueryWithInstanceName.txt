@@ -1,0 +1,30 @@
+
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4) BEGIN
+    DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'
+        + @@ServerName + ',Database:' + DB_NAME()
+        + ' is not a SQL Server Standard, Enterprise or Express. This query is only supported on these editions.';
+    RAISERROR (@ErrorMessage,11,1)
+    RETURN
+END
+
+SELECT
+     'sqlserver_index_physical_stats'       AS [measurement]
+    ,REPLACE(@@SERVERNAME,'\',':')          AS [sql_instance]
+    ,HOST_NAME()                            AS [computer_name]
+    ,DB_NAME(ps.[database_id])              AS [database_name]
+    ,OBJECT_NAME(ps.[object_id], ps.[database_id]) AS [table_name]
+    ,ps.[index_id]                          AS [index_id]
+    ,ps.[avg_fragmentation_in_percent]      AS [avg_fragmentation_percent]
+    ,ps.[page_count]                        AS [page_count]
+    ,ps.[record_count]                      AS [record_count]
+    ,(ps.[page_count] * 8) / 1024.0         AS [size_mb]
+FROM sys.dm_db_index_physical_stats(NULL, NULL, NULL, NULL, 'SAMPLED') AS ps
+INNER JOIN sys.databases AS d WITH (NOLOCK)
+    ON ps.[database_id] = d.[database_id]
+    AND d.[state] = 0
+    AND d.[database_id] > 4
+WHERE ps.[database_id] > 4
+AND ps.[index_level] = 0
+	AND @@SERVERNAME = 'instanceName'
+OPTION (RECOMPILE);

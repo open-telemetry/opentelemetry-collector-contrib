@@ -1,0 +1,102 @@
+
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+    DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'
+        + @@ServerName + ',Database:' + DB_NAME()
+        + ' is not supported for index metadata collection.';
+    RAISERROR (@ErrorMessage,11,1)
+    RETURN
+END
+
+CREATE TABLE #IndexMetadata (
+     measurement           nvarchar(50)
+    ,sql_instance          nvarchar(256)
+    ,computer_name         nvarchar(256)
+    ,database_name         nvarchar(128)
+    ,table_name            nvarchar(128)
+    ,index_id              int
+    ,index_name            nvarchar(128)
+    ,index_type            nvarchar(60)
+    ,index_columns         nvarchar(max)
+    ,include_columns       nvarchar(max)
+    ,is_unique             bit
+    ,is_primary_key        bit
+    ,is_disabled           bit
+    ,fill_factor           tinyint
+    ,has_filter            bit
+    ,filter_definition     nvarchar(max)
+);
+
+DECLARE @DbName nvarchar(128);
+DECLARE @Sql    nvarchar(max);
+
+DECLARE db_cursor CURSOR LOCAL FAST_FORWARD FOR
+    SELECT name FROM sys.databases
+    WHERE database_id > 4
+      AND state = 0
+      AND is_read_only = 0;
+
+OPEN db_cursor;
+FETCH NEXT FROM db_cursor INTO @DbName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @Sql = N'
+    INSERT INTO #IndexMetadata
+    SELECT
+         N''sqlserver_index_metadata''
+        ,REPLACE(@@SERVERNAME, N''\\'', N'':'')
+        ,HOST_NAME()
+        ,N''' + @DbName + N'''
+        ,t.[name]
+        ,i.[index_id]
+        ,ISNULL(i.[name], N''HEAP'')
+        ,LOWER(REPLACE(i.[type_desc], N'' '', N''_''))
+        ,ISNULL(STUFF((
+            SELECT N'','' + c.[name]
+            FROM [' + @DbName + N'].sys.index_columns ic2
+            INNER JOIN [' + @DbName + N'].sys.columns c
+                ON ic2.[object_id] = c.[object_id] AND ic2.[column_id] = c.[column_id]
+            WHERE ic2.[object_id] = i.[object_id]
+              AND ic2.[index_id]  = i.[index_id]
+              AND ic2.[is_included_column] = 0
+            -- Order by key_ordinal to preserve index definition order (1, 2, 3, ...)
+            ORDER BY ic2.[key_ordinal]
+            FOR XML PATH(N'''')), 1, 1, N''''), N'''')
+        ,ISNULL(STUFF((
+            SELECT N'','' + c.[name]
+            FROM [' + @DbName + N'].sys.index_columns ic2
+            INNER JOIN [' + @DbName + N'].sys.columns c
+                ON ic2.[object_id] = c.[object_id] AND ic2.[column_id] = c.[column_id]
+            WHERE ic2.[object_id] = i.[object_id]
+              AND ic2.[index_id]  = i.[index_id]
+              AND ic2.[is_included_column] = 1
+            -- Included columns maintain definition order in sys.index_columns catalog
+            FOR XML PATH(N'''')), 1, 1, N''''), N'''')
+        ,i.[is_unique]
+        ,i.[is_primary_key]
+        ,i.[is_disabled]
+        ,i.[fill_factor]
+        ,i.[has_filter]
+        ,i.[filter_definition]
+    FROM [' + @DbName + N'].sys.indexes  AS i WITH (NOLOCK)
+    INNER JOIN [' + @DbName + N'].sys.tables AS t WITH (NOLOCK)
+        ON i.[object_id] = t.[object_id]
+    WHERE OBJECTPROPERTY(i.[object_id], N''IsUserTable'') = 1
+      AND i.[type] > 0';
+
+    BEGIN TRY
+        EXEC sp_executesql @Sql;
+    END TRY
+    BEGIN CATCH
+        -- Permission denied or other per-database error: skip and continue
+    END CATCH
+
+    FETCH NEXT FROM db_cursor INTO @DbName;
+END
+
+CLOSE db_cursor;
+DEALLOCATE db_cursor;
+
+SELECT * FROM #IndexMetadata;
+DROP TABLE #IndexMetadata;

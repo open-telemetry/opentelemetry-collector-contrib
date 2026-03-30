@@ -1,0 +1,38 @@
+[
+    {
+        "measurement": "sqlserver_index_physical_stats",
+        "sql_instance": "localhost:1433",
+        "computer_name": "testhost",
+        "database_name": "AdventureWorks",
+        "table_name": "Orders",
+        "index_id": "2",
+        "avg_fragmentation_percent": "15.5",
+        "page_count": "500",
+        "record_count": "10000",
+        "size_mb": "3.90625"
+    },
+    {
+        "measurement": "sqlserver_index_physical_stats",
+        "sql_instance": "localhost:1433",
+        "computer_name": "testhost",
+        "database_name": "AdventureWorks",
+        "table_name": "Orders",
+        "index_id": "3",
+        "avg_fragmentation_percent": "5.2",
+        "page_count": "300",
+        "record_count": "10000",
+        "size_mb": "2.34375"
+    },
+    {
+        "measurement": "sqlserver_index_physical_stats",
+        "sql_instance": "localhost:1433",
+        "computer_name": "testhost",
+        "database_name": "AdventureWorks",
+        "table_name": "Products",
+        "index_id": "1",
+        "avg_fragmentation_percent": "0.0",
+        "page_count": "200",
+        "record_count": "5000",
+        "size_mb": "1.5625"
+    }
+]

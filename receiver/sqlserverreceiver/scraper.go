@@ -38,22 +38,23 @@ const (
 )
 
 type sqlServerScraperHelper struct {
-	id                     component.ID
-	config                 *Config
-	sqlQuery               string
-	instanceName           string
-	clientProviderFunc     sqlquery.ClientProviderFunc
-	dbProviderFunc         sqlquery.DbProviderFunc
-	logger                 *zap.Logger
-	telemetry              sqlquery.TelemetryConfig
-	client                 sqlquery.DbClient
-	db                     *sql.DB
-	mb                     *metadata.MetricsBuilder
-	lb                     *metadata.LogsBuilder
-	cache                  *lru.Cache[string, int64]
-	lastExecutionTimestamp time.Time
-	obfuscator             *obfuscator
-	serviceInstanceID      string
+	id                                  component.ID
+	config                              *Config
+	sqlQuery                            string
+	instanceName                        string
+	clientProviderFunc                  sqlquery.ClientProviderFunc
+	dbProviderFunc                      sqlquery.DbProviderFunc
+	logger                              *zap.Logger
+	telemetry                           sqlquery.TelemetryConfig
+	client                              sqlquery.DbClient
+	db                                  *sql.DB
+	mb                                  *metadata.MetricsBuilder
+	lb                                  *metadata.LogsBuilder
+	cache                               *lru.Cache[string, int64]
+	lastExecutionTimestamp              time.Time
+	lastIndexMetadataExecutionTimestamp time.Time
+	obfuscator                          *obfuscator
+	serviceInstanceID                   string
 }
 
 var (
@@ -78,19 +79,20 @@ func newSQLServerScraper(id component.ID,
 	}
 
 	return &sqlServerScraperHelper{
-		id:                     id,
-		config:                 cfg,
-		sqlQuery:               query,
-		logger:                 params.Logger,
-		telemetry:              telemetry,
-		dbProviderFunc:         dbProviderFunc,
-		clientProviderFunc:     clientProviderFunc,
-		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:                  cache,
-		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(),
-		serviceInstanceID:      serviceInstanceID,
+		id:                                  id,
+		config:                              cfg,
+		sqlQuery:                            query,
+		logger:                              params.Logger,
+		telemetry:                           telemetry,
+		dbProviderFunc:                      dbProviderFunc,
+		clientProviderFunc:                  clientProviderFunc,
+		mb:                                  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                                  metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:                               cache,
+		lastExecutionTimestamp:              time.Unix(0, 0),
+		lastIndexMetadataExecutionTimestamp: time.Unix(0, 0),
+		obfuscator:                          newObfuscator(),
+		serviceInstanceID:                   serviceInstanceID,
 	}
 }
 
@@ -121,6 +123,10 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabaseStatusMetrics(ctx)
 	case getSQLServerWaitStatsQuery(s.config.InstanceName):
 		err = s.recordDatabaseWaitMetrics(ctx)
+	case getSQLServerIndexUsageStatsQuery(s.config.InstanceName):
+		err = s.recordIndexUsageStatsMetrics(ctx)
+	case getSQLServerIndexPhysicalStatsQuery(s.config.InstanceName):
+		err = s.recordIndexPhysicalStatsMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -144,6 +150,13 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx)
 	case getSQLServerQuerySamplesQuery():
 		resources, err = s.recordDatabaseSampleQuery(ctx)
+	case getSQLServerIndexMetadataQuery(s.config.InstanceName):
+		if int(math.Ceil(time.Since(s.lastIndexMetadataExecutionTimestamp).Seconds())) < int(s.config.IndexMetadataCollection.CollectionInterval.Seconds()) {
+			s.logger.Debug("Skipping index metadata collection because the current time has not yet exceeded the last execution time plus the specified collection interval")
+			return plog.NewLogs(), nil
+		}
+		s.lastIndexMetadataExecutionTimestamp = time.Now()
+		resources, err = s.recordIndexMetadataLogs(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}
@@ -1068,5 +1081,198 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			resourcesAdded = true
 		}
 	}
+	return resources, errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordIndexUsageStatsMetrics(ctx context.Context) error {
+	const (
+		databaseName  = "database_name"
+		objectName    = "object_name"
+		indexID       = "index_id"
+		userSeeks     = "user_seeks"
+		userScans     = "user_scans"
+		userLookups   = "user_lookups"
+		userUpdates   = "user_updates"
+		systemSeeks   = "system_seeks"
+		systemScans   = "system_scans"
+		systemLookups = "system_lookups"
+		systemUpdates = "system_updates"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for _, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+		rb.SetSqlserverDatabaseName(row[databaseName])
+
+		// Record operation count metrics for both user and system operations (seek, scan, lookup, and update)
+		errs = append(errs,
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[userSeeks], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeUserSeek),
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[userScans], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeUserScan),
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[userLookups], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeUserLookup),
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[userUpdates], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeUserUpdate),
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[systemSeeks], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeSystemSeek),
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[systemScans], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeSystemScan),
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[systemLookups], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeSystemLookup),
+			s.mb.RecordSqlserverIndexOperationCountDataPoint(now, row[systemUpdates], row[databaseName], row[objectName], row[indexID], metadata.AttributeIndexOperationTypeSystemUpdate))
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	if len(rows) == 0 {
+		s.logger.Info("SQLServerScraperHelper: No rows found for index usage stats query")
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordIndexPhysicalStatsMetrics(ctx context.Context) error {
+	const (
+		databaseName         = "database_name"
+		objectName           = "object_name"
+		indexID              = "index_id"
+		fragmentationPercent = "avg_fragmentation_percent"
+		pageCount            = "page_count"
+		recordCount          = "record_count"
+		sizeMb               = "size_mb"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var val any
+	for i, row := range rows {
+		rb := s.setupResourceBuilder(s.mb.NewResourceBuilder(), row)
+		rb.SetSqlserverDatabaseName(row[databaseName])
+
+		// Record fragmentation percent
+		val, err = retrieveFloat(row, fragmentationPercent)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: failed to parse fragmentation_percent: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverIndexFragmentationPercentDataPoint(now, val.(float64), row[databaseName], row[objectName], row[indexID])
+		}
+
+		// Record size in MB
+		val, err = retrieveFloat(row, sizeMb)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("row %d: failed to parse size_mb: %w", i, err))
+		} else {
+			s.mb.RecordSqlserverIndexSizeMbDataPoint(now, val.(float64), row[databaseName], row[objectName], row[indexID])
+		}
+
+		// Record page count and record count (string input types)
+		errs = append(errs,
+			s.mb.RecordSqlserverIndexPageCountDataPoint(now, row[pageCount], row[databaseName], row[objectName], row[indexID]),
+			s.mb.RecordSqlserverIndexRecordCountDataPoint(now, row[recordCount], row[databaseName], row[objectName], row[indexID]))
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+
+	if len(rows) == 0 {
+		s.logger.Info("SQLServerScraperHelper: No rows found for index physical stats query")
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordIndexMetadataLogs(ctx context.Context) (pcommon.Resource, error) {
+	const (
+		databaseName     = "database_name"
+		objectName       = "object_name"
+		objectType       = "object_type"
+		indexID          = "index_id"
+		indexName        = "index_name"
+		indexType        = "index_type"
+		indexColumns     = "index_columns"
+		includeColumns   = "include_columns"
+		isUnique         = "is_unique"
+		isPrimaryKey     = "is_primary_key"
+		isDisabled       = "is_disabled"
+		fillFactor       = "fill_factor"
+		hasFilter        = "has_filter"
+		filterDefinition = "filter_definition"
+	)
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return pcommon.NewResource(), fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	resources := pcommon.NewResource()
+	resourcesAdded := false
+
+	for _, row := range rows {
+		// Parse fields
+		fillFactorVal, err := strconv.ParseInt(row[fillFactor], 10, 64)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to parse fill_factor: %w", err))
+			continue
+		}
+
+		isUniqueVal := row[isUnique] == "true" || row[isUnique] == "1"
+		isPrimaryKeyVal := row[isPrimaryKey] == "true" || row[isPrimaryKey] == "1"
+		isDisabledVal := row[isDisabled] == "true" || row[isDisabled] == "1"
+		hasFilterVal := row[hasFilter] == "true" || row[hasFilter] == "1"
+
+		// Convert index type string to enum
+		indexTypeVal, exists := metadata.MapAttributeSqlserverIndexType[row[indexType]]
+		if !exists {
+			errs = append(errs, fmt.Errorf("unknown index type: %s", row[indexType]))
+			continue
+		}
+
+		// Record the log event
+		s.lb.RecordDbSqlserverIndexMetadataEvent(
+			ctx,
+			now,
+			row[databaseName],
+			row[objectName],
+			row[objectType],
+			row[indexID],
+			row[indexName],
+			indexTypeVal,
+			row[indexColumns],
+			row[includeColumns],
+			isUniqueVal,
+			isPrimaryKeyVal,
+			isDisabledVal,
+			fillFactorVal,
+			hasFilterVal,
+			row[filterDefinition],
+		)
+
+		if !resourcesAdded {
+			rb := s.setupResourceBuilder(s.lb.NewResourceBuilder(), row)
+			rb.SetSqlserverDatabaseName(row[databaseName])
+			resources = rb.Emit()
+			resourcesAdded = true
+		}
+	}
+
+	if len(rows) == 0 {
+		s.logger.Info("SQLServerScraperHelper: No rows found for index metadata query")
+	}
+
 	return resources, errors.Join(errs...)
 }

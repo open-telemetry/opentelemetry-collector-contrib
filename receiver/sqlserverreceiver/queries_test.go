@@ -67,6 +67,30 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerWaitStatsQuery,
 			expectedQueryValFilename: "waitStatsQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test index usage stats query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerIndexUsageStatsQuery,
+			expectedQueryValFilename: "indexUsageStatsQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test index usage stats query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerIndexUsageStatsQuery,
+			expectedQueryValFilename: "indexUsageStatsQueryWithInstanceName.txt",
+		},
+		{
+			name:                     "Test index physical stats query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalStatsQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test index physical stats query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerIndexPhysicalStatsQuery,
+			expectedQueryValFilename: "indexPhysicalStatsQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {
@@ -136,6 +160,33 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 			actual := strings.ReplaceAll(tt.getQuery(), "\r\n", "\n")
+			require.Equal(t, expected, actual)
+		})
+	}
+}
+
+func TestGetSQLServerIndexMetadataQuery(t *testing.T) {
+	queryTests := []struct {
+		name                     string
+		getQuery                 func(string) string
+		instanceName             string
+		expectedQueryValFilename string
+	}{
+		{
+			name:                     "Test index metadata query",
+			getQuery:                 getSQLServerIndexMetadataQuery,
+			instanceName:             "",
+			expectedQueryValFilename: "indexMetadataQueryWithoutInstanceName.txt",
+		},
+	}
+
+	for _, tt := range queryTests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedBytes, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
+			require.NoError(t, err)
+			// Replace all will fix newlines when testing on Windows
+			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
+			actual := strings.ReplaceAll(tt.getQuery(tt.instanceName), "\r\n", "\n")
 			require.Equal(t, expected, actual)
 		})
 	}

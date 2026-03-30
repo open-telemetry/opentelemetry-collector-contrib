@@ -1029,3 +1029,348 @@ func getSQLServerWaitStatsQuery(instanceName string) string {
 	r := strings.NewReplacer("{filter_instance_name}", "")
 	return r.Replace(sqlServerWaitStatsQuery)
 }
+
+const sqlServerIndexUsageStatsQuery = `
+SET DEADLOCK_PRIORITY -10;
+DECLARE @EngineEdition int = CAST(SERVERPROPERTY('EngineEdition') AS int);
+IF @EngineEdition NOT IN (2,3,4,5,8) BEGIN
+    DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'
+        + @@ServerName + ',Database:' + DB_NAME()
+        + ' is not a supported SQL Server edition for this query.';
+    RAISERROR (@ErrorMessage,11,1)
+    RETURN
+END
+
+CREATE TABLE #IndexUsageStats (
+     measurement     nvarchar(50)
+    ,sql_instance    nvarchar(256)
+    ,computer_name   nvarchar(256)
+    ,database_name   nvarchar(128)
+    ,object_name     nvarchar(257)
+    ,object_type     nvarchar(60)
+    ,index_id        int
+    ,user_seeks      bigint
+    ,user_scans      bigint
+    ,user_lookups    bigint
+    ,user_updates    bigint
+    ,system_seeks    bigint
+    ,system_scans    bigint
+    ,system_lookups  bigint
+    ,system_updates  bigint
+);
+
+IF @EngineEdition = 5
+BEGIN
+    INSERT INTO #IndexUsageStats
+    SELECT
+         'sqlserver_index_usage_stats'
+        ,REPLACE(@@SERVERNAME, '\', ':')
+        ,HOST_NAME()
+        ,DB_NAME()
+        ,OBJECT_SCHEMA_NAME(ius.[object_id]) + '.' + OBJECT_NAME(ius.[object_id])
+        ,o.[type_desc]
+        ,ius.[index_id]
+        ,ius.[user_seeks]
+        ,ius.[user_scans]
+        ,ius.[user_lookups]
+        ,ius.[user_updates]
+        ,ius.[system_seeks]
+        ,ius.[system_scans]
+        ,ius.[system_lookups]
+        ,ius.[system_updates]
+    FROM sys.dm_db_index_usage_stats AS ius WITH (NOLOCK)
+    INNER JOIN sys.objects AS o WITH (NOLOCK)
+        ON ius.[database_id] = DB_ID()
+        AND ius.[object_id] = o.[object_id]
+        AND o.[type] = 'U';
+END
+ELSE
+BEGIN
+    DECLARE @DbName nvarchar(128);
+    DECLARE @Sql    nvarchar(max);
+
+    DECLARE db_cursor CURSOR LOCAL FAST_FORWARD FOR
+        SELECT name FROM sys.databases
+        WHERE database_id > 4
+          AND state = 0
+{filter_instance_name};
+
+    OPEN db_cursor;
+    FETCH NEXT FROM db_cursor INTO @DbName;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @Sql = N'
+        INSERT INTO #IndexUsageStats
+        SELECT
+             N''sqlserver_index_usage_stats''
+            ,REPLACE(@@SERVERNAME, N''\\'', N'':'')
+            ,HOST_NAME()
+            ,N''' + @DbName + N'''
+            ,OBJECT_SCHEMA_NAME(ius.[object_id], DB_ID(N''' + @DbName + N''')) + ''.'' + OBJECT_NAME(ius.[object_id], DB_ID(N''' + @DbName + N'''))
+            ,o.[type_desc]
+            ,ius.[index_id]
+            ,ius.[user_seeks]
+            ,ius.[user_scans]
+            ,ius.[user_lookups]
+            ,ius.[user_updates]
+            ,ius.[system_seeks]
+            ,ius.[system_scans]
+            ,ius.[system_lookups]
+            ,ius.[system_updates]
+        FROM sys.dm_db_index_usage_stats AS ius WITH (NOLOCK)
+        INNER JOIN [' + @DbName + N'].sys.objects AS o WITH (NOLOCK)
+            ON ius.[database_id] = DB_ID(N''' + @DbName + N''')
+            AND ius.[object_id] = o.[object_id]
+            AND o.[type] = ''U''';
+
+        BEGIN TRY
+            EXEC sp_executesql @Sql;
+        END TRY
+        BEGIN CATCH
+            -- Permission denied or other per-database error: skip and continue
+        END CATCH
+
+        FETCH NEXT FROM db_cursor INTO @DbName;
+    END
+
+    CLOSE db_cursor;
+    DEALLOCATE db_cursor;
+END
+
+SELECT * FROM #IndexUsageStats;
+DROP TABLE #IndexUsageStats;
+`
+
+func getSQLServerIndexUsageStatsQuery(instanceName string) string {
+	if instanceName != "" {
+		r := strings.NewReplacer("{filter_instance_name}", fmt.Sprintf("\t\t  AND @@SERVERNAME = '%s'", instanceName))
+		return r.Replace(sqlServerIndexUsageStatsQuery)
+	}
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerIndexUsageStatsQuery)
+}
+
+const sqlServerIndexPhysicalStatsQuery = `
+SET DEADLOCK_PRIORITY -10;
+DECLARE @EngineEdition int = CAST(SERVERPROPERTY('EngineEdition') AS int);
+IF @EngineEdition NOT IN (2,3,4,5,8) BEGIN
+    DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'
+        + @@ServerName + ',Database:' + DB_NAME()
+        + ' is not a supported SQL Server edition for this query.';
+    RAISERROR (@ErrorMessage,11,1)
+    RETURN
+END
+
+CREATE TABLE #IndexPhysicalStats (
+     measurement               nvarchar(50)
+    ,sql_instance              nvarchar(256)
+    ,computer_name             nvarchar(256)
+    ,database_name             nvarchar(128)
+    ,object_name               nvarchar(257)
+    ,object_type               nvarchar(60)
+    ,index_id                  int
+    ,avg_fragmentation_percent float
+    ,page_count                bigint
+    ,record_count              bigint
+    ,size_mb                   float
+);
+
+IF @EngineEdition = 5
+BEGIN
+    INSERT INTO #IndexPhysicalStats
+    SELECT
+         'sqlserver_index_physical_stats'
+        ,REPLACE(@@SERVERNAME, '\', ':')
+        ,HOST_NAME()
+        ,DB_NAME()
+        ,OBJECT_SCHEMA_NAME(ps.[object_id]) + '.' + OBJECT_NAME(ps.[object_id])
+        ,o.[type_desc]
+        ,ps.[index_id]
+        ,ps.[avg_fragmentation_in_percent]
+        ,ps.[page_count]
+        ,ps.[record_count]
+        ,(ps.[page_count] * 8) / 1024.0
+    FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, 'SAMPLED') AS ps
+    INNER JOIN sys.objects AS o WITH (NOLOCK)
+        ON ps.[object_id] = o.[object_id]
+        AND o.[type] = 'U'
+    WHERE ps.[index_level] = 0;
+END
+ELSE
+BEGIN
+    DECLARE @DbName nvarchar(128);
+    DECLARE @Sql    nvarchar(max);
+
+    DECLARE db_cursor CURSOR LOCAL FAST_FORWARD FOR
+        SELECT name FROM sys.databases
+        WHERE database_id > 4
+          AND state = 0
+{filter_instance_name};
+
+    OPEN db_cursor;
+    FETCH NEXT FROM db_cursor INTO @DbName;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @Sql = N'
+        INSERT INTO #IndexPhysicalStats
+        SELECT
+             N''sqlserver_index_physical_stats''
+            ,REPLACE(@@SERVERNAME, N''\\'', N'':'')
+            ,HOST_NAME()
+            ,N''' + @DbName + N'''
+            ,OBJECT_SCHEMA_NAME(ps.[object_id], DB_ID(N''' + @DbName + N''')) + ''.'' + OBJECT_NAME(ps.[object_id], DB_ID(N''' + @DbName + N'''))
+            ,o.[type_desc]
+            ,ps.[index_id]
+            ,ps.[avg_fragmentation_in_percent]
+            ,ps.[page_count]
+            ,ps.[record_count]
+            ,(ps.[page_count] * 8) / 1024.0
+        FROM sys.dm_db_index_physical_stats(DB_ID(N''' + @DbName + N'''), NULL, NULL, NULL, ''SAMPLED'') AS ps
+        INNER JOIN [' + @DbName + N'].sys.objects AS o WITH (NOLOCK)
+            ON ps.[object_id] = o.[object_id]
+            AND o.[type] = ''U''
+        WHERE ps.[index_level] = 0';
+
+        BEGIN TRY
+            EXEC sp_executesql @Sql;
+        END TRY
+        BEGIN CATCH
+            -- Permission denied or other per-database error: skip and continue
+        END CATCH
+
+        FETCH NEXT FROM db_cursor INTO @DbName;
+    END
+
+    CLOSE db_cursor;
+    DEALLOCATE db_cursor;
+END
+
+SELECT * FROM #IndexPhysicalStats;
+DROP TABLE #IndexPhysicalStats;
+`
+
+func getSQLServerIndexPhysicalStatsQuery(instanceName string) string {
+	if instanceName != "" {
+		r := strings.NewReplacer("{filter_instance_name}", fmt.Sprintf("\t\t  AND @@SERVERNAME = '%s'", instanceName))
+		return r.Replace(sqlServerIndexPhysicalStatsQuery)
+	}
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerIndexPhysicalStatsQuery)
+}
+
+const sqlServerIndexMetadataQuery = `
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4,5,8) BEGIN
+    DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'
+        + @@ServerName + ',Database:' + DB_NAME()
+        + ' is not supported for index metadata collection.';
+    RAISERROR (@ErrorMessage,11,1)
+    RETURN
+END
+
+CREATE TABLE #IndexMetadata (
+     measurement           nvarchar(50)
+    ,sql_instance          nvarchar(256)
+    ,computer_name         nvarchar(256)
+    ,database_name         nvarchar(128)
+    ,object_name           nvarchar(257)
+    ,object_type           nvarchar(60)
+    ,index_id              int
+    ,index_name            nvarchar(128)
+    ,index_type            nvarchar(60)
+    ,index_columns         nvarchar(max)
+    ,include_columns       nvarchar(max)
+    ,is_unique             bit
+    ,is_primary_key        bit
+    ,is_disabled           bit
+    ,fill_factor           tinyint
+    ,has_filter            bit
+    ,filter_definition     nvarchar(max)
+);
+
+DECLARE @DbName nvarchar(128);
+DECLARE @Sql    nvarchar(max);
+
+DECLARE db_cursor CURSOR LOCAL FAST_FORWARD FOR
+    SELECT name FROM sys.databases
+    WHERE database_id > 4
+      AND state = 0
+{filter_instance_name};
+
+OPEN db_cursor;
+FETCH NEXT FROM db_cursor INTO @DbName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @Sql = N'
+    INSERT INTO #IndexMetadata
+    SELECT
+         N''sqlserver_index_metadata''
+        ,REPLACE(@@SERVERNAME, N''\\'', N'':'')
+        ,HOST_NAME()
+        ,N''' + @DbName + N'''
+        ,OBJECT_SCHEMA_NAME(i.[object_id], DB_ID(N''' + @DbName + N''')) + ''.'' + OBJECT_NAME(i.[object_id], DB_ID(N''' + @DbName + N'''))
+        ,o.[type_desc]
+        ,i.[index_id]
+        ,ISNULL(i.[name], N''HEAP'')
+        ,LOWER(REPLACE(i.[type_desc], N'' '', N''_''))
+        ,ISNULL(STUFF((
+            SELECT N'','' + c.[name]
+            FROM [' + @DbName + N'].sys.index_columns ic2
+            INNER JOIN [' + @DbName + N'].sys.columns c
+                ON ic2.[object_id] = c.[object_id] AND ic2.[column_id] = c.[column_id]
+            WHERE ic2.[object_id] = i.[object_id]
+              AND ic2.[index_id]  = i.[index_id]
+              AND ic2.[is_included_column] = 0
+            -- Order by key_ordinal to preserve index definition order (1, 2, 3, ...)
+            ORDER BY ic2.[key_ordinal]
+            FOR XML PATH(N'''')), 1, 1, N''''), N'''')
+        ,ISNULL(STUFF((
+            SELECT N'','' + c.[name]
+            FROM [' + @DbName + N'].sys.index_columns ic2
+            INNER JOIN [' + @DbName + N'].sys.columns c
+                ON ic2.[object_id] = c.[object_id] AND ic2.[column_id] = c.[column_id]
+            WHERE ic2.[object_id] = i.[object_id]
+              AND ic2.[index_id]  = i.[index_id]
+              AND ic2.[is_included_column] = 1
+            -- Included columns maintain definition order in sys.index_columns catalog
+            FOR XML PATH(N'''')), 1, 1, N''''), N'''')
+        ,i.[is_unique]
+        ,i.[is_primary_key]
+        ,i.[is_disabled]
+        ,i.[fill_factor]
+        ,i.[has_filter]
+        ,i.[filter_definition]
+    FROM [' + @DbName + N'].sys.indexes  AS i WITH (NOLOCK)
+    INNER JOIN [' + @DbName + N'].sys.objects AS o WITH (NOLOCK)
+        ON o.[type] = ''U''
+        AND i.[object_id] = o.[object_id]
+    WHERE i.[type] > 0';
+
+    BEGIN TRY
+        EXEC sp_executesql @Sql;
+    END TRY
+    BEGIN CATCH
+        -- Permission denied or other per-database error: skip and continue
+    END CATCH
+
+    FETCH NEXT FROM db_cursor INTO @DbName;
+END
+
+CLOSE db_cursor;
+DEALLOCATE db_cursor;
+
+SELECT * FROM #IndexMetadata;
+DROP TABLE #IndexMetadata;
+`
+
+func getSQLServerIndexMetadataQuery(instanceName string) string {
+	if instanceName != "" {
+		r := strings.NewReplacer("{filter_instance_name}", fmt.Sprintf("\t  AND @@SERVERNAME = '%s'", instanceName))
+		return r.Replace(sqlServerIndexMetadataQuery)
+	}
+	r := strings.NewReplacer("{filter_instance_name}", "")
+	return r.Replace(sqlServerIndexMetadataQuery)
+}

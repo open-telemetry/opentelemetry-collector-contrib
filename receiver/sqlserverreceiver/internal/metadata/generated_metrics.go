@@ -82,6 +82,56 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
+// AttributeIndexOperationType specifies the value index.operation.type attribute.
+type AttributeIndexOperationType int
+
+const (
+	_ AttributeIndexOperationType = iota
+	AttributeIndexOperationTypeUserSeek
+	AttributeIndexOperationTypeUserScan
+	AttributeIndexOperationTypeUserLookup
+	AttributeIndexOperationTypeUserUpdate
+	AttributeIndexOperationTypeSystemSeek
+	AttributeIndexOperationTypeSystemScan
+	AttributeIndexOperationTypeSystemLookup
+	AttributeIndexOperationTypeSystemUpdate
+)
+
+// String returns the string representation of the AttributeIndexOperationType.
+func (av AttributeIndexOperationType) String() string {
+	switch av {
+	case AttributeIndexOperationTypeUserSeek:
+		return "user_seek"
+	case AttributeIndexOperationTypeUserScan:
+		return "user_scan"
+	case AttributeIndexOperationTypeUserLookup:
+		return "user_lookup"
+	case AttributeIndexOperationTypeUserUpdate:
+		return "user_update"
+	case AttributeIndexOperationTypeSystemSeek:
+		return "system_seek"
+	case AttributeIndexOperationTypeSystemScan:
+		return "system_scan"
+	case AttributeIndexOperationTypeSystemLookup:
+		return "system_lookup"
+	case AttributeIndexOperationTypeSystemUpdate:
+		return "system_update"
+	}
+	return ""
+}
+
+// MapAttributeIndexOperationType is a helper map of string to AttributeIndexOperationType attribute value.
+var MapAttributeIndexOperationType = map[string]AttributeIndexOperationType{
+	"user_seek":     AttributeIndexOperationTypeUserSeek,
+	"user_scan":     AttributeIndexOperationTypeUserScan,
+	"user_lookup":   AttributeIndexOperationTypeUserLookup,
+	"user_update":   AttributeIndexOperationTypeUserUpdate,
+	"system_seek":   AttributeIndexOperationTypeSystemSeek,
+	"system_scan":   AttributeIndexOperationTypeSystemScan,
+	"system_lookup": AttributeIndexOperationTypeSystemLookup,
+	"system_update": AttributeIndexOperationTypeSystemUpdate,
+}
+
 // AttributePageOperations specifies the value page.operations attribute.
 type AttributePageOperations int
 
@@ -132,6 +182,56 @@ func (av AttributeReplicaDirection) String() string {
 var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"transmit": AttributeReplicaDirectionTransmit,
 	"receive":  AttributeReplicaDirectionReceive,
+}
+
+// AttributeSqlserverIndexType specifies the value sqlserver.index.type attribute.
+type AttributeSqlserverIndexType int
+
+const (
+	_ AttributeSqlserverIndexType = iota
+	AttributeSqlserverIndexTypeHeap
+	AttributeSqlserverIndexTypeClustered
+	AttributeSqlserverIndexTypeNonclustered
+	AttributeSqlserverIndexTypeXml
+	AttributeSqlserverIndexTypeSpatial
+	AttributeSqlserverIndexTypeClusteredColumnstore
+	AttributeSqlserverIndexTypeNonclusteredColumnstore
+	AttributeSqlserverIndexTypeNonclusteredHash
+)
+
+// String returns the string representation of the AttributeSqlserverIndexType.
+func (av AttributeSqlserverIndexType) String() string {
+	switch av {
+	case AttributeSqlserverIndexTypeHeap:
+		return "heap"
+	case AttributeSqlserverIndexTypeClustered:
+		return "clustered"
+	case AttributeSqlserverIndexTypeNonclustered:
+		return "nonclustered"
+	case AttributeSqlserverIndexTypeXml:
+		return "xml"
+	case AttributeSqlserverIndexTypeSpatial:
+		return "spatial"
+	case AttributeSqlserverIndexTypeClusteredColumnstore:
+		return "clustered_columnstore"
+	case AttributeSqlserverIndexTypeNonclusteredColumnstore:
+		return "nonclustered_columnstore"
+	case AttributeSqlserverIndexTypeNonclusteredHash:
+		return "nonclustered_hash"
+	}
+	return ""
+}
+
+// MapAttributeSqlserverIndexType is a helper map of string to AttributeSqlserverIndexType attribute value.
+var MapAttributeSqlserverIndexType = map[string]AttributeSqlserverIndexType{
+	"heap":                     AttributeSqlserverIndexTypeHeap,
+	"clustered":                AttributeSqlserverIndexTypeClustered,
+	"nonclustered":             AttributeSqlserverIndexTypeNonclustered,
+	"xml":                      AttributeSqlserverIndexTypeXml,
+	"spatial":                  AttributeSqlserverIndexTypeSpatial,
+	"clustered_columnstore":    AttributeSqlserverIndexTypeClusteredColumnstore,
+	"nonclustered_columnstore": AttributeSqlserverIndexTypeNonclusteredColumnstore,
+	"nonclustered_hash":        AttributeSqlserverIndexTypeNonclusteredHash,
 }
 
 // AttributeTableState specifies the value table.state attribute.
@@ -258,8 +358,23 @@ var MetricsInfo = metricsInfo{
 	SqlserverDeadlockRate: metricInfo{
 		Name: "sqlserver.deadlock.rate",
 	},
+	SqlserverIndexFragmentationPercent: metricInfo{
+		Name: "sqlserver.index.fragmentation.percent",
+	},
+	SqlserverIndexOperationCount: metricInfo{
+		Name: "sqlserver.index.operation.count",
+	},
+	SqlserverIndexPageCount: metricInfo{
+		Name: "sqlserver.index.page.count",
+	},
+	SqlserverIndexRecordCount: metricInfo{
+		Name: "sqlserver.index.record.count",
+	},
 	SqlserverIndexSearchRate: metricInfo{
 		Name: "sqlserver.index.search.rate",
+	},
+	SqlserverIndexSizeMb: metricInfo{
+		Name: "sqlserver.index.size.mb",
 	},
 	SqlserverLockTimeoutRate: metricInfo{
 		Name: "sqlserver.lock.timeout.rate",
@@ -381,7 +496,12 @@ type metricsInfo struct {
 	SqlserverDatabaseTempdbSpace                metricInfo
 	SqlserverDatabaseTempdbVersionStoreSize     metricInfo
 	SqlserverDeadlockRate                       metricInfo
+	SqlserverIndexFragmentationPercent          metricInfo
+	SqlserverIndexOperationCount                metricInfo
+	SqlserverIndexPageCount                     metricInfo
+	SqlserverIndexRecordCount                   metricInfo
 	SqlserverIndexSearchRate                    metricInfo
+	SqlserverIndexSizeMb                        metricInfo
 	SqlserverLockTimeoutRate                    metricInfo
 	SqlserverLockWaitCount                      metricInfo
 	SqlserverLockWaitRate                       metricInfo
@@ -1199,6 +1319,225 @@ func newMetricSqlserverDeadlockRate(cfg MetricConfig) metricSqlserverDeadlockRat
 	return m
 }
 
+type metricSqlserverIndexFragmentationPercent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.index.fragmentation.percent metric with initial data.
+func (m *metricSqlserverIndexFragmentationPercent) init() {
+	m.data.SetName("sqlserver.index.fragmentation.percent")
+	m.data.SetDescription("Percentage of fragmentation in the index.")
+	m.data.SetUnit("“%”")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverIndexFragmentationPercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("sqlserver.database.name", sqlserverDatabaseNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.id", sqlserverIndexIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverIndexFragmentationPercent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverIndexFragmentationPercent) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverIndexFragmentationPercent(cfg MetricConfig) metricSqlserverIndexFragmentationPercent {
+	m := metricSqlserverIndexFragmentationPercent{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverIndexOperationCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.index.operation.count metric with initial data.
+func (m *metricSqlserverIndexOperationCount) init() {
+	m.data.SetName("sqlserver.index.operation.count")
+	m.data.SetDescription("Number of index operations performed (seeks, scans, lookups, updates).")
+	m.data.SetUnit("“{operations}”")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverIndexOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string, indexOperationTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("sqlserver.database.name", sqlserverDatabaseNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.id", sqlserverIndexIDAttributeValue)
+	dp.Attributes().PutStr("index.operation.type", indexOperationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverIndexOperationCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverIndexOperationCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverIndexOperationCount(cfg MetricConfig) metricSqlserverIndexOperationCount {
+	m := metricSqlserverIndexOperationCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverIndexPageCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.index.page.count metric with initial data.
+func (m *metricSqlserverIndexPageCount) init() {
+	m.data.SetName("sqlserver.index.page.count")
+	m.data.SetDescription("Number of pages in the index.")
+	m.data.SetUnit("“{pages}”")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverIndexPageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("sqlserver.database.name", sqlserverDatabaseNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.id", sqlserverIndexIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverIndexPageCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverIndexPageCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverIndexPageCount(cfg MetricConfig) metricSqlserverIndexPageCount {
+	m := metricSqlserverIndexPageCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverIndexRecordCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.index.record.count metric with initial data.
+func (m *metricSqlserverIndexRecordCount) init() {
+	m.data.SetName("sqlserver.index.record.count")
+	m.data.SetDescription("Number of records in the index.")
+	m.data.SetUnit("“{records}”")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverIndexRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("sqlserver.database.name", sqlserverDatabaseNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.id", sqlserverIndexIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverIndexRecordCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverIndexRecordCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverIndexRecordCount(cfg MetricConfig) metricSqlserverIndexRecordCount {
+	m := metricSqlserverIndexRecordCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverIndexSearchRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1241,6 +1580,60 @@ func (m *metricSqlserverIndexSearchRate) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSqlserverIndexSearchRate(cfg MetricConfig) metricSqlserverIndexSearchRate {
 	m := metricSqlserverIndexSearchRate{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverIndexSizeMb struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.index.size.mb metric with initial data.
+func (m *metricSqlserverIndexSizeMb) init() {
+	m.data.SetName("sqlserver.index.size.mb")
+	m.data.SetDescription("Size of the index in megabytes.")
+	m.data.SetUnit("“MB”")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverIndexSizeMb) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("sqlserver.database.name", sqlserverDatabaseNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.id", sqlserverIndexIDAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverIndexSizeMb) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverIndexSizeMb) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverIndexSizeMb(cfg MetricConfig) metricSqlserverIndexSizeMb {
+	m := metricSqlserverIndexSizeMb{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3004,7 +3397,12 @@ type MetricsBuilder struct {
 	metricSqlserverDatabaseTempdbSpace                metricSqlserverDatabaseTempdbSpace
 	metricSqlserverDatabaseTempdbVersionStoreSize     metricSqlserverDatabaseTempdbVersionStoreSize
 	metricSqlserverDeadlockRate                       metricSqlserverDeadlockRate
+	metricSqlserverIndexFragmentationPercent          metricSqlserverIndexFragmentationPercent
+	metricSqlserverIndexOperationCount                metricSqlserverIndexOperationCount
+	metricSqlserverIndexPageCount                     metricSqlserverIndexPageCount
+	metricSqlserverIndexRecordCount                   metricSqlserverIndexRecordCount
 	metricSqlserverIndexSearchRate                    metricSqlserverIndexSearchRate
+	metricSqlserverIndexSizeMb                        metricSqlserverIndexSizeMb
 	metricSqlserverLockTimeoutRate                    metricSqlserverLockTimeoutRate
 	metricSqlserverLockWaitCount                      metricSqlserverLockWaitCount
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
@@ -3079,7 +3477,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverDatabaseTempdbSpace:                newMetricSqlserverDatabaseTempdbSpace(mbc.Metrics.SqlserverDatabaseTempdbSpace),
 		metricSqlserverDatabaseTempdbVersionStoreSize:     newMetricSqlserverDatabaseTempdbVersionStoreSize(mbc.Metrics.SqlserverDatabaseTempdbVersionStoreSize),
 		metricSqlserverDeadlockRate:                       newMetricSqlserverDeadlockRate(mbc.Metrics.SqlserverDeadlockRate),
+		metricSqlserverIndexFragmentationPercent:          newMetricSqlserverIndexFragmentationPercent(mbc.Metrics.SqlserverIndexFragmentationPercent),
+		metricSqlserverIndexOperationCount:                newMetricSqlserverIndexOperationCount(mbc.Metrics.SqlserverIndexOperationCount),
+		metricSqlserverIndexPageCount:                     newMetricSqlserverIndexPageCount(mbc.Metrics.SqlserverIndexPageCount),
+		metricSqlserverIndexRecordCount:                   newMetricSqlserverIndexRecordCount(mbc.Metrics.SqlserverIndexRecordCount),
 		metricSqlserverIndexSearchRate:                    newMetricSqlserverIndexSearchRate(mbc.Metrics.SqlserverIndexSearchRate),
+		metricSqlserverIndexSizeMb:                        newMetricSqlserverIndexSizeMb(mbc.Metrics.SqlserverIndexSizeMb),
 		metricSqlserverLockTimeoutRate:                    newMetricSqlserverLockTimeoutRate(mbc.Metrics.SqlserverLockTimeoutRate),
 		metricSqlserverLockWaitCount:                      newMetricSqlserverLockWaitCount(mbc.Metrics.SqlserverLockWaitCount),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
@@ -3243,7 +3646,12 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverDatabaseTempdbSpace.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseTempdbVersionStoreSize.emit(ils.Metrics())
 	mb.metricSqlserverDeadlockRate.emit(ils.Metrics())
+	mb.metricSqlserverIndexFragmentationPercent.emit(ils.Metrics())
+	mb.metricSqlserverIndexOperationCount.emit(ils.Metrics())
+	mb.metricSqlserverIndexPageCount.emit(ils.Metrics())
+	mb.metricSqlserverIndexRecordCount.emit(ils.Metrics())
 	mb.metricSqlserverIndexSearchRate.emit(ils.Metrics())
+	mb.metricSqlserverIndexSizeMb.emit(ils.Metrics())
 	mb.metricSqlserverLockTimeoutRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitCount.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
@@ -3409,9 +3817,49 @@ func (mb *MetricsBuilder) RecordSqlserverDeadlockRateDataPoint(ts pcommon.Timest
 	mb.metricSqlserverDeadlockRate.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverIndexFragmentationPercentDataPoint adds a data point to sqlserver.index.fragmentation.percent metric.
+func (mb *MetricsBuilder) RecordSqlserverIndexFragmentationPercentDataPoint(ts pcommon.Timestamp, val float64, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) {
+	mb.metricSqlserverIndexFragmentationPercent.recordDataPoint(mb.startTime, ts, val, sqlserverDatabaseNameAttributeValue, sqlserverObjectNameAttributeValue, sqlserverIndexIDAttributeValue)
+}
+
+// RecordSqlserverIndexOperationCountDataPoint adds a data point to sqlserver.index.operation.count metric.
+func (mb *MetricsBuilder) RecordSqlserverIndexOperationCountDataPoint(ts pcommon.Timestamp, inputVal string, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string, indexOperationTypeAttributeValue AttributeIndexOperationType) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverIndexOperationCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverIndexOperationCount.recordDataPoint(mb.startTime, ts, val, sqlserverDatabaseNameAttributeValue, sqlserverObjectNameAttributeValue, sqlserverIndexIDAttributeValue, indexOperationTypeAttributeValue.String())
+	return nil
+}
+
+// RecordSqlserverIndexPageCountDataPoint adds a data point to sqlserver.index.page.count metric.
+func (mb *MetricsBuilder) RecordSqlserverIndexPageCountDataPoint(ts pcommon.Timestamp, inputVal string, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverIndexPageCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverIndexPageCount.recordDataPoint(mb.startTime, ts, val, sqlserverDatabaseNameAttributeValue, sqlserverObjectNameAttributeValue, sqlserverIndexIDAttributeValue)
+	return nil
+}
+
+// RecordSqlserverIndexRecordCountDataPoint adds a data point to sqlserver.index.record.count metric.
+func (mb *MetricsBuilder) RecordSqlserverIndexRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverIndexRecordCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverIndexRecordCount.recordDataPoint(mb.startTime, ts, val, sqlserverDatabaseNameAttributeValue, sqlserverObjectNameAttributeValue, sqlserverIndexIDAttributeValue)
+	return nil
+}
+
 // RecordSqlserverIndexSearchRateDataPoint adds a data point to sqlserver.index.search.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverIndexSearchRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverIndexSearchRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverIndexSizeMbDataPoint adds a data point to sqlserver.index.size.mb metric.
+func (mb *MetricsBuilder) RecordSqlserverIndexSizeMbDataPoint(ts pcommon.Timestamp, val float64, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverIndexIDAttributeValue string) {
+	mb.metricSqlserverIndexSizeMb.recordDataPoint(mb.startTime, ts, val, sqlserverDatabaseNameAttributeValue, sqlserverObjectNameAttributeValue, sqlserverIndexIDAttributeValue)
 }
 
 // RecordSqlserverLockTimeoutRateDataPoint adds a data point to sqlserver.lock.timeout.rate metric.

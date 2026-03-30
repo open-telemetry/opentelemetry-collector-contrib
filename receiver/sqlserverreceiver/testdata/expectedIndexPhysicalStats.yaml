@@ -1,0 +1,292 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: AdventureWorks
+        - key: sqlserver.instance.name
+          value:
+            stringValue: localhost:1433
+    scopeMetrics:
+      - metrics:
+          - description: Percentage of fragmentation in the index.
+            gauge:
+              dataPoints:
+                - asDouble: 15.5
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "2"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.fragmentation.percent
+            unit: “%”
+          - description: Number of pages in the index.
+            gauge:
+              dataPoints:
+                - asInt: "500"
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "2"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.page.count
+            unit: “{pages}”
+          - description: Number of records in the index.
+            gauge:
+              dataPoints:
+                - asInt: "10000"
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "2"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.record.count
+            unit: “{records}”
+          - description: Size of the index in megabytes.
+            gauge:
+              dataPoints:
+                - asDouble: 3.90625
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "2"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.size.mb
+            unit: “MB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: AdventureWorks
+        - key: sqlserver.instance.name
+          value:
+            stringValue: localhost:1433
+    scopeMetrics:
+      - metrics:
+          - description: Percentage of fragmentation in the index.
+            gauge:
+              dataPoints:
+                - asDouble: 5.2
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "3"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.fragmentation.percent
+            unit: “%”
+          - description: Number of pages in the index.
+            gauge:
+              dataPoints:
+                - asInt: "300"
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "3"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.page.count
+            unit: “{pages}”
+          - description: Number of records in the index.
+            gauge:
+              dataPoints:
+                - asInt: "10000"
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "3"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.record.count
+            unit: “{records}”
+          - description: Size of the index in megabytes.
+            gauge:
+              dataPoints:
+                - asDouble: 2.34375
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "3"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Orders
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.size.mb
+            unit: “MB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
+        - key: service.instance.id
+          value:
+            stringValue: 0.0.0.0:1433
+        - key: sqlserver.database.name
+          value:
+            stringValue: AdventureWorks
+        - key: sqlserver.instance.name
+          value:
+            stringValue: localhost:1433
+    scopeMetrics:
+      - metrics:
+          - description: Percentage of fragmentation in the index.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "1"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Products
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.fragmentation.percent
+            unit: “%”
+          - description: Number of pages in the index.
+            gauge:
+              dataPoints:
+                - asInt: "200"
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "1"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Products
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.page.count
+            unit: “{pages}”
+          - description: Number of records in the index.
+            gauge:
+              dataPoints:
+                - asInt: "5000"
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "1"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Products
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.record.count
+            unit: “{records}”
+          - description: Size of the index in megabytes.
+            gauge:
+              dataPoints:
+                - asDouble: 1.5625
+                  attributes:
+                    - key: sqlserver.database.name
+                      value:
+                        stringValue: AdventureWorks
+                    - key: sqlserver.index.id
+                      value:
+                        stringValue: "1"
+                    - key: sqlserver.table.name
+                      value:
+                        stringValue: Products
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.index.size.mb
+            unit: “MB”
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

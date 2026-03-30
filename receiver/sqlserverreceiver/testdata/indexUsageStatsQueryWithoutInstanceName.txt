@@ -1,0 +1,34 @@
+
+SET DEADLOCK_PRIORITY -10;
+IF SERVERPROPERTY('EngineEdition') NOT IN (2,3,4) BEGIN
+    DECLARE @ErrorMessage AS nvarchar(500) = 'Connection string Server:'
+        + @@ServerName + ',Database:' + DB_NAME()
+        + ' is not a SQL Server Standard, Enterprise or Express. This query is only supported on these editions.';
+    RAISERROR (@ErrorMessage,11,1)
+    RETURN
+END
+
+SELECT
+     'sqlserver_index_usage_stats'                       AS [measurement]
+    ,REPLACE(@@SERVERNAME,'\',':')                       AS [sql_instance]
+    ,HOST_NAME()                                         AS [computer_name]
+    ,DB_NAME(ius.[database_id])                          AS [database_name]
+    ,OBJECT_NAME(ius.[object_id], ius.[database_id])     AS [table_name]
+    ,ius.[index_id]                                      AS [index_id]
+    ,ius.[user_seeks]                                    AS [user_seeks]
+    ,ius.[user_scans]                                    AS [user_scans]
+    ,ius.[user_lookups]                                  AS [user_lookups]
+    ,ius.[user_updates]                                  AS [user_updates]
+    ,ius.[system_seeks]                                  AS [system_seeks]
+    ,ius.[system_scans]                                  AS [system_scans]
+    ,ius.[system_lookups]                                AS [system_lookups]
+    ,ius.[system_updates]                                AS [system_updates]
+FROM sys.dm_db_index_usage_stats AS ius WITH (NOLOCK)
+INNER JOIN sys.databases AS d WITH (NOLOCK)
+    ON ius.[database_id] = d.[database_id]
+    AND d.[state] = 0
+    AND d.[database_id] > 4
+WHERE ius.[database_id] > 4
+AND OBJECTPROPERTY(ius.[object_id], 'IsUserTable') = 1
+
+OPTION (RECOMPILE);

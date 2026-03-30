@@ -77,6 +77,10 @@ attributes:
   file_type:
     description: The type of file being monitored.
     type: string
+  index.operation.type:
+    description: The type of index operation being performed.
+    type: string
+    enum: [user_seek, user_scan, user_lookup, user_update, system_seek, system_scan, system_lookup, system_update]
   logical_filename:
     description: The logical filename of the file being monitored.
     type: string
@@ -119,6 +123,9 @@ attributes:
   sqlserver.cpu_time:
     description: CPU time consumed by the query, in seconds.
     type: double
+  sqlserver.database.name:
+    description: The name of the SQL Server database where the index resides.
+    type: string
   sqlserver.deadlock_priority:
     description: Deadlock priority value for the session.
     type: int
@@ -128,12 +135,52 @@ attributes:
   sqlserver.execution_count:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
+  sqlserver.index.columns:
+    description: Comma-separated list of key column names in index key order.
+    type: string
+  sqlserver.index.fill_factor:
+    description: Fill factor percentage for the index; 0 means server default.
+    type: int
+  sqlserver.index.filter_definition:
+    description: Filter predicate for a filtered index; empty string if not filtered.
+    type: string
+  sqlserver.index.has_filter:
+    description: Whether the index has a filter predicate.
+    type: bool
+  sqlserver.index.id:
+    description: The SQL Server ID of the index.
+    type: string
+  sqlserver.index.include_columns:
+    description: Comma-separated list of included (non-key) column names.
+    type: string
+  sqlserver.index.is_disabled:
+    description: Whether the index is disabled.
+    type: bool
+  sqlserver.index.is_primary_key:
+    description: Whether the index is the primary key for the table.
+    type: bool
+  sqlserver.index.is_unique:
+    description: Whether the index enforces uniqueness.
+    type: bool
+  sqlserver.index.name:
+    description: The name of the index.
+    type: string
+  sqlserver.index.type:
+    description: The type of the index.
+    type: string
+    enum: [heap, clustered, nonclustered, xml, spatial, clustered_columnstore, nonclustered_columnstore, nonclustered_hash]
   sqlserver.lock_timeout:
     description: Lock timeout value in seconds.
     type: double
   sqlserver.logical_reads:
     description: Number of logical reads (data read from cache/memory).
     type: int
+  sqlserver.object.name:
+    description: The schema-qualified name (schema.object) of the object associated with the index.
+    type: string
+  sqlserver.object.type:
+    description: The type of the object associated with the index (e.g. USER_TABLE).
+    type: string
   sqlserver.open_transaction_count:
     description: Number of transactions currently open in the session.
     type: int
@@ -305,6 +352,28 @@ events:
       - sqlserver.procedure_id
       - sqlserver.procedure_name
 
+  db.sqlserver.index.metadata:
+    enabled: false
+    description: >
+      Structural metadata for SQL Server indexes, emitted once per index per
+      collection cycle. Use a long collection_interval (30m or more) since index
+      definitions change infrequently.
+    attributes:
+      - sqlserver.database.name
+      - sqlserver.object.name
+      - sqlserver.object.type
+      - sqlserver.index.id
+      - sqlserver.index.name
+      - sqlserver.index.type
+      - sqlserver.index.columns
+      - sqlserver.index.include_columns
+      - sqlserver.index.is_unique
+      - sqlserver.index.is_primary_key
+      - sqlserver.index.is_disabled
+      - sqlserver.index.fill_factor
+      - sqlserver.index.has_filter
+      - sqlserver.index.filter_definition
+
 metrics:
   sqlserver.batch.request.rate:
     enabled: true
@@ -438,6 +507,47 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.index.fragmentation.percent:
+    enabled: false
+    description: Percentage of fragmentation in the index.
+    stability: development
+    unit: “%”
+    gauge:
+      value_type: double
+    attributes: [sqlserver.database.name, sqlserver.object.name, sqlserver.index.id]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server. This metric uses SAMPLED mode and may take 5-60 seconds per collection. It is recommended to use a longer collection_interval (5-15 minutes).
+  sqlserver.index.operation.count:
+    enabled: false
+    description: Number of index operations performed (seeks, scans, lookups, updates).
+    stability: development
+    unit: “{operations}”
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [sqlserver.database.name, sqlserver.object.name, sqlserver.index.id, index.operation.type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.page.count:
+    enabled: false
+    description: Number of pages in the index.
+    stability: development
+    unit: “{pages}”
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [sqlserver.database.name, sqlserver.object.name, sqlserver.index.id]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.index.record.count:
+    enabled: false
+    description: Number of records in the index.
+    stability: development
+    unit: “{records}”
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [sqlserver.database.name, sqlserver.object.name, sqlserver.index.id]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.index.search.rate:
     enabled: false
     description: Total number of index searches.
@@ -446,6 +556,15 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  sqlserver.index.size.mb:
+    enabled: false
+    description: Size of the index in megabytes.
+    stability: development
+    unit: “MB”
+    gauge:
+      value_type: double
+    attributes: [sqlserver.database.name, sqlserver.object.name, sqlserver.index.id]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.lock.timeout.rate:
     enabled: false
     description: Total number of lock timeouts.

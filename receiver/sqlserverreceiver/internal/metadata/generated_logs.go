@@ -136,6 +136,55 @@ func newEventDbServerTopQuery(cfg EventConfig) eventDbServerTopQuery {
 	return e
 }
 
+type eventDbSqlserverIndexMetadata struct {
+	data   plog.LogRecordSlice // data buffer for generated log records.
+	config EventConfig         // event config provided by user.
+}
+
+func (e *eventDbSqlserverIndexMetadata) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverObjectTypeAttributeValue string, sqlserverIndexIDAttributeValue string, sqlserverIndexNameAttributeValue string, sqlserverIndexTypeAttributeValue string, sqlserverIndexColumnsAttributeValue string, sqlserverIndexIncludeColumnsAttributeValue string, sqlserverIndexIsUniqueAttributeValue bool, sqlserverIndexIsPrimaryKeyAttributeValue bool, sqlserverIndexIsDisabledAttributeValue bool, sqlserverIndexFillFactorAttributeValue int64, sqlserverIndexHasFilterAttributeValue bool, sqlserverIndexFilterDefinitionAttributeValue string) {
+	if !e.config.Enabled {
+		return
+	}
+	dp := e.data.AppendEmpty()
+	dp.SetEventName("db.sqlserver.index.metadata")
+	dp.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		dp.SetTraceID(pcommon.TraceID(span.TraceID()))
+		dp.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+	dp.Attributes().PutStr("sqlserver.database.name", sqlserverDatabaseNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.object.name", sqlserverObjectNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.object.type", sqlserverObjectTypeAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.id", sqlserverIndexIDAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.name", sqlserverIndexNameAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.type", sqlserverIndexTypeAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.columns", sqlserverIndexColumnsAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.include_columns", sqlserverIndexIncludeColumnsAttributeValue)
+	dp.Attributes().PutBool("sqlserver.index.is_unique", sqlserverIndexIsUniqueAttributeValue)
+	dp.Attributes().PutBool("sqlserver.index.is_primary_key", sqlserverIndexIsPrimaryKeyAttributeValue)
+	dp.Attributes().PutBool("sqlserver.index.is_disabled", sqlserverIndexIsDisabledAttributeValue)
+	dp.Attributes().PutInt("sqlserver.index.fill_factor", sqlserverIndexFillFactorAttributeValue)
+	dp.Attributes().PutBool("sqlserver.index.has_filter", sqlserverIndexHasFilterAttributeValue)
+	dp.Attributes().PutStr("sqlserver.index.filter_definition", sqlserverIndexFilterDefinitionAttributeValue)
+
+}
+
+// emit appends recorded event data to a events slice and prepares it for recording another set of log records.
+func (e *eventDbSqlserverIndexMetadata) emit(lrs plog.LogRecordSlice) {
+	if e.config.Enabled && e.data.Len() > 0 {
+		e.data.MoveAndAppendTo(lrs)
+	}
+}
+
+func newEventDbSqlserverIndexMetadata(cfg EventConfig) eventDbSqlserverIndexMetadata {
+	e := eventDbSqlserverIndexMetadata{config: cfg}
+	if cfg.Enabled {
+		e.data = plog.NewLogRecordSlice()
+	}
+	return e
+}
+
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {
@@ -147,6 +196,7 @@ type LogsBuilder struct {
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	eventDbServerQuerySample       eventDbServerQuerySample
 	eventDbServerTopQuery          eventDbServerTopQuery
+	eventDbSqlserverIndexMetadata  eventDbSqlserverIndexMetadata
 }
 
 // LogBuilderOption applies changes to default logs builder.
@@ -162,6 +212,7 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		buildInfo:                      settings.BuildInfo,
 		eventDbServerQuerySample:       newEventDbServerQuerySample(lbc.Events.DbServerQuerySample),
 		eventDbServerTopQuery:          newEventDbServerTopQuery(lbc.Events.DbServerTopQuery),
+		eventDbSqlserverIndexMetadata:  newEventDbSqlserverIndexMetadata(lbc.Events.DbSqlserverIndexMetadata),
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
@@ -252,6 +303,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
 	ils.Scope().SetVersion(lb.buildInfo.Version)
 	lb.eventDbServerQuerySample.emit(ils.LogRecords())
 	lb.eventDbServerTopQuery.emit(ils.LogRecords())
+	lb.eventDbSqlserverIndexMetadata.emit(ils.LogRecords())
 
 	for _, op := range options {
 		op.apply(rl)
@@ -296,4 +348,9 @@ func (lb *LogsBuilder) RecordDbServerQuerySampleEvent(ctx context.Context, times
 // RecordDbServerTopQueryEvent adds a log record of db.server.top_query event.
 func (lb *LogsBuilder) RecordDbServerTopQueryEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverTotalWorkerTimeAttributeValue float64, dbQueryTextAttributeValue string, sqlserverExecutionCountAttributeValue int64, sqlserverTotalLogicalReadsAttributeValue int64, sqlserverTotalLogicalWritesAttributeValue int64, sqlserverTotalPhysicalReadsAttributeValue int64, sqlserverQueryHashAttributeValue string, sqlserverQueryPlanAttributeValue string, sqlserverQueryPlanHashAttributeValue string, sqlserverTotalRowsAttributeValue int64, sqlserverTotalElapsedTimeAttributeValue float64, sqlserverTotalGrantKbAttributeValue int64, serverAddressAttributeValue string, serverPortAttributeValue int64, dbSystemNameAttributeValue string, sqlserverProcedureExecutionCountAttributeValue int64, sqlserverProcedureIDAttributeValue string, sqlserverProcedureNameAttributeValue string) {
 	lb.eventDbServerTopQuery.recordEvent(ctx, timestamp, sqlserverTotalWorkerTimeAttributeValue, dbQueryTextAttributeValue, sqlserverExecutionCountAttributeValue, sqlserverTotalLogicalReadsAttributeValue, sqlserverTotalLogicalWritesAttributeValue, sqlserverTotalPhysicalReadsAttributeValue, sqlserverQueryHashAttributeValue, sqlserverQueryPlanAttributeValue, sqlserverQueryPlanHashAttributeValue, sqlserverTotalRowsAttributeValue, sqlserverTotalElapsedTimeAttributeValue, sqlserverTotalGrantKbAttributeValue, serverAddressAttributeValue, serverPortAttributeValue, dbSystemNameAttributeValue, sqlserverProcedureExecutionCountAttributeValue, sqlserverProcedureIDAttributeValue, sqlserverProcedureNameAttributeValue)
+}
+
+// RecordDbSqlserverIndexMetadataEvent adds a log record of db.sqlserver.index.metadata event.
+func (lb *LogsBuilder) RecordDbSqlserverIndexMetadataEvent(ctx context.Context, timestamp pcommon.Timestamp, sqlserverDatabaseNameAttributeValue string, sqlserverObjectNameAttributeValue string, sqlserverObjectTypeAttributeValue string, sqlserverIndexIDAttributeValue string, sqlserverIndexNameAttributeValue string, sqlserverIndexTypeAttributeValue AttributeSqlserverIndexType, sqlserverIndexColumnsAttributeValue string, sqlserverIndexIncludeColumnsAttributeValue string, sqlserverIndexIsUniqueAttributeValue bool, sqlserverIndexIsPrimaryKeyAttributeValue bool, sqlserverIndexIsDisabledAttributeValue bool, sqlserverIndexFillFactorAttributeValue int64, sqlserverIndexHasFilterAttributeValue bool, sqlserverIndexFilterDefinitionAttributeValue string) {
+	lb.eventDbSqlserverIndexMetadata.recordEvent(ctx, timestamp, sqlserverDatabaseNameAttributeValue, sqlserverObjectNameAttributeValue, sqlserverObjectTypeAttributeValue, sqlserverIndexIDAttributeValue, sqlserverIndexNameAttributeValue, sqlserverIndexTypeAttributeValue.String(), sqlserverIndexColumnsAttributeValue, sqlserverIndexIncludeColumnsAttributeValue, sqlserverIndexIsUniqueAttributeValue, sqlserverIndexIsPrimaryKeyAttributeValue, sqlserverIndexIsDisabledAttributeValue, sqlserverIndexFillFactorAttributeValue, sqlserverIndexHasFilterAttributeValue, sqlserverIndexFilterDefinitionAttributeValue)
 }

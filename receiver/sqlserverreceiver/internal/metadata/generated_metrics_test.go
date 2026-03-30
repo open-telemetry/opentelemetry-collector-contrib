@@ -116,7 +116,22 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverDeadlockRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverIndexFragmentationPercentDataPoint(ts, 1, "sqlserver.database.name-val", "sqlserver.object.name-val", "sqlserver.index.id-val")
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexOperationCountDataPoint(ts, "1", "sqlserver.database.name-val", "sqlserver.object.name-val", "sqlserver.index.id-val", AttributeIndexOperationTypeUserSeek)
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexPageCountDataPoint(ts, "1", "sqlserver.database.name-val", "sqlserver.object.name-val", "sqlserver.index.id-val")
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexRecordCountDataPoint(ts, "1", "sqlserver.database.name-val", "sqlserver.object.name-val", "sqlserver.index.id-val")
+
+			allMetricsCount++
 			mb.RecordSqlserverIndexSearchRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverIndexSizeMbDataPoint(ts, 1, "sqlserver.database.name-val", "sqlserver.object.name-val", "sqlserver.index.id-val")
 
 			allMetricsCount++
 			mb.RecordSqlserverLockTimeoutRateDataPoint(ts, 1)
@@ -503,6 +518,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.index.fragmentation.percent":
+					assert.False(t, validatedMetrics["sqlserver.index.fragmentation.percent"], "Found a duplicate in the metrics slice: sqlserver.index.fragmentation.percent")
+					validatedMetrics["sqlserver.index.fragmentation.percent"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of fragmentation in the index.", mi.Description())
+					assert.Equal(t, "“%”", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					sqlserverDatabaseNameAttrVal, ok := dp.Attributes().Get("sqlserver.database.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
+					sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+					sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.index.id-val", sqlserverIndexIDAttrVal.Str())
+				case "sqlserver.index.operation.count":
+					assert.False(t, validatedMetrics["sqlserver.index.operation.count"], "Found a duplicate in the metrics slice: sqlserver.index.operation.count")
+					validatedMetrics["sqlserver.index.operation.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of index operations performed (seeks, scans, lookups, updates).", mi.Description())
+					assert.Equal(t, "“{operations}”", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					sqlserverDatabaseNameAttrVal, ok := dp.Attributes().Get("sqlserver.database.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
+					sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+					sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.index.id-val", sqlserverIndexIDAttrVal.Str())
+					indexOperationTypeAttrVal, ok := dp.Attributes().Get("index.operation.type")
+					assert.True(t, ok)
+					assert.Equal(t, "user_seek", indexOperationTypeAttrVal.Str())
+				case "sqlserver.index.page.count":
+					assert.False(t, validatedMetrics["sqlserver.index.page.count"], "Found a duplicate in the metrics slice: sqlserver.index.page.count")
+					validatedMetrics["sqlserver.index.page.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of pages in the index.", mi.Description())
+					assert.Equal(t, "“{pages}”", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					sqlserverDatabaseNameAttrVal, ok := dp.Attributes().Get("sqlserver.database.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
+					sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+					sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.index.id-val", sqlserverIndexIDAttrVal.Str())
+				case "sqlserver.index.record.count":
+					assert.False(t, validatedMetrics["sqlserver.index.record.count"], "Found a duplicate in the metrics slice: sqlserver.index.record.count")
+					validatedMetrics["sqlserver.index.record.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of records in the index.", mi.Description())
+					assert.Equal(t, "“{records}”", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					sqlserverDatabaseNameAttrVal, ok := dp.Attributes().Get("sqlserver.database.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
+					sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+					sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.index.id-val", sqlserverIndexIDAttrVal.Str())
 				case "sqlserver.index.search.rate":
 					assert.False(t, validatedMetrics["sqlserver.index.search.rate"], "Found a duplicate in the metrics slice: sqlserver.index.search.rate")
 					validatedMetrics["sqlserver.index.search.rate"] = true
@@ -515,6 +619,27 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.index.size.mb":
+					assert.False(t, validatedMetrics["sqlserver.index.size.mb"], "Found a duplicate in the metrics slice: sqlserver.index.size.mb")
+					validatedMetrics["sqlserver.index.size.mb"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Size of the index in megabytes.", mi.Description())
+					assert.Equal(t, "“MB”", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					sqlserverDatabaseNameAttrVal, ok := dp.Attributes().Get("sqlserver.database.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.database.name-val", sqlserverDatabaseNameAttrVal.Str())
+					sqlserverObjectNameAttrVal, ok := dp.Attributes().Get("sqlserver.object.name")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.object.name-val", sqlserverObjectNameAttrVal.Str())
+					sqlserverIndexIDAttrVal, ok := dp.Attributes().Get("sqlserver.index.id")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.index.id-val", sqlserverIndexIDAttrVal.Str())
 				case "sqlserver.lock.timeout.rate":
 					assert.False(t, validatedMetrics["sqlserver.lock.timeout.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.timeout.rate")
 					validatedMetrics["sqlserver.lock.timeout.rate"] = true

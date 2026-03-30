@@ -31,7 +31,17 @@ all_set:
       enabled: true
     sqlserver.deadlock.rate:
       enabled: true
+    sqlserver.index.fragmentation.percent:
+      enabled: true
+    sqlserver.index.operation.count:
+      enabled: true
+    sqlserver.index.page.count:
+      enabled: true
+    sqlserver.index.record.count:
+      enabled: true
     sqlserver.index.search.rate:
+      enabled: true
+    sqlserver.index.size.mb:
       enabled: true
     sqlserver.lock.timeout.rate:
       enabled: true
@@ -105,6 +115,8 @@ all_set:
     db.server.query_sample:
       enabled: true
     db.server.top_query:
+      enabled: true
+    db.sqlserver.index.metadata:
       enabled: true
   resource_attributes:
     host.name:
@@ -153,7 +165,17 @@ none_set:
       enabled: false
     sqlserver.deadlock.rate:
       enabled: false
+    sqlserver.index.fragmentation.percent:
+      enabled: false
+    sqlserver.index.operation.count:
+      enabled: false
+    sqlserver.index.page.count:
+      enabled: false
+    sqlserver.index.record.count:
+      enabled: false
     sqlserver.index.search.rate:
+      enabled: false
+    sqlserver.index.size.mb:
       enabled: false
     sqlserver.lock.timeout.rate:
       enabled: false
@@ -227,6 +249,8 @@ none_set:
     db.server.query_sample:
       enabled: false
     db.server.top_query:
+      enabled: false
+    db.sqlserver.index.metadata:
       enabled: false
   resource_attributes:
     host.name:

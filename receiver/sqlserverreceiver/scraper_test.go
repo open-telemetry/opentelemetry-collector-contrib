@@ -45,7 +45,12 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbSpace.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDeadlockRate.Enabled = enabled
+	cfg.Metrics.SqlserverIndexFragmentationPercent.Enabled = enabled
+	cfg.Metrics.SqlserverIndexOperationCount.Enabled = enabled
+	cfg.Metrics.SqlserverIndexPageCount.Enabled = enabled
+	cfg.Metrics.SqlserverIndexRecordCount.Enabled = enabled
 	cfg.Metrics.SqlserverIndexSearchRate.Enabled = enabled
+	cfg.Metrics.SqlserverIndexSizeMb.Enabled = enabled
 	cfg.Metrics.SqlserverLockTimeoutRate.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitCount.Enabled = enabled
 	cfg.Metrics.SqlserverLockWaitRate.Enabled = enabled
@@ -83,6 +88,7 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 
 	cfg.Events.DbServerTopQuery.Enabled = enabled
 	cfg.Events.DbServerQuerySample.Enabled = enabled
+	cfg.Events.DbSqlserverIndexMetadata.Enabled = enabled
 	cfg.Metrics.SqlserverCPUCount.Enabled = enabled
 	cfg.Metrics.SqlserverComputerUptime.Enabled = enabled
 	// cfg.TopQueryCollection.Enabled = enabled
@@ -175,6 +181,10 @@ func TestSuccessfulScrape(t *testing.T) {
 					expectedFile = filepath.Join("testdata", "expectedProperties")
 				case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
 					expectedFile = filepath.Join("testdata", "expectedWaitStats")
+				case getSQLServerIndexUsageStatsQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedIndexUsageStats")
+				case getSQLServerIndexPhysicalStatsQuery(scraper.config.InstanceName):
+					expectedFile = filepath.Join("testdata", "expectedIndexPhysicalStats")
 				}
 				expectedFile += fileSuffix
 
@@ -353,10 +363,16 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("propertyQueryData.txt")
 	case getSQLServerWaitStatsQuery(mc.instanceName):
 		queryResults, err = readFile("waitStatsQueryData.txt")
+	case getSQLServerIndexUsageStatsQuery(mc.instanceName):
+		queryResults, err = readFile("indexUsageStatsQueryData.txt")
+	case getSQLServerIndexPhysicalStatsQuery(mc.instanceName):
+		queryResults, err = readFile("indexPhysicalStatsQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
+	case getSQLServerIndexMetadataQuery(""):
+		queryResults, err = readFile("indexMetadataQueryData.txt")
 	default:
 		return nil, errors.New("No valid query found")
 	}
@@ -982,4 +998,72 @@ func TestRecordDatabaseStatusMetricsUsesResourceBuilderForMetrics(t *testing.T) 
 	serverPort, exists := resourceAttributes.Get("server.port")
 	assert.True(t, exists)
 	assert.Equal(t, int64(1434), serverPort.Int())
+}
+
+func TestRecordIndexMetadataLogs(t *testing.T) {
+	tests := map[string]struct {
+		expectedFile      string
+		mockClient        func(instance, sql string) sqlquery.DbClient
+		removeServerAttrs bool
+	}{
+		"valid data": {
+			expectedFile: "expectedIndexMetadata.yaml",
+			mockClient: func(instance, sql string) sqlquery.DbClient {
+				return mockClient{
+					instanceName: instance,
+					SQL:          sql,
+				}
+			},
+			removeServerAttrs: false,
+		},
+		"valid data remove server attributes": {
+			expectedFile: "expectedIndexMetadataRemoveServerResourceAttributes.yaml",
+			mockClient: func(instance, sql string) sqlquery.DbClient {
+				return mockClient{
+					instanceName: instance,
+					SQL:          sql,
+				}
+			},
+			removeServerAttrs: true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run("TestRecordIndexMetadataLogs/"+name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Username = "sa"
+			cfg.Password = "password"
+			cfg.Port = 1433
+			cfg.Server = "0.0.0.0"
+			cfg.IndexMetadataCollection.Enabled = true
+			cfg.IndexMetadataCollection.CollectionInterval = cfg.ControllerConfig.CollectionInterval
+			enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+			if tc.removeServerAttrs {
+				cfg.LogsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = false
+				cfg.LogsBuilderConfig.ResourceAttributes.ServerPort.Enabled = false
+			}
+			assert.NoError(t, cfg.Validate())
+
+			configureAllScraperMetricsAndEvents(cfg, false)
+			cfg.Events.DbSqlserverIndexMetadata.Enabled = true
+
+			scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			assert.NotNil(t, scrapers)
+
+			scraper := scrapers[0]
+
+			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
+
+			actualLogs, err := scraper.ScrapeLogs(t.Context())
+			assert.NoError(t, err)
+
+			// Uncomment line below to re-generate expected logs.
+			// golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
+			assert.NoError(t, err)
+			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+			assert.Equal(t, "db.sqlserver.index.metadata", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
+			assert.NoError(t, errs)
+		})
+	}
 }

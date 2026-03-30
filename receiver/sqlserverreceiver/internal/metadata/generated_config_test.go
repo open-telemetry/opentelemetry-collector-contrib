@@ -71,7 +71,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDeadlockRate: MetricConfig{
 						Enabled: true,
 					},
+					SqlserverIndexFragmentationPercent: MetricConfig{
+						Enabled: true,
+					},
+					SqlserverIndexOperationCount: MetricConfig{
+						Enabled: true,
+					},
+					SqlserverIndexPageCount: MetricConfig{
+						Enabled: true,
+					},
+					SqlserverIndexRecordCount: MetricConfig{
+						Enabled: true,
+					},
 					SqlserverIndexSearchRate: MetricConfig{
+						Enabled: true,
+					},
+					SqlserverIndexSizeMb: MetricConfig{
 						Enabled: true,
 					},
 					SqlserverLockTimeoutRate: MetricConfig{
@@ -237,7 +252,22 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverDeadlockRate: MetricConfig{
 						Enabled: false,
 					},
+					SqlserverIndexFragmentationPercent: MetricConfig{
+						Enabled: false,
+					},
+					SqlserverIndexOperationCount: MetricConfig{
+						Enabled: false,
+					},
+					SqlserverIndexPageCount: MetricConfig{
+						Enabled: false,
+					},
+					SqlserverIndexRecordCount: MetricConfig{
+						Enabled: false,
+					},
 					SqlserverIndexSearchRate: MetricConfig{
+						Enabled: false,
+					},
+					SqlserverIndexSizeMb: MetricConfig{
 						Enabled: false,
 					},
 					SqlserverLockTimeoutRate: MetricConfig{
