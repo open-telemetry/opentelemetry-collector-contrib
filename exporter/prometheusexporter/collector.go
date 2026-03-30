@@ -260,8 +260,6 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		sumVal = dp.Sum()
 	}
 
-	exemplars := convertExemplars(dp.Exemplars())
-
 	m, err := prometheus.NewConstNativeHistogram(
 		desc,
 		dp.Count(),
@@ -278,6 +276,7 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		return nil, err
 	}
 
+	exemplars := convertExemplars(dp.Exemplars())
 	if len(exemplars) > 0 {
 		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
 		if err != nil {
