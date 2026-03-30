@@ -221,9 +221,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("network.transport")
+						networkTransportAttrVal, ok := dp.Attributes().Get("network.transport")
 						assert.True(t, ok)
-						assert.Equal(t, "udp", attrVal.Str())
+						assert.Equal(t, "udp", networkTransportAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.client.net.count"], "Found a duplicate in the metrics slice: nfs.client.net.count")
 						validatedMetrics["nfs.client.net.count"] = true
@@ -279,12 +279,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("onc_rpc.version")
+						oncRPCVersionAttrVal, ok := dp.Attributes().Get("onc_rpc.version")
 						assert.True(t, ok)
-						assert.EqualValues(t, 15, attrVal.Int())
-						attrVal, ok = dp.Attributes().Get("nfs.operation.name")
+						assert.EqualValues(t, 15, oncRPCVersionAttrVal.Int())
+						nfsOperationNameAttrVal, ok := dp.Attributes().Get("nfs.operation.name")
 						assert.True(t, ok)
-						assert.Equal(t, "nfs.operation.name-val", attrVal.Str())
+						assert.Equal(t, "nfs.operation.name-val", nfsOperationNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.client.operation.count"], "Found a duplicate in the metrics slice: nfs.client.operation.count")
 						validatedMetrics["nfs.client.operation.count"] = true
@@ -328,12 +328,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("onc_rpc.version")
+						oncRPCVersionAttrVal, ok := dp.Attributes().Get("onc_rpc.version")
 						assert.True(t, ok)
-						assert.EqualValues(t, 15, attrVal.Int())
-						attrVal, ok = dp.Attributes().Get("onc_rpc.procedure.name")
+						assert.EqualValues(t, 15, oncRPCVersionAttrVal.Int())
+						oncRPCProcedureNameAttrVal, ok := dp.Attributes().Get("onc_rpc.procedure.name")
 						assert.True(t, ok)
-						assert.Equal(t, "onc_rpc.procedure.name-val", attrVal.Str())
+						assert.Equal(t, "onc_rpc.procedure.name-val", oncRPCProcedureNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.client.procedure.count"], "Found a duplicate in the metrics slice: nfs.client.procedure.count")
 						validatedMetrics["nfs.client.procedure.count"] = true
@@ -433,9 +433,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("network.io.direction")
+						networkIoDirectionAttrVal, ok := dp.Attributes().Get("network.io.direction")
 						assert.True(t, ok)
-						assert.Equal(t, "transmit", attrVal.Str())
+						assert.Equal(t, "transmit", networkIoDirectionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.server.io"], "Found a duplicate in the metrics slice: nfs.server.io")
 						validatedMetrics["nfs.server.io"] = true
@@ -477,9 +477,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("network.transport")
+						networkTransportAttrVal, ok := dp.Attributes().Get("network.transport")
 						assert.True(t, ok)
-						assert.Equal(t, "udp", attrVal.Str())
+						assert.Equal(t, "udp", networkTransportAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.server.net.count"], "Found a duplicate in the metrics slice: nfs.server.net.count")
 						validatedMetrics["nfs.server.net.count"] = true
@@ -535,12 +535,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("onc_rpc.version")
+						oncRPCVersionAttrVal, ok := dp.Attributes().Get("onc_rpc.version")
 						assert.True(t, ok)
-						assert.EqualValues(t, 15, attrVal.Int())
-						attrVal, ok = dp.Attributes().Get("nfs.operation.name")
+						assert.EqualValues(t, 15, oncRPCVersionAttrVal.Int())
+						nfsOperationNameAttrVal, ok := dp.Attributes().Get("nfs.operation.name")
 						assert.True(t, ok)
-						assert.Equal(t, "nfs.operation.name-val", attrVal.Str())
+						assert.Equal(t, "nfs.operation.name-val", nfsOperationNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.server.operation.count"], "Found a duplicate in the metrics slice: nfs.server.operation.count")
 						validatedMetrics["nfs.server.operation.count"] = true
@@ -584,12 +584,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("onc_rpc.version")
+						oncRPCVersionAttrVal, ok := dp.Attributes().Get("onc_rpc.version")
 						assert.True(t, ok)
-						assert.EqualValues(t, 15, attrVal.Int())
-						attrVal, ok = dp.Attributes().Get("onc_rpc.procedure.name")
+						assert.EqualValues(t, 15, oncRPCVersionAttrVal.Int())
+						oncRPCProcedureNameAttrVal, ok := dp.Attributes().Get("onc_rpc.procedure.name")
 						assert.True(t, ok)
-						assert.Equal(t, "onc_rpc.procedure.name-val", attrVal.Str())
+						assert.Equal(t, "onc_rpc.procedure.name-val", oncRPCProcedureNameAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.server.procedure.count"], "Found a duplicate in the metrics slice: nfs.server.procedure.count")
 						validatedMetrics["nfs.server.procedure.count"] = true
@@ -633,9 +633,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("nfs.server.repcache.status")
+						nfsServerRepcacheStatusAttrVal, ok := dp.Attributes().Get("nfs.server.repcache.status")
 						assert.True(t, ok)
-						assert.Equal(t, "hit", attrVal.Str())
+						assert.Equal(t, "hit", nfsServerRepcacheStatusAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.server.repcache.requests"], "Found a duplicate in the metrics slice: nfs.server.repcache.requests")
 						validatedMetrics["nfs.server.repcache.requests"] = true
@@ -677,9 +677,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("error.type")
+						errorTypeAttrVal, ok := dp.Attributes().Get("error.type")
 						assert.True(t, ok)
-						assert.Equal(t, "format", attrVal.Str())
+						assert.Equal(t, "format", errorTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["nfs.server.rpc.count"], "Found a duplicate in the metrics slice: nfs.server.rpc.count")
 						validatedMetrics["nfs.server.rpc.count"] = true

@@ -129,10 +129,10 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", 14, "mysql.wait_type-val", 37.100000, "client.address-val", 11, "network.peer.address-val", 17)
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNameMysql, 23, "user.name-val", "db.namespace-val", "mysql.threads.processlist_command-val", "mysql.threads.processlist_state-val", "db.query.text-val", "mysql.events_statements_current.digest-val", "mysql.query_plan.hash-val", 14, "mysql.wait_type-val", "mysql.session.status-val", 16, 37.100000, "client.address-val", 11, "network.peer.address-val", 17)
 
 			allEventsCount++
-			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.query.text-val", "mysql.query_plan-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000)
+			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNameMysql, "db.query.text-val", "mysql.query_plan-val", "mysql.query_plan.hash-val", "mysql.events_statements_summary_by_digest.digest-val", 52, 56.100000)
 
 			rb := lb.NewResourceBuilder()
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
@@ -189,12 +189,21 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mysql.events_statements_current.digest")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.events_statements_current.digest-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.query_plan.hash")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql.query_plan.hash-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.event_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 14, attrVal.Int())
 					attrVal, ok = lr.Attributes().Get("mysql.wait_type")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.wait_type-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.session.status")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql.session.status-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.session.id")
+					assert.True(t, ok)
+					assert.EqualValues(t, 16, attrVal.Int())
 					attrVal, ok = lr.Attributes().Get("mysql.events_waits_current.timer_wait")
 					assert.True(t, ok)
 					assert.Equal(t, 37.100000, attrVal.Double())
@@ -226,6 +235,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("mysql.query_plan")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.query_plan-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("mysql.query_plan.hash")
+					assert.True(t, ok)
+					assert.Equal(t, "mysql.query_plan.hash-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("mysql.events_statements_summary_by_digest.digest")
 					assert.True(t, ok)
 					assert.Equal(t, "mysql.events_statements_summary_by_digest.digest-val", attrVal.Str())
