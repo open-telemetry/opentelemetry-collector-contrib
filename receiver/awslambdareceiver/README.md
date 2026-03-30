@@ -59,6 +59,13 @@ S3 events are handled in the following manner:
   - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
   - Metrics use `awscloudwatchmetricstreams_encoding` extension by default
 
+The receiver supports both sequential and random access to S3 objects:
+
+- **Sequential access** (`io.Reader`): uses a single streaming GET, optimal for line-delimited or compressed formats such as gzip.
+- **Random access** (`io.ReaderAt`): uses chunk-cached range GETs (4 MB chunks, 8-chunk LRU cache) to minimise S3 API calls. This enables efficient processing of formats that require non-sequential reads, such as Parquet.
+
+Gzip decompression is applied automatically for objects whose key ends with `.gz`.
+
 The following metadata is available through `client.Info` for both logs and metrics S3 events.
 This metadata is added to the request context and can be accessed by any downstream component in the pipeline (for example, processors):
 
