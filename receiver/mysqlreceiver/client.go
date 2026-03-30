@@ -32,7 +32,7 @@ type client interface {
 	getReplicaStatusStats() ([]replicaStatusStats, error)
 	getQuerySamples(uint64) ([]querySample, error)
 	getTopQueries(uint64, uint64) ([]topQuery, error)
-	explainQuery(statement, schema string, logger *zap.Logger) string
+	explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string
 	Close() error
 }
 
@@ -791,29 +791,31 @@ func (c *mySQLClient) getQuerySamples(limit uint64) ([]querySample, error) {
 	return samples, nil
 }
 
-func (c *mySQLClient) explainQuery(statement, schema string, logger *zap.Logger) string {
-	if strings.HasSuffix(statement, "...") {
-		logger.Warn("statement is truncated, skipping explain", zap.String("statement", statement))
+func (c *mySQLClient) explainQuery(digestText, sampleStatement, schema, digest string, logger *zap.Logger) string {
+	if strings.HasSuffix(sampleStatement, "...") {
+		logger.Debug("statement is truncated, skipping explain", zap.String("digest_text", digestText))
 		return ""
 	}
-
-	if !isQueryExplainable(statement) {
-		logger.Debug("statement is not explainable, skipping explain query", zap.String("statement", statement))
+	if !isQueryExplainable(digestText) {
+		logger.Debug("statement is not explainable, skipping explain query", zap.String("digest", digest))
 		return ""
 	}
 
 	if schema != "" {
-		if _, err := c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE %s;", schema)); err != nil {
-			logger.Error(fmt.Sprintf("unable to use schema: %s", schema), zap.Error(err))
+		if _, err := c.client.Exec(fmt.Sprintf("/* otel-collector-ignore */ USE `%s`;", strings.ReplaceAll(schema, "`", "``"))); err != nil {
+			logger.Warn(fmt.Sprintf("unable to use schema: %s", schema), zap.String("digest", digest), zap.Error(err))
 			return ""
 		}
 	}
 
 	var plan string
-	err := c.client.QueryRow(fmt.Sprintf("EXPLAIN FORMAT=json %s", statement)).Scan(&plan)
+	err := c.client.QueryRow("EXPLAIN FORMAT=json " + strings.TrimSpace(sampleStatement)).Scan(&plan)
 	if err != nil {
-		logger.Error("unable to execute explain statement", zap.Error(err))
+		logger.Warn("unable to execute explain statement", zap.String("digest", digest), zap.Error(err))
 		return ""
+	}
+	if plan == "" {
+		logger.Warn("explain query returned empty plan", zap.String("digest", digest))
 	}
 	return plan
 }
