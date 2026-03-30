@@ -50,7 +50,7 @@ func (r *sampleReceiver) Start(ctx context.Context, _ component.Host) error {
 	return r.next.ConsumeMetrics(ctx, generateHTTPServerMetrics())
 }
 
-func (_ *sampleReceiver) Shutdown(_ context.Context) error {
+func (*sampleReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
 
