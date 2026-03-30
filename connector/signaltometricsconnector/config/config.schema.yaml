@@ -6,6 +6,9 @@ $defs:
         x-customType: any
       key:
         type: string
+      keys_expression:
+        description: KeysExpression is an OTTL value expression that resolves to a list of attribute keys at runtime. The expression must return a pcommon.Slice or []string. Exactly one of Key or KeysExpression must be set.
+        type: string
       optional:
         type: boolean
   config:

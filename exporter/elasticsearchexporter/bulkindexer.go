@@ -181,7 +181,7 @@ type syncBulkIndexer struct {
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
 // it with a syncBulkIndexerSession.
-func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
+func (s *syncBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
 	bi, err := docappender.NewBulkIndexer(s.config)
 	if err != nil {
 		// This should never happen in practice:
@@ -190,7 +190,13 @@ func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
 		// always be valid at this point.
 		return errBulkIndexerSession{err: err}
 	}
-	return &syncBulkIndexerSession{s: s, bi: bi}
+	// Compute the docs received attribute set once per session.
+	// Metadata keys are constant within a single request context,
+	// so recomputing them per document is wasteful.
+	docsReceivedAttr := metric.WithAttributeSet(attribute.NewSet(
+		getAttributesFromMetadataKeys(ctx, s.metadataKeys)...,
+	))
+	return &syncBulkIndexerSession{s: s, bi: bi, docsReceivedAttr: docsReceivedAttr}
 }
 
 // Close is a no-op.
@@ -199,8 +205,9 @@ func (*syncBulkIndexer) Close(context.Context) error {
 }
 
 type syncBulkIndexerSession struct {
-	s  *syncBulkIndexer
-	bi *docappender.BulkIndexer
+	s                *syncBulkIndexer
+	bi               *docappender.BulkIndexer
+	docsReceivedAttr metric.MeasurementOption
 }
 
 // Add adds an item to the sync bulk indexer session.
@@ -218,12 +225,7 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index, docID, pipeline
 	if err != nil {
 		return err
 	}
-	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(
-		ctx, 1,
-		metric.WithAttributeSet(attribute.NewSet(
-			getAttributesFromMetadataKeys(ctx, s.s.metadataKeys)...),
-		),
-	)
+	s.s.telemetryBuilder.ElasticsearchDocsReceived.Add(ctx, 1, s.docsReceivedAttr)
 	// sending_queue operates on flush sizes based on pdata model whereas bulk
 	// indexers operate on ndjson. Force a flush if the ndjson size is too large.
 	// when the uncompressed length exceeds the configured max flush size.
