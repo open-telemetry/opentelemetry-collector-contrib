@@ -165,6 +165,7 @@ body:
       - pkg/core/xidutils
       - pkg/datadog
       - pkg/experimentalmetricmetadata
+      - pkg/expohisto
       - pkg/golden
       - pkg/kafka/configkafka
       - pkg/kafka/topic
@@ -222,6 +223,7 @@ body:
       - processor/resourcedetection/internal/digitalocean
       - processor/resourcedetection/internal/dynatrace
       - processor/resourcedetection/internal/hetzner
+      - processor/resourcedetection/internal/ibmcloud/classic
       - processor/resourcedetection/internal/ibmcloud/vpc
       - processor/resourcedetection/internal/openstack/nova
       - processor/resourcedetection/internal/oraclecloud
