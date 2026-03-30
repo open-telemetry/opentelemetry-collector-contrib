@@ -327,6 +327,85 @@ func TestLost(t *testing.T) {
 	c.lost(t.Context(), nil, map[string][]int32{"404": {0}}, true)
 }
 
+// TestResumePartitionsAfterRebalance verifies that partitions paused due to
+// processing errors are resumed when they are reassigned after a rebalance.
+func TestResumePartitionsAfterRebalance(t *testing.T) {
+	topic := "otlp_spans"
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	cfg.GroupID = t.Name()
+	cfg.MessageMarking = MessageMarking{
+		After:   true,
+		OnError: false, // errors are NOT marked -> triggers PauseFetchPartitions
+	}
+	cfg.ErrorBackOff = configretry.BackOffConfig{Enabled: false}
+
+	var (
+		consumeCount atomic.Int64
+		shouldError  atomic.Bool
+		errored      = make(chan struct{}, 1)
+	)
+	shouldError.Store(true)
+
+	settings, _, _ := mustNewSettings(t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+			if shouldError.Load() {
+				select {
+				case errored <- struct{}{}:
+				default:
+				}
+				return errors.New("simulated processing error")
+			}
+			consumeCount.Add(1)
+			return nil
+		}, nil
+	}
+
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+	// Produce a record to trigger the error path.
+	traces := testdata.GenerateTraces(1)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), &kgo.Record{
+		Topic: topic, Value: data,
+	}).FirstErr())
+
+	// Wait for the consume function to error at least once.
+	select {
+	case <-errored:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for consume error")
+	}
+
+	// Allow time for PauseFetchPartitions to be called after the error
+	// propagates through handleMessage -> the consume loop.
+	time.Sleep(200 * time.Millisecond)
+
+	// Switch to success mode and simulate a cooperative-sticky rebalance:
+	// the partition is lost (revoked) and then reassigned to the same consumer.
+	shouldError.Store(false)
+	partitions := map[string][]int32{topic: {0}}
+	c.lost(t.Context(), nil, partitions, false)
+	c.assigned(t.Context(), nil, partitions)
+
+	// Produce new records after the resume. The client's internal fetch offset
+	// has already advanced past the error record (offset 0), so we need fresh
+	// records at offset 1+ for the consumer to pick up.
+	// Without the fix, the partition stays paused and these records are never consumed.
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), &kgo.Record{
+		Topic: topic, Value: data,
+	}).FirstErr())
+
+	assert.Eventually(t, func() bool {
+		return consumeCount.Load() > 0
+	}, 5*time.Second, 50*time.Millisecond,
+		"expected partition to resume consuming after rebalance, but it stayed paused")
+}
+
 func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))

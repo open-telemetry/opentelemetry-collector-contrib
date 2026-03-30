@@ -434,6 +434,12 @@ func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned ma
 	// Report OK on each successful assignment so we can recover status after transient errors.
 	c.reportStatus(componentstatus.StatusOK)
 
+	// Resume any partitions that were previously paused due to processing errors.
+	// PauseFetchPartitions persists across rebalances in franz-go, so we must
+	// explicitly resume partitions when they are (re)assigned.
+	// ResumeFetchPartitions is a no-op for partitions that are not paused.
+	c.client.ResumeFetchPartitions(assigned)
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for topic, partitions := range assigned {
