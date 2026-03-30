@@ -11,7 +11,6 @@ const (
 	FormatCloudTrailLog                    = "cloudtrail"
 	FormatELBAccessLog                     = "elbaccess"
 	FormatNetworkFirewallLog               = "networkfirewall"
-	FormatTransitGatewayFlowLog            = "tgwflow"
 
 	// Legacy format values (v1) - kept for backward compatibility
 	FormatVPCFlowLogV1                       = "vpc_flow_log"

@@ -42,19 +42,3 @@ aws_logs_encoding/elbaccess:
 
 aws_logs_encoding/networkfirewall:
   format: networkfirewall
-
-# NEW: Transit Gateway flow log entries
-awslogs_encoding/text_tgwflow:
-  format: tgwflow
-  tgwflow:
-    file_format: plain-text
-
-awslogs_encoding/parquet_tgwflow:
-  format: tgwflow
-  tgwflow:
-    file_format: parquet
-
-awslogs_encoding/invalid_tgwflow:
-  format: tgwflow
-  tgwflow:
-    file_format: invalid

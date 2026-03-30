@@ -1,8 +1,0 @@
-resourceLogs:
-  - resource:
-      attributes:
-        - key: encoding.format
-          value:
-            stringValue: tgwflow
-    scopeLogs:
-      - scope: {}

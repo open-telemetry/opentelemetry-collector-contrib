@@ -17,6 +17,7 @@ This extension unmarshalls logs encoded in formats produced by AWS services.
 This extension unmarshals logs encoded in formats produced by AWS services, including:
  - [Amazon CloudWatch Logs Subscription Filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html).
  - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
+   - Includes support for Transit Gateway (TGW) flow logs, which use the same VPC flow log format.
    - Parquet support still to be added.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
@@ -55,6 +56,8 @@ extensions:
       # When unset, built-in default is used matching fields of Version 2 VPC flow logs format.
       format: version interface-id srcaddr dstaddr
 ```
+
+**Note**: This format also supports [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html), which follow the same VPC flow log format specification.
 
 Example for S3 access logs:
 ```yaml
@@ -126,6 +129,25 @@ The following format values are supported in the `awslogsencodingextension` to i
 #### Migration Path
 
 If you're using the old format values you should update the encoding extension configuration with the new format values.
+
+## Supported File Formats
+
+The following `file_format` values are supported for log types that support multiple file formats:
+
+| **Log Type** | **Supported Values** | **Description** |
+|--------------|---------------------|-----------------|
+| VPC Flow Logs | `plain-text` | Plain text format (VPC Flow Logs from S3 or CloudWatch) |
+| VPC Flow Logs | `parquet` | Apache Parquet format (planned for future implementation) |
+
+**Configuration Example:**
+
+```yaml
+extensions:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+    vpcflow:
+      file_format: plain-text  # or 'parquet' when implemented
+```
 
 ## Feature Gates
 

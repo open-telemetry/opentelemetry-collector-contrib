@@ -1,4 +1,0 @@
-version account-id tgw-id tgw-attachment-id tgw-src-vpc-id tgw-dst-vpc-id srcaddr dstaddr srcport dstport protocol packets bytes start end log-status type flow-direction region resource-type
-6 123456789012 tgw-0abc12345def67890 tgw-attach-0abc12345def67890 vpc-0abc12345def67890 vpc-0def12345abc67890 10.0.0.1 10.0.1.1 12345 443 6 10 1000 1700000000 1700000060 OK IPv4 ingress us-east-1 TransitGateway
-6 123456789012 tgw-0abc12345def67890 tgw-attach-0abc12345def67890 vpc-0abc12345def67890 vpc-0def12345abc67890 10.0.0.2 10.0.1.2 54321 80 6 20 2000 1700000060 1700000120 OK IPv4 egress us-east-1 TransitGateway
-6 123456789012 tgw-0abc12345def67890 tgw-attach-0abc12345def67890 - - - - - - - - - 1700000120 1700000180 NODATA - - us-east-1 TransitGateway

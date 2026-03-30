@@ -125,30 +125,6 @@ func TestNew_ELBAcessLogV1(t *testing.T) {
 	require.NotNil(t, e)
 }
 
-func TestNew_TransitGatewayFlowLog(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Format = constants.FormatTransitGatewayFlowLog
-	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
-
-	// plain-text parser silently skips unknown fields and never errors on bad input
-	_, err = e.UnmarshalLogs([]byte("some test input"))
-	require.NoError(t, err)
-}
-
-func TestNew_TransitGatewayFlowLog_ParquetNotImplemented(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Format = constants.FormatTransitGatewayFlowLog
-	cfg.TransitGatewayFlowLogConfig.FileFormat = constants.FileFormatParquet
-	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
-	require.NoError(t, err)
-	require.NotNil(t, e)
-
-	_, err = e.UnmarshalLogs([]byte("some test input"))
-	require.ErrorContains(t, err, `failed to get reader for "tgwflow" logs`)
-}
-
 func TestNew_Unimplemented(t *testing.T) {
 	e, err := newExtension(&Config{Format: "invalid"}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.Error(t, err)
@@ -181,10 +157,6 @@ func TestGetReaderFromFormat(t *testing.T) {
 		"valid_bytes_reader": {
 			format: constants.FormatS3AccessLog,
 			buf:    []byte("valid"),
-		},
-		"tgw_plain_text_reader": {
-			format: constants.FormatTransitGatewayFlowLog,
-			buf:    []byte("version account-id tgw-id\n6 123456789012 tgw-0abc1234"),
 		},
 	}
 

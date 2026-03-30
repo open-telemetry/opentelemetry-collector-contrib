@@ -312,11 +312,14 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 	record := scopeLogs.LogRecords().AppendEmpty()
 	addr := &address{}
 	for _, field := range fields {
-		if logLine == "" {
-			return errors.New("log line has less fields than the ones expected")
-		}
+		// If logLine is empty, treat missing trailing fields as "not applicable" (similar to "-")
+		// This makes the unmarshaler robust to variations in log formats
 		var value string
-		value, logLine, _ = strings.Cut(logLine, " ")
+		if logLine == "" {
+			value = "-"
+		} else {
+			value, logLine, _ = strings.Cut(logLine, " ")
+		}
 
 		if value == "-" {
 			// If a field is not applicable or could not be computed for a

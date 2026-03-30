@@ -17,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
-	tgwflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/tgw-flow-log"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
@@ -46,9 +45,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
-				},
 			},
 		},
 		{
@@ -60,9 +56,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
-				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
 				},
 			},
 		},
@@ -76,9 +69,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
-				},
 			},
 		},
 		{
@@ -90,9 +80,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
-				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
 				},
 			},
 		},
@@ -120,9 +107,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
-				},
 			},
 		},
 		{
@@ -134,9 +118,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
-				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
 				},
 			},
 		},
@@ -150,9 +131,6 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
-				},
 			},
 		},
 		{
@@ -164,9 +142,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
-				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
 				},
 			},
 		},
@@ -180,47 +155,7 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: "",
-				},
 			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "text_tgwflow"),
-			expected: &Config{
-				Format: constants.FormatTransitGatewayFlowLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "parquet_tgwflow"),
-			expected: &Config{
-				Format: constants.FormatTransitGatewayFlowLog,
-				VPCFlowLogConfig: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
-					FileFormat: constants.FileFormatPlainText,
-				},
-				TransitGatewayFlowLogConfig: tgwflowlog.Config{
-					FileFormat: constants.FileFormatParquet,
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "invalid_tgwflow"),
-			expectedErr: fmt.Sprintf(
-				`unsupported file format "invalid" for Transit Gateway flow log, expected one of %q`,
-				supportedTGWFlowLogFileFormat,
-			),
 		},
 	}
 

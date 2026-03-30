@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
-	tgwflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/tgw-flow-log"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
@@ -26,7 +25,6 @@ var (
 		constants.FormatCloudTrailLog,
 		constants.FormatELBAccessLog,
 		constants.FormatNetworkFirewallLog,
-		constants.FormatTransitGatewayFlowLog,
 		// Legacy format values (for backward compatibility)
 		constants.FormatCloudWatchLogsSubscriptionFilterV1,
 		constants.FormatVPCFlowLogV1,
@@ -36,7 +34,6 @@ var (
 		constants.FormatELBAccessLogV1,
 	}
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	supportedTGWFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 )
 
 type Config struct {
@@ -50,15 +47,12 @@ type Config struct {
 	// - cloudtrail
 	// - elbaccess
 	// - networkfirewall
-	// - tgwflow
 	//
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig vpcflowlog.Config `mapstructure:"vpcflow"`
 	// Deprecated: use VPCFlowLogConfig instead. It will be removed in v0.138.0
 	VPCFlowLogConfigV1 vpcflowlog.Config `mapstructure:"vpc_flow_log"`
-
-	TransitGatewayFlowLogConfig tgwflowlog.Config `mapstructure:"tgwflow"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -83,7 +77,6 @@ func (cfg *Config) Validate() error {
 	case constants.FormatELBAccessLogV1: // valid
 	case constants.FormatELBAccessLog: // valid
 	case constants.FormatNetworkFirewallLog: // valid
-	case constants.FormatTransitGatewayFlowLog: // valid
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}
@@ -108,18 +101,6 @@ func (cfg *Config) Validate() error {
 			"unsupported file format %q for VPC flow log, expected one of %q",
 			cfg.VPCFlowLogConfigV1.FileFormat,
 			supportedVPCFlowLogFileFormat,
-		))
-	}
-
-	switch cfg.TransitGatewayFlowLogConfig.FileFormat {
-	case constants.FileFormatParquet: // valid
-	case constants.FileFormatPlainText: // valid
-	case "": // valid — defaults to plain-text at runtime
-	default:
-		errs = append(errs, fmt.Errorf(
-			"unsupported file format %q for Transit Gateway flow log, expected one of %q",
-			cfg.TransitGatewayFlowLogConfig.FileFormat,
-			supportedTGWFlowLogFileFormat,
 		))
 	}
 
