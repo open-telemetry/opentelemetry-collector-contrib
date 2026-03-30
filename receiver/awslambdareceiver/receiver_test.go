@@ -12,6 +12,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -77,6 +78,7 @@ func TestCreateLogs(t *testing.T) {
 	// Process an S3 event notification.
 	lambdaEvent, err := json.Marshal(events.S3Event{
 		Records: []events.S3EventRecord{{
+			AWSRegion:   "us-east-1",
 			EventSource: "aws:s3",
 			S3: events.S3Entity{
 				Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
@@ -90,6 +92,17 @@ func TestCreateLogs(t *testing.T) {
 
 	// Verify logs were sent to the sink
 	require.NotZero(t, sink.LogRecordCount(), "Expected logs to be sent to sink")
+
+	// Validate context enrichment with S3 metadata
+	contexts := sink.Contexts()
+	require.Len(t, contexts, 1, "Expected one context for the consumed logs")
+	m := client.FromContext(contexts[0]).Metadata
+
+	// Check that S3 metadata is present in the context
+	require.Contains(t, m.Get("cloud.region"), "us-east-1")
+	require.Contains(t, m.Get("aws.s3.bucket.name"), "test-bucket")
+	require.Contains(t, m.Get("aws.s3.bucket.arn"), "arn:aws:s3:::test-bucket")
+	require.Contains(t, m.Get("aws.s3.key"), "test-file.txt")
 }
 
 func TestCreateMetrics(t *testing.T) {
@@ -137,6 +150,7 @@ func TestCreateMetrics(t *testing.T) {
 	// Process an S3 event notification.
 	lambdaEvent, err := json.Marshal(events.S3Event{
 		Records: []events.S3EventRecord{{
+			AWSRegion:   "us-east-1",
 			EventSource: "aws:s3",
 			S3: events.S3Entity{
 				Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
@@ -150,6 +164,17 @@ func TestCreateMetrics(t *testing.T) {
 
 	// Verify metrics were sent to the sink
 	require.NotZero(t, sink.DataPointCount(), "Expected metrics to be sent to sink")
+
+	// Validate context enrichment with S3 metadata
+	contexts := sink.Contexts()
+	require.Len(t, contexts, 1, "Expected one context for the consumed logs")
+	m := client.FromContext(contexts[0]).Metadata
+
+	// Check that S3 metadata is present in the context
+	require.Contains(t, m.Get("cloud.region"), "us-east-1")
+	require.Contains(t, m.Get("aws.s3.bucket.name"), "test-bucket")
+	require.Contains(t, m.Get("aws.s3.bucket.arn"), "arn:aws:s3:::test-bucket")
+	require.Contains(t, m.Get("aws.s3.key"), "test-file.txt")
 }
 
 func TestStartRequiresLambdaEnvironment(t *testing.T) {

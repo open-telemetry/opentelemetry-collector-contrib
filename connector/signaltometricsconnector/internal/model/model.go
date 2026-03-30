@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -123,27 +124,53 @@ func (s *Gauge[K]) fromConfig(
 	return nil
 }
 
-// AttributeEntry represents a single entry in include_resource_attributes
+// attributeEntry represents a single entry in include_resource_attributes
 // or attributes. Exactly one of Key or Expression must be set.
-type AttributeEntry[K any] struct {
-	// Key is a static attribute key.
-	Key string
-	// Expression is a parsed OTTL value expression that resolves to a
-	// list of attribute keys (pcommon.Slice or []string) at runtime.
+type attributeEntry[K any] struct {
+	Key          string
 	Expression   *ottl.ValueExpression[K]
+	Optional     bool
+	DefaultValue pcommon.Value
+}
+
+// AttributeKeyValue represents a resolved attribute entry with a static
+// key. This is the output of ResolveAttributes and
+// ResolveIncludeResourceAttributes after OTTL expressions have been
+// evaluated and flattened into the final ordered list.
+type AttributeKeyValue struct {
+	Key          string
 	Optional     bool
 	DefaultValue pcommon.Value
 }
 
 type MetricDef[K any] struct {
 	Key                       MetricKey
-	IncludeResourceAttributes []AttributeEntry[K]
-	Attributes                []AttributeEntry[K]
-	Conditions                *ottl.ConditionSequence[K]
-	ExponentialHistogram      *ExponentialHistogram[K]
-	ExplicitHistogram         *ExplicitHistogram[K]
-	Sum                       *Sum[K]
-	Gauge                     *Gauge[K]
+	includeResourceAttributes []attributeEntry[K]
+	attributes                []attributeEntry[K]
+	// hasExprResAttrs is true if any includeResourceAttributes entry
+	// has a keys_expression. When false, the static-only fast path
+	// skips OTTL evaluation and dedup overhead in
+	// ResolveIncludeResourceAttributes.
+	hasExprResAttrs bool
+	// hasExprAttrs is true if any attributes entry has a
+	// keys_expression. When false, the static-only fast path skips
+	// OTTL evaluation and dedup overhead in ResolveAttributes, and
+	// sortedStaticAttrs is used directly by ComputeAttributesHash
+	// to avoid per-call sorting.
+	hasExprAttrs bool
+	// sortedStaticAttrs is a pre-sorted copy of the static-key
+	// attributes, built at construction time. Used by
+	// ResolveAttributes (static fast path) and ComputeAttributesHash
+	// to avoid per-call allocation and sorting when there are no
+	// keys_expression entries.
+	sortedStaticAttrs []AttributeKeyValue
+	// sortedStaticResAttrs is the same for includeResourceAttributes.
+	sortedStaticResAttrs []AttributeKeyValue
+	Conditions           *ottl.ConditionSequence[K]
+	ExponentialHistogram *ExponentialHistogram[K]
+	ExplicitHistogram    *ExplicitHistogram[K]
+	Sum                  *Sum[K]
+	Gauge                *Gauge[K]
 }
 
 func (md *MetricDef[K]) FromMetricInfo(
@@ -156,14 +183,18 @@ func (md *MetricDef[K]) FromMetricInfo(
 	md.Key.Description = mi.Description
 
 	var err error
-	md.IncludeResourceAttributes, err = parseAttributeEntries(mi.IncludeResourceAttributes, parser)
+	md.includeResourceAttributes, err = parseAttributeEntries(mi.IncludeResourceAttributes, parser)
 	if err != nil {
 		return fmt.Errorf("failed to parse include resource attribute config: %w", err)
 	}
-	md.Attributes, err = parseAttributeEntries(mi.Attributes, parser)
+	md.attributes, err = parseAttributeEntries(mi.Attributes, parser)
 	if err != nil {
 		return fmt.Errorf("failed to parse attribute config: %w", err)
 	}
+	// Detect whether any entries use keys_expression and pre-build
+	// sorted static attribute lists for the fast path.
+	md.hasExprResAttrs, md.sortedStaticResAttrs = buildStaticAttrs(md.includeResourceAttributes)
+	md.hasExprAttrs, md.sortedStaticAttrs = buildStaticAttrs(md.attributes)
 	if len(mi.Conditions) > 0 {
 		conditions, err := parser.ParseConditions(mi.Conditions)
 		if err != nil {
@@ -207,35 +238,28 @@ func (md *MetricDef[K]) FromMetricInfo(
 	return nil
 }
 
-// FilterResourceAttributes filters resource attributes based on the
-// `IncludeResourceAttributes` list for the metric definition. Resource
-// attributes are only filtered if the list is specified, otherwise all the
-// resource attributes are used for creating the metrics from the metric
-// definition.
-//
-// For entries with an OTTL expression, the expression is evaluated at
-// runtime to resolve a list of attribute keys. The expression must return
-// a pcommon.Slice or []string. A nil result is treated as an empty list.
-func (md *MetricDef[K]) FilterResourceAttributes(
-	ctx context.Context,
-	tCtx K,
-	attrs pcommon.Map,
-	collectorInfo CollectorInstanceInfo,
-) (pcommon.Map, error) {
-	if len(md.IncludeResourceAttributes) == 0 {
-		filteredAttributes := pcommon.NewMap()
-		filteredAttributes.EnsureCapacity(attrs.Len() + collectorInfo.Size())
-		attrs.CopyTo(filteredAttributes)
-		collectorInfo.Copy(filteredAttributes)
-		return filteredAttributes, nil
+// ResolveIncludeResourceAttributes evaluates OTTL expressions in
+// include_resource_attributes and returns a flat, ordered list of
+// AttributeKeyValue entries. When no keys_expression entries are
+// configured, the pre-built sortedStaticResAttrs is returned directly
+// without allocation or OTTL evaluation.
+func (md *MetricDef[K]) ResolveIncludeResourceAttributes(ctx context.Context, tCtx K) ([]AttributeKeyValue, error) {
+	if !md.hasExprResAttrs {
+		return md.sortedStaticResAttrs, nil
 	}
+	return resolveEntries(ctx, tCtx, md.includeResourceAttributes)
+}
 
-	filteredAttributes, err := filterByEntries(ctx, tCtx, md.IncludeResourceAttributes, attrs, collectorInfo.Size())
-	if err != nil {
-		return pcommon.Map{}, err
+// ResolveAttributes evaluates OTTL expressions in attributes and
+// returns a flat, ordered list of AttributeKeyValue entries. When no
+// keys_expression entries are configured, the pre-built
+// sortedStaticAttrs is returned directly without allocation or OTTL
+// evaluation.
+func (md *MetricDef[K]) ResolveAttributes(ctx context.Context, tCtx K) ([]AttributeKeyValue, error) {
+	if !md.hasExprAttrs {
+		return md.sortedStaticAttrs, nil
 	}
-	collectorInfo.Copy(filteredAttributes)
-	return filteredAttributes, nil
+	return resolveEntries(ctx, tCtx, md.attributes)
 }
 
 // MatchAttributes checks if all required static key attributes are
@@ -243,9 +267,11 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 // require a transform context and can be used to skip expensive
 // transform context creation when the entity should not be processed.
 // OTTL expression entries and entries with default values or optional
-// flag are not checked.
+// flag are not checked — the presence of an expression entry means
+// there is a possibility of attributes resolving, so MatchAttributes
+// will not reject the entity on that basis.
 func (md *MetricDef[K]) MatchAttributes(attrs pcommon.Map) bool {
-	for _, filter := range md.Attributes {
+	for _, filter := range md.attributes {
 		if filter.Expression != nil || filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
 			continue
 		}
@@ -256,53 +282,152 @@ func (md *MetricDef[K]) MatchAttributes(attrs pcommon.Map) bool {
 	return true
 }
 
-// FilterAttributes filters event attributes (datapoint, logrecord, spans)
-// based on the `Attributes` selected for the metric definition. If no
-// attributes are selected then an empty `pcommon.Map` is returned.
-// MatchAttributes should be called before this method to avoid unnecessary
-// transform context creation.
-func (md *MetricDef[K]) FilterAttributes(ctx context.Context, tCtx K, attrs pcommon.Map) (pcommon.Map, error) {
-	return filterByEntries(ctx, tCtx, md.Attributes, attrs, 0)
+// ComputeAttributesHash returns a 128-bit hash that identifies the
+// filtered attribute set. The resolved list is expected to be sorted
+// alphabetically by key (guaranteed by both resolveEntries and the
+// pre-sorted sortedStaticAttrs).
+func (*MetricDef[K]) ComputeAttributesHash(attrs pcommon.Map, resolved []AttributeKeyValue) [16]byte {
+	hb := attrHashBufPool.Get().(*attrHashBuf)
+	hb.buf = hb.buf[:0]
+	for _, kv := range resolved {
+		v, ok := attrs.Get(kv.Key)
+		if ok {
+			hb.buf = append(hb.buf, kv.Key...)
+			hb.buf = append(hb.buf, 0)
+			hb.buf = appendAttrValue(hb.buf, v)
+		} else if kv.DefaultValue.Type() != pcommon.ValueTypeEmpty {
+			hb.buf = append(hb.buf, kv.Key...)
+			hb.buf = append(hb.buf, 0)
+			hb.buf = appendAttrValue(hb.buf, kv.DefaultValue)
+		}
+	}
+	id := hb.sum128()
+	attrHashBufPool.Put(hb)
+	return id
 }
 
-// filterByEntries iterates over attribute entries, resolving OTTL
-// expressions and copying static keys from src into a new map.
-// extraCapacity is added to the initial map capacity for entries
-// like CollectorInstanceInfo that are appended after filtering.
-func filterByEntries[K any](
-	ctx context.Context,
-	tCtx K,
-	entries []AttributeEntry[K],
-	src pcommon.Map,
-	extraCapacity int,
-) (pcommon.Map, error) {
+// FilterResourceAttributes builds a pcommon.Map from the resolved
+// include_resource_attributes list. If the list is empty, all resource
+// attributes are copied. CollectorInstanceInfo is always appended.
+func (md *MetricDef[K]) FilterResourceAttributes(
+	attrs pcommon.Map,
+	resolved []AttributeKeyValue,
+	collectorInfo CollectorInstanceInfo,
+) pcommon.Map {
+	if len(md.includeResourceAttributes) == 0 {
+		filteredAttributes := pcommon.NewMap()
+		filteredAttributes.EnsureCapacity(attrs.Len() + collectorInfo.Size())
+		attrs.CopyTo(filteredAttributes)
+		collectorInfo.Copy(filteredAttributes)
+		return filteredAttributes
+	}
+
+	filteredAttributes := filterByResolved(attrs, resolved, collectorInfo.Size())
+	collectorInfo.Copy(filteredAttributes)
+	return filteredAttributes
+}
+
+// FilterAttributes builds a pcommon.Map from the resolved attributes
+// list. Entries are applied in order so later entries override earlier
+// ones for the same key.
+func (*MetricDef[K]) FilterAttributes(attrs pcommon.Map, resolved []AttributeKeyValue) pcommon.Map {
+	return filterByResolved(attrs, resolved, 0)
+}
+
+// filterByResolved creates a pcommon.Map by iterating the resolved
+// AttributeKeyValue list in order. Later entries with the same key
+// override earlier ones.
+func filterByResolved(attrs pcommon.Map, resolved []AttributeKeyValue, extraCapacity int) pcommon.Map {
 	dst := pcommon.NewMap()
-	dst.EnsureCapacity(len(entries) + extraCapacity)
-	for _, entry := range entries {
+	dst.EnsureCapacity(len(resolved) + extraCapacity)
+	for _, kv := range resolved {
+		copyAttribute(kv.Key, kv.DefaultValue, attrs, dst)
+	}
+	return dst
+}
+
+// resolveEntries evaluates OTTL expressions in entries and returns a
+// flat, deduplicated, sorted list of AttributeKeyValue. Entries are
+// processed in reverse so the last occurrence of each key (highest
+// priority) is kept and earlier duplicates are discarded. The result
+// is sorted alphabetically by key for deterministic hashing — this is
+// safe because dedup guarantees unique keys and pcommon.Map is
+// order-independent.
+func resolveEntries[K any](ctx context.Context, tCtx K, entries []attributeEntry[K]) ([]AttributeKeyValue, error) {
+	seen := make(map[string]struct{}, len(entries))
+	resolved := make([]AttributeKeyValue, 0, len(entries))
+	for i := len(entries) - 1; i >= 0; i-- {
+		entry := entries[i]
 		if entry.Expression != nil {
-			if err := resolveKeysExpression(ctx, tCtx, entry, src, dst); err != nil {
-				return pcommon.Map{}, err
+			keys, err := evalKeysExpression(ctx, tCtx, entry)
+			if err != nil {
+				return nil, err
+			}
+			for j := len(keys) - 1; j >= 0; j-- {
+				if _, ok := seen[keys[j]]; ok {
+					continue
+				}
+				seen[keys[j]] = struct{}{}
+				resolved = append(resolved, AttributeKeyValue{
+					Key:          keys[j],
+					Optional:     entry.Optional,
+					DefaultValue: entry.DefaultValue,
+				})
 			}
 			continue
 		}
-		copyAttribute(entry.Key, entry.DefaultValue, src, dst)
+		if _, ok := seen[entry.Key]; ok {
+			continue
+		}
+		seen[entry.Key] = struct{}{}
+		resolved = append(resolved, AttributeKeyValue{
+			Key:          entry.Key,
+			Optional:     entry.Optional,
+			DefaultValue: entry.DefaultValue,
+		})
 	}
-	return dst, nil
+	sort.Slice(resolved, func(i, j int) bool {
+		return resolved[i].Key < resolved[j].Key
+	})
+	return resolved, nil
+}
+
+// buildStaticAttrs checks if any entries have OTTL expressions and
+// builds a pre-sorted list of static-key AttributeKeyValue entries.
+// Returns (hasExpr, sortedStaticAttrs).
+func buildStaticAttrs[K any](entries []attributeEntry[K]) (bool, []AttributeKeyValue) {
+	hasExpr := false
+	static := make([]AttributeKeyValue, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Expression != nil {
+			hasExpr = true
+			continue
+		}
+		static = append(static, AttributeKeyValue{
+			Key:          entry.Key,
+			Optional:     entry.Optional,
+			DefaultValue: entry.DefaultValue,
+		})
+	}
+	sort.Slice(static, func(i, j int) bool {
+		return static[i].Key < static[j].Key
+	})
+	return hasExpr, static
 }
 
 func parseAttributeEntries[K any](
 	cfgs []config.Attribute,
 	parser ottl.Parser[K],
-) ([]AttributeEntry[K], error) {
+) ([]attributeEntry[K], error) {
 	var errs []error
-	entries := make([]AttributeEntry[K], 0, len(cfgs))
+	entries := make([]attributeEntry[K], 0, len(cfgs))
 	for _, attr := range cfgs {
 		val := pcommon.NewValueEmpty()
 		if err := val.FromRaw(attr.DefaultValue); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		entry := AttributeEntry[K]{
+		entry := attributeEntry[K]{
 			Optional:     attr.Optional,
 			DefaultValue: val,
 		}
@@ -326,29 +451,26 @@ func parseAttributeEntries[K any](
 	return entries, nil
 }
 
-// resolveKeysExpression evaluates the OTTL expression to get a list of
-// attribute keys and copies matching attributes from src to dst.
-func resolveKeysExpression[K any](
+// evalKeysExpression evaluates the OTTL expression and returns the
+// resolved attribute keys. Returns nil (no error) if the expression
+// evaluates to nil.
+func evalKeysExpression[K any](
 	ctx context.Context,
 	tCtx K,
-	entry AttributeEntry[K],
-	src, dst pcommon.Map,
-) error {
+	entry attributeEntry[K],
+) ([]string, error) {
 	result, err := entry.Expression.Eval(ctx, tCtx)
 	if err != nil {
-		return fmt.Errorf("failed to evaluate keys_expression: %w", err)
+		return nil, fmt.Errorf("failed to evaluate keys_expression: %w", err)
 	}
 	if result == nil {
-		return nil
+		return nil, nil
 	}
 	keys, err := extractStringSlice(result)
 	if err != nil {
-		return fmt.Errorf("keys_expression must return a list of strings: %w", err)
+		return nil, fmt.Errorf("keys_expression must return a list of strings: %w", err)
 	}
-	for _, key := range keys {
-		copyAttribute(key, entry.DefaultValue, src, dst)
-	}
-	return nil
+	return keys, nil
 }
 
 func copyAttribute(key string, defaultValue pcommon.Value, src, dst pcommon.Map) {

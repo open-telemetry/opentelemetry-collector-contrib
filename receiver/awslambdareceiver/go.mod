@@ -3,26 +3,27 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslam
 go 1.25.0
 
 require (
-	github.com/aws/aws-lambda-go v1.53.0
+	github.com/aws/aws-lambda-go v1.54.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.12
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.97.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.97.2
 	github.com/goccy/go-json v0.10.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding v0.148.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.54.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/confmap v1.54.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/confmap/xconfmap v0.148.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/consumer v1.54.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/consumer/consumererror v0.148.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/consumer/consumertest v0.148.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/extension v1.54.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/pdata v1.54.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/receiver v1.54.1-0.20260320051400-372cc483b303
-	go.opentelemetry.io/collector/receiver/receivertest v0.148.1-0.20260320051400-372cc483b303
+	go.opentelemetry.io/collector/client v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/confmap v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.148.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/consumer v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/consumer/consumererror v0.148.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/consumer/consumertest v0.148.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/extension v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/pdata v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/receiver v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/receiver/receivertest v0.148.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/otel v1.42.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.6.0
@@ -31,7 +32,7 @@ require (
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.4 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.7 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.8 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.12 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.20 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.20 // indirect
@@ -66,13 +67,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.148.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.148.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.148.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.148.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/pipeline v1.54.1-0.20260320051400-372cc483b303 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.148.1-0.20260320051400-372cc483b303 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.148.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.148.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.148.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/pipeline v1.54.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
