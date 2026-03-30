@@ -116,7 +116,7 @@ type Config struct {
 
 	// RecordPartitioner configures how Kafka records are assigned to partitions.
 	// The default ("sarama_compatible") retains the legacy Sarama-compatible hashing
-	// behaviour. Set to "sticky", "round_robin", or "least_backup" to use one of the
+	// behavior. Set to "sticky", "round_robin", or "least_backup" to use one of the
 	// built-in franz-go partitioners, or "extension" to delegate to a custom extension.
 	RecordPartitioner RecordPartitionerConfig `mapstructure:"record_partitioner"`
 }

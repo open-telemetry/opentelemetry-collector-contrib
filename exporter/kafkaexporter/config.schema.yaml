@@ -1,4 +1,16 @@
 $defs:
+  record_partitioner_config:
+    description: RecordPartitionerConfig configures the strategy used to assign Kafka records to partitions.
+    type: object
+    properties:
+      extension:
+        description: Extension is the component ID of an extension implementing RecordPartitionerExtension. Required when Type is "extension"; must be empty for all other types.
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      type:
+        description: 'Type is the partitioning strategy. Valid values are: - "" or "sarama_compatible" (default): sticky key partitioner with Sarama-compatible FNV-1a hashing - "sticky": franz-go StickyKeyPartitioner with murmur2 hashing - "round_robin": round-robin across all available partitions - "least_backup": routes to the partition with fewest in-flight records - "extension": delegates to an extension implementing RecordPartitionerExtension'
+        type: string
   signal_config:
     description: SignalConfig holds signal-specific configuration for the Kafka exporter.
     type: object
@@ -43,6 +55,9 @@ properties:
   profiles:
     description: Profiles holds configuration about how profiles should be sent to Kafka.
     $ref: signal_config
+  record_partitioner:
+    description: RecordPartitioner configures how Kafka records are assigned to partitions. The default ("sarama_compatible") retains the legacy Sarama-compatible hashing behavior. Set to "sticky", "round_robin", or "least_backup" to use one of the built-in franz-go partitioners, or "extension" to delegate to a custom extension.
+    $ref: record_partitioner_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config

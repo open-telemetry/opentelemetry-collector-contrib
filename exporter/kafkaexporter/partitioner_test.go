@@ -25,14 +25,14 @@ type mockPartitionerExtension struct {
 	partitioner kgo.Partitioner
 }
 
-func (m *mockPartitionerExtension) Start(context.Context, component.Host) error { return nil }
-func (m *mockPartitionerExtension) Shutdown(context.Context) error              { return nil }
-func (m *mockPartitionerExtension) GetPartitioner() kgo.Partitioner             { return m.partitioner }
+func (*mockPartitionerExtension) Start(context.Context, component.Host) error { return nil }
+func (*mockPartitionerExtension) Shutdown(context.Context) error              { return nil }
+func (m *mockPartitionerExtension) GetPartitioner() kgo.Partitioner           { return m.partitioner }
 
 type notAPartitionerExtension struct{}
 
-func (n *notAPartitionerExtension) Start(context.Context, component.Host) error { return nil }
-func (n *notAPartitionerExtension) Shutdown(context.Context) error              { return nil }
+func (*notAPartitionerExtension) Start(context.Context, component.Host) error { return nil }
+func (*notAPartitionerExtension) Shutdown(context.Context) error              { return nil }
 
 type mockHostWithExtensions struct {
 	component.Host
