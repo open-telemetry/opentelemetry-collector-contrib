@@ -27,6 +27,9 @@ resourceLogs:
               - key: mysql.events_statements_current.digest
                 value:
                   stringValue: aaaaaa
+              - key: mysql.query_plan.hash
+                value:
+                  stringValue: aaaaaa
               - key: mysql.event_id
                 value:
                   intValue: "17470257762"
