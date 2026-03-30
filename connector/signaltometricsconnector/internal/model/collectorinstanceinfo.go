@@ -13,6 +13,10 @@ import (
 
 var prefix = metadata.Type.String()
 
+// prefixedServiceInstanceIDKey is the service.instance.id key with the connector prefix,
+// pre-computed to avoid a string allocation on every Copy() call.
+var prefixedServiceInstanceIDKey = keyWithPrefix(string(conventions.ServiceInstanceIDKey))
+
 // CollectorInstanceInfo holds the attributes that could uniquely identify
 // the current collector instance. These attributes are initialized from the
 // telemetry settings. The CollectorInstanceInfo can copy these attributes,
@@ -46,7 +50,7 @@ func (info CollectorInstanceInfo) Size() int {
 func (info CollectorInstanceInfo) Copy(to pcommon.Map) {
 	to.EnsureCapacity(info.Size())
 	if info.serviceInstanceID != "" {
-		to.PutStr(keyWithPrefix(string(conventions.ServiceInstanceIDKey)), info.serviceInstanceID)
+		to.PutStr(prefixedServiceInstanceIDKey, info.serviceInstanceID)
 	}
 }
 

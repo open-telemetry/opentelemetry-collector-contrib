@@ -1,4 +1,0 @@
-change_type: 'deprecation'
-component: receiver/yang_grpc
-note: Introduce new snake case compliant name `yang_grpc`
-issues: [46723]
