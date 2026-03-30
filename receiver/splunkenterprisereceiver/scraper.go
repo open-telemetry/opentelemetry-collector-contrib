@@ -30,17 +30,20 @@ import (
 var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 
 type splunkScraper struct {
-	splunkClient *splunkEntClient
-	settings     component.TelemetrySettings
-	conf         *Config
-	mb           *metadata.MetricsBuilder
+	splunkClient  *splunkEntClient
+	settings      component.TelemetrySettings
+	conf          *Config
+	mb            *metadata.MetricsBuilder
+	customMetrics pmetric.Metrics
+	customMu      sync.Mutex
 }
 
 func newSplunkMetricsScraper(params receiver.Settings, cfg *Config) splunkScraper {
 	return splunkScraper{
-		settings: params.TelemetrySettings,
-		conf:     cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		settings:      params.TelemetrySettings,
+		conf:          cfg,
+		mb:            metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		customMetrics: pmetric.NewMetrics(),
 	}
 }
 
@@ -109,6 +112,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeSearch,
 		s.scrapeIndexerClusterManagerStatus,
 		s.scrapeLicenses,
+		s.scrapeCustomSearches,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -146,7 +150,17 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	wg.Wait()
 	close(errChan)
 	errs = <-errOut
-	return s.mb.Emit(), errs.Combine()
+
+	metrics := s.mb.Emit()
+
+	s.customMu.Lock()
+	if s.customMetrics.ResourceMetrics().Len() > 0 {
+		s.customMetrics.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+	}
+	s.customMetrics = pmetric.NewMetrics()
+	s.customMu.Unlock()
+
+	return metrics, errs.Combine()
 }
 
 // Each metric has its own scrape function associated with it
@@ -2399,3 +2413,168 @@ func formatDurationForSplunk(d time.Duration) string {
 	return fmt.Sprintf("%ds", secs)
 }
 
+func (s *splunkScraper) scrapeCustomSearches(_ context.Context, now pcommon.Timestamp, _ infoDict, errs chan error) {
+	if len(s.conf.Searches) == 0 {
+		return
+	}
+
+	for i, search := range s.conf.Searches {
+		eptType := search.TargetType()
+		if !s.splunkClient.isConfigured(eptType) {
+			errs <- fmt.Errorf("search[%d]: target endpoint %q is not configured", i, search.Target)
+			continue
+		}
+
+		fields, err := s.executeCustomSearch(search, eptType)
+		if err != nil {
+			errs <- fmt.Errorf("search[%d]: %w", i, err)
+			continue
+		}
+
+		if len(fields) == 0 {
+			continue
+		}
+
+		s.emitCustomSearchMetrics(now, search, fields)
+	}
+}
+
+func (s *splunkScraper) executeCustomSearch(search SearchConfig, eptType string) ([]*field, error) {
+	sr := searchResponse{
+		search: s.formatSPLForSearch(search),
+		count:  100,
+		offset: 0,
+	}
+
+	var fields []*field
+	start := time.Now()
+
+	for {
+		req, err := s.splunkClient.createRequest(eptType, &sr)
+		if err != nil {
+			return nil, err
+		}
+
+		res, err := s.splunkClient.makeRequest(req)
+		if err != nil {
+			return nil, err
+		}
+
+		err = unmarshallSearchReq(res, &sr)
+		res.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		if sr.Return == 200 && sr.Jobid != nil {
+			fields = append(fields, sr.Fields...)
+			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+				break
+			}
+			sr.offset += sr.count
+		}
+
+		if sr.Return == 204 {
+			time.Sleep(2 * time.Second)
+		}
+
+		if sr.Return == 400 {
+			break
+		}
+
+		if time.Since(start) > s.conf.Timeout {
+			return nil, errMaxSearchWaitTimeExceeded
+		}
+	}
+
+	return fields, nil
+}
+
+func (s *splunkScraper) emitCustomSearchMetrics(now pcommon.Timestamp, search SearchConfig, fields []*field) {
+	rows := parseFields(fields)
+	if len(rows) == 0 {
+		return
+	}
+
+	s.customMu.Lock()
+	defer s.customMu.Unlock()
+
+	rm := s.customMetrics.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver")
+
+	for _, metricCfg := range search.Metrics {
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(metricCfg.MetricName)
+		m.SetUnit(metricCfg.Unit)
+		m.SetDescription(metricCfg.Description)
+
+		gauge := m.SetEmptyGauge().DataPoints()
+
+		for _, row := range rows {
+			valueStr, ok := row[metricCfg.ValueColumn]
+			if !ok {
+				continue
+			}
+
+			var intVal int64
+			var doubleVal float64
+			if metricCfg.ValueType == MetricValueTypeDouble {
+				v, err := strconv.ParseFloat(valueStr, 64)
+				if err != nil {
+					continue
+				}
+				doubleVal = v
+			} else {
+				if v, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
+					intVal = v
+				} else if v, err := strconv.ParseFloat(valueStr, 64); err == nil {
+					intVal = int64(v)
+				} else {
+					continue
+				}
+			}
+
+			dp := gauge.AppendEmpty()
+			dp.SetTimestamp(now)
+			if metricCfg.ValueType == MetricValueTypeDouble {
+				dp.SetDoubleValue(doubleVal)
+			} else {
+				dp.SetIntValue(intVal)
+			}
+
+			for _, attrCol := range metricCfg.AttributeColumns {
+				if attrVal, ok := row[attrCol]; ok {
+					dp.Attributes().PutStr(attrCol, attrVal)
+				}
+			}
+
+			for k, v := range metricCfg.StaticAttributes {
+				dp.Attributes().PutStr(k, v)
+			}
+		}
+	}
+}
+
+func parseFields(fields []*field) []map[string]string {
+	if len(fields) == 0 {
+		return nil
+	}
+
+	var rows []map[string]string
+	currentRow := make(map[string]string)
+
+	for _, f := range fields {
+		if _, exists := currentRow[f.FieldName]; exists {
+			rows = append(rows, currentRow)
+			currentRow = make(map[string]string)
+		}
+		currentRow[f.FieldName] = f.Value
+	}
+
+	if len(currentRow) > 0 {
+		rows = append(rows, currentRow)
+	}
+
+	return rows
+}
