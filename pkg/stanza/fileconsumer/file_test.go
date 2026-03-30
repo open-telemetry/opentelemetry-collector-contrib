@@ -1677,7 +1677,12 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 	line := string(bytes.Repeat([]byte("a"), 1024)) // identical 1024B lines
 
 	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
+
+	// Create the log file first so we can scope the include to its exact path.
+	log := filetest.OpenTemp(t, tempDir)
+
+	cfg := NewConfig()
+	cfg.Include = append(cfg.Include, log.Name())
 	cfg.StartAt = "beginning"
 	cfg.FingerprintSize = 1000 // identical prefix across rotations
 	cfg.OnTruncate = OnTruncateReadWholeFile
@@ -1686,8 +1691,7 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 	op1, sink1 := testManager(t, cfg)
 	op1.persister = testutil.NewUnscopedMockPersister()
 
-	// Create file and write 20 lines
-	log := filetest.OpenTemp(t, tempDir)
+	// Write 20 lines
 	for range 20 {
 		filetest.WriteString(t, log, line+"\n")
 	}
@@ -1703,21 +1707,13 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 	metadata := op1.tracker.GetMetadata()
 	require.NotEmpty(t, metadata)
 
-	// Simulate copytruncate while op1 is "down" (no more polls)
-	rotated := log.Name() + ".1"
-	origData, err := os.ReadFile(log.Name())
-	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(rotated, origData, 0o600))
+	// Simulate truncation while op1 is "down" (no more polls)
 	require.NoError(t, log.Truncate(0))
-	_, err = log.Seek(0, 0)
+	_, err := log.Seek(0, 0)
 	require.NoError(t, err)
 	for range 10 {
 		filetest.WriteString(t, log, line+"\n")
 	}
-
-	// Remove the rotated file so op2 only sees the truncated original.
-	// This avoids ambiguity from two files sharing the same fingerprint.
-	require.NoError(t, os.Remove(rotated))
 
 	// Manager #2 (manual polling) resumes from persisted metadata
 	op2, sink2 := testManager(t, cfg)
