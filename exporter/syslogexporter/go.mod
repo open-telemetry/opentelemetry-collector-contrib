@@ -35,7 +35,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.3 // indirect
+	github.com/knadh/koanf/v2 v2.3.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.54.1-0.20260330144813-4d17eb8959de // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.54.1-0.20260330144813-4d17eb8959de // indirect
