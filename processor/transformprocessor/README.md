@@ -671,7 +671,7 @@ The primary use case of the `set_semconv_span_name()` function is to address hig
 
 Parameters:
 
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. Versions `1.40.0` to `1.37.0` are supported.
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. Versions `1.37.0` to `1.40.0` are supported.
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:

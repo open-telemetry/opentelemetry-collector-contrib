@@ -16,7 +16,7 @@ issues: [45911]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: >
-  The `set_semconv_span_name` processor now recognizes semantic conventions 1.38.0, 1.39.0, and 1.40.0, allowing span 
+  The `set_semconv_span_name` function now recognizes semantic conventions 1.38.0, 1.39.0, and 1.40.0, allowing span 
   names to be   determined using the latest rules. Support for the `rpc.system.name` attribute (introduced in 1.39.0)
   has been added so span names can reflect the new RPC system conventions. Backward compatibility is preserved: the 
   `rpc.system` attribute remains supported.
