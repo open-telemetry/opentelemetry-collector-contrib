@@ -116,3 +116,10 @@ func (f *Fingerprint) UnmarshalJSON(data []byte) error {
 type marshal struct {
 	FirstBytes []byte `json:"first_bytes"`
 }
+
+// Bytes returns a copy of the raw fingerprint bytes.
+func (f *Fingerprint) Bytes() []byte {
+	buf := make([]byte, len(f.firstBytes))
+	copy(buf, f.firstBytes)
+	return buf
+}

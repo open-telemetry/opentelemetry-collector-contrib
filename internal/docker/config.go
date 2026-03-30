@@ -4,6 +4,7 @@
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/docker/client"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -26,8 +29,19 @@ type Config struct {
 	// A list of filters whose matching images are to be excluded. Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
-	// Docker client API version.
+	// Docker client API version. If empty, the client will auto-negotiate
+	// the API version with the Docker daemon using version negotiation.
 	DockerAPIVersion string `mapstructure:"api_version"`
+
+	// TLS holds optional TLS client configuration for connecting to the Docker daemon
+	// over HTTPS. When nil (the default), the connection uses no custom TLS — suitable
+	// for Unix sockets and plain HTTP endpoints.
+	TLS configoptional.Optional[configtls.ClientConfig] `mapstructure:"tls,omitempty"`
+	// StreamStats enables a persistent streaming connection per container to collect stats.
+	// When true, each container maintains an open Docker stats stream and the scraper reads
+	// from the cached latest value, which reduces connection overhead.  When false (default),
+	// a new connection is opened and closed on every scrape cycle, matching the original behavior.
+	StreamStats bool `mapstructure:"stream_stats"`
 }
 
 func (config *Config) Unmarshal(conf *confmap.Conf) error {
@@ -50,6 +64,11 @@ func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("endpoint must be specified")
 	}
+	if config.TLS.HasValue() {
+		if _, err := config.TLS.Get().LoadTLSConfig(context.Background()); err != nil {
+			return fmt.Errorf("invalid tls configuration: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -67,11 +86,11 @@ func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, 
 
 // NewDefaultConfig creates a new config with default values
 // to be used when creating a docker client
+// DockerAPIVersion is intentionally left empty for auto-negotiation.
 func NewDefaultConfig() *Config {
 	cfg := &Config{
-		Endpoint:         client.DefaultDockerHost,
-		Timeout:          5 * time.Second,
-		DockerAPIVersion: minimumRequiredDockerAPIVersion,
+		Endpoint: client.DefaultDockerHost,
+		Timeout:  5 * time.Second,
 	}
 
 	return cfg

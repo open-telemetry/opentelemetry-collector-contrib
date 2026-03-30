@@ -41,6 +41,11 @@ Here are some
 [STEF benchmark results](https://www.stefdata.net/benchmarks.html),
 comparing STEF and OTLP payload sizes for a few sample payloads produced by Collector:
 
+<img src="images/hostandcollectormetricssize.png">
+
+And here is a dataset from
+[Astronomy Shop demo](https://github.com/open-telemetry/opentelemetry-demo):
+
 <img src="images/astronomymetricssize.png">
 
 (This exporter implementation uses unsorted STEF format, labeled "STEF Unsorted" in 

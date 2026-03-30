@@ -158,10 +158,11 @@ func BenchmarkFileInput(b *testing.B) {
 	// to avoid measuring the time it takes to generate them
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
-	severalLines := ""
+	var severalLinesBuilder strings.Builder
 	for range uniqueLines {
-		severalLines += string(filetest.TokenWithLength(999)) + "\n"
+		severalLinesBuilder.WriteString(string(filetest.TokenWithLength(999)) + "\n")
 	}
+	severalLines := severalLinesBuilder.String()
 
 	for _, bench := range cases {
 		b.Run(bench.name, func(b *testing.B) {
@@ -415,6 +416,50 @@ func BenchmarkFilesetMatch(b *testing.B) {
 				if result == nil {
 					b.Fatal("expected to find match")
 				}
+			}
+		})
+	}
+}
+
+// BenchmarkStartLatency measures the time for Manager.Start() to return.
+func BenchmarkStartLatency(b *testing.B) {
+	fileCounts := []int{1000, 10000}
+
+	for _, fileCount := range fileCounts {
+		b.Run(fmt.Sprintf("Files_%d", fileCount), func(b *testing.B) {
+			b.ReportAllocs()
+			rootDir := b.TempDir()
+
+			// Create many log files to simulate production environment
+			for i := range fileCount {
+				path := filepath.Join(rootDir, fmt.Sprintf("app%d.log", i))
+				f := filetest.OpenFile(b, path)
+				// Write some initial content
+				_, err := fmt.Fprintf(f, "Initial log line for file %d\n", i)
+				require.NoError(b, err)
+				require.NoError(b, f.Close())
+			}
+
+			cfg := NewConfig()
+			cfg.Include = []string{filepath.Join(rootDir, "*.log")}
+			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Second
+
+			callback := func(_ context.Context, _ [][]byte, _ map[string]any, _ int64, _ []int64) error {
+				return nil
+			}
+
+			set := componenttest.NewNopTelemetrySettings()
+
+			for b.Loop() {
+				op, err := cfg.Build(set, callback)
+				require.NoError(b, err)
+
+				// This is the call under test. Start() initializes the
+				// manager and kicks off the poller goroutine. We measure
+				// how long it takes to return, which gates readiness.
+				require.NoError(b, op.Start(testutil.NewUnscopedMockPersister()))
+				require.NoError(b, op.Stop())
 			}
 		})
 	}

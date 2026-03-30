@@ -1,4 +1,8 @@
+display_name: Snowflake Receiver
 type: snowflake
+
+description: |
+  This receiver collects metrics from a Snowflake account by connecting to and querying a Snowflake deployment.
 
 status:
   class: receiver

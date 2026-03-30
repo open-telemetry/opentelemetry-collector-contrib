@@ -27,12 +27,21 @@ resourceLogs:
               - key: mysql.events_statements_current.digest
                 value:
                   stringValue: aaaaaa
+              - key: mysql.query_plan.hash
+                value:
+                  stringValue: aaaaaa
               - key: mysql.event_id
                 value:
                   intValue: "17470257762"
               - key: mysql.wait_type
                 value:
                   stringValue: CPU
+              - key: mysql.session.status
+                value:
+                  stringValue: 'waiting'
+              - key: mysql.session.id
+                value:
+                  intValue: "-54321"
               - key: mysql.events_waits_current.timer_wait
                 value:
                   doubleValue: 1.2851652e-05

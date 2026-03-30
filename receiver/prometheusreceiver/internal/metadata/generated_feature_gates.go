@@ -23,26 +23,10 @@ var ReceiverPrometheusreceiverEnableNativeHistogramsFeatureGate = featuregate.Gl
 	featuregate.WithRegisterToVersion("v0.145.0"),
 )
 
-var ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.EnableReportExtraScrapeMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Enables reporting of extra Prometheus scrape metrics. This replaces the deprecated 'report_extra_scrape_metrics' configuration option."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181"),
-	featuregate.WithRegisterFromVersion("v0.143.0"),
-)
-
-var ReceiverPrometheusreceiverRemoveReportExtraScrapeMetricsConfigFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, the 'report_extra_scrape_metrics' configuration option is ignored, and extra scrape metrics are controlled solely by the EnableReportExtraScrapeMetrics feature gate. The intention is to have extra scrape metrics enabled all the time in the future."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181"),
-	featuregate.WithRegisterFromVersion("v0.143.0"),
-)
-
 var ReceiverPrometheusreceiverRemoveStartTimeAdjustmentFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will leave the start time unset. Use the metricstarttime processor instead if you need this functionality."),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will leave the start time unset. Use the metric_start_time processor instead if you need this functionality."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36364"),
 	featuregate.WithRegisterFromVersion("v0.121.0"),
 	featuregate.WithRegisterToVersion("v0.142.0"),

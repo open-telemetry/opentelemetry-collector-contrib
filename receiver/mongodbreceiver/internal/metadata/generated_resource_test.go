@@ -13,9 +13,9 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetDatabase("database-val")
 			rb.SetServerAddress("server.address-val")
 			rb.SetServerPort(11)
+			rb.SetServiceInstanceID("service.instance.id-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -31,21 +31,20 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("database")
+			serverAddressAttrVal, ok := res.Attributes().Get("server.address")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "database-val", val.Str())
+				assert.Equal(t, "server.address-val", serverAddressAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("server.address")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "server.address-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("server.port")
+			serverPortAttrVal, ok := res.Attributes().Get("server.port")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, 11, val.Int())
+				assert.EqualValues(t, 11, serverPortAttrVal.Int())
+			}
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
 		})
 	}

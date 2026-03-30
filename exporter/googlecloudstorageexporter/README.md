@@ -25,7 +25,7 @@ This exporter writes received OpenTelemetry data to a cloud storage bucket.
 | `bucket.name`            | Name for the bucket storage.                                                                                                                                                                                             | Yes      |         |
 | `bucket.file_prefix`     | Prefix for the created filename. This prefix is applied after the partition path (if any).                                                                                                                               | No       | `logs`  |
 | `bucket.partition`       | Configuration for time-based partitioning. See below for details.                                                                                                                                                        | No       |         |
-| `bucket.reuse_if_exists` | If true, use the existing bucket if it already exists; if false, error if bucket exists.                                                                                                                                 | No       | `false` |
+| `bucket.reuse_if_exists` | Controls bucket creation behavior. If `true`, checks if bucket exists and uses it (requires `storage.buckets.get` permission on the bucket); fails if bucket doesn't exist. If `false`, attempts to create bucket; fails if bucket already exists (requires `storage.buckets.create` permission at project level). Set to `true` when the service account lacks project-level bucket creation permissions but has bucket-level permissions. | No       | `false` |
 | `bucket.region`          | Region where the bucket will be created or where it exists. If left empty, it will query the metadata endpoint. It requires the collector to be running in a Google Cloud environment.                                   | Yes      |         |
 | `bucket.compression`     | Compression algorithm used to compress data before uploading. Valid values are `gzip`, `zstd`, or no value set for no compression.                                                                                        | No       |         |
 
@@ -44,7 +44,7 @@ Here is an example configuration for this exporter:
 
 ```yaml
 exporters:
-  googlecloudstorage:
+  google_cloud_storage:
     encoding: text_encoding
     bucket:
       name: bucket-test
@@ -65,7 +65,7 @@ extensions:
 
 ```yaml
 exporters:
-  googlecloudstorage:
+  google_cloud_storage:
     bucket:
       name: compressed-logs-bucket
       project_id: my-project
@@ -75,3 +75,20 @@ exporters:
       partition:
         format: "year=%Y/month=%m/day=%d"
 ```
+
+### Using with Bucket-Level Permissions Only
+
+When the service account lacks project-level bucket creation permissions but has bucket-level permissions:
+
+```yaml
+exporters:
+  google_cloud_storage:
+    bucket:
+      name: existing-bucket
+      project_id: my-project
+      region: us-central1
+      reuse_if_exists: true
+      file_prefix: collector-logs
+```
+
+With `reuse_if_exists: true`, the exporter checks if the bucket exists using `storage.buckets.get` permission on that specific bucket (not project-level). If the bucket doesn't exist, the exporter will fail with an error. This allows service accounts with only bucket-level permissions to work without requiring project-level bucket creation permissions.

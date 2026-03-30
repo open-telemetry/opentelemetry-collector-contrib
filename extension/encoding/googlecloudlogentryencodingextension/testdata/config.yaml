@@ -1,15 +1,15 @@
-googlecloudlogentry_encoding:
+google_cloud_logentry_encoding:
 
-googlecloudlogentry_encoding/default:
+google_cloud_logentry_encoding/default:
   handle_json_payload_as: "json"
   handle_proto_payload_as: "json"
 
-googlecloudlogentry_encoding/json_as_text:
+google_cloud_logentry_encoding/json_as_text:
   handle_json_payload_as: "text"
 
-googlecloudlogentry_encoding/proto_as_text:
+google_cloud_logentry_encoding/proto_as_text:
   handle_proto_payload_as: "text"
 
-googlecloudlogentry_encoding/proto_as_protobuf:
+google_cloud_logentry_encoding/proto_as_protobuf:
   handle_proto_payload_as: "protobuf"
 

@@ -24,6 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/hetzner"
+	ibmcloudclassic "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic"
+	ibmcloudvpc "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/vpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
@@ -31,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/oraclecloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/scaleway"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
+	tencentcvm "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/tencent/cvm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/upcloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/vultr"
 )
@@ -82,7 +85,7 @@ type DetectorConfig struct {
 	// ConsulConfig contains user-specified configurations for the Consul detector
 	ConsulConfig consul.Config `mapstructure:"consul"`
 
-	// DigitalOceanConfig contains user-specified configurations for the docker detector
+	// DigitalOceanConfig contains user-specified configurations for the digitalocean detector
 	DigitalOceanConfig digitalocean.Config `mapstructure:"digitalocean"`
 
 	// DockerConfig contains user-specified configurations for the docker detector
@@ -96,6 +99,12 @@ type DetectorConfig struct {
 
 	// HetznerConfig contains user-specified configurations for the hetzner detector
 	HetznerConfig hetzner.Config `mapstructure:"hetzner"`
+
+	// IBMCloudClassicConfig contains user-specified configurations for the IBM Cloud Classic detector
+	IBMCloudClassicConfig ibmcloudclassic.Config `mapstructure:"ibmcloud_classic"`
+
+	// IBMCloudVPCConfig contains user-specified configurations for the IBM Cloud VPC detector
+	IBMCloudVPCConfig ibmcloudvpc.Config `mapstructure:"ibmcloud_vpc"`
 
 	// SystemConfig contains user-specified configurations for the System detector
 	SystemConfig system.Config `mapstructure:"system"`
@@ -121,6 +130,9 @@ type DetectorConfig struct {
 	// ScalewayConfig contains user-specified configurations for the scaleway detector
 	ScalewayConfig scaleway.Config `mapstructure:"scaleway"`
 
+	// TencentCVMConfig contains user-specified configurations for the Tencent Cloud CVM detector
+	TencentCVMConfig tencentcvm.Config `mapstructure:"tencent_cvm"`
+
 	// UpcloudConfig contains user-specified configurations for the upcloud detector
 	UpcloudConfig upcloud.Config `mapstructure:"upcloud"`
 
@@ -144,6 +156,8 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		GcpConfig:              gcp.CreateDefaultConfig(),
 		HerokuConfig:           heroku.CreateDefaultConfig(),
 		HetznerConfig:          hetzner.CreateDefaultConfig(),
+		IBMCloudClassicConfig:  ibmcloudclassic.CreateDefaultConfig(),
+		IBMCloudVPCConfig:      ibmcloudvpc.CreateDefaultConfig(),
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
 		OpenStackNovaConfig:    nova.CreateDefaultConfig(),
@@ -152,6 +166,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
 		AkamaiConfig:           akamai.CreateDefaultConfig(),
 		ScalewayConfig:         scaleway.CreateDefaultConfig(),
+		TencentCVMConfig:       tencentcvm.CreateDefaultConfig(),
 		UpcloudConfig:          upcloud.CreateDefaultConfig(),
 		VultrConfig:            vultr.CreateDefaultConfig(),
 	}
@@ -187,6 +202,10 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.HerokuConfig
 	case hetzner.TypeStr:
 		return d.HetznerConfig
+	case ibmcloudclassic.TypeStr:
+		return d.IBMCloudClassicConfig
+	case ibmcloudvpc.TypeStr:
+		return d.IBMCloudVPCConfig
 	case system.TypeStr:
 		return d.SystemConfig
 	case openshift.TypeStr:
@@ -203,6 +222,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AkamaiConfig
 	case scaleway.TypeStr:
 		return d.ScalewayConfig
+	case tencentcvm.TypeStr:
+		return d.TencentCVMConfig
 	case upcloud.TypeStr:
 		return d.UpcloudConfig
 	case vultr.TypeStr:

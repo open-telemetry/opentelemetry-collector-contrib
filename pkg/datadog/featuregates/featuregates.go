@@ -44,3 +44,10 @@ var AttributeSliceMultiTagExportingFeatureGate = featuregate.GlobalRegistry().Mu
 	featuregate.WithRegisterFromVersion("v0.142.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/44859"),
 )
+
+// InferIntervalDeltaFeatureGate is a feature gate that enables inferring the metrics interval for OTLP delta sums
+var InferIntervalDeltaFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.InferIntervalForDeltaMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic."),
+)

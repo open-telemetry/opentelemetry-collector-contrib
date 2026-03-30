@@ -54,6 +54,9 @@ type Config struct {
 	// TargetInfo allows customizing the target_info metric
 	TargetInfo TargetInfo `mapstructure:"target_info,omitempty"`
 
+	// DisableScopeInfo allows disabling the export of the scope info labels
+	DisableScopeInfo bool `mapstructure:"disable_scope_info"`
+
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
