@@ -4,16 +4,16 @@ go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/component v1.54.1-0.20260330144813-4d17eb8959de
 	go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/confmap v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/confmap v1.54.1-0.20260330144813-4d17eb8959de
 	go.opentelemetry.io/collector/connector v0.148.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/collector/connector/connectortest v0.148.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/collector/connector/xconnector v0.148.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/consumer v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/consumer v1.54.1-0.20260330144813-4d17eb8959de
 	go.opentelemetry.io/collector/consumer/consumertest v0.148.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/pdata v1.54.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/pipeline v1.54.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/pdata v1.54.1-0.20260330144813-4d17eb8959de
+	go.opentelemetry.io/collector/pipeline v1.54.1-0.20260330144813-4d17eb8959de
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
@@ -38,7 +38,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260330144813-4d17eb8959de // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.148.1-0.20260326211300-c04f6776a74c // indirect
