@@ -25,6 +25,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/collector/pipeline v1.54.1-0.20260326211300-c04f6776a74c
 	go.opentelemetry.io/collector/receiver/receivertest v0.148.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/receiver/xreceiver v0.148.1-0.20260326211300-c04f6776a74c
 	go.uber.org/zap v1.27.1
 	golang.org/x/text v0.35.0
 )
@@ -68,7 +69,6 @@ require (
 	go.opentelemetry.io/collector/pdata/xpdata v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
@@ -81,8 +81,6 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
@@ -101,3 +99,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage

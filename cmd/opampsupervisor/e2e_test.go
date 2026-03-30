@@ -314,8 +314,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 				if ok {
 					// The effective config may be structurally different compared to what was sent,
 					// and will also have some data redacted,
-					// so just check that it includes the filelog receiver
-					return strings.Contains(cfg, "filelog")
+					// so just check that it includes the file_log receiver
+					return strings.Contains(cfg, "file_log")
 				}
 
 				return false
@@ -660,7 +660,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 		}, 3*time.Second, 100*time.Millisecond)
 	}
 
-	// check that collector uses filelog receiver and file exporter from config passed via config_files param
+	// check that collector uses file_log receiver and file exporter from config passed via config_files param
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
 	require.NoError(t, err)
@@ -1692,7 +1692,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 					return false
 				}
 
-				return strings.Contains(loadedConfig, "filelog")
+				return strings.Contains(loadedConfig, "file_log")
 			}, 10*time.Second, 500*time.Millisecond, "Collector was not started with the last received remote config")
 		})
 	}
@@ -2179,8 +2179,8 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				if ok {
 					// The effective config may be structurally different compared to what was sent,
 					// and will also have some data redacted,
-					// so just check that it includes the filelog receiver
-					return strings.Contains(cfg, "filelog")
+					// so just check that it includes the file_log receiver
+					return strings.Contains(cfg, "file_log")
 				}
 
 				return false
@@ -2306,8 +2306,8 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
 			// and will also have some data redacted,
-			// so just check that it includes the filelog receiver
-			return strings.Contains(cfg, "filelog")
+			// so just check that it includes the file_log receiver
+			return strings.Contains(cfg, "file_log")
 		}
 
 		return false

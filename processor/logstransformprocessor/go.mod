@@ -67,6 +67,7 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/collector/receiver v1.54.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.148.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.148.1-0.20260326211300-c04f6776a74c // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
