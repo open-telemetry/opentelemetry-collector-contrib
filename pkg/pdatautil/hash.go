@@ -178,6 +178,7 @@ func (hw *hashWriter) writeValueHash(v pcommon.Value) {
 		hw.byteBuf = append(hw.byteBuf, valSliceSuffix...)
 	case pcommon.ValueTypeBytes:
 		hw.byteBuf = append(hw.byteBuf, valBytesPrefix...)
+		hw.byteBuf = binary.LittleEndian.AppendUint64(hw.byteBuf, uint64(v.Bytes().Len()))
 		hw.byteBuf = append(hw.byteBuf, v.Bytes().AsRaw()...)
 	case pcommon.ValueTypeEmpty:
 		hw.byteBuf = append(hw.byteBuf, valEmpty...)
