@@ -140,7 +140,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 						S3: events.S3Entity{
 							Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
 							Object: events.S3Object{
-								Key:  "test-file.txt",
+								Key:  "test-file.txt.gz",
 								Size: 10,
 							},
 						},
@@ -149,7 +149,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 			},
 			s3MockContent: s3Content{
 				bucketName: "test-bucket",
-				objectKey:  "test-file.txt",
+				objectKey:  "test-file.txt.gz",
 				data:       compressData(t, []byte("Logs in Gzip S3 object")),
 			},
 			extension:     internal.NewDefaultS3LogsDecoder(),
@@ -221,14 +221,21 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			s3Service := internal.NewMockS3Service(ctr)
 			s3Service.EXPECT().
-				GetReader(gomock.Any(), test.s3MockContent.bucketName, test.s3MockContent.objectKey).
-				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
+				GetReader(gomock.Any(), test.s3MockContent.bucketName, test.s3MockContent.objectKey, gomock.Any()).
+				Return(internal.NewBytesS3ObjectReader(test.s3MockContent.data), nil).
 				AnyTimes()
 
 			handler := newS3LogsHandler(s3Service, zap.NewNop(), test.extension, test.eventConsumer)
 
+			// Set the S3 object size to match the mock data so that
+			// io.NewSectionReader in the handler sees the correct length.
+			s3Event := test.s3Event
+			if len(s3Event.Records) > 0 && len(test.s3MockContent.data) > 0 {
+				s3Event.Records[0].S3.Object.Size = int64(len(test.s3MockContent.data))
+			}
+
 			var event json.RawMessage
-			event, err := json.Marshal(test.s3Event)
+			event, err := json.Marshal(s3Event)
 			require.NoError(t, err)
 
 			errP := handler.handle(t.Context(), event)
@@ -478,7 +485,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
 					Object: events.S3Object{
 						Key:  "test-file.txt",
-						Size: 10,
+						Size: int64(len("object content")),
 					},
 				},
 			},
@@ -512,8 +519,8 @@ func TestConsumerErrorHandling(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			s3Service := internal.NewMockS3Service(ctr)
-			s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(io.NopCloser(bytes.NewReader([]byte("object content"))), nil).
+			s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(internal.NewBytesS3ObjectReader([]byte("object content")), nil).
 				Times(1)
 
 			handler := newS3LogsHandler(s3Service, zap.NewNop(), &customLogUnmarshaler{}, &noOpLogsConsumer{err: test.consumerErr})

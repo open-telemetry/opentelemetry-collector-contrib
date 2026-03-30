@@ -4,7 +4,6 @@
 package awslambdareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver"
 
 import (
-	"bufio"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -32,9 +31,6 @@ import (
 
 // s3StreamBatchSize defines the size of data chunks read from S3 object stream for processing.
 const s3StreamBatchSize = 10_000_000 // 10MB chunks
-
-// readerBufferSize defines the buffer size for buffered readers.
-const readerBufferSize = 128 * 1024 // 128KB buffer size
 
 type (
 	handlerRegistry map[eventType]lambdaEventHandler
@@ -189,28 +185,23 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 		return nil
 	}
 
-	reader, err := s.s3Service.GetReader(ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.URLDecodedKey)
+	s3Reader, err := s.s3Service.GetReader(ctx, parsedEvent.S3.Bucket.Name, parsedEvent.S3.Object.URLDecodedKey, parsedEvent.S3.Object.Size)
 	if err != nil {
 		return err
 	}
+	defer s3Reader.Close()
 
-	wrappedReader, err := gunzipIfNeeded(reader)
-	if err != nil {
-		return fmt.Errorf("failed to derive reader with wrapper: %w", err)
-	}
-
-	defer func() {
-		if gzReader, ok := wrappedReader.(*gzip.Reader); ok {
-			_ = gzReader.Close()
+	var reader io.Reader = s3Reader
+	if strings.HasSuffix(parsedEvent.S3.Object.URLDecodedKey, ".gz") {
+		gzReader, gzErr := gzip.NewReader(s3Reader)
+		if gzErr != nil {
+			return fmt.Errorf("failed to create gzip reader: %w", gzErr)
 		}
-	}()
-
-	err = s.decodeF(ctx, wrappedReader, parsedEvent)
-	if err != nil {
-		return err
+		defer gzReader.Close()
+		reader = gzReader
 	}
 
-	return nil
+	return s.decodeF(ctx, reader, parsedEvent)
 }
 
 func (*s3Handler) parseEvent(raw json.RawMessage) (event events.S3EventRecord, err error) {
@@ -287,24 +278,6 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 	}
 
 	return nil
-}
-
-// gunzipIfNeeded checks if the provided reader is a gzipped stream and returns a reader with gunzip wrapping if needed.
-func gunzipIfNeeded(r io.Reader) (io.Reader, error) {
-	buf := bufio.NewReaderSize(r, readerBufferSize)
-	header, err := buf.Peek(2)
-	if err != nil {
-		return nil, err
-	}
-	// gzip magic number: 0x1f 0x8b
-	if header[0] == 0x1f && header[1] == 0x8b {
-		gr, err := gzip.NewReader(buf)
-		if err != nil {
-			return nil, err
-		}
-		return gr, nil
-	}
-	return buf, nil
 }
 
 func enrichS3Logs(logs plog.Logs, event events.S3EventRecord) {
