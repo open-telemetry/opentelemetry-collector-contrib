@@ -15,5 +15,39 @@ properties:
     type: object
     properties:
       encoding:
-        description: Encoding defines the encoding to decode incoming Lambda invocation data. This extension is expected to further process content of the events that are extracted from Lambda trigger. If receiving data is in different formats(ex:- a mix of VPC flow logs, CloudTrail logs), receiver is recommended to have separate Lambda functions with specific extension configurations.
+        description: >-
+          Encoding defines the encoding extension component ID used to decode incoming S3 object
+          data. Mutually exclusive with 'encodings'. If neither is set, S3 object content is
+          preserved as-is (raw decoder).
         type: string
+      encodings:
+        description: >-
+          Encodings defines a list of encoding entries for S3 path-based routing (multi-format
+          mode). Each entry maps an S3 object key prefix pattern to an encoding extension, allowing
+          a single Lambda deployment to handle multiple log formats simultaneously.
+          Mutually exclusive with 'encoding'.
+        type: array
+        items:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              description: >-
+                Unique identifier for this encoding entry. For well-known names (vpcflow,
+                cloudtrail, elbaccess, waf, networkfirewall) the default path_pattern is applied
+                automatically when path_pattern is omitted.
+              type: string
+            encoding:
+              description: >-
+                Encoding extension component ID used to decode matching S3 objects
+                (e.g. "awslogs_encoding/vpcflow"). If empty, S3 object content is passed through
+                using the built-in raw decoder.
+              type: string
+            path_pattern:
+              description: >-
+                S3 object key prefix pattern matched against incoming S3 event keys. A single "*"
+                matches exactly one path segment (e.g. "AWSLogs/*/vpcflowlogs"). If empty, the
+                built-in default pattern for the given name is used. Use "*" as a catch-all to
+                match any remaining S3 object key.
+              type: string
