@@ -169,7 +169,7 @@ require (
 	github.com/knadh/koanf/providers/env/v2 v2.0.0 // indirect
 	github.com/knadh/koanf/providers/file v1.2.1 // indirect
 	github.com/knadh/koanf/providers/fs v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.3 // indirect
+	github.com/knadh/koanf/v2 v2.3.4 // indirect
 	github.com/kulti/thelper v0.7.1 // indirect
 	github.com/kunwardeep/paralleltest v1.0.15 // indirect
 	github.com/lasiar/canonicalheader v1.1.2 // indirect
@@ -273,14 +273,14 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.29.0 // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.29.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.29.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/confmap v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/filter v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/pdata v1.54.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.148.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.148.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/component v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/confmap v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/filter v0.148.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/pdata v1.54.1-0.20260330144813-4d17eb8959de // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.42.0 // indirect
