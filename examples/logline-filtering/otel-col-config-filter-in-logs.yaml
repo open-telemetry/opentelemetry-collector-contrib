@@ -1,5 +1,5 @@
 receivers:
-  filelog:
+  file_log:
     include: [/var/log/busybox/simple.log]
     operators:
       - type: filter
@@ -8,7 +8,7 @@ receivers:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [otlp_grpc/custom]
       processors: []
 

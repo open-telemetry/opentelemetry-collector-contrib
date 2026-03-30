@@ -16,11 +16,11 @@ Count of spans that were sampled or not per sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
@@ -32,11 +32,11 @@ Count of traces that were sampled or not per sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
@@ -48,9 +48,9 @@ Number of spans that were able to be immediately released due to a decision cach
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
 
 ### otelcol_processor_tail_sampling_global_count_traces_sampled
 
@@ -62,10 +62,10 @@ Global count of traces that were sampled or not by at least one policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
 
@@ -109,9 +109,9 @@ Total number of executions of a specific sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
 
 ### otelcol_processor_tail_sampling_sampling_policy_execution_time_sum
 
@@ -123,9 +123,9 @@ Total time spent (in microseconds) executing a specific sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
 
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
