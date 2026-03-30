@@ -1,0 +1,28 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type:
+  enhancement
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component:
+  receiver/mysql
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note:
+  Add and tune obfuscation of sensitive properties in both V1 and V2 JSON query plans.
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [46629,46587]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Configure and test obfuscation for V1 and V2 plans, including tests of queries retrieved from the performance schema that are truncated and cannot be obfuscated.
+  The importance of obfuscation can be very context dependent; sensitive PII, banking, and authorization data may reside in the same database as less sensitive data, and it can be vital to ensure that what is expected to be obfuscated is always obfuscated. Significant additional testing has been added around query plan obfuscation to ensure that this is enforced and to provide assurance and reference to users about what specifically is obfuscated and what is not.
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
