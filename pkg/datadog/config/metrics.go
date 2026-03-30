@@ -10,6 +10,7 @@ import (
 
 	otlpmetrics "github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -78,6 +79,19 @@ type HistogramConfig struct {
 	// SendAggregations states if the exporter should send .sum, .count, .min and .max metrics for histograms.
 	// The default is false.
 	SendAggregations bool `mapstructure:"send_aggregation_metrics"`
+}
+
+var _ confmap.Marshaler = (*HistogramConfig)(nil)
+
+// Marshal emits only the canonical histogram aggregation setting.
+func (c HistogramConfig) Marshal(conf *confmap.Conf) error {
+	return conf.Marshal(struct {
+		Mode             HistogramMode `mapstructure:"mode"`
+		SendAggregations bool          `mapstructure:"send_aggregation_metrics"`
+	}{
+		Mode:             c.Mode,
+		SendAggregations: c.SendAggregations,
+	})
 }
 
 func (c *HistogramConfig) validate() error {
