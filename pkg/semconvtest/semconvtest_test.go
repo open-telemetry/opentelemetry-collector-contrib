@@ -73,8 +73,6 @@ func TestWeaverLogs(t *testing.T) {
 	record := scope.LogRecords().AppendEmpty()
 	record.Body().SetStr("hi I am a log")
 
-	time.Sleep(10 * time.Second)
-
 	err = weaver.TestLogs(logs)
 	require.NoError(t, err)
 
@@ -127,8 +125,6 @@ func TestWeaverMetrics(t *testing.T) {
 	dp := gauge.DataPoints().AppendEmpty()
 	dp.SetIntValue(42)
 	dp.Attributes().PutStr("invalid.datapoint.attribute", "value")
-
-	time.Sleep(10 * time.Second)
 
 	err = weaver.TestMetrics(metrics)
 	require.NoError(t, err)
@@ -187,8 +183,6 @@ func TestWeaverTraces(t *testing.T) {
 	span.SetName("test-span")
 	span.SetKind(ptrace.SpanKindClient)
 	span.Attributes().PutStr("invalid.span.attribute", "value")
-
-	time.Sleep(10 * time.Second)
 
 	err = weaver.TestTraces(traces)
 	require.NoError(t, err)
@@ -251,8 +245,6 @@ func TestWeaverHTTPServerMetrics(t *testing.T) {
 
 	require.NotEmpty(t, sink.AllMetrics(), "expected receiver to produce metrics")
 	metrics := sink.AllMetrics()[0]
-
-	time.Sleep(10 * time.Second)
 
 	err = weaver.TestMetrics(metrics)
 	require.NoError(t, err)

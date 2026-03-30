@@ -172,6 +172,9 @@ func (dp *DataPoints) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	// No variant matched. Return nil rather than an error so that
+	// unrecognized data point types don't prevent parsing the rest
+	// of the report.
 	return nil
 }
 

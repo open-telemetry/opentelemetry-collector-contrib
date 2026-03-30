@@ -18,6 +18,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/fsnotify/fsnotify"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -68,23 +69,32 @@ func NewWeaverContext(ctx context.Context, opts *WeaverOptions) (*WeaverContext,
 		return nil, err
 	}
 
+	cleanup := func() {
+		timeout := 10 * time.Second
+		_ = weaverC.Stop(ctx, &timeout)
+	}
+
 	// Upon creating the container, we can gather the host and the mapped ports
 	// it chose and use that to construct the pdata clients and stop endpoint.
 	host, err := weaverC.Host(ctx)
 	if err != nil {
+		cleanup()
 		return nil, err
 	}
 	mappedOTLPPort, err := weaverC.MappedPort(ctx, nat.Port(DefaultWeaverOTLPListenerPort))
 	if err != nil {
+		cleanup()
 		return nil, err
 	}
 	mappedStopPort, err := weaverC.MappedPort(ctx, nat.Port(DefaultWeaverStopPort))
 	if err != nil {
+		cleanup()
 		return nil, err
 	}
 
 	clients, err := newPdataClientContext(fmt.Sprintf("%s:%s", host, mappedOTLPPort.Port()))
 	if err != nil {
+		cleanup()
 		return nil, err
 	}
 
@@ -114,10 +124,13 @@ func (wc *WeaverContext) ContainerLogs() ([]string, error) {
 		return nil, err
 	}
 	defer reader.Close()
-	logs := []string{}
+	var logs []string
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		logs = append(logs, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 	return logs, nil
 }
@@ -259,8 +272,12 @@ func (opts *WeaverOptions) testContainerOptions() []testcontainers.ContainerCust
 		containerOpts = append(containerOpts, testcontainers.WithCmdArgs(cmdArgs...))
 	}
 
-	// Expose the required ports on the container.
-	containerOpts = append(containerOpts, testcontainers.WithExposedPorts(DefaultWeaverOTLPListenerPort, DefaultWeaverStopPort))
+	// Expose the required ports on the container and wait for the OTLP
+	// listener to be ready before returning.
+	containerOpts = append(containerOpts,
+		testcontainers.WithExposedPorts(DefaultWeaverOTLPListenerPort, DefaultWeaverStopPort),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(nat.Port(DefaultWeaverOTLPListenerPort))),
+	)
 
 	// If OutputDir is set, bind mount it into the container.
 	if opts.OutputDir != "" {
