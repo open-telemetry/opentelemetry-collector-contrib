@@ -173,7 +173,7 @@ func (*s3Handler) handlerType() eventType {
 
 func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	var err error
-	parsedEvent, err := s.parseEvent(event)
+	parsedEvent, err := parseS3Event(event)
 	if err != nil {
 		return fmt.Errorf("failed to parse the event: %w", err)
 	}
@@ -213,18 +213,115 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	return nil
 }
 
-func (*s3Handler) parseEvent(raw json.RawMessage) (event events.S3EventRecord, err error) {
+// parseS3Event parses a raw JSON S3 event notification and returns the single S3 event record.
+// S3 event notifications always contain exactly one record.
+func parseS3Event(raw json.RawMessage) (events.S3EventRecord, error) {
 	var message events.S3Event
 	if err := gojson.Unmarshal(raw, &message); err != nil {
 		return events.S3EventRecord{}, fmt.Errorf("failed to unmarshal S3 event notification: %w", err)
 	}
 
-	// Records cannot be more than 1 in case of s3 event notifications
+	// This receiver processes one S3 object per invocation; reject events with != 1 record.
 	if len(message.Records) > 1 || len(message.Records) == 0 {
 		return events.S3EventRecord{}, fmt.Errorf("s3 event notification should contain one record instead of %d", len(message.Records))
 	}
 
 	return message.Records[0], nil
+}
+
+// multiFormatS3LogsHandler handles S3 events with multiple log encodings.
+// It uses the router to select the correct LogsDecoderFactory based on the
+// S3 object key path, then streams the object through the selected decoder.
+type multiFormatS3LogsHandler struct {
+	s3Service internal.S3Service
+	logger    *zap.Logger
+	router    *logsDecoderRouter
+	consumer  consumer.Logs
+}
+
+func newMultiFormatS3LogsHandler(
+	service internal.S3Service,
+	baseLogger *zap.Logger,
+	router *logsDecoderRouter,
+	consumer consumer.Logs,
+) *multiFormatS3LogsHandler {
+	return &multiFormatS3LogsHandler{
+		s3Service: service,
+		logger:    baseLogger.Named("s3-multiformat"),
+		router:    router,
+		consumer:  consumer,
+	}
+}
+
+func (*multiFormatS3LogsHandler) handlerType() eventType {
+	return s3Event
+}
+
+func (s *multiFormatS3LogsHandler) handle(ctx context.Context, event json.RawMessage) error {
+	parsedEvent, err := parseS3Event(event)
+	if err != nil {
+		return fmt.Errorf("failed to parse the event: %w", err)
+	}
+
+	objectKey := parsedEvent.S3.Object.URLDecodedKey
+
+	s.logger.Debug("Processing S3 event notification (multi-encoding).",
+		zap.String("File", objectKey),
+		zap.String("S3Bucket", parsedEvent.S3.Bucket.Arn),
+	)
+
+	if parsedEvent.S3.Object.Size == 0 {
+		s.logger.Info("Empty object, skipping download", zap.String("File", objectKey))
+		return nil
+	}
+
+	// Route to the correct decoder based on the object key path.
+	decoderFactory, encodingName, err := s.router.GetDecoder(objectKey)
+	if err != nil {
+		return fmt.Errorf("failed to route S3 object: %w", err)
+	}
+
+	s.logger.Debug("Matched encoding for S3 object",
+		zap.String("File", objectKey),
+		zap.String("Encoding", encodingName),
+	)
+
+	reader, err := s.s3Service.GetReader(ctx, parsedEvent.S3.Bucket.Name, objectKey)
+	if err != nil {
+		return err
+	}
+
+	wrappedReader, err := gunzipIfNeeded(reader)
+	if err != nil {
+		return fmt.Errorf("failed to derive reader with wrapper: %w", err)
+	}
+	defer func() {
+		if gzReader, ok := wrappedReader.(*gzip.Reader); ok {
+			_ = gzReader.Close()
+		}
+	}()
+
+	decoder, err := decoderFactory.NewLogsDecoder(wrappedReader, encoding.WithFlushBytes(s3StreamBatchSize), encoding.WithFlushItems(0))
+	if err != nil {
+		return fmt.Errorf("failed to create logs decoder for encoding %q: %w", encodingName, err)
+	}
+
+	for {
+		var logs plog.Logs
+		logs, err = decoder.DecodeLogs()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return fmt.Errorf("failed to decode S3 logs (encoding %q): %w", encodingName, err)
+		}
+		enrichS3Logs(logs, parsedEvent)
+		if err = s.consumer.ConsumeLogs(getEnrichedContext(ctx, parsedEvent), logs); err != nil {
+			return checkConsumerErrorAndWrap(err)
+		}
+	}
+
+	return nil
 }
 
 // cwLogsSubscriptionHandler is specialized in CloudWatch log stream subscription filter events
