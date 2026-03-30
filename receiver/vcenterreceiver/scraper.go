@@ -60,7 +60,7 @@ func newVmwareVcenterScraper(
 	client := newVcenterClient(logger, config)
 	scrapeData := newVcenterScrapeData()
 
-	effectiveCfg := EffectiveMetricsBuilderConfig(config, config.MetricsBuilderConfig)
+	effectiveCfg := effectiveMetricsBuilderConfig(config, config.MetricsBuilderConfig)
 	return &vcenterMetricScraper{
 		client:     client,
 		config:     config,
@@ -93,7 +93,7 @@ func (v *vcenterMetricScraper) hasEnabledVSANMetrics() bool {
 	// When scraper groups are configured, use the vsan group's enabled flag.
 	// else check each vSAN metric individually for backward compatibility reasons
 	if v.config.Scrapers != nil {
-		return IsScraperGroupEnabled(v.config, ScraperGroupVSAN)
+		return isScraperGroupEnabled(v.config, ScraperGroupVSAN)
 	}
 
 	// Check cluster vSAN metrics

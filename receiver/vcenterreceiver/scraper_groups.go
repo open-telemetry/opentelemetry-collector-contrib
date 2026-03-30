@@ -23,7 +23,7 @@ const (
 	ScraperGroupVSAN         ScraperGroup = "vsan"
 )
 
-func AllScraperGroups() []ScraperGroup {
+func allScraperGroups() []ScraperGroup {
 	return []ScraperGroup{
 		ScraperGroupCluster,
 		ScraperGroupDatacenter,
@@ -37,7 +37,7 @@ func AllScraperGroups() []ScraperGroup {
 
 func validScraperGroupSet() map[ScraperGroup]bool {
 	set := make(map[ScraperGroup]bool)
-	for _, g := range AllScraperGroups() {
+	for _, g := range allScraperGroups() {
 		set[g] = true
 	}
 	return set
@@ -45,11 +45,13 @@ func validScraperGroupSet() map[ScraperGroup]bool {
 
 type ScraperConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
-// GroupForMetricName returns the scraper group for a metric by its mapstructure name
+// groupForMetricName returns the scraper group for a metric by its mapstructure name
 // (e.g. "vcenter.cluster.vsan.throughput" -> ScraperGroupVSAN).
-func GroupForMetricName(name string) ScraperGroup {
+func groupForMetricName(name string) ScraperGroup {
 	if strings.Contains(name, ".vsan.") || strings.HasSuffix(name, ".vsan") {
 		return ScraperGroupVSAN
 	}
@@ -71,9 +73,9 @@ func GroupForMetricName(name string) ScraperGroup {
 	}
 }
 
-// IsScraperGroupEnabled returns whether a scraper group is enabled.
+// isScraperGroupEnabled returns whether a scraper group is enabled.
 // If cfg.Scrapers is nil, all groups are enabled for backward compatibility reasons
-func IsScraperGroupEnabled(cfg *Config, group ScraperGroup) bool {
+func isScraperGroupEnabled(cfg *Config, group ScraperGroup) bool {
 	if cfg.Scrapers == nil {
 		return true
 	}
@@ -84,10 +86,10 @@ func IsScraperGroupEnabled(cfg *Config, group ScraperGroup) bool {
 	return sc.Enabled
 }
 
-// EffectiveMetricsBuilderConfig returns a MetricsBuilderConfig with any metric disabled
+// effectiveMetricsBuilderConfig returns a MetricsBuilderConfig with any metric disabled
 // whose scraper group is disabled in cfg. Used so the metrics builder only emits metrics
 // for enabled groups.
-func EffectiveMetricsBuilderConfig(cfg *Config, mbc metadata.MetricsBuilderConfig) metadata.MetricsBuilderConfig {
+func effectiveMetricsBuilderConfig(cfg *Config, mbc metadata.MetricsBuilderConfig) metadata.MetricsBuilderConfig {
 	if cfg.Scrapers == nil {
 		return mbc
 	}
@@ -107,7 +109,7 @@ func EffectiveMetricsBuilderConfig(cfg *Config, mbc metadata.MetricsBuilderConfi
 		if tag == "" {
 			continue
 		}
-		if !IsScraperGroupEnabled(cfg, GroupForMetricName(tag)) {
+		if !isScraperGroupEnabled(cfg, groupForMetricName(tag)) {
 			enabledField.SetBool(false)
 		}
 	}

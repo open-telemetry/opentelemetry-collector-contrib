@@ -31,7 +31,7 @@ func TestGroupForMetricName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GroupForMetricName(tt.metric)
+			got := groupForMetricName(tt.metric)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -40,8 +40,8 @@ func TestGroupForMetricName(t *testing.T) {
 func TestIsScraperGroupEnabled(t *testing.T) {
 	t.Run("nil Scrapers means all enabled", func(t *testing.T) {
 		cfg := &Config{Scrapers: nil}
-		assert.True(t, IsScraperGroupEnabled(cfg, ScraperGroupVSAN))
-		assert.True(t, IsScraperGroupEnabled(cfg, ScraperGroupHost))
+		assert.True(t, isScraperGroupEnabled(cfg, ScraperGroupVSAN))
+		assert.True(t, isScraperGroupEnabled(cfg, ScraperGroupHost))
 	})
 
 	t.Run("missing group means enabled", func(t *testing.T) {
@@ -50,8 +50,8 @@ func TestIsScraperGroupEnabled(t *testing.T) {
 				ScraperGroupVM: {Enabled: false},
 			},
 		}
-		assert.True(t, IsScraperGroupEnabled(cfg, ScraperGroupVSAN))
-		assert.False(t, IsScraperGroupEnabled(cfg, ScraperGroupVM))
+		assert.True(t, isScraperGroupEnabled(cfg, ScraperGroupVSAN))
+		assert.False(t, isScraperGroupEnabled(cfg, ScraperGroupVM))
 	})
 
 	t.Run("explicit enabled/disabled", func(t *testing.T) {
@@ -61,8 +61,8 @@ func TestIsScraperGroupEnabled(t *testing.T) {
 				ScraperGroupHost: {Enabled: false},
 			},
 		}
-		assert.True(t, IsScraperGroupEnabled(cfg, ScraperGroupVSAN))
-		assert.False(t, IsScraperGroupEnabled(cfg, ScraperGroupHost))
+		assert.True(t, isScraperGroupEnabled(cfg, ScraperGroupVSAN))
+		assert.False(t, isScraperGroupEnabled(cfg, ScraperGroupHost))
 	})
 }
 
@@ -70,7 +70,7 @@ func TestEffectiveMetricsBuilderConfig(t *testing.T) {
 	t.Run("nil Scrapers returns config unchanged", func(t *testing.T) {
 		cfg := &Config{Scrapers: nil}
 		mbc := metadata.DefaultMetricsBuilderConfig()
-		got := EffectiveMetricsBuilderConfig(cfg, mbc)
+		got := effectiveMetricsBuilderConfig(cfg, mbc)
 		require.True(t, got.Metrics.VcenterClusterCPUEffective.Enabled)
 		require.True(t, got.Metrics.VcenterHostCPUUtilization.Enabled)
 	})
@@ -82,7 +82,7 @@ func TestEffectiveMetricsBuilderConfig(t *testing.T) {
 			},
 		}
 		mbc := metadata.DefaultMetricsBuilderConfig()
-		got := EffectiveMetricsBuilderConfig(cfg, mbc)
+		got := effectiveMetricsBuilderConfig(cfg, mbc)
 		// Non-VSAN cluster metric still enabled
 		assert.True(t, got.Metrics.VcenterClusterCPUEffective.Enabled)
 		// VSAN metrics disabled
@@ -98,14 +98,14 @@ func TestEffectiveMetricsBuilderConfig(t *testing.T) {
 			},
 		}
 		mbc := metadata.DefaultMetricsBuilderConfig()
-		got := EffectiveMetricsBuilderConfig(cfg, mbc)
+		got := effectiveMetricsBuilderConfig(cfg, mbc)
 		assert.False(t, got.Metrics.VcenterHostCPUUtilization.Enabled)
 		assert.True(t, got.Metrics.VcenterVMCPUUsage.Enabled)
 	})
 }
 
 func TestAllScraperGroups(t *testing.T) {
-	groups := AllScraperGroups()
+	groups := allScraperGroups()
 	require.Len(t, groups, 7)
 	set := make(map[ScraperGroup]bool)
 	for _, g := range groups {
