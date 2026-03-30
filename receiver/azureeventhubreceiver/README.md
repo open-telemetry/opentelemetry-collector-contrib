@@ -5,7 +5,7 @@
 | Stability     | [beta]: metrics, logs, traces   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fazureeventhub%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fazureeventhub) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fazureeventhub%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fazureeventhub) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azure_event_hub)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azure_event_hub&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_azureeventhub)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_azureeventhub&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@cparkins](https://www.github.com/cparkins), [@dyl10s](https://www.github.com/dyl10s) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
@@ -50,6 +50,18 @@ Either `connection` or `auth` must be specified.
 | `offset` | string | No | `""` | Starting offset. Only applicable when `partition` is set. |
 | `storage` | string | No | | ID of a [storage extension] for checkpoint persistence. |
 
+### Distributed Consumption Settings
+
+When `blob_checkpoint_store` is set, the receiver uses the Azure SDK [Processor](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2#Processor) to coordinate partition ownership across multiple collector instances via Azure Blob Storage. This is mutually exclusive with `partition`, `offset`, and `storage`.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `blob_checkpoint_store.connection` | string | * | | Azure Blob Storage connection string. Required when not using `auth`. |
+| `blob_checkpoint_store.storage_account_url` | string | * | | Blob service URL (e.g., `https://myaccount.blob.core.windows.net`). Required when using `auth`. |
+| `blob_checkpoint_store.container_name` | string | Yes | | Blob container for checkpoint data. Must already exist before starting the collector. |
+
+\* One of `connection` or `storage_account_url` is required.
+
 ### Polling Settings
 
 | Field | Type | Required | Default | Description |
@@ -91,10 +103,10 @@ receivers:
     event_hub:
       name: hubName
       namespace: namespace.servicebus.windows.net
-    auth: azureauth
+    auth: azure_auth
 
 extensions:
-  azureauth:
+  azure_auth:
     service_principal:
       client_id: ${env:AZURE_CLIENT_ID}
       client_secret: ${env:AZURE_CLIENT_SECRET}
@@ -118,6 +130,40 @@ extensions:
     directory: /var/lib/otelcol/eventhub
 ```
 
+#### Distributed Consumption with Blob Checkpoint Store
+
+When `blob_checkpoint_store` is configured, the receiver automatically:
+- Coordinates partition ownership across collector instances via blob leases
+- Checkpoints progress to Azure Blob Storage
+- Rebalances partitions when instances are added or removed
+
+**Prerequisites:**
+- The blob container must already exist before starting the collector
+- All collector instances must use the same consumer group and container
+
+```yaml
+# With connection strings
+receivers:
+  azure_event_hub:
+    connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
+    blob_checkpoint_store:
+      connection: DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net
+      container_name: eventhub-checkpoints
+```
+
+```yaml
+# With auth extension
+receivers:
+  azure_event_hub:
+    event_hub:
+      name: hubName
+      namespace: namespace.servicebus.windows.net
+    auth: azureauth
+    blob_checkpoint_store:
+      storage_account_url: https://myaccount.blob.core.windows.net
+      container_name: eventhub-checkpoints
+```
+
 #### Custom Time Formats and Partitioning
 
 ```yaml
@@ -132,16 +178,6 @@ receivers:
       logs: ["01/02/2006 15:04:05", "2006-01-02 15:04:05"]
       metrics: ["01/02/2006 15:04:05"]
 ```
-
-## Feature Gates
-
-The following feature gates are available for this receiver:
-
-### `receiver.azureeventhubreceiver.UseAzeventhubs`
-
-| Status | Default | From Version | To Version |
-|--------|---------|--------------|------------|
-| Stable | `true`  | v0.129.0     | v0.144.0   |
 
 ## Known Limitations
 

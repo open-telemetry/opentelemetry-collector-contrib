@@ -207,10 +207,10 @@ type metricInfo struct {
 }
 
 type metricNfsClientNetCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        NfsClientNetCountMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.client.net.count metric with initial data.
@@ -233,7 +233,7 @@ func (m *metricNfsClientNetCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "network.transport") {
+	if slices.Contains(m.config.EnabledAttributes, NfsClientNetCountMetricAttributeKeyNetworkTransport) {
 		dp.Attributes().PutStr("network.transport", networkTransportAttributeValue)
 	}
 
@@ -287,7 +287,7 @@ func (m *metricNfsClientNetCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsClientNetCount(cfg MetricConfig) metricNfsClientNetCount {
+func newMetricNfsClientNetCount(cfg NfsClientNetCountMetricConfig) metricNfsClientNetCount {
 	m := metricNfsClientNetCount{config: cfg}
 
 	if cfg.Enabled {
@@ -298,9 +298,9 @@ func newMetricNfsClientNetCount(cfg MetricConfig) metricNfsClientNetCount {
 }
 
 type metricNfsClientNetTCPConnectionAccepted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   NfsClientNetTCPConnectionAcceptedMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills nfs.client.net.tcp.connection.accepted metric with initial data.
@@ -339,7 +339,7 @@ func (m *metricNfsClientNetTCPConnectionAccepted) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricNfsClientNetTCPConnectionAccepted(cfg MetricConfig) metricNfsClientNetTCPConnectionAccepted {
+func newMetricNfsClientNetTCPConnectionAccepted(cfg NfsClientNetTCPConnectionAcceptedMetricConfig) metricNfsClientNetTCPConnectionAccepted {
 	m := metricNfsClientNetTCPConnectionAccepted{config: cfg}
 
 	if cfg.Enabled {
@@ -350,10 +350,10 @@ func newMetricNfsClientNetTCPConnectionAccepted(cfg MetricConfig) metricNfsClien
 }
 
 type metricNfsClientOperationCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        NfsClientOperationCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.client.operation.count metric with initial data.
@@ -376,10 +376,10 @@ func (m *metricNfsClientOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "onc_rpc.version") {
+	if slices.Contains(m.config.EnabledAttributes, NfsClientOperationCountMetricAttributeKeyOncRPCVersion) {
 		dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "nfs.operation.name") {
+	if slices.Contains(m.config.EnabledAttributes, NfsClientOperationCountMetricAttributeKeyNfsOperationName) {
 		dp.Attributes().PutStr("nfs.operation.name", nfsOperationNameAttributeValue)
 	}
 
@@ -433,7 +433,7 @@ func (m *metricNfsClientOperationCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsClientOperationCount(cfg MetricConfig) metricNfsClientOperationCount {
+func newMetricNfsClientOperationCount(cfg NfsClientOperationCountMetricConfig) metricNfsClientOperationCount {
 	m := metricNfsClientOperationCount{config: cfg}
 
 	if cfg.Enabled {
@@ -444,10 +444,10 @@ func newMetricNfsClientOperationCount(cfg MetricConfig) metricNfsClientOperation
 }
 
 type metricNfsClientProcedureCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        NfsClientProcedureCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.client.procedure.count metric with initial data.
@@ -470,10 +470,10 @@ func (m *metricNfsClientProcedureCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "onc_rpc.version") {
+	if slices.Contains(m.config.EnabledAttributes, NfsClientProcedureCountMetricAttributeKeyOncRPCVersion) {
 		dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "onc_rpc.procedure.name") {
+	if slices.Contains(m.config.EnabledAttributes, NfsClientProcedureCountMetricAttributeKeyOncRPCProcedureName) {
 		dp.Attributes().PutStr("onc_rpc.procedure.name", oncRPCProcedureNameAttributeValue)
 	}
 
@@ -527,7 +527,7 @@ func (m *metricNfsClientProcedureCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsClientProcedureCount(cfg MetricConfig) metricNfsClientProcedureCount {
+func newMetricNfsClientProcedureCount(cfg NfsClientProcedureCountMetricConfig) metricNfsClientProcedureCount {
 	m := metricNfsClientProcedureCount{config: cfg}
 
 	if cfg.Enabled {
@@ -538,9 +538,9 @@ func newMetricNfsClientProcedureCount(cfg MetricConfig) metricNfsClientProcedure
 }
 
 type metricNfsClientRPCAuthrefreshCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   NfsClientRPCAuthrefreshCountMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills nfs.client.rpc.authrefresh.count metric with initial data.
@@ -579,7 +579,7 @@ func (m *metricNfsClientRPCAuthrefreshCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsClientRPCAuthrefreshCount(cfg MetricConfig) metricNfsClientRPCAuthrefreshCount {
+func newMetricNfsClientRPCAuthrefreshCount(cfg NfsClientRPCAuthrefreshCountMetricConfig) metricNfsClientRPCAuthrefreshCount {
 	m := metricNfsClientRPCAuthrefreshCount{config: cfg}
 
 	if cfg.Enabled {
@@ -590,9 +590,9 @@ func newMetricNfsClientRPCAuthrefreshCount(cfg MetricConfig) metricNfsClientRPCA
 }
 
 type metricNfsClientRPCCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   NfsClientRPCCountMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills nfs.client.rpc.count metric with initial data.
@@ -631,7 +631,7 @@ func (m *metricNfsClientRPCCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsClientRPCCount(cfg MetricConfig) metricNfsClientRPCCount {
+func newMetricNfsClientRPCCount(cfg NfsClientRPCCountMetricConfig) metricNfsClientRPCCount {
 	m := metricNfsClientRPCCount{config: cfg}
 
 	if cfg.Enabled {
@@ -642,9 +642,9 @@ func newMetricNfsClientRPCCount(cfg MetricConfig) metricNfsClientRPCCount {
 }
 
 type metricNfsClientRPCRetransmitCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   NfsClientRPCRetransmitCountMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills nfs.client.rpc.retransmit.count metric with initial data.
@@ -683,7 +683,7 @@ func (m *metricNfsClientRPCRetransmitCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsClientRPCRetransmitCount(cfg MetricConfig) metricNfsClientRPCRetransmitCount {
+func newMetricNfsClientRPCRetransmitCount(cfg NfsClientRPCRetransmitCountMetricConfig) metricNfsClientRPCRetransmitCount {
 	m := metricNfsClientRPCRetransmitCount{config: cfg}
 
 	if cfg.Enabled {
@@ -694,9 +694,9 @@ func newMetricNfsClientRPCRetransmitCount(cfg MetricConfig) metricNfsClientRPCRe
 }
 
 type metricNfsServerFhStaleCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   NfsServerFhStaleCountMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills nfs.server.fh.stale.count metric with initial data.
@@ -735,7 +735,7 @@ func (m *metricNfsServerFhStaleCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerFhStaleCount(cfg MetricConfig) metricNfsServerFhStaleCount {
+func newMetricNfsServerFhStaleCount(cfg NfsServerFhStaleCountMetricConfig) metricNfsServerFhStaleCount {
 	m := metricNfsServerFhStaleCount{config: cfg}
 
 	if cfg.Enabled {
@@ -746,10 +746,10 @@ func newMetricNfsServerFhStaleCount(cfg MetricConfig) metricNfsServerFhStaleCoun
 }
 
 type metricNfsServerIo struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric          // data buffer for generated metric.
+	config        NfsServerIoMetricConfig // metric config provided by user.
+	capacity      int                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.server.io metric with initial data.
@@ -772,7 +772,7 @@ func (m *metricNfsServerIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "network.io.direction") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerIoMetricAttributeKeyNetworkIoDirection) {
 		dp.Attributes().PutStr("network.io.direction", networkIoDirectionAttributeValue)
 	}
 
@@ -826,7 +826,7 @@ func (m *metricNfsServerIo) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerIo(cfg MetricConfig) metricNfsServerIo {
+func newMetricNfsServerIo(cfg NfsServerIoMetricConfig) metricNfsServerIo {
 	m := metricNfsServerIo{config: cfg}
 
 	if cfg.Enabled {
@@ -837,10 +837,10 @@ func newMetricNfsServerIo(cfg MetricConfig) metricNfsServerIo {
 }
 
 type metricNfsServerNetCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        NfsServerNetCountMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.server.net.count metric with initial data.
@@ -863,7 +863,7 @@ func (m *metricNfsServerNetCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "network.transport") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerNetCountMetricAttributeKeyNetworkTransport) {
 		dp.Attributes().PutStr("network.transport", networkTransportAttributeValue)
 	}
 
@@ -917,7 +917,7 @@ func (m *metricNfsServerNetCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerNetCount(cfg MetricConfig) metricNfsServerNetCount {
+func newMetricNfsServerNetCount(cfg NfsServerNetCountMetricConfig) metricNfsServerNetCount {
 	m := metricNfsServerNetCount{config: cfg}
 
 	if cfg.Enabled {
@@ -928,9 +928,9 @@ func newMetricNfsServerNetCount(cfg MetricConfig) metricNfsServerNetCount {
 }
 
 type metricNfsServerNetTCPConnectionAccepted struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   NfsServerNetTCPConnectionAcceptedMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills nfs.server.net.tcp.connection.accepted metric with initial data.
@@ -969,7 +969,7 @@ func (m *metricNfsServerNetTCPConnectionAccepted) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricNfsServerNetTCPConnectionAccepted(cfg MetricConfig) metricNfsServerNetTCPConnectionAccepted {
+func newMetricNfsServerNetTCPConnectionAccepted(cfg NfsServerNetTCPConnectionAcceptedMetricConfig) metricNfsServerNetTCPConnectionAccepted {
 	m := metricNfsServerNetTCPConnectionAccepted{config: cfg}
 
 	if cfg.Enabled {
@@ -980,10 +980,10 @@ func newMetricNfsServerNetTCPConnectionAccepted(cfg MetricConfig) metricNfsServe
 }
 
 type metricNfsServerOperationCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        NfsServerOperationCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.server.operation.count metric with initial data.
@@ -1006,10 +1006,10 @@ func (m *metricNfsServerOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "onc_rpc.version") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerOperationCountMetricAttributeKeyOncRPCVersion) {
 		dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "nfs.operation.name") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerOperationCountMetricAttributeKeyNfsOperationName) {
 		dp.Attributes().PutStr("nfs.operation.name", nfsOperationNameAttributeValue)
 	}
 
@@ -1063,7 +1063,7 @@ func (m *metricNfsServerOperationCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerOperationCount(cfg MetricConfig) metricNfsServerOperationCount {
+func newMetricNfsServerOperationCount(cfg NfsServerOperationCountMetricConfig) metricNfsServerOperationCount {
 	m := metricNfsServerOperationCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1074,10 +1074,10 @@ func newMetricNfsServerOperationCount(cfg MetricConfig) metricNfsServerOperation
 }
 
 type metricNfsServerProcedureCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        NfsServerProcedureCountMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.server.procedure.count metric with initial data.
@@ -1100,10 +1100,10 @@ func (m *metricNfsServerProcedureCount) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "onc_rpc.version") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerProcedureCountMetricAttributeKeyOncRPCVersion) {
 		dp.Attributes().PutInt("onc_rpc.version", oncRPCVersionAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "onc_rpc.procedure.name") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerProcedureCountMetricAttributeKeyOncRPCProcedureName) {
 		dp.Attributes().PutStr("onc_rpc.procedure.name", oncRPCProcedureNameAttributeValue)
 	}
 
@@ -1157,7 +1157,7 @@ func (m *metricNfsServerProcedureCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerProcedureCount(cfg MetricConfig) metricNfsServerProcedureCount {
+func newMetricNfsServerProcedureCount(cfg NfsServerProcedureCountMetricConfig) metricNfsServerProcedureCount {
 	m := metricNfsServerProcedureCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1168,10 +1168,10 @@ func newMetricNfsServerProcedureCount(cfg MetricConfig) metricNfsServerProcedure
 }
 
 type metricNfsServerRepcacheRequests struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        NfsServerRepcacheRequestsMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.server.repcache.requests metric with initial data.
@@ -1194,7 +1194,7 @@ func (m *metricNfsServerRepcacheRequests) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "nfs.server.repcache.status") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerRepcacheRequestsMetricAttributeKeyNfsServerRepcacheStatus) {
 		dp.Attributes().PutStr("nfs.server.repcache.status", nfsServerRepcacheStatusAttributeValue)
 	}
 
@@ -1248,7 +1248,7 @@ func (m *metricNfsServerRepcacheRequests) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerRepcacheRequests(cfg MetricConfig) metricNfsServerRepcacheRequests {
+func newMetricNfsServerRepcacheRequests(cfg NfsServerRepcacheRequestsMetricConfig) metricNfsServerRepcacheRequests {
 	m := metricNfsServerRepcacheRequests{config: cfg}
 
 	if cfg.Enabled {
@@ -1259,10 +1259,10 @@ func newMetricNfsServerRepcacheRequests(cfg MetricConfig) metricNfsServerRepcach
 }
 
 type metricNfsServerRPCCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        NfsServerRPCCountMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills nfs.server.rpc.count metric with initial data.
@@ -1285,7 +1285,7 @@ func (m *metricNfsServerRPCCount) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "error.type") {
+	if slices.Contains(m.config.EnabledAttributes, NfsServerRPCCountMetricAttributeKeyErrorType) {
 		dp.Attributes().PutStr("error.type", errorTypeAttributeValue)
 	}
 
@@ -1339,7 +1339,7 @@ func (m *metricNfsServerRPCCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerRPCCount(cfg MetricConfig) metricNfsServerRPCCount {
+func newMetricNfsServerRPCCount(cfg NfsServerRPCCountMetricConfig) metricNfsServerRPCCount {
 	m := metricNfsServerRPCCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1350,9 +1350,9 @@ func newMetricNfsServerRPCCount(cfg MetricConfig) metricNfsServerRPCCount {
 }
 
 type metricNfsServerThreadCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   NfsServerThreadCountMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills nfs.server.thread.count metric with initial data.
@@ -1391,7 +1391,7 @@ func (m *metricNfsServerThreadCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricNfsServerThreadCount(cfg MetricConfig) metricNfsServerThreadCount {
+func newMetricNfsServerThreadCount(cfg NfsServerThreadCountMetricConfig) metricNfsServerThreadCount {
 	m := metricNfsServerThreadCount{config: cfg}
 
 	if cfg.Enabled {

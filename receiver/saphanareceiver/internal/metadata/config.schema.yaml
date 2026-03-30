@@ -4,321 +4,321 @@ $defs:
     description: MetricsConfig provides config for saphana metrics.
     type: object
     properties:
-    saphana.alert.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.backup.latest:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.column.memory.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.component.memory.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.connection.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.cpu.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.disk.size.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.host.memory.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.host.swap.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.instance.code_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.instance.memory.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.instance.memory.shared.allocated:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.instance.memory.used.peak:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.license.expiration.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.license.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.license.peak:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.network.request.average_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.network.request.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.network.request.finished.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.replication.average_time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.replication.backlog.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.replication.backlog.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.row_store.memory.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.schema.memory.used.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.schema.memory.used.max:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.schema.operation.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.schema.record.compressed.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.schema.record.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.code_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.memory.compactors.allocated:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.memory.compactors.freeable:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.memory.effective_limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.memory.heap.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.memory.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.memory.shared.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.memory.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.stack_size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.service.thread.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.transaction.blocked:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.transaction.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.uptime:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.volume.operation.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.volume.operation.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    saphana.volume.operation.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      saphana.alert.count:
+        description: "SaphanaAlertCountMetricConfig provides config for the saphana.alert.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.backup.latest:
+        description: "SaphanaBackupLatestMetricConfig provides config for the saphana.backup.latest metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.column.memory.used:
+        description: "SaphanaColumnMemoryUsedMetricConfig provides config for the saphana.column.memory.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.component.memory.used:
+        description: "SaphanaComponentMemoryUsedMetricConfig provides config for the saphana.component.memory.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.connection.count:
+        description: "SaphanaConnectionCountMetricConfig provides config for the saphana.connection.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.cpu.used:
+        description: "SaphanaCPUUsedMetricConfig provides config for the saphana.cpu.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.disk.size.current:
+        description: "SaphanaDiskSizeCurrentMetricConfig provides config for the saphana.disk.size.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.host.memory.current:
+        description: "SaphanaHostMemoryCurrentMetricConfig provides config for the saphana.host.memory.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.host.swap.current:
+        description: "SaphanaHostSwapCurrentMetricConfig provides config for the saphana.host.swap.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.instance.code_size:
+        description: "SaphanaInstanceCodeSizeMetricConfig provides config for the saphana.instance.code_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.instance.memory.current:
+        description: "SaphanaInstanceMemoryCurrentMetricConfig provides config for the saphana.instance.memory.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.instance.memory.shared.allocated:
+        description: "SaphanaInstanceMemorySharedAllocatedMetricConfig provides config for the saphana.instance.memory.shared.allocated metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.instance.memory.used.peak:
+        description: "SaphanaInstanceMemoryUsedPeakMetricConfig provides config for the saphana.instance.memory.used.peak metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.license.expiration.time:
+        description: "SaphanaLicenseExpirationTimeMetricConfig provides config for the saphana.license.expiration.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.license.limit:
+        description: "SaphanaLicenseLimitMetricConfig provides config for the saphana.license.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.license.peak:
+        description: "SaphanaLicensePeakMetricConfig provides config for the saphana.license.peak metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.network.request.average_time:
+        description: "SaphanaNetworkRequestAverageTimeMetricConfig provides config for the saphana.network.request.average_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.network.request.count:
+        description: "SaphanaNetworkRequestCountMetricConfig provides config for the saphana.network.request.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.network.request.finished.count:
+        description: "SaphanaNetworkRequestFinishedCountMetricConfig provides config for the saphana.network.request.finished.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.replication.average_time:
+        description: "SaphanaReplicationAverageTimeMetricConfig provides config for the saphana.replication.average_time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.replication.backlog.size:
+        description: "SaphanaReplicationBacklogSizeMetricConfig provides config for the saphana.replication.backlog.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.replication.backlog.time:
+        description: "SaphanaReplicationBacklogTimeMetricConfig provides config for the saphana.replication.backlog.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.row_store.memory.used:
+        description: "SaphanaRowStoreMemoryUsedMetricConfig provides config for the saphana.row_store.memory.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.schema.memory.used.current:
+        description: "SaphanaSchemaMemoryUsedCurrentMetricConfig provides config for the saphana.schema.memory.used.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.schema.memory.used.max:
+        description: "SaphanaSchemaMemoryUsedMaxMetricConfig provides config for the saphana.schema.memory.used.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.schema.operation.count:
+        description: "SaphanaSchemaOperationCountMetricConfig provides config for the saphana.schema.operation.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.schema.record.compressed.count:
+        description: "SaphanaSchemaRecordCompressedCountMetricConfig provides config for the saphana.schema.record.compressed.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.schema.record.count:
+        description: "SaphanaSchemaRecordCountMetricConfig provides config for the saphana.schema.record.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.code_size:
+        description: "SaphanaServiceCodeSizeMetricConfig provides config for the saphana.service.code_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.count:
+        description: "SaphanaServiceCountMetricConfig provides config for the saphana.service.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.memory.compactors.allocated:
+        description: "SaphanaServiceMemoryCompactorsAllocatedMetricConfig provides config for the saphana.service.memory.compactors.allocated metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.memory.compactors.freeable:
+        description: "SaphanaServiceMemoryCompactorsFreeableMetricConfig provides config for the saphana.service.memory.compactors.freeable metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.memory.effective_limit:
+        description: "SaphanaServiceMemoryEffectiveLimitMetricConfig provides config for the saphana.service.memory.effective_limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.memory.heap.current:
+        description: "SaphanaServiceMemoryHeapCurrentMetricConfig provides config for the saphana.service.memory.heap.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.memory.limit:
+        description: "SaphanaServiceMemoryLimitMetricConfig provides config for the saphana.service.memory.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.memory.shared.current:
+        description: "SaphanaServiceMemorySharedCurrentMetricConfig provides config for the saphana.service.memory.shared.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.memory.used:
+        description: "SaphanaServiceMemoryUsedMetricConfig provides config for the saphana.service.memory.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.stack_size:
+        description: "SaphanaServiceStackSizeMetricConfig provides config for the saphana.service.stack_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.service.thread.count:
+        description: "SaphanaServiceThreadCountMetricConfig provides config for the saphana.service.thread.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.transaction.blocked:
+        description: "SaphanaTransactionBlockedMetricConfig provides config for the saphana.transaction.blocked metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.transaction.count:
+        description: "SaphanaTransactionCountMetricConfig provides config for the saphana.transaction.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.uptime:
+        description: "SaphanaUptimeMetricConfig provides config for the saphana.uptime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.volume.operation.count:
+        description: "SaphanaVolumeOperationCountMetricConfig provides config for the saphana.volume.operation.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.volume.operation.size:
+        description: "SaphanaVolumeOperationSizeMetricConfig provides config for the saphana.volume.operation.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      saphana.volume.operation.time:
+        description: "SaphanaVolumeOperationTimeMetricConfig provides config for the saphana.volume.operation.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for saphana resource attributes.
     type: object

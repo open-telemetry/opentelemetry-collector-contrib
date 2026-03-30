@@ -446,7 +446,7 @@ func commonLogSplunkEvent(
 	sourcetype string,
 ) *Event {
 	return &Event{
-		Time:       nanoTimestampToEpochMilliseconds(ts),
+		Time:       nanoToEpochSeconds(ts),
 		Host:       host,
 		Event:      event,
 		Source:     source,
@@ -458,15 +458,6 @@ func commonLogSplunkEvent(
 func Test_emptyLogRecord(t *testing.T) {
 	event := LogToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), DefaultHecToOtelAttrs(), DefaultOtelToHecFields(), "", "", "")
 	assert.Nil(t, event)
-}
-
-func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
-	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-	assert.Equal(t, 1.001, splunkTs)
-	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-	assert.Equal(t, 1.002, splunkTs)
-	splunkTs = nanoTimestampToEpochMilliseconds(0)
-	assert.Zero(t, splunkTs)
 }
 
 func Test_mergeValue(t *testing.T) {

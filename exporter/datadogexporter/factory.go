@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -70,12 +72,6 @@ var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustR
 	"exporter.datadogexporter.metricexportserializerclient",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
-)
-
-var inferIntervalDeltaFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.InferIntervalForDeltaMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic."),
 )
 
 func init() {

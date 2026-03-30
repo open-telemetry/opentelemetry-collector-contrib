@@ -15,9 +15,6 @@ $defs:
 description: Config defines configuration for Kafka exporter.
 type: object
 properties:
-  encoding:
-    description: 'Encoding holds the encoding of Kafka message values. Encoding has no default. If explicitly specified, it will take precedence over the default values of logs::encoding, metrics::encoding, and traces::encoding. Deprecated [v0.124.0]: use logs::encoding, metrics::encoding, and traces::encoding instead.'
-    type: string
   include_metadata_keys:
     description: IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
     type: array
@@ -42,16 +39,13 @@ properties:
     description: 'PartitionTracesByID sets the message key of outgoing trace messages to the trace ID. NOTE: this does not have any effect for Jaeger encodings. Jaeger encodings always use use the trace ID for the message key.'
     type: boolean
   producer:
-    $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka.producer_config
+    $ref: /pkg/kafka/configkafka.producer_config
   profiles:
     description: Profiles holds configuration about how profiles should be sent to Kafka.
     $ref: signal_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
-  topic:
-    description: 'Topic holds the name of the Kafka topic to which data should be exported. Topic has no default. If explicitly specified, it will take precedence over the default values of logs::topic, metrics::topic, and traces::topic. Deprecated [v0.124.0]: use logs::topic, metrics::topic, and traces::topic instead.'
-    type: string
   topic_from_attribute:
     description: TopicFromAttribute is the name of the attribute to use as the topic name.
     type: string
@@ -61,4 +55,4 @@ properties:
 allOf:
   - $ref: go.opentelemetry.io/collector/exporter/exporterhelper.timeout_config
   - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka.client_config
+  - $ref: /pkg/kafka/configkafka.client_config

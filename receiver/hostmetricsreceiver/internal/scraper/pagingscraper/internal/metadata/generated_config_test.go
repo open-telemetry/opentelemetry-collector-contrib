@@ -26,25 +26,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults: MetricConfig{
+					SystemPagingFaults: SystemPagingFaultsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []SystemPagingFaultsMetricAttributeKey{SystemPagingFaultsMetricAttributeKeyType},
 					},
-					SystemPagingOperations: MetricConfig{
+					SystemPagingOperations: SystemPagingOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction", "type"},
+						EnabledAttributes:   []SystemPagingOperationsMetricAttributeKey{SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType},
 					},
-					SystemPagingUsage: MetricConfig{
+					SystemPagingUsage: SystemPagingUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "state"},
+						EnabledAttributes:   []SystemPagingUsageMetricAttributeKey{SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState},
 					},
-					SystemPagingUtilization: MetricConfig{
+					SystemPagingUtilization: SystemPagingUtilizationMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"device", "state"},
+						EnabledAttributes:   []SystemPagingUtilizationMetricAttributeKey{SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -53,25 +53,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemPagingFaults: MetricConfig{
+					SystemPagingFaults: SystemPagingFaultsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"type"},
+						EnabledAttributes:   []SystemPagingFaultsMetricAttributeKey{SystemPagingFaultsMetricAttributeKeyType},
 					},
-					SystemPagingOperations: MetricConfig{
+					SystemPagingOperations: SystemPagingOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"direction", "type"},
+						EnabledAttributes:   []SystemPagingOperationsMetricAttributeKey{SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType},
 					},
-					SystemPagingUsage: MetricConfig{
+					SystemPagingUsage: SystemPagingUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []string{"device", "state"},
+						EnabledAttributes:   []SystemPagingUsageMetricAttributeKey{SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState},
 					},
-					SystemPagingUtilization: MetricConfig{
+					SystemPagingUtilization: SystemPagingUtilizationMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"device", "state"},
+						EnabledAttributes:   []SystemPagingUtilizationMetricAttributeKey{SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState},
 					},
 				},
 			},
@@ -80,7 +80,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemPagingFaultsMetricConfig{}, SystemPagingOperationsMetricConfig{}, SystemPagingUsageMetricConfig{}, SystemPagingUtilizationMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

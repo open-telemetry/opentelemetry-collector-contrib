@@ -4,96 +4,96 @@ $defs:
     description: MetricsConfig provides config for redfish metrics.
     type: object
     properties:
-    chassis.powerstate:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    chassis.status.health:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    chassis.status.state:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    fan.reading:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    fan.status.health:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    fan.status.state:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.powerstate:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.status.health:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.status.state:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    temperature.reading:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    temperature.status.health:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    temperature.status.state:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      chassis.powerstate:
+        description: "ChassisPowerstateMetricConfig provides config for the chassis.powerstate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      chassis.status.health:
+        description: "ChassisStatusHealthMetricConfig provides config for the chassis.status.health metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      chassis.status.state:
+        description: "ChassisStatusStateMetricConfig provides config for the chassis.status.state metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      fan.reading:
+        description: "FanReadingMetricConfig provides config for the fan.reading metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      fan.status.health:
+        description: "FanStatusHealthMetricConfig provides config for the fan.status.health metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      fan.status.state:
+        description: "FanStatusStateMetricConfig provides config for the fan.status.state metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.powerstate:
+        description: "SystemPowerstateMetricConfig provides config for the system.powerstate metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.status.health:
+        description: "SystemStatusHealthMetricConfig provides config for the system.status.health metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.status.state:
+        description: "SystemStatusStateMetricConfig provides config for the system.status.state metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      temperature.reading:
+        description: "TemperatureReadingMetricConfig provides config for the temperature.reading metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      temperature.status.health:
+        description: "TemperatureStatusHealthMetricConfig provides config for the temperature.status.health metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      temperature.status.state:
+        description: "TemperatureStatusStateMetricConfig provides config for the temperature.status.state metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for redfish resource attributes.
     type: object
     properties:
-      base_url:
-        description: ResourceAttributeConfig provides common config for a base_url resource attribute.
+      host.name:
+        description: ResourceAttributeConfig provides common config for a host.name resource attribute.
         type: object
         properties:
           enabled:
@@ -109,8 +109,8 @@ $defs:
             type: array
             items:
               $ref: go.opentelemetry.io/collector/filter.config
-      system.host_name:
-        description: ResourceAttributeConfig provides common config for a system.host_name resource attribute.
+      url.full:
+        description: ResourceAttributeConfig provides common config for a url.full resource attribute.
         type: object
         properties:
           enabled:

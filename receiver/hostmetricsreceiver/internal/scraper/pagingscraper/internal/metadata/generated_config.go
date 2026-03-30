@@ -4,22 +4,27 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled             bool `mapstructure:"enabled"`
-	enabledSetByUser    bool
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+// SystemPagingFaultsMetricAttributeKey specifies the key of an attribute for the system.paging.faults metric.
+type SystemPagingFaultsMetricAttributeKey string
+
+const (
+	SystemPagingFaultsMetricAttributeKeyType SystemPagingFaultsMetricAttributeKey = "type"
+)
+
+// SystemPagingFaultsMetricConfig provides config for the system.paging.faults metric.
+type SystemPagingFaultsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemPagingFaultsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemPagingFaultsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,64 +33,205 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if len(ms.definedAttributes) > 0 {
-		for _, val := range ms.EnabledAttributes {
-			if !slices.Contains(ms.definedAttributes, val) {
-				return fmt.Errorf("%v is not defined in metadata.yaml", val)
-			}
-		}
 
-		for _, val := range ms.requiredAttributes {
-			if !slices.Contains(ms.EnabledAttributes, val) {
-				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-			}
-		}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
-		if ms.AggregationStrategy != AggregationStrategySum &&
-			ms.AggregationStrategy != AggregationStrategyAvg &&
-			ms.AggregationStrategy != AggregationStrategyMin &&
-			ms.AggregationStrategy != AggregationStrategyMax {
-			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+func (ms *SystemPagingFaultsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemPagingFaultsMetricAttributeKeyType:
+		default:
+			return fmt.Errorf("metric system.paging.faults doesn't have an attribute %v, valid attributes: [type]", val)
 		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemPagingOperationsMetricAttributeKey specifies the key of an attribute for the system.paging.operations metric.
+type SystemPagingOperationsMetricAttributeKey string
+
+const (
+	SystemPagingOperationsMetricAttributeKeyDirection SystemPagingOperationsMetricAttributeKey = "direction"
+	SystemPagingOperationsMetricAttributeKeyType      SystemPagingOperationsMetricAttributeKey = "type"
+)
+
+// SystemPagingOperationsMetricConfig provides config for the system.paging.operations metric.
+type SystemPagingOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemPagingOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemPagingOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
+func (ms *SystemPagingOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType:
+		default:
+			return fmt.Errorf("metric system.paging.operations doesn't have an attribute %v, valid attributes: [direction, type]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemPagingUsageMetricAttributeKey specifies the key of an attribute for the system.paging.usage metric.
+type SystemPagingUsageMetricAttributeKey string
+
+const (
+	SystemPagingUsageMetricAttributeKeyDevice SystemPagingUsageMetricAttributeKey = "device"
+	SystemPagingUsageMetricAttributeKeyState  SystemPagingUsageMetricAttributeKey = "state"
+)
+
+// SystemPagingUsageMetricConfig provides config for the system.paging.usage metric.
+type SystemPagingUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemPagingUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemPagingUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemPagingUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.paging.usage doesn't have an attribute %v, valid attributes: [device, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemPagingUtilizationMetricAttributeKey specifies the key of an attribute for the system.paging.utilization metric.
+type SystemPagingUtilizationMetricAttributeKey string
+
+const (
+	SystemPagingUtilizationMetricAttributeKeyDevice SystemPagingUtilizationMetricAttributeKey = "device"
+	SystemPagingUtilizationMetricAttributeKeyState  SystemPagingUtilizationMetricAttributeKey = "state"
+)
+
+// SystemPagingUtilizationMetricConfig provides config for the system.paging.utilization metric.
+type SystemPagingUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemPagingUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemPagingUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemPagingUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.paging.utilization doesn't have an attribute %v, valid attributes: [device, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for paging metrics.
 type MetricsConfig struct {
-	SystemPagingFaults      MetricConfig `mapstructure:"system.paging.faults"`
-	SystemPagingOperations  MetricConfig `mapstructure:"system.paging.operations"`
-	SystemPagingUsage       MetricConfig `mapstructure:"system.paging.usage"`
-	SystemPagingUtilization MetricConfig `mapstructure:"system.paging.utilization"`
+	SystemPagingFaults      SystemPagingFaultsMetricConfig      `mapstructure:"system.paging.faults"`
+	SystemPagingOperations  SystemPagingOperationsMetricConfig  `mapstructure:"system.paging.operations"`
+	SystemPagingUsage       SystemPagingUsageMetricConfig       `mapstructure:"system.paging.usage"`
+	SystemPagingUtilization SystemPagingUtilizationMetricConfig `mapstructure:"system.paging.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemPagingFaults: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"type"},
-			EnabledAttributes:  []string{"type"},
+		SystemPagingFaults: SystemPagingFaultsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemPagingFaultsMetricAttributeKey{SystemPagingFaultsMetricAttributeKeyType},
 		},
-		SystemPagingOperations: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"direction", "type"},
-			EnabledAttributes:  []string{"direction", "type"},
+		SystemPagingOperations: SystemPagingOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemPagingOperationsMetricAttributeKey{SystemPagingOperationsMetricAttributeKeyDirection, SystemPagingOperationsMetricAttributeKeyType},
 		},
-		SystemPagingUsage: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"device", "state"},
-			EnabledAttributes:  []string{"device", "state"},
+		SystemPagingUsage: SystemPagingUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemPagingUsageMetricAttributeKey{SystemPagingUsageMetricAttributeKeyDevice, SystemPagingUsageMetricAttributeKeyState},
 		},
-		SystemPagingUtilization: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"device", "state"},
-			EnabledAttributes:  []string{"device", "state"},
+		SystemPagingUtilization: SystemPagingUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemPagingUtilizationMetricAttributeKey{SystemPagingUtilizationMetricAttributeKeyDevice, SystemPagingUtilizationMetricAttributeKeyState},
 		},
 	}
 }

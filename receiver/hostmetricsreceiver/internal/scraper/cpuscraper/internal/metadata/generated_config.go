@@ -4,22 +4,27 @@ package metadata
 
 import (
 	"fmt"
-	"slices"
 
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled             bool `mapstructure:"enabled"`
-	enabledSetByUser    bool
-	AggregationStrategy string   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []string `mapstructure:"attributes"`
-	definedAttributes   []string
-	requiredAttributes  []string
+// SystemCPUFrequencyMetricAttributeKey specifies the key of an attribute for the system.cpu.frequency metric.
+type SystemCPUFrequencyMetricAttributeKey string
+
+const (
+	SystemCPUFrequencyMetricAttributeKeyCpu SystemCPUFrequencyMetricAttributeKey = "cpu"
+)
+
+// SystemCPUFrequencyMetricConfig provides config for the system.cpu.frequency metric.
+type SystemCPUFrequencyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUFrequencyMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemCPUFrequencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,65 +33,198 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if len(ms.definedAttributes) > 0 {
-		for _, val := range ms.EnabledAttributes {
-			if !slices.Contains(ms.definedAttributes, val) {
-				return fmt.Errorf("%v is not defined in metadata.yaml", val)
-			}
-		}
 
-		for _, val := range ms.requiredAttributes {
-			if !slices.Contains(ms.EnabledAttributes, val) {
-				return fmt.Errorf("`attributes` field must contain required attribute: %v", val)
-			}
-		}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
 
-		if ms.AggregationStrategy != AggregationStrategySum &&
-			ms.AggregationStrategy != AggregationStrategyAvg &&
-			ms.AggregationStrategy != AggregationStrategyMin &&
-			ms.AggregationStrategy != AggregationStrategyMax {
-			return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+func (ms *SystemCPUFrequencyMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUFrequencyMetricAttributeKeyCpu:
+		default:
+			return fmt.Errorf("metric system.cpu.frequency doesn't have an attribute %v, valid attributes: [cpu]", val)
 		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemCPULogicalCountMetricConfig provides config for the system.cpu.logical.count metric.
+type SystemCPULogicalCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemCPULogicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
+// SystemCPUPhysicalCountMetricConfig provides config for the system.cpu.physical.count metric.
+type SystemCPUPhysicalCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemCPUPhysicalCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemCPUTimeMetricAttributeKey specifies the key of an attribute for the system.cpu.time metric.
+type SystemCPUTimeMetricAttributeKey string
+
+const (
+	SystemCPUTimeMetricAttributeKeyCpu   SystemCPUTimeMetricAttributeKey = "cpu"
+	SystemCPUTimeMetricAttributeKeyState SystemCPUTimeMetricAttributeKey = "state"
+)
+
+// SystemCPUTimeMetricConfig provides config for the system.cpu.time metric.
+type SystemCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemCPUTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.cpu.time doesn't have an attribute %v, valid attributes: [cpu, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SystemCPUUtilizationMetricAttributeKey specifies the key of an attribute for the system.cpu.utilization metric.
+type SystemCPUUtilizationMetricAttributeKey string
+
+const (
+	SystemCPUUtilizationMetricAttributeKeyCpu   SystemCPUUtilizationMetricAttributeKey = "cpu"
+	SystemCPUUtilizationMetricAttributeKeyState SystemCPUUtilizationMetricAttributeKey = "state"
+)
+
+// SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric.
+type SystemCPUUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemCPUUtilizationMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SystemCPUUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SystemCPUUtilizationMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric system.cpu.utilization doesn't have an attribute %v, valid attributes: [cpu, state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // MetricsConfig provides config for cpu metrics.
 type MetricsConfig struct {
-	SystemCPUFrequency     MetricConfig `mapstructure:"system.cpu.frequency"`
-	SystemCPULogicalCount  MetricConfig `mapstructure:"system.cpu.logical.count"`
-	SystemCPUPhysicalCount MetricConfig `mapstructure:"system.cpu.physical.count"`
-	SystemCPUTime          MetricConfig `mapstructure:"system.cpu.time"`
-	SystemCPUUtilization   MetricConfig `mapstructure:"system.cpu.utilization"`
+	SystemCPUFrequency     SystemCPUFrequencyMetricConfig     `mapstructure:"system.cpu.frequency"`
+	SystemCPULogicalCount  SystemCPULogicalCountMetricConfig  `mapstructure:"system.cpu.logical.count"`
+	SystemCPUPhysicalCount SystemCPUPhysicalCountMetricConfig `mapstructure:"system.cpu.physical.count"`
+	SystemCPUTime          SystemCPUTimeMetricConfig          `mapstructure:"system.cpu.time"`
+	SystemCPUUtilization   SystemCPUUtilizationMetricConfig   `mapstructure:"system.cpu.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemCPUFrequency: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cpu"},
-			EnabledAttributes:  []string{"cpu"},
+		SystemCPUFrequency: SystemCPUFrequencyMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemCPUFrequencyMetricAttributeKey{SystemCPUFrequencyMetricAttributeKeyCpu},
 		},
-		SystemCPULogicalCount: MetricConfig{
+		SystemCPULogicalCount: SystemCPULogicalCountMetricConfig{
 			Enabled: false,
 		},
-		SystemCPUPhysicalCount: MetricConfig{
+		SystemCPUPhysicalCount: SystemCPUPhysicalCountMetricConfig{
 			Enabled: false,
 		},
-		SystemCPUTime: MetricConfig{
-			Enabled: true, AggregationStrategy: AggregationStrategySum,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cpu", "state"},
-			EnabledAttributes:  []string{"cpu", "state"},
+		SystemCPUTime: SystemCPUTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []SystemCPUTimeMetricAttributeKey{SystemCPUTimeMetricAttributeKeyCpu, SystemCPUTimeMetricAttributeKeyState},
 		},
-		SystemCPUUtilization: MetricConfig{
-			Enabled: false, AggregationStrategy: AggregationStrategyAvg,
-			requiredAttributes: []string{},
-			definedAttributes:  []string{"cpu", "state"},
-			EnabledAttributes:  []string{"cpu", "state"},
+		SystemCPUUtilization: SystemCPUUtilizationMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SystemCPUUtilizationMetricAttributeKey{SystemCPUUtilizationMetricAttributeKeyCpu, SystemCPUUtilizationMetricAttributeKeyState},
 		},
 	}
 }

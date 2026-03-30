@@ -4,48 +4,48 @@ $defs:
     description: MetricsConfig provides config for sshcheck metrics.
     type: object
     properties:
-    sshcheck.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    sshcheck.error:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    sshcheck.sftp_duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    sshcheck.sftp_error:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    sshcheck.sftp_status:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    sshcheck.status:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      sshcheck.duration:
+        description: "SshcheckDurationMetricConfig provides config for the sshcheck.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      sshcheck.error:
+        description: "SshcheckErrorMetricConfig provides config for the sshcheck.error metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      sshcheck.sftp_duration:
+        description: "SshcheckSftpDurationMetricConfig provides config for the sshcheck.sftp_duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sshcheck.sftp_error:
+        description: "SshcheckSftpErrorMetricConfig provides config for the sshcheck.sftp_error metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sshcheck.sftp_status:
+        description: "SshcheckSftpStatusMetricConfig provides config for the sshcheck.sftp_status metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      sshcheck.status:
+        description: "SshcheckStatusMetricConfig provides config for the sshcheck.status metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for sshcheck resource attributes.
     type: object

@@ -10,13 +10,10 @@ import (
 	"strconv"
 
 	"github.com/cespare/xxhash/v2"
-	"github.com/elastic/go-structform"
-	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 )
 
 func (*Serializer) SerializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
@@ -25,33 +22,32 @@ func (*Serializer) SerializeMetrics(resource pcommon.Resource, resourceSchemaURL
 	}
 	dp0 := dataPoints[0]
 
-	v := json.NewVisitor(buf)
-	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
-	// This is required to generate the correct dynamic mapping in ES.
-	v.SetExplicitRadixPoint(true)
-	_ = v.OnObjectStart(-1, structform.AnyType)
-	writeTimestampEpochMillisField(v, "@timestamp", dp0.Timestamp())
+	w := newJSONWriter(buf)
+	w.startObject()
+	first := true
+	first = w.writeTimestampEpochMillisField("@timestamp", dp0.Timestamp(), first)
 	if dp0.StartTimestamp() != 0 {
-		writeTimestampEpochMillisField(v, "start_timestamp", dp0.StartTimestamp())
+		first = w.writeTimestampEpochMillisField("start_timestamp", dp0.StartTimestamp(), first)
 	}
-	writeStringFieldSkipDefault(v, "unit", dp0.Metric().Unit())
-	writeDataStream(v, idx)
-	writeAttributes(v, dp0.Attributes(), true)
-	writeResource(v, resource, resourceSchemaURL, true)
-	writeScope(v, scope, scopeSchemaURL, true)
-	dynamicTemplates := serializeDataPoints(v, dataPoints, validationErrors)
-	_ = v.OnObjectFinished()
+	first = w.writeStringFieldSkipDefault("unit", dp0.Metric().Unit(), first)
+	first = w.writeDataStream(idx, first)
+	first = w.writeAttributes(dp0.Attributes(), true, first)
+	first = w.writeResource(resource, resourceSchemaURL, true, first)
+	first = w.writeScope(scope, scopeSchemaURL, true, first)
+	dynamicTemplates := serializeDataPoints(&w, dataPoints, validationErrors, first)
+	w.endObject()
 	return dynamicTemplates, nil
 }
 
-func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, validationErrors *[]error) map[string]string {
-	_ = v.OnKey("metrics")
-	_ = v.OnObjectStart(-1, structform.AnyType)
+func serializeDataPoints(w *jsonWriter, dataPoints []datapoints.DataPoint, validationErrors *[]error, first bool) map[string]string {
+	first = w.key("metrics", first)
+	w.startObject()
 
 	dynamicTemplates := make(map[string]string, len(dataPoints))
 	var docCount uint64
 	metricNamesSet := make(map[string]bool, len(dataPoints))
 	metricNames := make([]string, 0, len(dataPoints))
+	firstMetric := true
 	for _, dp := range dataPoints {
 		metric := dp.Metric()
 		if _, present := metricNamesSet[metric.Name()]; present {
@@ -77,19 +73,19 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 			*validationErrors = append(*validationErrors, err)
 			continue
 		}
-		_ = v.OnKey(metric.Name())
+		firstMetric = w.key(metric.Name(), firstMetric)
 		// TODO: support quantiles
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
-		serializer.WriteValue(v, value, false)
+		w.writeValue(value, false)
 		// DynamicTemplate returns the name of dynamic template that applies to the metric and data point,
 		// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
 		// dynamic template that is defined in ES mapping, e.g.
 		// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
 		dynamicTemplates["metrics."+metric.Name()] = dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeOTel)
 	}
-	_ = v.OnObjectFinished()
+	w.endObject()
 	if docCount != 0 {
-		writeUIntField(v, "_doc_count", docCount)
+		first = w.writeUIntField("_doc_count", docCount, first)
 	}
 	sort.Strings(metricNames)
 	hasher := xxhash.New()
@@ -98,7 +94,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 	}
 	// workaround for https://github.com/elastic/elasticsearch/issues/99123
 	// should use a string field to benefit from run-length encoding
-	writeStringFieldSkipDefault(v, "_metric_names_hash", strconv.FormatUint(hasher.Sum64(), 16))
+	_ = w.writeStringFieldSkipDefault("_metric_names_hash", strconv.FormatUint(hasher.Sum64(), 16), first)
 
 	return dynamicTemplates
 }
