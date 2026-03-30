@@ -875,7 +875,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	// This begins the processing of the scrapes collected by the receiver
 	metrics := cms.AllMetrics()
 	// split and store results by target name
-	pResults := splitMetricsByTarget(metrics)
+	pResults = splitMetricsByTarget(metrics)
 	lep := len(mp.endpoints)
 
 	// loop to validate outputs for each targets
