@@ -855,11 +855,13 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	// Wait for consumer to receive all expected scrapes (deterministic, replaces polling).
 	cms.Wait(t, 30*time.Second)
 
-	assert.Eventually(t, func() bool {
-		m := cms.AllMetrics()
-		pR := splitMetricsByTarget(m)
+	// Wait for per-target scrape counts, capturing the snapshot used for validation.
+	var pResults map[string][]pmetric.ResourceMetrics
+	require.Eventually(t, func() bool {
+		metrics := cms.AllMetrics()
+		pResults = splitMetricsByTarget(metrics)
 		for _, target := range targets[:len(mp.endpoints)] {
-			scrapes := pR[getTargetName(target)]
+			scrapes := pResults[getTargetName(target)]
 
 			// There may be an additional scrape entry between when the mock server provided
 			// all responses and when we capture the metrics.  It will be ignored later.
