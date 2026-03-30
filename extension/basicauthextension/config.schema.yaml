@@ -1,0 +1,35 @@
+$defs:
+  client_auth_settings:
+    type: object
+    properties:
+      password:
+        description: Password holds the password to use for client authentication.
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      password_file:
+        description: PasswordFile points to a file that contains the password. If set, takes precedence over Password. The file is watched for changes.
+        type: string
+      username:
+        description: Username holds the username to use for client authentication.
+        type: string
+      username_file:
+        description: UsernameFile points to a file that contains the username. If set, takes precedence over Username. The file is watched for changes.
+        type: string
+  htpasswd_settings:
+    type: object
+    properties:
+      file:
+        description: Path to the htpasswd file.
+        type: string
+      inline:
+        description: Inline contents of the htpasswd file.
+        type: string
+type: object
+properties:
+  client_auth:
+    description: ClientAuth settings
+    x-pointer: true
+    $ref: client_auth_settings
+  htpasswd:
+    description: Htpasswd settings.
+    x-pointer: true
+    $ref: htpasswd_settings

@@ -164,9 +164,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
+					contextSwitchTypeAttrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "involuntary", attrVal.Str())
+					assert.Equal(t, "involuntary", contextSwitchTypeAttrVal.Str())
 				case "process.cpu.time":
 					assert.False(t, validatedMetrics["process.cpu.time"], "Found a duplicate in the metrics slice: process.cpu.time")
 					validatedMetrics["process.cpu.time"] = true
@@ -181,9 +181,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("state")
+					stateAttrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
+					assert.Equal(t, "system", stateAttrVal.Str())
 				case "process.cpu.utilization":
 					assert.False(t, validatedMetrics["process.cpu.utilization"], "Found a duplicate in the metrics slice: process.cpu.utilization")
 					validatedMetrics["process.cpu.utilization"] = true
@@ -196,9 +196,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("state")
+					stateAttrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
+					assert.Equal(t, "system", stateAttrVal.Str())
 				case "process.disk.io":
 					assert.False(t, validatedMetrics["process.disk.io"], "Found a duplicate in the metrics slice: process.disk.io")
 					validatedMetrics["process.disk.io"] = true
@@ -213,9 +213,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
+					directionAttrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.Equal(t, "read", directionAttrVal.Str())
 				case "process.disk.operations":
 					assert.False(t, validatedMetrics["process.disk.operations"], "Found a duplicate in the metrics slice: process.disk.operations")
 					validatedMetrics["process.disk.operations"] = true
@@ -230,9 +230,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
+					directionAttrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.Equal(t, "read", directionAttrVal.Str())
 				case "process.handles":
 					assert.False(t, validatedMetrics["process.handles"], "Found a duplicate in the metrics slice: process.handles")
 					validatedMetrics["process.handles"] = true
@@ -315,9 +315,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
+					pagingFaultTypeAttrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "major", attrVal.Str())
+					assert.Equal(t, "major", pagingFaultTypeAttrVal.Str())
 				case "process.signals_pending":
 					assert.False(t, validatedMetrics["process.signals_pending"], "Found a duplicate in the metrics slice: process.signals_pending")
 					validatedMetrics["process.signals_pending"] = true

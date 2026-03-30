@@ -102,4 +102,4 @@ properties:
 allOf:
   - $ref: go.opentelemetry.io/collector/config/configretry.back_off_config
   - $ref: go.opentelemetry.io/collector/config/confighttp.client_config
-  - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk.access_token_passthrough_config
+  - $ref: /internal/splunk.access_token_passthrough_config
