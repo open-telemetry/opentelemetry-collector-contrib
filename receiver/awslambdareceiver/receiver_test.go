@@ -3,7 +3,6 @@
 package awslambdareceiver
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -60,9 +59,9 @@ func TestCreateLogs(t *testing.T) {
 
 	// Test data - mock S3 file content
 	testData := []byte("version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status\n2 627286350134 eni-0377aa710071c557e 172.31.31.124 140.82.121.6 52718 443 6 13 3777 1751375679 ENDTIME ACCEPT OK\n")
-	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(1).
-		Return(io.NopCloser(bytes.NewReader(testData)), nil)
+		Return(internal.NewBytesS3ObjectReader(testData), nil)
 
 	// Register the extension with the same component ID as S3Encoding
 	// This is required: the extension ID must match cfg.S3Encoding
@@ -134,9 +133,9 @@ func TestCreateMetrics(t *testing.T) {
 	s3Service := internal.NewMockS3Service(goMock)
 	s3Provider := internal.NewMockS3Provider(goMock)
 	s3Provider.EXPECT().GetService(gomock.Any()).AnyTimes().Return(s3Service, nil)
-	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any()).
+	s3Service.EXPECT().GetReader(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Times(1).
-		Return(io.NopCloser(bytes.NewReader([]byte("dummy data"))), nil)
+		Return(internal.NewBytesS3ObjectReader([]byte("dummy data")), nil)
 
 	host := mockHost{GetFunc: func() map[component.ID]component.Component {
 		return map[component.ID]component.Component{
