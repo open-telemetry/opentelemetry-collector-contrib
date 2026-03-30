@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: receiver/hostmetrics
+
+note: Align HugePages metric instrument types with the semantic conventions by emitting page_size, reserved, and surplus as non-monotonic sums instead of gauges.
+
+issues: [42650]
+
+subtext:
+
+change_logs: [user]

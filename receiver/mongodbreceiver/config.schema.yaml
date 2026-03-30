@@ -19,6 +19,8 @@ properties:
     $ref: go.opentelemetry.io/collector/config/configopaque.string
   replica_set:
     type: string
+  scheme:
+    type: string
   timeout:
     type: string
     format: duration

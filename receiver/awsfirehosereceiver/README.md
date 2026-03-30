@@ -25,16 +25,22 @@ Example:
 receivers:
   awsfirehose:
     endpoint: 0.0.0.0:4433
-    record_type: cwmetrics
+    encoding: awscloudwatchmetricstreams_encoding
     access_key: "some_access_key"
     tls:
       cert_file: server.crt
       key_file: server.key
+
+extensions:
+  awscloudwatchmetricstreams_encoding:
+    format: json
 ```
+
 The configuration includes the OpenTelemetry collector's server [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration),
 which allows for a variety of settings. Only the most relevant ones will be discussed here, but all are available.
-The AWS Kinesis Data Firehose Delivery Streams currently only support HTTPS endpoints using port 443. This can be potentially circumvented
-using a Load Balancer.
+
+The Amazon Data Firehose Delivery Streams currently only support HTTPS endpoints using port 443.
+This can be potentially circumvented using a Load Balancer.
 
 ### endpoint:
 The address:port to bind the listener to.
@@ -52,46 +58,64 @@ A `cert_file` and `key_file` are required.
 
 The ID of an [encoding extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding) for decoding logs or metrics.
 This configuration also supports the built-in encodings listed in the [Encodings](#encodings) section.
-If no encoding is specified, then the receiver will default to a signal-specific encoding: `cwmetrics` for metrics, and `cwlogs` for logs.
 
-### record_type:
+If no encoding is specified, then the receiver will default to a signal-specific encoding: `cwmetrics` for metrics, and `cwlogs` for logs.
+In the future, the default encodings will be removed, and it will be required to specify an encoding extension.
+
+### record\_type:
 
 Deprecated, use `encoding` instead. `record_type` will be removed in a future release; it is an alias for `encoding`.
 
-### access_key (Optional):
+### access\_key (Optional):
 The access key to be checked on each request received. This can be set when creating or updating the delivery stream.
 See [documentation](https://docs.aws.amazon.com/firehose/latest/dev/create-destination.html#create-destination-http) for details.
 
 ## Encodings
 
-### cwmetrics
-The encoding for the CloudWatch metric stream. Expects the format for the records to be JSON.
-See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html) for details.
+Any encoding extension can be used with this receiver. There are additionally built-in encodings, which are deprecated.
+In the future it will be required to specify an encoding extension, and the built-in encodings will be removed.
 
-### cwlogs
-The encoding for the CloudWatch log stream. Expects the format for the records to be JSON.
-For example:
+### cwmetrics (deprecated)
 
-```json
-{
-  "messageType": "DATA_MESSAGE",
-  "owner": "111122223333",
-  "logGroup": "my-log-group",
-  "logStream": "my-log-stream",
-  "subscriptionFilters": ["my-subscription-filter"],
-  "logEvents": [
-    {
-      "id": "123",
-      "timestamp": 1725544035523,
-      "message": "My log message."
-    }
-  ]
-}
+The built-in `cwmetrics` encoding is deprecated and will be removed in a future version.
+Use the [`awscloudwatchmetricstreams_encoding`](../../extension/encoding/awscloudwatchmetricstreamsencodingextension)
+extension with `format: json` instead.
+
+```yaml
+extensions:
+  awscloudwatchmetricstreams_encoding:
+    format: json
+receivers:
+  awsfirehose:
+    encoding: awscloudwatchmetricstreams_encoding
 ```
 
-### otlp_v1
+### cwlogs (deprecated)
 
-The OTLP v1 encoding as produced by CloudWatch metric streams.
-See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html) for details.
+The built-in `cwlogs` encoding is deprecated and will be removed in a future version.
+Use the [`aws_logs_encoding`](../../extension/encoding/awslogsencodingextension) extension with
+`format: cloudwatch` instead.
 
+```yaml
+extensions:
+  aws_logs_encoding:
+    format: cloudwatch
+receivers:
+  awsfirehose:
+    encoding: aws_logs_encoding
+```
 
+### otlp\_v1 (deprecated)
+
+The built-in `otlp_v1` encoding is deprecated and will be removed in a future version.
+Use the [`awscloudwatchmetricstreams_encoding`](../../extension/encoding/awscloudwatchmetricstreamsencodingextension)
+extension with `format: opentelemetry1.0` instead.
+
+```yaml
+extensions:
+  awscloudwatchmetricstreams_encoding:
+    format: opentelemetry1.0
+receivers:
+  awsfirehose:
+    encoding: awscloudwatchmetricstreams_encoding
+```

@@ -244,9 +244,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
+					stateAttrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "synced", attrVal.Str())
+					assert.Equal(t, "synced", stateAttrVal.Str())
 				case "zookeeper.fsync.exceeded_threshold.count":
 					assert.False(t, validatedMetrics["zookeeper.fsync.exceeded_threshold.count"], "Found a duplicate in the metrics slice: zookeeper.fsync.exceeded_threshold.count")
 					validatedMetrics["zookeeper.fsync.exceeded_threshold.count"] = true
@@ -311,9 +311,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
+					directionAttrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
+					assert.Equal(t, "received", directionAttrVal.Str())
 				case "zookeeper.request.active":
 					assert.False(t, validatedMetrics["zookeeper.request.active"], "Found a duplicate in the metrics slice: zookeeper.request.active")
 					validatedMetrics["zookeeper.request.active"] = true

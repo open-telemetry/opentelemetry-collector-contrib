@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 
@@ -99,6 +100,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 	}
 	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
+		e.cfg.Producer.MaxMessageBytes,
 	)
 	return nil
 }
@@ -160,6 +162,13 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.Error(err),
 			)
 		}
+		var msgTooLarge *kafkaclient.MessageTooLargeError
+		if errors.As(err, &msgTooLarge) {
+			e.logger.Error("kafka record exceeds max message size",
+				zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
+				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
+			)
+		}
 	}
 	return err
 }
@@ -198,20 +207,34 @@ func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) s
 
 func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
 	return func(yield func([]byte, ptrace.Traces) bool) {
-		if !e.config.PartitionTracesByID {
-			yield(nil, td)
+		if e.config.PartitionTracesByID {
+			for _, td := range batchpersignal.SplitTraces(td) {
+				// Note that batchpersignal.SplitTraces guarantees that each trace
+				// has exactly one trace, and by implication, at least one span.
+				key := []byte(traceutil.TraceIDToHexOrEmptyString(
+					td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID(),
+				))
+				if !yield(key, td) {
+					return
+				}
+			}
 			return
 		}
-		for _, td := range batchpersignal.SplitTraces(td) {
-			// Note that batchpersignal.SplitTraces guarantees that each trace
-			// has exactly one trace, and by implication, at least one span.
-			key := []byte(traceutil.TraceIDToHexOrEmptyString(
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID(),
-			))
-			if !yield(key, td) {
-				return
+		if e.config.TopicFromAttribute != "" {
+			newTraces := ptrace.NewTraces()
+			target := newTraces.ResourceSpans().AppendEmpty()
+			for _, resourceSpans := range td.ResourceSpans().All() {
+				resourceSpans.CopyTo(target)
+				// NOTE: The same ptrace.Traces instance (newTraces) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
+				if !yield(nil, newTraces) {
+					return
+				}
 			}
+			return
 		}
+		yield(nil, td)
 	}
 }
 
@@ -243,16 +266,22 @@ func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string 
 
 func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
 	return func(yield func([]byte, plog.Logs) bool) {
-		if e.config.PartitionLogsByResourceAttributes {
+		splitByResource := e.config.PartitionLogsByResourceAttributes ||
+			(e.config.TopicFromAttribute != "" && !e.config.PartitionLogsByTraceID)
+		if splitByResource {
 			newLogs := plog.NewLogs()
 			target := newLogs.ResourceLogs().AppendEmpty()
 			for _, resourceLogs := range ld.ResourceLogs().All() {
-				hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
+				var key []byte
+				if e.config.PartitionLogsByResourceAttributes {
+					hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
+					key = hash[:]
+				}
 				resourceLogs.CopyTo(target)
 				// NOTE: The same plog.Logs instance (newLogs) is reused and mutated on each iteration.
 				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
 				// the current callback/iteration, as its contents will be overwritten on the next yield.
-				if !yield(hash[:], newLogs) {
+				if !yield(key, newLogs) {
 					return
 				}
 			}
@@ -303,19 +332,25 @@ func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics
 
 func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
 	return func(yield func([]byte, pmetric.Metrics) bool) {
-		if !e.config.PartitionMetricsByResourceAttributes {
+		splitByResource := e.config.PartitionMetricsByResourceAttributes ||
+			e.config.TopicFromAttribute != ""
+		if !splitByResource {
 			yield(nil, md)
 			return
 		}
 		newMetrics := pmetric.NewMetrics()
 		target := newMetrics.ResourceMetrics().AppendEmpty()
 		for _, resourceMetrics := range md.ResourceMetrics().All() {
-			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+			var key []byte
+			if e.config.PartitionMetricsByResourceAttributes {
+				hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+				key = hash[:]
+			}
 			resourceMetrics.CopyTo(target)
 			// NOTE: The same pmetric.Metrics instance (newMetrics) is reused and mutated on each iteration.
 			// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
 			// the current callback/iteration, as its contents will be overwritten on the next yield.
-			if !yield(hash[:], newMetrics) {
+			if !yield(key, newMetrics) {
 				return
 			}
 		}
@@ -348,9 +383,23 @@ func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profi
 	return getTopic[pprofile.ResourceProfiles](ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
 }
 
-func (*kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
+func (e *kafkaProfilesMessenger) partitionData(pd pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
 	return func(yield func([]byte, pprofile.Profiles) bool) {
-		yield(nil, ld)
+		if e.config.TopicFromAttribute != "" {
+			newProfiles := pprofile.NewProfiles()
+			target := newProfiles.ResourceProfiles().AppendEmpty()
+			for _, resourceProfiles := range pd.ResourceProfiles().All() {
+				resourceProfiles.CopyTo(target)
+				// NOTE: The same pprofile.Profiles instance (newProfiles) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
+				if !yield(nil, newProfiles) {
+					return
+				}
+			}
+			return
+		}
+		yield(nil, pd)
 	}
 }
 

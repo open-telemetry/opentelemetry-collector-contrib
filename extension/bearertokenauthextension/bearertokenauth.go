@@ -241,7 +241,7 @@ func (b *bearerTokenAuth) Authenticate(ctx context.Context, headers map[string][
 			return ctx, nil // Authentication successful, token is valid
 		}
 	}
-	return ctx, fmt.Errorf("scheme or token does not match: %s", token) // Token is invalid
+	return ctx, errors.New("provided authorization does not match expected scheme or token") // Token is invalid
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.

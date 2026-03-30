@@ -23,7 +23,7 @@ permissions: read-all
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
+    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     if: ${{ github.actor != 'dependabot[bot]' &&  github.repository_owner == 'open-telemetry' }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
@@ -45,7 +45,7 @@ jobs:
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
-    runs-on: oracle-bare-metal-64cpu-512gb-x86-64
+    runs-on: oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
     needs: [setup-environment]
     strategy:
       fail-fast: false
@@ -57,7 +57,7 @@ jobs:
           go-version: oldstable
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Testbed Binaries
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: testbed-binaries
           path: bin/
@@ -108,7 +108,7 @@ jobs:
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: benchmark-results-*
           merge-multiple: true
