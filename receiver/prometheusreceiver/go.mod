@@ -11,8 +11,10 @@ require (
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.148.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.148.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.148.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.148.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
@@ -211,7 +213,6 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.148.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.148.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.148.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.148.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.148.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.148.0 // indirect
