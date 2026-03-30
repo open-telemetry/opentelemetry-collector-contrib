@@ -1,4 +1,9 @@
+display_name: ACK Extension
 type: ack
+
+description: |
+  This extension allows acking of data upon successful processing. The upstream agent can choose to send event again
+  if ack fails.
 
 status:
   class: extension

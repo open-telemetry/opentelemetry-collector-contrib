@@ -60,10 +60,14 @@ func NewServer(
 
 	if legacyConfig.UseV2 {
 		srv.httpConfig = config.ServerConfig
+		includeAttributes := true // default for backward compatibility
+		if config.Status.Enabled {
+			includeAttributes = config.Status.IncludeAttributes
+		}
 		if componentHealthConfig != nil {
-			srv.responder = componentHealthResponder(&now, componentHealthConfig)
+			srv.responder = componentHealthResponder(&now, componentHealthConfig, includeAttributes)
 		} else {
-			srv.responder = defaultResponder(&now)
+			srv.responder = defaultResponder(&now, includeAttributes)
 		}
 		if config.Status.Enabled {
 			srv.mux.Handle(config.Status.Path, srv.statusHandler())
@@ -101,15 +105,13 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.NetAddr.Endpoint, err)
 	}
 
-	s.doneWg.Add(1)
-	go func() {
-		defer s.doneWg.Done()
+	s.doneWg.Go(func() {
 		defer s.doneOnce.Do(func() { close(s.doneCh) })
 
 		if err = s.httpServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 		}
-	}()
+	})
 
 	return nil
 }

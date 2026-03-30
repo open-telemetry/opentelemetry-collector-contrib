@@ -21,6 +21,17 @@ func MoveResourcesIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans) bool) 
 	})
 }
 
+// CopyResourcesIf calls f sequentially for each ResourceSpans present in the first ptrace.Traces.
+// If f returns true, the element is copied from the first ptrace.Traces to the second ptrace.Traces.
+func CopyResourcesIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans) bool) {
+	for i := 0; i < from.ResourceSpans().Len(); i++ {
+		rs := from.ResourceSpans().At(i)
+		if f(rs) {
+			rs.CopyTo(to.ResourceSpans().AppendEmpty())
+		}
+	}
+}
+
 // MoveSpansWithContextIf calls f sequentially for each Span present in the first ptrace.Traces.
 // If f returns true, the element is removed from the first ptrace.Traces and added to the second ptrace.Traces.
 // Notably, the Resource and Scope associated with the Span are created in the second ptrace.Traces only once.
@@ -54,4 +65,34 @@ func MoveSpansWithContextIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans,
 		})
 		return rs.ScopeSpans().Len() == 0
 	})
+}
+
+// CopySpansWithContextIf calls f sequentially for each Span present in the first ptrace.Traces.
+// If f returns true, the element is copied from the first ptrace.Traces to the second ptrace.Traces.
+// Notably, the Resource and Scope associated with the Span are created in the second ptrace.Traces only once.
+func CopySpansWithContextIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool) {
+	for i := 0; i < from.ResourceSpans().Len(); i++ {
+		rs := from.ResourceSpans().At(i)
+		var rsCopy pdatautil.OnceValue[ptrace.ResourceSpans]
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			var ssCopy pdatautil.OnceValue[ptrace.ScopeSpans]
+			for k := 0; k < ss.Spans().Len(); k++ {
+				s := ss.Spans().At(k)
+				if f(rs, ss, s) {
+					if !rsCopy.IsInit() {
+						rsCopy.Init(to.ResourceSpans().AppendEmpty())
+						rs.Resource().CopyTo(rsCopy.Value().Resource())
+						rsCopy.Value().SetSchemaUrl(rs.SchemaUrl())
+					}
+					if !ssCopy.IsInit() {
+						ssCopy.Init(rsCopy.Value().ScopeSpans().AppendEmpty())
+						ss.Scope().CopyTo(ssCopy.Value().Scope())
+						ssCopy.Value().SetSchemaUrl(ss.SchemaUrl())
+					}
+					s.CopyTo(ssCopy.Value().Spans().AppendEmpty())
+				}
+			}
+		}
+	}
 }

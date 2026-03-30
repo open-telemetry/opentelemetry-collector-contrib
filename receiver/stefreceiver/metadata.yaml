@@ -1,4 +1,8 @@
+display_name: STEF Receiver
 type: stef
+
+description: |
+  Receives data via gRPC in OTel/STEF format.
 
 status:
   class: receiver

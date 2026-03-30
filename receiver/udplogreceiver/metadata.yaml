@@ -1,4 +1,7 @@
+display_name: UDP Receiver
 type: udplog
+
+description: The UDP Receiver receives logs over UDP.
 
 status:
   class: receiver

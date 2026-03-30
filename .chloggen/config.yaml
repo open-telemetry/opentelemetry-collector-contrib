@@ -25,7 +25,7 @@ components:
     - connector/roundrobin
     - connector/routing
     - connector/servicegraph
-    - connector/signaltometrics
+    - connector/signal_to_metrics
     - connector/slowsql
     - connector/spanmetrics
     - connector/sum
@@ -36,7 +36,7 @@ components:
     - exporter/awskinesis
     - exporter/awss3
     - exporter/awsxray
-    - exporter/azureblob
+    - exporter/azure_blob
     - exporter/azuredataexplorer
     - exporter/azuremonitor
     - exporter/bmchelix
@@ -49,9 +49,9 @@ components:
     - exporter/elasticsearch
     - exporter/faro
     - exporter/file
+    - exporter/google_cloud_storage
     - exporter/googlecloud
     - exporter/googlecloudpubsub
-    - exporter/googlecloudstorage
     - exporter/googlemanagedprometheus
     - exporter/honeycombmarker
     - exporter/influxdb
@@ -66,7 +66,6 @@ components:
     - exporter/prometheusremotewrite
     - exporter/pulsar
     - exporter/rabbitmq
-    - exporter/sapm
     - exporter/sematext
     - exporter/sentry
     - exporter/signalfx
@@ -80,23 +79,23 @@ components:
     - extension/ack
     - extension/asapclient
     - extension/avro_log_encoding
+    - extension/aws_logs_encoding
     - extension/awscloudwatchmetricstreams_encoding
-    - extension/awslogs_encoding
     - extension/awsproxy
+    - extension/azure_auth
     - extension/azure_encoding
-    - extension/azureauth
     - extension/basicauth
     - extension/bearertokenauth
     - extension/cfgarden_observer
-    - extension/cgroupruntime
+    - extension/cgroup_runtime
     - extension/datadog
     - extension/db_storage
     - extension/docker_observer
     - extension/ecs_observer
     - extension/encoding
     - extension/file_storage
+    - extension/google_cloud_logentry_encoding
     - extension/googleclientauth
-    - extension/googlecloudlogentry_encoding
     - extension/headers_setter
     - extension/health_check
     - extension/healthcheckv2
@@ -127,7 +126,6 @@ components:
     - internal/aws
     - internal/collectd
     - internal/common
-    - internal/coreinternal
     - internal/datadog
     - internal/datadog/e2e
     - internal/docker
@@ -147,11 +145,14 @@ components:
     - internal/splunk
     - internal/sqlquery
     - internal/tools
+    - pkg/azurelogs
     - pkg/batchperresourceattr
     - pkg/batchpersignal
     - pkg/core/xidutils
+    - pkg/coreinternal
     - pkg/datadog
     - pkg/experimentalmetricmetadata
+    - pkg/expohisto
     - pkg/faro
     - pkg/fileconsumer
     - pkg/golden
@@ -162,29 +163,29 @@ components:
     - pkg/pdatautil
     - pkg/resourcetotelemetry
     - pkg/sampling
+    - pkg/skywalking
     - pkg/stanza
     - pkg/stanza/operator/input/journald
     - pkg/status
     - pkg/topic
     - pkg/translator/azure
-    - pkg/translator/azurelogs
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
     - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
-    - pkg/translator/skywalking
     - pkg/translator/splunk
-    - pkg/translator/zipkin
     - pkg/winperfcounters
     - pkg/xk8stest
+    - pkg/xstreamencoding
+    - pkg/zipkin
     - processor/akamaidetector
+    - processor/alibabaecsdetector
     - processor/attributes
     - processor/azuredetector
     - processor/coralogix
     - processor/cumulativetodelta
-    - processor/datadogsemantics
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
@@ -195,27 +196,30 @@ components:
     - processor/groupbyattrs
     - processor/groupbytrace
     - processor/hetznerdetector
+    - processor/ibmcloudclassicdetector
+    - processor/ibmcloudvpcdetector
     - processor/interval
     - processor/isolationforest
-    - processor/k8sattributes
+    - processor/k8s_attributes
     - processor/logdedup
     - processor/logstransform
     - processor/lookup
+    - processor/metric_start_time
     - processor/metricsgeneration
-    - processor/metricstarttime
     - processor/metricstransform
     - processor/novadetector
+    - processor/oracleclouddetector
     - processor/probabilistic_sampler
     - processor/redaction
     - processor/remotetap
     - processor/resource
     - processor/resourcedetection
-    - processor/resourcedetectionprocessor/oraclecloud
     - processor/scalewaydetector
     - processor/schema
     - processor/span
     - processor/sumologic
     - processor/tail_sampling
+    - processor/tencentcvmdetector
     - processor/transform
     - processor/unroll
     - processor/upclouddetector
@@ -235,13 +239,13 @@ components:
     - receiver/awslambda
     - receiver/awss3
     - receiver/awsxray
-    - receiver/azureblob
-    - receiver/azureeventhub
-    - receiver/azuremonitor
-    - receiver/bigip
+    - receiver/azure_blob
+    - receiver/azure_event_hub
+    - receiver/azure_functions
+    - receiver/azure_monitor
     - receiver/carbon
     - receiver/chrony
-    - receiver/ciscoos
+    - receiver/cisco_os
     - receiver/cloudflare
     - receiver/cloudfoundry
     - receiver/collectd
@@ -274,17 +278,16 @@ components:
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events
-    - receiver/k8slog
     - receiver/k8sobjects
     - receiver/kafka
     - receiver/kafkametrics
     - receiver/kubeletstats
     - receiver/libhoney
     - receiver/loki
-    - receiver/macosunifiedlogging
+    - receiver/macos_unified_logging
     - receiver/memcached
     - receiver/mongodb
-    - receiver/mongodbatlas
+    - receiver/mongodb_atlas
     - receiver/mysql
     - receiver/namedpipe
     - receiver/netflow
@@ -299,8 +302,8 @@ components:
     - receiver/postgresql
     - receiver/pprof
     - receiver/prometheus
+    - receiver/prometheus_remote_write
     - receiver/prometheus_simple
-    - receiver/prometheusremotewrite
     - receiver/pulsar
     - receiver/purefa
     - receiver/purefb
@@ -329,12 +332,13 @@ components:
     - receiver/tlscheck
     - receiver/udplog
     - receiver/vcenter
+    - receiver/vcr
     - receiver/wavefront
     - receiver/webhookevent
     - receiver/windowseventlog
     - receiver/windowsperfcounters
     - receiver/windowsservice
-    - receiver/yanggrpc
+    - receiver/yang_grpc
     - receiver/zipkin
     - receiver/zookeeper
     - scraper/cpu

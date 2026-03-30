@@ -35,7 +35,7 @@ func (mockHubWrapper) GetRuntimeInformation(context.Context) (*hubRuntimeInfo, e
 	}, nil
 }
 
-func (mockHubWrapper) Receive(ctx context.Context, _ string, _ hubHandler, _ bool) (listenerHandleWrapper, error) {
+func (mockHubWrapper) Receive(ctx context.Context, _ string, _ hubHandler, _ bool, _ *zap.Logger) (listenerHandleWrapper, error) {
 	return &mockListenerHandleWrapper{
 		ctx: ctx,
 	}, nil
@@ -272,6 +272,152 @@ func TestEventhubHandler_newLegacyMessageHandler(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "bar", read.AsString())
 	assert.NoError(t, ehHandler.close(t.Context()))
+}
+
+func TestEventhubHandler_runDistributed_skipsNonDistributed(t *testing.T) {
+	// Verify that the non-distributed path still works when BlobCheckpointStore is nil
+	config := createDefaultConfig()
+	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+
+	ehHandler := &eventhubHandler{
+		settings:     receivertest.NewNopSettings(metadata.Type),
+		dataConsumer: &mockDataConsumer{},
+		config:       config.(*Config),
+	}
+	ehHandler.hub = &mockHubWrapper{}
+
+	// BlobCheckpointStore is nil, so it should take the non-distributed path
+	assert.Nil(t, ehHandler.config.BlobCheckpointStore)
+	assert.NoError(t, ehHandler.run(t.Context(), componenttest.NewNopHost()))
+	assert.NoError(t, ehHandler.close(t.Context()))
+}
+
+func TestProcessPartitionEvents_contextCancelled(t *testing.T) {
+	// Verify that processPartitionEvents returns when context is cancelled
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel() // Cancel immediately
+
+	mockPC := &mockProcessorPartitionClient{
+		partitionID: "0",
+		onReceive: func() ([]*azeventhubs.ReceivedEventData, error) {
+			return nil, context.Canceled
+		},
+	}
+
+	config := &Config{
+		PollRate:      1,
+		MaxPollEvents: 10,
+	}
+
+	processPartitionEvents(ctx, mockPC, func(_ context.Context, _ *azureEvent) error {
+		return nil
+	}, config, zap.NewNop())
+
+	assert.True(t, mockPC.closed)
+}
+
+func TestProcessPartitionEvents_ownershipLost(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	mockPC := &mockProcessorPartitionClient{
+		partitionID: "0",
+		onReceive: func() ([]*azeventhubs.ReceivedEventData, error) {
+			return nil, &azeventhubs.Error{Code: azeventhubs.ErrorCodeOwnershipLost}
+		},
+	}
+
+	config := &Config{
+		PollRate:      1,
+		MaxPollEvents: 10,
+	}
+
+	processPartitionEvents(ctx, mockPC, func(_ context.Context, _ *azureEvent) error {
+		return nil
+	}, config, zap.NewNop())
+
+	assert.True(t, mockPC.closed)
+}
+
+func TestProcessPartitionEvents_processesEvents(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+
+	now := time.Now()
+	callCount := 0
+	var receivedEvents []*azureEvent
+
+	mockPC := &mockProcessorPartitionClient{
+		partitionID: "1",
+		onReceive: func() ([]*azeventhubs.ReceivedEventData, error) {
+			callCount++
+			if callCount == 1 {
+				return []*azeventhubs.ReceivedEventData{
+					{
+						EventData: azeventhubs.EventData{
+							Body: []byte("event1"),
+						},
+						EnqueuedTime:   &now,
+						SequenceNumber: 1,
+					},
+					{
+						EventData: azeventhubs.EventData{
+							Body: []byte("event2"),
+						},
+						EnqueuedTime:   &now,
+						SequenceNumber: 2,
+					},
+				}, nil
+			}
+			cancel()
+			return nil, context.Canceled
+		},
+	}
+
+	config := &Config{
+		PollRate:      1,
+		MaxPollEvents: 10,
+	}
+
+	processPartitionEvents(ctx, mockPC, func(_ context.Context, event *azureEvent) error {
+		receivedEvents = append(receivedEvents, event)
+		return nil
+	}, config, zap.NewNop())
+
+	assert.Len(t, receivedEvents, 2)
+	assert.Equal(t, []byte("event1"), receivedEvents[0].AzEventData.Body)
+	assert.Equal(t, []byte("event2"), receivedEvents[1].AzEventData.Body)
+	assert.True(t, mockPC.checkpointUpdated)
+	assert.Equal(t, int64(2), mockPC.lastCheckpointSeq)
+	assert.True(t, mockPC.closed)
+}
+
+// mockProcessorPartitionClient implements the processorPartitionClient interface
+// for use in unit tests without requiring a real Azure connection.
+type mockProcessorPartitionClient struct {
+	partitionID       string
+	closed            bool
+	checkpointUpdated bool
+	lastCheckpointSeq int64
+	onReceive         func() ([]*azeventhubs.ReceivedEventData, error)
+}
+
+func (m *mockProcessorPartitionClient) PartitionID() string {
+	return m.partitionID
+}
+
+func (m *mockProcessorPartitionClient) ReceiveEvents(_ context.Context, _ int, _ *azeventhubs.ReceiveEventsOptions) ([]*azeventhubs.ReceivedEventData, error) {
+	return m.onReceive()
+}
+
+func (m *mockProcessorPartitionClient) UpdateCheckpoint(_ context.Context, event *azeventhubs.ReceivedEventData, _ *azeventhubs.UpdateCheckpointOptions) error {
+	m.checkpointUpdated = true
+	m.lastCheckpointSeq = event.SequenceNumber
+	return nil
+}
+
+func (m *mockProcessorPartitionClient) Close(_ context.Context) error {
+	m.closed = true
+	return nil
 }
 
 func TestEventhubHandler_closeWithStorageClient(t *testing.T) {

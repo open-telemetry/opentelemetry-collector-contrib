@@ -206,11 +206,9 @@ func TestConcurrentGzipReaderUsage(t *testing.T) {
 	concurrent := 20
 	wg := sync.WaitGroup{}
 	for range concurrent {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			testUnmarshall()
-		}()
+		})
 	}
 	wg.Wait()
 }

@@ -34,10 +34,13 @@ func TestCreateTraces(t *testing.T) {
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0"
+
 	_, err := factory.CreateTraces(
 		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
-		factory.CreateDefaultConfig().(*Config),
+		cfg,
 		consumertest.NewNop(),
 	)
 	assert.NoError(t, err, "trace receiver can be created")

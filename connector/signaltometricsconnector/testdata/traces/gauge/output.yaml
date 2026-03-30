@@ -4,7 +4,7 @@ resourceMetrics:
         - key: resource.foo
           value:
             stringValue: foo
-        - key: signaltometrics.service.instance.id
+        - key: signal_to_metrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
     scopeMetrics:
@@ -26,7 +26,7 @@ resourceMetrics:
         - key: resource.foo
           value:
             stringValue: foo
-        - key: signaltometrics.service.instance.id
+        - key: signal_to_metrics.service.instance.id
           value:
             stringValue: 627cc493-f310-47de-96bd-71410b7dec09
     scopeMetrics:

@@ -1,0 +1,5 @@
+description: SysLogConfig defines configuration for the syslog receiver
+type: object
+allOf:
+  - $ref: /pkg/stanza/operator/input/syslog.config
+  - $ref: /pkg/stanza/adapter.base_config

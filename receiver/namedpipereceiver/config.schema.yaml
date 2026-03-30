@@ -1,0 +1,5 @@
+description: NamedPipeConfig defines configuration for the namedpipe receiver
+type: object
+allOf:
+  - $ref: /pkg/stanza/operator/input/namedpipe.config
+  - $ref: /pkg/stanza/adapter.base_config

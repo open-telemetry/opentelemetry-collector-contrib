@@ -8,31 +8,36 @@ status:
   codeowners:
     active: [dmitryax, braydonk]
 
+reaggregation_enabled: true
+
 sem_conv_version: 1.9.0
 
 attributes:
   device:
     description: Name of the network interface.
     type: string
+    requirement_level: recommended
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
     type: string
+    requirement_level: recommended
     enum: [receive, transmit]
   protocol:
     description: Network protocol, e.g. TCP or UDP.
     type: string
+    requirement_level: recommended
     enum: [tcp]
   state:
     description: State of the network connection.
     type: string
+    requirement_level: recommended
 
 metrics:
   system.network.connections:
     enabled: true
     description: The number of connections.
     unit: "{connections}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -42,8 +47,7 @@ metrics:
     enabled: false
     description: The count of entries in conntrack table.
     unit: "{entries}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -52,8 +56,7 @@ metrics:
     enabled: false
     description: The limit for entries in the conntrack table.
     unit: "{entries}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -62,8 +65,7 @@ metrics:
     enabled: true
     description: The number of packets dropped.
     unit: "{packets}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -73,8 +75,7 @@ metrics:
     enabled: true
     description: The number of errors encountered.
     unit: "{errors}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -84,8 +85,7 @@ metrics:
     enabled: true
     description: The number of bytes transmitted and received.
     unit: "By"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -95,8 +95,7 @@ metrics:
     enabled: true
     description: The number of packets transferred.
     unit: "{packets}"
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative

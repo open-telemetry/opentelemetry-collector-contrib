@@ -17,8 +17,10 @@ const (
 
 type (
 	Settings struct {
+		Namespace          string             `yaml:"namespace"`
 		Mappings           Mappings           `yaml:"mappings"`
 		ComponentOverrides ComponentOverrides `yaml:"componentOverrides"`
+		AllowedRefs        []string           `yaml:"allowedRefs"`
 	}
 	Mappings           map[string]PackagesMapping
 	PackagesMapping    map[string]TypeDesc
@@ -27,8 +29,9 @@ type (
 		ConfigName string `yaml:"configName"`
 	}
 	TypeDesc struct {
-		SchemaType SchemaType `yaml:"schemaType"`
-		Format     string     `yaml:"format"`
+		SchemaType     SchemaType `yaml:"schemaType"`
+		Format         string     `yaml:"format"`
+		SkipAnnotation bool       `yaml:"skipAnnotation"`
 	}
 )
 
