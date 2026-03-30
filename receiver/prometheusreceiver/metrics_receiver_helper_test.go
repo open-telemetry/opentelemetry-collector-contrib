@@ -872,15 +872,9 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 		return true
 	}, 10*time.Second, 10*time.Millisecond, "failed to receive expected scrapes")
 
-	// This begins the processing of the scrapes collected by the receiver
-	metrics := cms.AllMetrics()
-	// split and store results by target name
-	pResults = splitMetricsByTarget(metrics)
-	lep := len(mp.endpoints)
-
 	// loop to validate outputs for each targets
 	// Stop once we have evaluated all expected results, any others are superfluous.
-	for _, target := range targets[:lep] {
+	for _, target := range targets[:len(mp.endpoints)] {
 		t.Run(target.name, func(t *testing.T) {
 			scrapes := pResults[getTargetName(target)]
 			if !target.validateScrapes {
