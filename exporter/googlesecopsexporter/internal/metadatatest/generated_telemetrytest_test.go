@@ -19,23 +19,15 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.GoogleSecopsExporterBatchSize.Record(context.Background(), 1)
-	tb.GoogleSecopsExporterLogsSendFailed.Add(context.Background(), 1)
+	tb.GoogleSecopsExporterBytesSent.Add(context.Background(), 1)
 	tb.GoogleSecopsExporterPayloadSize.Record(context.Background(), 1)
-	tb.GoogleSecopsExporterRawBytes.Add(context.Background(), 1)
 	tb.GoogleSecopsExporterRequestCount.Add(context.Background(), 1)
 	tb.GoogleSecopsExporterRequestLatency.Record(context.Background(), 1)
-	AssertEqualGoogleSecopsExporterBatchSize(t, testTel,
-		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualGoogleSecopsExporterLogsSendFailed(t, testTel,
+	AssertEqualGoogleSecopsExporterBytesSent(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualGoogleSecopsExporterPayloadSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualGoogleSecopsExporterRawBytes(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualGoogleSecopsExporterRequestCount(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

@@ -9,54 +9,40 @@ status:
 
 telemetry:
   metrics:
-    google_secops_exporter_batch_size:
+    google_secops.exporter.bytes.sent:
       enabled: true
-      description: "The number of logs in a batch."
+      description: The total number of raw bytes sent.
       stability: alpha
-      unit: "{logs}"
-      histogram:
-        value_type: int
-        bucket_boundaries: [1, 100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 10000, 20000, 30000, 40000, 50000]
-
-    google_secops_exporter_logs_send_failed:
-      enabled: true
-      description: "The number of times ConsumeLogs failed, triggering a retry by the collector pipeline."
-      stability: alpha
-      unit: "{failures}"
+      unit: By
       sum:
         value_type: int
         monotonic: true
+        aggregation_temporality: cumulative
 
-    google_secops_exporter_payload_size:
+    google_secops.exporter.payload.size:
       enabled: true
       description: "The size of the payload in bytes."
       stability: alpha
-      unit: "B"
+      unit: By
       histogram:
         value_type: int
         bucket_boundaries: [10000, 50000, 100000, 250000, 500000, 750000, 1e6, 1.25e6, 1.5e6, 1.75e6, 2e6, 2.25e6, 2.5e6, 2.75e6, 3e6, 3.25e6, 3.5e6, 3.75e6, 4e6, 4.25e6, 4.5e6, 4.75e6, 5e6]
 
-    google_secops_exporter_raw_bytes:
-      enabled: true
-      description: The total number of raw bytes sent.
-      stability: alpha
-      unit: "B"
-      sum:
-        value_type: int
-
-    google_secops_exporter_request_count:
+    google_secops.exporter.request.count:
       enabled: true
       description: "The total number of requests made."
       stability: alpha
-      unit: "{requests}"
+      unit: "{request}"
       sum:
         value_type: int
+        monotonic: true
+        aggregation_temporality: cumulative
 
-    google_secops_exporter_request_latency:
+    google_secops.exporter.request.latency:
       enabled: true
       description: "The latency of the request in milliseconds."
       stability: alpha
-      unit: "ms"
+      unit: ms
       histogram:
         value_type: int
         bucket_boundaries: [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 10000, 15000, 20000, 30000, 60000]

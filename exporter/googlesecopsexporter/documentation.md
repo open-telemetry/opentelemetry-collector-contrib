@@ -6,47 +6,31 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_google_secops_exporter_batch_size
-
-The number of logs in a batch.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| {logs} | Histogram | Int | Alpha |
-
-### otelcol_google_secops_exporter_logs_send_failed
-
-The number of times ConsumeLogs failed, triggering a retry by the collector pipeline.
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {failures} | Sum | Int | true | Alpha |
-
-### otelcol_google_secops_exporter_payload_size
-
-The size of the payload in bytes.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| B | Histogram | Int | Alpha |
-
-### otelcol_google_secops_exporter_raw_bytes
+### otelcol_google_secops.exporter.bytes.sent
 
 The total number of raw bytes sent.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| B | Sum | Int | false | Alpha |
+| By | Sum | Int | true | Alpha |
 
-### otelcol_google_secops_exporter_request_count
+### otelcol_google_secops.exporter.payload.size
+
+The size of the payload in bytes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Histogram | Int | Alpha |
+
+### otelcol_google_secops.exporter.request.count
 
 The total number of requests made.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
-| {requests} | Sum | Int | false | Alpha |
+| {request} | Sum | Int | true | Alpha |
 
-### otelcol_google_secops_exporter_request_latency
+### otelcol_google_secops.exporter.request.latency
 
 The latency of the request in milliseconds.
 

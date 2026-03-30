@@ -25,11 +25,9 @@ type TelemetryBuilder struct {
 	meter                              metric.Meter
 	mu                                 sync.Mutex
 	registrations                      []metric.Registration
-	GoogleSecopsExporterBatchSize      metric.Int64Histogram
-	GoogleSecopsExporterLogsSendFailed metric.Int64Counter
+	GoogleSecopsExporterBytesSent      metric.Int64Counter
 	GoogleSecopsExporterPayloadSize    metric.Int64Histogram
-	GoogleSecopsExporterRawBytes       metric.Int64UpDownCounter
-	GoogleSecopsExporterRequestCount   metric.Int64UpDownCounter
+	GoogleSecopsExporterRequestCount   metric.Int64Counter
 	GoogleSecopsExporterRequestLatency metric.Int64Histogram
 }
 
@@ -62,40 +60,27 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.GoogleSecopsExporterBatchSize, err = builder.meter.Int64Histogram(
-		"otelcol_google_secops_exporter_batch_size",
-		metric.WithDescription("The number of logs in a batch. [Alpha]"),
-		metric.WithUnit("{logs}"),
-		metric.WithExplicitBucketBoundaries([]float64{1, 100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 10000, 20000, 30000, 40000, 50000}...),
-	)
-	errs = errors.Join(errs, err)
-	builder.GoogleSecopsExporterLogsSendFailed, err = builder.meter.Int64Counter(
-		"otelcol_google_secops_exporter_logs_send_failed",
-		metric.WithDescription("The number of times ConsumeLogs failed, triggering a retry by the collector pipeline. [Alpha]"),
-		metric.WithUnit("{failures}"),
+	builder.GoogleSecopsExporterBytesSent, err = builder.meter.Int64Counter(
+		"otelcol_google_secops.exporter.bytes.sent",
+		metric.WithDescription("The total number of raw bytes sent. [Alpha]"),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.GoogleSecopsExporterPayloadSize, err = builder.meter.Int64Histogram(
-		"otelcol_google_secops_exporter_payload_size",
+		"otelcol_google_secops.exporter.payload.size",
 		metric.WithDescription("The size of the payload in bytes. [Alpha]"),
-		metric.WithUnit("B"),
+		metric.WithUnit("By"),
 		metric.WithExplicitBucketBoundaries([]float64{10000, 50000, 100000, 250000, 500000, 750000, 1e+06, 1.25e+06, 1.5e+06, 1.75e+06, 2e+06, 2.25e+06, 2.5e+06, 2.75e+06, 3e+06, 3.25e+06, 3.5e+06, 3.75e+06, 4e+06, 4.25e+06, 4.5e+06, 4.75e+06, 5e+06}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.GoogleSecopsExporterRawBytes, err = builder.meter.Int64UpDownCounter(
-		"otelcol_google_secops_exporter_raw_bytes",
-		metric.WithDescription("The total number of raw bytes sent. [Alpha]"),
-		metric.WithUnit("B"),
-	)
-	errs = errors.Join(errs, err)
-	builder.GoogleSecopsExporterRequestCount, err = builder.meter.Int64UpDownCounter(
-		"otelcol_google_secops_exporter_request_count",
+	builder.GoogleSecopsExporterRequestCount, err = builder.meter.Int64Counter(
+		"otelcol_google_secops.exporter.request.count",
 		metric.WithDescription("The total number of requests made. [Alpha]"),
-		metric.WithUnit("{requests}"),
+		metric.WithUnit("{request}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.GoogleSecopsExporterRequestLatency, err = builder.meter.Int64Histogram(
-		"otelcol_google_secops_exporter_request_latency",
+		"otelcol_google_secops.exporter.request.latency",
 		metric.WithDescription("The latency of the request in milliseconds. [Alpha]"),
 		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 10000, 15000, 20000, 30000, 60000}...),

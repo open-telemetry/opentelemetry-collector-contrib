@@ -21,87 +21,56 @@ func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 	return set
 }
 
-func AssertEqualGoogleSecopsExporterBatchSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualGoogleSecopsExporterBytesSent(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_google_secops_exporter_batch_size",
-		Description: "The number of logs in a batch. [Alpha]",
-		Unit:        "{logs}",
-		Data: metricdata.Histogram[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_google_secops_exporter_batch_size")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualGoogleSecopsExporterLogsSendFailed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_google_secops_exporter_logs_send_failed",
-		Description: "The number of times ConsumeLogs failed, triggering a retry by the collector pipeline. [Alpha]",
-		Unit:        "{failures}",
+		Name:        "otelcol_google_secops.exporter.bytes.sent",
+		Description: "The total number of raw bytes sent. [Alpha]",
+		Unit:        "By",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_google_secops_exporter_logs_send_failed")
+	got, err := tt.GetMetric("otelcol_google_secops.exporter.bytes.sent")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualGoogleSecopsExporterPayloadSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_google_secops_exporter_payload_size",
+		Name:        "otelcol_google_secops.exporter.payload.size",
 		Description: "The size of the payload in bytes. [Alpha]",
-		Unit:        "B",
+		Unit:        "By",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_google_secops_exporter_payload_size")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualGoogleSecopsExporterRawBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_google_secops_exporter_raw_bytes",
-		Description: "The total number of raw bytes sent. [Alpha]",
-		Unit:        "B",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: false,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_google_secops_exporter_raw_bytes")
+	got, err := tt.GetMetric("otelcol_google_secops.exporter.payload.size")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualGoogleSecopsExporterRequestCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_google_secops_exporter_request_count",
+		Name:        "otelcol_google_secops.exporter.request.count",
 		Description: "The total number of requests made. [Alpha]",
-		Unit:        "{requests}",
+		Unit:        "{request}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: false,
+			IsMonotonic: true,
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_google_secops_exporter_request_count")
+	got, err := tt.GetMetric("otelcol_google_secops.exporter.request.count")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualGoogleSecopsExporterRequestLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_google_secops_exporter_request_latency",
+		Name:        "otelcol_google_secops.exporter.request.latency",
 		Description: "The latency of the request in milliseconds. [Alpha]",
 		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
@@ -109,7 +78,7 @@ func AssertEqualGoogleSecopsExporterRequestLatency(t *testing.T, tt *componentte
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_google_secops_exporter_request_latency")
+	got, err := tt.GetMetric("otelcol_google_secops.exporter.request.latency")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
