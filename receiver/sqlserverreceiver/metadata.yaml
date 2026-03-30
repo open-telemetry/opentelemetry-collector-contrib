@@ -6,6 +6,7 @@ description: |
   Windows Performance Counters, or by directly connecting to the instance and querying it. Windows Performance Counters
   are only available when running on Windows.
 
+reaggregation_enabled: true
 
 status:
   class: receiver
@@ -53,192 +54,251 @@ attributes:
   client.address:
     description: Hostname or address of the client.
     type: string
+    requirement_level: recommended
   client.port:
     description: TCP port used by the client.
     type: int
+    requirement_level: recommended
   database.status:
     description: The current status of a database
     type: string
+    requirement_level: recommended
     enum: [online, restoring, recovering, pending_recovery, suspect, offline]
   db.namespace:
     description: The database name.
     type: string
+    requirement_level: recommended
   db.query.text:
     description: The text of the database query being executed.
     type: string
+    requirement_level: recommended
   db.system.name:
     description: The database management system (DBMS) product as identified by the client instrumentation.
     type: string
+    requirement_level: recommended
   ## query sample
   direction:
     description: The direction of flow of bytes or operations.
     type: string
+    requirement_level: recommended
     enum: [read, write]
   file_type:
     description: The type of file being monitored.
     type: string
+    requirement_level: recommended
   logical_filename:
     description: The logical filename of the file being monitored.
     type: string
+    requirement_level: recommended
   network.peer.address:
     description: IP address of the peer client.
     type: string
+    requirement_level: recommended
   network.peer.port:
     description: TCP port used by the peer client.
     type: int
+    requirement_level: recommended
   page.operations:
     name_override: type
     description: The page operation types.
     type: string
+    requirement_level: recommended
     enum: [read, write]
   performance_counter.object_name:
     description: Category to which this counter belongs
     type: string
+    requirement_level: recommended
   physical_filename:
     description: The physical filename of the file being monitored.
     type: string
+    requirement_level: recommended
   replica.direction:
     description: The direction of flow of bytes for replica.
     type: string
+    requirement_level: recommended
     enum: [transmit, receive]
   server.address:
     description: The network address of the server hosting the database.
     type: string
+    requirement_level: recommended
   server.port:
     description: The port number on which the server is listening.
     type: int
+    requirement_level: recommended
   sqlserver.blocking_session_id:
     description: Session ID that is blocking the current session. 0 if none.
     type: int
+    requirement_level: recommended
   sqlserver.command:
     description: SQL command type being executed.
     type: string
+    requirement_level: recommended
   sqlserver.context_info:
     description: Context information for the session, represented as a hexadecimal string.
     type: string
+    requirement_level: recommended
   sqlserver.cpu_time:
     description: CPU time consumed by the query, in seconds.
     type: double
+    requirement_level: recommended
   sqlserver.deadlock_priority:
     description: Deadlock priority value for the session.
     type: int
+    requirement_level: recommended
   sqlserver.estimated_completion_time:
     description: Estimated time remaining for the request to complete, in seconds.
     type: double
+    requirement_level: recommended
   sqlserver.execution_count:
     description: Number of times that the plan has been executed since it was last compiled, reported in delta value.
     type: int
+    requirement_level: recommended
   sqlserver.lock_timeout:
     description: Lock timeout value in seconds.
     type: double
+    requirement_level: recommended
   sqlserver.logical_reads:
     description: Number of logical reads (data read from cache/memory).
     type: int
+    requirement_level: recommended
   sqlserver.open_transaction_count:
     description: Number of transactions currently open in the session.
     type: int
+    requirement_level: recommended
   sqlserver.percent_complete:
     description: Percentage of work completed.
     type: double
+    requirement_level: recommended
   # Stored Procedures
   sqlserver.procedure_execution_count:
     description: Number of times that the procedure has been executed since it was last compiled, reported in delta value.
     type: int
+    requirement_level: recommended
   sqlserver.procedure_id:
     description: The SQL Server ID of the stored procedure, if any
     type: string
+    requirement_level: recommended
   sqlserver.procedure_name:
     description: The name of the stored procedure, if any
     type: string
+    requirement_level: recommended
   sqlserver.query_hash:
     description: Binary hash value calculated on the query and used to identify queries with similar logic, reported in the HEX format.
     type: string
+    requirement_level: recommended
   sqlserver.query_plan:
     description: The query execution plan used by the SQL Server.
     type: string
+    requirement_level: recommended
   sqlserver.query_plan_hash:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
+    requirement_level: recommended
   sqlserver.query_start:
     description: Timestamp of when the SQL query started (ISO 8601 format).
     type: string
+    requirement_level: recommended
   sqlserver.reads:
     description: Number of physical reads performed by the query.
     type: int
+    requirement_level: recommended
   sqlserver.request_status:
     description: Status of the request (e.g., running, suspended).
     type: string
+    requirement_level: recommended
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
+    requirement_level: recommended
   sqlserver.session_id:
     description: ID of the SQL Server session.
     type: int
+    requirement_level: recommended
   sqlserver.session_status:
     description: Status of the session (e.g., running, sleeping).
     type: string
+    requirement_level: recommended
   sqlserver.total_elapsed_time:
     description: Total elapsed time for completed executions of this plan, reported in delta seconds.
     type: double
+    requirement_level: recommended
   ## top query
   sqlserver.total_grant_kb:
     description: The total amount of reserved memory grant in KB this plan received since it was compiled, reported in delta value.
     type: int
+    requirement_level: recommended
   sqlserver.total_logical_reads:
     description: Total number of logical reads performed by executions of this plan since it was compiled, reported in delta value.
     type: int
+    requirement_level: recommended
   sqlserver.total_logical_writes:
     description: Total number of logical writes performed by executions of this plan since it was compiled, reported in delta value.
     type: int
+    requirement_level: recommended
   sqlserver.total_physical_reads:
     description: Total number of physical reads performed by executions of this plan since it was compiled, reported in delta value.
     type: int
+    requirement_level: recommended
   sqlserver.total_rows:
     description: Total number of rows returned by the query, reported in delta value.
     type: int
+    requirement_level: recommended
   sqlserver.total_worker_time:
     description: Total amount of CPU time that was consumed by executions of this plan since it was compiled, reported in delta seconds.
     type: double
+    requirement_level: recommended
   sqlserver.transaction_id:
     description: Unique ID of the active transaction.
     type: int
+    requirement_level: recommended
   sqlserver.transaction_isolation_level:
     description: Transaction isolation level used in the session. Represented as numeric constant.
     type: int
+    requirement_level: recommended
   sqlserver.wait_resource:
     description: The resource for which the session is waiting.
     type: string
+    requirement_level: recommended
   sqlserver.wait_time:
     description: Duration in seconds the request has been waiting.
     type: double
+    requirement_level: recommended
   sqlserver.wait_type:
     description: Type of wait encountered by the request. Empty if none.
     type: string
+    requirement_level: recommended
   sqlserver.writes:
     description: Number of writes performed by the query.
     type: int
+    requirement_level: recommended
   table.state:
     description: The state of the table.
     type: string
+    requirement_level: recommended
     enum: [active, inactive]
   table.status:
     description: The status of the table.
     type: string
+    requirement_level: recommended
     enum: [temporary, permanent]
   tempdb.state:
     description: The status of the tempdb space usage.
     type: string
+    requirement_level: recommended
     enum: [free, used]
   user.name:
     description: Login name associated with the SQL Server session.
     type: string
+    requirement_level: recommended
 
   wait.category:
     description: Category of the reason for a wait.
     type: string
+    requirement_level: recommended
   wait.type:
     description: Type of the wait, view [WaitTypes documentation](https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-os-wait-stats-transact-sql?view=sql-server-ver16#WaitTypes) for more information.
     type: string
+    requirement_level: recommended
   # attributes for events
   ## common
 events:
