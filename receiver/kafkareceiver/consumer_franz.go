@@ -430,7 +430,7 @@ func (c *franzConsumer) triggerShutdown() bool {
 
 // assigned must be set as kgo.OnPartitionsAssigned callback. Ensuring all
 // assigned partitions to this consumer process received records.
-func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned map[string][]int32) {
+func (c *franzConsumer) assigned(ctx context.Context, cl *kgo.Client, assigned map[string][]int32) {
 	// Report OK on each successful assignment so we can recover status after transient errors.
 	c.reportStatus(componentstatus.StatusOK)
 
@@ -438,7 +438,7 @@ func (c *franzConsumer) assigned(ctx context.Context, _ *kgo.Client, assigned ma
 	// PauseFetchPartitions persists across rebalances in franz-go, so we must
 	// explicitly resume partitions when they are (re)assigned.
 	// ResumeFetchPartitions is a no-op for partitions that are not paused.
-	c.client.ResumeFetchPartitions(assigned)
+	cl.ResumeFetchPartitions(assigned)
 
 	c.mu.Lock()
 	defer c.mu.Unlock()

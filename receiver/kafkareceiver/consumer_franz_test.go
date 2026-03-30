@@ -390,7 +390,7 @@ func TestResumePartitionsAfterRebalance(t *testing.T) {
 	shouldError.Store(false)
 	partitions := map[string][]int32{topic: {0}}
 	c.lost(t.Context(), nil, partitions, false)
-	c.assigned(t.Context(), nil, partitions)
+	c.assigned(t.Context(), c.client, partitions)
 
 	// Produce new records after the resume. The client's internal fetch offset
 	// has already advanced past the error record (offset 0), so we need fresh
