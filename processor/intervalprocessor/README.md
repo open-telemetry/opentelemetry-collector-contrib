@@ -78,5 +78,3 @@ At the next `interval` (15s by default), the processor would pass the following 
 
 > [!IMPORTANT]
 > After exporting, any internal state is cleared. So if no new metrics come in, the next interval will export nothing.
-
-On shutdown (e.g. when the collector receives a SIGHUP or SIGTERM), the processor flushes all buffered metrics to the next component before exiting, ensuring no data is lost.

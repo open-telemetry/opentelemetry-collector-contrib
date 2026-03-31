@@ -125,11 +125,9 @@ func TestFlushOnShutdown(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// Start the processor.
 	err = mgp.Start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	// Feed metrics into the processor.
 	dir := filepath.Join("testdata", "basic_aggregation")
 	md, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
 	require.NoError(t, err)
@@ -137,17 +135,12 @@ func TestFlushOnShutdown(t *testing.T) {
 	err = mgp.ConsumeMetrics(t.Context(), md)
 	require.NoError(t, err)
 
-	// Shutdown should flush the buffered metrics.
 	err = mgp.Shutdown(t.Context())
 	require.NoError(t, err)
 
-	// The next consumer should have received:
-	// 1. Pass-through metrics from ConsumeMetrics
-	// 2. Buffered metrics flushed on shutdown
 	allMetrics := next.AllMetrics()
 	require.Len(t, allMetrics, 2)
 
-	// Verify the flushed data matches expected output.
 	expectedExportData, err := golden.ReadMetrics(filepath.Join(dir, "output.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedExportData, allMetrics[1]))
