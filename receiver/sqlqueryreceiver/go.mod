@@ -25,7 +25,7 @@ require (
 )
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.43.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.44.0
 	github.com/SAP/go-hdb v1.16.2
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/lib/pq v1.10.9
