@@ -278,7 +278,7 @@ func (er *eventReceiver) verifyHMACSignature(payload []byte, signatureHeader str
 	hexDigest := strings.TrimPrefix(signatureHeader, prefix)
 	sigBytes, err := hex.DecodeString(hexDigest)
 	if err != nil {
-		return fmt.Errorf("%w: %v", errInvalidSignatureEncoding, err)
+		return fmt.Errorf("%w: %w", errInvalidSignatureEncoding, err)
 	}
 
 	mac := hmac.New(sha256.New, []byte(er.cfg.HMACSignature.Secret))
