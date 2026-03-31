@@ -80,7 +80,7 @@ exporter/prometheusremotewriteexporter/                          @open-telemetry
 exporter/pulsarexporter/                                         @open-telemetry/collector-contrib-approvers @dao-jun
 exporter/rabbitmqexporter/                                       @open-telemetry/collector-contrib-approvers @atoulme
 exporter/sematextexporter/                                       @open-telemetry/collector-contrib-approvers @AkhigbeEromo
-exporter/sentryexporter/                                         @open-telemetry/collector-contrib-approvers @AbhiPrasad
+exporter/sentryexporter/                                         @open-telemetry/collector-contrib-approvers @AbhiPrasad @giortzisg
 exporter/signalfxexporter/                                       @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 exporter/splunkhecexporter/                                      @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 exporter/stefexporter/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @dmitryax
