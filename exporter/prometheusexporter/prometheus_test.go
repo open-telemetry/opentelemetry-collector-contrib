@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -21,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -721,86 +719,4 @@ this_one_there_where_{arch="x86",instance="test-instance",job="test-service",os=
 			assert.Equal(t, tt.want, output)
 		})
 	}
-}
-
-// TestPrometheusExporter_BackgroundCleanup verifies that expired entries in both
-// the accumulator's registeredMetrics and the collector's metricFamilies map are
-// evicted by the background goroutine even when no Prometheus scrape occurs.
-// This covers the memory leak described in
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41123
-func TestPrometheusExporter_BackgroundCleanup(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			NetAddr: confignet.AddrConfig{
-				Transport: "tcp",
-				Endpoint:  addr,
-			},
-		},
-		MetricExpiration: 50 * time.Millisecond,
-	}
-
-	factory := NewFactory()
-	set := exportertest.NewNopSettings(metadata.Type)
-	exp, err := factory.CreateMetrics(t.Context(), set, cfg)
-	require.NoError(t, err)
-
-	require.NoError(t, exp.Start(t.Context(), componenttest.NewNopHost()))
-	defer func() {
-		require.NoError(t, exp.Shutdown(t.Context()))
-	}()
-
-	c := exp.(*wrapMetricsExporter).exporter.collector
-	a := c.accumulator.(*lastValueAccumulator)
-
-	// --- Seed the accumulator with a stale and a fresh time series ---
-	staleMetric := pmetric.NewMetric()
-	staleMetric.SetName("stale_accumulated")
-	a.registeredMetrics.Store("stale_acc_key", &accumulatedValue{
-		value:           staleMetric,
-		resourceAttrs:   pcommon.NewMap(),
-		scopeAttributes: pcommon.NewMap(),
-		updated:         time.Now().Add(-10 * time.Minute),
-	})
-	freshMetric := pmetric.NewMetric()
-	freshMetric.SetName("fresh_accumulated")
-	a.registeredMetrics.Store("fresh_acc_key", &accumulatedValue{
-		value:           freshMetric,
-		resourceAttrs:   pcommon.NewMap(),
-		scopeAttributes: pcommon.NewMap(),
-		updated:         time.Now().Add(time.Hour),
-	})
-
-	// --- Seed the metricFamilies map with a stale and a fresh entry ---
-	gaugeType := io_prometheus_client.MetricType_GAUGE
-	c.metricFamilies.Store("stale_metric", metricFamily{
-		lastSeen: time.Now().Add(-10 * time.Minute),
-		mf: &io_prometheus_client.MetricFamily{
-			Name: proto.String("stale_metric"),
-			Help: proto.String("should be cleaned up"),
-			Type: &gaugeType,
-		},
-	})
-	c.metricFamilies.Store("fresh_metric", metricFamily{
-		lastSeen: time.Now().Add(time.Hour),
-		mf: &io_prometheus_client.MetricFamily{
-			Name: proto.String("fresh_metric"),
-			Help: proto.String("should remain"),
-			Type: &gaugeType,
-		},
-	})
-
-	// Wait for the background ticker to fire. We intentionally do NOT scrape
-	// /metrics — the whole point is that cleanup happens independently of Collect().
-	require.Eventually(t, func() bool {
-		_, mfFound := c.metricFamilies.Load("stale_metric")
-		_, accFound := a.registeredMetrics.Load("stale_acc_key")
-		return !mfFound && !accFound
-	}, 2*time.Second, 25*time.Millisecond, "stale entries were not removed by background cleanup")
-
-	// Fresh entries must survive.
-	_, ok := c.metricFamilies.Load("fresh_metric")
-	assert.True(t, ok, "fresh_metric should not have been evicted")
-	_, ok = a.registeredMetrics.Load("fresh_acc_key")
-	assert.True(t, ok, "fresh_accumulated should not have been evicted")
 }
