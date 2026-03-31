@@ -28,7 +28,7 @@ Total number of processes in each state.
 
 ### system.processes.created
 
-Total number of created processes.
+Total number of created processes. Supported on Linux and OpenBSD.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
