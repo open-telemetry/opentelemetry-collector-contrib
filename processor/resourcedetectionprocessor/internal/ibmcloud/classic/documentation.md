@@ -4,12 +4,12 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.account.id | The IBM Cloud account ID. | Any Str | true |
-| cloud.availability_zone | The IBM Cloud Classic datacenter (e.g., dal13, par01). | Any Str | true |
-| cloud.platform | The cloud platform (ibm_cloud.classic). | Any Str | true |
-| cloud.provider | The cloud provider (ibm_cloud). | Any Str | true |
-| cloud.resource_id | The global unique identifier (UUID) of the instance. | Any Str | true |
-| host.id | The SoftLayer instance ID. | Any Str | true |
-| host.name | The hostname of the instance. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| cloud.account.id | The IBM Cloud account ID. | Any Str | true | - |
+| cloud.availability_zone | The IBM Cloud Classic datacenter (e.g., dal13, par01). | Any Str | true | - |
+| cloud.platform | The cloud platform (ibm_cloud.classic). | Any Str | true | - |
+| cloud.provider | The cloud provider (ibm_cloud). | Any Str | true | - |
+| cloud.resource_id | The global unique identifier (UUID) of the instance. | Any Str | true | - |
+| host.id | The SoftLayer instance ID. | Any Str | true | - |
+| host.name | The hostname of the instance. | Any Str | true | - |

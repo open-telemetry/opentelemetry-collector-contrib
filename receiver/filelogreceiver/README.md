@@ -160,7 +160,7 @@ After the original file is truncated, the receiver detects the fingerprint chang
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /var/log/myservice/*.json ]
     operators:
       - type: json_parser
@@ -174,7 +174,7 @@ receivers:
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /simple.log ]
     operators:
       - type: regex_parser
@@ -197,7 +197,7 @@ The above configuration will read logs from the "simple.log" file. Some examples
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
     - /var/log/example/multiline.log
     multiline:
@@ -222,7 +222,7 @@ Exception in thread 2 "main" java.lang.NullPointerException
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
     - /var/log/example/compressed.log.gz
     compression: gzip

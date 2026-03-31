@@ -158,7 +158,7 @@ components:
         - envoyals
         - expvar
         - faro
-        - filelog
+        - file_log
         - filestats
         - flinkmetrics
         - fluentforward
