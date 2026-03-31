@@ -71,9 +71,7 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 
 func (p *intervalProcessor) Start(_ context.Context, _ component.Host) error {
 	exportTicker := time.NewTicker(p.config.Interval)
-	p.wg.Add(1)
-	go func() {
-		defer p.wg.Done()
+	p.wg.Go(func() {
 		for {
 			select {
 			case <-p.ctx.Done():
@@ -86,7 +84,7 @@ func (p *intervalProcessor) Start(_ context.Context, _ component.Host) error {
 				p.exportMetrics(p.ctx)
 			}
 		}
-	}()
+	})
 
 	return nil
 }
