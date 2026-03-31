@@ -32,7 +32,7 @@ metrics:
     attributes: [status]
   system.processes.created:
     enabled: true
-    description: Total number of created processes.
+    description: Total number of created processes. Supported on Linux and OpenBSD.
     unit: "{processes}"
     stability: development
     sum:

@@ -38,9 +38,9 @@ The total number of messages currently in the queue.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | The state of messages in a queue. | Str: ``ready``, ``unacknowledged`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | The state of messages in a queue. | Str: ``ready``, ``unacknowledged`` | Recommended | - |
 
 ### rabbitmq.message.delivered
 
@@ -670,8 +670,8 @@ Uptime of the node.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true | - |
+| rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true | - |
+| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true | - |

@@ -4,39 +4,39 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| container.id | Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count. | Any Str | false |
-| container.image.name | Name of the image the container was built on. Requires container.id or k8s.container.name. | Any Str | true |
-| container.image.repo_digests | Repo digests of the container image as provided by the container runtime. | Any Slice | false |
-| container.image.tag | Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. Deprecated, use container.image.tags instead. | Any Str | true |
-| container.image.tags | Container image tags. Requires container.id or k8s.container.name. | Any Slice | true |
-| k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false |
-| k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false |
-| k8s.cronjob.name | The name of the CronJob. | Any Str | false |
-| k8s.cronjob.uid | The uid of the CronJob. | Any Str | false |
-| k8s.daemonset.name | The name of the DaemonSet. | Any Str | false |
-| k8s.daemonset.uid | The UID of the DaemonSet. | Any Str | false |
-| k8s.deployment.name | The name of the Deployment. | Any Str | true |
-| k8s.deployment.uid | The UID of the Deployment. | Any Str | false |
-| k8s.job.name | The name of the Job. | Any Str | false |
-| k8s.job.uid | The UID of the Job. | Any Str | false |
-| k8s.namespace.name | The name of the namespace that the pod is running in. | Any Str | true |
-| k8s.node.name | The name of the Node. | Any Str | true |
-| k8s.node.uid | The UID of the Node. | Any Str | false |
-| k8s.pod.hostname | The hostname of the Pod. | Any Str | false |
-| k8s.pod.ip | The IP address of the Pod. | Any Str | false |
-| k8s.pod.name | The name of the Pod. | Any Str | true |
-| k8s.pod.start_time | The start time of the Pod. | Any Str | true |
-| k8s.pod.uid | The UID of the Pod. | Any Str | true |
-| k8s.replicaset.name | The name of the ReplicaSet. | Any Str | false |
-| k8s.replicaset.uid | The UID of the ReplicaSet. | Any Str | false |
-| k8s.statefulset.name | The name of the StatefulSet. | Any Str | false |
-| k8s.statefulset.uid | The UID of the StatefulSet. | Any Str | false |
-| service.instance.id | The instance ID of the service. | Any Str | false |
-| service.name | The name of the service. | Any Str | false |
-| service.namespace | The namespace of the service. | Any Str | false |
-| service.version | The version of the service. | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| container.id | Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count. | Any Str | false | - |
+| container.image.name | Name of the image the container was built on. Requires container.id or k8s.container.name. | Any Str | true | - |
+| container.image.repo_digests | Repo digests of the container image as provided by the container runtime. | Any Slice | false | - |
+| container.image.tag | Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. Deprecated, use container.image.tags instead. | Any Str | true | - |
+| container.image.tags | Container image tags. Requires container.id or k8s.container.name. | Any Slice | true | - |
+| k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false | - |
+| k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false | - |
+| k8s.cronjob.name | The name of the CronJob. | Any Str | false | - |
+| k8s.cronjob.uid | The uid of the CronJob. | Any Str | false | - |
+| k8s.daemonset.name | The name of the DaemonSet. | Any Str | false | - |
+| k8s.daemonset.uid | The UID of the DaemonSet. | Any Str | false | - |
+| k8s.deployment.name | The name of the Deployment. | Any Str | true | - |
+| k8s.deployment.uid | The UID of the Deployment. | Any Str | false | - |
+| k8s.job.name | The name of the Job. | Any Str | false | - |
+| k8s.job.uid | The UID of the Job. | Any Str | false | - |
+| k8s.namespace.name | The name of the namespace that the pod is running in. | Any Str | true | - |
+| k8s.node.name | The name of the Node. | Any Str | true | - |
+| k8s.node.uid | The UID of the Node. | Any Str | false | - |
+| k8s.pod.hostname | The hostname of the Pod. | Any Str | false | - |
+| k8s.pod.ip | The IP address of the Pod. | Any Str | false | - |
+| k8s.pod.name | The name of the Pod. | Any Str | true | - |
+| k8s.pod.start_time | The start time of the Pod. | Any Str | true | - |
+| k8s.pod.uid | The UID of the Pod. | Any Str | true | - |
+| k8s.replicaset.name | The name of the ReplicaSet. | Any Str | false | - |
+| k8s.replicaset.uid | The UID of the ReplicaSet. | Any Str | false | - |
+| k8s.statefulset.name | The name of the StatefulSet. | Any Str | false | - |
+| k8s.statefulset.uid | The UID of the StatefulSet. | Any Str | false | - |
+| service.instance.id | The instance ID of the service. | Any Str | false | - |
+| service.name | The name of the service. | Any Str | false | - |
+| service.namespace | The namespace of the service. | Any Str | false | - |
+| service.version | The version of the service. | Any Str | false | - |
 
 ## Internal Telemetry
 

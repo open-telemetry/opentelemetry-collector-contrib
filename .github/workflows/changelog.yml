@@ -35,7 +35,7 @@ jobs:
           # Fetch complete history depth only if the PR is not a chore.
           fetch-depth: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]') && '0' || '1' }}
       - run: ./.github/workflows/scripts/free-disk-space.sh
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: oldstable
           cache-dependency-path: "**/*.sum"
