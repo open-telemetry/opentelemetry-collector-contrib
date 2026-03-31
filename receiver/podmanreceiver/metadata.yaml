@@ -1,4 +1,11 @@
+display_name: Podman Stats Receiver
 type: podman_stats
+
+reaggregation_enabled: true
+description: |
+  The Podman Stats Receiver queries the Podman service API to fetch stats for all running containers
+  on a configured interval.  These stats are for container resource usage of cpu, memory, network, and
+  the [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
 status:
   class: receiver
@@ -31,6 +38,7 @@ attributes:
   core:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
+    requirement_level: recommended
 
 metrics:
   # BlockIO

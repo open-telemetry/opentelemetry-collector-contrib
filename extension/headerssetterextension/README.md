@@ -5,7 +5,7 @@
 | Stability     | [alpha]  |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fheaderssetter%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fheaderssetter) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fheaderssetter%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fheaderssetter) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_headers_setter)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_headers_setter&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_headerssetter)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_headerssetter&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@VihasMakwana](https://www.github.com/VihasMakwana) \| Seeking more code owners! |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -41,6 +41,9 @@ The following settings are available:
         - `delete`: Deletes the header.
     - `value`: The header value is looked up from the `value` property of the
       extension configuration.
+    - `value_file`: The header value is read from a file. The file is watched for
+      changes and the header value is automatically updated when the file changes.
+      This is useful for credentials that are rotated, such as Kubernetes secrets.
     - `default_value`: (Optional) Value used if no entry for header key specified in `from_context` is present in request metadata.
     - `from_context`: The header value is looked up from the request metadata,
       such as HTTP headers, using the property value as the key (likely a header
@@ -48,7 +51,7 @@ The following settings are available:
     - `from_attribute`: The header value is taken from the request's authentication data,
       may include attributes like `subject` and `membership`.
 
-The `value`,`from_context,default_value` and `from_attribute,default_value` properties are mutually exclusive.
+The `value`, `value_file`, `from_context,default_value` and `from_attribute,default_value` properties are mutually exclusive.
 
 In order for `from_context` to work, other components in the pipeline also need to be configured appropriately:
 * If a [batch processor][batch-processor] is present in the pipeline, it must be configured to [preserve client metadata][batch-processor-preserve-metadata]. 
@@ -104,6 +107,41 @@ service:
       processors: [ batch ]
       exporters: [ loki ]
 ```
+
+#### File-Based Credentials Example
+
+The `value_file` option allows reading header values from files, which is useful
+for credentials that are rotated, such as Kubernetes secrets or other dynamic
+credentials:
+
+```yaml
+extensions:
+  headers_setter:
+    headers:
+      - key: X-API-Key
+        value_file: /var/secrets/api-key
+        action: upsert
+      - key: X-Tenant-ID
+        value_file: /etc/tenant/id
+        action: insert
+
+exporters:
+  otlphttp:
+    endpoint: https://api.example.com/v1/traces
+    auth:
+      authenticator: headers_setter
+
+service:
+  extensions: [headers_setter]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlphttp]
+```
+
+The files are watched for changes, and header values are automatically updated
+when the files are modified. This is particularly useful in Kubernetes environments
+where secrets are mounted as files and can be rotated without restarting the collector.
 
 ## Chaining with other Auth Extensions
 

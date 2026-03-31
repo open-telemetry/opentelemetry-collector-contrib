@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("yanggrpc")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver"
+	Type           = component.MustNewType("yang_grpc")
+	DeprecatedType = component.MustNewType("yanggrpc")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver"
 )
 
 const (

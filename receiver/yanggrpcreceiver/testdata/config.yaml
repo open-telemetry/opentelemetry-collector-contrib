@@ -1,4 +1,4 @@
-yanggrpc/default:
+yang_grpc/default:
   endpoint: localhost:57500
   transport: tcp
   keepalive:
@@ -19,7 +19,7 @@ yanggrpc/default:
     cache_modules: true
     enable_rfc_parser: true
     max_modules: 1000
-yanggrpc/prod:
+yang_grpc/prod:
   endpoint: "0.0.0.0:57500"
   # TLS/mTLS Configuration
   tls:

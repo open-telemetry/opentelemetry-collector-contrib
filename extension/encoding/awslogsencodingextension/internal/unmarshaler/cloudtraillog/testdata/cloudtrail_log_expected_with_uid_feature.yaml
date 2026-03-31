@@ -6,10 +6,10 @@ resourceLogs:
             stringValue: aws
         - key: cloud.region
           value:
-            stringValue: us-east-1
+            stringValue: us-west-2
         - key: cloud.account.id
           value:
-            stringValue: "123456789012"
+            stringValue: "111122223333"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -141,12 +141,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: stopped
                                                     - key: code
                                                       value:
                                                         doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
@@ -166,12 +166,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: stopped
                                                     - key: code
                                                       value:
                                                         doubleValue: 80
+                                                    - key: name
+                                                      value:
+                                                        stringValue: stopped
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -418,9 +418,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: state
-                        value:
-                          stringValue: Start
                       - key: eventSource
                         value:
                           stringValue: ssm.amazonaws.com
@@ -452,6 +449,9 @@ resourceLogs:
                                               - key: average
                                                 value:
                                                   doubleValue: 669
+                      - key: state
+                        value:
+                          stringValue: Start
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:
@@ -611,15 +611,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: MFAUsed
+                        value:
+                          boolValue: true
                       - key: MobileVersion
                         value:
                           stringValue: "No"
                       - key: LoginTo
                         value:
                           stringValue: https://console.aws.amazon.com/console/home?region=us
-                      - key: MFAUsed
-                        value:
-                          boolValue: true
             body: {}
             timeUnixNano: "1749997800000000000"
           - attributes:

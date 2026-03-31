@@ -3,17 +3,2022 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// MysqlBufferPoolDataPagesMetricAttributeKey specifies the key of an attribute for the mysql.buffer_pool.data_pages metric.
+type MysqlBufferPoolDataPagesMetricAttributeKey string
+
+const (
+	MysqlBufferPoolDataPagesMetricAttributeKeyBufferPoolData MysqlBufferPoolDataPagesMetricAttributeKey = "status"
+)
+
+// MysqlBufferPoolDataPagesMetricConfig provides config for the mysql.buffer_pool.data_pages metric.
+type MysqlBufferPoolDataPagesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlBufferPoolDataPagesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlBufferPoolDataPagesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlBufferPoolDataPagesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlBufferPoolDataPagesMetricAttributeKeyBufferPoolData:
+		default:
+			return fmt.Errorf("metric mysql.buffer_pool.data_pages doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlBufferPoolLimitMetricConfig provides config for the mysql.buffer_pool.limit metric.
+type MysqlBufferPoolLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *MysqlBufferPoolLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlBufferPoolOperationsMetricAttributeKey specifies the key of an attribute for the mysql.buffer_pool.operations metric.
+type MysqlBufferPoolOperationsMetricAttributeKey string
+
+const (
+	MysqlBufferPoolOperationsMetricAttributeKeyBufferPoolOperations MysqlBufferPoolOperationsMetricAttributeKey = "operation"
+)
+
+// MysqlBufferPoolOperationsMetricConfig provides config for the mysql.buffer_pool.operations metric.
+type MysqlBufferPoolOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlBufferPoolOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlBufferPoolOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlBufferPoolOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlBufferPoolOperationsMetricAttributeKeyBufferPoolOperations:
+		default:
+			return fmt.Errorf("metric mysql.buffer_pool.operations doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlBufferPoolPageFlushesMetricConfig provides config for the mysql.buffer_pool.page_flushes metric.
+type MysqlBufferPoolPageFlushesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlBufferPoolPageFlushesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlBufferPoolPagesMetricAttributeKey specifies the key of an attribute for the mysql.buffer_pool.pages metric.
+type MysqlBufferPoolPagesMetricAttributeKey string
+
+const (
+	MysqlBufferPoolPagesMetricAttributeKeyBufferPoolPages MysqlBufferPoolPagesMetricAttributeKey = "kind"
+)
+
+// MysqlBufferPoolPagesMetricConfig provides config for the mysql.buffer_pool.pages metric.
+type MysqlBufferPoolPagesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlBufferPoolPagesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlBufferPoolPagesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlBufferPoolPagesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlBufferPoolPagesMetricAttributeKeyBufferPoolPages:
+		default:
+			return fmt.Errorf("metric mysql.buffer_pool.pages doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlBufferPoolUsageMetricAttributeKey specifies the key of an attribute for the mysql.buffer_pool.usage metric.
+type MysqlBufferPoolUsageMetricAttributeKey string
+
+const (
+	MysqlBufferPoolUsageMetricAttributeKeyBufferPoolData MysqlBufferPoolUsageMetricAttributeKey = "status"
+)
+
+// MysqlBufferPoolUsageMetricConfig provides config for the mysql.buffer_pool.usage metric.
+type MysqlBufferPoolUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlBufferPoolUsageMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlBufferPoolUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlBufferPoolUsageMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlBufferPoolUsageMetricAttributeKeyBufferPoolData:
+		default:
+			return fmt.Errorf("metric mysql.buffer_pool.usage doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlClientNetworkIoMetricAttributeKey specifies the key of an attribute for the mysql.client.network.io metric.
+type MysqlClientNetworkIoMetricAttributeKey string
+
+const (
+	MysqlClientNetworkIoMetricAttributeKeyDirection MysqlClientNetworkIoMetricAttributeKey = "kind"
+)
+
+// MysqlClientNetworkIoMetricConfig provides config for the mysql.client.network.io metric.
+type MysqlClientNetworkIoMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlClientNetworkIoMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlClientNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlClientNetworkIoMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlClientNetworkIoMetricAttributeKeyDirection:
+		default:
+			return fmt.Errorf("metric mysql.client.network.io doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlCommandsMetricAttributeKey specifies the key of an attribute for the mysql.commands metric.
+type MysqlCommandsMetricAttributeKey string
+
+const (
+	MysqlCommandsMetricAttributeKeyCommand MysqlCommandsMetricAttributeKey = "command"
+)
+
+// MysqlCommandsMetricConfig provides config for the mysql.commands metric.
+type MysqlCommandsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlCommandsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlCommandsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlCommandsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlCommandsMetricAttributeKeyCommand:
+		default:
+			return fmt.Errorf("metric mysql.commands doesn't have an attribute %v, valid attributes: [command]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlConnectionCountMetricConfig provides config for the mysql.connection.count metric.
+type MysqlConnectionCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlConnectionErrorsMetricAttributeKey specifies the key of an attribute for the mysql.connection.errors metric.
+type MysqlConnectionErrorsMetricAttributeKey string
+
+const (
+	MysqlConnectionErrorsMetricAttributeKeyConnectionError MysqlConnectionErrorsMetricAttributeKey = "error"
+)
+
+// MysqlConnectionErrorsMetricConfig provides config for the mysql.connection.errors metric.
+type MysqlConnectionErrorsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlConnectionErrorsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlConnectionErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlConnectionErrorsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlConnectionErrorsMetricAttributeKeyConnectionError:
+		default:
+			return fmt.Errorf("metric mysql.connection.errors doesn't have an attribute %v, valid attributes: [error]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlDoubleWritesMetricAttributeKey specifies the key of an attribute for the mysql.double_writes metric.
+type MysqlDoubleWritesMetricAttributeKey string
+
+const (
+	MysqlDoubleWritesMetricAttributeKeyDoubleWrites MysqlDoubleWritesMetricAttributeKey = "kind"
+)
+
+// MysqlDoubleWritesMetricConfig provides config for the mysql.double_writes metric.
+type MysqlDoubleWritesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlDoubleWritesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlDoubleWritesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlDoubleWritesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlDoubleWritesMetricAttributeKeyDoubleWrites:
+		default:
+			return fmt.Errorf("metric mysql.double_writes doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlHandlersMetricAttributeKey specifies the key of an attribute for the mysql.handlers metric.
+type MysqlHandlersMetricAttributeKey string
+
+const (
+	MysqlHandlersMetricAttributeKeyHandler MysqlHandlersMetricAttributeKey = "kind"
+)
+
+// MysqlHandlersMetricConfig provides config for the mysql.handlers metric.
+type MysqlHandlersMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlHandlersMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlHandlersMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlHandlersMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlHandlersMetricAttributeKeyHandler:
+		default:
+			return fmt.Errorf("metric mysql.handlers doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlIndexIoWaitCountMetricAttributeKey specifies the key of an attribute for the mysql.index.io.wait.count metric.
+type MysqlIndexIoWaitCountMetricAttributeKey string
+
+const (
+	MysqlIndexIoWaitCountMetricAttributeKeyIoWaitsOperations MysqlIndexIoWaitCountMetricAttributeKey = "operation"
+	MysqlIndexIoWaitCountMetricAttributeKeyTableName         MysqlIndexIoWaitCountMetricAttributeKey = "table"
+	MysqlIndexIoWaitCountMetricAttributeKeySchema            MysqlIndexIoWaitCountMetricAttributeKey = "schema"
+	MysqlIndexIoWaitCountMetricAttributeKeyIndexName         MysqlIndexIoWaitCountMetricAttributeKey = "index"
+)
+
+// MysqlIndexIoWaitCountMetricConfig provides config for the mysql.index.io.wait.count metric.
+type MysqlIndexIoWaitCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlIndexIoWaitCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlIndexIoWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlIndexIoWaitCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlIndexIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitCountMetricAttributeKeyTableName, MysqlIndexIoWaitCountMetricAttributeKeySchema, MysqlIndexIoWaitCountMetricAttributeKeyIndexName:
+		default:
+			return fmt.Errorf("metric mysql.index.io.wait.count doesn't have an attribute %v, valid attributes: [operation, table, schema, index]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlIndexIoWaitTimeMetricAttributeKey specifies the key of an attribute for the mysql.index.io.wait.time metric.
+type MysqlIndexIoWaitTimeMetricAttributeKey string
+
+const (
+	MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations MysqlIndexIoWaitTimeMetricAttributeKey = "operation"
+	MysqlIndexIoWaitTimeMetricAttributeKeyTableName         MysqlIndexIoWaitTimeMetricAttributeKey = "table"
+	MysqlIndexIoWaitTimeMetricAttributeKeySchema            MysqlIndexIoWaitTimeMetricAttributeKey = "schema"
+	MysqlIndexIoWaitTimeMetricAttributeKeyIndexName         MysqlIndexIoWaitTimeMetricAttributeKey = "index"
+)
+
+// MysqlIndexIoWaitTimeMetricConfig provides config for the mysql.index.io.wait.time metric.
+type MysqlIndexIoWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlIndexIoWaitTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlIndexIoWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlIndexIoWaitTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName:
+		default:
+			return fmt.Errorf("metric mysql.index.io.wait.time doesn't have an attribute %v, valid attributes: [operation, table, schema, index]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlJoinsMetricAttributeKey specifies the key of an attribute for the mysql.joins metric.
+type MysqlJoinsMetricAttributeKey string
+
+const (
+	MysqlJoinsMetricAttributeKeyJoinKind MysqlJoinsMetricAttributeKey = "kind"
+)
+
+// MysqlJoinsMetricConfig provides config for the mysql.joins metric.
+type MysqlJoinsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlJoinsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlJoinsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlJoinsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlJoinsMetricAttributeKeyJoinKind:
+		default:
+			return fmt.Errorf("metric mysql.joins doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlLocksMetricAttributeKey specifies the key of an attribute for the mysql.locks metric.
+type MysqlLocksMetricAttributeKey string
+
+const (
+	MysqlLocksMetricAttributeKeyLocks MysqlLocksMetricAttributeKey = "kind"
+)
+
+// MysqlLocksMetricConfig provides config for the mysql.locks metric.
+type MysqlLocksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlLocksMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlLocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlLocksMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlLocksMetricAttributeKeyLocks:
+		default:
+			return fmt.Errorf("metric mysql.locks doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlLogOperationsMetricAttributeKey specifies the key of an attribute for the mysql.log_operations metric.
+type MysqlLogOperationsMetricAttributeKey string
+
+const (
+	MysqlLogOperationsMetricAttributeKeyLogOperations MysqlLogOperationsMetricAttributeKey = "operation"
+)
+
+// MysqlLogOperationsMetricConfig provides config for the mysql.log_operations metric.
+type MysqlLogOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlLogOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlLogOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlLogOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlLogOperationsMetricAttributeKeyLogOperations:
+		default:
+			return fmt.Errorf("metric mysql.log_operations doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlMaxUsedConnectionsMetricConfig provides config for the mysql.max_used_connections metric.
+type MysqlMaxUsedConnectionsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlMaxUsedConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlMysqlxConnectionsMetricAttributeKey specifies the key of an attribute for the mysql.mysqlx_connections metric.
+type MysqlMysqlxConnectionsMetricAttributeKey string
+
+const (
+	MysqlMysqlxConnectionsMetricAttributeKeyConnectionStatus MysqlMysqlxConnectionsMetricAttributeKey = "status"
+)
+
+// MysqlMysqlxConnectionsMetricConfig provides config for the mysql.mysqlx_connections metric.
+type MysqlMysqlxConnectionsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlMysqlxConnectionsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlMysqlxConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlMysqlxConnectionsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlMysqlxConnectionsMetricAttributeKeyConnectionStatus:
+		default:
+			return fmt.Errorf("metric mysql.mysqlx_connections doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlMysqlxWorkerThreadsMetricAttributeKey specifies the key of an attribute for the mysql.mysqlx_worker_threads metric.
+type MysqlMysqlxWorkerThreadsMetricAttributeKey string
+
+const (
+	MysqlMysqlxWorkerThreadsMetricAttributeKeyMysqlxThreads MysqlMysqlxWorkerThreadsMetricAttributeKey = "kind"
+)
+
+// MysqlMysqlxWorkerThreadsMetricConfig provides config for the mysql.mysqlx_worker_threads metric.
+type MysqlMysqlxWorkerThreadsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlMysqlxWorkerThreadsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlMysqlxWorkerThreadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlMysqlxWorkerThreadsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlMysqlxWorkerThreadsMetricAttributeKeyMysqlxThreads:
+		default:
+			return fmt.Errorf("metric mysql.mysqlx_worker_threads doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlOpenedResourcesMetricAttributeKey specifies the key of an attribute for the mysql.opened_resources metric.
+type MysqlOpenedResourcesMetricAttributeKey string
+
+const (
+	MysqlOpenedResourcesMetricAttributeKeyOpenedResources MysqlOpenedResourcesMetricAttributeKey = "kind"
+)
+
+// MysqlOpenedResourcesMetricConfig provides config for the mysql.opened_resources metric.
+type MysqlOpenedResourcesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlOpenedResourcesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlOpenedResourcesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlOpenedResourcesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlOpenedResourcesMetricAttributeKeyOpenedResources:
+		default:
+			return fmt.Errorf("metric mysql.opened_resources doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlOperationsMetricAttributeKey specifies the key of an attribute for the mysql.operations metric.
+type MysqlOperationsMetricAttributeKey string
+
+const (
+	MysqlOperationsMetricAttributeKeyOperations MysqlOperationsMetricAttributeKey = "operation"
+)
+
+// MysqlOperationsMetricConfig provides config for the mysql.operations metric.
+type MysqlOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlOperationsMetricAttributeKeyOperations:
+		default:
+			return fmt.Errorf("metric mysql.operations doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlPageOperationsMetricAttributeKey specifies the key of an attribute for the mysql.page_operations metric.
+type MysqlPageOperationsMetricAttributeKey string
+
+const (
+	MysqlPageOperationsMetricAttributeKeyPageOperations MysqlPageOperationsMetricAttributeKey = "operation"
+)
+
+// MysqlPageOperationsMetricConfig provides config for the mysql.page_operations metric.
+type MysqlPageOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlPageOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlPageOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlPageOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlPageOperationsMetricAttributeKeyPageOperations:
+		default:
+			return fmt.Errorf("metric mysql.page_operations doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlPageSizeMetricConfig provides config for the mysql.page_size metric.
+type MysqlPageSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlPageSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlPreparedStatementsMetricAttributeKey specifies the key of an attribute for the mysql.prepared_statements metric.
+type MysqlPreparedStatementsMetricAttributeKey string
+
+const (
+	MysqlPreparedStatementsMetricAttributeKeyPreparedStatementsCommand MysqlPreparedStatementsMetricAttributeKey = "command"
+)
+
+// MysqlPreparedStatementsMetricConfig provides config for the mysql.prepared_statements metric.
+type MysqlPreparedStatementsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlPreparedStatementsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlPreparedStatementsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlPreparedStatementsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlPreparedStatementsMetricAttributeKeyPreparedStatementsCommand:
+		default:
+			return fmt.Errorf("metric mysql.prepared_statements doesn't have an attribute %v, valid attributes: [command]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlQueryClientCountMetricConfig provides config for the mysql.query.client.count metric.
+type MysqlQueryClientCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlQueryClientCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlQueryCountMetricConfig provides config for the mysql.query.count metric.
+type MysqlQueryCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlQueryCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlQuerySlowCountMetricConfig provides config for the mysql.query.slow.count metric.
+type MysqlQuerySlowCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlQuerySlowCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlReplicaSQLDelayMetricConfig provides config for the mysql.replica.sql_delay metric.
+type MysqlReplicaSQLDelayMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlReplicaSQLDelayMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlReplicaTimeBehindSourceMetricConfig provides config for the mysql.replica.time_behind_source metric.
+type MysqlReplicaTimeBehindSourceMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlReplicaTimeBehindSourceMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MysqlRowLocksMetricAttributeKey specifies the key of an attribute for the mysql.row_locks metric.
+type MysqlRowLocksMetricAttributeKey string
+
+const (
+	MysqlRowLocksMetricAttributeKeyRowLocks MysqlRowLocksMetricAttributeKey = "kind"
+)
+
+// MysqlRowLocksMetricConfig provides config for the mysql.row_locks metric.
+type MysqlRowLocksMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlRowLocksMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlRowLocksMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlRowLocksMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlRowLocksMetricAttributeKeyRowLocks:
+		default:
+			return fmt.Errorf("metric mysql.row_locks doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlRowOperationsMetricAttributeKey specifies the key of an attribute for the mysql.row_operations metric.
+type MysqlRowOperationsMetricAttributeKey string
+
+const (
+	MysqlRowOperationsMetricAttributeKeyRowOperations MysqlRowOperationsMetricAttributeKey = "operation"
+)
+
+// MysqlRowOperationsMetricConfig provides config for the mysql.row_operations metric.
+type MysqlRowOperationsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlRowOperationsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlRowOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlRowOperationsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlRowOperationsMetricAttributeKeyRowOperations:
+		default:
+			return fmt.Errorf("metric mysql.row_operations doesn't have an attribute %v, valid attributes: [operation]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlSortsMetricAttributeKey specifies the key of an attribute for the mysql.sorts metric.
+type MysqlSortsMetricAttributeKey string
+
+const (
+	MysqlSortsMetricAttributeKeySorts MysqlSortsMetricAttributeKey = "kind"
+)
+
+// MysqlSortsMetricConfig provides config for the mysql.sorts metric.
+type MysqlSortsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlSortsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlSortsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlSortsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlSortsMetricAttributeKeySorts:
+		default:
+			return fmt.Errorf("metric mysql.sorts doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlStatementEventCountMetricAttributeKey specifies the key of an attribute for the mysql.statement_event.count metric.
+type MysqlStatementEventCountMetricAttributeKey string
+
+const (
+	MysqlStatementEventCountMetricAttributeKeySchema     MysqlStatementEventCountMetricAttributeKey = "schema"
+	MysqlStatementEventCountMetricAttributeKeyDigest     MysqlStatementEventCountMetricAttributeKey = "digest"
+	MysqlStatementEventCountMetricAttributeKeyDigestText MysqlStatementEventCountMetricAttributeKey = "digest_text"
+	MysqlStatementEventCountMetricAttributeKeyEventState MysqlStatementEventCountMetricAttributeKey = "kind"
+)
+
+// MysqlStatementEventCountMetricConfig provides config for the mysql.statement_event.count metric.
+type MysqlStatementEventCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlStatementEventCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlStatementEventCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlStatementEventCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlStatementEventCountMetricAttributeKeySchema, MysqlStatementEventCountMetricAttributeKeyDigest, MysqlStatementEventCountMetricAttributeKeyDigestText, MysqlStatementEventCountMetricAttributeKeyEventState:
+		default:
+			return fmt.Errorf("metric mysql.statement_event.count doesn't have an attribute %v, valid attributes: [schema, digest, digest_text, kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlStatementEventWaitTimeMetricAttributeKey specifies the key of an attribute for the mysql.statement_event.wait.time metric.
+type MysqlStatementEventWaitTimeMetricAttributeKey string
+
+const (
+	MysqlStatementEventWaitTimeMetricAttributeKeySchema     MysqlStatementEventWaitTimeMetricAttributeKey = "schema"
+	MysqlStatementEventWaitTimeMetricAttributeKeyDigest     MysqlStatementEventWaitTimeMetricAttributeKey = "digest"
+	MysqlStatementEventWaitTimeMetricAttributeKeyDigestText MysqlStatementEventWaitTimeMetricAttributeKey = "digest_text"
+)
+
+// MysqlStatementEventWaitTimeMetricConfig provides config for the mysql.statement_event.wait.time metric.
+type MysqlStatementEventWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlStatementEventWaitTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlStatementEventWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlStatementEventWaitTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlStatementEventWaitTimeMetricAttributeKeySchema, MysqlStatementEventWaitTimeMetricAttributeKeyDigest, MysqlStatementEventWaitTimeMetricAttributeKeyDigestText:
+		default:
+			return fmt.Errorf("metric mysql.statement_event.wait.time doesn't have an attribute %v, valid attributes: [schema, digest, digest_text]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableAverageRowLengthMetricAttributeKey specifies the key of an attribute for the mysql.table.average_row_length metric.
+type MysqlTableAverageRowLengthMetricAttributeKey string
+
+const (
+	MysqlTableAverageRowLengthMetricAttributeKeyTableName MysqlTableAverageRowLengthMetricAttributeKey = "table"
+	MysqlTableAverageRowLengthMetricAttributeKeySchema    MysqlTableAverageRowLengthMetricAttributeKey = "schema"
+)
+
+// MysqlTableAverageRowLengthMetricConfig provides config for the mysql.table.average_row_length metric.
+type MysqlTableAverageRowLengthMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableAverageRowLengthMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableAverageRowLengthMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableAverageRowLengthMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableAverageRowLengthMetricAttributeKeyTableName, MysqlTableAverageRowLengthMetricAttributeKeySchema:
+		default:
+			return fmt.Errorf("metric mysql.table.average_row_length doesn't have an attribute %v, valid attributes: [table, schema]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableIoWaitCountMetricAttributeKey specifies the key of an attribute for the mysql.table.io.wait.count metric.
+type MysqlTableIoWaitCountMetricAttributeKey string
+
+const (
+	MysqlTableIoWaitCountMetricAttributeKeyIoWaitsOperations MysqlTableIoWaitCountMetricAttributeKey = "operation"
+	MysqlTableIoWaitCountMetricAttributeKeyTableName         MysqlTableIoWaitCountMetricAttributeKey = "table"
+	MysqlTableIoWaitCountMetricAttributeKeySchema            MysqlTableIoWaitCountMetricAttributeKey = "schema"
+)
+
+// MysqlTableIoWaitCountMetricConfig provides config for the mysql.table.io.wait.count metric.
+type MysqlTableIoWaitCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableIoWaitCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableIoWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableIoWaitCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitCountMetricAttributeKeyTableName, MysqlTableIoWaitCountMetricAttributeKeySchema:
+		default:
+			return fmt.Errorf("metric mysql.table.io.wait.count doesn't have an attribute %v, valid attributes: [operation, table, schema]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableIoWaitTimeMetricAttributeKey specifies the key of an attribute for the mysql.table.io.wait.time metric.
+type MysqlTableIoWaitTimeMetricAttributeKey string
+
+const (
+	MysqlTableIoWaitTimeMetricAttributeKeyIoWaitsOperations MysqlTableIoWaitTimeMetricAttributeKey = "operation"
+	MysqlTableIoWaitTimeMetricAttributeKeyTableName         MysqlTableIoWaitTimeMetricAttributeKey = "table"
+	MysqlTableIoWaitTimeMetricAttributeKeySchema            MysqlTableIoWaitTimeMetricAttributeKey = "schema"
+)
+
+// MysqlTableIoWaitTimeMetricConfig provides config for the mysql.table.io.wait.time metric.
+type MysqlTableIoWaitTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableIoWaitTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableIoWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableIoWaitTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitTimeMetricAttributeKeyTableName, MysqlTableIoWaitTimeMetricAttributeKeySchema:
+		default:
+			return fmt.Errorf("metric mysql.table.io.wait.time doesn't have an attribute %v, valid attributes: [operation, table, schema]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableLockWaitReadCountMetricAttributeKey specifies the key of an attribute for the mysql.table.lock_wait.read.count metric.
+type MysqlTableLockWaitReadCountMetricAttributeKey string
+
+const (
+	MysqlTableLockWaitReadCountMetricAttributeKeySchema       MysqlTableLockWaitReadCountMetricAttributeKey = "schema"
+	MysqlTableLockWaitReadCountMetricAttributeKeyTableName    MysqlTableLockWaitReadCountMetricAttributeKey = "table"
+	MysqlTableLockWaitReadCountMetricAttributeKeyReadLockType MysqlTableLockWaitReadCountMetricAttributeKey = "kind"
+)
+
+// MysqlTableLockWaitReadCountMetricConfig provides config for the mysql.table.lock_wait.read.count metric.
+type MysqlTableLockWaitReadCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableLockWaitReadCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableLockWaitReadCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableLockWaitReadCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableLockWaitReadCountMetricAttributeKeySchema, MysqlTableLockWaitReadCountMetricAttributeKeyTableName, MysqlTableLockWaitReadCountMetricAttributeKeyReadLockType:
+		default:
+			return fmt.Errorf("metric mysql.table.lock_wait.read.count doesn't have an attribute %v, valid attributes: [schema, table, kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableLockWaitReadTimeMetricAttributeKey specifies the key of an attribute for the mysql.table.lock_wait.read.time metric.
+type MysqlTableLockWaitReadTimeMetricAttributeKey string
+
+const (
+	MysqlTableLockWaitReadTimeMetricAttributeKeySchema       MysqlTableLockWaitReadTimeMetricAttributeKey = "schema"
+	MysqlTableLockWaitReadTimeMetricAttributeKeyTableName    MysqlTableLockWaitReadTimeMetricAttributeKey = "table"
+	MysqlTableLockWaitReadTimeMetricAttributeKeyReadLockType MysqlTableLockWaitReadTimeMetricAttributeKey = "kind"
+)
+
+// MysqlTableLockWaitReadTimeMetricConfig provides config for the mysql.table.lock_wait.read.time metric.
+type MysqlTableLockWaitReadTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableLockWaitReadTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableLockWaitReadTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableLockWaitReadTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableLockWaitReadTimeMetricAttributeKeySchema, MysqlTableLockWaitReadTimeMetricAttributeKeyTableName, MysqlTableLockWaitReadTimeMetricAttributeKeyReadLockType:
+		default:
+			return fmt.Errorf("metric mysql.table.lock_wait.read.time doesn't have an attribute %v, valid attributes: [schema, table, kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableLockWaitWriteCountMetricAttributeKey specifies the key of an attribute for the mysql.table.lock_wait.write.count metric.
+type MysqlTableLockWaitWriteCountMetricAttributeKey string
+
+const (
+	MysqlTableLockWaitWriteCountMetricAttributeKeySchema        MysqlTableLockWaitWriteCountMetricAttributeKey = "schema"
+	MysqlTableLockWaitWriteCountMetricAttributeKeyTableName     MysqlTableLockWaitWriteCountMetricAttributeKey = "table"
+	MysqlTableLockWaitWriteCountMetricAttributeKeyWriteLockType MysqlTableLockWaitWriteCountMetricAttributeKey = "kind"
+)
+
+// MysqlTableLockWaitWriteCountMetricConfig provides config for the mysql.table.lock_wait.write.count metric.
+type MysqlTableLockWaitWriteCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableLockWaitWriteCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableLockWaitWriteCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableLockWaitWriteCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableLockWaitWriteCountMetricAttributeKeySchema, MysqlTableLockWaitWriteCountMetricAttributeKeyTableName, MysqlTableLockWaitWriteCountMetricAttributeKeyWriteLockType:
+		default:
+			return fmt.Errorf("metric mysql.table.lock_wait.write.count doesn't have an attribute %v, valid attributes: [schema, table, kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableLockWaitWriteTimeMetricAttributeKey specifies the key of an attribute for the mysql.table.lock_wait.write.time metric.
+type MysqlTableLockWaitWriteTimeMetricAttributeKey string
+
+const (
+	MysqlTableLockWaitWriteTimeMetricAttributeKeySchema        MysqlTableLockWaitWriteTimeMetricAttributeKey = "schema"
+	MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName     MysqlTableLockWaitWriteTimeMetricAttributeKey = "table"
+	MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType MysqlTableLockWaitWriteTimeMetricAttributeKey = "kind"
+)
+
+// MysqlTableLockWaitWriteTimeMetricConfig provides config for the mysql.table.lock_wait.write.time metric.
+type MysqlTableLockWaitWriteTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableLockWaitWriteTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableLockWaitWriteTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableLockWaitWriteTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableLockWaitWriteTimeMetricAttributeKeySchema, MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName, MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType:
+		default:
+			return fmt.Errorf("metric mysql.table.lock_wait.write.time doesn't have an attribute %v, valid attributes: [schema, table, kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableRowsMetricAttributeKey specifies the key of an attribute for the mysql.table.rows metric.
+type MysqlTableRowsMetricAttributeKey string
+
+const (
+	MysqlTableRowsMetricAttributeKeyTableName MysqlTableRowsMetricAttributeKey = "table"
+	MysqlTableRowsMetricAttributeKeySchema    MysqlTableRowsMetricAttributeKey = "schema"
+)
+
+// MysqlTableRowsMetricConfig provides config for the mysql.table.rows metric.
+type MysqlTableRowsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableRowsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableRowsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableRowsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableRowsMetricAttributeKeyTableName, MysqlTableRowsMetricAttributeKeySchema:
+		default:
+			return fmt.Errorf("metric mysql.table.rows doesn't have an attribute %v, valid attributes: [table, schema]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableSizeMetricAttributeKey specifies the key of an attribute for the mysql.table.size metric.
+type MysqlTableSizeMetricAttributeKey string
+
+const (
+	MysqlTableSizeMetricAttributeKeyTableName     MysqlTableSizeMetricAttributeKey = "table"
+	MysqlTableSizeMetricAttributeKeySchema        MysqlTableSizeMetricAttributeKey = "schema"
+	MysqlTableSizeMetricAttributeKeyTableSizeType MysqlTableSizeMetricAttributeKey = "kind"
+)
+
+// MysqlTableSizeMetricConfig provides config for the mysql.table.size metric.
+type MysqlTableSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableSizeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableSizeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableSizeMetricAttributeKeyTableName, MysqlTableSizeMetricAttributeKeySchema, MysqlTableSizeMetricAttributeKeyTableSizeType:
+		default:
+			return fmt.Errorf("metric mysql.table.size doesn't have an attribute %v, valid attributes: [table, schema, kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTableOpenCacheMetricAttributeKey specifies the key of an attribute for the mysql.table_open_cache metric.
+type MysqlTableOpenCacheMetricAttributeKey string
+
+const (
+	MysqlTableOpenCacheMetricAttributeKeyCacheStatus MysqlTableOpenCacheMetricAttributeKey = "status"
+)
+
+// MysqlTableOpenCacheMetricConfig provides config for the mysql.table_open_cache metric.
+type MysqlTableOpenCacheMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTableOpenCacheMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTableOpenCacheMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTableOpenCacheMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTableOpenCacheMetricAttributeKeyCacheStatus:
+		default:
+			return fmt.Errorf("metric mysql.table_open_cache doesn't have an attribute %v, valid attributes: [status]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlThreadsMetricAttributeKey specifies the key of an attribute for the mysql.threads metric.
+type MysqlThreadsMetricAttributeKey string
+
+const (
+	MysqlThreadsMetricAttributeKeyThreads MysqlThreadsMetricAttributeKey = "kind"
+)
+
+// MysqlThreadsMetricConfig provides config for the mysql.threads metric.
+type MysqlThreadsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlThreadsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlThreadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlThreadsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlThreadsMetricAttributeKeyThreads:
+		default:
+			return fmt.Errorf("metric mysql.threads doesn't have an attribute %v, valid attributes: [kind]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlTmpResourcesMetricAttributeKey specifies the key of an attribute for the mysql.tmp_resources metric.
+type MysqlTmpResourcesMetricAttributeKey string
+
+const (
+	MysqlTmpResourcesMetricAttributeKeyTmpResource MysqlTmpResourcesMetricAttributeKey = "resource"
+)
+
+// MysqlTmpResourcesMetricConfig provides config for the mysql.tmp_resources metric.
+type MysqlTmpResourcesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []MysqlTmpResourcesMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *MysqlTmpResourcesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *MysqlTmpResourcesMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case MysqlTmpResourcesMetricAttributeKeyTmpResource:
+		default:
+			return fmt.Errorf("metric mysql.tmp_resources doesn't have an attribute %v, valid attributes: [resource]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// MysqlUptimeMetricConfig provides config for the mysql.uptime metric.
+type MysqlUptimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *MysqlUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,200 +2034,274 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for mysql metrics.
 type MetricsConfig struct {
-	MysqlBufferPoolDataPages     MetricConfig `mapstructure:"mysql.buffer_pool.data_pages"`
-	MysqlBufferPoolLimit         MetricConfig `mapstructure:"mysql.buffer_pool.limit"`
-	MysqlBufferPoolOperations    MetricConfig `mapstructure:"mysql.buffer_pool.operations"`
-	MysqlBufferPoolPageFlushes   MetricConfig `mapstructure:"mysql.buffer_pool.page_flushes"`
-	MysqlBufferPoolPages         MetricConfig `mapstructure:"mysql.buffer_pool.pages"`
-	MysqlBufferPoolUsage         MetricConfig `mapstructure:"mysql.buffer_pool.usage"`
-	MysqlClientNetworkIo         MetricConfig `mapstructure:"mysql.client.network.io"`
-	MysqlCommands                MetricConfig `mapstructure:"mysql.commands"`
-	MysqlConnectionCount         MetricConfig `mapstructure:"mysql.connection.count"`
-	MysqlConnectionErrors        MetricConfig `mapstructure:"mysql.connection.errors"`
-	MysqlDoubleWrites            MetricConfig `mapstructure:"mysql.double_writes"`
-	MysqlHandlers                MetricConfig `mapstructure:"mysql.handlers"`
-	MysqlIndexIoWaitCount        MetricConfig `mapstructure:"mysql.index.io.wait.count"`
-	MysqlIndexIoWaitTime         MetricConfig `mapstructure:"mysql.index.io.wait.time"`
-	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
-	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
-	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
-	MysqlMaxUsedConnections      MetricConfig `mapstructure:"mysql.max_used_connections"`
-	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
-	MysqlMysqlxWorkerThreads     MetricConfig `mapstructure:"mysql.mysqlx_worker_threads"`
-	MysqlOpenedResources         MetricConfig `mapstructure:"mysql.opened_resources"`
-	MysqlOperations              MetricConfig `mapstructure:"mysql.operations"`
-	MysqlPageOperations          MetricConfig `mapstructure:"mysql.page_operations"`
-	MysqlPageSize                MetricConfig `mapstructure:"mysql.page_size"`
-	MysqlPreparedStatements      MetricConfig `mapstructure:"mysql.prepared_statements"`
-	MysqlQueryClientCount        MetricConfig `mapstructure:"mysql.query.client.count"`
-	MysqlQueryCount              MetricConfig `mapstructure:"mysql.query.count"`
-	MysqlQuerySlowCount          MetricConfig `mapstructure:"mysql.query.slow.count"`
-	MysqlReplicaSQLDelay         MetricConfig `mapstructure:"mysql.replica.sql_delay"`
-	MysqlReplicaTimeBehindSource MetricConfig `mapstructure:"mysql.replica.time_behind_source"`
-	MysqlRowLocks                MetricConfig `mapstructure:"mysql.row_locks"`
-	MysqlRowOperations           MetricConfig `mapstructure:"mysql.row_operations"`
-	MysqlSorts                   MetricConfig `mapstructure:"mysql.sorts"`
-	MysqlStatementEventCount     MetricConfig `mapstructure:"mysql.statement_event.count"`
-	MysqlStatementEventWaitTime  MetricConfig `mapstructure:"mysql.statement_event.wait.time"`
-	MysqlTableAverageRowLength   MetricConfig `mapstructure:"mysql.table.average_row_length"`
-	MysqlTableIoWaitCount        MetricConfig `mapstructure:"mysql.table.io.wait.count"`
-	MysqlTableIoWaitTime         MetricConfig `mapstructure:"mysql.table.io.wait.time"`
-	MysqlTableLockWaitReadCount  MetricConfig `mapstructure:"mysql.table.lock_wait.read.count"`
-	MysqlTableLockWaitReadTime   MetricConfig `mapstructure:"mysql.table.lock_wait.read.time"`
-	MysqlTableLockWaitWriteCount MetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
-	MysqlTableLockWaitWriteTime  MetricConfig `mapstructure:"mysql.table.lock_wait.write.time"`
-	MysqlTableRows               MetricConfig `mapstructure:"mysql.table.rows"`
-	MysqlTableSize               MetricConfig `mapstructure:"mysql.table.size"`
-	MysqlTableOpenCache          MetricConfig `mapstructure:"mysql.table_open_cache"`
-	MysqlThreads                 MetricConfig `mapstructure:"mysql.threads"`
-	MysqlTmpResources            MetricConfig `mapstructure:"mysql.tmp_resources"`
-	MysqlUptime                  MetricConfig `mapstructure:"mysql.uptime"`
+	MysqlBufferPoolDataPages     MysqlBufferPoolDataPagesMetricConfig     `mapstructure:"mysql.buffer_pool.data_pages"`
+	MysqlBufferPoolLimit         MysqlBufferPoolLimitMetricConfig         `mapstructure:"mysql.buffer_pool.limit"`
+	MysqlBufferPoolOperations    MysqlBufferPoolOperationsMetricConfig    `mapstructure:"mysql.buffer_pool.operations"`
+	MysqlBufferPoolPageFlushes   MysqlBufferPoolPageFlushesMetricConfig   `mapstructure:"mysql.buffer_pool.page_flushes"`
+	MysqlBufferPoolPages         MysqlBufferPoolPagesMetricConfig         `mapstructure:"mysql.buffer_pool.pages"`
+	MysqlBufferPoolUsage         MysqlBufferPoolUsageMetricConfig         `mapstructure:"mysql.buffer_pool.usage"`
+	MysqlClientNetworkIo         MysqlClientNetworkIoMetricConfig         `mapstructure:"mysql.client.network.io"`
+	MysqlCommands                MysqlCommandsMetricConfig                `mapstructure:"mysql.commands"`
+	MysqlConnectionCount         MysqlConnectionCountMetricConfig         `mapstructure:"mysql.connection.count"`
+	MysqlConnectionErrors        MysqlConnectionErrorsMetricConfig        `mapstructure:"mysql.connection.errors"`
+	MysqlDoubleWrites            MysqlDoubleWritesMetricConfig            `mapstructure:"mysql.double_writes"`
+	MysqlHandlers                MysqlHandlersMetricConfig                `mapstructure:"mysql.handlers"`
+	MysqlIndexIoWaitCount        MysqlIndexIoWaitCountMetricConfig        `mapstructure:"mysql.index.io.wait.count"`
+	MysqlIndexIoWaitTime         MysqlIndexIoWaitTimeMetricConfig         `mapstructure:"mysql.index.io.wait.time"`
+	MysqlJoins                   MysqlJoinsMetricConfig                   `mapstructure:"mysql.joins"`
+	MysqlLocks                   MysqlLocksMetricConfig                   `mapstructure:"mysql.locks"`
+	MysqlLogOperations           MysqlLogOperationsMetricConfig           `mapstructure:"mysql.log_operations"`
+	MysqlMaxUsedConnections      MysqlMaxUsedConnectionsMetricConfig      `mapstructure:"mysql.max_used_connections"`
+	MysqlMysqlxConnections       MysqlMysqlxConnectionsMetricConfig       `mapstructure:"mysql.mysqlx_connections"`
+	MysqlMysqlxWorkerThreads     MysqlMysqlxWorkerThreadsMetricConfig     `mapstructure:"mysql.mysqlx_worker_threads"`
+	MysqlOpenedResources         MysqlOpenedResourcesMetricConfig         `mapstructure:"mysql.opened_resources"`
+	MysqlOperations              MysqlOperationsMetricConfig              `mapstructure:"mysql.operations"`
+	MysqlPageOperations          MysqlPageOperationsMetricConfig          `mapstructure:"mysql.page_operations"`
+	MysqlPageSize                MysqlPageSizeMetricConfig                `mapstructure:"mysql.page_size"`
+	MysqlPreparedStatements      MysqlPreparedStatementsMetricConfig      `mapstructure:"mysql.prepared_statements"`
+	MysqlQueryClientCount        MysqlQueryClientCountMetricConfig        `mapstructure:"mysql.query.client.count"`
+	MysqlQueryCount              MysqlQueryCountMetricConfig              `mapstructure:"mysql.query.count"`
+	MysqlQuerySlowCount          MysqlQuerySlowCountMetricConfig          `mapstructure:"mysql.query.slow.count"`
+	MysqlReplicaSQLDelay         MysqlReplicaSQLDelayMetricConfig         `mapstructure:"mysql.replica.sql_delay"`
+	MysqlReplicaTimeBehindSource MysqlReplicaTimeBehindSourceMetricConfig `mapstructure:"mysql.replica.time_behind_source"`
+	MysqlRowLocks                MysqlRowLocksMetricConfig                `mapstructure:"mysql.row_locks"`
+	MysqlRowOperations           MysqlRowOperationsMetricConfig           `mapstructure:"mysql.row_operations"`
+	MysqlSorts                   MysqlSortsMetricConfig                   `mapstructure:"mysql.sorts"`
+	MysqlStatementEventCount     MysqlStatementEventCountMetricConfig     `mapstructure:"mysql.statement_event.count"`
+	MysqlStatementEventWaitTime  MysqlStatementEventWaitTimeMetricConfig  `mapstructure:"mysql.statement_event.wait.time"`
+	MysqlTableAverageRowLength   MysqlTableAverageRowLengthMetricConfig   `mapstructure:"mysql.table.average_row_length"`
+	MysqlTableIoWaitCount        MysqlTableIoWaitCountMetricConfig        `mapstructure:"mysql.table.io.wait.count"`
+	MysqlTableIoWaitTime         MysqlTableIoWaitTimeMetricConfig         `mapstructure:"mysql.table.io.wait.time"`
+	MysqlTableLockWaitReadCount  MysqlTableLockWaitReadCountMetricConfig  `mapstructure:"mysql.table.lock_wait.read.count"`
+	MysqlTableLockWaitReadTime   MysqlTableLockWaitReadTimeMetricConfig   `mapstructure:"mysql.table.lock_wait.read.time"`
+	MysqlTableLockWaitWriteCount MysqlTableLockWaitWriteCountMetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
+	MysqlTableLockWaitWriteTime  MysqlTableLockWaitWriteTimeMetricConfig  `mapstructure:"mysql.table.lock_wait.write.time"`
+	MysqlTableRows               MysqlTableRowsMetricConfig               `mapstructure:"mysql.table.rows"`
+	MysqlTableSize               MysqlTableSizeMetricConfig               `mapstructure:"mysql.table.size"`
+	MysqlTableOpenCache          MysqlTableOpenCacheMetricConfig          `mapstructure:"mysql.table_open_cache"`
+	MysqlThreads                 MysqlThreadsMetricConfig                 `mapstructure:"mysql.threads"`
+	MysqlTmpResources            MysqlTmpResourcesMetricConfig            `mapstructure:"mysql.tmp_resources"`
+	MysqlUptime                  MysqlUptimeMetricConfig                  `mapstructure:"mysql.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		MysqlBufferPoolDataPages: MetricConfig{
+		MysqlBufferPoolDataPages: MysqlBufferPoolDataPagesMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlBufferPoolDataPagesMetricAttributeKey{MysqlBufferPoolDataPagesMetricAttributeKeyBufferPoolData},
+		},
+		MysqlBufferPoolLimit: MysqlBufferPoolLimitMetricConfig{
 			Enabled: true,
 		},
-		MysqlBufferPoolLimit: MetricConfig{
+		MysqlBufferPoolOperations: MysqlBufferPoolOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlBufferPoolOperationsMetricAttributeKey{MysqlBufferPoolOperationsMetricAttributeKeyBufferPoolOperations},
+		},
+		MysqlBufferPoolPageFlushes: MysqlBufferPoolPageFlushesMetricConfig{
 			Enabled: true,
 		},
-		MysqlBufferPoolOperations: MetricConfig{
-			Enabled: true,
+		MysqlBufferPoolPages: MysqlBufferPoolPagesMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlBufferPoolPagesMetricAttributeKey{MysqlBufferPoolPagesMetricAttributeKeyBufferPoolPages},
 		},
-		MysqlBufferPoolPageFlushes: MetricConfig{
-			Enabled: true,
+		MysqlBufferPoolUsage: MysqlBufferPoolUsageMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlBufferPoolUsageMetricAttributeKey{MysqlBufferPoolUsageMetricAttributeKeyBufferPoolData},
 		},
-		MysqlBufferPoolPages: MetricConfig{
-			Enabled: true,
+		MysqlClientNetworkIo: MysqlClientNetworkIoMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlClientNetworkIoMetricAttributeKey{MysqlClientNetworkIoMetricAttributeKeyDirection},
 		},
-		MysqlBufferPoolUsage: MetricConfig{
-			Enabled: true,
+		MysqlCommands: MysqlCommandsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlCommandsMetricAttributeKey{MysqlCommandsMetricAttributeKeyCommand},
 		},
-		MysqlClientNetworkIo: MetricConfig{
+		MysqlConnectionCount: MysqlConnectionCountMetricConfig{
 			Enabled: false,
 		},
-		MysqlCommands: MetricConfig{
+		MysqlConnectionErrors: MysqlConnectionErrorsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlConnectionErrorsMetricAttributeKey{MysqlConnectionErrorsMetricAttributeKeyConnectionError},
+		},
+		MysqlDoubleWrites: MysqlDoubleWritesMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlDoubleWritesMetricAttributeKey{MysqlDoubleWritesMetricAttributeKeyDoubleWrites},
+		},
+		MysqlHandlers: MysqlHandlersMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlHandlersMetricAttributeKey{MysqlHandlersMetricAttributeKeyHandler},
+		},
+		MysqlIndexIoWaitCount: MysqlIndexIoWaitCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlIndexIoWaitCountMetricAttributeKey{MysqlIndexIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitCountMetricAttributeKeyTableName, MysqlIndexIoWaitCountMetricAttributeKeySchema, MysqlIndexIoWaitCountMetricAttributeKeyIndexName},
+		},
+		MysqlIndexIoWaitTime: MysqlIndexIoWaitTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlIndexIoWaitTimeMetricAttributeKey{MysqlIndexIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlIndexIoWaitTimeMetricAttributeKeyTableName, MysqlIndexIoWaitTimeMetricAttributeKeySchema, MysqlIndexIoWaitTimeMetricAttributeKeyIndexName},
+		},
+		MysqlJoins: MysqlJoinsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlJoinsMetricAttributeKey{MysqlJoinsMetricAttributeKeyJoinKind},
+		},
+		MysqlLocks: MysqlLocksMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlLocksMetricAttributeKey{MysqlLocksMetricAttributeKeyLocks},
+		},
+		MysqlLogOperations: MysqlLogOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlLogOperationsMetricAttributeKey{MysqlLogOperationsMetricAttributeKeyLogOperations},
+		},
+		MysqlMaxUsedConnections: MysqlMaxUsedConnectionsMetricConfig{
 			Enabled: false,
 		},
-		MysqlConnectionCount: MetricConfig{
+		MysqlMysqlxConnections: MysqlMysqlxConnectionsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlMysqlxConnectionsMetricAttributeKey{MysqlMysqlxConnectionsMetricAttributeKeyConnectionStatus},
+		},
+		MysqlMysqlxWorkerThreads: MysqlMysqlxWorkerThreadsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlMysqlxWorkerThreadsMetricAttributeKey{MysqlMysqlxWorkerThreadsMetricAttributeKeyMysqlxThreads},
+		},
+		MysqlOpenedResources: MysqlOpenedResourcesMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlOpenedResourcesMetricAttributeKey{MysqlOpenedResourcesMetricAttributeKeyOpenedResources},
+		},
+		MysqlOperations: MysqlOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlOperationsMetricAttributeKey{MysqlOperationsMetricAttributeKeyOperations},
+		},
+		MysqlPageOperations: MysqlPageOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlPageOperationsMetricAttributeKey{MysqlPageOperationsMetricAttributeKeyPageOperations},
+		},
+		MysqlPageSize: MysqlPageSizeMetricConfig{
 			Enabled: false,
 		},
-		MysqlConnectionErrors: MetricConfig{
+		MysqlPreparedStatements: MysqlPreparedStatementsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlPreparedStatementsMetricAttributeKey{MysqlPreparedStatementsMetricAttributeKeyPreparedStatementsCommand},
+		},
+		MysqlQueryClientCount: MysqlQueryClientCountMetricConfig{
 			Enabled: false,
 		},
-		MysqlDoubleWrites: MetricConfig{
-			Enabled: true,
-		},
-		MysqlHandlers: MetricConfig{
-			Enabled: true,
-		},
-		MysqlIndexIoWaitCount: MetricConfig{
-			Enabled: true,
-		},
-		MysqlIndexIoWaitTime: MetricConfig{
-			Enabled: true,
-		},
-		MysqlJoins: MetricConfig{
+		MysqlQueryCount: MysqlQueryCountMetricConfig{
 			Enabled: false,
 		},
-		MysqlLocks: MetricConfig{
-			Enabled: true,
-		},
-		MysqlLogOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlMaxUsedConnections: MetricConfig{
+		MysqlQuerySlowCount: MysqlQuerySlowCountMetricConfig{
 			Enabled: false,
 		},
-		MysqlMysqlxConnections: MetricConfig{
-			Enabled: true,
-		},
-		MysqlMysqlxWorkerThreads: MetricConfig{
+		MysqlReplicaSQLDelay: MysqlReplicaSQLDelayMetricConfig{
 			Enabled: false,
 		},
-		MysqlOpenedResources: MetricConfig{
-			Enabled: true,
-		},
-		MysqlOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlPageOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlPageSize: MetricConfig{
+		MysqlReplicaTimeBehindSource: MysqlReplicaTimeBehindSourceMetricConfig{
 			Enabled: false,
 		},
-		MysqlPreparedStatements: MetricConfig{
-			Enabled: true,
+		MysqlRowLocks: MysqlRowLocksMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlRowLocksMetricAttributeKey{MysqlRowLocksMetricAttributeKeyRowLocks},
 		},
-		MysqlQueryClientCount: MetricConfig{
-			Enabled: false,
+		MysqlRowOperations: MysqlRowOperationsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlRowOperationsMetricAttributeKey{MysqlRowOperationsMetricAttributeKeyRowOperations},
 		},
-		MysqlQueryCount: MetricConfig{
-			Enabled: false,
+		MysqlSorts: MysqlSortsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlSortsMetricAttributeKey{MysqlSortsMetricAttributeKeySorts},
 		},
-		MysqlQuerySlowCount: MetricConfig{
-			Enabled: false,
+		MysqlStatementEventCount: MysqlStatementEventCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlStatementEventCountMetricAttributeKey{MysqlStatementEventCountMetricAttributeKeySchema, MysqlStatementEventCountMetricAttributeKeyDigest, MysqlStatementEventCountMetricAttributeKeyDigestText, MysqlStatementEventCountMetricAttributeKeyEventState},
 		},
-		MysqlReplicaSQLDelay: MetricConfig{
-			Enabled: false,
+		MysqlStatementEventWaitTime: MysqlStatementEventWaitTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlStatementEventWaitTimeMetricAttributeKey{MysqlStatementEventWaitTimeMetricAttributeKeySchema, MysqlStatementEventWaitTimeMetricAttributeKeyDigest, MysqlStatementEventWaitTimeMetricAttributeKeyDigestText},
 		},
-		MysqlReplicaTimeBehindSource: MetricConfig{
-			Enabled: false,
+		MysqlTableAverageRowLength: MysqlTableAverageRowLengthMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableAverageRowLengthMetricAttributeKey{MysqlTableAverageRowLengthMetricAttributeKeyTableName, MysqlTableAverageRowLengthMetricAttributeKeySchema},
 		},
-		MysqlRowLocks: MetricConfig{
-			Enabled: true,
+		MysqlTableIoWaitCount: MysqlTableIoWaitCountMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableIoWaitCountMetricAttributeKey{MysqlTableIoWaitCountMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitCountMetricAttributeKeyTableName, MysqlTableIoWaitCountMetricAttributeKeySchema},
 		},
-		MysqlRowOperations: MetricConfig{
-			Enabled: true,
+		MysqlTableIoWaitTime: MysqlTableIoWaitTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableIoWaitTimeMetricAttributeKey{MysqlTableIoWaitTimeMetricAttributeKeyIoWaitsOperations, MysqlTableIoWaitTimeMetricAttributeKeyTableName, MysqlTableIoWaitTimeMetricAttributeKeySchema},
 		},
-		MysqlSorts: MetricConfig{
-			Enabled: true,
+		MysqlTableLockWaitReadCount: MysqlTableLockWaitReadCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableLockWaitReadCountMetricAttributeKey{MysqlTableLockWaitReadCountMetricAttributeKeySchema, MysqlTableLockWaitReadCountMetricAttributeKeyTableName, MysqlTableLockWaitReadCountMetricAttributeKeyReadLockType},
 		},
-		MysqlStatementEventCount: MetricConfig{
-			Enabled: false,
+		MysqlTableLockWaitReadTime: MysqlTableLockWaitReadTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableLockWaitReadTimeMetricAttributeKey{MysqlTableLockWaitReadTimeMetricAttributeKeySchema, MysqlTableLockWaitReadTimeMetricAttributeKeyTableName, MysqlTableLockWaitReadTimeMetricAttributeKeyReadLockType},
 		},
-		MysqlStatementEventWaitTime: MetricConfig{
-			Enabled: false,
+		MysqlTableLockWaitWriteCount: MysqlTableLockWaitWriteCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableLockWaitWriteCountMetricAttributeKey{MysqlTableLockWaitWriteCountMetricAttributeKeySchema, MysqlTableLockWaitWriteCountMetricAttributeKeyTableName, MysqlTableLockWaitWriteCountMetricAttributeKeyWriteLockType},
 		},
-		MysqlTableAverageRowLength: MetricConfig{
-			Enabled: false,
+		MysqlTableLockWaitWriteTime: MysqlTableLockWaitWriteTimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableLockWaitWriteTimeMetricAttributeKey{MysqlTableLockWaitWriteTimeMetricAttributeKeySchema, MysqlTableLockWaitWriteTimeMetricAttributeKeyTableName, MysqlTableLockWaitWriteTimeMetricAttributeKeyWriteLockType},
 		},
-		MysqlTableIoWaitCount: MetricConfig{
-			Enabled: true,
+		MysqlTableRows: MysqlTableRowsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableRowsMetricAttributeKey{MysqlTableRowsMetricAttributeKeyTableName, MysqlTableRowsMetricAttributeKeySchema},
 		},
-		MysqlTableIoWaitTime: MetricConfig{
-			Enabled: true,
+		MysqlTableSize: MysqlTableSizeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableSizeMetricAttributeKey{MysqlTableSizeMetricAttributeKeyTableName, MysqlTableSizeMetricAttributeKeySchema, MysqlTableSizeMetricAttributeKeyTableSizeType},
 		},
-		MysqlTableLockWaitReadCount: MetricConfig{
-			Enabled: false,
+		MysqlTableOpenCache: MysqlTableOpenCacheMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTableOpenCacheMetricAttributeKey{MysqlTableOpenCacheMetricAttributeKeyCacheStatus},
 		},
-		MysqlTableLockWaitReadTime: MetricConfig{
-			Enabled: false,
+		MysqlThreads: MysqlThreadsMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlThreadsMetricAttributeKey{MysqlThreadsMetricAttributeKeyThreads},
 		},
-		MysqlTableLockWaitWriteCount: MetricConfig{
-			Enabled: false,
+		MysqlTmpResources: MysqlTmpResourcesMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []MysqlTmpResourcesMetricAttributeKey{MysqlTmpResourcesMetricAttributeKeyTmpResource},
 		},
-		MysqlTableLockWaitWriteTime: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableRows: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableSize: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableOpenCache: MetricConfig{
-			Enabled: false,
-		},
-		MysqlThreads: MetricConfig{
-			Enabled: true,
-		},
-		MysqlTmpResources: MetricConfig{
-			Enabled: true,
-		},
-		MysqlUptime: MetricConfig{
+		MysqlUptime: MysqlUptimeMetricConfig{
 			Enabled: true,
 		},
 	}
@@ -256,7 +2335,7 @@ type EventsConfig struct {
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
 		DbServerQuerySample: EventConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		DbServerTopQuery: EventConfig{
 			Enabled: false,
