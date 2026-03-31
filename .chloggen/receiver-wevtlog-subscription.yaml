@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/elasticsearch
+component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `histogram:raw` mapping hint to bypass midpoint approximation for histogram metrics
+note: Add new scrape model for Windows event logs using an event-driven subscription instead of polling
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47150]
+issues: [47091]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
