@@ -29,11 +29,13 @@ import (
 
 var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 
+const receiverScope = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
+
 type splunkScraper struct {
-	splunkClient  *splunkEntClient
-	settings      component.TelemetrySettings
-	conf          *Config
-	mb            *metadata.MetricsBuilder
+	splunkClient *splunkEntClient
+	settings     component.TelemetrySettings
+	conf         *Config
+	mb           *metadata.MetricsBuilder
 	customMetrics pmetric.Metrics
 	customMu      sync.Mutex
 }
@@ -2418,6 +2420,12 @@ func (s *splunkScraper) scrapeCustomSearches(_ context.Context, now pcommon.Time
 		return
 	}
 
+	type result struct {
+		cfg    SearchConfig
+		fields []*field
+	}
+	var results []result
+
 	for i, search := range s.conf.Searches {
 		eptType := search.TargetType()
 		if !s.splunkClient.isConfigured(eptType) {
@@ -2431,11 +2439,24 @@ func (s *splunkScraper) scrapeCustomSearches(_ context.Context, now pcommon.Time
 			continue
 		}
 
-		if len(fields) == 0 {
-			continue
+		if len(fields) > 0 {
+			results = append(results, result{search, fields})
 		}
+	}
 
-		s.emitCustomSearchMetrics(now, search, fields)
+	if len(results) == 0 {
+		return
+	}
+
+	s.customMu.Lock()
+	defer s.customMu.Unlock()
+
+	rm := s.customMetrics.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName(receiverScope)
+
+	for _, r := range results {
+		s.appendSearchMetrics(now, sm, r.cfg, r.fields)
 	}
 }
 
@@ -2468,7 +2489,8 @@ func (s *splunkScraper) executeCustomSearch(search SearchConfig, eptType string)
 
 		if sr.Return == 200 && sr.Jobid != nil {
 			fields = append(fields, sr.Fields...)
-			if sr.count >= sr.TotalCount.Count || sr.offset >= sr.TotalCount.Count {
+			sr.Fields = nil
+			if (sr.offset + sr.count) >= sr.TotalCount.Count {
 				break
 			}
 			sr.offset += sr.count
@@ -2490,18 +2512,12 @@ func (s *splunkScraper) executeCustomSearch(search SearchConfig, eptType string)
 	return fields, nil
 }
 
-func (s *splunkScraper) emitCustomSearchMetrics(now pcommon.Timestamp, search SearchConfig, fields []*field) {
+// appendSearchMetrics writes metrics for a single search using customMu
+func (s *splunkScraper) appendSearchMetrics(now pcommon.Timestamp, sm pmetric.ScopeMetrics, search SearchConfig, fields []*field) {
 	rows := parseFields(fields)
 	if len(rows) == 0 {
 		return
 	}
-
-	s.customMu.Lock()
-	defer s.customMu.Unlock()
-
-	rm := s.customMetrics.ResourceMetrics().AppendEmpty()
-	sm := rm.ScopeMetrics().AppendEmpty()
-	sm.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver")
 
 	for _, metricCfg := range search.Metrics {
 		m := sm.Metrics().AppendEmpty()
