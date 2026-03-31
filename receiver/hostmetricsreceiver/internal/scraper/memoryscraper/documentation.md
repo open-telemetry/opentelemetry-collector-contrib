@@ -22,9 +22,9 @@ Bytes of memory in use.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended | - |
 
 ## Optional Metrics
 
@@ -102,9 +102,9 @@ Number of hugepages in use by state.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| system.memory.linux.hugepages.state | Breakdown of hugepages usage by state. | Str: ``free``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.memory.linux.hugepages.state | Breakdown of hugepages usage by state. | Str: ``free``, ``used`` | Recommended | - |
 
 ### system.memory.linux.hugepages.utilization
 
@@ -116,9 +116,9 @@ Percentage of hugepages in use by state.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| system.memory.linux.hugepages.state | Breakdown of hugepages usage by state. | Str: ``free``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| system.memory.linux.hugepages.state | Breakdown of hugepages usage by state. | Str: ``free``, ``used`` | Recommended | - |
 
 ### system.memory.linux.shared
 
@@ -146,6 +146,6 @@ Percentage of memory bytes in use.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended | - |
