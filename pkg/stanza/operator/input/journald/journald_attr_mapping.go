@@ -38,7 +38,7 @@ var priorityToSeverityText = map[string]string{
 }
 
 // attributeMapping maps journald well-known field names to OTel semantic convention log attribute names.
-// See: https://opentelemetry.io/docs/specs/semconv/
+// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model-appendix.md#rfc5424-syslog
 var attributeMapping = map[string]string{
 	"CODE_FILE":         "code.file.path",
 	"CODE_FUNC":         "code.function.name",
