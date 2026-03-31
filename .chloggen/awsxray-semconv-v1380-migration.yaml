@@ -1,0 +1,33 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: exporter/awsxray
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add feature gates to migrate semantic conventions from v1.12.0 to v1.38.0
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [46533]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Four new alpha feature gates control the migration:
+  - `exporter.awsxray.EmitV1HTTPNetworkConventions`: reads HTTP/network span attributes using semconv v1.38.0 keys (e.g. http.request.method, server.address, server.port, client.address).
+  - `exporter.awsxray.DontEmitV0HTTPNetworkConventions`: stops reading deprecated v1.12.0 HTTP/network attribute keys. Requires EmitV1HTTPNetworkConventions to also be enabled.
+  - `exporter.awsxray.EmitV1DBConventions`: reads database span attributes using semconv v1.38.0 keys (db.namespace, db.system.name, db.query.text, user.name).
+  - `exporter.awsxray.DontEmitV0DBConventions`: stops reading deprecated v1.12.0 database attribute keys. Requires EmitV1DBConventions to also be enabled.
+  All gates default to disabled, preserving existing behavior. Enable the EmitV1 gate first for dual-read, then enable the DontEmitV0 gate once upstream instrumentation has migrated.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]
