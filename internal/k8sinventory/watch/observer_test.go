@@ -367,6 +367,76 @@ func TestObserverInitialStateNoObjects(t *testing.T) {
 	wg.Wait()
 }
 
+// TestSendInitialStateReturnsListRV verifies that sendInitialState returns the
+// list's own ResourceVersion, not just the highest individual object RV.
+// The list RV is always >= any individual object RV and is the correct starting
+// point for the subsequent watch to avoid a race window between two List calls.
+func TestSendInitialStateReturnsListRV(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	// Set list RV to "999", higher than any individual object RV below.
+	mockClient.setListResourceVersion("999")
+	mockClient.createPods(
+		generatePod("pod1", "default", nil, "100"),
+		generatePod("pod2", "default", nil, "200"),
+	)
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces: []string{"default"},
+		},
+		IncludeInitialState: true,
+	}
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, nil)
+	require.NoError(t, err)
+
+	resource := mockClient.Resource(cfg.Gvr)
+	listRV := obs.sendInitialState(t.Context(), resource.Namespace("default"), "default", func(string) {})
+	assert.Equal(t, "999", listRV, "sendInitialState should return the list's own ResourceVersion")
+}
+
+// TestInitialStateListRVPersistedAsCheckpoint verifies that after sendInitialState
+// the checkpoint is updated with the list's RV (via setLatestRV in startWatch),
+// which is more accurate than the highest individual object RV.
+func TestInitialStateListRVPersistedAsCheckpoint(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+	// List RV "999" is higher than any individual pod RV — after startup the
+	// checkpoint should hold "999", not "200".
+	mockClient.setListResourceVersion("999")
+	mockClient.createPods(
+		generatePod("pod1", "default", nil, "100"),
+		generatePod("pod2", "default", nil, "200"),
+	)
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces: []string{"default"},
+		},
+		IncludeInitialState:    true,
+		PersistResourceVersion: true,
+	}
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+	stopChan := obs.Start(t.Context(), &wg)
+
+	time.Sleep(200 * time.Millisecond)
+
+	close(stopChan)
+	wg.Wait()
+
+	cp := newCheckpointer(storageClient, zap.NewNop())
+	rv, err := cp.GetCheckpoint(t.Context(), "default", "pods")
+	require.NoError(t, err)
+	assert.Equal(t, "999", rv, "checkpoint should hold the list RV, not a lower individual object RV")
+}
+
 func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *apiWatch.Event, stopChan chan struct{}) {
 	receivedEvents := 0
 

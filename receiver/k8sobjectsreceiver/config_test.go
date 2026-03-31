@@ -250,7 +250,7 @@ func TestConfigValidationPersistResourceVersion(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "resource_version cannot be set when persist_resource_version is enabled; the persisted version takes priority",
+			expectedErr: "resource_version cannot be set when persist_resource_version is enabled",
 		},
 		{
 			desc: "resource_version set without persist_resource_version is valid",

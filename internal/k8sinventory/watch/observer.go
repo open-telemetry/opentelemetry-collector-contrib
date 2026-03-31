@@ -101,7 +101,7 @@ func (o *Observer) startCheckpointFlusher(ctx context.Context, namespace string)
 	setLatestRV = func(rv string) {
 		// Buffer the latest rv in the checkpointer; Flush will write it to storage.
 		if err := o.checkpointer.SetCheckpoint(context.Background(), namespace, o.config.Gvr.Resource, rv); err != nil {
-			o.logger.Warn("failed to buffer resourceVersion",
+			o.logger.Error("failed to buffer resourceVersion",
 				zap.String("namespace", namespace),
 				zap.String("resource", o.config.Gvr.Resource),
 				zap.Error(err))
@@ -110,7 +110,7 @@ func (o *Observer) startCheckpointFlusher(ctx context.Context, namespace string)
 
 	flush = func() {
 		if err := o.checkpointer.Flush(context.Background()); err != nil {
-			o.logger.Warn("failed to flush checkpoints",
+			o.logger.Error("failed to flush checkpoints",
 				zap.String("namespace", namespace),
 				zap.String("resource", o.config.Gvr.Resource),
 				zap.Error(err))
@@ -154,22 +154,40 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 	setLatestRV, flushCheckpoint, stopFlusher := o.startCheckpointFlusher(cancelCtx, namespace)
 	defer stopFlusher()
 
+	// initialListRV holds the list resourceVersion returned by sendInitialState.
+	// It is used as the watch starting point on the first iteration, eliminating
+	// a second List() call and closing the race window between the two listings.
+	// It is cleared after the first iteration so subsequent restarts (e.g. after
+	// a 410 Gone) fall back to getResourceVersion() as normal.
+	var initialListRV string
 	if o.config.IncludeInitialState {
-		o.sendInitialState(ctx, resource, namespace, setLatestRV)
-		// Force-flush immediately so the rv from the initial state is durable before
-		// the watch loop starts. Without this, a 410 arriving within the first 5s
-		// would delete a checkpoint that was never written due to the flush interval delay.
+		initialListRV = o.sendInitialState(ctx, resource, namespace, setLatestRV)
+		// Update the checkpoint with the list's own RV, which is >= any individual
+		// object RV and represents the precise snapshot point of the listing.
+		if initialListRV != "" {
+			setLatestRV(initialListRV)
+		}
+		// Force-flush immediately so the rv is durable before the watch loop starts.
 		flushCheckpoint()
 	}
 
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
-		resourceVersion, err := o.getResourceVersion(newCtx, resource, namespace)
-		if err != nil {
-			o.logger.Error("could not retrieve a resourceVersion",
-				zap.String("resource", o.config.Gvr.String()),
-				zap.Error(err))
-			cancel()
-			return
+		var resourceVersion string
+		if initialListRV != "" {
+			// First iteration: reuse the list RV from sendInitialState directly,
+			// avoiding a redundant List() call and the race window it creates.
+			resourceVersion = initialListRV
+			initialListRV = ""
+		} else {
+			var err error
+			resourceVersion, err = o.getResourceVersion(newCtx, resource, namespace)
+			if err != nil {
+				o.logger.Error("could not retrieve a resourceVersion",
+					zap.String("resource", o.config.Gvr.String()),
+					zap.Error(err))
+				cancel()
+				return
+			}
 		}
 
 		done := o.doWatch(ctx, resourceVersion, namespace, watchFunc, stopperChan, setLatestRV)
@@ -186,7 +204,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 		// This handles 410 Gone errors where the persisted resourceVersion is too old
 		if o.checkpointer != nil {
 			if err := o.checkpointer.DeleteCheckpoint(context.Background(), namespace, o.config.Gvr.Resource); err != nil {
-				o.logger.Warn("failed to delete persisted resourceVersion after watch restart",
+				o.logger.Error("failed to delete persisted resourceVersion after watch restart",
 					zap.String("namespace", namespace),
 					zap.String("resource", o.config.Gvr.Resource),
 					zap.Error(err))
@@ -201,7 +219,9 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 // those objects were already seen before the last checkpoint. setLatestRV is
 // called for every event that is emitted so the flusher tracks the high-water
 // mark across the initial listing as well as the watch loop.
-func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.ResourceInterface, namespace string, setLatestRV func(string)) {
+// It returns the list's own ResourceVersion, which the caller should use as
+// the watch starting point to avoid a redundant List() call.
+func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.ResourceInterface, namespace string, setLatestRV func(string)) string {
 	o.logger.Info("sending initial state",
 		zap.String("resource", o.config.Gvr.String()),
 		zap.Strings("namespaces", o.config.Namespaces))
@@ -231,13 +251,15 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 		o.logger.Error("error in listing objects for initial state",
 			zap.String("resource", o.config.Gvr.String()),
 			zap.Error(err))
-		return
+		return ""
 	}
+
+	listRV := objects.GetResourceVersion()
 
 	if len(objects.Items) == 0 {
 		o.logger.Debug("no objects found for initial state",
 			zap.String("resource", o.config.Gvr.String()))
-		return
+		return listRV
 	}
 
 	emitted := 0
@@ -271,8 +293,11 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 	}
 
 	o.logger.Info("initial state sent",
+		zap.String("namespace", namespace),
+		zap.String("list_rv", listRV),
 		zap.String("resource", o.config.Gvr.String()),
 		zap.Int("object_count", emitted))
+	return listRV
 }
 
 // doWatch returns true when watching is done, false when watching should be restarted.
@@ -396,13 +421,13 @@ func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.Reso
 
 		// Persist the list version for future use
 		if err := o.checkpointer.SetCheckpoint(ctx, namespace, o.config.Gvr.Resource, listVersion); err != nil {
-			o.logger.Warn("failed to persist initial resourceVersion",
+			o.logger.Error("failed to persist initial resourceVersion",
 				zap.String("namespace", namespace),
 				zap.String("resource", o.config.Gvr.Resource),
 				zap.String("resourceVersion", listVersion),
 				zap.Error(err))
 		} else if err := o.checkpointer.Flush(ctx); err != nil {
-			o.logger.Warn("failed to flush initial resourceVersion",
+			o.logger.Error("failed to flush initial resourceVersion",
 				zap.String("namespace", namespace),
 				zap.String("resource", o.config.Gvr.Resource),
 				zap.String("resourceVersion", listVersion),

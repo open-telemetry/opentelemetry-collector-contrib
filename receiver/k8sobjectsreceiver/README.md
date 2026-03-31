@@ -71,7 +71,7 @@ this case, it will select `v1` by default.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
-- `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. Required when `persist_resource_version` is enabled.
+- `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. Required when `persist_resource_version` is enabled. The attached storage should be a persistent volume, which is accessible by all the nodes in the given cluster. If local volume is used, persistence will break when the pod is moved to another node.
 - `persist_resource_version` (default: `false`): when set to `true` (watch-mode only), the receiver persists the resourceVersion after processing each event. On restart, the receiver resumes watching from the persisted resourceVersion, preventing duplicate events. Requires a `storage` extension to be configured.
 
 
