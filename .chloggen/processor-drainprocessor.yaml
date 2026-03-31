@@ -7,7 +7,7 @@ change_type: new_component
 component: processor/drain
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add drain processor that applies the Drain log clustering algorithm to annotate log records with a derived template string and cluster ID.
+note: Add drain processor that applies the Drain log clustering algorithm to annotate log records with a derived template string.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47235]
@@ -16,15 +16,15 @@ issues: [47235]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The processor sets `log.record.template` (e.g. `"user <*> logged in from <*>"`) and
-  `log.record.template.id` on each log record. Downstream processors such as the filter
-  processor can then act on those attributes to, for example, drop entire classes of
-  noisy logs by template string.
+  The processor sets `log.record.template` (e.g. `"user <*> logged in from <*>"`) on each log record.
+  Downstream processors such as the filter processor can act on this attribute to, for example, drop
+  entire classes of noisy logs by template string.
 
   Key features:
   - Configurable Drain parse tree parameters (depth, similarity threshold, max clusters with LRU eviction)
-  - Optional seeding via known template strings or example log lines for stable IDs across restarts
-  - `passthrough` warmup mode (default) and `buffer` warmup mode that holds records until the tree has stabilised
+  - Optional seeding via known template strings or example log lines for stable templates across restarts
+  - `passthrough` warmup mode (default) and `buffer` warmup mode that holds records until the tree has stabilized
+  - Internal telemetry metrics: active cluster count gauge, annotated and unannotated record counters
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
