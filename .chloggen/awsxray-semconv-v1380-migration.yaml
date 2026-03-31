@@ -10,7 +10,7 @@ component: exporter/awsxray
 note: Add feature gates to migrate semantic conventions from v1.12.0 to v1.38.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [46533]
+issues: [46537]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
