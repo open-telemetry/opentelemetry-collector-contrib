@@ -182,7 +182,10 @@ jobs:
           name: otelcontribcol
           path: /tmp
       - name: Load Docker image into MicroShift
-        run: sg libvirt -c 'eval "$(crc podman-env)" && podman load < /tmp/otelcontribcol.tar'
+        run: |
+          PODMAN_ENV=$(sg libvirt -c "crc podman-env")
+          eval "$PODMAN_ENV"
+          podman load < /tmp/otelcontribcol.tar
       - name: Run OpenShift E2E tests
         env:
           KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
