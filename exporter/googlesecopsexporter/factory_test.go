@@ -16,6 +16,7 @@ func Test_createDefaultConfig(t *testing.T) {
 	expectedCfg := &Config{
 		API:                   chronicleAPI,
 		Hostname:              defaultHostname,
+		APIVersion:            apiVersionV1Alpha,
 		TimeoutConfig:         exporterhelper.NewDefaultTimeoutConfig(),
 		QueueBatchConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:         configretry.NewDefaultBackOffConfig(),

@@ -37,6 +37,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		API:                   chronicleAPI,
 		Hostname:              defaultHostname,
+		APIVersion:            apiVersionV1Alpha,
 		CollectAgentMetrics:   true,
 		MetricsInterval:       defaultMetricsInterval,
 		LogErroredPayloads:    false,

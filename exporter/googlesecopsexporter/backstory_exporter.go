@@ -20,19 +20,19 @@ func newBackstoryAPIExporter(_ *Config, _ exporter.Settings, _ *metadata.Telemet
 	return &backstoryExporter{}, nil
 }
 
-func (exp *backstoryExporter) Capabilities() consumer.Capabilities {
+func (*backstoryExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (exp *backstoryExporter) Start(_ context.Context, _ component.Host) error {
+func (*backstoryExporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (exp *backstoryExporter) Shutdown(_ context.Context) error {
+func (*backstoryExporter) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // ConsumeLogs sends logs to the Backstory API via gRPC.
-func (exp *backstoryExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
+func (*backstoryExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	return nil
 }
