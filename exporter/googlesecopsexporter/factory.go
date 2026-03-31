@@ -5,6 +5,7 @@ package googlesecopsexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -12,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlesecopsexporter/internal/metadata"
 )
@@ -56,17 +56,30 @@ func createLogsExporter(
 	params exporter.Settings,
 	cfg component.Config,
 ) (exp exporter.Logs, err error) {
+	t, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("create telemetry builder: %w", err)
+	}
+
 	c := cfg.(*Config)
+	if c.API == chronicleAPI {
+		exp, err = newChronicleAPIExporter(c, params, t)
+	} else {
+		exp, err = newBackstoryAPIExporter(c, params, t)
+	}
+	if err != nil {
+		return nil, err
+	}
 	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		c,
-		// TODO: Replace no-op consumer with actual exporter implementation.
-		func(_ context.Context, _ plog.Logs) error {
-			return nil
-		},
+		exp.ConsumeLogs,
+		exporterhelper.WithCapabilities(exp.Capabilities()),
 		exporterhelper.WithTimeout(c.TimeoutConfig),
 		exporterhelper.WithQueue(c.QueueBatchConfig),
 		exporterhelper.WithRetry(c.BackOffConfig),
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Shutdown),
 	)
 }

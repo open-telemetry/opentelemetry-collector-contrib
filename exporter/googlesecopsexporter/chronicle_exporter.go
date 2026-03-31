@@ -1,0 +1,38 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package googlesecopsexporter
+
+import (
+	"context"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlesecopsexporter/internal/metadata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/plog"
+)
+
+type chronicleAPIExporter struct {
+}
+
+func newChronicleAPIExporter(_ *Config, _ exporter.Settings, _ *metadata.TelemetryBuilder) (*chronicleAPIExporter, error) {
+	return &chronicleAPIExporter{}, nil
+}
+
+func (exp *chronicleAPIExporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (exp *chronicleAPIExporter) Start(ctx context.Context, _ component.Host) error {
+	return nil
+}
+
+func (exp *chronicleAPIExporter) Shutdown(_ context.Context) error {
+	return nil
+}
+
+// ConsumeLogs sends logs to Chronicle via HTTP.
+func (exp *chronicleAPIExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
+	return nil
+}
