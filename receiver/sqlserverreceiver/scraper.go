@@ -916,6 +916,7 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
 	const blockingSessionID = "blocking_session_id"
+	const blockingStartTime = "blocking_start_time"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
 	const command = "command"
@@ -934,6 +935,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const queryStart = "query_start"
 	const reads = "reads"
 	const requestStatus = "request_status"
+	const resourceID = "resource_id"
+	const resourceType = "resource_type"
 	const rowCount = "row_count"
 	const sessionID = "session_id"
 	const sessionStatus = "session_status"
@@ -988,6 +991,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
+		blockingStartTimeVal := row[blockingStartTime]
 		commandVal := row[command]
 		cpuTimeSecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
@@ -1005,6 +1009,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryStartVal := row[queryStart]
 		readsVal := s.retrieveValue(row, reads, &errs, retrieveInt).(int64)
 		requestStatusVal := row[requestStatus]
+		resourceIDVal := row[resourceID]
+		resourceTypeVal := row[resourceType]
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
 		sessionStatusVal := row[sessionStatus]
@@ -1050,13 +1056,13 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			timestamp, clientAddressVal, clientPortVal,
 			dbNamespaceVal, queryTextVal, dbSystemNameVal,
 			networkPeerAddressVal, networkPeerPortVal,
-			blockSessionIDVal, contextInfoVal,
+			blockSessionIDVal, blockingStartTimeVal, contextInfoVal,
 			commandVal, cpuTimeSecondVal,
 			deadlockPriorityVal, estimatedCompletionTimeSecondVal,
 			lockTimeoutSecondVal, logicalReadsVal,
 			openTransactionCountVal, percentCompleteVal, queryHashVal, queryPlanHashVal,
 			queryStartVal, readsVal,
-			requestStatusVal, rowCountVal,
+			requestStatusVal, resourceIDVal, resourceTypeVal, rowCountVal,
 			sessionIDVal, sessionStatusVal,
 			totalElapsedTimeSecondVal, transactionIDVal, transactionIsolationLevelVal,
 			waitResourceVal, waitTimeSecondVal, waitTypeVal, writesVal, usernameVal,
