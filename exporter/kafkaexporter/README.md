@@ -167,3 +167,37 @@ The destination topic can be defined in a few different ways and takes priority 
 2. Otherwise, if `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
 3. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
 4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic.
+
+## Partitioning Kafka Records
+
+Kafka topics are partitioned, meaning a topic is spread over a number of “buckets” located on different Kafka brokers.
+The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
+
+Available strategies for partitioning are `sarama_compatible`, `round_robin`, `least_backup` and `custom`
+
+### Using custom partitioner
+
+The Kafka exporter allows you to define a custom partitioning strategy via an extension. A sample config for custom partitioner would look like:
+
+```yaml
+exporters:
+  kafka:
+    brokers:
+      - localhost:9092
+    record_partitioner:
+      type: custom
+      extension: my_custom_partitioner
+  
+extensions:
+  my_custom_partitioner:
+    # your extension-specific configuration here
+
+# rest of the pipeline config
+```
+
+Use custom partitioner if:
+- Built-in strategies (round_robin, least_backup, etc.) don’t fit your needs
+- You require domain-specific routing logic
+
+> [!NOTE]
+> The custom partitioner extension must implement the RecordPartitionerExtension interface (see [partitioner.go](./partitioner.go)).
