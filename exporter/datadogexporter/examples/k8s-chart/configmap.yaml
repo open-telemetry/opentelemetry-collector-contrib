@@ -34,7 +34,7 @@ data:
           network:
           processes:
 
-      filelog:
+      file_log:
         include_file_path: true
         poll_interval: 500ms
         include:
@@ -139,5 +139,5 @@ data:
           processors: [resourcedetection, k8sattributes]
           exporters: [datadog]
         logs:
-          receivers: [filelog]
+          receivers: [file_log]
           exporters: [datadog]

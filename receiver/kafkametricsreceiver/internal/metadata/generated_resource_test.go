@@ -29,11 +29,10 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("kafka.cluster.alias")
+			kafkaClusterAliasAttrVal, ok := res.Attributes().Get("kafka.cluster.alias")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "kafka.cluster.alias-val", val.Str())
+				assert.Equal(t, "kafka.cluster.alias-val", kafkaClusterAliasAttrVal.Str())
 			}
 		})
 	}

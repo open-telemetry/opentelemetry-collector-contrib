@@ -382,7 +382,14 @@ func (p *Parser) parseSelector(selector *ast.SelectorExpr) (SchemaElement, error
 			fullID := fmt.Sprintf("%s.%s", path, strcase.ToSnake(name))
 			// if allowed - create ref, else create any with custom type
 			if allowed {
-				element := CreateRefField(fullID, "")
+				var refID string
+				// if ref is in the same namespace/repository
+				if path == p.config.Namespace || strings.HasPrefix(path, p.config.Namespace+"/") {
+					refID, _ = strings.CutPrefix(fullID, p.config.Namespace)
+				} else {
+					refID = fullID
+				}
+				element := CreateRefField(refID, "")
 				return element, nil
 			}
 			element := CreateSimpleField(SchemaTypeAny, "")

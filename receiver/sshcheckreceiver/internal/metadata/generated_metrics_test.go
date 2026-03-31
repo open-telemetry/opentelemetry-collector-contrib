@@ -144,9 +144,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("error.message")
+					errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
 					assert.True(t, ok)
-					assert.Equal(t, "error.message-val", attrVal.Str())
+					assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
 				case "sshcheck.sftp_duration":
 					assert.False(t, validatedMetrics["sshcheck.sftp_duration"], "Found a duplicate in the metrics slice: sshcheck.sftp_duration")
 					validatedMetrics["sshcheck.sftp_duration"] = true
@@ -173,9 +173,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("error.message")
+					errorMessageAttrVal, ok := dp.Attributes().Get("error.message")
 					assert.True(t, ok)
-					assert.Equal(t, "error.message-val", attrVal.Str())
+					assert.Equal(t, "error.message-val", errorMessageAttrVal.Str())
 				case "sshcheck.sftp_status":
 					assert.False(t, validatedMetrics["sshcheck.sftp_status"], "Found a duplicate in the metrics slice: sshcheck.sftp_status")
 					validatedMetrics["sshcheck.sftp_status"] = true
