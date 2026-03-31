@@ -301,7 +301,11 @@ func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
 }
 
 func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) error {
-	simpleEvent, err := event.RenderSimple(i.buffer)
+	render := event.RenderSimple
+	if i.raw {
+		render = event.RenderSimpleRaw
+	}
+	simpleEvent, err := render(i.buffer)
 	if err != nil {
 		return fmt.Errorf("render simple event: %w", err)
 	}
@@ -309,7 +313,11 @@ func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) error {
 }
 
 func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Publisher) error {
-	deepEvent, err := event.RenderDeep(i.buffer, publisher)
+	render := event.RenderDeep
+	if i.raw {
+		render = event.RenderDeepRaw
+	}
+	deepEvent, err := render(i.buffer, publisher)
 	if err == nil {
 		return i.sendEvent(ctx, deepEvent)
 	}
@@ -350,11 +358,15 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 	return i.renderSimpleAndSend(ctx, event)
 }
 
-// sendEvent will send EventXML as an entry to the operator's output.
-func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
-	var body any = eventXML.Original
+// sendEvent will send a parsedEvent as an entry to the operator's output.
+//
+// raw=true path: only event.getOriginal(), event.getSystemTime(), event.getLevel(),
+// and event.getRenderedLevel() are called. If you add a field access here that
+// runs when raw=true, add a corresponding method to parsedEvent and rawParsedEvent.
+func (i *Input) sendEvent(ctx context.Context, event parsedEvent) error {
+	var body any = event.getOriginal()
 	if !i.raw {
-		body = formattedBody(eventXML, i.eventDataFormat)
+		body = formattedBody(event.toEventXML(), i.eventDataFormat)
 	}
 
 	e, err := i.NewEntry(body)
@@ -362,19 +374,15 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 		return fmt.Errorf("create entry: %w", err)
 	}
 
-	e.Timestamp = parseTimestamp(eventXML.TimeCreated.SystemTime)
-	renderedLevel := ""
-	if eventXML.RenderingInfo != nil {
-		renderedLevel = eventXML.RenderingInfo.Level
-	}
-	e.Severity = parseSeverity(renderedLevel, eventXML.Level)
+	e.Timestamp = parseTimestamp(event.getSystemTime())
+	e.Severity = parseSeverity(event.getRenderedLevel(), event.getLevel())
 
 	if i.remote.Server != "" {
 		e.AddAttribute("server.address", i.remote.Server)
 	}
 
 	if i.includeLogRecordOriginal {
-		e.AddAttribute(string(conventions.LogRecordOriginalKey), eventXML.Original)
+		e.AddAttribute(string(conventions.LogRecordOriginalKey), event.getOriginal())
 	}
 
 	return i.Write(ctx, e)
