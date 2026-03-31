@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -132,49 +134,31 @@ func (c *metadataClient) getMetadata(ctx context.Context, path string) (string, 
 
 // Metadata retrieves all ECS instance metadata.
 func (c *metadataClient) Metadata(ctx context.Context) (*Metadata, error) {
-	// Fetch all metadata fields
-	hostname, err := c.getMetadata(ctx, "hostname")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get hostname: %w", err)
+	g, ctx := errgroup.WithContext(ctx)
+	var md Metadata
+
+	fetch := func(dst *string, key string) {
+		g.Go(func() error {
+			val, err := c.getMetadata(ctx, key)
+			if err != nil {
+				return fmt.Errorf("failed to get %s: %w", key, err)
+			}
+			*dst = val
+			return nil
+		})
 	}
 
-	imageID, err := c.getMetadata(ctx, "image-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get image-id: %w", err)
+	fetch(&md.Hostname, "hostname")
+	fetch(&md.ImageID, "image-id")
+	fetch(&md.InstanceID, "instance-id")
+	fetch(&md.InstanceType, "instance/instance-type")
+	fetch(&md.OwnerAccountID, "owner-account-id")
+	fetch(&md.RegionID, "region-id")
+	fetch(&md.ZoneID, "zone-id")
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
-	instanceID, err := c.getMetadata(ctx, "instance-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance-id: %w", err)
-	}
-
-	instanceType, err := c.getMetadata(ctx, "instance/instance-type")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance-type: %w", err)
-	}
-
-	ownerAccountID, err := c.getMetadata(ctx, "owner-account-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get owner-account-id: %w", err)
-	}
-
-	regionID, err := c.getMetadata(ctx, "region-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get region-id: %w", err)
-	}
-
-	zoneID, err := c.getMetadata(ctx, "zone-id")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get zone-id: %w", err)
-	}
-
-	return &Metadata{
-		Hostname:       hostname,
-		ImageID:        imageID,
-		InstanceID:     instanceID,
-		InstanceType:   instanceType,
-		OwnerAccountID: ownerAccountID,
-		RegionID:       regionID,
-		ZoneID:         zoneID,
-	}, nil
+	return &md, nil
 }

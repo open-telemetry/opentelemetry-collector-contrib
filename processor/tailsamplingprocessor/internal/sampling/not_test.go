@@ -18,10 +18,15 @@ import (
 type mockEvaluator struct {
 	decision samplingpolicy.Decision
 	err      error
+	stateful bool
 }
 
 func (m *mockEvaluator) Evaluate(_ context.Context, _ pcommon.TraceID, _ *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
 	return m.decision, m.err
+}
+
+func (m *mockEvaluator) IsStateful() bool {
+	return m.stateful
 }
 
 func TestNotSamplingPolicy_Evaluate_Sampled(t *testing.T) {
@@ -85,4 +90,11 @@ func TestNotSamplingPolicy_Evaluate_Err_Not_Nil(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, expectedError, err)
 	assert.Equal(t, samplingpolicy.Error, decision)
+}
+
+func TestNotIsStatefulFollowsSubpolicy(t *testing.T) {
+	logger := zap.NewNop()
+	mockSubPolicy := &mockEvaluator{stateful: true}
+	notPolicy := NewNot(logger, mockSubPolicy)
+	assert.True(t, notPolicy.IsStateful())
 }

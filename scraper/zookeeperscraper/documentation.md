@@ -62,9 +62,9 @@ The number of followers. Only exposed by the leader.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| state | State of followers | Str: ``synced``, ``unsynced`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| state | State of followers | Str: ``synced``, ``unsynced`` | Recommended | - |
 
 ### zookeeper.fsync.exceeded_threshold.count
 
@@ -108,9 +108,9 @@ The number of ZooKeeper packets received or sent by a server.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | State of a packet based on io direction. | Str: ``received``, ``sent`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | State of a packet based on io direction. | Str: ``received``, ``sent`` | Recommended | - |
 
 ### zookeeper.request.active
 
@@ -154,7 +154,7 @@ Number of z-nodes that a ZooKeeper server has in its data tree.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| server.state | State of the Zookeeper server (leader, standalone or follower). | Any Str | true |
-| zk.version | Zookeeper version of the instance. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| server.state | State of the Zookeeper server (leader, standalone or follower). | Any Str | true | - |
+| zk.version | Zookeeper version of the instance. | Any Str | true | - |

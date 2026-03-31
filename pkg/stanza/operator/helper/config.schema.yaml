@@ -47,11 +47,11 @@ $defs:
     properties:
       body:
         x-pointer: true
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
       parse_from:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
       parse_to:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.rootable_field
+        $ref: /pkg/stanza/entry.rootable_field
       scope_name:
         x-pointer: true
         $ref: scope_name_parser
@@ -71,7 +71,7 @@ $defs:
     type: object
     properties:
       parse_from:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
   severity_config:
     description: SeverityConfig allows users to specify how to parse a severity from a field.
     type: object
@@ -84,7 +84,7 @@ $defs:
         type: boolean
       parse_from:
         x-pointer: true
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
       preset:
         type: string
   span_id_config:
@@ -92,7 +92,7 @@ $defs:
     properties:
       parse_from:
         x-pointer: true
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
   time_parser:
     description: TimeParser is a helper that parses time onto an entry.
     type: object
@@ -105,19 +105,19 @@ $defs:
         type: string
       parse_from:
         x-pointer: true
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
   trace_flags_config:
     type: object
     properties:
       parse_from:
         x-pointer: true
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
   trace_id_config:
     type: object
     properties:
       parse_from:
         x-pointer: true
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry.field
+        $ref: /pkg/stanza/entry.field
   trace_parser:
     description: TraceParser is a helper that parses trace spans (and flags) onto an entry.
     type: object

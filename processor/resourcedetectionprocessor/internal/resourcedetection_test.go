@@ -477,3 +477,34 @@ func TestStartStopRefreshing(t *testing.T) {
 		md.AssertNumberOfCalls(t, "Detect", 1)
 	})
 }
+
+func TestStartRefreshing_CalledMultipleTimes(t *testing.T) {
+	provider := NewResourceProvider(zap.NewNop(), 5*time.Second)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	// Call StartRefreshing multiple times (simulating traces, metrics, logs processors)
+	provider.StartRefreshing(100*time.Millisecond, client)
+	provider.StartRefreshing(100*time.Millisecond, client)
+	provider.StartRefreshing(100*time.Millisecond, client)
+	provider.StartRefreshing(100*time.Millisecond, client)
+
+	// Give the goroutine a moment to start
+	time.Sleep(50 * time.Millisecond)
+
+	// StopRefreshing should return without deadlock and must not panic
+	// when called multiple times (each pipeline calls Shutdown independently)
+	done := make(chan struct{})
+	go func() {
+		provider.StopRefreshing()
+		provider.StopRefreshing()
+		provider.StopRefreshing()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// success -- no deadlock, no panic
+	case <-time.After(2 * time.Second):
+		t.Fatal("StopRefreshing deadlocked: leaked goroutines from multiple StartRefreshing calls")
+	}
+}
