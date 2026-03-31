@@ -126,7 +126,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	gitlab.com/gitlab-org/api/client-go/v2 v2.7.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.11.0
 	go.opentelemetry.io/collector/client v1.54.1-0.20260330144813-4d17eb8959de // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.148.1-0.20260330144813-4d17eb8959de
 	go.opentelemetry.io/collector/config/configauth v1.54.1-0.20260330144813-4d17eb8959de // indirect
