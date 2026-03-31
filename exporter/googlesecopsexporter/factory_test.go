@@ -14,9 +14,16 @@ import (
 
 func Test_createDefaultConfig(t *testing.T) {
 	expectedCfg := &Config{
-		TimeoutConfig:    exporterhelper.NewDefaultTimeoutConfig(),
-		QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		API:                   chronicleAPI,
+		Hostname:              defaultHostname,
+		TimeoutConfig:         exporterhelper.NewDefaultTimeoutConfig(),
+		QueueBatchConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		BackOffConfig:         configretry.NewDefaultBackOffConfig(),
+		Compression:           noCompression,
+		CollectAgentMetrics:   true,
+		MetricsInterval:       defaultMetricsInterval,
+		BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
+		CollectorID:           defaultCollectorID,
 	}
 
 	actual := createDefaultConfig()
