@@ -107,10 +107,10 @@ type metricInfo struct {
 }
 
 type metricSystemNetworkConnections struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SystemNetworkConnectionsMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.connections metric with initial data.
@@ -133,10 +133,10 @@ func (m *metricSystemNetworkConnections) recordDataPoint(start pcommon.Timestamp
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "protocol") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkConnectionsMetricAttributeKeyProtocol) {
 		dp.Attributes().PutStr("protocol", protocolAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "state") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkConnectionsMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -190,7 +190,7 @@ func (m *metricSystemNetworkConnections) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemNetworkConnections(cfg MetricConfig) metricSystemNetworkConnections {
+func newMetricSystemNetworkConnections(cfg SystemNetworkConnectionsMetricConfig) metricSystemNetworkConnections {
 	m := metricSystemNetworkConnections{config: cfg}
 
 	if cfg.Enabled {
@@ -201,10 +201,9 @@ func newMetricSystemNetworkConnections(cfg MetricConfig) metricSystemNetworkConn
 }
 
 type metricSystemNetworkConntrackCount struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                          // data buffer for generated metric.
+	config   SystemNetworkConntrackCountMetricConfig // metric config provided by user.
+	capacity int                                     // max observed number of data points added to the metric.
 }
 
 // init fills system.network.conntrack.count metric with initial data.
@@ -215,45 +214,16 @@ func (m *metricSystemNetworkConntrackCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemNetworkConntrackCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -266,18 +236,13 @@ func (m *metricSystemNetworkConntrackCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkConntrackCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkConntrackCount(cfg MetricConfig) metricSystemNetworkConntrackCount {
+func newMetricSystemNetworkConntrackCount(cfg SystemNetworkConntrackCountMetricConfig) metricSystemNetworkConntrackCount {
 	m := metricSystemNetworkConntrackCount{config: cfg}
 
 	if cfg.Enabled {
@@ -288,10 +253,9 @@ func newMetricSystemNetworkConntrackCount(cfg MetricConfig) metricSystemNetworkC
 }
 
 type metricSystemNetworkConntrackMax struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   SystemNetworkConntrackMaxMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills system.network.conntrack.max metric with initial data.
@@ -302,45 +266,16 @@ func (m *metricSystemNetworkConntrackMax) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemNetworkConntrackMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-
-	dp := pmetric.NewNumberDataPoint()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-
-	var s string
-	dps := m.data.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
-		dpi := dps.At(i)
-		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			switch s = m.config.AggregationStrategy; s {
-			case AggregationStrategySum, AggregationStrategyAvg:
-				dpi.SetIntValue(dpi.IntValue() + val)
-				m.aggDataPoints[i] += 1
-				return
-			case AggregationStrategyMin:
-				if dpi.IntValue() > val {
-					dpi.SetIntValue(val)
-				}
-				return
-			case AggregationStrategyMax:
-				if dpi.IntValue() < val {
-					dpi.SetIntValue(val)
-				}
-				return
-			}
-		}
-	}
-
 	dp.SetIntValue(val)
-	m.aggDataPoints = append(m.aggDataPoints, 1)
-	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -353,18 +288,13 @@ func (m *metricSystemNetworkConntrackMax) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkConntrackMax) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == AggregationStrategyAvg {
-			for i, aggCount := range m.aggDataPoints {
-				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
-			}
-		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkConntrackMax(cfg MetricConfig) metricSystemNetworkConntrackMax {
+func newMetricSystemNetworkConntrackMax(cfg SystemNetworkConntrackMaxMetricConfig) metricSystemNetworkConntrackMax {
 	m := metricSystemNetworkConntrackMax{config: cfg}
 
 	if cfg.Enabled {
@@ -375,10 +305,10 @@ func newMetricSystemNetworkConntrackMax(cfg MetricConfig) metricSystemNetworkCon
 }
 
 type metricSystemNetworkDropped struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SystemNetworkDroppedMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.dropped metric with initial data.
@@ -401,10 +331,10 @@ func (m *metricSystemNetworkDropped) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkDroppedMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkDroppedMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -458,7 +388,7 @@ func (m *metricSystemNetworkDropped) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemNetworkDropped(cfg MetricConfig) metricSystemNetworkDropped {
+func newMetricSystemNetworkDropped(cfg SystemNetworkDroppedMetricConfig) metricSystemNetworkDropped {
 	m := metricSystemNetworkDropped{config: cfg}
 
 	if cfg.Enabled {
@@ -469,10 +399,10 @@ func newMetricSystemNetworkDropped(cfg MetricConfig) metricSystemNetworkDropped 
 }
 
 type metricSystemNetworkErrors struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SystemNetworkErrorsMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.errors metric with initial data.
@@ -495,10 +425,10 @@ func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkErrorsMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkErrorsMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -552,7 +482,7 @@ func (m *metricSystemNetworkErrors) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
+func newMetricSystemNetworkErrors(cfg SystemNetworkErrorsMetricConfig) metricSystemNetworkErrors {
 	m := metricSystemNetworkErrors{config: cfg}
 
 	if cfg.Enabled {
@@ -563,10 +493,10 @@ func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
 }
 
 type metricSystemNetworkIo struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric              // data buffer for generated metric.
+	config        SystemNetworkIoMetricConfig // metric config provided by user.
+	capacity      int                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.io metric with initial data.
@@ -589,10 +519,10 @@ func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkIoMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkIoMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -646,7 +576,7 @@ func (m *metricSystemNetworkIo) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
+func newMetricSystemNetworkIo(cfg SystemNetworkIoMetricConfig) metricSystemNetworkIo {
 	m := metricSystemNetworkIo{config: cfg}
 
 	if cfg.Enabled {
@@ -657,10 +587,10 @@ func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
 }
 
 type metricSystemNetworkPackets struct {
-	data          pmetric.Metric // data buffer for generated metric.
-	config        MetricConfig   // metric config provided by user.
-	capacity      int            // max observed number of data points added to the metric.
-	aggDataPoints []int64        // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SystemNetworkPacketsMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.network.packets metric with initial data.
@@ -683,10 +613,10 @@ func (m *metricSystemNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, "device") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketsMetricAttributeKeyDevice) {
 		dp.Attributes().PutStr("device", deviceAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, "direction") {
+	if slices.Contains(m.config.EnabledAttributes, SystemNetworkPacketsMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -740,7 +670,7 @@ func (m *metricSystemNetworkPackets) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemNetworkPackets(cfg MetricConfig) metricSystemNetworkPackets {
+func newMetricSystemNetworkPackets(cfg SystemNetworkPacketsMetricConfig) metricSystemNetworkPackets {
 	m := metricSystemNetworkPackets{config: cfg}
 
 	if cfg.Enabled {

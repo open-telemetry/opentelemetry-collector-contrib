@@ -170,7 +170,7 @@ func TestConsumerShutdownConsuming(t *testing.T) {
 		newConsumeFunc := func() (newConsumeMessageFunc, chan<- struct{}) {
 			consuming := make(chan struct{})
 			return func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-				return func(ctx context.Context, _ kafkaMessage, _ attribute.Set) error {
+				return func(ctx context.Context, _ *kgo.Record, _ attribute.Set) error {
 					wg.Add(1)
 					defer wg.Done()
 
@@ -234,7 +234,7 @@ func TestConsumerShutdownNotStarted(t *testing.T) {
 	_, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, "test"))
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
 			return nil
 		}, nil
 	}
@@ -276,7 +276,7 @@ func TestRaceLostVsConsume(t *testing.T) {
 
 	// Noop consume function.
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(context.Context, kafkaMessage, attribute.Set) error {
+		return func(context.Context, *kgo.Record, attribute.Set) error {
 			return nil
 		}, nil
 	}
@@ -309,7 +309,7 @@ func TestLost(t *testing.T) {
 	settings, _, _ := mustNewSettings(t)
 
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
 			return nil
 		}, nil
 	}
@@ -337,7 +337,7 @@ func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
 	var called atomic.Int64
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, _ kafkaMessage, _ attribute.Set) error {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
 			called.Add(1)
 			return nil
 		}, nil
@@ -419,9 +419,9 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 
 	settings, _, _ := mustNewSettings(t)
 	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
-		return func(_ context.Context, msg kafkaMessage, _ attribute.Set) error {
+		return func(_ context.Context, record *kgo.Record, _ attribute.Set) error {
 			mu.Lock()
-			consumedTopics[msg.topic()]++
+			consumedTopics[record.Topic]++
 			mu.Unlock()
 			called.Add(1)
 			return nil

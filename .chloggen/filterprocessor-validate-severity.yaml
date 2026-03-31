@@ -1,0 +1,14 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component
+component: processor/filter
+
+# A brief description of the change
+note: Fix validation of include and exclude severity configurations so they run independently of LogConditions.
+
+# Related issue
+issues: [46883]
+
+# This affects users
+change_logs: [user]

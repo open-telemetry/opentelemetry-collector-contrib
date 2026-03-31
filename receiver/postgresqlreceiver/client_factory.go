@@ -8,18 +8,7 @@ import (
 	"sync"
 
 	"github.com/lib/pq"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
-)
-
-const connectionPoolGateID = "receiver.postgresql.connectionPool"
-
-var connectionPoolGate = featuregate.GlobalRegistry().MustRegister(
-	connectionPoolGateID,
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Use of connection pooling"),
-	featuregate.WithRegisterFromVersion("0.96.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831"),
 )
 
 type postgreSQLClientFactory interface {

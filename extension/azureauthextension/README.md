@@ -31,7 +31,7 @@ User based:
 
 ```yaml
 extensions:
-  azureauth:
+  azure_auth:
     managed_identity:
       client_id: ${CLIENT_ID}
 ```
@@ -40,7 +40,7 @@ System based (leave `client_id` field empty):
 
 ```yaml
 extensions:
-  azureauth:
+  azure_auth:
     managed_identity:
 ```
 
@@ -48,7 +48,7 @@ extensions:
 
 ```yaml
 extensions:
-  azureauth:
+  azure_auth:
     workload_identity:
       client_id: ${CLIENT_ID}
       federated_token_file: ${FILE}
@@ -61,7 +61,7 @@ With client secret:
 
 ```yaml
 extensions:
-  azureauth:
+  azure_auth:
     service_principal:
       client_id: ${CLIENT_ID}
       tenant_id: ${TENANT_ID}
@@ -72,7 +72,7 @@ With client certificate path:
 
 ```yaml
 extensions:
-  azureauth:
+  azure_auth:
     service_principal:
       client_id: ${CLIENT_ID}
       tenant_id: ${TENANT_ID}
@@ -85,7 +85,7 @@ Not recommended for production.
 
 ```yaml
 extensions:
-  azureauth:
+  azure_auth:
     use_default: true
 ```
 
@@ -96,7 +96,7 @@ This is useful for Azure Monitor Workspaces since the workspace hostname is spec
 
 ```yaml:
 extensions:
-  azureauth:
+  azure_auth:
     scopes:
       - https://monitor.azure.com/.default
 ```

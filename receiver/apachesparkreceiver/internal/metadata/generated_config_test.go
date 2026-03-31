@@ -26,69 +26,195 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SparkDriverBlockManagerDiskUsage:                   MetricConfig{Enabled: true},
-					SparkDriverBlockManagerMemoryUsage:                 MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorCompilationAverageTime:     MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorCompilationCount:           MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorGeneratedClassAverageSize:  MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorGeneratedClassCount:        MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorGeneratedMethodAverageSize: MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorGeneratedMethodCount:       MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorSourceCodeAverageSize:      MetricConfig{Enabled: true},
-					SparkDriverCodeGeneratorSourceCodeOperations:       MetricConfig{Enabled: true},
-					SparkDriverDagSchedulerJobActive:                   MetricConfig{Enabled: true},
-					SparkDriverDagSchedulerJobCount:                    MetricConfig{Enabled: true},
-					SparkDriverDagSchedulerStageCount:                  MetricConfig{Enabled: true},
-					SparkDriverDagSchedulerStageFailed:                 MetricConfig{Enabled: true},
-					SparkDriverExecutorGcOperations:                    MetricConfig{Enabled: true},
-					SparkDriverExecutorGcTime:                          MetricConfig{Enabled: true},
-					SparkDriverExecutorMemoryExecution:                 MetricConfig{Enabled: true},
-					SparkDriverExecutorMemoryJvm:                       MetricConfig{Enabled: true},
-					SparkDriverExecutorMemoryPool:                      MetricConfig{Enabled: true},
-					SparkDriverExecutorMemoryStorage:                   MetricConfig{Enabled: true},
-					SparkDriverHiveExternalCatalogFileCacheHits:        MetricConfig{Enabled: true},
-					SparkDriverHiveExternalCatalogFilesDiscovered:      MetricConfig{Enabled: true},
-					SparkDriverHiveExternalCatalogHiveClientCalls:      MetricConfig{Enabled: true},
-					SparkDriverHiveExternalCatalogParallelListingJobs:  MetricConfig{Enabled: true},
-					SparkDriverHiveExternalCatalogPartitionsFetched:    MetricConfig{Enabled: true},
-					SparkDriverJvmCPUTime:                              MetricConfig{Enabled: true},
-					SparkDriverLiveListenerBusDropped:                  MetricConfig{Enabled: true},
-					SparkDriverLiveListenerBusPosted:                   MetricConfig{Enabled: true},
-					SparkDriverLiveListenerBusProcessingTimeAverage:    MetricConfig{Enabled: true},
-					SparkDriverLiveListenerBusQueueSize:                MetricConfig{Enabled: true},
-					SparkExecutorDiskUsage:                             MetricConfig{Enabled: true},
-					SparkExecutorGcTime:                                MetricConfig{Enabled: true},
-					SparkExecutorInputSize:                             MetricConfig{Enabled: true},
-					SparkExecutorMemoryUsage:                           MetricConfig{Enabled: true},
-					SparkExecutorShuffleIoSize:                         MetricConfig{Enabled: true},
-					SparkExecutorStorageMemoryUsage:                    MetricConfig{Enabled: true},
-					SparkExecutorTaskActive:                            MetricConfig{Enabled: true},
-					SparkExecutorTaskLimit:                             MetricConfig{Enabled: true},
-					SparkExecutorTaskResult:                            MetricConfig{Enabled: true},
-					SparkExecutorTime:                                  MetricConfig{Enabled: true},
-					SparkJobStageActive:                                MetricConfig{Enabled: true},
-					SparkJobStageResult:                                MetricConfig{Enabled: true},
-					SparkJobTaskActive:                                 MetricConfig{Enabled: true},
-					SparkJobTaskResult:                                 MetricConfig{Enabled: true},
-					SparkStageDiskSpilled:                              MetricConfig{Enabled: true},
-					SparkStageExecutorCPUTime:                          MetricConfig{Enabled: true},
-					SparkStageExecutorRunTime:                          MetricConfig{Enabled: true},
-					SparkStageIoRecords:                                MetricConfig{Enabled: true},
-					SparkStageIoSize:                                   MetricConfig{Enabled: true},
-					SparkStageJvmGcTime:                                MetricConfig{Enabled: true},
-					SparkStageMemoryPeak:                               MetricConfig{Enabled: true},
-					SparkStageMemorySpilled:                            MetricConfig{Enabled: true},
-					SparkStageShuffleBlocksFetched:                     MetricConfig{Enabled: true},
-					SparkStageShuffleFetchWaitTime:                     MetricConfig{Enabled: true},
-					SparkStageShuffleIoDisk:                            MetricConfig{Enabled: true},
-					SparkStageShuffleIoReadSize:                        MetricConfig{Enabled: true},
-					SparkStageShuffleIoRecords:                         MetricConfig{Enabled: true},
-					SparkStageShuffleIoWriteSize:                       MetricConfig{Enabled: true},
-					SparkStageShuffleWriteTime:                         MetricConfig{Enabled: true},
-					SparkStageStatus:                                   MetricConfig{Enabled: true},
-					SparkStageTaskActive:                               MetricConfig{Enabled: true},
-					SparkStageTaskResult:                               MetricConfig{Enabled: true},
-					SparkStageTaskResultSize:                           MetricConfig{Enabled: true},
+					SparkDriverBlockManagerDiskUsage: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverBlockManagerMemoryUsage: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorCompilationAverageTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorCompilationCount: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorGeneratedClassAverageSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorGeneratedClassCount: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorGeneratedMethodAverageSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorGeneratedMethodCount: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorSourceCodeAverageSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverCodeGeneratorSourceCodeOperations: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverDagSchedulerJobActive: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverDagSchedulerJobCount: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverDagSchedulerStageCount: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverDagSchedulerStageFailed: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverExecutorGcOperations: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverExecutorGcTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverExecutorMemoryExecution: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverExecutorMemoryJvm: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverExecutorMemoryPool: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverExecutorMemoryStorage: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverHiveExternalCatalogFileCacheHits: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverHiveExternalCatalogFilesDiscovered: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverHiveExternalCatalogHiveClientCalls: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverHiveExternalCatalogParallelListingJobs: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverHiveExternalCatalogPartitionsFetched: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverJvmCPUTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverLiveListenerBusDropped: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverLiveListenerBusPosted: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverLiveListenerBusProcessingTimeAverage: MetricConfig{
+						Enabled: true,
+					},
+					SparkDriverLiveListenerBusQueueSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorDiskUsage: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorGcTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorInputSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorMemoryUsage: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorShuffleIoSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorStorageMemoryUsage: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorTaskActive: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorTaskLimit: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorTaskResult: MetricConfig{
+						Enabled: true,
+					},
+					SparkExecutorTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkJobStageActive: MetricConfig{
+						Enabled: true,
+					},
+					SparkJobStageResult: MetricConfig{
+						Enabled: true,
+					},
+					SparkJobTaskActive: MetricConfig{
+						Enabled: true,
+					},
+					SparkJobTaskResult: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageDiskSpilled: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageExecutorCPUTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageExecutorRunTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageIoRecords: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageIoSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageJvmGcTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageMemoryPeak: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageMemorySpilled: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageShuffleBlocksFetched: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageShuffleFetchWaitTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageShuffleIoDisk: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageShuffleIoReadSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageShuffleIoRecords: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageShuffleIoWriteSize: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageShuffleWriteTime: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageStatus: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageTaskActive: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageTaskResult: MetricConfig{
+						Enabled: true,
+					},
+					SparkStageTaskResultSize: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SparkApplicationID:   ResourceAttributeConfig{Enabled: true},
@@ -104,69 +230,195 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SparkDriverBlockManagerDiskUsage:                   MetricConfig{Enabled: false},
-					SparkDriverBlockManagerMemoryUsage:                 MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorCompilationAverageTime:     MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorCompilationCount:           MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorGeneratedClassAverageSize:  MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorGeneratedClassCount:        MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorGeneratedMethodAverageSize: MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorGeneratedMethodCount:       MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorSourceCodeAverageSize:      MetricConfig{Enabled: false},
-					SparkDriverCodeGeneratorSourceCodeOperations:       MetricConfig{Enabled: false},
-					SparkDriverDagSchedulerJobActive:                   MetricConfig{Enabled: false},
-					SparkDriverDagSchedulerJobCount:                    MetricConfig{Enabled: false},
-					SparkDriverDagSchedulerStageCount:                  MetricConfig{Enabled: false},
-					SparkDriverDagSchedulerStageFailed:                 MetricConfig{Enabled: false},
-					SparkDriverExecutorGcOperations:                    MetricConfig{Enabled: false},
-					SparkDriverExecutorGcTime:                          MetricConfig{Enabled: false},
-					SparkDriverExecutorMemoryExecution:                 MetricConfig{Enabled: false},
-					SparkDriverExecutorMemoryJvm:                       MetricConfig{Enabled: false},
-					SparkDriverExecutorMemoryPool:                      MetricConfig{Enabled: false},
-					SparkDriverExecutorMemoryStorage:                   MetricConfig{Enabled: false},
-					SparkDriverHiveExternalCatalogFileCacheHits:        MetricConfig{Enabled: false},
-					SparkDriverHiveExternalCatalogFilesDiscovered:      MetricConfig{Enabled: false},
-					SparkDriverHiveExternalCatalogHiveClientCalls:      MetricConfig{Enabled: false},
-					SparkDriverHiveExternalCatalogParallelListingJobs:  MetricConfig{Enabled: false},
-					SparkDriverHiveExternalCatalogPartitionsFetched:    MetricConfig{Enabled: false},
-					SparkDriverJvmCPUTime:                              MetricConfig{Enabled: false},
-					SparkDriverLiveListenerBusDropped:                  MetricConfig{Enabled: false},
-					SparkDriverLiveListenerBusPosted:                   MetricConfig{Enabled: false},
-					SparkDriverLiveListenerBusProcessingTimeAverage:    MetricConfig{Enabled: false},
-					SparkDriverLiveListenerBusQueueSize:                MetricConfig{Enabled: false},
-					SparkExecutorDiskUsage:                             MetricConfig{Enabled: false},
-					SparkExecutorGcTime:                                MetricConfig{Enabled: false},
-					SparkExecutorInputSize:                             MetricConfig{Enabled: false},
-					SparkExecutorMemoryUsage:                           MetricConfig{Enabled: false},
-					SparkExecutorShuffleIoSize:                         MetricConfig{Enabled: false},
-					SparkExecutorStorageMemoryUsage:                    MetricConfig{Enabled: false},
-					SparkExecutorTaskActive:                            MetricConfig{Enabled: false},
-					SparkExecutorTaskLimit:                             MetricConfig{Enabled: false},
-					SparkExecutorTaskResult:                            MetricConfig{Enabled: false},
-					SparkExecutorTime:                                  MetricConfig{Enabled: false},
-					SparkJobStageActive:                                MetricConfig{Enabled: false},
-					SparkJobStageResult:                                MetricConfig{Enabled: false},
-					SparkJobTaskActive:                                 MetricConfig{Enabled: false},
-					SparkJobTaskResult:                                 MetricConfig{Enabled: false},
-					SparkStageDiskSpilled:                              MetricConfig{Enabled: false},
-					SparkStageExecutorCPUTime:                          MetricConfig{Enabled: false},
-					SparkStageExecutorRunTime:                          MetricConfig{Enabled: false},
-					SparkStageIoRecords:                                MetricConfig{Enabled: false},
-					SparkStageIoSize:                                   MetricConfig{Enabled: false},
-					SparkStageJvmGcTime:                                MetricConfig{Enabled: false},
-					SparkStageMemoryPeak:                               MetricConfig{Enabled: false},
-					SparkStageMemorySpilled:                            MetricConfig{Enabled: false},
-					SparkStageShuffleBlocksFetched:                     MetricConfig{Enabled: false},
-					SparkStageShuffleFetchWaitTime:                     MetricConfig{Enabled: false},
-					SparkStageShuffleIoDisk:                            MetricConfig{Enabled: false},
-					SparkStageShuffleIoReadSize:                        MetricConfig{Enabled: false},
-					SparkStageShuffleIoRecords:                         MetricConfig{Enabled: false},
-					SparkStageShuffleIoWriteSize:                       MetricConfig{Enabled: false},
-					SparkStageShuffleWriteTime:                         MetricConfig{Enabled: false},
-					SparkStageStatus:                                   MetricConfig{Enabled: false},
-					SparkStageTaskActive:                               MetricConfig{Enabled: false},
-					SparkStageTaskResult:                               MetricConfig{Enabled: false},
-					SparkStageTaskResultSize:                           MetricConfig{Enabled: false},
+					SparkDriverBlockManagerDiskUsage: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverBlockManagerMemoryUsage: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorCompilationAverageTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorCompilationCount: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorGeneratedClassAverageSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorGeneratedClassCount: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorGeneratedMethodAverageSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorGeneratedMethodCount: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorSourceCodeAverageSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverCodeGeneratorSourceCodeOperations: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverDagSchedulerJobActive: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverDagSchedulerJobCount: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverDagSchedulerStageCount: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverDagSchedulerStageFailed: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverExecutorGcOperations: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverExecutorGcTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverExecutorMemoryExecution: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverExecutorMemoryJvm: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverExecutorMemoryPool: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverExecutorMemoryStorage: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverHiveExternalCatalogFileCacheHits: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverHiveExternalCatalogFilesDiscovered: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverHiveExternalCatalogHiveClientCalls: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverHiveExternalCatalogParallelListingJobs: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverHiveExternalCatalogPartitionsFetched: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverJvmCPUTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverLiveListenerBusDropped: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverLiveListenerBusPosted: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverLiveListenerBusProcessingTimeAverage: MetricConfig{
+						Enabled: false,
+					},
+					SparkDriverLiveListenerBusQueueSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorDiskUsage: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorGcTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorInputSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorMemoryUsage: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorShuffleIoSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorStorageMemoryUsage: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorTaskActive: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorTaskLimit: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorTaskResult: MetricConfig{
+						Enabled: false,
+					},
+					SparkExecutorTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkJobStageActive: MetricConfig{
+						Enabled: false,
+					},
+					SparkJobStageResult: MetricConfig{
+						Enabled: false,
+					},
+					SparkJobTaskActive: MetricConfig{
+						Enabled: false,
+					},
+					SparkJobTaskResult: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageDiskSpilled: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageExecutorCPUTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageExecutorRunTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageIoRecords: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageIoSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageJvmGcTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageMemoryPeak: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageMemorySpilled: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageShuffleBlocksFetched: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageShuffleFetchWaitTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageShuffleIoDisk: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageShuffleIoReadSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageShuffleIoRecords: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageShuffleIoWriteSize: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageShuffleWriteTime: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageStatus: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageTaskActive: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageTaskResult: MetricConfig{
+						Enabled: false,
+					},
+					SparkStageTaskResultSize: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SparkApplicationID:   ResourceAttributeConfig{Enabled: false},

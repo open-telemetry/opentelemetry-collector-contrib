@@ -13,10 +13,14 @@ import (
 	"time"
 )
 
+type logSyntaxType string
+
 const (
-	albAccessLogs = "alb_access_logs"
-	nlbAccessLogs = "nlb_access_logs"
-	clbAccessLogs = "clb_access_logs"
+	albAccessLogs  logSyntaxType = "alb_access_logs"
+	nlbAccessLogs  logSyntaxType = "nlb_access_logs"
+	clbAccessLogs  logSyntaxType = "clb_access_logs"
+	controlMessage logSyntaxType = "control_message"
+
 	// any field can be set to - to indicate that the data was unknown
 	// or unavailable, or that the field was not applicable to this request.
 	unknownField = "-"
@@ -373,7 +377,7 @@ func safeConvertStrToFloat(stringNum string) (float64, error) {
 // ALB supports http, https, h2, grpcs, ws, wss and NLB supports tls.
 // Only if those are not matched, it checks if the field is a valid timestamp (for CLB logs).
 // If none match, it returns an error.
-func findLogSyntaxByField(field string) (string, error) {
+func findLogSyntaxByField(field string) (logSyntaxType, error) {
 	switch field {
 	case "http", "https", "h2", "grpcs", "ws", "wss":
 		return albAccessLogs, nil

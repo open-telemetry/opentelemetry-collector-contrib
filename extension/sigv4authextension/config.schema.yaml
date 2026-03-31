@@ -1,0 +1,24 @@
+$defs:
+  assume_role:
+    description: AssumeRole holds the configuration needed to assume a role
+    type: object
+    properties:
+      arn:
+        type: string
+      external_id:
+        type: string
+      session_name:
+        type: string
+      sts_region:
+        type: string
+      web_identity_token_file:
+        type: string
+description: Config stores the configuration for the Sigv4 Authenticator
+type: object
+properties:
+  assume_role:
+    $ref: assume_role
+  region:
+    type: string
+  service:
+    type: string
