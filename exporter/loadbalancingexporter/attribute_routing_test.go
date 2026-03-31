@@ -48,7 +48,7 @@ func TestBuildAttributeRoutingKeyValue_MapAndSliceDeterministic(t *testing.T) {
 	m2.Map().PutStr("a", "x")
 	m2.Map().PutInt("b", 2)
 
-	assert.Equal(t, "k={a:x,b:2}|", buildAttributeRoutingKeyValue("k", m1))
+	assert.Equal(t, "k={\"a\":\"x\",\"b\":2}|", buildAttributeRoutingKeyValue("k", m1))
 	assert.Equal(t, buildAttributeRoutingKeyValue("k", m1), buildAttributeRoutingKeyValue("k", m2))
 
 	s := pcommon.NewValueSlice()
@@ -56,5 +56,5 @@ func TestBuildAttributeRoutingKeyValue_MapAndSliceDeterministic(t *testing.T) {
 	s.Slice().AppendEmpty().SetStr("x")
 	s.Slice().AppendEmpty().SetBool(false)
 
-	assert.Equal(t, "k=[1,x,false]|", buildAttributeRoutingKeyValue("k", s))
+	assert.Equal(t, "k=[1,\"x\",false]|", buildAttributeRoutingKeyValue("k", s))
 }
