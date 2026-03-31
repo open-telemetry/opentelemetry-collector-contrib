@@ -175,19 +175,14 @@ jobs:
         with:
           preset: microshift
       - name: Export KUBECONFIG for MicroShift
-        run: |
-          mkdir -p /tmp
-          eval '$(crc oc-env)'
-          oc config view --raw > /tmp/kube-config-otelcol-e2e-testing
+        run: cp ~/.kube/config /tmp/kube-config-otelcol-e2e-testing
       - name: Download artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: otelcontribcol
           path: /tmp
       - name: Load Docker image into MicroShift
-        run: |
-          eval '$(crc podman-env)'
-          podman load < /tmp/otelcontribcol.tar
+        run: sg libvirt -c 'eval "$(crc podman-env)" && podman load < /tmp/otelcontribcol.tar'
       - name: Run OpenShift E2E tests
         env:
           KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
