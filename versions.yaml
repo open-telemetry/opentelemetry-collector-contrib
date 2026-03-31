@@ -55,6 +55,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlesecopsexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
