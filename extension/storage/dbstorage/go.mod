@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.149.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	modernc.org/sqlite v1.47.0
+	modernc.org/sqlite v1.48.0
 )
 
 require (
