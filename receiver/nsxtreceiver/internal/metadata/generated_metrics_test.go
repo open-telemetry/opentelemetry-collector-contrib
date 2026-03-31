@@ -140,9 +140,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("class")
+					classAttrVal, ok := dp.Attributes().Get("class")
 					assert.True(t, ok)
-					assert.Equal(t, "datapath", attrVal.Str())
+					assert.Equal(t, "datapath", classAttrVal.Str())
 				case "nsxt.node.filesystem.usage":
 					assert.False(t, validatedMetrics["nsxt.node.filesystem.usage"], "Found a duplicate in the metrics slice: nsxt.node.filesystem.usage")
 					validatedMetrics["nsxt.node.filesystem.usage"] = true
@@ -157,9 +157,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("state")
+					diskStateAttrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.Equal(t, "used", diskStateAttrVal.Str())
 				case "nsxt.node.filesystem.utilization":
 					assert.False(t, validatedMetrics["nsxt.node.filesystem.utilization"], "Found a duplicate in the metrics slice: nsxt.node.filesystem.utilization")
 					validatedMetrics["nsxt.node.filesystem.utilization"] = true
@@ -214,9 +214,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
+					directionAttrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
+					assert.Equal(t, "received", directionAttrVal.Str())
 				case "nsxt.node.network.packet.count":
 					assert.False(t, validatedMetrics["nsxt.node.network.packet.count"], "Found a duplicate in the metrics slice: nsxt.node.network.packet.count")
 					validatedMetrics["nsxt.node.network.packet.count"] = true
@@ -231,12 +231,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
+					directionAttrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("type")
+					assert.Equal(t, "received", directionAttrVal.Str())
+					packetTypeAttrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "dropped", attrVal.Str())
+					assert.Equal(t, "dropped", packetTypeAttrVal.Str())
 				}
 			}
 		})

@@ -78,15 +78,15 @@ type correlationTestClient struct {
 	cors             []*correlations.Correlation
 	getPayload       map[string]map[string][]string
 	getCallback      func()
-	getCounter       int64
-	deleteCounter    int64
-	correlateCounter int64
+	getCounter       atomic.Int64
+	deleteCounter    atomic.Int64
+	correlateCounter atomic.Int64
 }
 
 func (*correlationTestClient) Start()    { /*no-op*/ }
 func (*correlationTestClient) Shutdown() { /*no-op*/ }
 func (c *correlationTestClient) Get(_, dimValue string, cb correlations.SuccessfulGetCB) {
-	atomic.AddInt64(&c.getCounter, 1)
+	c.getCounter.Add(1)
 	go func() {
 		cb(c.getPayload[dimValue])
 		if c.getCallback != nil {
@@ -100,7 +100,7 @@ func (c *correlationTestClient) Correlate(cl *correlations.Correlation, cb corre
 	defer c.Unlock()
 	c.cors = append(c.cors, cl)
 	cb(cl, nil)
-	atomic.AddInt64(&c.correlateCounter, 1)
+	c.correlateCounter.Add(1)
 }
 
 func (c *correlationTestClient) Delete(cl *correlations.Correlation, cb correlations.SuccessfulDeleteCB) {
@@ -108,7 +108,7 @@ func (c *correlationTestClient) Delete(cl *correlations.Correlation, cb correlat
 	defer c.Unlock()
 	c.cors = append(c.cors, cl)
 	cb(cl)
-	atomic.AddInt64(&c.deleteCounter, 1)
+	c.deleteCounter.Add(1)
 }
 
 func (c *correlationTestClient) getCorrelations() []*correlations.Correlation {
