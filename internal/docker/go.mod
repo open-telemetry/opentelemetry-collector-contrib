@@ -47,7 +47,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.55.0 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.148.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.149.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.55.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
