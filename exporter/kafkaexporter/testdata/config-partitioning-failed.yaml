@@ -45,3 +45,9 @@ kafka/per_signal_encoding:
     encoding: per_signal_encoding
   profiles:
     encoding: per_signal_encoding
+kafka/invalid_partitioner:
+  record_partitioner:
+    type: invalid_partitioner
+kafka/extension_not_set:
+  record_partitioner:
+    type: custom

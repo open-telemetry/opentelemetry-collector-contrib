@@ -50,11 +50,12 @@ type RecordPartitionerConfig struct {
 }
 
 func (c *RecordPartitionerConfig) Validate() error {
+	fmt.Println(c.Type)
 	switch c.Type {
-	case "", RecordPartitionerTypeSaramaCompatible,
+	case RecordPartitionerTypeSaramaCompatible,
 		RecordPartitionerTypeRoundRobin,
 		RecordPartitionerTypeLeastBackup:
-	case RecordPartitionerTypeExtension:
+	case RecordPartitionerTypeCustom:
 		if c.Extension == nil {
 			return errRecordPartitionerExtRequired
 		}

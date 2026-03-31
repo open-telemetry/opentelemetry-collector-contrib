@@ -26,9 +26,9 @@ const (
 	// buffered records, which can reduce produce latency under uneven load.
 	RecordPartitionerTypeLeastBackup = "least_backup"
 
-	// RecordPartitionerTypeExtension delegates partitioning to a user-provided extension
+	// RecordPartitionerTypeCustom delegates partitioning to a user-provided extension
 	// that implements RecordPartitionerExtension.
-	RecordPartitionerTypeExtension = "custom"
+	RecordPartitionerTypeCustom = "custom"
 )
 
 // RecordPartitionerExtension is implemented by extensions that supply a custom Kafka record
@@ -47,7 +47,7 @@ func buildPartitionerOpt(cfg RecordPartitionerConfig, host component.Host) (kgo.
 		return kgo.RecordPartitioner(kgo.RoundRobinPartitioner()), nil
 	case RecordPartitionerTypeLeastBackup:
 		return kgo.RecordPartitioner(kgo.LeastBackupPartitioner()), nil
-	case RecordPartitionerTypeExtension:
+	case RecordPartitionerTypeCustom:
 		if cfg.Extension == nil {
 			return nil, errRecordPartitionerExtRequired
 		}

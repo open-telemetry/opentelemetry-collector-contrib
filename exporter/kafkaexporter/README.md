@@ -54,11 +54,11 @@ The following settings can be optionally configured:
 - `partition_logs_by_trace_id` (default = false): configures the exporter to partition log messages by trace ID, if the log record has one associated. Note: `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id` are mutually exclusive, and enabling both will lead to an error.
 - `record_partitioner`: configures the Kafka-level record partitioner. When unset, the default sarama-compatible sticky key partitioner is used.
   - `type`: The partitioner strategy. Valid values are:
-    - `""` or `sarama_compatible`: Sticky key partitioner using Sarama-compatible FNV-1a hashing.
+    - `sarama_compatible` (default): Sticky key partitioner using Sarama-compatible FNV-1a hashing.
     - `round_robin`: Distributes records evenly across all partitions.
     - `least_backup`: Sends records to the partition with the fewest in-flight messages.
     - `custom`: Delegates partitioning to a custom extension.
-  - `custom`: The ID of a cusom partitioner extension to be used.
+  - `extension`: The ID of a cusom partitioner extension to be used.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)

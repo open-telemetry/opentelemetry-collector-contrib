@@ -52,10 +52,6 @@ func TestRecordPartitionerConfig_Validate(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "empty type (default)",
-			cfg:  RecordPartitionerConfig{},
-		},
-		{
 			name: "sarama_compatible",
 			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeSaramaCompatible},
 		},
@@ -69,11 +65,11 @@ func TestRecordPartitionerConfig_Validate(t *testing.T) {
 		},
 		{
 			name: "extension with ID",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeExtension, Extension: &extID},
+			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
 		},
 		{
 			name:    "extension without ID",
-			cfg:     RecordPartitionerConfig{Type: RecordPartitionerTypeExtension},
+			cfg:     RecordPartitionerConfig{Type: RecordPartitionerTypeCustom},
 			wantErr: errRecordPartitionerExtRequired.Error(),
 		},
 		{
@@ -137,18 +133,18 @@ func TestBuildPartitionerOpt(t *testing.T) {
 		},
 		{
 			name: "extension",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeExtension, Extension: &extID},
+			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
 			host: hostWithExt,
 		},
 		{
 			name:    "extension not found",
-			cfg:     RecordPartitionerConfig{Type: RecordPartitionerTypeExtension, Extension: &compID},
+			cfg:     RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &compID},
 			host:    componenttest.NewNopHost(),
 			wantErr: `partitioner extension "missing" not found`,
 		},
 		{
 			name: "extension does not implement RecordPartitionerExtension",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeExtension, Extension: &extID},
+			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
 			host: &mockHostWithExtensions{
 				Host: componenttest.NewNopHost(),
 				extensions: map[component.ID]component.Component{
@@ -333,7 +329,7 @@ func TestRecordPartitioner_Extension_CustomRouting(t *testing.T) {
 	}
 
 	client, brokers := newPartitioningProducer(t,
-		RecordPartitionerConfig{Type: RecordPartitionerTypeExtension, Extension: &extID},
+		RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
 		host, numPartitions, topic,
 	)
 

@@ -81,6 +81,9 @@ func TestLoadConfig(t *testing.T) {
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
 				PartitionLogsByTraceID:               false,
+				RecordPartitioner: RecordPartitionerConfig{
+					Type: "sarama_compatible",
+				},
 			},
 		},
 		{
@@ -145,6 +148,9 @@ func TestLoadConfig(t *testing.T) {
 				IncludeMetadataKeys: []string{
 					"metadata_key",
 				},
+				RecordPartitioner: RecordPartitionerConfig{
+					Type: "sarama_compatible",
+				},
 			},
 		},
 		{
@@ -170,6 +176,9 @@ func TestLoadConfig(t *testing.T) {
 				Profiles: SignalConfig{
 					Topic:    "otlp_profiles",
 					Encoding: "per_signal_encoding",
+				},
+				RecordPartitioner: RecordPartitionerConfig{
+					Type: "sarama_compatible",
 				},
 			},
 		},
@@ -214,6 +223,9 @@ func TestLoadConfig(t *testing.T) {
 					Encoding:             "otlp_proto",
 				},
 				IncludeMetadataKeys: []string{"metadata_key"},
+				RecordPartitioner: RecordPartitionerConfig{
+					Type: "sarama_compatible",
+				},
 			},
 		},
 	}
@@ -259,6 +271,16 @@ func TestLoadConfigFailed(t *testing.T) {
 			id:            component.NewIDWithName(metadata.Type, "not_superset_batch_partitioner_keys"),
 			errorContains: `sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values: missing "required_key" from sending_queue::batch::partition::metadata_keys=[metadata_key]`,
 			configFile:    "config-batch-partition-validation-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "invalid_partitioner"),
+			errorContains: errRecordPartitionerUnknownType.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "extension_not_set"),
+			errorContains: errRecordPartitionerExtRequired.Error(),
+			configFile:    "config-partitioning-failed.yaml",
 		},
 	}
 
