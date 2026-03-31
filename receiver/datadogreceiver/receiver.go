@@ -205,13 +205,10 @@ func newDataDogReceiver(ctx context.Context, config *Config, params receiver.Set
 		params:             params,
 		config:             config,
 		intakeReverseProxy: intakeReverseProxy,
-		server: &http.Server{
-			ReadTimeout: config.ReadTimeout,
-		},
-		tReceiver:         instance,
-		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
-		statsTranslator:   translator.NewStatsTranslator(),
-		traceIDCache:      cache,
+		tReceiver:          instance,
+		metricsTranslator:  translator.NewMetricsTranslator(params.BuildInfo),
+		statsTranslator:    translator.NewStatsTranslator(),
+		traceIDCache:       cache,
 	}, nil
 }
 
@@ -249,6 +246,9 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 }
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
+	if ddr.server == nil {
+		return nil
+	}
 	return ddr.server.Shutdown(ctx)
 }
 

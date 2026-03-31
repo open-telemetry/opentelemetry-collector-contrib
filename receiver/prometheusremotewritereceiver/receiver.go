@@ -45,10 +45,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		settings:     settings,
 		nextConsumer: nextConsumer,
 		config:       cfg,
-		server: &http.Server{
-			ReadTimeout: 60 * time.Second,
-		},
-		rmCache: cache,
+		rmCache:      cache,
 		bodyBufferPool: &sync.Pool{
 			New: func() any {
 				// Pre-allocate 4KiB
@@ -345,6 +342,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			snapshot := pmetric.NewResourceMetrics()
 			attrs.CopyTo(snapshot.Resource().Attributes())
 			prw.rmCache.Add(hashed, snapshot)
+			// target_info is not stored as a metric but PRW requires the response
+			// to report all received samples, including target_info, to avoid a stats mismatch
+			stats.Samples += len(ts.Samples)
 			continue
 		}
 

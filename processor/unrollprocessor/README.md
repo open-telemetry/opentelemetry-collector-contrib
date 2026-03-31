@@ -78,7 +78,7 @@ The following configuration utilizes the [transform processor](https://github.co
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ ./test.txt ]
     start_at: beginning
 
@@ -98,7 +98,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [transform, unroll]
       exporters: [file]
 ```

@@ -232,14 +232,16 @@ service:
 > The scope attribute `elastic.mapping.mode` takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
 > The attribute will be excluded from the final document sent to Elasticsearch.
 
+> [!NOTE]
+> `otel` and `ecs` mapping modes require Elasticsearch 8.12 or above[^1].
+> `otel` mode works best with Elasticsearch 8.16 or above[^2].
+
+[^1]: as OTel and ECS mapping modes rely on the `require_data_stream` bulk action metadata, available since Elasticsearch 8.12
+[^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
+
 #### OTel mapping mode
 
 The default and recommended "OTel-native" mapping mode.
-
-Requires Elasticsearch 8.12 or above[^1], works best with Elasticsearch 8.16 or above[^2].
-
-[^1]: as it uses the undocumented `require_data_stream` bulk API parameter supported from Elasticsearch 8.12
-[^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
 
 In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
 "OTel-native" schema. In this mapping mode, documents use the original attribute names and
@@ -425,6 +427,22 @@ The metric types supported are:
 - Exponential histogram (Delta temporality only)
 - Summary
 
+### Metrics dynamic templates
+
+For metrics, the exporter sends **per-document `dynamic_templates`** with each bulk index action so that Elasticsearch can apply the correct mapping to metric fields. It uses the [bulk API `dynamic_templates` parameter](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk):
+
+> A map from the full name of fields to the name of dynamic templates. It defaults to an empty map. If a name matches a dynamic template, that template will be applied regardless of other match predicates defined in the template. If a field is already defined in the mapping, then this parameter won't be used.
+
+The index template must define dynamic templates whose names match the values sent by the exporter. Behavior depends on the mapping mode:
+
+| Mapping mode | Field path in document | Template names sent | Notes |
+| ------------ | ---------------------- | -------------------- | ----- |
+| **OTel**     | `metrics.<metric name>` | `histogram`, `summary`, `gauge_double`, `gauge_long`, `counter_double`, `counter_long` | The OTel data plugin defines more specific templates. |
+| **ECS**      | `metric.<metric name>`  | `histogram_metrics`, `summary_metrics`, `double_metrics` | Relies on core templates in [metrics@mappings](https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json). Intended to match the [APM metrics ingest pipeline](https://github.com/elastic/elasticsearch/blob/b34960a2b450869aee2866e91c647e0026dd6953/x-pack/plugin/apm-data/src/main/resources/ingest-pipelines/metrics-apm%40pipeline.yaml). |
+
+- **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
+- **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
+
 ## Exporting profiles
 
 Profiles support is currently in development, and should not be used in
@@ -513,9 +531,9 @@ It is recommended to enrich events using the [elasticapmprocessor](https://githu
 | source.address              | source.ip                   | false    | false          |
 | telemetry.distro.name       | ""                          | false    | false          |
 | telemetry.distro.version    | ""                          | false    | false          |
-| telemetry.sdk.language      | ""                          | false    | false          |
+| telemetry.sdk.language      | service.language.name       | false    | false          |
 | telemetry.sdk.name          | ""                          | false    | false          |
-| telemetry.sdk.version       | ""                          | false    | false          |
+| telemetry.sdk.version       | service.language.version    | false    | false          |
 
 ### Log record attribute mapping
 
@@ -545,28 +563,6 @@ There are ECS fields that are not mapped easily 1 to 1 but require more advanced
 #### `host.name` and `host.hostname`
 
 Maintains the SemConv Value `host.name` as ECS Value `host.name` and maps it to ECS Value `host.hostname`, if this does not already exist.
-
-#### `host.os.type`
-
-Maps values of `os.type` in the following manner:
-
-| SemConv Value | ECS Value |
-|---------------|-----------|
-| windows       | windows   |
-| linux         | linux     |
-| darwin        | macos     |
-| aix           | unix      |
-| hpux          | unix      |
-| solaris       | unix      |
-
-In case `os.name` is present and falls within the specified range of values:
-
-| SemConv Value | ECS Value |
-|---------------|-----------|
-| Android       | android   |
-| iOS           | ios       |
-
-Otherwise, it is mapped to an empty string ("").
 
 #### `@timestamp`
 
@@ -684,9 +680,10 @@ error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flu
 }
 ```
 
-This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
+In this scenario, Elasticsearch may reject the bulk request because the `require_data_stream` bulk action metadata is not supported.
+This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) or [ECS mapping mode](#ecs-mapping-mode), and send data to Elasticsearch version < 8.12.
 
-To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
+To resolve this, upgrade Elasticsearch to 8.12+; for OTel mapping mode, 8.16+ is recommended.
 Alternatively, try other mapping modes, but the document structure will be different.
 
 ### "dropping cumulative temporality histogram" and "dropping cumulative temporality exponential histogram"

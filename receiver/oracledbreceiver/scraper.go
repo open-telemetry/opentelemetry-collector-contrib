@@ -93,11 +93,13 @@ const (
 	queryDiskReadsMetric        = "DISK_READS"
 	queryDirectReadsMetric      = "DIRECT_READS"
 	queryDirectWritesMetric     = "DIRECT_WRITES"
+	procedureExecutionsMetric   = "PROCEDURE_EXECUTIONS"
 
 	// Stored procedure columns
-	objectIDAttr   = "PROGRAM_ID"
-	objectNameAttr = "PROCEDURE_NAME"
-	objectTypeAttr = "PROCEDURE_TYPE"
+	objectIDAttr    = "PROGRAM_ID"
+	objectNameAttr  = "PROCEDURE_NAME"
+	objectTypeAttr  = "PROCEDURE_TYPE"
+	commandTypeAttr = "COMMAND_TYPE"
 )
 
 var (
@@ -532,6 +534,7 @@ type queryMetricCacheHit struct {
 	objectID     int64
 	objectName   string
 	objectType   string
+	commandType  int64
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
@@ -600,6 +603,11 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectID, _ = strconv.ParseInt(row[objectIDAttr], 10, 64)
 			}
 
+			var commandType int64
+			if row[commandTypeAttr] != "" {
+				commandType, _ = strconv.ParseInt(row[commandTypeAttr], 10, 64)
+			}
+
 			hit := queryMetricCacheHit{
 				sqlID:        row[sqlIDAttr],
 				queryText:    row[sqlTextAttr],
@@ -609,6 +617,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectID:     objectID,
 				objectName:   row[objectNameAttr],
 				objectType:   row[objectTypeAttr],
+				commandType:  commandType,
 			}
 
 			var possiblePurge bool
@@ -676,6 +685,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			asFloatInSeconds(hit.metrics[applicationWaitTimeMetric]),
 			hit.metrics[bufferGetsMetric],
 			asFloatInSeconds(hit.metrics[clusterWaitTimeMetric]),
+			hit.commandType,
 			asFloatInSeconds(hit.metrics[concurrencyWaitTimeMetric]),
 			asFloatInSeconds(hit.metrics[cpuTimeMetric]),
 			hit.metrics[queryDirectReadsMetric],
@@ -689,6 +699,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.metrics[physicalWriteRequestsMetric],
 			hit.metrics[rowsProcessedMetric],
 			asFloatInSeconds(hit.metrics[userIoWaitTimeMetric]),
+			hit.metrics[procedureExecutionsMetric],
 			hit.objectID,
 			hit.objectName,
 			hit.objectType)
@@ -798,7 +809,7 @@ func (s *oracleScraper) obfuscateCacheHits(hits []queryMetricCacheHit) []queryMe
 		// obfuscate and normalize the query text
 		obfuscatedSQL, err := s.obfuscator.obfuscateSQLString(hit.queryText)
 		if err != nil {
-			s.logger.Error("oracleScraper failed getting metric rows", zap.Error(err))
+			s.logger.Warn("oracleScraper failed to obfuscate SQL query, skipping entry", zap.String("sql_id", hit.sqlID), zap.Error(err))
 		} else {
 			hit.queryText = obfuscatedSQL
 			obfuscatedHits = append(obfuscatedHits, hit)
@@ -847,7 +858,7 @@ func (*oracleScraper) getTopNMetricNames() []string {
 		elapsedTimeMetric, queryExecutionMetric, cpuTimeMetric, applicationWaitTimeMetric,
 		concurrencyWaitTimeMetric, userIoWaitTimeMetric, clusterWaitTimeMetric, rowsProcessedMetric, bufferGetsMetric,
 		physicalReadRequestsMetric, physicalWriteRequestsMetric, physicalReadBytesMetric, physicalWriteBytesMetric,
-		queryDirectReadsMetric, queryDirectWritesMetric, queryDiskReadsMetric,
+		queryDirectReadsMetric, queryDirectWritesMetric, queryDiskReadsMetric, procedureExecutionsMetric,
 	}
 }
 

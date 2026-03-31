@@ -107,7 +107,6 @@
       "matchPaths": [
         "exporter/datadogexporter/**",
         "connector/datadogconnector/**",
-        "processor/datadogsemanticsprocessor/**",
         "internal/datadog/**",
         "pkg/datadog/**"
       ],

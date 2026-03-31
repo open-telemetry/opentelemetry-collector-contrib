@@ -10,14 +10,18 @@ status:
 
 sem_conv_version: 1.9.0
 
+reaggregation_enabled: true
+
 attributes:
   state:
     description: Breakdown of memory usage by type.
     type: string
+    requirement_level: recommended
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
   system.memory.linux.hugepages.state:
     description: Breakdown of hugepages usage by state.
     type: string
+    requirement_level: recommended
     enum: [free, used]
 
 metrics:
@@ -66,7 +70,7 @@ metrics:
     description: System hugepage size in bytes.
     unit: By
     stability: development
-    gauge:
+    sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
@@ -76,16 +80,20 @@ metrics:
     description: Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.
     unit: "{page}"
     stability: development
-    gauge:
+    sum:
       value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
 
   system.memory.linux.hugepages.surplus:
     enabled: false
     description: Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.
     unit: "{page}"
     stability: development
-    gauge:
+    sum:
       value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
 
   system.memory.linux.hugepages.usage:
     enabled: false

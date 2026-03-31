@@ -48,7 +48,7 @@ emitting a single log with the count of logs that were deduplicated.
 The following config is an example configuration for the log deduplication processor. It is configured with an aggregation interval of `60 seconds`, a timezone of `America/Los_Angeles`, and a log count attribute of `dedup_count`. It has no fields being excluded.
 ```yaml
 receivers:
-    filelog:
+    file_log:
         include: [./example/*.log]
 processors:
     logdedup:
@@ -61,7 +61,7 @@ exporters:
 service:
     pipelines:
         logs:
-            receivers: [filelog]
+            receivers: [file_log]
             processors: [logdedup]
             exporters: [googlecloud]
 ```
@@ -75,7 +75,7 @@ The following config is an example configuration that excludes the following fie
 
 ```yaml
 receivers:
-    filelog:
+    file_log:
         include: [./example/*.log]
 processors:
     logdedup:
@@ -89,7 +89,7 @@ exporters:
 service:
     pipelines:
         logs:
-            receivers: [filelog]
+            receivers: [file_log]
             processors: [logdedup]
             exporters: [googlecloud]
 ```
@@ -99,7 +99,7 @@ This example demonstrates a configuration where deduplication is applied to tele
 
 ```yaml
 receivers:
-    filelog:
+    file_log:
         include: [./example/*.log]
 processors:
     logdedup:
@@ -115,7 +115,7 @@ exporters:
 service:
     pipelines:
         logs:
-            receivers: [filelog]
+            receivers: [file_log]
             processors: [logdedup]
             exporters: [googlecloud]
 ```
@@ -125,7 +125,7 @@ The following config is an example configuration that only performs the deduping
 
 ```yaml
 receivers:
-    filelog:
+    file_log:
         include: [./example/*.log]
 processors:
     logdedup:
@@ -141,7 +141,7 @@ exporters:
 service:
     pipelines:
         logs:
-            receivers: [filelog]
+            receivers: [file_log]
             processors: [logdedup]
             exporters: [googlecloud]
 ```

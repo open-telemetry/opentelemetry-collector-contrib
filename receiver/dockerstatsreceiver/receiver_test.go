@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -32,80 +33,81 @@ import (
 var mockFolder = filepath.Join("testdata", "mock")
 
 var (
-	metricEnabled     = metadata.MetricConfig{Enabled: true}
-	allMetricsEnabled = metadata.MetricsConfig{
-		ContainerBlockioIoMergedRecursive:          metricEnabled,
-		ContainerBlockioIoQueuedRecursive:          metricEnabled,
-		ContainerBlockioIoServiceBytesRecursive:    metricEnabled,
-		ContainerBlockioIoServiceTimeRecursive:     metricEnabled,
-		ContainerBlockioIoServicedRecursive:        metricEnabled,
-		ContainerBlockioIoTimeRecursive:            metricEnabled,
-		ContainerBlockioIoWaitTimeRecursive:        metricEnabled,
-		ContainerBlockioSectorsRecursive:           metricEnabled,
-		ContainerCPULimit:                          metricEnabled,
-		ContainerCPUShares:                         metricEnabled,
-		ContainerCPUUtilization:                    metricEnabled,
-		ContainerCPUThrottlingDataPeriods:          metricEnabled,
-		ContainerCPUThrottlingDataThrottledPeriods: metricEnabled,
-		ContainerCPUThrottlingDataThrottledTime:    metricEnabled,
-		ContainerCPUUsageKernelmode:                metricEnabled,
-		ContainerCPUUsagePercpu:                    metricEnabled,
-		ContainerCPUUsageSystem:                    metricEnabled,
-		ContainerCPUUsageTotal:                     metricEnabled,
-		ContainerCPUUsageUsermode:                  metricEnabled,
-		ContainerCPULogicalCount:                   metricEnabled,
-		ContainerMemoryActiveAnon:                  metricEnabled,
-		ContainerMemoryActiveFile:                  metricEnabled,
-		ContainerMemoryCache:                       metricEnabled,
-		ContainerMemoryDirty:                       metricEnabled,
-		ContainerMemoryHierarchicalMemoryLimit:     metricEnabled,
-		ContainerMemoryHierarchicalMemswLimit:      metricEnabled,
-		ContainerMemoryInactiveAnon:                metricEnabled,
-		ContainerMemoryInactiveFile:                metricEnabled,
-		ContainerMemoryMappedFile:                  metricEnabled,
-		ContainerMemoryPercent:                     metricEnabled,
-		ContainerMemoryPgfault:                     metricEnabled,
-		ContainerMemoryPgmajfault:                  metricEnabled,
-		ContainerMemoryPgpgin:                      metricEnabled,
-		ContainerMemoryPgpgout:                     metricEnabled,
-		ContainerMemoryRss:                         metricEnabled,
-		ContainerMemoryRssHuge:                     metricEnabled,
-		ContainerMemoryTotalActiveAnon:             metricEnabled,
-		ContainerMemoryTotalActiveFile:             metricEnabled,
-		ContainerMemoryTotalCache:                  metricEnabled,
-		ContainerMemoryTotalDirty:                  metricEnabled,
-		ContainerMemoryTotalInactiveAnon:           metricEnabled,
-		ContainerMemoryTotalInactiveFile:           metricEnabled,
-		ContainerMemoryTotalMappedFile:             metricEnabled,
-		ContainerMemoryTotalPgfault:                metricEnabled,
-		ContainerMemoryTotalPgmajfault:             metricEnabled,
-		ContainerMemoryTotalPgpgin:                 metricEnabled,
-		ContainerMemoryTotalPgpgout:                metricEnabled,
-		ContainerMemoryTotalRss:                    metricEnabled,
-		ContainerMemoryTotalRssHuge:                metricEnabled,
-		ContainerMemoryTotalUnevictable:            metricEnabled,
-		ContainerMemoryTotalWriteback:              metricEnabled,
-		ContainerMemoryUnevictable:                 metricEnabled,
-		ContainerMemoryUsageLimit:                  metricEnabled,
-		ContainerMemoryUsageMax:                    metricEnabled,
-		ContainerMemoryUsageTotal:                  metricEnabled,
-		ContainerMemoryWriteback:                   metricEnabled,
-		ContainerMemoryFails:                       metricEnabled,
-		ContainerNetworkIoUsageRxBytes:             metricEnabled,
-		ContainerNetworkIoUsageRxDropped:           metricEnabled,
-		ContainerNetworkIoUsageRxErrors:            metricEnabled,
-		ContainerNetworkIoUsageRxPackets:           metricEnabled,
-		ContainerNetworkIoUsageTxBytes:             metricEnabled,
-		ContainerNetworkIoUsageTxDropped:           metricEnabled,
-		ContainerNetworkIoUsageTxErrors:            metricEnabled,
-		ContainerNetworkIoUsageTxPackets:           metricEnabled,
-		ContainerPidsCount:                         metricEnabled,
-		ContainerPidsLimit:                         metricEnabled,
-		ContainerUptime:                            metricEnabled,
-		ContainerRestarts:                          metricEnabled,
-		ContainerMemoryAnon:                        metricEnabled,
-		ContainerMemoryFile:                        metricEnabled,
-	}
+	allMetricsEnabled = func() metadata.MetricsConfig {
+		cfg := metadata.DefaultMetricsConfig()
+		cfg.ContainerBlockioIoMergedRecursive.Enabled = true
+		cfg.ContainerBlockioIoQueuedRecursive.Enabled = true
+		cfg.ContainerBlockioIoServiceBytesRecursive.Enabled = true
+		cfg.ContainerBlockioIoServiceTimeRecursive.Enabled = true
+		cfg.ContainerBlockioIoServicedRecursive.Enabled = true
+		cfg.ContainerBlockioIoTimeRecursive.Enabled = true
+		cfg.ContainerBlockioIoWaitTimeRecursive.Enabled = true
+		cfg.ContainerBlockioSectorsRecursive.Enabled = true
+		cfg.ContainerCPULimit.Enabled = true
+		cfg.ContainerCPUShares.Enabled = true
+		cfg.ContainerCPUUtilization.Enabled = true
+		cfg.ContainerCPUThrottlingDataPeriods.Enabled = true
+		cfg.ContainerCPUThrottlingDataThrottledPeriods.Enabled = true
+		cfg.ContainerCPUThrottlingDataThrottledTime.Enabled = true
+		cfg.ContainerCPUUsageKernelmode.Enabled = true
+		cfg.ContainerCPUUsagePercpu.Enabled = true
+		cfg.ContainerCPUUsageSystem.Enabled = true
+		cfg.ContainerCPUUsageTotal.Enabled = true
+		cfg.ContainerCPUUsageUsermode.Enabled = true
+		cfg.ContainerCPULogicalCount.Enabled = true
+		cfg.ContainerMemoryActiveAnon.Enabled = true
+		cfg.ContainerMemoryActiveFile.Enabled = true
+		cfg.ContainerMemoryAnon.Enabled = true
+		cfg.ContainerMemoryCache.Enabled = true
+		cfg.ContainerMemoryDirty.Enabled = true
+		cfg.ContainerMemoryFails.Enabled = true
+		cfg.ContainerMemoryFile.Enabled = true
+		cfg.ContainerMemoryHierarchicalMemoryLimit.Enabled = true
+		cfg.ContainerMemoryHierarchicalMemswLimit.Enabled = true
+		cfg.ContainerMemoryInactiveAnon.Enabled = true
+		cfg.ContainerMemoryInactiveFile.Enabled = true
+		cfg.ContainerMemoryMappedFile.Enabled = true
+		cfg.ContainerMemoryPercent.Enabled = true
+		cfg.ContainerMemoryPgfault.Enabled = true
+		cfg.ContainerMemoryPgmajfault.Enabled = true
+		cfg.ContainerMemoryPgpgin.Enabled = true
+		cfg.ContainerMemoryPgpgout.Enabled = true
+		cfg.ContainerMemoryRss.Enabled = true
+		cfg.ContainerMemoryRssHuge.Enabled = true
+		cfg.ContainerMemoryTotalActiveAnon.Enabled = true
+		cfg.ContainerMemoryTotalActiveFile.Enabled = true
+		cfg.ContainerMemoryTotalCache.Enabled = true
+		cfg.ContainerMemoryTotalDirty.Enabled = true
+		cfg.ContainerMemoryTotalInactiveAnon.Enabled = true
+		cfg.ContainerMemoryTotalInactiveFile.Enabled = true
+		cfg.ContainerMemoryTotalMappedFile.Enabled = true
+		cfg.ContainerMemoryTotalPgfault.Enabled = true
+		cfg.ContainerMemoryTotalPgmajfault.Enabled = true
+		cfg.ContainerMemoryTotalPgpgin.Enabled = true
+		cfg.ContainerMemoryTotalPgpgout.Enabled = true
+		cfg.ContainerMemoryTotalRss.Enabled = true
+		cfg.ContainerMemoryTotalRssHuge.Enabled = true
+		cfg.ContainerMemoryTotalUnevictable.Enabled = true
+		cfg.ContainerMemoryTotalWriteback.Enabled = true
+		cfg.ContainerMemoryUnevictable.Enabled = true
+		cfg.ContainerMemoryUsageLimit.Enabled = true
+		cfg.ContainerMemoryUsageMax.Enabled = true
+		cfg.ContainerMemoryUsageTotal.Enabled = true
+		cfg.ContainerMemoryWriteback.Enabled = true
+		cfg.ContainerNetworkIoUsageRxBytes.Enabled = true
+		cfg.ContainerNetworkIoUsageRxDropped.Enabled = true
+		cfg.ContainerNetworkIoUsageRxErrors.Enabled = true
+		cfg.ContainerNetworkIoUsageRxPackets.Enabled = true
+		cfg.ContainerNetworkIoUsageTxBytes.Enabled = true
+		cfg.ContainerNetworkIoUsageTxDropped.Enabled = true
+		cfg.ContainerNetworkIoUsageTxErrors.Enabled = true
+		cfg.ContainerNetworkIoUsageTxPackets.Enabled = true
+		cfg.ContainerPidsCount.Enabled = true
+		cfg.ContainerPidsLimit.Enabled = true
+		cfg.ContainerRestarts.Enabled = true
+		cfg.ContainerUptime.Enabled = true
+		return cfg
+	}()
 
 	resourceAttributeEnabled     = metadata.ResourceAttributeConfig{Enabled: true}
 	allResourceAttributesEnabled = metadata.ResourceAttributesConfig{
@@ -375,11 +377,56 @@ func TestScrapeV2(t *testing.T) {
 	}
 }
 
+// TestScrapeV2Streaming verifies that with stream_stats enabled the scraper reads
+// stats from the persistent stream cache once the first frame has been delivered.
+func TestScrapeV2Streaming(t *testing.T) {
+	dockerAPIVersion := defaultDockerAPIVersion
+	containerID := "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326"
+	mockDockerEngine, err := dockerMockServer(&map[string]string{
+		"/v" + dockerAPIVersion + "/containers/json":                      filepath.Join(mockFolder, "single_container", "containers.json"),
+		"/v" + dockerAPIVersion + "/containers/" + containerID + "/json":  filepath.Join(mockFolder, "single_container", "container.json"),
+		"/v" + dockerAPIVersion + "/containers/" + containerID + "/stats": filepath.Join(mockFolder, "single_container", "stats.json"),
+	})
+	require.NoError(t, err)
+	defer mockDockerEngine.Close()
+
+	receiver := newMetricsReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		newTestConfigBuilder().
+			withDefaultLabels().
+			withMetrics(allMetricsEnabled).
+			withAPIVersion(dockerAPIVersion).
+			withStreamStats(true).
+			withEndpoint(mockDockerEngine.URL).build())
+
+	err = receiver.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, receiver.shutdown(t.Context())) }()
+
+	// Streaming goroutines deliver stats asynchronously; poll until the cache is populated.
+	var actualMetrics pmetric.Metrics
+	require.Eventually(t, func() bool {
+		var scrapeErr error
+		actualMetrics, scrapeErr = receiver.scrapeV2(t.Context())
+		return scrapeErr == nil && actualMetrics.ResourceMetrics().Len() > 0
+	}, 5*time.Second, 10*time.Millisecond, "timed out waiting for streaming container stats")
+
+	expectedMetrics, err := golden.ReadMetrics(filepath.Join(mockFolder, "single_container", "expected_metrics.yaml"))
+	require.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricValues("container.uptime"),
+	))
+}
+
 func TestRecordBaseMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics = metadata.MetricsConfig{
-		ContainerUptime: metricEnabled,
-	}
+	metricsConfig := metadata.DefaultMetricsConfig()
+	metricsConfig.ContainerUptime.Enabled = true
+	cfg.Metrics = metricsConfig
 	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	now := time.Now()
 	started := now.Add(-2 * time.Second).Format(time.RFC3339)
@@ -466,6 +513,11 @@ func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsConfig) *testConfigB
 
 func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesConfig) *testConfigBuilder {
 	cb.config.ResourceAttributes = ras
+	return cb
+}
+
+func (cb *testConfigBuilder) withStreamStats(enabled bool) *testConfigBuilder {
+	cb.config.StreamStats = enabled
 	return cb
 }
 

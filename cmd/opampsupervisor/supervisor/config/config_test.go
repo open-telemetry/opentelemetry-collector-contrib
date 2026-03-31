@@ -416,6 +416,57 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
+			name: "Valid instance_id (UUID)",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					InstanceID:              "018feed6-905b-7aa6-ba37-b0eec565de03",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+		},
+		{
+			name: "Invalid instance_id",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLS: tlsConfig,
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					InstanceID:              "not-a-valid-uuid",
+					OrphanDetectionInterval: 5 * time.Second,
+					ConfigApplyTimeout:      2 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedErrorFunc: simpleError("agent::instance_id must be a valid UUID string when set:"),
+		},
+		{
 			name: "Invalid special config file",
 			config: Supervisor{
 				Server: OpAMPServer{
@@ -653,6 +704,7 @@ agent:
 						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
+						ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,
@@ -742,6 +794,7 @@ telemetry:
 						BootstrapTimeout:        8 * time.Second,
 						OpAMPServerPort:         8090,
 						PassthroughLogs:         true,
+						ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
@@ -778,6 +831,7 @@ agent:
 						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
+						ValidateConfig:          DefaultSupervisor().Agent.ValidateConfig,
 					},
 					Telemetry:   DefaultSupervisor().Telemetry,
 					HealthCheck: DefaultSupervisor().HealthCheck,

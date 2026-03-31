@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -69,6 +69,31 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
 		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		return err
+	}
+
+	if kp.rules.ContainerImageTag {
+		kp.logger.Warn(
+			"[WARNING] container.image.tag is being renamed to container.image.tags per Semantic Conventions. " +
+				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+				"See processor README section 'Semantic Conventions Compatibility' for details.",
+		)
+	}
+	if len(kp.rules.Labels) > 0 {
+		kp.logger.Warn(
+			"[WARNING] Pod label extraction attributes are being renamed (e.g. k8s.pod.labels.<key> -> k8s.pod.label.<key>) per Semantic Conventions. " +
+				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+				"See processor README section 'Semantic Conventions Compatibility' for details.",
+		)
+	}
+	if len(kp.rules.Annotations) > 0 {
+		kp.logger.Warn(
+			"[WARNING] Pod annotation extraction attributes are being renamed (e.g. k8s.pod.annotations.<key> -> k8s.pod.annotation.<key>) per Semantic Conventions. " +
+				"Consider switching to the new schema by enabling the processor.k8sattributes.EmitV1K8sConventions and " +
+				"processor.k8sattributes.DontEmitV0K8sConventions feature gates. " +
+				"See processor README section 'Semantic Conventions Compatibility' for details.",
+		)
 	}
 
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)

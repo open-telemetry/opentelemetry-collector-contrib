@@ -7,6 +7,7 @@ internal/coreinternal
 pkg/ottl
 connector/routingconnector
 internal/pdatautil
+pkg/sampling
 connector/spanmetricsconnector
 internal/grpcutil
 internal/sharedcomponent
@@ -78,7 +79,6 @@ connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
-pkg/sampling
 connector/signaltometricsconnector
 connector/slowsqlconnector
 connector/sumconnector
@@ -132,7 +132,6 @@ exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
-exporter/sapmexporter
 exporter/sematextexporter
 exporter/sentryexporter
 extension/sumologicextension
@@ -206,6 +205,7 @@ internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
+pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
@@ -213,7 +213,6 @@ pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
-processor/datadogsemanticsprocessor
 processor/deltatorateprocessor
 processor/dnslookupprocessor
 processor/filterprocessor
@@ -248,6 +247,7 @@ receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
 receiver/azureeventhubreceiver
+receiver/azurefunctionsreceiver
 receiver/azuremonitorreceiver
 receiver/chronyreceiver
 receiver/ciscoosreceiver
@@ -278,7 +278,6 @@ receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
-receiver/k8slogreceiver
 receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver

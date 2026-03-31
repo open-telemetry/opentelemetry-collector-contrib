@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	gojson "github.com/goccy/go-json"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -17,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/passthroughnlb"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/proxynlb"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/vpcflowlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -592,6 +594,46 @@ func TestHandleProtoPayload(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, lr.Body().AsRaw(), tt.expectsBody)
+		})
+	}
+}
+
+func TestToSnakeCase(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		ignore   string
+		expected string
+	}{
+		{
+			name:     "k8s label key preserved",
+			input:    "labels.authorization.k8s.io/decision",
+			ignore:   ".",
+			expected: "labels.authorization.k8s.io/decision",
+		},
+		{
+			name:     "already snake_case unchanged",
+			input:    "already_snake",
+			ignore:   ".",
+			expected: "already_snake",
+		},
+		{
+			name:     "simple camelCase converted",
+			input:    "simpleLabel",
+			ignore:   ".",
+			expected: "simple_label",
+		},
+		{
+			name:     "h2c in lowercase preserved",
+			input:    "proxy.h2c.enabled",
+			ignore:   ".",
+			expected: "proxy.h2c.enabled",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := shared.ToSnakeCase(tt.input, tt.ignore)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

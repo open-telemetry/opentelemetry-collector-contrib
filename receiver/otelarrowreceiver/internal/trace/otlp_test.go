@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -105,7 +106,23 @@ func TestExport_ErrorConsumer(t *testing.T) {
 
 	traceClient, selfExp, selfProv := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := traceClient.Export(t.Context(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
+	// Non-permanent errors should be mapped to Unavailable (retryable), not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
+
+	// One self-tracing spans is issued.
+	require.NoError(t, selfProv.ForceFlush(t.Context()))
+	require.Len(t, selfExp.GetSpans(), 1)
+}
+
+func TestExport_PermanentErrorConsumer(t *testing.T) {
+	td := testdata.GenerateTraces(1)
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	traceClient, selfExp, selfProv := makeTraceServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("bad data"))))
+	resp, err := traceClient.Export(t.Context(), req)
+	// Permanent errors should be mapped to Internal, not Unknown.
+	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: bad data")
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 
 	// One self-tracing spans is issued.
