@@ -239,11 +239,11 @@ func TestK8sHintsBuilderLogs(t *testing.T) {
 	logger := zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))
 
 	id := component.ID{}
-	err := id.UnmarshalText([]byte("filelog/pod-2-UID_redis"))
+	err := id.UnmarshalText([]byte("file_log/pod-2-UID_redis"))
 	assert.NoError(t, err)
 
 	idNginx := component.ID{}
-	err = idNginx.UnmarshalText([]byte("filelog/pod-2-UID_nginx"))
+	err = idNginx.UnmarshalText([]byte("file_log/pod-2-UID_nginx"))
 	assert.NoError(t, err)
 
 	config := `

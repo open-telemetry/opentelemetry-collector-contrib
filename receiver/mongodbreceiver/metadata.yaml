@@ -1,4 +1,11 @@
+display_name: MongoDB Receiver
 type: mongodb
+reaggregation_enabled: true
+
+description: |
+  This receiver fetches stats from a MongoDB instance using the 
+  [golang mongo driver](https://github.com/mongodb/mongo-go-driver). Stats are collected via MongoDB's `dbStats` and
+  `serverStatus` commands.
 
 status:
   class: receiver
@@ -27,10 +34,12 @@ attributes:
   collection:
     description: The name of a collection.
     type: string
+    requirement_level: recommended
   connection_type:
     name_override: type
     description: The status of the connection.
     type: string
+    requirement_level: recommended
     enum:
       - active
       - available
@@ -38,9 +47,11 @@ attributes:
   db.namespace:
     description: The name of a database.
     type: string
+    requirement_level: recommended
   lock_mode:
     description: The mode of Lock which denotes the degree of access
     type: string
+    requirement_level: recommended
     enum:
       - shared
       - exclusive
@@ -50,6 +61,7 @@ attributes:
   lock_type:
     description: The Resource over which the Lock controls access
     type: string
+    requirement_level: recommended
     enum:
       - parallel_batch_write_mode
       - replication_state_transition
@@ -63,12 +75,14 @@ attributes:
     name_override: type
     description: The type of memory used.
     type: string
+    requirement_level: recommended
     enum:
       - resident
       - virtual
   operation:
     description: The MongoDB operation being counted.
     type: string
+    requirement_level: recommended
     enum:
       - insert
       - query
@@ -80,6 +94,7 @@ attributes:
     name_override: operation
     description: The MongoDB operation with regards to latency
     type: string
+    requirement_level: recommended
     enum:
       - read
       - write
@@ -87,6 +102,7 @@ attributes:
   type:
     description: The result of a cache request.
     type: string
+    requirement_level: recommended
     enum:
       - hit
       - miss

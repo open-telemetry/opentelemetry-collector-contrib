@@ -1,4 +1,9 @@
+display_name: Simple Prometheus Receiver
 type: prometheus_simple
+
+description: |
+  This receiver provides a simple configuration interface to configure the
+  prometheus receiver to scrape metrics from a single target.
 
 status:
   class: receiver

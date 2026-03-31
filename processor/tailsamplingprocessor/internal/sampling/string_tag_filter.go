@@ -151,6 +151,10 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 	), nil
 }
 
+func (*stringAttributeFilter) IsStateful() bool {
+	return false
+}
+
 // addFilters compiles all the given filters and stores them as regexes.
 // All regexes are automatically anchored to enforce full string matches.
 func addFilters(exprs []string) ([]*regexp.Regexp, error) {

@@ -121,7 +121,7 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
-  filelog:
+  file_log:
     include: [ %s ]
     start_at: beginning
     operators:
@@ -138,7 +138,7 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
 }
 
 func (*FileLogWriter) ProtocolName() string {
-	return "filelog"
+	return "file_log"
 }
 
 func (*FileLogWriter) GetEndpoint() net.Addr {

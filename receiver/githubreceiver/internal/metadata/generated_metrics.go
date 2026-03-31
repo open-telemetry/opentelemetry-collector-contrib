@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -11,6 +12,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeVcsChangeState specifies the value vcs.change.state attribute.
@@ -220,9 +228,10 @@ type metricInfo struct {
 }
 
 type metricVcsChangeCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric             // data buffer for generated metric.
+	config        VcsChangeCountMetricConfig // metric config provided by user.
+	capacity      int                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.change.count metric with initial data.
@@ -232,19 +241,54 @@ func (m *metricVcsChangeCount) init() {
 	m.data.SetUnit("{change}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsChangeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsChangeStateAttributeValue string, vcsRepositoryNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeCountMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeCountMetricAttributeKeyVcsChangeState) {
+		dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeCountMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -257,13 +301,18 @@ func (m *metricVcsChangeCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsChangeCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsChangeCount(cfg MetricConfig) metricVcsChangeCount {
+func newMetricVcsChangeCount(cfg VcsChangeCountMetricConfig) metricVcsChangeCount {
 	m := metricVcsChangeCount{config: cfg}
 
 	if cfg.Enabled {
@@ -274,9 +323,10 @@ func newMetricVcsChangeCount(cfg MetricConfig) metricVcsChangeCount {
 }
 
 type metricVcsChangeDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        VcsChangeDurationMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.change.duration metric with initial data.
@@ -286,20 +336,57 @@ func (m *metricVcsChangeDuration) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsChangeDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsChangeStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeDurationMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeDurationMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeDurationMetricAttributeKeyVcsRefHeadName) {
+		dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeDurationMetricAttributeKeyVcsChangeState) {
+		dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
-	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -312,13 +399,18 @@ func (m *metricVcsChangeDuration) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsChangeDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsChangeDuration(cfg MetricConfig) metricVcsChangeDuration {
+func newMetricVcsChangeDuration(cfg VcsChangeDurationMetricConfig) metricVcsChangeDuration {
 	m := metricVcsChangeDuration{config: cfg}
 
 	if cfg.Enabled {
@@ -329,9 +421,10 @@ func newMetricVcsChangeDuration(cfg MetricConfig) metricVcsChangeDuration {
 }
 
 type metricVcsChangeTimeToApproval struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        VcsChangeTimeToApprovalMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.change.time_to_approval metric with initial data.
@@ -341,19 +434,54 @@ func (m *metricVcsChangeTimeToApproval) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsChangeTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeTimeToApprovalMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeTimeToApprovalMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeTimeToApprovalMetricAttributeKeyVcsRefHeadName) {
+		dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -366,13 +494,18 @@ func (m *metricVcsChangeTimeToApproval) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsChangeTimeToApproval) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsChangeTimeToApproval(cfg MetricConfig) metricVcsChangeTimeToApproval {
+func newMetricVcsChangeTimeToApproval(cfg VcsChangeTimeToApprovalMetricConfig) metricVcsChangeTimeToApproval {
 	m := metricVcsChangeTimeToApproval{config: cfg}
 
 	if cfg.Enabled {
@@ -383,9 +516,10 @@ func newMetricVcsChangeTimeToApproval(cfg MetricConfig) metricVcsChangeTimeToApp
 }
 
 type metricVcsChangeTimeToMerge struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        VcsChangeTimeToMergeMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.change.time_to_merge metric with initial data.
@@ -395,19 +529,54 @@ func (m *metricVcsChangeTimeToMerge) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsChangeTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeTimeToMergeMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeTimeToMergeMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsChangeTimeToMergeMetricAttributeKeyVcsRefHeadName) {
+		dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -420,13 +589,18 @@ func (m *metricVcsChangeTimeToMerge) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsChangeTimeToMerge) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsChangeTimeToMerge(cfg MetricConfig) metricVcsChangeTimeToMerge {
+func newMetricVcsChangeTimeToMerge(cfg VcsChangeTimeToMergeMetricConfig) metricVcsChangeTimeToMerge {
 	m := metricVcsChangeTimeToMerge{config: cfg}
 
 	if cfg.Enabled {
@@ -437,9 +611,10 @@ func newMetricVcsChangeTimeToMerge(cfg MetricConfig) metricVcsChangeTimeToMerge 
 }
 
 type metricVcsContributorCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        VcsContributorCountMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.contributor.count metric with initial data.
@@ -449,18 +624,51 @@ func (m *metricVcsContributorCount) init() {
 	m.data.SetUnit("{contributor}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsContributorCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsContributorCountMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsContributorCountMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -473,13 +681,18 @@ func (m *metricVcsContributorCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsContributorCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsContributorCount(cfg MetricConfig) metricVcsContributorCount {
+func newMetricVcsContributorCount(cfg VcsContributorCountMetricConfig) metricVcsContributorCount {
 	m := metricVcsContributorCount{config: cfg}
 
 	if cfg.Enabled {
@@ -490,9 +703,10 @@ func newMetricVcsContributorCount(cfg MetricConfig) metricVcsContributorCount {
 }
 
 type metricVcsRefCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric          // data buffer for generated metric.
+	config        VcsRefCountMetricConfig // metric config provided by user.
+	capacity      int                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.ref.count metric with initial data.
@@ -502,19 +716,54 @@ func (m *metricVcsRefCount) init() {
 	m.data.SetUnit("{ref}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsRefCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsRefCountMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefCountMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefCountMetricAttributeKeyVcsRefType) {
+		dp.Attributes().PutStr("vcs.ref.type", vcsRefTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.type", vcsRefTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -527,13 +776,18 @@ func (m *metricVcsRefCount) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsRefCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsRefCount(cfg MetricConfig) metricVcsRefCount {
+func newMetricVcsRefCount(cfg VcsRefCountMetricConfig) metricVcsRefCount {
 	m := metricVcsRefCount{config: cfg}
 
 	if cfg.Enabled {
@@ -544,9 +798,10 @@ func newMetricVcsRefCount(cfg MetricConfig) metricVcsRefCount {
 }
 
 type metricVcsRefLinesDelta struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        VcsRefLinesDeltaMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.ref.lines_delta metric with initial data.
@@ -556,23 +811,66 @@ func (m *metricVcsRefLinesDelta) init() {
 	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsRefLinesDelta) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string, vcsRefBaseNameAttributeValue string, vcsRefBaseTypeAttributeValue string, vcsLineChangeTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsRefLinesDeltaMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefLinesDeltaMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefLinesDeltaMetricAttributeKeyVcsRefHeadName) {
+		dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefLinesDeltaMetricAttributeKeyVcsRefHeadType) {
+		dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefLinesDeltaMetricAttributeKeyVcsRefBaseName) {
+		dp.Attributes().PutStr("vcs.ref.base.name", vcsRefBaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefLinesDeltaMetricAttributeKeyVcsRefBaseType) {
+		dp.Attributes().PutStr("vcs.ref.base.type", vcsRefBaseTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefLinesDeltaMetricAttributeKeyVcsLineChangeType) {
+		dp.Attributes().PutStr("vcs.line_change.type", vcsLineChangeTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.base.name", vcsRefBaseNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.base.type", vcsRefBaseTypeAttributeValue)
-	dp.Attributes().PutStr("vcs.line_change.type", vcsLineChangeTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -585,13 +883,18 @@ func (m *metricVcsRefLinesDelta) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsRefLinesDelta) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsRefLinesDelta(cfg MetricConfig) metricVcsRefLinesDelta {
+func newMetricVcsRefLinesDelta(cfg VcsRefLinesDeltaMetricConfig) metricVcsRefLinesDelta {
 	m := metricVcsRefLinesDelta{config: cfg}
 
 	if cfg.Enabled {
@@ -602,9 +905,10 @@ func newMetricVcsRefLinesDelta(cfg MetricConfig) metricVcsRefLinesDelta {
 }
 
 type metricVcsRefRevisionsDelta struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        VcsRefRevisionsDeltaMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.ref.revisions_delta metric with initial data.
@@ -614,23 +918,66 @@ func (m *metricVcsRefRevisionsDelta) init() {
 	m.data.SetUnit("{revision}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsRefRevisionsDelta) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string, vcsRefBaseNameAttributeValue string, vcsRefBaseTypeAttributeValue string, vcsRevisionDeltaDirectionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsRefRevisionsDeltaMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefRevisionsDeltaMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefRevisionsDeltaMetricAttributeKeyVcsRefHeadName) {
+		dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefRevisionsDeltaMetricAttributeKeyVcsRefHeadType) {
+		dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefRevisionsDeltaMetricAttributeKeyVcsRefBaseName) {
+		dp.Attributes().PutStr("vcs.ref.base.name", vcsRefBaseNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefRevisionsDeltaMetricAttributeKeyVcsRefBaseType) {
+		dp.Attributes().PutStr("vcs.ref.base.type", vcsRefBaseTypeAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefRevisionsDeltaMetricAttributeKeyVcsRevisionDeltaDirection) {
+		dp.Attributes().PutStr("vcs.revision_delta.direction", vcsRevisionDeltaDirectionAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.base.name", vcsRefBaseNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.base.type", vcsRefBaseTypeAttributeValue)
-	dp.Attributes().PutStr("vcs.revision_delta.direction", vcsRevisionDeltaDirectionAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -643,13 +990,18 @@ func (m *metricVcsRefRevisionsDelta) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsRefRevisionsDelta) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsRefRevisionsDelta(cfg MetricConfig) metricVcsRefRevisionsDelta {
+func newMetricVcsRefRevisionsDelta(cfg VcsRefRevisionsDeltaMetricConfig) metricVcsRefRevisionsDelta {
 	m := metricVcsRefRevisionsDelta{config: cfg}
 
 	if cfg.Enabled {
@@ -660,9 +1012,10 @@ func newMetricVcsRefRevisionsDelta(cfg MetricConfig) metricVcsRefRevisionsDelta 
 }
 
 type metricVcsRefTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric         // data buffer for generated metric.
+	config        VcsRefTimeMetricConfig // metric config provided by user.
+	capacity      int                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills vcs.ref.time metric with initial data.
@@ -672,20 +1025,57 @@ func (m *metricVcsRefTime) init() {
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricVcsRefTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, VcsRefTimeMetricAttributeKeyVcsRepositoryURLFull) {
+		dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefTimeMetricAttributeKeyVcsRepositoryName) {
+		dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefTimeMetricAttributeKeyVcsRefHeadName) {
+		dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	}
+	if slices.Contains(m.config.EnabledAttributes, VcsRefTimeMetricAttributeKeyVcsRefHeadType) {
+		dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -698,13 +1088,18 @@ func (m *metricVcsRefTime) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcsRefTime) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricVcsRefTime(cfg MetricConfig) metricVcsRefTime {
+func newMetricVcsRefTime(cfg VcsRefTimeMetricConfig) metricVcsRefTime {
 	m := metricVcsRefTime{config: cfg}
 
 	if cfg.Enabled {
@@ -715,9 +1110,9 @@ func newMetricVcsRefTime(cfg MetricConfig) metricVcsRefTime {
 }
 
 type metricVcsRepositoryCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   VcsRepositoryCountMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills vcs.repository.count metric with initial data.
@@ -754,7 +1149,7 @@ func (m *metricVcsRepositoryCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricVcsRepositoryCount(cfg MetricConfig) metricVcsRepositoryCount {
+func newMetricVcsRepositoryCount(cfg VcsRepositoryCountMetricConfig) metricVcsRepositoryCount {
 	m := metricVcsRepositoryCount{config: cfg}
 
 	if cfg.Enabled {

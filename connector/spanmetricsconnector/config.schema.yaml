@@ -80,6 +80,9 @@ properties:
   dimensions_cache_size:
     description: 'DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing indefinitely over the lifetime of the collector. Optional. See defaultDimensionsCacheSize in connector.go for the default value. Deprecated [v0.130.0]:  Please use AggregationCardinalityLimit instead'
     type: integer
+  enable_metrics_sampling_method:
+    description: EnableMetricsSamplingMethod adds the sampling.method attribute ("extrapolated" or "counted") to metrics. When false (default), the attribute is not added.
+    type: boolean
   events:
     description: Events defines the configuration for events section of spans.
     $ref: events_config

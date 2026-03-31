@@ -26,22 +26,72 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NfsClientNetCount:                 MetricConfig{Enabled: true},
-					NfsClientNetTCPConnectionAccepted: MetricConfig{Enabled: true},
-					NfsClientOperationCount:           MetricConfig{Enabled: true},
-					NfsClientProcedureCount:           MetricConfig{Enabled: true},
-					NfsClientRPCAuthrefreshCount:      MetricConfig{Enabled: true},
-					NfsClientRPCCount:                 MetricConfig{Enabled: true},
-					NfsClientRPCRetransmitCount:       MetricConfig{Enabled: true},
-					NfsServerFhStaleCount:             MetricConfig{Enabled: true},
-					NfsServerIo:                       MetricConfig{Enabled: true},
-					NfsServerNetCount:                 MetricConfig{Enabled: true},
-					NfsServerNetTCPConnectionAccepted: MetricConfig{Enabled: true},
-					NfsServerOperationCount:           MetricConfig{Enabled: true},
-					NfsServerProcedureCount:           MetricConfig{Enabled: true},
-					NfsServerRepcacheRequests:         MetricConfig{Enabled: true},
-					NfsServerRPCCount:                 MetricConfig{Enabled: true},
-					NfsServerThreadCount:              MetricConfig{Enabled: true},
+					NfsClientNetCount: NfsClientNetCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsClientNetCountMetricAttributeKey{NfsClientNetCountMetricAttributeKeyNetworkTransport},
+					},
+					NfsClientNetTCPConnectionAccepted: NfsClientNetTCPConnectionAcceptedMetricConfig{
+						Enabled: true,
+					},
+					NfsClientOperationCount: NfsClientOperationCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsClientOperationCountMetricAttributeKey{NfsClientOperationCountMetricAttributeKeyOncRPCVersion, NfsClientOperationCountMetricAttributeKeyNfsOperationName},
+					},
+					NfsClientProcedureCount: NfsClientProcedureCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsClientProcedureCountMetricAttributeKey{NfsClientProcedureCountMetricAttributeKeyOncRPCVersion, NfsClientProcedureCountMetricAttributeKeyOncRPCProcedureName},
+					},
+					NfsClientRPCAuthrefreshCount: NfsClientRPCAuthrefreshCountMetricConfig{
+						Enabled: true,
+					},
+					NfsClientRPCCount: NfsClientRPCCountMetricConfig{
+						Enabled: true,
+					},
+					NfsClientRPCRetransmitCount: NfsClientRPCRetransmitCountMetricConfig{
+						Enabled: true,
+					},
+					NfsServerFhStaleCount: NfsServerFhStaleCountMetricConfig{
+						Enabled: true,
+					},
+					NfsServerIo: NfsServerIoMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerIoMetricAttributeKey{NfsServerIoMetricAttributeKeyNetworkIoDirection},
+					},
+					NfsServerNetCount: NfsServerNetCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerNetCountMetricAttributeKey{NfsServerNetCountMetricAttributeKeyNetworkTransport},
+					},
+					NfsServerNetTCPConnectionAccepted: NfsServerNetTCPConnectionAcceptedMetricConfig{
+						Enabled: true,
+					},
+					NfsServerOperationCount: NfsServerOperationCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerOperationCountMetricAttributeKey{NfsServerOperationCountMetricAttributeKeyOncRPCVersion, NfsServerOperationCountMetricAttributeKeyNfsOperationName},
+					},
+					NfsServerProcedureCount: NfsServerProcedureCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerProcedureCountMetricAttributeKey{NfsServerProcedureCountMetricAttributeKeyOncRPCVersion, NfsServerProcedureCountMetricAttributeKeyOncRPCProcedureName},
+					},
+					NfsServerRepcacheRequests: NfsServerRepcacheRequestsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerRepcacheRequestsMetricAttributeKey{NfsServerRepcacheRequestsMetricAttributeKeyNfsServerRepcacheStatus},
+					},
+					NfsServerRPCCount: NfsServerRPCCountMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerRPCCountMetricAttributeKey{NfsServerRPCCountMetricAttributeKeyErrorType},
+					},
+					NfsServerThreadCount: NfsServerThreadCountMetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -49,22 +99,72 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					NfsClientNetCount:                 MetricConfig{Enabled: false},
-					NfsClientNetTCPConnectionAccepted: MetricConfig{Enabled: false},
-					NfsClientOperationCount:           MetricConfig{Enabled: false},
-					NfsClientProcedureCount:           MetricConfig{Enabled: false},
-					NfsClientRPCAuthrefreshCount:      MetricConfig{Enabled: false},
-					NfsClientRPCCount:                 MetricConfig{Enabled: false},
-					NfsClientRPCRetransmitCount:       MetricConfig{Enabled: false},
-					NfsServerFhStaleCount:             MetricConfig{Enabled: false},
-					NfsServerIo:                       MetricConfig{Enabled: false},
-					NfsServerNetCount:                 MetricConfig{Enabled: false},
-					NfsServerNetTCPConnectionAccepted: MetricConfig{Enabled: false},
-					NfsServerOperationCount:           MetricConfig{Enabled: false},
-					NfsServerProcedureCount:           MetricConfig{Enabled: false},
-					NfsServerRepcacheRequests:         MetricConfig{Enabled: false},
-					NfsServerRPCCount:                 MetricConfig{Enabled: false},
-					NfsServerThreadCount:              MetricConfig{Enabled: false},
+					NfsClientNetCount: NfsClientNetCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsClientNetCountMetricAttributeKey{NfsClientNetCountMetricAttributeKeyNetworkTransport},
+					},
+					NfsClientNetTCPConnectionAccepted: NfsClientNetTCPConnectionAcceptedMetricConfig{
+						Enabled: false,
+					},
+					NfsClientOperationCount: NfsClientOperationCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsClientOperationCountMetricAttributeKey{NfsClientOperationCountMetricAttributeKeyOncRPCVersion, NfsClientOperationCountMetricAttributeKeyNfsOperationName},
+					},
+					NfsClientProcedureCount: NfsClientProcedureCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsClientProcedureCountMetricAttributeKey{NfsClientProcedureCountMetricAttributeKeyOncRPCVersion, NfsClientProcedureCountMetricAttributeKeyOncRPCProcedureName},
+					},
+					NfsClientRPCAuthrefreshCount: NfsClientRPCAuthrefreshCountMetricConfig{
+						Enabled: false,
+					},
+					NfsClientRPCCount: NfsClientRPCCountMetricConfig{
+						Enabled: false,
+					},
+					NfsClientRPCRetransmitCount: NfsClientRPCRetransmitCountMetricConfig{
+						Enabled: false,
+					},
+					NfsServerFhStaleCount: NfsServerFhStaleCountMetricConfig{
+						Enabled: false,
+					},
+					NfsServerIo: NfsServerIoMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerIoMetricAttributeKey{NfsServerIoMetricAttributeKeyNetworkIoDirection},
+					},
+					NfsServerNetCount: NfsServerNetCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerNetCountMetricAttributeKey{NfsServerNetCountMetricAttributeKeyNetworkTransport},
+					},
+					NfsServerNetTCPConnectionAccepted: NfsServerNetTCPConnectionAcceptedMetricConfig{
+						Enabled: false,
+					},
+					NfsServerOperationCount: NfsServerOperationCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerOperationCountMetricAttributeKey{NfsServerOperationCountMetricAttributeKeyOncRPCVersion, NfsServerOperationCountMetricAttributeKeyNfsOperationName},
+					},
+					NfsServerProcedureCount: NfsServerProcedureCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerProcedureCountMetricAttributeKey{NfsServerProcedureCountMetricAttributeKeyOncRPCVersion, NfsServerProcedureCountMetricAttributeKeyOncRPCProcedureName},
+					},
+					NfsServerRepcacheRequests: NfsServerRepcacheRequestsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerRepcacheRequestsMetricAttributeKey{NfsServerRepcacheRequestsMetricAttributeKeyNfsServerRepcacheStatus},
+					},
+					NfsServerRPCCount: NfsServerRPCCountMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []NfsServerRPCCountMetricAttributeKey{NfsServerRPCCountMetricAttributeKeyErrorType},
+					},
+					NfsServerThreadCount: NfsServerThreadCountMetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -72,7 +172,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(NfsClientNetCountMetricConfig{}, NfsClientNetTCPConnectionAcceptedMetricConfig{}, NfsClientOperationCountMetricConfig{}, NfsClientProcedureCountMetricConfig{}, NfsClientRPCAuthrefreshCountMetricConfig{}, NfsClientRPCCountMetricConfig{}, NfsClientRPCRetransmitCountMetricConfig{}, NfsServerFhStaleCountMetricConfig{}, NfsServerIoMetricConfig{}, NfsServerNetCountMetricConfig{}, NfsServerNetTCPConnectionAcceptedMetricConfig{}, NfsServerOperationCountMetricConfig{}, NfsServerProcedureCountMetricConfig{}, NfsServerRepcacheRequestsMetricConfig{}, NfsServerRPCCountMetricConfig{}, NfsServerThreadCountMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

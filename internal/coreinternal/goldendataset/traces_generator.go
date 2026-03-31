@@ -5,12 +5,15 @@ package goldendataset // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand/v2"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/internal/metadata"
 )
 
 // GenerateTraces generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise
@@ -18,6 +21,9 @@ import (
 // spans for defined in the file specified by the spanPairsFile parameter.
 // The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
 func GenerateTraces(tracePairsFile, spanPairsFile string) ([]ptrace.Traces, error) {
+	if metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
+		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0NetworkConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1NetworkConventions")
+	}
 	random := (*randReader)(rand.New(rand.NewPCG(42, 0)))
 	pairsData, err := loadPictOutputFile(tracePairsFile)
 	if err != nil {

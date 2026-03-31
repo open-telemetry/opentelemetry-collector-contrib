@@ -18,6 +18,7 @@ import (
 	"sync"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -227,11 +228,22 @@ func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
-func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
-	var traces pb.Traces
-	for _, p := range payload.GetChunks() {
-		traces = append(traces, p.GetSpans())
+func traceChunkSamplingPriority(traceChunk *pb.TraceChunk) (float64, bool) {
+	if traceChunk == nil {
+		return 0, false
 	}
+	if traceChunk.Priority != int32(ddsampler.PriorityNone) {
+		return float64(traceChunk.Priority), true
+	}
+	for _, span := range traceChunk.GetSpans() {
+		if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
+			return samplingPriority, true
+		}
+	}
+	return 0, false
+}
+
+func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
 		string(conventions.ContainerIDKey):               payload.ContainerID,
@@ -262,11 +274,15 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	// now instead of being a span level attribute.
 	groupByService := make(map[string]ptrace.SpanSlice)
 
-	for _, trace := range traces {
-		for _, span := range trace {
+	for _, traceChunk := range payload.GetChunks() {
+		samplingPriority, hasSamplingPriority := traceChunkSamplingPriority(traceChunk)
+		for _, span := range traceChunk.GetSpans() {
 			// Restore base service name as the service name.
 			// Without this, internal spans such as postgresql queries have a service.name set to postgresql
 			if val, ok := span.Meta["_dd.base_service"]; ok {
+				// Preserve original per-span service name so the DD exporter
+				// can recover it via span-level service.name precedence
+				span.Meta["service.name"] = span.Service
 				span.Service = val
 			}
 			slice, exist := groupByService[span.Service]
@@ -297,7 +313,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
-			if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
+			if hasSamplingPriority {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
 			}
 			if span.Error > 0 {
@@ -572,7 +588,7 @@ func traceChunksFromSpans(spans []pb.Span) []*pb.TraceChunk {
 	}
 	for _, t := range byID {
 		traceChunks = append(traceChunks, &pb.TraceChunk{
-			Priority: int32(0),
+			Priority: int32(ddsampler.PriorityNone),
 			Spans:    t,
 		})
 	}
@@ -583,7 +599,7 @@ func traceChunksFromTraces(traces pb.Traces) []*pb.TraceChunk {
 	traceChunks := make([]*pb.TraceChunk, 0, len(traces))
 	for _, trace := range traces {
 		traceChunks = append(traceChunks, &pb.TraceChunk{
-			Priority: int32(0),
+			Priority: int32(ddsampler.PriorityNone),
 			Spans:    trace,
 		})
 	}
