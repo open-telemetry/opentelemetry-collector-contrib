@@ -119,7 +119,7 @@ jobs:
         with:
           go-version: oldstable
       - name: Run `govulncheck`
-        run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
+        run: make gogovulncheck GROUP=${{ matrix.group }}
       - run: ./.github/workflows/scripts/check-disk-space.sh
   checks:
     runs-on: ubuntu-24.04
@@ -222,7 +222,7 @@ jobs:
         with:
           go-version: oldstable
       - name: Cache Test Build
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
@@ -288,12 +288,12 @@ jobs:
     needs: [unittest]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -477,7 +477,7 @@ jobs:
           sparse-checkout: |
             .github/workflows/scripts/verify-dist-files-exist.sh
       - name: Download Binaries
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           merge-multiple: true
           path: ./bin/
@@ -616,7 +616,7 @@ jobs:
       - uses: ./.github/actions/setup-go-tools
         with:
           go-version: oldstable
-      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           merge-multiple: true
           pattern: test-results-*

@@ -328,9 +328,9 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	}()
 
 	// Track the number of concurrent calls to SendMetadata
-	var callCount int32
-	var maxConcurrentCalls int32
-	var currentConcurrentCalls int32
+	var callCount atomic.Int32
+	var maxConcurrentCalls atomic.Int32
+	var currentConcurrentCalls atomic.Int32
 
 	core, _ := observer.New(zapcore.InfoLevel)
 	logger := zap.New(core)
@@ -338,12 +338,12 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	serializer := &mockSerializer{
 		sendMetadataFunc: func(any) error {
 			// Increment current concurrent calls
-			current := atomic.AddInt32(&currentConcurrentCalls, 1)
+			current := currentConcurrentCalls.Add(1)
 
 			// Update max if this is higher
 			for {
-				maxVal := atomic.LoadInt32(&maxConcurrentCalls)
-				if current <= maxVal || atomic.CompareAndSwapInt32(&maxConcurrentCalls, maxVal, current) {
+				maxVal := maxConcurrentCalls.Load()
+				if current <= maxVal || maxConcurrentCalls.CompareAndSwap(maxVal, current) {
 					break
 				}
 			}
@@ -352,8 +352,8 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 
 			// Decrement current concurrent calls and increment total call count
-			atomic.AddInt32(&currentConcurrentCalls, -1)
-			atomic.AddInt32(&callCount, 1)
+			currentConcurrentCalls.Add(-1)
+			callCount.Add(1)
 
 			return nil
 		},
@@ -400,10 +400,10 @@ func TestHandleMetadataConcurrency(t *testing.T) {
 	}
 
 	// Verify the expected number of serializer calls were made
-	assert.Equal(t, int32(numRequests), atomic.LoadInt32(&callCount), "Should have made %d serializer calls", numRequests)
+	assert.Equal(t, int32(numRequests), callCount.Load(), "Should have made %d serializer calls", numRequests)
 
 	// Log the maximum concurrent calls for debugging
-	t.Logf("Maximum concurrent calls to SendMetadata: %d", atomic.LoadInt32(&maxConcurrentCalls))
+	t.Logf("Maximum concurrent calls to SendMetadata: %d", maxConcurrentCalls.Load())
 
 	// Note: This test verifies that concurrent calls don't crash or deadlock,
 	// but it doesn't guarantee thread safety of the underlying serializer.

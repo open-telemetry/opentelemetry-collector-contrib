@@ -18,6 +18,7 @@ type MappingHint string
 const (
 	HintAggregateMetricDouble MappingHint = "aggregate_metric_double"
 	HintDocCount              MappingHint = "_doc_count"
+	HintHistogramRaw          MappingHint = "histogram:raw"
 )
 
 type MappingHintGetter struct {

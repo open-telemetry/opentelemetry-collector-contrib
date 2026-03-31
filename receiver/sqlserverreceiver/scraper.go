@@ -17,7 +17,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -36,16 +35,6 @@ const (
 	computerNameKey = "computer_name"
 	databaseNameKey = "database_name"
 	instanceNameKey = "sql_instance"
-)
-
-const removeServerResourceAttributeFeatureGateID = "receiver.sqlserver.RemoveServerResourceAttribute"
-
-var removeServerResourceAttributeFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	removeServerResourceAttributeFeatureGateID,
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.129.0"),
-	featuregate.WithRegisterDescription("When enabled, the server.address and server.port resource attributes are removed from metrics."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/40141"),
 )
 
 type sqlServerScraperHelper struct {
@@ -192,7 +181,7 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetHostName(hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 
-	if !removeServerResourceAttributeFeatureGate.IsEnabled() {
+	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
 		rb.SetServerAddress(serverAddress)
 		rb.SetServerPort(serverPort)
 	}
