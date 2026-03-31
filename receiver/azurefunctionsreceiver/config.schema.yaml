@@ -5,12 +5,14 @@ $defs:
     properties:
       encoding:
         description: Encoding identifies the encoding of log records that triggered azure functions.
+        x-pointer: true
         type: string
         x-customType: go.opentelemetry.io/collector/component.ID
 type: object
 properties:
   auth:
     description: Auth is the component.ID of the extension that provides Azure authentication
+    x-pointer: true
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
   http:
