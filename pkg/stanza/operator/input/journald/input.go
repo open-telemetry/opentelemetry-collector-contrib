@@ -30,12 +30,12 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister            operator.Persister
-	convertMessageBytes  bool
-	enableOtelAttributes bool
-	cancel               context.CancelFunc
-	wg                   sync.WaitGroup
-	errChan              chan error
+	persister                    operator.Persister
+	convertMessageBytes          bool
+	ConvertToSemanticConventions bool
+	cancel                       context.CancelFunc
+	wg                           sync.WaitGroup
+	errChan                      chan error
 }
 
 type cmd interface {
@@ -250,7 +250,7 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 	}
 
 	var e *entry.Entry
-	if operator.enableOtelAttributes {
+	if operator.ConvertToSemanticConventions {
 		e, err = operator.NewEntry(nil)
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to create entry: %w", err)

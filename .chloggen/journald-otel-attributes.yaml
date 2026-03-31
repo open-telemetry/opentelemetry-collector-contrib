@@ -2,12 +2,12 @@ change_type: enhancement
 
 component: receiver/journald
 
-note: Add "enable_otel_attributes" config option to map well-known journald fields to OpenTelemetry semantic convention attributes
+note: Add "convert_to_semantic_conventions" config option to map well-known journald fields to OpenTelemetry semantic convention attributes
 
 issues: [7298]
 
 subtext: |
-  When `enable_otel_attributes: true` is set, the journald receiver maps well-known
+  When `convert_to_semantic_conventions: true` is set, the journald receiver maps well-known
   systemd journal fields to their OpenTelemetry semantic convention equivalents instead
   of placing the entire raw journal record in the log body:
 

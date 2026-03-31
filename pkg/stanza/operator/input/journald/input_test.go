@@ -406,7 +406,7 @@ func TestConfigValidation(t *testing.T) {
 func TestInputJournaldOtelAttributes(t *testing.T) {
 	cfg := NewConfigWithID("my_journald_input")
 	cfg.OutputIDs = []string{"output"}
-	cfg.EnableOtelAttributes = true
+	cfg.ConvertToSemanticConventions = true
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -492,7 +492,7 @@ func TestInputJournaldOtelAttributes_EmergencyPriority(t *testing.T) {
 	const line = `{"MESSAGE":"system crash","PRIORITY":"0","_HOSTNAME":"box","_PID":"1","_COMM":"init","_EXE":"/sbin/init","_CMDLINE":"/sbin/init","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
 
 	cfg := NewConfigWithID("my_journald_input")
-	cfg.EnableOtelAttributes = true
+	cfg.ConvertToSemanticConventions = true
 
 	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
 		return &fakeJournaldCmdCustom{response: line}
@@ -512,9 +512,9 @@ func TestInputJournaldOtelAttributes_EmergencyPriority(t *testing.T) {
 }
 
 func TestInputJournaldOtelAttributes_DefaultDisabled(t *testing.T) {
-	// Without enable_otel_attributes the full body map must be preserved.
+	// Without convert_to_semantic_conventions the full body map must be preserved.
 	cfg := NewConfigWithID("my_journald_input")
-	// EnableOtelAttributes defaults to false — do not set it.
+	// ConvertToSemanticConventions defaults to false — do not set it.
 
 	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
 		return &fakeJournaldCmd{}
@@ -525,7 +525,7 @@ func TestInputJournaldOtelAttributes_DefaultDisabled(t *testing.T) {
 	case e := <-received:
 		// Body is a map, not a string
 		bodyMap, ok := e.Body.(map[string]any)
-		require.True(t, ok, "expected body to be map[string]any when enable_otel_attributes is false")
+		require.True(t, ok, "expected body to be map[string]any when convert_to_semantic_conventions is false")
 		assert.Equal(t, "run-docker-netns-4f76d707d45f.mount: Succeeded.", bodyMap["MESSAGE"])
 		assert.Equal(t, "6", bodyMap["PRIORITY"])
 		// No OTel attributes populated from journald fields
@@ -538,12 +538,12 @@ func TestInputJournaldOtelAttributes_DefaultDisabled(t *testing.T) {
 
 func TestInputJournaldOtelAttributes_ConvertMessageBytesWithOtelAttrs(t *testing.T) {
 	// MESSAGE as a byte array should still be converted to a string body when
-	// both convert_message_bytes and enable_otel_attributes are true.
+	// both convert_message_bytes and convert_to_semantic_conventions are true.
 	const line = `{"MESSAGE":[116,101,115,116],"PRIORITY":"6","_HOSTNAME":"myhost","_PID":"99","_COMM":"app","_EXE":"/usr/bin/app","_CMDLINE":"/usr/bin/app","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
 
 	cfg := NewConfigWithID("my_journald_input")
 	cfg.ConvertMessageBytes = true
-	cfg.EnableOtelAttributes = true
+	cfg.ConvertToSemanticConventions = true
 
 	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
 		return &fakeJournaldCmdCustom{response: line}
@@ -567,7 +567,7 @@ func TestInputJournaldOtelAttributes_ErrnoAndThreadID(t *testing.T) {
 	const line = `{"MESSAGE":"io error","PRIORITY":"3","ERRNO":"5","TID":"777","_HOSTNAME":"h","_PID":"1","_COMM":"c","_EXE":"/c","_CMDLINE":"c","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
 
 	cfg := NewConfigWithID("my_journald_input")
-	cfg.EnableOtelAttributes = true
+	cfg.ConvertToSemanticConventions = true
 
 	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
 		return &fakeJournaldCmdCustom{response: line}
@@ -585,11 +585,11 @@ func TestInputJournaldOtelAttributes_ErrnoAndThreadID(t *testing.T) {
 }
 
 func TestInputJournaldOtelAttributes_TimestampPreserved(t *testing.T) {
-	// Timestamp must be set correctly regardless of enable_otel_attributes.
+	// Timestamp must be set correctly regardless of convert_to_semantic_conventions.
 	const line = `{"MESSAGE":"hello","PRIORITY":"6","_HOSTNAME":"h","_PID":"1","_COMM":"c","_EXE":"/c","_CMDLINE":"c","__REALTIME_TIMESTAMP":"1587047866229555","__CURSOR":"s=1"}` + "\n"
 
 	cfg := NewConfigWithID("my_journald_input")
-	cfg.EnableOtelAttributes = true
+	cfg.ConvertToSemanticConventions = true
 
 	received, stop := newTestOperator(t, cfg, func(_ context.Context, _ []byte) cmd {
 		return &fakeJournaldCmdCustom{response: line}
