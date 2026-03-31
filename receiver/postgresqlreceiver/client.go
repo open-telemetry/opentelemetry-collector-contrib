@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.opentelemetry.io/otel/trace"
@@ -28,19 +27,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
-const (
-	lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
-	querySampleTraceContextKey       = "_otel_trace_context"
-)
-
-var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
-	lagMetricsInSecondsFeatureGateID,
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
-	featuregate.WithRegisterFromVersion("0.89.0"),
-)
+const querySampleTraceContextKey = "_otel_trace_context"
 
 // databaseName is a name that refers to a database so that it can be uniquely referred to later
 // i.e. database1
@@ -790,7 +780,7 @@ func (c *postgreSQLClient) getDeprecatedReplicationStats(ctx context.Context) ([
 }
 
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
-	if !preciseLagMetricsFg.IsEnabled() {
+	if !metadata.PostgresqlreceiverPreciselagmetricsFeatureGate.IsEnabled() {
 		return c.getDeprecatedReplicationStats(ctx)
 	}
 

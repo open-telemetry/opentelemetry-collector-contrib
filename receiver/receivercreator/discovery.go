@@ -31,7 +31,7 @@ const (
 	scraperHint          = "scraper"
 	configHint           = "config"
 
-	logsReceiver          = "filelog"
+	logsReceiver          = "file_log"
 	defaultLogPathPattern = "/var/log/pods/%s_%s_%s/%s/*.log"
 )
 
