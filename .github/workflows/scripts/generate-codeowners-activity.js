@@ -28,7 +28,7 @@ const FOCUS_COMPONENT_LABELS = new Set([
   'receiver/hostmetrics',
   'processor/k8sattributes',
   'processor/resourcedetection',
-  'receiver/filelog',
+  'receiver/file_log',
   'processor/filter',
   'pkg/stanza',
   'pkg/ottl',
