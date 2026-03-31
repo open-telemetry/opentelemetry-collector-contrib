@@ -100,8 +100,8 @@ require (
 	github.com/ghostiam/protogetter v0.3.17 // indirect
 	github.com/go-critic/go-critic v0.14.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.5 // indirect
+	github.com/go-git/go-billy/v5 v5.8.0 // indirect
+	github.com/go-git/go-git/v5 v5.17.1 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250813233538-9b1f9ea2e11b // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
@@ -169,7 +169,7 @@ require (
 	github.com/knadh/koanf/providers/env/v2 v2.0.0 // indirect
 	github.com/knadh/koanf/providers/file v1.2.1 // indirect
 	github.com/knadh/koanf/providers/fs v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.3 // indirect
+	github.com/knadh/koanf/v2 v2.3.4 // indirect
 	github.com/kulti/thelper v0.7.1 // indirect
 	github.com/kunwardeep/paralleltest v1.0.15 // indirect
 	github.com/lasiar/canonicalheader v1.1.2 // indirect
@@ -273,14 +273,14 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.29.0 // indirect
 	go.opentelemetry.io/build-tools/issuegenerator v0.29.0 // indirect
 	go.opentelemetry.io/build-tools/multimod v0.29.0 // indirect
-	go.opentelemetry.io/collector/cmd/builder v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/cmd/mdatagen v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/confmap v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/filter v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/pdata v1.54.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/cmd/builder v0.148.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/cmd/mdatagen v0.148.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/component v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/confmap v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/filter v0.148.1-0.20260330144813-4d17eb8959de // indirect
+	go.opentelemetry.io/collector/pdata v1.54.1-0.20260330144813-4d17eb8959de // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/trace v1.42.0 // indirect

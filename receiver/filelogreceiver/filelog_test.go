@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.MustNewID("filelog").String())
+	sub, err := cm.Sub(component.MustNewID("file_log").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
@@ -315,7 +315,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 	}
 }
 
-// TestConsumeContract tests the contract between the filelog receiver and the next consumer with enabled retry.
+// TestConsumeContract tests the contract between the File Log receiver and the next consumer with enabled retry.
 func TestConsumeContract(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePattern := "test-*.log"
@@ -416,7 +416,7 @@ func TestMultilineWithUTF16Encoding(t *testing.T) {
 	require.NoError(t, utf16Writer.Close())
 	require.NoError(t, testFile.Close())
 
-	// Configure filelog receiver with UTF-16LE encoding and multiline
+	// Configure file_log receiver with UTF-16LE encoding and multiline
 	cfg := &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() file.Config {
