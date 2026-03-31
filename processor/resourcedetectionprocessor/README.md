@@ -983,7 +983,7 @@ The `refresh_interval` option allows resource attributes to be periodically refr
 
 The `fail_on_missing_metadata` option controls whether detectors treat an unreachable metadata service as a hard failure. When set to `true`, affected detectors return an error instead of silently returning an empty resource, enabling the collector's retry mechanism to wait until the metadata service becomes available.
 
-This is particularly useful workloads where the metadata service may be temporarily unavailable during node startup.
+This is particularly useful for workloads where the metadata service may be temporarily unavailable during node startup.
 
 ```yaml
 processors:
