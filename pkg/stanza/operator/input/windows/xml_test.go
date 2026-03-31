@@ -59,18 +59,20 @@ func TestParseBody(t *testing.T) {
 		Channel:  "application",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
 		EventData: EventData{
 			Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}},
 		},
-		RenderedLevel:    "rendered_level",
-		RenderedTask:     "rendered_task",
-		RenderedOpcode:   "rendered_opcode",
-		RenderedKeywords: []string{"RenderedKeywords"},
-		Version:          0,
+		RenderingInfo: &RenderingInfo{
+			Message:  "message",
+			Level:    "rendered_level",
+			Task:     "rendered_task",
+			Opcode:   "rendered_opcode",
+			Keywords: []string{"RenderedKeywords"},
+		},
+		Version: 0,
 	}
 
 	expected := map[string]any{
@@ -96,6 +98,16 @@ func TestParseBody(t *testing.T) {
 			"1st_name": "value",
 			"2nd_name": "another_value",
 		},
+		"rendering_info": map[string]any{
+			"culture":  "",
+			"message":  "message",
+			"level":    "rendered_level",
+			"task":     "rendered_task",
+			"opcode":   "rendered_opcode",
+			"channel":  "",
+			"provider": "",
+			"keywords": []string{"RenderedKeywords"},
+		},
 		"version": uint8(0),
 	}
 
@@ -120,7 +132,6 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		Channel:  "application",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
@@ -134,11 +145,14 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		Security: &Security{
 			UserID: "my-user-id",
 		},
-		RenderedLevel:    "rendered_level",
-		RenderedTask:     "rendered_task",
-		RenderedOpcode:   "rendered_opcode",
-		RenderedKeywords: []string{"RenderedKeywords"},
-		Version:          0,
+		RenderingInfo: &RenderingInfo{
+			Message:  "message",
+			Level:    "rendered_level",
+			Task:     "rendered_task",
+			Opcode:   "rendered_opcode",
+			Keywords: []string{"RenderedKeywords"},
+		},
+		Version: 0,
 	}
 
 	expected := map[string]any{
@@ -171,6 +185,16 @@ func TestParseBodySecurityExecution(t *testing.T) {
 			"name":         "value",
 			"another_name": "another_value",
 		},
+		"rendering_info": map[string]any{
+			"culture":  "",
+			"message":  "message",
+			"level":    "rendered_level",
+			"task":     "rendered_task",
+			"opcode":   "rendered_opcode",
+			"channel":  "",
+			"provider": "",
+			"keywords": []string{"RenderedKeywords"},
+		},
 		"version": uint8(0),
 	}
 
@@ -201,7 +225,6 @@ func TestParseBodyFullExecution(t *testing.T) {
 		Channel:  "application",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
@@ -220,11 +243,14 @@ func TestParseBodyFullExecution(t *testing.T) {
 		Security: &Security{
 			UserID: "my-user-id",
 		},
-		RenderedLevel:    "rendered_level",
-		RenderedTask:     "rendered_task",
-		RenderedOpcode:   "rendered_opcode",
-		RenderedKeywords: []string{"RenderedKeywords"},
-		Version:          0,
+		RenderingInfo: &RenderingInfo{
+			Message:  "message",
+			Level:    "rendered_level",
+			Task:     "rendered_task",
+			Opcode:   "rendered_opcode",
+			Keywords: []string{"RenderedKeywords"},
+		},
+		Version: 0,
 	}
 
 	expected := map[string]any{
@@ -262,6 +288,16 @@ func TestParseBodyFullExecution(t *testing.T) {
 			"name":         "value",
 			"another_name": "another_value",
 		},
+		"rendering_info": map[string]any{
+			"culture":  "",
+			"message":  "message",
+			"level":    "rendered_level",
+			"task":     "rendered_task",
+			"opcode":   "rendered_opcode",
+			"channel":  "",
+			"provider": "",
+			"keywords": []string{"RenderedKeywords"},
+		},
 		"version": uint8(0),
 	}
 
@@ -288,17 +324,19 @@ func TestParseBodyCorrelation(t *testing.T) {
 		Channel:  "application",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
 		EventData: EventData{
 			Data: []Data{{Name: "1st_name", Value: "value"}, {Name: "2nd_name", Value: "another_value"}},
 		},
-		RenderedLevel:    "rendered_level",
-		RenderedTask:     "rendered_task",
-		RenderedOpcode:   "rendered_opcode",
-		RenderedKeywords: []string{"RenderedKeywords"},
+		RenderingInfo: &RenderingInfo{
+			Message:  "message",
+			Level:    "rendered_level",
+			Task:     "rendered_task",
+			Opcode:   "rendered_opcode",
+			Keywords: []string{"RenderedKeywords"},
+		},
 		Correlation: &Correlation{
 			ActivityID:        &activityIDGuid,
 			RelatedActivityID: &relatedActivityIDGuid,
@@ -329,6 +367,16 @@ func TestParseBodyCorrelation(t *testing.T) {
 			"1st_name": "value",
 			"2nd_name": "another_value",
 		},
+		"rendering_info": map[string]any{
+			"culture":  "",
+			"message":  "message",
+			"level":    "rendered_level",
+			"task":     "rendered_task",
+			"opcode":   "rendered_opcode",
+			"channel":  "",
+			"provider": "",
+			"keywords": []string{"RenderedKeywords"},
+		},
 		"correlation": map[string]any{
 			"activity_id":         "{11111111-1111-1111-1111-111111111111}",
 			"related_activity_id": "{22222222-2222-2222-2222-222222222222}",
@@ -357,7 +405,6 @@ func TestParseNoRendered(t *testing.T) {
 		Channel:  "application",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
@@ -382,7 +429,7 @@ func TestParseNoRendered(t *testing.T) {
 		"channel":     "application",
 		"record_id":   uint64(1),
 		"level":       "Information",
-		"message":     "message",
+		"message":     "",
 		"task":        "task",
 		"opcode":      "opcode",
 		"keywords":    []string{"keyword"},
@@ -414,18 +461,20 @@ func TestParseBodySecurity(t *testing.T) {
 		Channel:  "Security",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
 		EventData: EventData{
 			Data: []Data{{Name: "name", Value: "value"}, {Name: "another_name", Value: "another_value"}},
 		},
-		RenderedLevel:    "rendered_level",
-		RenderedTask:     "rendered_task",
-		RenderedOpcode:   "rendered_opcode",
-		RenderedKeywords: []string{"RenderedKeywords"},
-		Version:          0,
+		RenderingInfo: &RenderingInfo{
+			Message:  "message",
+			Level:    "rendered_level",
+			Task:     "rendered_task",
+			Opcode:   "rendered_opcode",
+			Keywords: []string{"RenderedKeywords"},
+		},
+		Version: 0,
 	}
 
 	expected := map[string]any{
@@ -450,6 +499,16 @@ func TestParseBodySecurity(t *testing.T) {
 		"event_data": map[string]any{
 			"name":         "value",
 			"another_name": "another_value",
+		},
+		"rendering_info": map[string]any{
+			"culture":  "",
+			"message":  "message",
+			"level":    "rendered_level",
+			"task":     "rendered_task",
+			"opcode":   "rendered_opcode",
+			"channel":  "",
+			"provider": "",
+			"keywords": []string{"RenderedKeywords"},
 		},
 		"version": uint8(0),
 	}
@@ -486,6 +545,140 @@ func TestParseEventData(t *testing.T) {
 		"param1":      "no_name",
 	}
 	require.Equal(t, expectedFlat, parsed["event_data"])
+}
+
+func TestParseBodyWithUserData(t *testing.T) {
+	e := &EventXML{
+		Channel: "Security",
+		UserData: &UserData{
+			Name: "LogFileCleared",
+			Data: map[string]string{
+				"SubjectUserName": "test_user",
+				"SubjectLogonId":  "0xa8bb72",
+			},
+		},
+	}
+
+	body := formattedBody(e, EventDataFormatArray)
+	require.Equal(t, map[string]any{
+		"name": "LogFileCleared",
+		"data": map[string]string{
+			"SubjectUserName": "test_user",
+			"SubjectLogonId":  "0xa8bb72",
+		},
+	}, body["user_data"])
+}
+
+// TestUnmarshalSystemEventWithRenderingInfo uses a real captured System channel event
+// (Service Control Manager 7036). It confirms that Culture and Provider are populated
+// from RenderingInfo, while Channel/Task/Opcode are absent in RenderingInfo for this
+// event type and fall back to the System values in the body.
+func TestUnmarshalSystemEventWithRenderingInfo(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlRenderingInfoSystem.xml"))
+	require.NoError(t, err)
+
+	parsedEvent, err := unmarshalEventXML(data)
+	require.NoError(t, err)
+
+	event := parsedEvent.toEventXML()
+
+	require.NotNil(t, event.RenderingInfo)
+	require.Equal(t, "en-US", event.RenderingInfo.Culture)
+	require.Equal(t, "The Software Protection service entered the running state.", event.RenderingInfo.Message)
+	require.Equal(t, "Information", event.RenderingInfo.Level)
+	require.Equal(t, "Microsoft-Windows-Service Control Manager", event.RenderingInfo.Provider)
+	require.Equal(t, []string{"Classic"}, event.RenderingInfo.Keywords)
+	// Channel, Task, Opcode are absent from RenderingInfo in this event type.
+	require.Empty(t, event.RenderingInfo.Channel)
+	require.Empty(t, event.RenderingInfo.Task)
+	require.Empty(t, event.RenderingInfo.Opcode)
+
+	body := formattedBody(event, EventDataFormatArray)
+
+	// Level, Task, Opcode fall back to System values when absent from RenderingInfo.
+	require.Equal(t, "Information", body["level"])
+	require.Equal(t, "0", body["task"])
+	require.Equal(t, "0", body["opcode"])
+
+	ri, ok := body["rendering_info"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "en-US", ri["culture"])
+	require.Equal(t, "Microsoft-Windows-Service Control Manager", ri["provider"])
+	require.Empty(t, ri["channel"])
+}
+
+// TestUnmarshalSecurityEventWithRenderingInfo uses a real captured Security channel event
+// (4624 logon). It confirms that all RenderingInfo fields — including Channel, Provider,
+// Task, Opcode, and Culture — are populated when a well-known provider manifest is present.
+func TestUnmarshalSecurityEventWithRenderingInfo(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlRenderingInfoSecurity.xml"))
+	require.NoError(t, err)
+
+	parsedEvent, err := unmarshalEventXML(data)
+	require.NoError(t, err)
+
+	event := parsedEvent.toEventXML()
+
+	require.NotNil(t, event.RenderingInfo)
+	require.Equal(t, "en-US", event.RenderingInfo.Culture)
+	require.Equal(t, "Information", event.RenderingInfo.Level)
+	require.Equal(t, "Logon", event.RenderingInfo.Task)
+	require.Equal(t, "Info", event.RenderingInfo.Opcode)
+	require.Equal(t, "Security", event.RenderingInfo.Channel)
+	require.Equal(t, "Microsoft Windows security auditing.", event.RenderingInfo.Provider)
+	require.Equal(t, []string{"Audit Success"}, event.RenderingInfo.Keywords)
+	require.Contains(t, event.RenderingInfo.Message, "An account was successfully logged on.")
+
+	body := formattedBody(event, EventDataFormatArray)
+
+	// Rendered values from RenderingInfo take precedence over raw System values.
+	require.Equal(t, "Information", body["level"]) // vs raw "0"
+	require.Equal(t, "Logon", body["task"])        // vs raw "12544"
+	require.Equal(t, "Info", body["opcode"])       // vs raw "0"
+
+	ri, ok := body["rendering_info"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "en-US", ri["culture"])
+	require.Equal(t, "Security", ri["channel"])
+	require.Equal(t, "Microsoft Windows security auditing.", ri["provider"])
+}
+
+func TestUnmarshalRawEventXML(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalRawEventXML(data)
+	require.NoError(t, err)
+
+	// rawParsedEvent carries only the four fields needed by sendEvent in raw mode.
+	// The absence of EventXML fields (EventID, Provider, Computer, etc.) is
+	// enforced by the type itself — rawParsedEvent has no such fields.
+	require.Equal(t, string(data), event.getOriginal())
+	require.Equal(t, "2022-04-22T10:20:52.3778625Z", event.getSystemTime())
+	require.Equal(t, "4", event.getLevel())
+	require.Empty(t, event.getRenderedLevel())
+}
+
+func TestUnmarshalRawEventXMLWithRenderingInfo(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlRenderingInfoSystem.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalRawEventXML(data)
+	require.NoError(t, err)
+
+	require.Equal(t, string(data), event.getOriginal())
+	require.NotEmpty(t, event.getSystemTime())
+	require.Equal(t, "Information", event.getRenderedLevel())
+	require.Panics(t, func() {
+		_ = event.toEventXML()
+	})
+	// All other RenderingInfo fields (Message, Culture, Keywords, etc.) are
+	// not present on rawParsedEvent — the type enforces they were never parsed.
+}
+
+func TestUnmarshalRawEventXMLInvalid(t *testing.T) {
+	_, err := unmarshalRawEventXML([]byte("Test \n Invalid \t Unmarshal"))
+	require.Error(t, err)
 }
 
 func TestInvalidUnmarshal(t *testing.T) {
@@ -572,8 +765,9 @@ func TestUnmarshalWithIllegalXMLChars(t *testing.T) {
     </EventData>
 </Event>`
 
-	event, err := unmarshalEventXML([]byte(xmlTemplate))
+	parsedEvent, err := unmarshalEventXML([]byte(xmlTemplate))
 	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
 	require.Equal(t, "Microsoft-Windows-Sysmon/Operational", event.Channel)
 	require.Equal(t, uint64(12345), event.RecordID)
 	// The illegal character should have been stripped from the event data value
@@ -608,7 +802,6 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		Channel:   "Application",
 		RecordID:  23401,
 		Level:     "4",
-		Message:   "",
 		Task:      "0",
 		Opcode:    "0",
 		Execution: &Execution{},
@@ -653,7 +846,6 @@ func TestUnmarshalWithCorrelation(t *testing.T) {
 		Channel:  "Security",
 		RecordID: 13177,
 		Level:    "0",
-		Message:  "",
 		Task:     "12544",
 		Opcode:   "0",
 		EventData: EventData{
@@ -699,7 +891,6 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 		Channel:  "Application",
 		RecordID: 383972,
 		Level:    "2",
-		Message:  "",
 		Task:     "0",
 		Opcode:   "0",
 		EventData: EventData{
@@ -839,7 +1030,6 @@ func TestUnmarshalWithUserData(t *testing.T) {
 		Channel:  "Security",
 		RecordID: 2590526,
 		Level:    "4",
-		Message:  "",
 		Task:     "104",
 		Opcode:   "0",
 		Keywords: []string{"0x4020000000000000"},
@@ -850,12 +1040,160 @@ func TestUnmarshalWithUserData(t *testing.T) {
 			ProcessID: 1472,
 			ThreadID:  7784,
 		},
+		UserData: &UserData{
+			Name: "LogFileCleared",
+			Data: map[string]string{
+				"SubjectUserSid":        "S-1-5-21-1148437859-4135665037-1195073887-1000",
+				"SubjectUserName":       "test_user",
+				"SubjectDomainName":     "TEST",
+				"SubjectLogonId":        "0xa8bb72",
+				"ClientProcessId":       "4536",
+				"ClientProcessStartKey": "17732923532772643",
+			},
+		},
 		Original:    string(data),
 		Correlation: &Correlation{},
 		Version:     1,
 	}
 
 	require.Equal(t, xml, event)
+}
+
+func TestParseBodyWithProcessingErrorData(t *testing.T) {
+	e := &EventXML{
+		ProcessingErrorData: &ProcessingErrorData{
+			ErrorCode:    15005,
+			DataItemName: "SubjectUserSid",
+			EventPayload: "AABBCCDD",
+		},
+	}
+
+	body := formattedBody(e, EventDataFormatArray)
+	require.Equal(t, map[string]any{
+		"error_code":     uint32(15005),
+		"data_item_name": "SubjectUserSid",
+		"event_payload":  "AABBCCDD",
+	}, body["processing_error_data"])
+}
+
+func TestUnmarshalWithProcessingErrorData(t *testing.T) {
+	xmlStr := `<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+	<System>
+		<Provider Name="TestProvider"/>
+		<EventID>1</EventID><Version>0</Version><Level>2</Level><Task>0</Task><Opcode>0</Opcode>
+		<Keywords>0x80000000000000</Keywords>
+		<TimeCreated SystemTime="2026-01-01T00:00:00.000000000Z"/>
+		<EventRecordID>1</EventRecordID>
+		<Correlation/><Execution ProcessID="100" ThreadID="200"/>
+		<Channel>Application</Channel><Computer>computer</Computer><Security/>
+	</System>
+	<ProcessingErrorData>
+		<ErrorCode>15005</ErrorCode>
+		<DataItemName>SubjectUserSid</DataItemName>
+		<EventPayload>AABBCCDD</EventPayload>
+	</ProcessingErrorData>
+</Event>`
+
+	parsedEvent, err := unmarshalEventXML([]byte(xmlStr))
+	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
+	require.NotNil(t, event.ProcessingErrorData)
+	require.Equal(t, uint32(15005), event.ProcessingErrorData.ErrorCode)
+	require.Equal(t, "SubjectUserSid", event.ProcessingErrorData.DataItemName)
+	require.Equal(t, "AABBCCDD", event.ProcessingErrorData.EventPayload)
+}
+
+func TestParseBodyWithDebugData(t *testing.T) {
+	e := &EventXML{
+		DebugData: &DebugData{
+			SequenceNumber: 42,
+			FlagName:       "TRACE_LEVEL_INFORMATION",
+			LevelName:      "Information",
+			Component:      "TestComponent",
+			SubComponent:   "TestSubComponent",
+			FileLine:       "main.c:100",
+			Function:       "TestFunction",
+			Message:        "Debug message",
+		},
+	}
+
+	body := formattedBody(e, EventDataFormatArray)
+	require.Equal(t, map[string]any{
+		"sequence_number": uint32(42),
+		"flag_name":       "TRACE_LEVEL_INFORMATION",
+		"level_name":      "Information",
+		"component":       "TestComponent",
+		"sub_component":   "TestSubComponent",
+		"file_line":       "main.c:100",
+		"function":        "TestFunction",
+		"message":         "Debug message",
+	}, body["debug_data"])
+}
+
+func TestUnmarshalWithDebugData(t *testing.T) {
+	xmlStr := `<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+	<System>
+		<Provider Name="TestProvider"/>
+		<EventID>1</EventID><Version>0</Version><Level>4</Level><Task>0</Task><Opcode>0</Opcode>
+		<Keywords>0x80000000000000</Keywords>
+		<TimeCreated SystemTime="2026-01-01T00:00:00.000000000Z"/>
+		<EventRecordID>2</EventRecordID>
+		<Correlation/><Execution ProcessID="100" ThreadID="200"/>
+		<Channel>Application</Channel><Computer>computer</Computer><Security/>
+	</System>
+	<DebugData>
+		<SequenceNumber>42</SequenceNumber>
+		<FlagName>TRACE_LEVEL_INFORMATION</FlagName>
+		<LevelName>Information</LevelName>
+		<Component>TestComponent</Component>
+		<SubComponent>TestSubComponent</SubComponent>
+		<FileLine>main.c:100</FileLine>
+		<Function>TestFunction</Function>
+		<Message>Debug message</Message>
+	</DebugData>
+</Event>`
+
+	parsedEvent, err := unmarshalEventXML([]byte(xmlStr))
+	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
+	require.NotNil(t, event.DebugData)
+	require.Equal(t, uint32(42), event.DebugData.SequenceNumber)
+	require.Equal(t, "TRACE_LEVEL_INFORMATION", event.DebugData.FlagName)
+	require.Equal(t, "Information", event.DebugData.LevelName)
+	require.Equal(t, "TestComponent", event.DebugData.Component)
+	require.Equal(t, "TestSubComponent", event.DebugData.SubComponent)
+	require.Equal(t, "main.c:100", event.DebugData.FileLine)
+	require.Equal(t, "TestFunction", event.DebugData.Function)
+	require.Equal(t, "Debug message", event.DebugData.Message)
+}
+
+func TestParseBodyWithBinaryEventData(t *testing.T) {
+	e := &EventXML{
+		BinaryEventData: "AABBCCDD",
+	}
+
+	body := formattedBody(e, EventDataFormatArray)
+	require.Equal(t, "AABBCCDD", body["binary_event_data"])
+}
+
+func TestUnmarshalWithBinaryEventData(t *testing.T) {
+	xmlStr := `<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+	<System>
+		<Provider Name="TestProvider"/>
+		<EventID>1</EventID><Version>0</Version><Level>2</Level><Task>0</Task><Opcode>0</Opcode>
+		<Keywords>0x80000000000000</Keywords>
+		<TimeCreated SystemTime="2026-01-01T00:00:00.000000000Z"/>
+		<EventRecordID>3</EventRecordID>
+		<Correlation/><Execution ProcessID="100" ThreadID="200"/>
+		<Channel>Application</Channel><Computer>computer</Computer><Security/>
+	</System>
+	<BinaryEventData>AABBCCDD</BinaryEventData>
+</Event>`
+
+	parsedEvent, err := unmarshalEventXML([]byte(xmlStr))
+	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
+	require.Equal(t, "AABBCCDD", event.BinaryEventData)
 }
 
 func TestParseEventDataVariants(t *testing.T) {
@@ -1033,13 +1371,15 @@ func TestParseBodyWithAnonymousEventData(t *testing.T) {
 		Channel:  "application",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
 		EventData: EventData{
 			Data:   []Data{{Value: "first_value"}, {Value: "second_value"}},
 			Binary: "2D20",
+		},
+		RenderingInfo: &RenderingInfo{
+			Message: "message",
 		},
 		Version: 0,
 	}
@@ -1070,18 +1410,20 @@ func TestFormattedBodyArrayFormat(t *testing.T) {
 		Channel:  "application",
 		RecordID: 1,
 		Level:    "Information",
-		Message:  "message",
 		Task:     "task",
 		Opcode:   "opcode",
 		Keywords: []string{"keyword"},
 		EventData: EventData{
 			Data: []Data{{Name: "ProcessId", Value: "7924"}, {Name: "Application", Value: "app.exe"}},
 		},
-		RenderedLevel:    "rendered_level",
-		RenderedTask:     "rendered_task",
-		RenderedOpcode:   "rendered_opcode",
-		RenderedKeywords: []string{"RenderedKeywords"},
-		Version:          0,
+		RenderingInfo: &RenderingInfo{
+			Message:  "message",
+			Level:    "rendered_level",
+			Task:     "rendered_task",
+			Opcode:   "rendered_opcode",
+			Keywords: []string{"RenderedKeywords"},
+		},
+		Version: 0,
 	}
 
 	body := formattedBody(xml, EventDataFormatArray)
@@ -1101,7 +1443,7 @@ func TestUnmarshalAndFormatAnonymousEventData(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	mapBody := formattedBody(event, EventDataFormatMap)
+	mapBody := formattedBody(event.toEventXML(), EventDataFormatMap)
 	mapEventData := mapBody["event_data"].(map[string]any)
 	require.Equal(t, "1st_value", mapEventData["param1"])
 	require.Equal(t, "2nd_value", mapEventData["param2"])
@@ -1109,7 +1451,7 @@ func TestUnmarshalAndFormatAnonymousEventData(t *testing.T) {
 	_, hasDataKey := mapEventData["data"]
 	require.False(t, hasDataKey, "map format should not have a 'data' key")
 
-	arrayBody := formattedBody(event, EventDataFormatArray)
+	arrayBody := formattedBody(event.toEventXML(), EventDataFormatArray)
 	arrayEventData := arrayBody["event_data"].(map[string]any)
 	require.Equal(t, []any{
 		map[string]any{"": "1st_value"},
@@ -1125,12 +1467,12 @@ func TestUnmarshalAndFormatNamedEventData(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	mapBody := formattedBody(event, EventDataFormatMap)
+	mapBody := formattedBody(event.toEventXML(), EventDataFormatMap)
 	mapEventData := mapBody["event_data"].(map[string]any)
 	require.Equal(t, "2022-04-28T19:48:52Z", mapEventData["Time"])
 	require.Equal(t, "RulesEngine", mapEventData["Source"])
 
-	arrayBody := formattedBody(event, EventDataFormatArray)
+	arrayBody := formattedBody(event.toEventXML(), EventDataFormatArray)
 	arrayEventData := arrayBody["event_data"].(map[string]any)
 	require.Equal(t, []any{
 		map[string]any{"Time": "2022-04-28T19:48:52Z"},

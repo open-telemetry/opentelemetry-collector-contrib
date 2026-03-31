@@ -33,31 +33,30 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("cloud.platform")
+			cloudPlatformAttrVal, ok := res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", cloudPlatformAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("cloud.provider")
+			cloudProviderAttrVal, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", cloudProviderAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("deployment.environment")
+			deploymentEnvironmentAttrVal, ok := res.Attributes().Get("deployment.environment")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "deployment.environment-val", val.Str())
+				assert.Equal(t, "deployment.environment-val", deploymentEnvironmentAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.instance.id")
+			serviceInstanceIDAttrVal, ok := res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.instance.id-val", val.Str())
+				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("service.version")
+			serviceVersionAttrVal, ok := res.Attributes().Get("service.version")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "service.version-val", val.Str())
+				assert.Equal(t, "service.version-val", serviceVersionAttrVal.Str())
 			}
 		})
 	}
