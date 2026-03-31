@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -38,17 +39,23 @@ type Input struct {
 	includeLogRecordOriginal bool
 	excludeProviders         map[string]struct{}
 	pollInterval             time.Duration
-	persister                operator.Persister
-	publisherCache           publisherCache
-	cancel                   context.CancelFunc
-	wg                       sync.WaitGroup
-	subscription             Subscription
-	maxEventsPerPollCycle    int
-	eventsReadInPollCycle    int
-	remote                   RemoteConfig
-	remoteSessionHandle      windows.Handle
-	startRemoteSession       func() error
-	processEvent             func(context.Context, Event) error
+	waitTimeout              time.Duration
+	// cancelEvent is a manual-reset Windows event handle signaled by Stop() to unblock
+	// WaitForMultipleObjects in awaitAndReadEvents. A plain context cancellation cannot
+	// interrupt a blocking Windows syscall, so this handle bridges Go's cancellation model
+	// to the Windows API layer.
+	cancelEvent           windows.Handle
+	persister             operator.Persister
+	publisherCache        publisherCache
+	cancel                context.CancelFunc
+	wg                    sync.WaitGroup
+	subscription          Subscription
+	maxEventsPerPollCycle int
+	eventsReadInPollCycle int
+	remote                RemoteConfig
+	remoteSessionHandle   windows.Handle
+	startRemoteSession    func() error
+	processEvent          func(context.Context, Event) error
 }
 
 // newInput creates a new Input operator.
@@ -139,9 +146,9 @@ func (i *Input) Start(persister operator.Persister) error {
 	i.publisherCache = newPublisherCache()
 
 	subscriptionError := false
-	subscription := NewLocalSubscription()
+	subscription := NewLocalSubscription(i.Logger())
 	if i.isRemote() {
-		subscription = NewRemoteSubscription(i.remote.Server)
+		subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
 	}
 
 	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
@@ -168,8 +175,18 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	if !subscriptionError {
 		i.subscription = subscription
-		i.wg.Add(1)
-		go i.pollAndRead(ctx)
+		if metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled() {
+			cancelEvent, err := windows.CreateEvent(nil, 1, 0, nil) // manual-reset, initially non-signaled
+			if err != nil {
+				return fmt.Errorf("failed to create cancel event: %w", err)
+			}
+			i.cancelEvent = cancelEvent
+			i.wg.Add(1)
+			go i.awaitAndReadEvents(ctx)
+		} else {
+			i.wg.Add(1)
+			go i.pollAndRead(ctx)
+		}
 	}
 
 	return nil
@@ -183,9 +200,24 @@ func (i *Input) Stop() error {
 		i.cancel()
 	}
 
+	if i.cancelEvent != 0 {
+		// If this fails, wg.Wait() below will block forever since awaitAndReadEvents will never
+		// return from WaitForMultipleObjects. Log loudly and continue.
+		if err := windows.SetEvent(i.cancelEvent); err != nil {
+			i.Logger().Error("Failed to signal cancel event during stop; shutdown may hang", zap.Error(err))
+		}
+	}
+
 	i.wg.Wait()
 
 	var errs error
+	if i.cancelEvent != 0 {
+		if err := windows.CloseHandle(i.cancelEvent); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("failed to close cancel event: %w", err))
+		}
+		i.cancelEvent = 0
+	}
+
 	if err := i.subscription.Close(); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to close subscription: %w", err))
 	}
@@ -257,7 +289,7 @@ func (i *Input) readBatch(ctx context.Context) bool {
 				i.Logger().Error("Failed to close remote session", zap.Error(err))
 			}
 			i.Logger().Info("Resubscribing, creating remote subscription")
-			i.subscription = NewRemoteSubscription(i.remote.Server)
+			i.subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
 			if err := i.startRemoteSession(); err != nil {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
 				return false
@@ -285,6 +317,29 @@ func (i *Input) readBatch(ctx context.Context) bool {
 
 	i.eventsReadInPollCycle += len(events)
 	return len(events) != 0
+}
+
+// awaitAndReadEvents is the event-driven alternative to pollAndRead. Instead of sleeping
+// for a fixed interval it blocks on a Windows wait object that is signaled by the subscription
+// when new events arrive. This reduces latency and avoids unnecessary wakeups.
+func (i *Input) awaitAndReadEvents(ctx context.Context) {
+	defer i.wg.Done()
+
+	timeoutMs := uint32(i.waitTimeout.Milliseconds())
+	for {
+		ready, err := i.subscription.Wait(i.cancelEvent, timeoutMs)
+		if err != nil {
+			i.Logger().Error("Failed to wait for subscription signal", zap.Error(err))
+			return
+		}
+		if !ready {
+			// cancel event was signaled
+			return
+		}
+
+		i.eventsReadInPollCycle = 0
+		i.read(ctx)
+	}
 }
 
 func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
