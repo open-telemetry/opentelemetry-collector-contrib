@@ -4,10 +4,10 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/filelog
+component: receiver/file_log
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fixes bug where filelog receiver did not read the last line of gzip compressed files."
+note: "Fixes bug where File Log receiver did not read the last line of gzip compressed files."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [45572]
