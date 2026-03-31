@@ -29,11 +29,10 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("mysql.instance.endpoint")
+			mysqlInstanceEndpointAttrVal, ok := res.Attributes().Get("mysql.instance.endpoint")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "mysql.instance.endpoint-val", val.Str())
+				assert.Equal(t, "mysql.instance.endpoint-val", mysqlInstanceEndpointAttrVal.Str())
 			}
 		})
 	}

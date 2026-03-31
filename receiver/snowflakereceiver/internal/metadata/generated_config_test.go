@@ -26,168 +26,174 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SnowflakeBillingCloudServiceTotal: MetricConfig{
+					SnowflakeBillingCloudServiceTotal: SnowflakeBillingCloudServiceTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"service_type"},
+						EnabledAttributes:   []SnowflakeBillingCloudServiceTotalMetricAttributeKey{SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType},
 					},
-					SnowflakeBillingTotalCreditTotal: MetricConfig{
+					SnowflakeBillingTotalCreditTotal: SnowflakeBillingTotalCreditTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"service_type"},
+						EnabledAttributes:   []SnowflakeBillingTotalCreditTotalMetricAttributeKey{SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType},
 					},
-					SnowflakeBillingVirtualWarehouseTotal: MetricConfig{
+					SnowflakeBillingVirtualWarehouseTotal: SnowflakeBillingVirtualWarehouseTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"service_type"},
+						EnabledAttributes:   []SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType},
 					},
-					SnowflakeBillingWarehouseCloudServiceTotal: MetricConfig{
+					SnowflakeBillingWarehouseCloudServiceTotal: SnowflakeBillingWarehouseCloudServiceTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey{SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeBillingWarehouseTotalCreditTotal: MetricConfig{
+					SnowflakeBillingWarehouseTotalCreditTotal: SnowflakeBillingWarehouseTotalCreditTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey{SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{
+					SnowflakeBillingWarehouseVirtualWarehouseTotal: SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeDatabaseBytesScannedAvg: MetricConfig{
+					SnowflakeDatabaseBytesScannedAvg: SnowflakeDatabaseBytesScannedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeDatabaseBytesScannedAvgMetricAttributeKey{SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeDatabaseQueryCount: MetricConfig{
+					SnowflakeDatabaseQueryCount: SnowflakeDatabaseQueryCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeDatabaseQueryCountMetricAttributeKey{SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName, SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeLoginsTotal: MetricConfig{
+					SnowflakeLoginsTotal: SnowflakeLoginsTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"error_message", "reported_client_type", "is_success"},
+						EnabledAttributes:   []SnowflakeLoginsTotalMetricAttributeKey{SnowflakeLoginsTotalMetricAttributeKeyErrorMessage, SnowflakeLoginsTotalMetricAttributeKeyReportedClientType, SnowflakeLoginsTotalMetricAttributeKeyIsSuccess},
 					},
-					SnowflakePipeCreditsUsedTotal: MetricConfig{
+					SnowflakePipeCreditsUsedTotal: SnowflakePipeCreditsUsedTotalMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"pipe_name"},
+						EnabledAttributes:   []SnowflakePipeCreditsUsedTotalMetricAttributeKey{SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName},
 					},
-					SnowflakeQueryBlocked: MetricConfig{
+					SnowflakeQueryBlocked: SnowflakeQueryBlockedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryBlockedMetricAttributeKey{SnowflakeQueryBlockedMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueryBytesDeletedAvg: MetricConfig{
+					SnowflakeQueryBytesDeletedAvg: SnowflakeQueryBytesDeletedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesDeletedAvgMetricAttributeKey{SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryBytesSpilledLocalAvg: MetricConfig{
+					SnowflakeQueryBytesSpilledLocalAvg: SnowflakeQueryBytesSpilledLocalAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey{SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryBytesSpilledRemoteAvg: MetricConfig{
+					SnowflakeQueryBytesSpilledRemoteAvg: SnowflakeQueryBytesSpilledRemoteAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey{SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryBytesWrittenAvg: MetricConfig{
+					SnowflakeQueryBytesWrittenAvg: SnowflakeQueryBytesWrittenAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesWrittenAvgMetricAttributeKey{SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryCompilationTimeAvg: MetricConfig{
+					SnowflakeQueryCompilationTimeAvg: SnowflakeQueryCompilationTimeAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryCompilationTimeAvgMetricAttributeKey{SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryDataScannedCacheAvg: MetricConfig{
+					SnowflakeQueryDataScannedCacheAvg: SnowflakeQueryDataScannedCacheAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryDataScannedCacheAvgMetricAttributeKey{SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryExecuted: MetricConfig{
+					SnowflakeQueryExecuted: SnowflakeQueryExecutedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryExecutedMetricAttributeKey{SnowflakeQueryExecutedMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueryExecutionTimeAvg: MetricConfig{
+					SnowflakeQueryExecutionTimeAvg: SnowflakeQueryExecutionTimeAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryExecutionTimeAvgMetricAttributeKey{SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryPartitionsScannedAvg: MetricConfig{
+					SnowflakeQueryPartitionsScannedAvg: SnowflakeQueryPartitionsScannedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryPartitionsScannedAvgMetricAttributeKey{SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryQueuedOverload: MetricConfig{
+					SnowflakeQueryQueuedOverload: SnowflakeQueryQueuedOverloadMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryQueuedOverloadMetricAttributeKey{SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueryQueuedProvision: MetricConfig{
+					SnowflakeQueryQueuedProvision: SnowflakeQueryQueuedProvisionMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryQueuedProvisionMetricAttributeKey{SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueuedOverloadTimeAvg: MetricConfig{
+					SnowflakeQueuedOverloadTimeAvg: SnowflakeQueuedOverloadTimeAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueuedOverloadTimeAvgMetricAttributeKey{SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueuedProvisioningTimeAvg: MetricConfig{
+					SnowflakeQueuedProvisioningTimeAvg: SnowflakeQueuedProvisioningTimeAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey{SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueuedRepairTimeAvg: MetricConfig{
+					SnowflakeQueuedRepairTimeAvg: SnowflakeQueuedRepairTimeAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueuedRepairTimeAvgMetricAttributeKey{SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsDeletedAvg: MetricConfig{
+					SnowflakeRowsDeletedAvg: SnowflakeRowsDeletedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsDeletedAvgMetricAttributeKey{SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName, SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsInsertedAvg: MetricConfig{
+					SnowflakeRowsInsertedAvg: SnowflakeRowsInsertedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsInsertedAvgMetricAttributeKey{SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName, SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsProducedAvg: MetricConfig{
+					SnowflakeRowsProducedAvg: SnowflakeRowsProducedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsProducedAvgMetricAttributeKey{SnowflakeRowsProducedAvgMetricAttributeKeySchemaName, SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsProducedAvgMetricAttributeKeyQueryType, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsUnloadedAvg: MetricConfig{
+					SnowflakeRowsUnloadedAvg: SnowflakeRowsUnloadedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsUnloadedAvgMetricAttributeKey{SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName, SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsUpdatedAvg: MetricConfig{
+					SnowflakeRowsUpdatedAvg: SnowflakeRowsUpdatedAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsUpdatedAvgMetricAttributeKey{SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName, SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeSessionIDCount: MetricConfig{
+					SnowflakeSessionIDCount: SnowflakeSessionIDCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"user_name"},
+						EnabledAttributes:   []SnowflakeSessionIDCountMetricAttributeKey{SnowflakeSessionIDCountMetricAttributeKeyUserName},
 					},
-					SnowflakeStorageFailsafeBytesTotal: MetricConfig{Enabled: true},
-					SnowflakeStorageStageBytesTotal:    MetricConfig{Enabled: true},
-					SnowflakeStorageStorageBytesTotal:  MetricConfig{Enabled: true},
-					SnowflakeTotalElapsedTimeAvg: MetricConfig{
+					SnowflakeStorageFailsafeBytesTotal: SnowflakeStorageFailsafeBytesTotalMetricConfig{
+						Enabled: true,
+					},
+					SnowflakeStorageStageBytesTotal: SnowflakeStorageStageBytesTotalMetricConfig{
+						Enabled: true,
+					},
+					SnowflakeStorageStorageBytesTotal: SnowflakeStorageStorageBytesTotalMetricConfig{
+						Enabled: true,
+					},
+					SnowflakeTotalElapsedTimeAvg: SnowflakeTotalElapsedTimeAvgMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeTotalElapsedTimeAvgMetricAttributeKey{SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -199,168 +205,174 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SnowflakeBillingCloudServiceTotal: MetricConfig{
+					SnowflakeBillingCloudServiceTotal: SnowflakeBillingCloudServiceTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"service_type"},
+						EnabledAttributes:   []SnowflakeBillingCloudServiceTotalMetricAttributeKey{SnowflakeBillingCloudServiceTotalMetricAttributeKeyServiceType},
 					},
-					SnowflakeBillingTotalCreditTotal: MetricConfig{
+					SnowflakeBillingTotalCreditTotal: SnowflakeBillingTotalCreditTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"service_type"},
+						EnabledAttributes:   []SnowflakeBillingTotalCreditTotalMetricAttributeKey{SnowflakeBillingTotalCreditTotalMetricAttributeKeyServiceType},
 					},
-					SnowflakeBillingVirtualWarehouseTotal: MetricConfig{
+					SnowflakeBillingVirtualWarehouseTotal: SnowflakeBillingVirtualWarehouseTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"service_type"},
+						EnabledAttributes:   []SnowflakeBillingVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingVirtualWarehouseTotalMetricAttributeKeyServiceType},
 					},
-					SnowflakeBillingWarehouseCloudServiceTotal: MetricConfig{
+					SnowflakeBillingWarehouseCloudServiceTotal: SnowflakeBillingWarehouseCloudServiceTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKey{SnowflakeBillingWarehouseCloudServiceTotalMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeBillingWarehouseTotalCreditTotal: MetricConfig{
+					SnowflakeBillingWarehouseTotalCreditTotal: SnowflakeBillingWarehouseTotalCreditTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKey{SnowflakeBillingWarehouseTotalCreditTotalMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{
+					SnowflakeBillingWarehouseVirtualWarehouseTotal: SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKey{SnowflakeBillingWarehouseVirtualWarehouseTotalMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeDatabaseBytesScannedAvg: MetricConfig{
+					SnowflakeDatabaseBytesScannedAvg: SnowflakeDatabaseBytesScannedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeDatabaseBytesScannedAvgMetricAttributeKey{SnowflakeDatabaseBytesScannedAvgMetricAttributeKeySchemaName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyErrorMessage, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyQueryType, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyDatabaseName, SnowflakeDatabaseBytesScannedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeDatabaseQueryCount: MetricConfig{
+					SnowflakeDatabaseQueryCount: SnowflakeDatabaseQueryCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeDatabaseQueryCountMetricAttributeKey{SnowflakeDatabaseQueryCountMetricAttributeKeySchemaName, SnowflakeDatabaseQueryCountMetricAttributeKeyExecutionStatus, SnowflakeDatabaseQueryCountMetricAttributeKeyErrorMessage, SnowflakeDatabaseQueryCountMetricAttributeKeyQueryType, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseName, SnowflakeDatabaseQueryCountMetricAttributeKeyDatabaseName, SnowflakeDatabaseQueryCountMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeLoginsTotal: MetricConfig{
+					SnowflakeLoginsTotal: SnowflakeLoginsTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"error_message", "reported_client_type", "is_success"},
+						EnabledAttributes:   []SnowflakeLoginsTotalMetricAttributeKey{SnowflakeLoginsTotalMetricAttributeKeyErrorMessage, SnowflakeLoginsTotalMetricAttributeKeyReportedClientType, SnowflakeLoginsTotalMetricAttributeKeyIsSuccess},
 					},
-					SnowflakePipeCreditsUsedTotal: MetricConfig{
+					SnowflakePipeCreditsUsedTotal: SnowflakePipeCreditsUsedTotalMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"pipe_name"},
+						EnabledAttributes:   []SnowflakePipeCreditsUsedTotalMetricAttributeKey{SnowflakePipeCreditsUsedTotalMetricAttributeKeyPipeName},
 					},
-					SnowflakeQueryBlocked: MetricConfig{
+					SnowflakeQueryBlocked: SnowflakeQueryBlockedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryBlockedMetricAttributeKey{SnowflakeQueryBlockedMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueryBytesDeletedAvg: MetricConfig{
+					SnowflakeQueryBytesDeletedAvg: SnowflakeQueryBytesDeletedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesDeletedAvgMetricAttributeKey{SnowflakeQueryBytesDeletedAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesDeletedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryBytesSpilledLocalAvg: MetricConfig{
+					SnowflakeQueryBytesSpilledLocalAvg: SnowflakeQueryBytesSpilledLocalAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKey{SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledLocalAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryBytesSpilledRemoteAvg: MetricConfig{
+					SnowflakeQueryBytesSpilledRemoteAvg: SnowflakeQueryBytesSpilledRemoteAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKey{SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesSpilledRemoteAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryBytesWrittenAvg: MetricConfig{
+					SnowflakeQueryBytesWrittenAvg: SnowflakeQueryBytesWrittenAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryBytesWrittenAvgMetricAttributeKey{SnowflakeQueryBytesWrittenAvgMetricAttributeKeySchemaName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyErrorMessage, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyQueryType, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyDatabaseName, SnowflakeQueryBytesWrittenAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryCompilationTimeAvg: MetricConfig{
+					SnowflakeQueryCompilationTimeAvg: SnowflakeQueryCompilationTimeAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryCompilationTimeAvgMetricAttributeKey{SnowflakeQueryCompilationTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryCompilationTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryDataScannedCacheAvg: MetricConfig{
+					SnowflakeQueryDataScannedCacheAvg: SnowflakeQueryDataScannedCacheAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryDataScannedCacheAvgMetricAttributeKey{SnowflakeQueryDataScannedCacheAvgMetricAttributeKeySchemaName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyErrorMessage, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyQueryType, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyDatabaseName, SnowflakeQueryDataScannedCacheAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryExecuted: MetricConfig{
+					SnowflakeQueryExecuted: SnowflakeQueryExecutedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryExecutedMetricAttributeKey{SnowflakeQueryExecutedMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueryExecutionTimeAvg: MetricConfig{
+					SnowflakeQueryExecutionTimeAvg: SnowflakeQueryExecutionTimeAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryExecutionTimeAvgMetricAttributeKey{SnowflakeQueryExecutionTimeAvgMetricAttributeKeySchemaName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyQueryType, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueryExecutionTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryPartitionsScannedAvg: MetricConfig{
+					SnowflakeQueryPartitionsScannedAvg: SnowflakeQueryPartitionsScannedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueryPartitionsScannedAvgMetricAttributeKey{SnowflakeQueryPartitionsScannedAvgMetricAttributeKeySchemaName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyExecutionStatus, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyErrorMessage, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyQueryType, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyDatabaseName, SnowflakeQueryPartitionsScannedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueryQueuedOverload: MetricConfig{
+					SnowflakeQueryQueuedOverload: SnowflakeQueryQueuedOverloadMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryQueuedOverloadMetricAttributeKey{SnowflakeQueryQueuedOverloadMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueryQueuedProvision: MetricConfig{
+					SnowflakeQueryQueuedProvision: SnowflakeQueryQueuedProvisionMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"warehouse_name"},
+						EnabledAttributes:   []SnowflakeQueryQueuedProvisionMetricAttributeKey{SnowflakeQueryQueuedProvisionMetricAttributeKeyWarehouseName},
 					},
-					SnowflakeQueuedOverloadTimeAvg: MetricConfig{
+					SnowflakeQueuedOverloadTimeAvg: SnowflakeQueuedOverloadTimeAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueuedOverloadTimeAvgMetricAttributeKey{SnowflakeQueuedOverloadTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedOverloadTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueuedProvisioningTimeAvg: MetricConfig{
+					SnowflakeQueuedProvisioningTimeAvg: SnowflakeQueuedProvisioningTimeAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueuedProvisioningTimeAvgMetricAttributeKey{SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedProvisioningTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeQueuedRepairTimeAvg: MetricConfig{
+					SnowflakeQueuedRepairTimeAvg: SnowflakeQueuedRepairTimeAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeQueuedRepairTimeAvgMetricAttributeKey{SnowflakeQueuedRepairTimeAvgMetricAttributeKeySchemaName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyErrorMessage, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyQueryType, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyDatabaseName, SnowflakeQueuedRepairTimeAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsDeletedAvg: MetricConfig{
+					SnowflakeRowsDeletedAvg: SnowflakeRowsDeletedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsDeletedAvgMetricAttributeKey{SnowflakeRowsDeletedAvgMetricAttributeKeySchemaName, SnowflakeRowsDeletedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsDeletedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsDeletedAvgMetricAttributeKeyQueryType, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsDeletedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsDeletedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsInsertedAvg: MetricConfig{
+					SnowflakeRowsInsertedAvg: SnowflakeRowsInsertedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsInsertedAvgMetricAttributeKey{SnowflakeRowsInsertedAvgMetricAttributeKeySchemaName, SnowflakeRowsInsertedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsInsertedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsInsertedAvgMetricAttributeKeyQueryType, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsInsertedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsInsertedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsProducedAvg: MetricConfig{
+					SnowflakeRowsProducedAvg: SnowflakeRowsProducedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsProducedAvgMetricAttributeKey{SnowflakeRowsProducedAvgMetricAttributeKeySchemaName, SnowflakeRowsProducedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsProducedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsProducedAvgMetricAttributeKeyQueryType, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsProducedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsProducedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsUnloadedAvg: MetricConfig{
+					SnowflakeRowsUnloadedAvg: SnowflakeRowsUnloadedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsUnloadedAvgMetricAttributeKey{SnowflakeRowsUnloadedAvgMetricAttributeKeySchemaName, SnowflakeRowsUnloadedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUnloadedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUnloadedAvgMetricAttributeKeyQueryType, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUnloadedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeRowsUpdatedAvg: MetricConfig{
+					SnowflakeRowsUpdatedAvg: SnowflakeRowsUpdatedAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeRowsUpdatedAvgMetricAttributeKey{SnowflakeRowsUpdatedAvgMetricAttributeKeySchemaName, SnowflakeRowsUpdatedAvgMetricAttributeKeyExecutionStatus, SnowflakeRowsUpdatedAvgMetricAttributeKeyErrorMessage, SnowflakeRowsUpdatedAvgMetricAttributeKeyQueryType, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyDatabaseName, SnowflakeRowsUpdatedAvgMetricAttributeKeyWarehouseSize},
 					},
-					SnowflakeSessionIDCount: MetricConfig{
+					SnowflakeSessionIDCount: SnowflakeSessionIDCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"user_name"},
+						EnabledAttributes:   []SnowflakeSessionIDCountMetricAttributeKey{SnowflakeSessionIDCountMetricAttributeKeyUserName},
 					},
-					SnowflakeStorageFailsafeBytesTotal: MetricConfig{Enabled: false},
-					SnowflakeStorageStageBytesTotal:    MetricConfig{Enabled: false},
-					SnowflakeStorageStorageBytesTotal:  MetricConfig{Enabled: false},
-					SnowflakeTotalElapsedTimeAvg: MetricConfig{
+					SnowflakeStorageFailsafeBytesTotal: SnowflakeStorageFailsafeBytesTotalMetricConfig{
+						Enabled: false,
+					},
+					SnowflakeStorageStageBytesTotal: SnowflakeStorageStageBytesTotalMetricConfig{
+						Enabled: false,
+					},
+					SnowflakeStorageStorageBytesTotal: SnowflakeStorageStorageBytesTotalMetricConfig{
+						Enabled: false,
+					},
+					SnowflakeTotalElapsedTimeAvg: SnowflakeTotalElapsedTimeAvgMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []string{"schema_name", "execution_status", "error_message", "query_type", "warehouse_name", "database_name", "warehouse_size"},
+						EnabledAttributes:   []SnowflakeTotalElapsedTimeAvgMetricAttributeKey{SnowflakeTotalElapsedTimeAvgMetricAttributeKeySchemaName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyExecutionStatus, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyErrorMessage, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyQueryType, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyDatabaseName, SnowflakeTotalElapsedTimeAvgMetricAttributeKeyWarehouseSize},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -372,7 +384,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SnowflakeBillingCloudServiceTotalMetricConfig{}, SnowflakeBillingTotalCreditTotalMetricConfig{}, SnowflakeBillingVirtualWarehouseTotalMetricConfig{}, SnowflakeBillingWarehouseCloudServiceTotalMetricConfig{}, SnowflakeBillingWarehouseTotalCreditTotalMetricConfig{}, SnowflakeBillingWarehouseVirtualWarehouseTotalMetricConfig{}, SnowflakeDatabaseBytesScannedAvgMetricConfig{}, SnowflakeDatabaseQueryCountMetricConfig{}, SnowflakeLoginsTotalMetricConfig{}, SnowflakePipeCreditsUsedTotalMetricConfig{}, SnowflakeQueryBlockedMetricConfig{}, SnowflakeQueryBytesDeletedAvgMetricConfig{}, SnowflakeQueryBytesSpilledLocalAvgMetricConfig{}, SnowflakeQueryBytesSpilledRemoteAvgMetricConfig{}, SnowflakeQueryBytesWrittenAvgMetricConfig{}, SnowflakeQueryCompilationTimeAvgMetricConfig{}, SnowflakeQueryDataScannedCacheAvgMetricConfig{}, SnowflakeQueryExecutedMetricConfig{}, SnowflakeQueryExecutionTimeAvgMetricConfig{}, SnowflakeQueryPartitionsScannedAvgMetricConfig{}, SnowflakeQueryQueuedOverloadMetricConfig{}, SnowflakeQueryQueuedProvisionMetricConfig{}, SnowflakeQueuedOverloadTimeAvgMetricConfig{}, SnowflakeQueuedProvisioningTimeAvgMetricConfig{}, SnowflakeQueuedRepairTimeAvgMetricConfig{}, SnowflakeRowsDeletedAvgMetricConfig{}, SnowflakeRowsInsertedAvgMetricConfig{}, SnowflakeRowsProducedAvgMetricConfig{}, SnowflakeRowsUnloadedAvgMetricConfig{}, SnowflakeRowsUpdatedAvgMetricConfig{}, SnowflakeSessionIDCountMetricConfig{}, SnowflakeStorageFailsafeBytesTotalMetricConfig{}, SnowflakeStorageStageBytesTotalMetricConfig{}, SnowflakeStorageStorageBytesTotalMetricConfig{}, SnowflakeTotalElapsedTimeAvgMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

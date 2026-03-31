@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,32 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["MongodbCacheOperations"] = mb.metricMongodbCacheOperations.config.AggregationStrategy
+			aggMap["MongodbCollectionCount"] = mb.metricMongodbCollectionCount.config.AggregationStrategy
+			aggMap["MongodbConnectionCount"] = mb.metricMongodbConnectionCount.config.AggregationStrategy
+			aggMap["MongodbDataSize"] = mb.metricMongodbDataSize.config.AggregationStrategy
+			aggMap["MongodbDocumentOperationCount"] = mb.metricMongodbDocumentOperationCount.config.AggregationStrategy
+			aggMap["MongodbExtentCount"] = mb.metricMongodbExtentCount.config.AggregationStrategy
+			aggMap["MongodbIndexAccessCount"] = mb.metricMongodbIndexAccessCount.config.AggregationStrategy
+			aggMap["MongodbIndexCount"] = mb.metricMongodbIndexCount.config.AggregationStrategy
+			aggMap["MongodbIndexSize"] = mb.metricMongodbIndexSize.config.AggregationStrategy
+			aggMap["MongodbLockAcquireCount"] = mb.metricMongodbLockAcquireCount.config.AggregationStrategy
+			aggMap["MongodbLockAcquireTime"] = mb.metricMongodbLockAcquireTime.config.AggregationStrategy
+			aggMap["MongodbLockAcquireWaitCount"] = mb.metricMongodbLockAcquireWaitCount.config.AggregationStrategy
+			aggMap["MongodbLockDeadlockCount"] = mb.metricMongodbLockDeadlockCount.config.AggregationStrategy
+			aggMap["MongodbMemoryUsage"] = mb.metricMongodbMemoryUsage.config.AggregationStrategy
+			aggMap["MongodbObjectCount"] = mb.metricMongodbObjectCount.config.AggregationStrategy
+			aggMap["MongodbOperationCount"] = mb.metricMongodbOperationCount.config.AggregationStrategy
+			aggMap["MongodbOperationLatencyTime"] = mb.metricMongodbOperationLatencyTime.config.AggregationStrategy
+			aggMap["MongodbOperationReplCount"] = mb.metricMongodbOperationReplCount.config.AggregationStrategy
+			aggMap["MongodbOperationTime"] = mb.metricMongodbOperationTime.config.AggregationStrategy
+			aggMap["MongodbStorageSize"] = mb.metricMongodbStorageSize.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -76,10 +105,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbCacheOperationsDataPoint(ts, 3, AttributeTypeMiss)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbCollectionCountDataPoint(ts, 3, "db.namespace-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbCommandsRateDataPoint(ts, 1)
@@ -87,6 +122,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbConnectionCountDataPoint(ts, 3, AttributeConnectionTypeAvailable, "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -99,6 +137,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDataSizeDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbDataSizeDataPoint(ts, 3, "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -110,10 +151,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbDocumentOperationCountDataPoint(ts, 3, AttributeOperationQuery, "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbExtentCountDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbExtentCountDataPoint(ts, 3, "db.namespace-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbFlushesRateDataPoint(ts, 1)
@@ -131,33 +178,57 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "collection-val", "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbIndexAccessCountDataPoint(ts, 3, "collection-val-2", "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexCountDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbIndexCountDataPoint(ts, 3, "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbIndexSizeDataPoint(ts, 3, "db.namespace-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbInsertsRateDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbLockAcquireCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbLockAcquireTimeDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbLockDeadlockCountDataPoint(ts, 3, AttributeLockTypeReplicationStateTransition, AttributeLockModeExclusive, "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, AttributeMemoryTypeResident, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbMemoryUsageDataPoint(ts, 3, AttributeMemoryTypeVirtual, "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -174,20 +245,35 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbObjectCountDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbObjectCountDataPoint(ts, 3, "db.namespace-val-2")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperationInsert)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbOperationCountDataPoint(ts, 3, AttributeOperationQuery)
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatencyRead)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 3, AttributeOperationLatencyWrite)
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperationInsert)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbOperationReplCountDataPoint(ts, 3, AttributeOperationQuery)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperationInsert)
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbOperationTimeDataPoint(ts, 3, AttributeOperationQuery)
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbPageFaultsDataPoint(ts, 1)
@@ -220,6 +306,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "db.namespace-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordMongodbStorageSizeDataPoint(ts, 3, "db.namespace-val-2")
+			}
 
 			allMetricsCount++
 			mb.RecordMongodbUpdatesRateDataPoint(ts, 1)
@@ -236,36 +325,64 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetServiceInstanceID("service.instance.id-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricMongodbCacheOperations.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbCollectionCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbConnectionCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbDataSize.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbDocumentOperationCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbExtentCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbIndexAccessCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbIndexCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbIndexSize.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbLockAcquireCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbLockAcquireTime.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbLockAcquireWaitCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbLockDeadlockCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbMemoryUsage.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbObjectCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbOperationCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbOperationLatencyTime.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbOperationReplCount.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbOperationTime.aggDataPoints)
+				assert.Empty(t, mb.metricMongodbStorageSize.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
-			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-			rm := metrics.ResourceMetrics().At(0)
-			assert.Equal(t, res, rm.Resource())
-			assert.Equal(t, 1, rm.ScopeMetrics().Len())
-			ms := rm.ScopeMetrics().At(0).Metrics()
+			var allMetricsList []pmetric.Metric
+			totalMetricsCount := 0
+			for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+				rm := metrics.ResourceMetrics().At(ri)
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				ms := rm.ScopeMetrics().At(0).Metrics()
+				totalMetricsCount += ms.Len()
+				for mi := 0; mi < ms.Len(); mi++ {
+					allMetricsList = append(allMetricsList, ms.At(mi))
+				}
+			}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, defaultMetricsCount, ms.Len())
+				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
 			if tt.metricsSet == testDataSetAll {
-				assert.Equal(t, allMetricsCount, ms.Len())
+				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
-			for i := 0; i < ms.Len(); i++ {
-				switch ms.At(i).Name() {
+			for _, mi := range allMetricsList {
+				switch mi.Name() {
 				case "mongodb.active.reads":
 					assert.False(t, validatedMetrics["mongodb.active.reads"], "Found a duplicate in the metrics slice: mongodb.active.reads")
 					validatedMetrics["mongodb.active.reads"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of read operations currently being processed.", ms.At(i).Description())
-					assert.Equal(t, "{reads}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of read operations currently being processed.", mi.Description())
+					assert.Equal(t, "{reads}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -273,93 +390,176 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.active.writes":
 					assert.False(t, validatedMetrics["mongodb.active.writes"], "Found a duplicate in the metrics slice: mongodb.active.writes")
 					validatedMetrics["mongodb.active.writes"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of write operations currently being processed.", ms.At(i).Description())
-					assert.Equal(t, "{writes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of write operations currently being processed.", mi.Description())
+					assert.Equal(t, "{writes}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.cache.operations":
-					assert.False(t, validatedMetrics["mongodb.cache.operations"], "Found a duplicate in the metrics slice: mongodb.cache.operations")
-					validatedMetrics["mongodb.cache.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of cache operations of the instance.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.cache.operations"], "Found a duplicate in the metrics slice: mongodb.cache.operations")
+						validatedMetrics["mongodb.cache.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of cache operations of the instance.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						typeAttrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "hit", typeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.cache.operations"], "Found a duplicate in the metrics slice: mongodb.cache.operations")
+						validatedMetrics["mongodb.cache.operations"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of cache operations of the instance.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.cache.operations"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+					}
 				case "mongodb.collection.count":
-					assert.False(t, validatedMetrics["mongodb.collection.count"], "Found a duplicate in the metrics slice: mongodb.collection.count")
-					validatedMetrics["mongodb.collection.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of collections.", ms.At(i).Description())
-					assert.Equal(t, "{collections}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.collection.count"], "Found a duplicate in the metrics slice: mongodb.collection.count")
+						validatedMetrics["mongodb.collection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of collections.", mi.Description())
+						assert.Equal(t, "{collections}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.collection.count"], "Found a duplicate in the metrics slice: mongodb.collection.count")
+						validatedMetrics["mongodb.collection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of collections.", mi.Description())
+						assert.Equal(t, "{collections}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.collection.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.commands.rate":
 					assert.False(t, validatedMetrics["mongodb.commands.rate"], "Found a duplicate in the metrics slice: mongodb.commands.rate")
 					validatedMetrics["mongodb.commands.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of commands executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{command}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of commands executed per second.", mi.Description())
+					assert.Equal(t, "{command}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.connection.count":
-					assert.False(t, validatedMetrics["mongodb.connection.count"], "Found a duplicate in the metrics slice: mongodb.connection.count")
-					validatedMetrics["mongodb.connection.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of connections.", ms.At(i).Description())
-					assert.Equal(t, "{connections}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.connection.count"], "Found a duplicate in the metrics slice: mongodb.connection.count")
+						validatedMetrics["mongodb.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of connections.", mi.Description())
+						assert.Equal(t, "{connections}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						connectionTypeAttrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "active", connectionTypeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.connection.count"], "Found a duplicate in the metrics slice: mongodb.connection.count")
+						validatedMetrics["mongodb.connection.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of connections.", mi.Description())
+						assert.Equal(t, "{connections}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.connection.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.cursor.count":
 					assert.False(t, validatedMetrics["mongodb.cursor.count"], "Found a duplicate in the metrics slice: mongodb.cursor.count")
 					validatedMetrics["mongodb.cursor.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of open cursors maintained for clients.", ms.At(i).Description())
-					assert.Equal(t, "{cursors}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of open cursors maintained for clients.", mi.Description())
+					assert.Equal(t, "{cursors}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -367,44 +567,71 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.cursor.timeout.count":
 					assert.False(t, validatedMetrics["mongodb.cursor.timeout.count"], "Found a duplicate in the metrics slice: mongodb.cursor.timeout.count")
 					validatedMetrics["mongodb.cursor.timeout.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of cursors that have timed out.", ms.At(i).Description())
-					assert.Equal(t, "{cursors}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of cursors that have timed out.", mi.Description())
+					assert.Equal(t, "{cursors}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.data.size":
-					assert.False(t, validatedMetrics["mongodb.data.size"], "Found a duplicate in the metrics slice: mongodb.data.size")
-					validatedMetrics["mongodb.data.size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The size of the collection. Data compression does not affect this value.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.data.size"], "Found a duplicate in the metrics slice: mongodb.data.size")
+						validatedMetrics["mongodb.data.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the collection. Data compression does not affect this value.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.data.size"], "Found a duplicate in the metrics slice: mongodb.data.size")
+						validatedMetrics["mongodb.data.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The size of the collection. Data compression does not affect this value.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.data.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.database.count":
 					assert.False(t, validatedMetrics["mongodb.database.count"], "Found a duplicate in the metrics slice: mongodb.database.count")
 					validatedMetrics["mongodb.database.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of existing databases.", ms.At(i).Description())
-					assert.Equal(t, "{databases}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of existing databases.", mi.Description())
+					assert.Equal(t, "{databases}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -412,60 +639,116 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.deletes.rate":
 					assert.False(t, validatedMetrics["mongodb.deletes.rate"], "Found a duplicate in the metrics slice: mongodb.deletes.rate")
 					validatedMetrics["mongodb.deletes.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of deletes executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{delete}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of deletes executed per second.", mi.Description())
+					assert.Equal(t, "{delete}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.document.operation.count":
-					assert.False(t, validatedMetrics["mongodb.document.operation.count"], "Found a duplicate in the metrics slice: mongodb.document.operation.count")
-					validatedMetrics["mongodb.document.operation.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of document operations executed.", ms.At(i).Description())
-					assert.Equal(t, "{documents}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.document.operation.count"], "Found a duplicate in the metrics slice: mongodb.document.operation.count")
+						validatedMetrics["mongodb.document.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of document operations executed.", mi.Description())
+						assert.Equal(t, "{documents}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "insert", operationAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.document.operation.count"], "Found a duplicate in the metrics slice: mongodb.document.operation.count")
+						validatedMetrics["mongodb.document.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of document operations executed.", mi.Description())
+						assert.Equal(t, "{documents}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.document.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.extent.count":
-					assert.False(t, validatedMetrics["mongodb.extent.count"], "Found a duplicate in the metrics slice: mongodb.extent.count")
-					validatedMetrics["mongodb.extent.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of extents.", ms.At(i).Description())
-					assert.Equal(t, "{extents}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.extent.count"], "Found a duplicate in the metrics slice: mongodb.extent.count")
+						validatedMetrics["mongodb.extent.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of extents.", mi.Description())
+						assert.Equal(t, "{extents}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.extent.count"], "Found a duplicate in the metrics slice: mongodb.extent.count")
+						validatedMetrics["mongodb.extent.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of extents.", mi.Description())
+						assert.Equal(t, "{extents}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.extent.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.flushes.rate":
 					assert.False(t, validatedMetrics["mongodb.flushes.rate"], "Found a duplicate in the metrics slice: mongodb.flushes.rate")
 					validatedMetrics["mongodb.flushes.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of flushes executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{flush}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of flushes executed per second.", mi.Description())
+					assert.Equal(t, "{flush}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -473,11 +756,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.getmores.rate":
 					assert.False(t, validatedMetrics["mongodb.getmores.rate"], "Found a duplicate in the metrics slice: mongodb.getmores.rate")
 					validatedMetrics["mongodb.getmores.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of getmores executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{getmore}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of getmores executed per second.", mi.Description())
+					assert.Equal(t, "{getmore}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -485,13 +768,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.global_lock.time":
 					assert.False(t, validatedMetrics["mongodb.global_lock.time"], "Found a duplicate in the metrics slice: mongodb.global_lock.time")
 					validatedMetrics["mongodb.global_lock.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The time the global lock has been held.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The time the global lock has been held.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -499,203 +782,439 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.health":
 					assert.False(t, validatedMetrics["mongodb.health"], "Found a duplicate in the metrics slice: mongodb.health")
 					validatedMetrics["mongodb.health"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The health status of the server.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The health status of the server.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.index.access.count":
-					assert.False(t, validatedMetrics["mongodb.index.access.count"], "Found a duplicate in the metrics slice: mongodb.index.access.count")
-					validatedMetrics["mongodb.index.access.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of times an index has been accessed.", ms.At(i).Description())
-					assert.Equal(t, "{accesses}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("collection")
-					assert.True(t, ok)
-					assert.Equal(t, "collection-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.index.access.count"], "Found a duplicate in the metrics slice: mongodb.index.access.count")
+						validatedMetrics["mongodb.index.access.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of times an index has been accessed.", mi.Description())
+						assert.Equal(t, "{accesses}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						collectionAttrVal, ok := dp.Attributes().Get("collection")
+						assert.True(t, ok)
+						assert.Equal(t, "collection-val", collectionAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.index.access.count"], "Found a duplicate in the metrics slice: mongodb.index.access.count")
+						validatedMetrics["mongodb.index.access.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of times an index has been accessed.", mi.Description())
+						assert.Equal(t, "{accesses}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.index.access.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("collection")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.index.count":
-					assert.False(t, validatedMetrics["mongodb.index.count"], "Found a duplicate in the metrics slice: mongodb.index.count")
-					validatedMetrics["mongodb.index.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of indexes.", ms.At(i).Description())
-					assert.Equal(t, "{indexes}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.index.count"], "Found a duplicate in the metrics slice: mongodb.index.count")
+						validatedMetrics["mongodb.index.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of indexes.", mi.Description())
+						assert.Equal(t, "{indexes}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.index.count"], "Found a duplicate in the metrics slice: mongodb.index.count")
+						validatedMetrics["mongodb.index.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of indexes.", mi.Description())
+						assert.Equal(t, "{indexes}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.index.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.index.size":
-					assert.False(t, validatedMetrics["mongodb.index.size"], "Found a duplicate in the metrics slice: mongodb.index.size")
-					validatedMetrics["mongodb.index.size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Sum of the space allocated to all indexes in the database, including free index space.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.index.size"], "Found a duplicate in the metrics slice: mongodb.index.size")
+						validatedMetrics["mongodb.index.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Sum of the space allocated to all indexes in the database, including free index space.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.index.size"], "Found a duplicate in the metrics slice: mongodb.index.size")
+						validatedMetrics["mongodb.index.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Sum of the space allocated to all indexes in the database, including free index space.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.index.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.inserts.rate":
 					assert.False(t, validatedMetrics["mongodb.inserts.rate"], "Found a duplicate in the metrics slice: mongodb.inserts.rate")
 					validatedMetrics["mongodb.inserts.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of insertions executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{insert}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of insertions executed per second.", mi.Description())
+					assert.Equal(t, "{insert}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.lock.acquire.count":
-					assert.False(t, validatedMetrics["mongodb.lock.acquire.count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.count")
-					validatedMetrics["mongodb.lock.acquire.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times the lock was acquired in the specified mode.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
-					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
-					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.lock.acquire.count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.count")
+						validatedMetrics["mongodb.lock.acquire.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times the lock was acquired in the specified mode.", mi.Description())
+						assert.Equal(t, "{count}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
+						assert.True(t, ok)
+						assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+						lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
+						assert.True(t, ok)
+						assert.Equal(t, "shared", lockModeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.lock.acquire.count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.count")
+						validatedMetrics["mongodb.lock.acquire.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times the lock was acquired in the specified mode.", mi.Description())
+						assert.Equal(t, "{count}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.lock.acquire.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("lock_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("lock_mode")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.lock.acquire.time":
-					assert.False(t, validatedMetrics["mongodb.lock.acquire.time"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.time")
-					validatedMetrics["mongodb.lock.acquire.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cumulative wait time for the lock acquisitions.", ms.At(i).Description())
-					assert.Equal(t, "microseconds", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
-					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
-					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.lock.acquire.time"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.time")
+						validatedMetrics["mongodb.lock.acquire.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative wait time for the lock acquisitions.", mi.Description())
+						assert.Equal(t, "microseconds", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
+						assert.True(t, ok)
+						assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+						lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
+						assert.True(t, ok)
+						assert.Equal(t, "shared", lockModeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.lock.acquire.time"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.time")
+						validatedMetrics["mongodb.lock.acquire.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Cumulative wait time for the lock acquisitions.", mi.Description())
+						assert.Equal(t, "microseconds", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.lock.acquire.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("lock_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("lock_mode")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.lock.acquire.wait_count":
-					assert.False(t, validatedMetrics["mongodb.lock.acquire.wait_count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.wait_count")
-					validatedMetrics["mongodb.lock.acquire.wait_count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
-					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
-					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.lock.acquire.wait_count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.wait_count")
+						validatedMetrics["mongodb.lock.acquire.wait_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.", mi.Description())
+						assert.Equal(t, "{count}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
+						assert.True(t, ok)
+						assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+						lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
+						assert.True(t, ok)
+						assert.Equal(t, "shared", lockModeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.lock.acquire.wait_count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.wait_count")
+						validatedMetrics["mongodb.lock.acquire.wait_count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.", mi.Description())
+						assert.Equal(t, "{count}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.lock.acquire.wait_count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("lock_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("lock_mode")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.lock.deadlock.count":
-					assert.False(t, validatedMetrics["mongodb.lock.deadlock.count"], "Found a duplicate in the metrics slice: mongodb.lock.deadlock.count")
-					validatedMetrics["mongodb.lock.deadlock.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of times the lock acquisitions encountered deadlocks.", ms.At(i).Description())
-					assert.Equal(t, "{count}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("lock_type")
-					assert.True(t, ok)
-					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("lock_mode")
-					assert.True(t, ok)
-					assert.Equal(t, "shared", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.lock.deadlock.count"], "Found a duplicate in the metrics slice: mongodb.lock.deadlock.count")
+						validatedMetrics["mongodb.lock.deadlock.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times the lock acquisitions encountered deadlocks.", mi.Description())
+						assert.Equal(t, "{count}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
+						assert.True(t, ok)
+						assert.Equal(t, "parallel_batch_write_mode", lockTypeAttrVal.Str())
+						lockModeAttrVal, ok := dp.Attributes().Get("lock_mode")
+						assert.True(t, ok)
+						assert.Equal(t, "shared", lockModeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.lock.deadlock.count"], "Found a duplicate in the metrics slice: mongodb.lock.deadlock.count")
+						validatedMetrics["mongodb.lock.deadlock.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Number of times the lock acquisitions encountered deadlocks.", mi.Description())
+						assert.Equal(t, "{count}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.lock.deadlock.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("lock_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("lock_mode")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.memory.usage":
-					assert.False(t, validatedMetrics["mongodb.memory.usage"], "Found a duplicate in the metrics slice: mongodb.memory.usage")
-					validatedMetrics["mongodb.memory.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory used.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
-					assert.True(t, ok)
-					assert.Equal(t, "resident", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.memory.usage"], "Found a duplicate in the metrics slice: mongodb.memory.usage")
+						validatedMetrics["mongodb.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of memory used.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						memoryTypeAttrVal, ok := dp.Attributes().Get("type")
+						assert.True(t, ok)
+						assert.Equal(t, "resident", memoryTypeAttrVal.Str())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.memory.usage"], "Found a duplicate in the metrics slice: mongodb.memory.usage")
+						validatedMetrics["mongodb.memory.usage"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The amount of memory used.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.memory.usage"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.network.io.receive":
 					assert.False(t, validatedMetrics["mongodb.network.io.receive"], "Found a duplicate in the metrics slice: mongodb.network.io.receive")
 					validatedMetrics["mongodb.network.io.receive"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of bytes received.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of bytes received.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -703,13 +1222,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.network.io.transmit":
 					assert.False(t, validatedMetrics["mongodb.network.io.transmit"], "Found a duplicate in the metrics slice: mongodb.network.io.transmit")
 					validatedMetrics["mongodb.network.io.transmit"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of by transmitted.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of by transmitted.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -717,110 +1236,243 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.network.request.count":
 					assert.False(t, validatedMetrics["mongodb.network.request.count"], "Found a duplicate in the metrics slice: mongodb.network.request.count")
 					validatedMetrics["mongodb.network.request.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of requests received by the server.", ms.At(i).Description())
-					assert.Equal(t, "{requests}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of requests received by the server.", mi.Description())
+					assert.Equal(t, "{requests}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.object.count":
-					assert.False(t, validatedMetrics["mongodb.object.count"], "Found a duplicate in the metrics slice: mongodb.object.count")
-					validatedMetrics["mongodb.object.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of objects.", ms.At(i).Description())
-					assert.Equal(t, "{objects}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.object.count"], "Found a duplicate in the metrics slice: mongodb.object.count")
+						validatedMetrics["mongodb.object.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of objects.", mi.Description())
+						assert.Equal(t, "{objects}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.object.count"], "Found a duplicate in the metrics slice: mongodb.object.count")
+						validatedMetrics["mongodb.object.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of objects.", mi.Description())
+						assert.Equal(t, "{objects}", mi.Unit())
+						assert.False(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.object.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.operation.count":
-					assert.False(t, validatedMetrics["mongodb.operation.count"], "Found a duplicate in the metrics slice: mongodb.operation.count")
-					validatedMetrics["mongodb.operation.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of operations executed.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.operation.count"], "Found a duplicate in the metrics slice: mongodb.operation.count")
+						validatedMetrics["mongodb.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations executed.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "insert", operationAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.operation.count"], "Found a duplicate in the metrics slice: mongodb.operation.count")
+						validatedMetrics["mongodb.operation.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of operations executed.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.operation.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "mongodb.operation.latency.time":
-					assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
-					validatedMetrics["mongodb.operation.latency.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The latency of operations.", ms.At(i).Description())
-					assert.Equal(t, "us", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
+						validatedMetrics["mongodb.operation.latency.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The latency of operations.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						operationLatencyAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "read", operationLatencyAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
+						validatedMetrics["mongodb.operation.latency.time"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The latency of operations.", mi.Description())
+						assert.Equal(t, "us", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.operation.latency.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "mongodb.operation.repl.count":
-					assert.False(t, validatedMetrics["mongodb.operation.repl.count"], "Found a duplicate in the metrics slice: mongodb.operation.repl.count")
-					validatedMetrics["mongodb.operation.repl.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of replicated operations executed.", ms.At(i).Description())
-					assert.Equal(t, "{operations}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.operation.repl.count"], "Found a duplicate in the metrics slice: mongodb.operation.repl.count")
+						validatedMetrics["mongodb.operation.repl.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of replicated operations executed.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "insert", operationAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.operation.repl.count"], "Found a duplicate in the metrics slice: mongodb.operation.repl.count")
+						validatedMetrics["mongodb.operation.repl.count"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The number of replicated operations executed.", mi.Description())
+						assert.Equal(t, "{operations}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.operation.repl.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "mongodb.operation.time":
-					assert.False(t, validatedMetrics["mongodb.operation.time"], "Found a duplicate in the metrics slice: mongodb.operation.time")
-					validatedMetrics["mongodb.operation.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total time spent performing operations.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("operation")
-					assert.True(t, ok)
-					assert.Equal(t, "insert", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.operation.time"], "Found a duplicate in the metrics slice: mongodb.operation.time")
+						validatedMetrics["mongodb.operation.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total time spent performing operations.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						operationAttrVal, ok := dp.Attributes().Get("operation")
+						assert.True(t, ok)
+						assert.Equal(t, "insert", operationAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.operation.time"], "Found a duplicate in the metrics slice: mongodb.operation.time")
+						validatedMetrics["mongodb.operation.time"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total time spent performing operations.", mi.Description())
+						assert.Equal(t, "ms", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.operation.time"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("operation")
+						assert.False(t, ok)
+					}
 				case "mongodb.page_faults":
 					assert.False(t, validatedMetrics["mongodb.page_faults"], "Found a duplicate in the metrics slice: mongodb.page_faults")
 					validatedMetrics["mongodb.page_faults"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of page faults.", ms.At(i).Description())
-					assert.Equal(t, "{faults}", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of page faults.", mi.Description())
+					assert.Equal(t, "{faults}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -828,11 +1480,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.queries.rate":
 					assert.False(t, validatedMetrics["mongodb.queries.rate"], "Found a duplicate in the metrics slice: mongodb.queries.rate")
 					validatedMetrics["mongodb.queries.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of queries executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{query}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of queries executed per second.", mi.Description())
+					assert.Equal(t, "{query}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -840,11 +1492,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.repl_commands_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_commands_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_commands_per_sec")
 					validatedMetrics["mongodb.repl_commands_per_sec"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of replicated commands executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{command}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of replicated commands executed per second.", mi.Description())
+					assert.Equal(t, "{command}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -852,11 +1504,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.repl_deletes_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_deletes_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_deletes_per_sec")
 					validatedMetrics["mongodb.repl_deletes_per_sec"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of replicated deletes executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{delete}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of replicated deletes executed per second.", mi.Description())
+					assert.Equal(t, "{delete}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -864,11 +1516,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.repl_getmores_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_getmores_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_getmores_per_sec")
 					validatedMetrics["mongodb.repl_getmores_per_sec"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of replicated getmores executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{getmore}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of replicated getmores executed per second.", mi.Description())
+					assert.Equal(t, "{getmore}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -876,11 +1528,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.repl_inserts_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_inserts_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_inserts_per_sec")
 					validatedMetrics["mongodb.repl_inserts_per_sec"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of replicated insertions executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{insert}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of replicated insertions executed per second.", mi.Description())
+					assert.Equal(t, "{insert}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -888,11 +1540,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.repl_queries_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_queries_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_queries_per_sec")
 					validatedMetrics["mongodb.repl_queries_per_sec"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of replicated queries executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{query}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of replicated queries executed per second.", mi.Description())
+					assert.Equal(t, "{query}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -900,11 +1552,11 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.repl_updates_per_sec":
 					assert.False(t, validatedMetrics["mongodb.repl_updates_per_sec"], "Found a duplicate in the metrics slice: mongodb.repl_updates_per_sec")
 					validatedMetrics["mongodb.repl_updates_per_sec"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of replicated updates executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{update}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of replicated updates executed per second.", mi.Description())
+					assert.Equal(t, "{update}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -912,42 +1564,69 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.session.count":
 					assert.False(t, validatedMetrics["mongodb.session.count"], "Found a duplicate in the metrics slice: mongodb.session.count")
 					validatedMetrics["mongodb.session.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total number of active sessions.", ms.At(i).Description())
-					assert.Equal(t, "{sessions}", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of active sessions.", mi.Description())
+					assert.Equal(t, "{sessions}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.storage.size":
-					assert.False(t, validatedMetrics["mongodb.storage.size"], "Found a duplicate in the metrics slice: mongodb.storage.size")
-					validatedMetrics["mongodb.storage.size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total amount of storage allocated to this collection.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("db.namespace")
-					assert.True(t, ok)
-					assert.Equal(t, "db.namespace-val", attrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["mongodb.storage.size"], "Found a duplicate in the metrics slice: mongodb.storage.size")
+						validatedMetrics["mongodb.storage.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total amount of storage allocated to this collection.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						dbNamespaceAttrVal, ok := dp.Attributes().Get("db.namespace")
+						assert.True(t, ok)
+						assert.Equal(t, "db.namespace-val", dbNamespaceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["mongodb.storage.size"], "Found a duplicate in the metrics slice: mongodb.storage.size")
+						validatedMetrics["mongodb.storage.size"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "The total amount of storage allocated to this collection.", mi.Description())
+						assert.Equal(t, "By", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["mongodb.storage.size"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("db.namespace")
+						assert.False(t, ok)
+					}
 				case "mongodb.updates.rate":
 					assert.False(t, validatedMetrics["mongodb.updates.rate"], "Found a duplicate in the metrics slice: mongodb.updates.rate")
 					validatedMetrics["mongodb.updates.rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of updates executed per second.", ms.At(i).Description())
-					assert.Equal(t, "{update}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of updates executed per second.", mi.Description())
+					assert.Equal(t, "{update}/s", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
@@ -955,13 +1634,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.uptime":
 					assert.False(t, validatedMetrics["mongodb.uptime"], "Found a duplicate in the metrics slice: mongodb.uptime")
 					validatedMetrics["mongodb.uptime"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of time that the server has been running.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of time that the server has been running.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -969,13 +1648,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "mongodb.wtcache.bytes.read":
 					assert.False(t, validatedMetrics["mongodb.wtcache.bytes.read"], "Found a duplicate in the metrics slice: mongodb.wtcache.bytes.read")
 					validatedMetrics["mongodb.wtcache.bytes.read"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of bytes read into the WiredTiger cache.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of bytes read into the WiredTiger cache.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

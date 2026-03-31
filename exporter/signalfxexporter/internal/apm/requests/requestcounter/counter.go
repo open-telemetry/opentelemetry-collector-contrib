@@ -39,10 +39,10 @@ func ContextWithRequestCounter(ctx context.Context) context.Context {
 		// don't create a new context with counter if a counter already exists on the counter
 		return ctx
 	}
-	var c uint32
-	newCtx := context.WithValue(ctx, getRequestCountKey, getRequestCount(func() uint32 { return atomic.LoadUint32(&c) }))
-	newCtx = context.WithValue(newCtx, incrementRequestCountKey, incrementRequestCount(func() { atomic.AddUint32(&c, 1) }))
-	return context.WithValue(newCtx, resetRequestCountKey, resetRequestCount(func() { atomic.StoreUint32(&c, 0) }))
+	var c atomic.Uint32
+	newCtx := context.WithValue(ctx, getRequestCountKey, getRequestCount(c.Load))
+	newCtx = context.WithValue(newCtx, incrementRequestCountKey, incrementRequestCount(func() { c.Add(1) }))
+	return context.WithValue(newCtx, resetRequestCountKey, resetRequestCount(func() { c.Store(0) }))
 }
 
 // ResetRequestCount resets the request counter on the provided context if the context has one

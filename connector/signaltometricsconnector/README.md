@@ -7,7 +7,7 @@ Signal to metrics connector produces metrics from all signal types (traces, logs
 | ------------- |-----------|
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fsignaltometrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fsignaltometrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fsignaltometrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fsignaltometrics) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_signal_to_metrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_signal_to_metrics&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=connector_signaltometrics)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=connector_signaltometrics&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@ChrsMark](https://www.github.com/ChrsMark), [@lahsivjar](https://www.github.com/lahsivjar) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -44,21 +44,25 @@ signal_to_metrics:
       description: Count of spans
       sum:
         value: Int(AdjustedCount()) # Count of total spans represented by each span
+        monotonic: true
   datapoints:
     - name: datapoint.count
       description: Count of datapoints
       sum:
         value: "1" # increment by 1 for each datapoint
+        monotonic: true
   logs:
     - name: logrecord.count
       description: Count of log records
       sum:
         value: "1" # increment by 1 for each log record
+        monotonic: true
   profiles:
     - name: profile.count
       description: Count of profiles
       sum:
         value: "1" # increment by 1 for each profile
+        monotonic: true
 ```
 
 ### Error Handling
@@ -104,6 +108,7 @@ Sum metrics have the following configurations:
 ```yaml
 sum:
   value: <ottl_value_expression>
+  monotonic: <bool>
 ```
 
 - [**Required**] `value` represents an OTTL expression to extract a value from the
@@ -111,6 +116,7 @@ sum:
   returned value determines the value type of the `sum` metric (`int` or `double`).
   [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
+- [**Optional**] `monotonic` whether the generated metric is monotonic. It defaults to `false`.
 
 #### Gauge
 
@@ -213,10 +219,13 @@ attributes:
     default_value: bar
   - key: datapoint.baz
     optional: true
+  - keys_expression: otelcol.client.metadata["x-dynamic-attributes"]
 ```
 
+Each attribute entry must have exactly one of `key` or `keys_expression` set.
+
 If attributes are specified then a separate metric will be generated for each unique
-set of attribute values. There are three behaviors that can be configured for an
+set of attribute values. There are four behaviors that can be configured for an
 attribute:
 
 - Without any extra parameters: `datapoint.foo` in the above yaml is an example
@@ -237,6 +246,13 @@ attribute:
   attributes are not present in the incoming signal, the signal will be processed
   and will produce a metric given all other non-optional attributes are present
   or have a default value defined.
+- With `keys_expression`: The OTTL value expression is evaluated at runtime and
+  must return a list of attribute keys (`pcommon.Slice` or `[]string`). Each resolved
+  key is looked up in the signal's attributes and included in the output metric.
+  If the expression returns `nil` (e.g. missing client metadata), it is treated as
+  an empty list. Expression evaluation errors are governed by the `error_mode`
+  configuration. The `optional` and `default_value` options can be combined with
+  `keys_expression` and apply to each resolved key.
 
 Note that resource attributes are handled differently, check the resource attributes
 section for more details on this. Think of `attributes` as conditional filters for
@@ -294,7 +310,10 @@ include_resource_attributes:
     default_value: bar
   - key: resource.baz # Optional resource.baz attribute is added if present
     optional: true
+  - keys_expression: otelcol.client.metadata["x-dynamic-resource-attributes"]
 ```
+
+Each entry must have exactly one of `key` or `keys_expression` set.
 
 With the above configuration the produced metrics would have the following
 resource attributes:
@@ -309,6 +328,17 @@ resource attributes:
   are basically an include list, the `optional` option is a no-op i.e. the resource
   attributes with `optional` set to `true` behaves identical to an attribute configured
   without `default_value` or `optional`.
+- The `keys_expression` entry evaluates the OTTL value expression at runtime to
+  resolve a list of attribute keys. The expression must return a list of strings
+  (`pcommon.Slice` or `[]string`). Each resolved key is looked up in the resource
+  attributes and included in the output metric. If the expression returns `nil`
+  (e.g. missing client metadata), it is treated as an empty list. Expression
+  evaluation errors are governed by the `error_mode` configuration. The `optional`
+  and `default_value` options can be combined with `keys_expression` and apply to
+  each resolved key. OTTL expressions for `include_resource_attributes` should
+  only reference resource-level paths (e.g. `resource.attributes`) or context-level
+  paths (e.g. `otelcol.client.metadata`), not signal-specific paths (e.g.
+  `attributes`, `span.*`, `log.*`).
 
 ### Single writer
 

@@ -62,3 +62,7 @@ func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace 
 		return slices.Contains(r.statusCodes, span.Status().Code())
 	}), nil
 }
+
+func (*statusCodeFilter) IsStateful() bool {
+	return false
+}

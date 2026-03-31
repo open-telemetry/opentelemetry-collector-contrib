@@ -19,6 +19,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "24"
                   timeUnixNano: "1000000"
+              isMonotonic: true
           - description: Count total number of datapoints as per datapoint.foo attribute
             name: datapoint.foo.sum
             sum:
@@ -36,6 +37,7 @@ resourceMetrics:
                       value:
                         stringValue: notfoo
                   timeUnixNano: "1000000"
+              isMonotonic: true
           - description: Count total number of datapoints as per datapoint.bar attribute
             name: datapoint.bar.sum
             sum:
@@ -53,5 +55,14 @@ resourceMetrics:
                       value:
                         stringValue: notbar
                   timeUnixNano: "1000000"
+              isMonotonic: true
+          - description: A non-monotonic sum
+            name: non.monotonic.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "456"
+                  timeUnixNano: "1000000"
+              isMonotonic: false
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
