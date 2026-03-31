@@ -159,7 +159,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.processes.created"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
 					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Total number of created processes.", mi.Description())
+					assert.Equal(t, "Total number of created processes. Supported on Linux and OpenBSD.", mi.Description())
 					assert.Equal(t, "{processes}", mi.Unit())
 					assert.True(t, mi.Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())

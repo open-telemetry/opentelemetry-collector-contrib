@@ -35,6 +35,8 @@ $defs:
         type: string
       multiline:
         $ref: /pkg/stanza/split.config
+      on_truncate:
+        type: string
       poll_interval:
         type: string
         format: duration
