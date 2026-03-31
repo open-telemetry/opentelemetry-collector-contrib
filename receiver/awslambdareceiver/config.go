@@ -68,7 +68,6 @@ func (e *S3Encoding) Validate() error {
 }
 
 // sharedConfig defines configuration options shared between Lambda trigger types.
-// Note: not modified in this PR. CloudWatch will migrate to a dedicated type in PR 2.
 type sharedConfig struct {
 	// Encoding defines the encoding to decode incoming Lambda invocation data.
 	Encoding string `mapstructure:"encoding"`
@@ -134,7 +133,6 @@ type Config struct {
 	S3 S3Config `mapstructure:"s3"`
 
 	// CloudWatch defines configuration for the CloudWatch Logs Lambda trigger.
-	// Note: stays as sharedConfig until PR 2.
 	CloudWatch sharedConfig `mapstructure:"cloudwatch"`
 
 	// FailureBucketARN is the ARN of the S3 bucket used to store failed Lambda event records.
