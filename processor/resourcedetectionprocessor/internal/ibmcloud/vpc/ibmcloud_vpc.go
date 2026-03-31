@@ -54,6 +54,9 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	meta, err := d.provider.InstanceMetadata(ctx)
 	if err != nil {
 		d.logger.Debug("IBM Cloud VPC metadata not available", zap.Error(err))
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", fmt.Errorf("ibmcloud vpc metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

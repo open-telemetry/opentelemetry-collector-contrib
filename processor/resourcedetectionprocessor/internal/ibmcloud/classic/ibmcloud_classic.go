@@ -5,6 +5,7 @@ package classic // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -47,6 +48,9 @@ func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error)
 	meta, err := d.provider.InstanceMetadata(ctx)
 	if err != nil {
 		d.logger.Debug("IBM Cloud Classic metadata not available", zap.Error(err))
+		if internal.FailOnMissingMetadataFromContext(ctx) {
+			return pcommon.NewResource(), "", fmt.Errorf("ibmcloud classic metadata unavailable: %w", err)
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
