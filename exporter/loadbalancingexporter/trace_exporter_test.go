@@ -211,6 +211,86 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	<-consumeDone
 }
 
+func TestConsumeTraces_ConcurrentBackendSends(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	t.Cleanup(func() {
+		releaseOnce.Do(func() {
+			close(release)
+		})
+	})
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
+			started <- struct{}{}
+			<-release
+			return nil
+		}), nil
+	}
+
+	config := serviceBasedRoutingConfig()
+	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, config)
+	require.NoError(t, err)
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	var routingIDs []string
+	endpointByID := make(map[string]struct{})
+	for i := range 200 {
+		id := fmt.Sprintf("service-%d", i)
+		_, endpoint, err := p.loadBalancer.exporterAndEndpoint([]byte(id))
+		require.NoError(t, err)
+		if _, ok := endpointByID[endpoint]; ok {
+			continue
+		}
+		endpointByID[endpoint] = struct{}{}
+		routingIDs = append(routingIDs, id)
+		if len(routingIDs) == 2 {
+			break
+		}
+	}
+	require.Len(t, routingIDs, 2, "expected routing ids to map to at least two endpoints")
+
+	traces := ptrace.NewTraces()
+	for i, routingID := range routingIDs {
+		rs := traces.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", routingID)
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID([16]byte{byte(i + 1)})
+	}
+
+	consumeDone := make(chan error, 1)
+	go func() {
+		consumeDone <- p.ConsumeTraces(t.Context(), traces)
+	}()
+
+	select {
+	case <-started:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("first backend send was not started")
+	}
+	select {
+	case <-started:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("backend sends did not start concurrently")
+	}
+
+	releaseOnce.Do(func() {
+		close(release)
+	})
+	require.NoError(t, <-consumeDone)
+}
+
 func TestConsumeTracesServiceBased(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
