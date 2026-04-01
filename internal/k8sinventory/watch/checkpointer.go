@@ -117,13 +117,22 @@ func (c *checkpointer) Flush(ctx context.Context) error {
 	c.pending = make(map[string]string)
 	c.mu.Unlock()
 
+	failed := false
 	for key, rv := range snapshot {
 		if err := c.client.Set(ctx, key, []byte(rv)); err != nil {
-			return fmt.Errorf("failed to flush checkpoint with key %s: %w", key, err)
+			c.logger.Error("failed to flush checkpoint",
+				zap.String("key", key),
+				zap.String("resourceVersion", rv),
+				zap.Error(err))
+			failed = true
+			continue
 		}
 		c.logger.Debug("flushed resourceVersion checkpoint",
 			zap.String("key", key),
 			zap.String("resourceVersion", rv))
+	}
+	if failed {
+		return errors.New("one or more checkpoints failed to be stored")
 	}
 	return nil
 }

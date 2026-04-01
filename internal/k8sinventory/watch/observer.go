@@ -184,6 +184,7 @@ func (o *Observer) startWatch(ctx context.Context, resource dynamic.ResourceInte
 			if err != nil {
 				o.logger.Error("could not retrieve a resourceVersion",
 					zap.String("resource", o.config.Gvr.String()),
+					zap.String("namespace", namespace),
 					zap.Error(err))
 				cancel()
 				return
@@ -233,8 +234,7 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 			o.logger.Debug("retrieved persisted resourceVersion",
 				zap.String("resourceVersion", rv),
 				zap.String("namespace", namespace),
-				zap.String("resource", o.config.Gvr.Resource),
-				zap.Error(err))
+				zap.String("resource", o.config.Gvr.Resource))
 			if parsed, err := strconv.ParseInt(rv, 10, 64); err == nil {
 				persistedRV = parsed
 			}
@@ -267,14 +267,22 @@ func (o *Observer) sendInitialState(ctx context.Context, resource dynamic.Resour
 		rv := obj.GetResourceVersion()
 
 		// Skip objects that were already processed before the last checkpoint.
+		// If the object's RV cannot be parsed, emit the event anyway to avoid
+		// silently dropping it — a potential duplicate is safer than a missed event.
 		if persistedRV > 0 {
-			if objRV, err := strconv.ParseInt(rv, 10, 64); err != nil || objRV <= persistedRV {
-				o.logger.Debug("skipping forwarding the object as persisted rv is greater",
-					zap.String("persisted_resourceVersion", strconv.FormatInt(persistedRV, 10)),
+			objRV, err := strconv.ParseInt(rv, 10, 64)
+			if err != nil {
+				o.logger.Warn("could not parse object resourceVersion, emitting event to avoid data loss",
 					zap.String("object_resourceVersion", rv),
 					zap.String("namespace", namespace),
 					zap.String("resource", o.config.Gvr.String()),
 					zap.Error(err))
+			} else if objRV <= persistedRV {
+				o.logger.Debug("skipping object already processed before last checkpoint",
+					zap.String("persisted_resourceVersion", strconv.FormatInt(persistedRV, 10)),
+					zap.String("object_resourceVersion", rv),
+					zap.String("namespace", namespace),
+					zap.String("resource", o.config.Gvr.String()))
 				continue
 			}
 		}
@@ -374,7 +382,7 @@ func (o *Observer) fetchListResourceVersion(ctx context.Context, resource dynami
 		LabelSelector: o.config.LabelSelector,
 	})
 	if err != nil {
-		return "", fmt.Errorf("could not perform initial list for watch on %v, %w", o.config.Gvr.String(), err)
+		return "", fmt.Errorf("could not perform initial list for watch on %s, %w", o.config.Gvr.String(), err)
 	}
 	if objects == nil {
 		return "", errors.New("nil objects returned, this is an error in the k8s observer")
@@ -412,6 +420,10 @@ func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.Reso
 		// No valid persisted version found - get from List and persist it
 		listVersion, err := o.fetchListResourceVersion(ctx, resource)
 		if err != nil {
+			o.logger.Error("failed to retrieve resourceVersion from List() API",
+				zap.String("namespace", namespace),
+				zap.String("resource", o.config.Gvr.String()),
+				zap.Error(err))
 			return "", err
 		}
 
@@ -426,7 +438,10 @@ func (o *Observer) getResourceVersion(ctx context.Context, resource dynamic.Reso
 				zap.String("resource", o.config.Gvr.Resource),
 				zap.String("resourceVersion", listVersion),
 				zap.Error(err))
-		} else if err := o.checkpointer.Flush(ctx); err != nil {
+		}
+
+		// Flush the checkpoint to storage immediately.
+		if err := o.checkpointer.Flush(ctx); err != nil {
 			o.logger.Error("failed to flush initial resourceVersion",
 				zap.String("namespace", namespace),
 				zap.String("resource", o.config.Gvr.Resource),

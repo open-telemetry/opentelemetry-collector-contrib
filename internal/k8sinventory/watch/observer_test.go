@@ -437,6 +437,53 @@ func TestInitialStateListRVPersistedAsCheckpoint(t *testing.T) {
 	assert.Equal(t, "999", rv, "checkpoint should hold the list RV, not a lower individual object RV")
 }
 
+// TestSendInitialStateUnparsableRVEmitsEvent verifies that when an object has a
+// non-integer resourceVersion (which cannot be compared against the persisted RV),
+// the event is still emitted rather than silently dropped. Emitting a potential
+// duplicate is safer than missing an event.
+func TestSendInitialStateUnparsableRVEmitsEvent(t *testing.T) {
+	mockClient := newMockDynamicClient()
+	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+
+	// Persist a checkpoint so the deduplication path is active.
+	cp := newCheckpointer(storageClient, zap.NewNop())
+	require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", "100"))
+	require.NoError(t, cp.Flush(t.Context()))
+
+	// pod1 has a valid RV <= persisted (should be skipped).
+	// pod2 has an unparsable RV (should be emitted despite parse failure).
+	// pod3 has a valid RV > persisted (should be emitted normally).
+	mockClient.createPods(
+		generatePod("pod1", "default", nil, "50"),
+		generatePod("pod2", "default", nil, "not-a-number"),
+		generatePod("pod3", "default", nil, "200"),
+	)
+
+	cfg := Config{
+		Config: k8sinventory.Config{
+			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+			Namespaces: []string{"default"},
+		},
+		PersistResourceVersion: true,
+	}
+
+	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)
+	require.NoError(t, err)
+
+	var emitted []string
+	obs.handleWatchEventFunc = func(event *apiWatch.Event) {
+		obj, ok := event.Object.(*unstructured.Unstructured)
+		require.True(t, ok)
+		emitted = append(emitted, obj.GetName())
+	}
+
+	resource := mockClient.Resource(cfg.Gvr)
+	obs.sendInitialState(t.Context(), resource.Namespace("default"), "default", func(string) {})
+
+	assert.ElementsMatch(t, []string{"pod2", "pod3"}, emitted,
+		"pod1 (rv<=persisted) must be skipped; pod2 (unparsable rv) and pod3 (rv>persisted) must be emitted")
+}
+
 func verifyReceivedEvents(t *testing.T, numEvents int, receivedEventsChan chan *apiWatch.Event, stopChan chan struct{}) {
 	receivedEvents := 0
 
