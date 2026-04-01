@@ -112,11 +112,6 @@ func TestBuildPartitionerOpt(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "default (empty type)",
-			cfg:  RecordPartitionerConfig{},
-			host: componenttest.NewNopHost(),
-		},
-		{
 			name: "sarama_compatible",
 			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeSaramaCompatible},
 			host: componenttest.NewNopHost(),
@@ -261,7 +256,9 @@ func TestRecordPartitioner_SaramaCompatible_SameKeyConsistency(t *testing.T) {
 	const numRecords = 6
 
 	client, brokers := newPartitioningProducer(t,
-		RecordPartitionerConfig{}, // default = sarama_compatible
+		RecordPartitionerConfig{
+			Type: RecordPartitionerTypeSaramaCompatible,
+		},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
 
