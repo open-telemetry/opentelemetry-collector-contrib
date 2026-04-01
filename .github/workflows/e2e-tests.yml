@@ -199,9 +199,10 @@ jobs:
           podman load < /tmp/otelcontribcol.tar
       - name: Resolve host endpoint for CRC network
         run: |
-          HOST_ENDPOINT=$(ip -4 addr show crc 2>/dev/null | grep -oP 'inet \K[\d.]+')
+          CRC_IP=$(sg libvirt -c "crc ip")
+          HOST_ENDPOINT=$(ip route get "$CRC_IP" | grep -oP 'src \K[\d.]+')
           echo "HOST_ENDPOINT=${HOST_ENDPOINT}" >> "$GITHUB_ENV"
-          echo "Host endpoint for CRC: ${HOST_ENDPOINT}"
+          echo "Host endpoint for CRC: ${HOST_ENDPOINT} (VM: ${CRC_IP})"
       - name: Run OpenShift E2E tests
         env:
           KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
