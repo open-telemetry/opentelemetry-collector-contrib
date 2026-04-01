@@ -39,6 +39,7 @@ func TestComponentLifecycle(t *testing.T) {
 				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
+
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
