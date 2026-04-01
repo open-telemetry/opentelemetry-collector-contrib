@@ -3047,7 +3047,7 @@ func Test_NonDeterministicConverter_PreventsConstantFolding(t *testing.T) {
 	// should report canFold=true when there are no arguments (trivially
 	// "all-literal").
 	deterministicFactory := NewFactory(
-		"testing_deterministic",
+		"Testing_deterministic",
 		nil,
 		func(FunctionContext, Arguments) (ExprFunc[any], error) {
 			return func(context.Context, any) (any, error) {
@@ -3061,7 +3061,7 @@ func Test_NonDeterministicConverter_PreventsConstantFolding(t *testing.T) {
 	// arguments, newFunctionCall should report canFold=false so the
 	// parser never evaluates it at parse time.
 	nonDeterministicFactory := NewFactory(
-		"testing_nondeterministic",
+		"Testing_nondeterministic",
 		nil,
 		func(FunctionContext, Arguments) (ExprFunc[any], error) {
 			return func(context.Context, any) (any, error) {
@@ -3081,7 +3081,7 @@ func Test_NonDeterministicConverter_PreventsConstantFolding(t *testing.T) {
 
 	// Deterministic converter with no arguments → canFold must be true.
 	_, canFold, err := p.newFunctionCall(editor{
-		Function:  "testing_deterministic",
+		Function:  "Testing_deterministic",
 		Arguments: []argument{},
 	})
 	require.NoError(t, err)
@@ -3089,9 +3089,25 @@ func Test_NonDeterministicConverter_PreventsConstantFolding(t *testing.T) {
 
 	// Non-deterministic converter with no arguments → canFold must be false.
 	_, canFold, err = p.newFunctionCall(editor{
-		Function:  "testing_nondeterministic",
+		Function:  "Testing_nondeterministic",
 		Arguments: []argument{},
 	})
 	require.NoError(t, err)
 	assert.False(t, canFold, "non-deterministic converter should never be foldable")
+}
+
+func Test_NonDeterministicConverter_PanicsForEditor(t *testing.T) {
+	// NonDeterministicConverter must only be used with converters (uppercase
+	// name). Applying it to an editor (lowercase name) should panic at
+	// factory creation time.
+	assert.Panics(t, func() {
+		NewFactory[any](
+			"lowercase_editor",
+			nil,
+			func(FunctionContext, Arguments) (ExprFunc[any], error) {
+				return func(context.Context, any) (any, error) { return nil, nil }, nil
+			},
+			NonDeterministicConverter[any](),
+		)
+	})
 }

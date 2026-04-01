@@ -4,6 +4,9 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"fmt"
+	"unicode"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 )
@@ -100,6 +103,10 @@ func NewFactory[K any](name string, args Arguments, createFunctionFunc CreateFun
 
 	for _, option := range options {
 		option(f)
+	}
+
+	if f.nonDeterministic && (len(name) == 0 || !unicode.IsUpper(rune(name[0]))) {
+		panic(fmt.Sprintf("NonDeterministicConverter can only be used with converters (uppercase name), got %q", name))
 	}
 
 	return f

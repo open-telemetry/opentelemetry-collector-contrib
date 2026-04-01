@@ -315,6 +315,21 @@ func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
 	return g, nil
 }
 
+// isLiteralArg reports whether val is a compile-time literal argument.
+// Getter wrappers that originate from literal values implement literalGetter.
+// Raw scalar types (string, int64, float64, bool) from the OTTL grammar are
+// inherently literal.
+func isLiteralArg(val any) bool {
+	if _, ok := val.(literalGetter); ok {
+		return true
+	}
+	switch val.(type) {
+	case string, int64, float64, bool:
+		return true
+	}
+	return false
+}
+
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], bool, error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
@@ -427,7 +442,11 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) (bool, error) {
 			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case fieldType.Kind() == reflect.Slice:
-			val, err = p.buildSliceArg(arg.Value, fieldType)
+			var argLiteral bool
+			val, argLiteral, err = p.buildSliceArg(arg.Value, fieldType)
+			if !argLiteral {
+				allLiteral = false
+			}
 		default:
 			val, err = p.buildArg(arg.Value, fieldType)
 		}
@@ -441,19 +460,13 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) (bool, error) {
 			field.Set(reflect.ValueOf(val))
 		}
 
-		// Minimal literal detection: prefer the internal `literalGetter` marker.
-		// If the constructed value itself implements the marker it's literal.
-		// Also accept slices of untyped getters where each element implements
-		// the marker. Anything else is conservatively non-literal.
-		if _, ok := val.(literalGetter); !ok {
-			if sget, ok := val.([]Getter[K]); ok {
-				for _, el := range sget {
-					if _, lok := el.(literalGetter); !lok {
-						allLiteral = false
-						break
-					}
-				}
-			} else {
+		// For non-slice arguments, check whether the constructed value is a
+		// compile-time literal. Getter wrappers propagate the literalGetter
+		// marker, and raw scalars (string, int64, float64, bool) from the
+		// OTTL grammar are inherently literal. Slice arguments are already
+		// tracked via buildSliceArg above.
+		if fieldType.Kind() != reflect.Slice {
+			if !isLiteralArg(val) {
 				allLiteral = false
 			}
 		}
@@ -463,100 +476,100 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) (bool, error) {
 	return allLiteral, nil
 }
 
-func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
+func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, bool, error) {
 	name := argType.Elem().Name()
 	switch {
 	case name == reflect.Uint8.String():
 		if argVal.Bytes == nil {
-			return nil, errors.New("slice parameter must be a byte slice literal")
+			return nil, false, errors.New("slice parameter must be a byte slice literal")
 		}
-		return []byte(*argVal.Bytes), nil
+		return []byte(*argVal.Bytes), true, nil
 	case name == reflect.String.String():
-		arg, err := buildSlice[string](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[string](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case name == reflect.Float64.String():
-		arg, err := buildSlice[float64](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[float64](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case name == reflect.Int64.String():
-		arg, err := buildSlice[int64](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[int64](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "Getter"):
-		arg, err := buildSlice[Getter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[Getter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "PMapGetter"):
-		arg, err := buildSlice[PMapGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[PMapGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "PSliceGetter"):
-		arg, err := buildSlice[PSliceGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[PSliceGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "StringGetter"):
-		arg, err := buildSlice[StringGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[StringGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "StringLikeGetter"):
-		arg, err := buildSlice[StringLikeGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[StringLikeGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "FloatGetter"):
-		arg, err := buildSlice[FloatGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[FloatGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "FloatLikeGetter"):
-		arg, err := buildSlice[FloatLikeGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[FloatLikeGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "IntGetter"):
-		arg, err := buildSlice[IntGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[IntGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "IntLikeGetter"):
-		arg, err := buildSlice[IntLikeGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[IntLikeGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "DurationGetter"):
-		arg, err := buildSlice[DurationGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[DurationGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	case strings.HasPrefix(name, "TimeGetter"):
-		arg, err := buildSlice[TimeGetter[K]](argVal, argType, p.buildArg, name)
+		arg, isLiteral, err := buildSlice[TimeGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return arg, nil
+		return arg, isLiteral, nil
 	default:
-		return nil, fmt.Errorf("unsupported slice type %q for function", argType.Elem().Name())
+		return nil, false, fmt.Errorf("unsupported slice type %q for function", argType.Elem().Name())
 	}
 }
 
@@ -718,29 +731,34 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 
 type buildArgFunc func(value, reflect.Type) (any, error)
 
-func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc, name string) (any, error) {
+func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc, name string) (any, bool, error) {
 	if argVal.List == nil {
-		return nil, fmt.Errorf("must be a list of type %v", name)
+		return nil, false, fmt.Errorf("must be a list of type %v", name)
 	}
 
+	allLiteral := true
 	vals := []T{}
 	values := argVal.List.Values
 	for j := range values {
 		untypedVal, err := buildArg(values[j], argType.Elem())
 		if err != nil {
-			return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
+			return nil, false, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
+		}
+
+		if _, ok := untypedVal.(literalGetter); !ok {
+			allLiteral = false
 		}
 
 		val, ok := untypedVal.(T)
 
 		if !ok {
-			return nil, fmt.Errorf("invalid element type at list index %v, must be of type %v", j, name)
+			return nil, false, fmt.Errorf("invalid element type at list index %v, must be of type %v", j, name)
 		}
 
 		vals = append(vals, val)
 	}
 
-	return vals, nil
+	return vals, allLiteral, nil
 }
 
 // optionalManager provides a way for the parser to handle Optional[T] structs
