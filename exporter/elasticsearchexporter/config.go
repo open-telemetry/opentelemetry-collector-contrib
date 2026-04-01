@@ -120,23 +120,21 @@ type Config struct {
 	// Keys are case-insensitive and duplicates will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys"`
 
-	// FilterPath, if set will override the default filter_path of
-	// the bulk API request, which is
-	// "items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason"
-	// This can be used to control what data is returned in the
-	// response from Elasticsearch.
+	// BulkResponseFilterPath sets the filter_path parameter of bulk API requests,
+	// which controls what data is returned in the response from Elasticsearch.
 	//
-	// Note: If `items.*._index.items` is not in the FilterPath
+	// Note: If `items.*._index.items` is not in the BulkResponseFilterPath
 	// than for any failed documents, the exporter will not be able
 	// to log the index to which the document was being written
 	// to.
 	//
-	// Note: if `items.*._index.items` is not in the FilterPath
+	// Note: if `items.*._index.items` is not in the BulkResponseFilterPath
 	// than the export will log rejection of duplicates to
 	// ".profiling-stackframes" which were previously suppressed.
 	//
-	// FilterPath is Unset by default
-	FilterPath string `mapstructure:"filter_path"`
+	// BulkResponseFilterPath defaults to
+	// "items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason"
+	FilterPath string `mapstructure:"bulk_response_filter_path"`
 }
 
 type TelemetrySettings struct {
