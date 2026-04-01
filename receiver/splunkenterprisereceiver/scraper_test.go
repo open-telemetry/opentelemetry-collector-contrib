@@ -374,7 +374,6 @@ func TestParseFieldsToRows(t *testing.T) {
 	}
 }
 
-
 func newTestScopeMetrics() pmetric.ScopeMetrics {
 	return pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 }
@@ -405,9 +404,8 @@ func TestAppendSearchMetrics(t *testing.T) {
 			{FieldName: "count", Value: "96"},
 			{FieldName: "rate", Value: "4.20"},
 		}
-		s := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), &Config{})
 		sm := newTestScopeMetrics()
-		s.appendSearchMetrics(now, sm, search, fields)
+		appendSearchMetrics(now, sm, search, fields)
 
 		metrics := sm.Metrics()
 		intDPs := metrics.At(0).Gauge().DataPoints()
@@ -429,9 +427,8 @@ func TestAppendSearchMetrics(t *testing.T) {
 		fields := []*field{
 			{FieldName: "count", Value: "7.9"},
 		}
-		s := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), &Config{})
 		sm := newTestScopeMetrics()
-		s.appendSearchMetrics(now, sm, SearchConfig{
+		appendSearchMetrics(now, sm, SearchConfig{
 			Metrics: []MetricConfig{{MetricName: "m", ValueColumn: "count", ValueType: MetricValueTypeInt}},
 		}, fields)
 
@@ -444,9 +441,8 @@ func TestAppendSearchMetrics(t *testing.T) {
 		fields := []*field{
 			{FieldName: "count", Value: "ayyy its batmanta time"},
 		}
-		s := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), &Config{})
 		sm := newTestScopeMetrics()
-		s.appendSearchMetrics(now, sm, SearchConfig{
+		appendSearchMetrics(now, sm, SearchConfig{
 			Metrics: []MetricConfig{{MetricName: "m", ValueColumn: "count", ValueType: MetricValueTypeInt}},
 		}, fields)
 
@@ -458,9 +454,8 @@ func TestAppendSearchMetrics(t *testing.T) {
 		fields := []*field{
 			{FieldName: "host", Value: "srv1"},
 		}
-		s := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), &Config{})
 		sm := newTestScopeMetrics()
-		s.appendSearchMetrics(now, sm, SearchConfig{
+		appendSearchMetrics(now, sm, SearchConfig{
 			Metrics: []MetricConfig{{MetricName: "m", ValueColumn: "count", ValueType: MetricValueTypeInt}},
 		}, fields)
 

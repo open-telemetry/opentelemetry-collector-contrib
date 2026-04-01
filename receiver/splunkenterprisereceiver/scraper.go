@@ -32,10 +32,10 @@ var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded
 const receiverScope = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 type splunkScraper struct {
-	splunkClient *splunkEntClient
-	settings     component.TelemetrySettings
-	conf         *Config
-	mb           *metadata.MetricsBuilder
+	splunkClient  *splunkEntClient
+	settings      component.TelemetrySettings
+	conf          *Config
+	mb            *metadata.MetricsBuilder
 	customMetrics pmetric.Metrics
 	customMu      sync.Mutex
 }
@@ -2330,11 +2330,12 @@ func (s *splunkScraper) formatSPLForSearch(search SearchConfig) string {
 			latest = "now"
 		}
 
-		if !hasEarliest && !hasLatest {
+		switch {
+		case !hasEarliest && !hasLatest:
 			timeRange = fmt.Sprintf("earliest=%s latest=%s ", earliest, latest)
-		} else if !hasEarliest {
+		case !hasEarliest:
 			timeRange = fmt.Sprintf("earliest=%s ", earliest)
-		} else {
+		default:
 			timeRange = fmt.Sprintf("latest=%s ", latest)
 		}
 	}
@@ -2352,7 +2353,7 @@ func (s *splunkScraper) formatSPLForSearch(search SearchConfig) string {
 // `| tstats` doesn't get time window normally so we need to check for it and treat it with specialness
 func isTstatsCommand(spl string) bool {
 	fields := strings.Fields(spl[1:])
-	return len(fields) > 0 && strings.ToLower(fields[0]) == "tstats"
+	return len(fields) > 0 && strings.EqualFold(fields[0], "tstats")
 }
 
 func (s *splunkScraper) injectTstatsTimeRange(spl string, search SearchConfig) string {
@@ -2374,11 +2375,12 @@ func (s *splunkScraper) injectTstatsTimeRange(spl string, search SearchConfig) s
 	}
 
 	var timeRange string
-	if !hasEarliest && !hasLatest {
+	switch {
+	case !hasEarliest && !hasLatest:
 		timeRange = fmt.Sprintf("earliest=%s latest=%s", earliest, latest)
-	} else if !hasEarliest {
+	case !hasEarliest:
 		timeRange = fmt.Sprintf("earliest=%s", earliest)
-	} else {
+	default:
 		timeRange = fmt.Sprintf("latest=%s", latest)
 	}
 
@@ -2456,7 +2458,7 @@ func (s *splunkScraper) scrapeCustomSearches(_ context.Context, now pcommon.Time
 	sm.Scope().SetName(receiverScope)
 
 	for _, r := range results {
-		s.appendSearchMetrics(now, sm, r.cfg, r.fields)
+		appendSearchMetrics(now, sm, r.cfg, r.fields)
 	}
 }
 
@@ -2513,7 +2515,7 @@ func (s *splunkScraper) executeCustomSearch(search SearchConfig, eptType string)
 }
 
 // appendSearchMetrics writes metrics for a single search using customMu
-func (s *splunkScraper) appendSearchMetrics(now pcommon.Timestamp, sm pmetric.ScopeMetrics, search SearchConfig, fields []*field) {
+func appendSearchMetrics(now pcommon.Timestamp, sm pmetric.ScopeMetrics, search SearchConfig, fields []*field) {
 	rows := parseFields(fields)
 	if len(rows) == 0 {
 		return
