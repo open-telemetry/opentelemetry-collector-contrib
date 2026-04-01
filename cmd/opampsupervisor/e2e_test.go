@@ -885,6 +885,71 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
+func TestSupervisorPackageCapabilitiesGuarded(t *testing.T) {
+	// Verifies that when accepts_packages or reports_package_statuses are enabled,
+	// the supervisor logs a warning and does not report those capabilities to the server.
+	if runtime.GOOS == "windows" {
+		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
+	}
+
+	var capabilities atomic.Uint64
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+		OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			capabilities.Store(message.Capabilities)
+			return &protobufs.ServerToAgent{}
+		},
+	})
+	defer server.shutdown()
+	server.start()
+
+	storageDir := t.TempDir()
+	supervisorLogFilePath := filepath.Join(storageDir, "supervisor_log.log")
+	cfgFile := getSupervisorConfig(t, "packages_cap", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+		"log_level":   "0",
+		"log_file":    supervisorLogFilePath,
+	})
+	cfg, err := config.Load(cfgFile.Name())
+	require.NoError(t, err)
+	logger, err := telemetry.NewLogger(cfg.Telemetry.Logs)
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(t.Context(), logger, cfg)
+	require.NoError(t, err)
+	require.Nil(t, s.Start(t.Context()))
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+	// Verify the package capabilities are NOT reported to the server
+	require.Eventually(t, func() bool {
+		caps := capabilities.Load()
+		if caps == 0 {
+			return false
+		}
+		hasAcceptsPackages := caps&uint64(protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages) != 0
+		hasReportsPackageStatuses := caps&uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses) != 0
+		return !hasAcceptsPackages && !hasReportsPackageStatuses
+	}, 5*time.Second, 250*time.Millisecond, "Package capabilities should not be reported to server")
+
+	// Verify the warning log was written
+	logFile, err := os.Open(supervisorLogFilePath)
+	require.NoError(t, err)
+	defer logFile.Close()
+
+	logContent, err := io.ReadAll(logFile)
+	require.NoError(t, err)
+	require.Contains(t, string(logContent),
+		"accepts_packages and reports_package_statuses capabilities are not yet fully implemented and are disabled",
+		"Expected warning about disabled package capabilities in supervisor log")
+}
+
 func TestSupervisorBootstrapsCollector(t *testing.T) {
 	tests := []struct {
 		name     string

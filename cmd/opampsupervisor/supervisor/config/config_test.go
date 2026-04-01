@@ -629,6 +629,14 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
+			name: "Package capabilities have no effect",
+			capabilities: Capabilities{
+				AcceptsPackages:        true,
+				ReportsPackageStatuses: true,
+			},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+		},
+		{
 			name: "Many capabilities",
 			capabilities: Capabilities{
 				AcceptsRemoteConfig:            true,
@@ -642,6 +650,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsRemoteConfig:            true,
 				ReportsAvailableComponents:     true,
 				ReportsHeartbeat:               true,
+				AcceptsPackages:                true,
+				ReportsPackageStatuses:         true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
