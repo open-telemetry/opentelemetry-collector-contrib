@@ -20,9 +20,6 @@ SELECT TOP(@top)
         ) / 2
       ) + 1) AS statement_text,
   r.blocking_session_id,
-  ISNULL(blocking_info.blocking_start_time, '') AS blocking_start_time,
-  ISNULL(blocking_info.resource_id, '') AS resource_id,
-  ISNULL(blocking_info.resource_type, '') AS resource_type,
   ISNULL(r.wait_type, '') AS wait_type,
   r.wait_time,
   r.wait_resource,
@@ -51,21 +48,4 @@ SELECT TOP(@top)
 FROM sys.dm_exec_requests r
 INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
 INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
-OUTER APPLY (
-  SELECT TOP (1)
-    CASE
-      WHEN wt.blocking_session_id > 0 AND wt.wait_duration_ms > 0
-        THEN CONVERT(NVARCHAR, TODATETIMEOFFSET(DATEADD(MILLISECOND, -wt.wait_duration_ms, SYSDATETIME()), DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126)
-      ELSE ''
-    END AS blocking_start_time,
-    ISNULL(CONVERT(NVARCHAR(64), tl.resource_associated_entity_id), '') AS resource_id,
-    ISNULL(tl.resource_type, '') AS resource_type
-  FROM sys.dm_os_waiting_tasks wt
-  LEFT JOIN sys.dm_tran_locks tl
-    ON wt.resource_address = tl.lock_owner_address
-   AND tl.request_session_id = r.session_id
-   AND tl.request_request_id = r.request_id
-  WHERE wt.session_id = r.session_id
-  ORDER BY wt.wait_duration_ms DESC, tl.resource_type, tl.resource_associated_entity_id
-) AS blocking_info
 CROSS APPLY sys.dm_exec_sql_text(r.plan_handle) AS o;
