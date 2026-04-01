@@ -390,21 +390,21 @@ func TestNewBulkIndexer(t *testing.T) {
 	t.Cleanup(func() { bi.Close(t.Context()) })
 }
 
-func TestFilterPathInBulkRequest(t *testing.T) {
+func TestBulkResponseFilterPath(t *testing.T) {
 	tests := []struct {
-		name           string
-		filterPath     string
-		wantFilterPath string
+		name                   string
+		bulkResponseFilterPath string
+		wantFilterPath         string
 	}{
 		{
-			name:           "default filter_path when not set",
-			filterPath:     "",
-			wantFilterPath: docappender.DefaultFilterPath,
+			name:                   "default filter_path when not set",
+			bulkResponseFilterPath: "",
+			wantFilterPath:         docappender.DefaultFilterPath,
 		},
 		{
-			name:           "custom filter_path when set",
-			filterPath:     "items.*.status,items.*.error",
-			wantFilterPath: "items.*.status,items.*.error",
+			name:                   "custom filter_path when set",
+			bulkResponseFilterPath: "items.*.status,items.*.error",
+			wantFilterPath:         "items.*.status,items.*.error",
 		},
 	}
 
@@ -412,14 +412,14 @@ func TestFilterPathInBulkRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoints = []string{"http://localhost:9200"}
-			cfg.FilterPath = tt.filterPath
+			cfg.BulkResponseFilterPath = tt.bulkResponseFilterPath
 
 			client, err := newElasticsearchClient(t.Context(), cfg, componenttest.NewNopHost(), componenttest.NewTelemetry().NewTelemetrySettings(), "")
 			require.NoError(t, err)
 
 			// Verify the FilterPath is correctly set in the BulkIndexerConfig.
 			bi := bulkIndexerConfig(client, cfg, false, zaptest.NewLogger(t))
-			require.Equal(t, tt.filterPath, bi.FilterPath)
+			require.Equal(t, tt.bulkResponseFilterPath, bi.FilterPath)
 
 			// Verify the filter_path query param is sent correctly in the HTTP request.
 			var gotFilterPath string

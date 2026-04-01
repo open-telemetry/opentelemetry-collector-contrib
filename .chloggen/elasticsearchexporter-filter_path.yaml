@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/elasticsearch
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add ability to set filter_path in Elasticsearch exporter
+note: Add ability to set filter_path in Elasticsearch exporter via the bulk_response_filter_path option.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47204]

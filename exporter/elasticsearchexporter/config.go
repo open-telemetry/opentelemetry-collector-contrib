@@ -134,7 +134,7 @@ type Config struct {
 	//
 	// BulkResponseFilterPath defaults to
 	// "items.*._index,items.*.status,items.*.failure_store,items.*.error.type,items.*.error.reason"
-	FilterPath string `mapstructure:"bulk_response_filter_path"`
+	BulkResponseFilterPath string `mapstructure:"bulk_response_filter_path"`
 }
 
 type TelemetrySettings struct {
