@@ -40,7 +40,7 @@ type Config struct {
 	// CustomerID is the customer ID that will be used to send logs to Google SecOps.
 	CustomerID string `mapstructure:"customer_id"`
 
-	// OverrideHostname determines whether or not the Location field is used when constructing the base URL for the Chronicle API.
+	// OverrideHostname determines whether or not the Region field is used when constructing the base URL for the Chronicle API.
 	// Only applies to the Chronicle API.
 	OverrideHostname bool `mapstructure:"override_hostname"`
 
@@ -48,9 +48,9 @@ type Config struct {
 	// Only used for the Chronicle API.
 	APIVersion string `mapstructure:"api_version"`
 
-	// Location is the location of the Google SecOps instance to send logs to.
+	// Region is the region of the Google SecOps instance to send logs to.
 	// Only used for the Chronicle API.
-	Location string `mapstructure:"location"`
+	Region string `mapstructure:"region"`
 
 	// ProjectNumber is the GCP project number of the Google SecOps instance to send logs to.
 	// Only used for the Chronicle API.
@@ -126,8 +126,8 @@ func (cfg *Config) Validate() error {
 
 	switch cfg.API {
 	case chronicleAPI:
-		if cfg.Location == "" {
-			return errors.New("location is required for the Chronicle API")
+		if cfg.Region == "" {
+			return errors.New("region is required for the Chronicle API")
 		}
 		if cfg.Hostname == "" {
 			return errors.New("hostname is required for the Chronicle API")

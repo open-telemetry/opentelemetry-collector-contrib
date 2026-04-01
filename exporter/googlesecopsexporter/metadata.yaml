@@ -52,7 +52,7 @@ tests:
     api: chronicle
     hostname: chronicle.googleapis.com
     customer_id: test-customer-id
-    location: us
+    region: us
     project_number: "123456"
     compression: none
     batch_request_size_limit: 4000000
