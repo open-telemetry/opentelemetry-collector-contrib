@@ -147,6 +147,7 @@ components:
         - azure_monitor
         - carbon
         - chrony
+        - cisco_os
         - cloudflare
         - cloudfoundry
         - collectd
@@ -157,7 +158,7 @@ components:
         - envoyals
         - expvar
         - faro
-        - filelog
+        - file_log
         - filestats
         - flinkmetrics
         - fluentforward

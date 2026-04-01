@@ -278,9 +278,9 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
 
 ### k8s.resource_quota.used
 
@@ -292,9 +292,9 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
 
 ### k8s.statefulset.current_pods
 
@@ -338,10 +338,10 @@ The upper limit for a particular resource in a specific namespace.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| k8s.namespace.name | The k8s namespace name. | Any Str | Recommended |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| k8s.namespace.name | The k8s namespace name. | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
 
 ### openshift.appliedclusterquota.used
 
@@ -353,10 +353,10 @@ The usage for a particular resource in a specific namespace.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| k8s.namespace.name | The k8s namespace name. | Any Str | Recommended |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| k8s.namespace.name | The k8s namespace name. | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
 
 ### openshift.clusterquota.limit
 
@@ -368,9 +368,9 @@ The configured upper limit for a particular resource.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
 
 ### openshift.clusterquota.used
 
@@ -382,9 +382,9 @@ The usage for a particular resource with a configured limit.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
 
 ## Optional Metrics
 
@@ -406,9 +406,9 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | Recommended | - |
 
 ### k8s.container.status.state
 
@@ -420,9 +420,9 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | Recommended | - |
 
 ### k8s.node.condition
 
@@ -434,9 +434,9 @@ The condition of a particular Node.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | Recommended | - |
 
 ### k8s.pod.status_reason
 
@@ -456,11 +456,11 @@ The number of endpoints for a service, broken down by condition, address type, a
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| k8s.service.endpoint.address_type | The address type of the endpoint. | Str: ``IPv4``, ``IPv6``, ``FQDN`` | Recommended |
-| k8s.service.endpoint.condition | The condition of the service endpoint. | Str: ``ready``, ``serving``, ``terminating`` | Recommended |
-| k8s.service.endpoint.zone | The zone of the service endpoint, typically corresponding to a failure domain. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| k8s.service.endpoint.address_type | The address type of the endpoint. | Str: ``IPv4``, ``IPv6``, ``FQDN`` | Recommended | - |
+| k8s.service.endpoint.condition | The condition of the service endpoint. | Str: ``ready``, ``serving``, ``terminating`` | Recommended | - |
+| k8s.service.endpoint.zone | The zone of the service endpoint, typically corresponding to a failure domain. | Any Str | Recommended | - |
 
 ### k8s.service.load_balancer.ingress.count
 
@@ -472,53 +472,53 @@ The number of load balancer ingress points (external IPs/hostnames) assigned to 
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| container.id | The container id. | Any Str | true |
-| container.image.name | The container image name | Any Str | true |
-| container.image.tag | The container image tag | Any Str | true |
-| container.runtime | The container runtime used by Kubernetes Node. | Any Str | false |
-| container.runtime.version | The version of container runtime used by Kubernetes Node. | Any Str | false |
-| k8s.container.name | The k8s container name | Any Str | true |
-| k8s.container.status.last_terminated_reason | Last terminated reason of a container. | Any Str | false |
-| k8s.cronjob.name | The k8s CronJob name | Any Str | true |
-| k8s.cronjob.uid | The k8s CronJob uid. | Any Str | true |
-| k8s.daemonset.name | The k8s daemonset name. | Any Str | true |
-| k8s.daemonset.uid | The k8s daemonset uid. | Any Str | true |
-| k8s.deployment.name | The name of the Deployment. | Any Str | true |
-| k8s.deployment.uid | The UID of the Deployment. | Any Str | true |
-| k8s.hpa.name | The k8s hpa name. | Any Str | true |
-| k8s.hpa.scaletargetref.apiversion | The API version of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false |
-| k8s.hpa.scaletargetref.kind | The kind of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false |
-| k8s.hpa.scaletargetref.name | The name of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false |
-| k8s.hpa.uid | The k8s hpa uid. | Any Str | true |
-| k8s.job.name | The k8s pod name. | Any Str | true |
-| k8s.job.uid | The k8s job uid. | Any Str | true |
-| k8s.kubelet.version | The version of Kubelet running on the node. | Any Str | false |
-| k8s.namespace.name | The k8s namespace name. | Any Str | true |
-| k8s.namespace.uid | The k8s namespace uid. | Any Str | true |
-| k8s.node.name | The k8s node name. | Any Str | true |
-| k8s.node.uid | The k8s node uid. | Any Str | true |
-| k8s.pod.name | The k8s pod name. | Any Str | true |
-| k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false |
-| k8s.pod.uid | The k8s pod uid. | Any Str | true |
-| k8s.replicaset.name | The k8s replicaset name | Any Str | true |
-| k8s.replicaset.uid | The k8s replicaset uid | Any Str | true |
-| k8s.replicationcontroller.name | The k8s replicationcontroller name. | Any Str | true |
-| k8s.replicationcontroller.uid | The k8s replicationcontroller uid. | Any Str | true |
-| k8s.resourcequota.name | The k8s resourcequota name. | Any Str | true |
-| k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
-| k8s.service.name | The k8s service name. | Any Str | true |
-| k8s.service.publish_not_ready_addresses | Whether the Service publishes not-ready endpoints. | Any Bool | false |
-| k8s.service.traffic_distribution | The traffic distribution policy for the Service (e.g., PreferClose). | Any Str | false |
-| k8s.service.type | The k8s service type. | Any Str | true |
-| k8s.service.uid | The k8s service uid. | Any Str | true |
-| k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
-| k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
-| openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
-| openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
-| os.description | The os description used by Kubernetes Node. | Any Str | false |
-| os.type | The os type used by Kubernetes Node. | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| container.id | The container id. | Any Str | true | - |
+| container.image.name | The container image name | Any Str | true | - |
+| container.image.tag | The container image tag | Any Str | true | - |
+| container.runtime | The container runtime used by Kubernetes Node. | Any Str | false | - |
+| container.runtime.version | The version of container runtime used by Kubernetes Node. | Any Str | false | - |
+| k8s.container.name | The k8s container name | Any Str | true | - |
+| k8s.container.status.last_terminated_reason | Last terminated reason of a container. | Any Str | false | - |
+| k8s.cronjob.name | The k8s CronJob name | Any Str | true | - |
+| k8s.cronjob.uid | The k8s CronJob uid. | Any Str | true | - |
+| k8s.daemonset.name | The k8s daemonset name. | Any Str | true | - |
+| k8s.daemonset.uid | The k8s daemonset uid. | Any Str | true | - |
+| k8s.deployment.name | The name of the Deployment. | Any Str | true | - |
+| k8s.deployment.uid | The UID of the Deployment. | Any Str | true | - |
+| k8s.hpa.name | The k8s hpa name. | Any Str | true | - |
+| k8s.hpa.scaletargetref.apiversion | The API version of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false | - |
+| k8s.hpa.scaletargetref.kind | The kind of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false | - |
+| k8s.hpa.scaletargetref.name | The name of the target resource to scale for the HorizontalPodAutoscaler. | Any Str | false | - |
+| k8s.hpa.uid | The k8s hpa uid. | Any Str | true | - |
+| k8s.job.name | The k8s pod name. | Any Str | true | - |
+| k8s.job.uid | The k8s job uid. | Any Str | true | - |
+| k8s.kubelet.version | The version of Kubelet running on the node. | Any Str | false | - |
+| k8s.namespace.name | The k8s namespace name. | Any Str | true | - |
+| k8s.namespace.uid | The k8s namespace uid. | Any Str | true | - |
+| k8s.node.name | The k8s node name. | Any Str | true | - |
+| k8s.node.uid | The k8s node uid. | Any Str | true | - |
+| k8s.pod.name | The k8s pod name. | Any Str | true | - |
+| k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false | - |
+| k8s.pod.uid | The k8s pod uid. | Any Str | true | - |
+| k8s.replicaset.name | The k8s replicaset name | Any Str | true | - |
+| k8s.replicaset.uid | The k8s replicaset uid | Any Str | true | - |
+| k8s.replicationcontroller.name | The k8s replicationcontroller name. | Any Str | true | - |
+| k8s.replicationcontroller.uid | The k8s replicationcontroller uid. | Any Str | true | - |
+| k8s.resourcequota.name | The k8s resourcequota name. | Any Str | true | - |
+| k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true | - |
+| k8s.service.name | The k8s service name. | Any Str | true | - |
+| k8s.service.publish_not_ready_addresses | Whether the Service publishes not-ready endpoints. | Any Bool | false | - |
+| k8s.service.traffic_distribution | The traffic distribution policy for the Service (e.g., PreferClose). | Any Str | false | - |
+| k8s.service.type | The k8s service type. | Any Str | true | - |
+| k8s.service.uid | The k8s service uid. | Any Str | true | - |
+| k8s.statefulset.name | The k8s statefulset name. | Any Str | true | - |
+| k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true | - |
+| openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true | - |
+| openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true | - |
+| os.description | The os description used by Kubernetes Node. | Any Str | false | - |
+| os.type | The os type used by Kubernetes Node. | Any Str | false | - |
 
 ## Entities
 

@@ -630,7 +630,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -653,7 +653,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 
@@ -677,7 +677,7 @@ func TestRecreate(t *testing.T) {
 		se, ok := ext.(storage.Extension)
 		require.True(t, ok)
 
-		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("filelog"), "")
+		client, err := se.GetClient(ctx, component.KindReceiver, component.MustNewID("file_log"), "")
 		require.NoError(t, err)
 		require.NotNil(t, client)
 

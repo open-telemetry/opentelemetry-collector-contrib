@@ -156,9 +156,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("command")
+					commandAttrVal, ok := dp.Attributes().Get("command")
 					assert.True(t, ok)
-					assert.Equal(t, "get", attrVal.Str())
+					assert.Equal(t, "get", commandAttrVal.Str())
 				case "memcached.connections.current":
 					assert.False(t, validatedMetrics["memcached.connections.current"], "Found a duplicate in the metrics slice: memcached.connections.current")
 					validatedMetrics["memcached.connections.current"] = true
@@ -201,9 +201,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("state")
+					stateAttrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
+					assert.Equal(t, "system", stateAttrVal.Str())
 				case "memcached.current_items":
 					assert.False(t, validatedMetrics["memcached.current_items"], "Found a duplicate in the metrics slice: memcached.current_items")
 					validatedMetrics["memcached.current_items"] = true
@@ -246,9 +246,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
+					directionAttrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.Equal(t, "sent", directionAttrVal.Str())
 				case "memcached.operation_hit_ratio":
 					assert.False(t, validatedMetrics["memcached.operation_hit_ratio"], "Found a duplicate in the metrics slice: memcached.operation_hit_ratio")
 					validatedMetrics["memcached.operation_hit_ratio"] = true
@@ -261,9 +261,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("operation")
+					operationAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "increment", attrVal.Str())
+					assert.Equal(t, "increment", operationAttrVal.Str())
 				case "memcached.operations":
 					assert.False(t, validatedMetrics["memcached.operations"], "Found a duplicate in the metrics slice: memcached.operations")
 					validatedMetrics["memcached.operations"] = true
@@ -278,12 +278,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("type")
+					typeAttrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("operation")
+					assert.Equal(t, "hit", typeAttrVal.Str())
+					operationAttrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "increment", attrVal.Str())
+					assert.Equal(t, "increment", operationAttrVal.Str())
 				case "memcached.threads":
 					assert.False(t, validatedMetrics["memcached.threads"], "Found a duplicate in the metrics slice: memcached.threads")
 					validatedMetrics["memcached.threads"] = true

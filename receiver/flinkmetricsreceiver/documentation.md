@@ -22,9 +22,9 @@ The number of checkpoints completed or failed.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| checkpoint | The number of checkpoints completed or that failed. | Str: ``completed``, ``failed`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| checkpoint | The number of checkpoints completed or that failed. | Str: ``completed``, ``failed`` | Required | - |
 
 ### flink.job.checkpoint.in_progress
 
@@ -92,9 +92,9 @@ The total number of collections that have occurred.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Required | - |
 
 ### flink.jvm.gc.collections.time
 
@@ -106,9 +106,9 @@ The total time spent performing garbage collection.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| name | The names for the parallel scavenge and garbage first garbage collectors. | Str: ``PS_MarkSweep``, ``PS_Scavenge``, ``G1_Young_Generation``, ``G1_Old_Generation`` | Required | - |
 
 ### flink.jvm.memory.direct.total_capacity
 
@@ -248,10 +248,10 @@ The number of records an operator has.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| name | The operator name. | Any Str | Recommended |
-| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| name | The operator name. | Any Str | Recommended | - |
+| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Required | - |
 
 ### flink.operator.watermark.output
 
@@ -263,9 +263,9 @@ The last watermark this operator has emitted.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| name | The operator name. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| name | The operator name. | Any Str | Recommended | - |
 
 ### flink.task.record.count
 
@@ -277,17 +277,17 @@ The number of records a task has.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| record | The number of records received in, sent out or dropped due to arriving late. | Str: ``in``, ``out``, ``dropped`` | Required | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| flink.job.name | The job name. | Any Str | true |
-| flink.resource.type | The flink scope type in which a metric belongs to. | Str: ``jobmanager``, ``taskmanager`` | true |
-| flink.subtask.index | The subtask index. | Any Str | true |
-| flink.task.name | The task name. | Any Str | true |
-| flink.taskmanager.id | The taskmanager ID. | Any Str | true |
-| host.name | The host name. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| flink.job.name | The job name. | Any Str | true | - |
+| flink.resource.type | The flink scope type in which a metric belongs to. | Str: ``jobmanager``, ``taskmanager`` | true | - |
+| flink.subtask.index | The subtask index. | Any Str | true | - |
+| flink.task.name | The task name. | Any Str | true | - |
+| flink.taskmanager.id | The taskmanager ID. | Any Str | true | - |
+| host.name | The host name. | Any Str | true | - |
