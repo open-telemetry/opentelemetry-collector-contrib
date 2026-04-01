@@ -50,7 +50,6 @@ type RecordPartitionerConfig struct {
 }
 
 func (c *RecordPartitionerConfig) Validate() error {
-	fmt.Println(c.Type)
 	switch c.Type {
 	case RecordPartitionerTypeSaramaCompatible,
 		RecordPartitionerTypeRoundRobin,
