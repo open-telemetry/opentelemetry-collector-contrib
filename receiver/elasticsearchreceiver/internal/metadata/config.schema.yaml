@@ -4,650 +4,650 @@ $defs:
     description: MetricsConfig provides config for elasticsearch metrics.
     type: object
     properties:
-    elasticsearch.breaker.memory.estimated:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.breaker.memory.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.breaker.tripped:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.data_nodes:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.health:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.in_flight_fetch:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.indices.cache.evictions:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.cluster.nodes:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.pending_tasks:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.published_states.differences:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.published_states.full:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.shards:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.state_queue:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.state_update.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.cluster.state_update.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.index.cache.evictions:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.cache.memory.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.cache.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.documents:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.index.operations.completed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.index.operations.merge.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.index.operations.merge.docs_count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.operations.merge.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.operations.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.index.segments.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.index.segments.memory:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.segments.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.shards.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.index.translog.operations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.index.translog.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.indexing_pressure.memory.limit:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.indexing_pressure.memory.total.primary_rejections:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.indexing_pressure.memory.total.replica_rejections:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.memory.indexing_pressure:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.cache.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.cache.evictions:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.cache.memory.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.cache.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.node.cluster.connections:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.cluster.io:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.disk.io.read:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.disk.io.write:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.documents:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.fs.disk.available:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.fs.disk.free:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.fs.disk.total:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.http.connections:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.ingest.documents:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.ingest.documents.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.ingest.operations.failed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.open_files:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.operations.completed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.operations.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.node.operations.get.completed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.node.operations.get.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.node.operations.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.pipeline.ingest.documents.current:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.pipeline.ingest.documents.preprocessed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.pipeline.ingest.operations.failed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.script.cache_evictions:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.script.compilation_limit_triggered:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.script.compilations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.segments.memory:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.node.shards.data_set.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.shards.reserved.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.shards.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.thread_pool.tasks.finished:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.thread_pool.tasks.queued:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.thread_pool.threads:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.translog.operations:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.translog.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.node.translog.uncommitted.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.os.cpu.load_avg.15m:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.os.cpu.load_avg.1m:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.os.cpu.load_avg.5m:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.os.cpu.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.os.memory:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    elasticsearch.process.cpu.time:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.process.cpu.usage:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    elasticsearch.process.memory.virtual:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    jvm.classes.loaded:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.gc.collections.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.gc.collections.elapsed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.memory.heap.committed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.memory.heap.max:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.memory.heap.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.memory.heap.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    jvm.memory.nonheap.committed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.memory.nonheap.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.memory.pool.max:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.memory.pool.used:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    jvm.threads.count:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      elasticsearch.breaker.memory.estimated:
+        description: "ElasticsearchBreakerMemoryEstimatedMetricConfig provides config for the elasticsearch.breaker.memory.estimated metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.breaker.memory.limit:
+        description: "ElasticsearchBreakerMemoryLimitMetricConfig provides config for the elasticsearch.breaker.memory.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.breaker.tripped:
+        description: "ElasticsearchBreakerTrippedMetricConfig provides config for the elasticsearch.breaker.tripped metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.data_nodes:
+        description: "ElasticsearchClusterDataNodesMetricConfig provides config for the elasticsearch.cluster.data_nodes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.health:
+        description: "ElasticsearchClusterHealthMetricConfig provides config for the elasticsearch.cluster.health metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.in_flight_fetch:
+        description: "ElasticsearchClusterInFlightFetchMetricConfig provides config for the elasticsearch.cluster.in_flight_fetch metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.indices.cache.evictions:
+        description: "ElasticsearchClusterIndicesCacheEvictionsMetricConfig provides config for the elasticsearch.cluster.indices.cache.evictions metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.cluster.nodes:
+        description: "ElasticsearchClusterNodesMetricConfig provides config for the elasticsearch.cluster.nodes metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.pending_tasks:
+        description: "ElasticsearchClusterPendingTasksMetricConfig provides config for the elasticsearch.cluster.pending_tasks metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.published_states.differences:
+        description: "ElasticsearchClusterPublishedStatesDifferencesMetricConfig provides config for the elasticsearch.cluster.published_states.differences metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.published_states.full:
+        description: "ElasticsearchClusterPublishedStatesFullMetricConfig provides config for the elasticsearch.cluster.published_states.full metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.shards:
+        description: "ElasticsearchClusterShardsMetricConfig provides config for the elasticsearch.cluster.shards metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.state_queue:
+        description: "ElasticsearchClusterStateQueueMetricConfig provides config for the elasticsearch.cluster.state_queue metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.state_update.count:
+        description: "ElasticsearchClusterStateUpdateCountMetricConfig provides config for the elasticsearch.cluster.state_update.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.cluster.state_update.time:
+        description: "ElasticsearchClusterStateUpdateTimeMetricConfig provides config for the elasticsearch.cluster.state_update.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.index.cache.evictions:
+        description: "ElasticsearchIndexCacheEvictionsMetricConfig provides config for the elasticsearch.index.cache.evictions metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.cache.memory.usage:
+        description: "ElasticsearchIndexCacheMemoryUsageMetricConfig provides config for the elasticsearch.index.cache.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.cache.size:
+        description: "ElasticsearchIndexCacheSizeMetricConfig provides config for the elasticsearch.index.cache.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.documents:
+        description: "ElasticsearchIndexDocumentsMetricConfig provides config for the elasticsearch.index.documents metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.index.operations.completed:
+        description: "ElasticsearchIndexOperationsCompletedMetricConfig provides config for the elasticsearch.index.operations.completed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.index.operations.merge.current:
+        description: "ElasticsearchIndexOperationsMergeCurrentMetricConfig provides config for the elasticsearch.index.operations.merge.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.index.operations.merge.docs_count:
+        description: "ElasticsearchIndexOperationsMergeDocsCountMetricConfig provides config for the elasticsearch.index.operations.merge.docs_count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.operations.merge.size:
+        description: "ElasticsearchIndexOperationsMergeSizeMetricConfig provides config for the elasticsearch.index.operations.merge.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.operations.time:
+        description: "ElasticsearchIndexOperationsTimeMetricConfig provides config for the elasticsearch.index.operations.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.index.segments.count:
+        description: "ElasticsearchIndexSegmentsCountMetricConfig provides config for the elasticsearch.index.segments.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.index.segments.memory:
+        description: "ElasticsearchIndexSegmentsMemoryMetricConfig provides config for the elasticsearch.index.segments.memory metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.segments.size:
+        description: "ElasticsearchIndexSegmentsSizeMetricConfig provides config for the elasticsearch.index.segments.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.shards.size:
+        description: "ElasticsearchIndexShardsSizeMetricConfig provides config for the elasticsearch.index.shards.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.index.translog.operations:
+        description: "ElasticsearchIndexTranslogOperationsMetricConfig provides config for the elasticsearch.index.translog.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.index.translog.size:
+        description: "ElasticsearchIndexTranslogSizeMetricConfig provides config for the elasticsearch.index.translog.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.indexing_pressure.memory.limit:
+        description: "ElasticsearchIndexingPressureMemoryLimitMetricConfig provides config for the elasticsearch.indexing_pressure.memory.limit metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.indexing_pressure.memory.total.primary_rejections:
+        description: "ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig provides config for the elasticsearch.indexing_pressure.memory.total.primary_rejections metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.indexing_pressure.memory.total.replica_rejections:
+        description: "ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig provides config for the elasticsearch.indexing_pressure.memory.total.replica_rejections metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.memory.indexing_pressure:
+        description: "ElasticsearchMemoryIndexingPressureMetricConfig provides config for the elasticsearch.memory.indexing_pressure metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.cache.count:
+        description: "ElasticsearchNodeCacheCountMetricConfig provides config for the elasticsearch.node.cache.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.cache.evictions:
+        description: "ElasticsearchNodeCacheEvictionsMetricConfig provides config for the elasticsearch.node.cache.evictions metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.cache.memory.usage:
+        description: "ElasticsearchNodeCacheMemoryUsageMetricConfig provides config for the elasticsearch.node.cache.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.cache.size:
+        description: "ElasticsearchNodeCacheSizeMetricConfig provides config for the elasticsearch.node.cache.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.node.cluster.connections:
+        description: "ElasticsearchNodeClusterConnectionsMetricConfig provides config for the elasticsearch.node.cluster.connections metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.cluster.io:
+        description: "ElasticsearchNodeClusterIoMetricConfig provides config for the elasticsearch.node.cluster.io metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.disk.io.read:
+        description: "ElasticsearchNodeDiskIoReadMetricConfig provides config for the elasticsearch.node.disk.io.read metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.disk.io.write:
+        description: "ElasticsearchNodeDiskIoWriteMetricConfig provides config for the elasticsearch.node.disk.io.write metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.documents:
+        description: "ElasticsearchNodeDocumentsMetricConfig provides config for the elasticsearch.node.documents metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.fs.disk.available:
+        description: "ElasticsearchNodeFsDiskAvailableMetricConfig provides config for the elasticsearch.node.fs.disk.available metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.fs.disk.free:
+        description: "ElasticsearchNodeFsDiskFreeMetricConfig provides config for the elasticsearch.node.fs.disk.free metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.fs.disk.total:
+        description: "ElasticsearchNodeFsDiskTotalMetricConfig provides config for the elasticsearch.node.fs.disk.total metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.http.connections:
+        description: "ElasticsearchNodeHTTPConnectionsMetricConfig provides config for the elasticsearch.node.http.connections metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.ingest.documents:
+        description: "ElasticsearchNodeIngestDocumentsMetricConfig provides config for the elasticsearch.node.ingest.documents metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.ingest.documents.current:
+        description: "ElasticsearchNodeIngestDocumentsCurrentMetricConfig provides config for the elasticsearch.node.ingest.documents.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.ingest.operations.failed:
+        description: "ElasticsearchNodeIngestOperationsFailedMetricConfig provides config for the elasticsearch.node.ingest.operations.failed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.open_files:
+        description: "ElasticsearchNodeOpenFilesMetricConfig provides config for the elasticsearch.node.open_files metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.operations.completed:
+        description: "ElasticsearchNodeOperationsCompletedMetricConfig provides config for the elasticsearch.node.operations.completed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.operations.current:
+        description: "ElasticsearchNodeOperationsCurrentMetricConfig provides config for the elasticsearch.node.operations.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.node.operations.get.completed:
+        description: "ElasticsearchNodeOperationsGetCompletedMetricConfig provides config for the elasticsearch.node.operations.get.completed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.node.operations.get.time:
+        description: "ElasticsearchNodeOperationsGetTimeMetricConfig provides config for the elasticsearch.node.operations.get.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.node.operations.time:
+        description: "ElasticsearchNodeOperationsTimeMetricConfig provides config for the elasticsearch.node.operations.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.pipeline.ingest.documents.current:
+        description: "ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.current metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.pipeline.ingest.documents.preprocessed:
+        description: "ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.pipeline.ingest.operations.failed:
+        description: "ElasticsearchNodePipelineIngestOperationsFailedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.operations.failed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.script.cache_evictions:
+        description: "ElasticsearchNodeScriptCacheEvictionsMetricConfig provides config for the elasticsearch.node.script.cache_evictions metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.script.compilation_limit_triggered:
+        description: "ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig provides config for the elasticsearch.node.script.compilation_limit_triggered metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.script.compilations:
+        description: "ElasticsearchNodeScriptCompilationsMetricConfig provides config for the elasticsearch.node.script.compilations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.segments.memory:
+        description: "ElasticsearchNodeSegmentsMemoryMetricConfig provides config for the elasticsearch.node.segments.memory metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.node.shards.data_set.size:
+        description: "ElasticsearchNodeShardsDataSetSizeMetricConfig provides config for the elasticsearch.node.shards.data_set.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.shards.reserved.size:
+        description: "ElasticsearchNodeShardsReservedSizeMetricConfig provides config for the elasticsearch.node.shards.reserved.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.shards.size:
+        description: "ElasticsearchNodeShardsSizeMetricConfig provides config for the elasticsearch.node.shards.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.thread_pool.tasks.finished:
+        description: "ElasticsearchNodeThreadPoolTasksFinishedMetricConfig provides config for the elasticsearch.node.thread_pool.tasks.finished metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.thread_pool.tasks.queued:
+        description: "ElasticsearchNodeThreadPoolTasksQueuedMetricConfig provides config for the elasticsearch.node.thread_pool.tasks.queued metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.thread_pool.threads:
+        description: "ElasticsearchNodeThreadPoolThreadsMetricConfig provides config for the elasticsearch.node.thread_pool.threads metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.translog.operations:
+        description: "ElasticsearchNodeTranslogOperationsMetricConfig provides config for the elasticsearch.node.translog.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.translog.size:
+        description: "ElasticsearchNodeTranslogSizeMetricConfig provides config for the elasticsearch.node.translog.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.node.translog.uncommitted.size:
+        description: "ElasticsearchNodeTranslogUncommittedSizeMetricConfig provides config for the elasticsearch.node.translog.uncommitted.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.os.cpu.load_avg.15m:
+        description: "ElasticsearchOsCPULoadAvg15mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.15m metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.os.cpu.load_avg.1m:
+        description: "ElasticsearchOsCPULoadAvg1mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.1m metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.os.cpu.load_avg.5m:
+        description: "ElasticsearchOsCPULoadAvg5mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.5m metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.os.cpu.usage:
+        description: "ElasticsearchOsCPUUsageMetricConfig provides config for the elasticsearch.os.cpu.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.os.memory:
+        description: "ElasticsearchOsMemoryMetricConfig provides config for the elasticsearch.os.memory metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      elasticsearch.process.cpu.time:
+        description: "ElasticsearchProcessCPUTimeMetricConfig provides config for the elasticsearch.process.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.process.cpu.usage:
+        description: "ElasticsearchProcessCPUUsageMetricConfig provides config for the elasticsearch.process.cpu.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      elasticsearch.process.memory.virtual:
+        description: "ElasticsearchProcessMemoryVirtualMetricConfig provides config for the elasticsearch.process.memory.virtual metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      jvm.classes.loaded:
+        description: "JvmClassesLoadedMetricConfig provides config for the jvm.classes.loaded metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.gc.collections.count:
+        description: "JvmGcCollectionsCountMetricConfig provides config for the jvm.gc.collections.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.gc.collections.elapsed:
+        description: "JvmGcCollectionsElapsedMetricConfig provides config for the jvm.gc.collections.elapsed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.memory.heap.committed:
+        description: "JvmMemoryHeapCommittedMetricConfig provides config for the jvm.memory.heap.committed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.memory.heap.max:
+        description: "JvmMemoryHeapMaxMetricConfig provides config for the jvm.memory.heap.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.memory.heap.used:
+        description: "JvmMemoryHeapUsedMetricConfig provides config for the jvm.memory.heap.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.memory.heap.utilization:
+        description: "JvmMemoryHeapUtilizationMetricConfig provides config for the jvm.memory.heap.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      jvm.memory.nonheap.committed:
+        description: "JvmMemoryNonheapCommittedMetricConfig provides config for the jvm.memory.nonheap.committed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.memory.nonheap.used:
+        description: "JvmMemoryNonheapUsedMetricConfig provides config for the jvm.memory.nonheap.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.memory.pool.max:
+        description: "JvmMemoryPoolMaxMetricConfig provides config for the jvm.memory.pool.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.memory.pool.used:
+        description: "JvmMemoryPoolUsedMetricConfig provides config for the jvm.memory.pool.used metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      jvm.threads.count:
+        description: "JvmThreadsCountMetricConfig provides config for the jvm.threads.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for elasticsearch resource attributes.
     type: object

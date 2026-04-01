@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -40,6 +42,25 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "tls"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
+					Timeout:            5 * time.Second,
+				},
+				Config: docker.Config{
+					Endpoint:         "https://example.com/",
+					DockerAPIVersion: "1.44",
+					Timeout:          5 * time.Second,
+					TLS: configoptional.Some(configtls.ClientConfig{
+						InsecureSkipVerify: true,
+					}),
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
@@ -71,12 +92,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
 					m := metadata.DefaultMetricsBuilderConfig()
-					m.Metrics.ContainerCPUUsageSystem = metadata.MetricConfig{
-						Enabled: false,
-					}
-					m.Metrics.ContainerMemoryTotalRss = metadata.MetricConfig{
-						Enabled: true,
-					}
+					m.Metrics.ContainerCPUUsageSystem.Enabled = false
+					m.Metrics.ContainerMemoryTotalRss.Enabled = true
 					return m
 				}(),
 			},
@@ -91,7 +108,9 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, xconfmap.Validate(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg, cmp.FilterPath(func(p cmp.Path) bool {
+				return p.Last().String() == ".enabledSetByUser"
+			}, cmp.Ignore()), cmpopts.IgnoreUnexported(configoptional.Optional[configtls.ClientConfig]{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

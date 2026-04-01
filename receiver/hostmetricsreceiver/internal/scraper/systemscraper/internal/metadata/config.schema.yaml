@@ -4,13 +4,13 @@ $defs:
     description: MetricsConfig provides config for system metrics.
     type: object
     properties:
-    system.uptime:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      system.uptime:
+        description: "SystemUptimeMetricConfig provides config for the system.uptime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for system metrics builder.
     type: object

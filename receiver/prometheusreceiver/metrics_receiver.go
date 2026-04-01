@@ -195,7 +195,7 @@ func (r *pReceiver) initPrometheusComponents(
 			Set(reflect.ValueOf(true))
 	}
 
-	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, store, r.registerer)
+	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, store, nil, r.registerer)
 	if err != nil {
 		return err
 	}
@@ -288,9 +288,10 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
 	factoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
 	var app storage.Appendable
+	var appV2 storage.AppendableV2
 	logger := promslog.NewNopLogger()
 
-	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
+	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, appV2, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
 
 		// This ensures that any changes to the config made, even by the target allocator, are reflected in the API.
 		func() promconfig.Config {
@@ -328,7 +329,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 
 			return status, nil
 		},
-		&web.PrometheusVersion{
+		&api_v1.PrometheusVersion{
 			Version:   version.Version,
 			Revision:  version.Revision,
 			Branch:    version.Branch,
@@ -352,6 +353,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		false, // appendMetadata from remote write
 		nil,   // OverrideErrorCode
 		nil,   // FeatureRegistry
+		api_v1.OpenAPIOptions{},
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579

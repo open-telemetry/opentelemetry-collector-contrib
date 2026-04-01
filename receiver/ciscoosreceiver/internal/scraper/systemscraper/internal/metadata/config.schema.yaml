@@ -4,27 +4,27 @@ $defs:
     description: MetricsConfig provides config for system metrics.
     type: object
     properties:
-    cisco.device.up:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.cpu.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    system.memory.utilization:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      cisco.device.up:
+        description: "CiscoDeviceUpMetricConfig provides config for the cisco.device.up metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.cpu.utilization:
+        description: "SystemCPUUtilizationMetricConfig provides config for the system.cpu.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      system.memory.utilization:
+        description: "SystemMemoryUtilizationMetricConfig provides config for the system.memory.utilization metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for system resource attributes.
     type: object

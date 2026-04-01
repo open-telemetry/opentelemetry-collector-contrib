@@ -4,41 +4,41 @@ $defs:
     description: MetricsConfig provides config for icmpcheckreceiver metrics.
     type: object
     properties:
-    ping.loss.ratio:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    ping.rtt.avg:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    ping.rtt.max:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    ping.rtt.min:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    ping.rtt.stddev:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
+      ping.loss.ratio:
+        description: "PingLossRatioMetricConfig provides config for the ping.loss.ratio metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      ping.rtt.avg:
+        description: "PingRttAvgMetricConfig provides config for the ping.rtt.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      ping.rtt.max:
+        description: "PingRttMaxMetricConfig provides config for the ping.rtt.max metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      ping.rtt.min:
+        description: "PingRttMinMetricConfig provides config for the ping.rtt.min metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      ping.rtt.stddev:
+        description: "PingRttStddevMetricConfig provides config for the ping.rtt.stddev metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for icmpcheckreceiver resource attributes.
     type: object

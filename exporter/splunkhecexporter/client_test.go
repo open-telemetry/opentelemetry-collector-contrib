@@ -954,6 +954,24 @@ func TestReceiveLogEvent(t *testing.T) {
 	compareWithTestData(t, actual[0].body, "testdata/hec_log_event.json")
 }
 
+func TestLogEventTimestampMicrosecondPrecision(t *testing.T) {
+	// Verify that nanosecond timestamp precision is turned to microseconds in the HEC payload
+	logs := plog.NewLogs()
+	logRecord := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("test log")
+	logRecord.SetTimestamp(pcommon.Timestamp(1574092046011123456))
+
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runLogExport(t, cfg, logs, 1)
+	assert.NoError(t, err)
+	assert.Len(t, actual, 1)
+
+	// time field in raw JSON should preserve microsecond precision
+	assert.Contains(t, string(actual[0].body), "1574092046.011123")
+}
+
 func TestReceiveMetricEvent(t *testing.T) {
 	metrics := createMetricsData(1, 1)
 	cfg := NewFactory().CreateDefaultConfig().(*Config)

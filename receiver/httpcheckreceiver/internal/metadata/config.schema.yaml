@@ -4,90 +4,90 @@ $defs:
     description: MetricsConfig provides config for httpcheck metrics.
     type: object
     properties:
-    httpcheck.client.connection.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.client.request.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.dns.lookup.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    httpcheck.error:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    httpcheck.response.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.response.size:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.status:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: true
-    httpcheck.tls.cert_remaining:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.tls.handshake.duration:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.validation.failed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
-    httpcheck.validation.passed:
-      description: MetricConfig provides common config for a particular metric.
-      type: object
-      properties:
-        enabled:
-          type: boolean
-          default: false
+      httpcheck.client.connection.duration:
+        description: "HttpcheckClientConnectionDurationMetricConfig provides config for the httpcheck.client.connection.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.client.request.duration:
+        description: "HttpcheckClientRequestDurationMetricConfig provides config for the httpcheck.client.request.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.dns.lookup.duration:
+        description: "HttpcheckDNSLookupDurationMetricConfig provides config for the httpcheck.dns.lookup.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.duration:
+        description: "HttpcheckDurationMetricConfig provides config for the httpcheck.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      httpcheck.error:
+        description: "HttpcheckErrorMetricConfig provides config for the httpcheck.error metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      httpcheck.response.duration:
+        description: "HttpcheckResponseDurationMetricConfig provides config for the httpcheck.response.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.response.size:
+        description: "HttpcheckResponseSizeMetricConfig provides config for the httpcheck.response.size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.status:
+        description: "HttpcheckStatusMetricConfig provides config for the httpcheck.status metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+      httpcheck.tls.cert_remaining:
+        description: "HttpcheckTLSCertRemainingMetricConfig provides config for the httpcheck.tls.cert_remaining metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.tls.handshake.duration:
+        description: "HttpcheckTLSHandshakeDurationMetricConfig provides config for the httpcheck.tls.handshake.duration metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.validation.failed:
+        description: "HttpcheckValidationFailedMetricConfig provides config for the httpcheck.validation.failed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      httpcheck.validation.passed:
+        description: "HttpcheckValidationPassedMetricConfig provides config for the httpcheck.validation.passed metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
   metrics_builder_config:
     description: MetricsBuilderConfig is a configuration for httpcheck metrics builder.
     type: object

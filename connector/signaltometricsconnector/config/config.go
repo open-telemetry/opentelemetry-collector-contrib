@@ -168,9 +168,14 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 }
 
 type Attribute struct {
-	Key          string `mapstructure:"key"`
-	Optional     bool   `mapstructure:"optional"`
-	DefaultValue any    `mapstructure:"default_value"`
+	Key string `mapstructure:"key"`
+	// KeysExpression is an OTTL value expression that resolves to a list
+	// of attribute keys at runtime. The expression must return a
+	// pcommon.Slice or []string. Exactly one of Key or KeysExpression
+	// must be set.
+	KeysExpression string `mapstructure:"keys_expression"`
+	Optional       bool   `mapstructure:"optional"`
+	DefaultValue   any    `mapstructure:"default_value"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -192,7 +197,8 @@ type ExponentialHistogram struct {
 }
 
 type Sum struct {
-	Value string `mapstructure:"value"`
+	Value       string `mapstructure:"value"`
+	IsMonotonic bool   `mapstructure:"monotonic"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -240,23 +246,37 @@ func (mi *MetricInfo) ensureDefaults() {
 	}
 }
 
-func (mi *MetricInfo) validateAttributes() error {
+// validateAttributeConfigs validates a list of Attribute configs. Each entry
+// must have exactly one of Key or KeysExpression set. OTTL expressions are
+// parsed to verify syntax. The label parameter is used in error messages.
+func validateAttributeConfigs[K any](attrs []Attribute, parser ottl.Parser[K], label string) error {
 	tmp := pcommon.NewValueEmpty()
 	duplicate := map[string]struct{}{}
-	for _, attr := range mi.Attributes {
-		if attr.Key == "" {
-			return errors.New("attribute key missing")
+	for _, attr := range attrs {
+		hasKey := attr.Key != ""
+		hasExpr := attr.KeysExpression != ""
+		if hasKey == hasExpr {
+			return fmt.Errorf("exactly one of key or keys_expression must be set for %s", label)
+		}
+		if hasExpr {
+			if _, err := parser.ParseValueExpression(attr.KeysExpression); err != nil {
+				return fmt.Errorf("failed to parse keys_expression for %s: %w", label, err)
+			}
+		}
+		if hasKey {
+			if _, ok := duplicate[attr.Key]; ok {
+				return fmt.Errorf("duplicate key found in %s config: %s", label, attr.Key)
+			}
+			duplicate[attr.Key] = struct{}{}
 		}
 		if attr.DefaultValue != nil && attr.Optional {
-			return errors.New("only one of default_value or optional should be set")
+			return fmt.Errorf("only one of default_value or optional should be set for %s", label)
 		}
-		if _, ok := duplicate[attr.Key]; ok {
-			return fmt.Errorf("duplicate key found in attributes config: %s", attr.Key)
+		if attr.DefaultValue != nil {
+			if err := tmp.FromRaw(attr.DefaultValue); err != nil {
+				return fmt.Errorf("invalid default value specified for %s attribute %s", label, attr.Key)
+			}
 		}
-		if err := tmp.FromRaw(attr.DefaultValue); err != nil {
-			return fmt.Errorf("invalid default value specified for attribute %s", attr.Key)
-		}
-		duplicate[attr.Key] = struct{}{}
 	}
 	return nil
 }
@@ -309,7 +329,10 @@ func validateMetricInfo[K any](mi *MetricInfo, parser ottl.Parser[K]) error {
 	if mi.Name == "" {
 		return errors.New("missing required metric name configuration")
 	}
-	if err := mi.validateAttributes(); err != nil {
+	if err := validateAttributeConfigs(mi.IncludeResourceAttributes, parser, "include_resource_attributes"); err != nil {
+		return fmt.Errorf("include_resource_attributes validation failed: %w", err)
+	}
+	if err := validateAttributeConfigs(mi.Attributes, parser, "attributes"); err != nil {
 		return fmt.Errorf("attributes validation failed: %w", err)
 	}
 	if err := mi.validateHistogram(); err != nil {
