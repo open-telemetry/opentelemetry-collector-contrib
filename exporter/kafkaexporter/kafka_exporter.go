@@ -12,7 +12,6 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -134,8 +133,6 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.String("topic", topic),
 				zap.Error(err),
 			)
-			componentstatus.ReportStatus(
-				e.host, componentstatus.NewRecoverableErrorEvent(err))
 			return consumererror.NewPermanent(err)
 		}
 		for i := range partitionMessages {
