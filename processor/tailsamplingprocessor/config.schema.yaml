@@ -262,7 +262,7 @@ $defs:
     type: object
     properties:
       error_mode:
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl.error_mode
+        $ref: /pkg/ottl.error_mode
       span:
         type: array
         items:
@@ -426,11 +426,11 @@ properties:
     description: DecisionCache holds configuration for the decision cache(s)
     $ref: decision_cache_config
   decision_wait:
-    description: DecisionWait is the desired wait time from the arrival of the first span of trace until the decision about sampling it or not is evaluated.
+    description: DecisionWait is the time before timer handling for a trace. When sampling_strategy is "trace-complete", this controls decision timing. When sampling_strategy is "span-ingest", this controls pending cleanup finalization timing.
     type: string
     format: duration
   decision_wait_after_root_received:
-    description: DecisionWaitAfterRootReceived is the desired wait time from the arrival of the root span of trace until the decision about sampling it or not is evaluated.
+    description: DecisionWaitAfterRootReceived adds root-span-based acceleration for timer handling. When sampling_strategy is "trace-complete", this can make decisions earlier. When sampling_strategy is "span-ingest", this can finalize pending traces earlier on cleanup.
     type: string
     format: duration
   drop_pending_traces_on_shutdown:
@@ -456,3 +456,6 @@ properties:
   sample_on_first_match:
     description: Make decision as soon as a policy matches
     type: boolean
+  sampling_strategy:
+    description: SamplingStrategy controls how/when sampling decisions are made. "trace-complete" (default) evaluates accumulated trace data on timer handling. "span-ingest" evaluates each incoming batch on ingest; terminal outcomes finalize immediately, and non-terminal traces are finalized on cleanup.
+    type: string

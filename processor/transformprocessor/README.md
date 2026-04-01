@@ -882,7 +882,7 @@ view into how OTTL views the underlying data.
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     start_at: beginning
     include: [ test.log ]
 
@@ -905,7 +905,7 @@ service:
   pipelines:
     logs:
       receivers:
-        - filelog
+        - file_log
       processors:
         - transform
       exporters:

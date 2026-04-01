@@ -1,4 +1,0 @@
-change_type: 'deprecation'
-component: receiver/cisco_os
-note: Introduce new snake case compliant name `cisco_os`
-issues: [46948]
