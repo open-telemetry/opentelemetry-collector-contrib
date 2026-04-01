@@ -189,7 +189,7 @@ func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
 	}
 }
 
-func parseWaitResource(waitResource string) (resourceType string, resourceID string) {
+func parseWaitResource(waitResource string) (resourceType, resourceID string) {
 	if waitResource == "" {
 		return "", ""
 	}
@@ -227,13 +227,13 @@ func parseWaitResource(waitResource string) (resourceType string, resourceID str
 		}
 		return resourceType, second
 	case "PAGE", "OBJECT":
-		_, tail, ok := splitAfterFirstSegment(rest)
+		tail, ok := splitAfterFirstSegment(rest)
 		if !ok || !isTwoNumericSegments(tail) {
 			return "", ""
 		}
 		return resourceType, tail
 	case "RID":
-		_, tail, ok := splitAfterFirstSegment(rest)
+		tail, ok := splitAfterFirstSegment(rest)
 		if !ok || !isThreeNumericSegments(tail) {
 			return "", ""
 		}
@@ -258,16 +258,17 @@ func splitTwoSegments(s string) (first, second string, ok bool) {
 	return first, second, true
 }
 
-func splitAfterFirstSegment(s string) (first, tail string, ok bool) {
+func splitAfterFirstSegment(s string) (tail string, ok bool) {
 	sep := strings.IndexByte(s, ':')
 	if sep <= 0 || sep >= len(s)-1 {
-		return "", "", false
+		return "", false
 	}
-	first, tail = s[:sep], s[sep+1:]
+	first := s[:sep]
+	tail = s[sep+1:]
 	if !isDigits(first) {
-		return "", "", false
+		return "", false
 	}
-	return first, tail, true
+	return tail, true
 }
 
 func isDigits(s string) bool {
