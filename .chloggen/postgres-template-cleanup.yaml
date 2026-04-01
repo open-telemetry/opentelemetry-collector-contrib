@@ -4,10 +4,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/postgresqlreceiver
+component: receiver/postgresql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Clean up the PostgreSQL query template to exclude our own connection and transaction control and utility statements.
+note: Clean up the query_sample template to exclude our own connection and transaction control and utility statements.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47317]
