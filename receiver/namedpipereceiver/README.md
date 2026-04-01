@@ -22,7 +22,6 @@ This receiver supports opening a Unix Named Pipe (aka FIFO), and reading logs fr
 
 Named pipes are only supported on Unix operating systems.
 
-
 ## Configuration
 
 The following settings are required:
@@ -31,9 +30,18 @@ The following settings are required:
 
 The following settings are optional:
 
-- `mode`: The mode bits to set on the opened pipe (default: 666)
+- `mode`: The mode bits to set on the opened pipe (default: 0666)
 
 ## Example Configuration
+
+```yaml
+receivers:
+  named_pipe:
+    path: /tmp/pipe
+    mode: 0600
+```
+
+The deprecated component type `namedpipe` is still accepted:
 
 ```yaml
 receivers:
