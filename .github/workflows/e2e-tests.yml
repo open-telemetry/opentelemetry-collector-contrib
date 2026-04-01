@@ -176,6 +176,17 @@ jobs:
           preset: microshift
       - name: Export KUBECONFIG for MicroShift
         run: cp ~/.kube/config /tmp/kube-config-otelcol-e2e-testing
+      - name: Install Infrastructure CRD on MicroShift
+        env:
+          KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
+        run: |
+          SETUP_DIR=${{ matrix.component }}/testdata/e2e/openshift-real/microshift-setup
+          oc apply -f "${SETUP_DIR}/infrastructure-crd.yaml"
+          oc wait --for=condition=Established crd/infrastructures.config.openshift.io --timeout=30s
+          oc apply -f "${SETUP_DIR}/infrastructure-cr.yaml"
+          oc patch infrastructure cluster --type=merge --subresource=status \
+            -p '{"status":{"infrastructureName":"microshift-ci-cluster","controlPlaneTopology":"SingleReplica","infrastructureTopology":"SingleReplica","platformStatus":{"type":"None"}}}'
+          oc get infrastructure cluster -o yaml
       - name: Download artifact
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
