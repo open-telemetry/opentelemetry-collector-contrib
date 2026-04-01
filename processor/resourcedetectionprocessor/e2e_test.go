@@ -1073,7 +1073,8 @@ func TestE2EOpenShiftRealCluster(t *testing.T) {
 	startEntries := len(metricsConsumer.AllMetrics())
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-real", "collector"), map[string]string{}, "")
+	host := os.Getenv("HOST_ENDPOINT")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "openshift-real", "collector"), map[string]string{}, host)
 
 	defer func() {
 		for _, obj := range collectorObjs {

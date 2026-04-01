@@ -197,9 +197,15 @@ jobs:
           PODMAN_ENV=$(sg libvirt -c "crc podman-env")
           eval "$PODMAN_ENV"
           podman load < /tmp/otelcontribcol.tar
+      - name: Resolve host endpoint for CRC network
+        run: |
+          HOST_ENDPOINT=$(ip -4 addr show crc 2>/dev/null | grep -oP 'inet \K[\d.]+')
+          echo "HOST_ENDPOINT=${HOST_ENDPOINT}" >> "$GITHUB_ENV"
+          echo "Host endpoint for CRC: ${HOST_ENDPOINT}"
       - name: Run OpenShift E2E tests
         env:
           KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
+          HOST_ENDPOINT: ${{ env.HOST_ENDPOINT }}
         run: |
           cd ${{ matrix.component }}
           go test -v --tags=e2e -run TestE2EOpenShiftRealCluster
