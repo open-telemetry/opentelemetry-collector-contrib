@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
 
@@ -36,6 +37,9 @@ func TestType(t *testing.T) {
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
+	require.NoError(t, err)
+
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.EqualExportedValues(t, &Config{
@@ -43,6 +47,17 @@ func TestCreateDefaultConfig(t *testing.T) {
 	}, cfg)
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	err = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, true)
+	require.NoError(t, err)
+
+	cfgGateEnabled := factory.CreateDefaultConfig()
+	assert.EqualExportedValues(t, &Config{
+		ErrorMode: ottl.IgnoreError,
+	}, cfgGateEnabled)
+
+	err = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
+	require.NoError(t, err)
 }
 
 func TestCreateProcessors(t *testing.T) {
