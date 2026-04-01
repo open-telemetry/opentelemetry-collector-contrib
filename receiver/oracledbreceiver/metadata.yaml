@@ -271,6 +271,13 @@ metrics:
       monotonic: true
       value_type: double
     unit: s
+  oracledb.data_dictionary_hit_ratio:
+    description: Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.db_block_gets:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
@@ -577,6 +584,13 @@ metrics:
       value_type: int
       input_type: string
     unit: "{queries}"
+  oracledb.recycle_bin_size:
+    description: Total size of the recycle bin in megabytes.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: MBy
   oracledb.sessions.limit:
     description: Maximum limit of active sessions, -1 if unlimited.
     enabled: true
@@ -596,6 +610,20 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
+  oracledb.storage.allocated:
+    description: Total allocated database storage size in megabytes from dba_data_files.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: MBy
+  oracledb.storage.used_pct:
+    description: Percentage of allocated database storage that is used.
+    enabled: false
+    stability: development
+    gauge:
+      value_type: double
+    unit: "%"
   oracledb.tablespace_size.limit:
     attributes:
       - tablespace_name

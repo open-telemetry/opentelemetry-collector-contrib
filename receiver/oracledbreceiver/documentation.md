@@ -249,6 +249,14 @@ Number of times a consistent read was requested for a block from the buffer cach
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
+### oracledb.data_dictionary_hit_ratio
+
+Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
+
 ### oracledb.db_block_gets
 
 Number of times a current block was requested from the buffer cache.
@@ -376,6 +384,30 @@ Number of SELECT statements executed in parallel
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
+
+### oracledb.recycle_bin_size
+
+Total size of the recycle bin in megabytes.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| MBy | Gauge | Double | Development |
+
+### oracledb.storage.allocated
+
+Total allocated database storage size in megabytes from dba_data_files.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| MBy | Gauge | Double | Development |
+
+### oracledb.storage.used_pct
+
+Percentage of allocated database storage that is used.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| % | Gauge | Double | Development |
 
 ## Default Events
 

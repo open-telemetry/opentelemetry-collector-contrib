@@ -49,6 +49,26 @@ func (ms *OracledbCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
+// OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary_hit_ratio metric.
+type OracledbDataDictionaryHitRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbDataDictionaryHitRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric.
 type OracledbDbBlockGetsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -689,6 +709,26 @@ func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
+// OracledbRecycleBinSizeMetricConfig provides config for the oracledb.recycle_bin_size metric.
+type OracledbRecycleBinSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbRecycleBinSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric.
 type OracledbSessionsLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -755,6 +795,46 @@ func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
 	}
 
+	return nil
+}
+
+// OracledbStorageAllocatedMetricConfig provides config for the oracledb.storage.allocated metric.
+type OracledbStorageAllocatedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbStorageAllocatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// OracledbStorageUsedPctMetricConfig provides config for the oracledb.storage.used_pct metric.
+type OracledbStorageUsedPctMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *OracledbStorageUsedPctMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -938,6 +1018,7 @@ func (ms *OracledbUserRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) err
 type MetricsConfig struct {
 	OracledbConsistentGets                        OracledbConsistentGetsMetricConfig                        `mapstructure:"oracledb.consistent_gets"`
 	OracledbCPUTime                               OracledbCPUTimeMetricConfig                               `mapstructure:"oracledb.cpu_time"`
+	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary_hit_ratio"`
 	OracledbDbBlockGets                           OracledbDbBlockGetsMetricConfig                           `mapstructure:"oracledb.db_block_gets"`
 	OracledbDdlStatementsParallelized             OracledbDdlStatementsParallelizedMetricConfig             `mapstructure:"oracledb.ddl_statements_parallelized"`
 	OracledbDmlLocksLimit                         OracledbDmlLocksLimitMetricConfig                         `mapstructure:"oracledb.dml_locks.limit"`
@@ -970,8 +1051,11 @@ type MetricsConfig struct {
 	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
+	OracledbRecycleBinSize                        OracledbRecycleBinSizeMetricConfig                        `mapstructure:"oracledb.recycle_bin_size"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
+	OracledbStorageAllocated                      OracledbStorageAllocatedMetricConfig                      `mapstructure:"oracledb.storage.allocated"`
+	OracledbStorageUsedPct                        OracledbStorageUsedPctMetricConfig                        `mapstructure:"oracledb.storage.used_pct"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
@@ -987,6 +1071,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbCPUTime: OracledbCPUTimeMetricConfig{
 			Enabled: true,
+		},
+		OracledbDataDictionaryHitRatio: OracledbDataDictionaryHitRatioMetricConfig{
+			Enabled: false,
 		},
 		OracledbDbBlockGets: OracledbDbBlockGetsMetricConfig{
 			Enabled: false,
@@ -1084,6 +1171,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
 			Enabled: false,
 		},
+		OracledbRecycleBinSize: OracledbRecycleBinSizeMetricConfig{
+			Enabled: false,
+		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
 			Enabled: true,
 		},
@@ -1091,6 +1181,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
+		},
+		OracledbStorageAllocated: OracledbStorageAllocatedMetricConfig{
+			Enabled: false,
+		},
+		OracledbStorageUsedPct: OracledbStorageUsedPctMetricConfig{
+			Enabled: false,
 		},
 		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{
 			Enabled:             true,

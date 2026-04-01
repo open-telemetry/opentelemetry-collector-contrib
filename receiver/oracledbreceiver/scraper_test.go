@@ -48,7 +48,10 @@ var queryResponses = map[string][]metricRow{
 		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
 		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"},
 	},
-	tablespaceUsageSQL: {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
+	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
+	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
+	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_MB": "12.5"}},
+	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 }
 
 var cacheValue = map[string]int64{
@@ -197,6 +200,111 @@ func TestScraper_Scrape(t *testing.T) {
 				}
 			}
 			assert.Equal(t, int64(78944), found.Sum().DataPoints().At(0).IntValue())
+		})
+	}
+}
+
+func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid operational metrics",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						queryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad data dictionary hit ratio value",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == dataDictHitRatioSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{{"DATA_DICTIONARY_HIT_RATIO": "not_a_number"}},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse float64 for OracledbDataDictionaryHitRatio, value was not_a_number`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := metadata.DefaultMetricsBuilderConfig()
+			// Disable all default-enabled metrics so only our 4 new ones are active.
+			cfg.Metrics.OracledbEnqueueDeadlocks.Enabled = false
+			cfg.Metrics.OracledbExchangeDeadlocks.Enabled = false
+			cfg.Metrics.OracledbExecutions.Enabled = false
+			cfg.Metrics.OracledbParseCalls.Enabled = false
+			cfg.Metrics.OracledbHardParses.Enabled = false
+			cfg.Metrics.OracledbUserCommits.Enabled = false
+			cfg.Metrics.OracledbUserRollbacks.Enabled = false
+			cfg.Metrics.OracledbPhysicalReads.Enabled = false
+			cfg.Metrics.OracledbSessionsUsage.Enabled = false
+			cfg.Metrics.OracledbSessionsLimit.Enabled = false
+			cfg.Metrics.OracledbProcessesUsage.Enabled = false
+			cfg.Metrics.OracledbProcessesLimit.Enabled = false
+			cfg.Metrics.OracledbEnqueueLocksUsage.Enabled = false
+			cfg.Metrics.OracledbEnqueueLocksLimit.Enabled = false
+			cfg.Metrics.OracledbEnqueueResourcesUsage.Enabled = false
+			cfg.Metrics.OracledbEnqueueResourcesLimit.Enabled = false
+			cfg.Metrics.OracledbTablespaceSizeUsage.Enabled = false
+			cfg.Metrics.OracledbTablespaceSizeLimit.Enabled = false
+			cfg.Metrics.OracledbLogons.Enabled = false
+			cfg.Metrics.OracledbLogicalReads.Enabled = false
+			cfg.Metrics.OracledbCPUTime.Enabled = false
+			cfg.Metrics.OracledbPgaMemory.Enabled = false
+			cfg.Metrics.OracledbPhysicalReadsDirect.Enabled = false
+			cfg.Metrics.OracledbPhysicalReadIoRequests.Enabled = false
+			cfg.Metrics.OracledbPhysicalWrites.Enabled = false
+			cfg.Metrics.OracledbPhysicalWritesDirect.Enabled = false
+			cfg.Metrics.OracledbPhysicalWriteIoRequests.Enabled = false
+			cfg.Metrics.OracledbDataDictionaryHitRatio.Enabled = true
+			cfg.Metrics.OracledbRecycleBinSize.Enabled = true
+			cfg.Metrics.OracledbStorageAllocated.Enabled = true
+			cfg.Metrics.OracledbStorageUsedPct.Enabled = true
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc:   test.dbclientFn,
+				id:                   component.ID{},
+				metricsBuilderConfig: cfg,
+			}
+			err := scrpr.start(t.Context(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(t.Context()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrape(t.Context())
+			if test.errWanted != "" {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), test.errWanted)
+			} else {
+				require.NoError(t, err)
+				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+				assert.Equal(t, 4, metrics.Len())
+
+				metricMap := make(map[string]float64)
+				for i := 0; i < metrics.Len(); i++ {
+					metric := metrics.At(i)
+					metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+				}
+				assert.InDelta(t, 98.75, metricMap["oracledb.data_dictionary_hit_ratio"], 0.01)
+				assert.InDelta(t, 12.5, metricMap["oracledb.recycle_bin_size"], 0.01)
+				assert.InDelta(t, 10240.0, metricMap["oracledb.storage.allocated"], 0.01)
+				assert.InDelta(t, 50.0, metricMap["oracledb.storage.used_pct"], 0.01)
+			}
 		})
 	}
 }

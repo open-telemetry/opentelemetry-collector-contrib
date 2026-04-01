@@ -70,6 +70,9 @@ const (
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
+	dataDictHitRatioSQL = "SELECT (1-(SUM(getmisses)/SUM(gets))) * 100 as DATA_DICTIONARY_HIT_RATIO FROM v$rowcache WHERE getmisses + gets <> 0"
+	recycleBinSizeSQL   = "SELECT nvl(SUM(SPACE*(SELECT value FROM v$parameter WHERE name = 'db_block_size')/1024/1024),0) as RECYCLE_BIN_SIZE_MB FROM dba_recyclebin"
+	storageUsageSQL     = "WITH total_bytes AS (SELECT SUM(bytes) AS total FROM dba_data_files) SELECT (total - (SELECT SUM(bytes) FROM dba_free_space)) AS USED_DB_SIZE, total AS ALLOCATED_DB_SIZE FROM total_bytes"
 
 	sqlIDAttr        = "SQL_ID"
 	childAddressAttr = "CHILD_ADDRESS"
@@ -123,6 +126,9 @@ type oracleScraper struct {
 	oracleQueryMetricsClient   dbClient
 	oraclePlanDataClient       dbClient
 	samplesQueryClient         dbClient
+	dataDictHitRatioClient     dbClient
+	recycleBinSizeClient       dbClient
+	storageUsageClient         dbClient
 	db                         *sql.DB
 	clientProviderFunc         clientProviderFunc
 	mb                         *metadata.MetricsBuilder
@@ -193,6 +199,9 @@ func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
 	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
+	s.dataDictHitRatioClient = s.clientProviderFunc(s.db, dataDictHitRatioSQL, s.logger)
+	s.recycleBinSizeClient = s.clientProviderFunc(s.db, recycleBinSizeSQL, s.logger)
+	s.storageUsageClient = s.clientProviderFunc(s.db, storageUsageSQL, s.logger)
 	return nil
 }
 
@@ -515,6 +524,10 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	s.collectDataDictHitRatio(ctx, &scrapeErrors)
+	s.collectRecycleBinSize(ctx, &scrapeErrors)
+	s.collectStorageUsage(ctx, &scrapeErrors)
+
 	rb := s.setupResourceBuilder(s.mb.NewResourceBuilder())
 
 	out := s.mb.Emit(metadata.WithResource(rb.Emit()))
@@ -523,6 +536,79 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}
 	return out, nil
+}
+
+func (s *oracleScraper) collectDataDictHitRatio(ctx context.Context, scrapeErrors *[]error) {
+	if !s.metricsBuilderConfig.Metrics.OracledbDataDictionaryHitRatio.Enabled {
+		return
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.dataDictHitRatioClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", dataDictHitRatioSQL, err))
+		return
+	}
+	for _, row := range rows {
+		val, err := strconv.ParseFloat(row["DATA_DICTIONARY_HIT_RATIO"], 64)
+		if err != nil {
+			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbDataDictionaryHitRatio, value was %s: %w", row["DATA_DICTIONARY_HIT_RATIO"], err))
+			continue
+		}
+		s.mb.RecordOracledbDataDictionaryHitRatioDataPoint(now, val)
+	}
+}
+
+func (s *oracleScraper) collectRecycleBinSize(ctx context.Context, scrapeErrors *[]error) {
+	if !s.metricsBuilderConfig.Metrics.OracledbRecycleBinSize.Enabled {
+		return
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.recycleBinSizeClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", recycleBinSizeSQL, err))
+		return
+	}
+	for _, row := range rows {
+		val, err := strconv.ParseFloat(row["RECYCLE_BIN_SIZE_MB"], 64)
+		if err != nil {
+			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbRecycleBinSize, value was %s: %w", row["RECYCLE_BIN_SIZE_MB"], err))
+			continue
+		}
+		s.mb.RecordOracledbRecycleBinSizeDataPoint(now, val)
+	}
+}
+
+func (s *oracleScraper) collectStorageUsage(ctx context.Context, scrapeErrors *[]error) {
+	if !s.metricsBuilderConfig.Metrics.OracledbStorageAllocated.Enabled &&
+		!s.metricsBuilderConfig.Metrics.OracledbStorageUsedPct.Enabled {
+		return
+	}
+	now := pcommon.NewTimestampFromTime(time.Now())
+	rows, err := s.storageUsageClient.metricRows(ctx)
+	if err != nil {
+		*scrapeErrors = append(*scrapeErrors, fmt.Errorf("error executing %s: %w", storageUsageSQL, err))
+		return
+	}
+	for _, row := range rows {
+		allocatedBytes, err := strconv.ParseFloat(row["ALLOCATED_DB_SIZE"], 64)
+		if err != nil {
+			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbStorageAllocated, value was %s: %w", row["ALLOCATED_DB_SIZE"], err))
+			continue
+		}
+		usedBytes, err := strconv.ParseFloat(row["USED_DB_SIZE"], 64)
+		if err != nil {
+			*scrapeErrors = append(*scrapeErrors, fmt.Errorf("failed to parse float64 for OracledbStorageUsedPct, value was %s: %w", row["USED_DB_SIZE"], err))
+			continue
+		}
+		allocatedMB := allocatedBytes / 1024 / 1024
+		if s.metricsBuilderConfig.Metrics.OracledbStorageAllocated.Enabled {
+			s.mb.RecordOracledbStorageAllocatedDataPoint(now, allocatedMB)
+		}
+		if s.metricsBuilderConfig.Metrics.OracledbStorageUsedPct.Enabled && allocatedBytes > 0 {
+			usedPct := (usedBytes / allocatedBytes) * 100
+			s.mb.RecordOracledbStorageUsedPctDataPoint(now, usedPct)
+		}
+	}
 }
 
 type queryMetricCacheHit struct {

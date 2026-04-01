@@ -29,6 +29,9 @@ var MetricsInfo = metricsInfo{
 	OracledbCPUTime: metricInfo{
 		Name: "oracledb.cpu_time",
 	},
+	OracledbDataDictionaryHitRatio: metricInfo{
+		Name: "oracledb.data_dictionary_hit_ratio",
+	},
 	OracledbDbBlockGets: metricInfo{
 		Name: "oracledb.db_block_gets",
 	},
@@ -125,11 +128,20 @@ var MetricsInfo = metricsInfo{
 	OracledbQueriesParallelized: metricInfo{
 		Name: "oracledb.queries_parallelized",
 	},
+	OracledbRecycleBinSize: metricInfo{
+		Name: "oracledb.recycle_bin_size",
+	},
 	OracledbSessionsLimit: metricInfo{
 		Name: "oracledb.sessions.limit",
 	},
 	OracledbSessionsUsage: metricInfo{
 		Name: "oracledb.sessions.usage",
+	},
+	OracledbStorageAllocated: metricInfo{
+		Name: "oracledb.storage.allocated",
+	},
+	OracledbStorageUsedPct: metricInfo{
+		Name: "oracledb.storage.used_pct",
 	},
 	OracledbTablespaceSizeLimit: metricInfo{
 		Name: "oracledb.tablespace_size.limit",
@@ -154,6 +166,7 @@ var MetricsInfo = metricsInfo{
 type metricsInfo struct {
 	OracledbConsistentGets                        metricInfo
 	OracledbCPUTime                               metricInfo
+	OracledbDataDictionaryHitRatio                metricInfo
 	OracledbDbBlockGets                           metricInfo
 	OracledbDdlStatementsParallelized             metricInfo
 	OracledbDmlLocksLimit                         metricInfo
@@ -186,8 +199,11 @@ type metricsInfo struct {
 	OracledbProcessesLimit                        metricInfo
 	OracledbProcessesUsage                        metricInfo
 	OracledbQueriesParallelized                   metricInfo
+	OracledbRecycleBinSize                        metricInfo
 	OracledbSessionsLimit                         metricInfo
 	OracledbSessionsUsage                         metricInfo
+	OracledbStorageAllocated                      metricInfo
+	OracledbStorageUsedPct                        metricInfo
 	OracledbTablespaceSizeLimit                   metricInfo
 	OracledbTablespaceSizeUsage                   metricInfo
 	OracledbTransactionsLimit                     metricInfo
@@ -296,6 +312,56 @@ func (m *metricOracledbCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbCPUTime(cfg OracledbCPUTimeMetricConfig) metricOracledbCPUTime {
 	m := metricOracledbCPUTime{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbDataDictionaryHitRatio struct {
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   OracledbDataDictionaryHitRatioMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.data_dictionary_hit_ratio metric with initial data.
+func (m *metricOracledbDataDictionaryHitRatio) init() {
+	m.data.SetName("oracledb.data_dictionary_hit_ratio")
+	m.data.SetDescription("Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbDataDictionaryHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbDataDictionaryHitRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbDataDictionaryHitRatio) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbDataDictionaryHitRatio(cfg OracledbDataDictionaryHitRatioMetricConfig) metricOracledbDataDictionaryHitRatio {
+	m := metricOracledbDataDictionaryHitRatio{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -1952,6 +2018,56 @@ func newMetricOracledbQueriesParallelized(cfg OracledbQueriesParallelizedMetricC
 	return m
 }
 
+type metricOracledbRecycleBinSize struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbRecycleBinSizeMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.recycle_bin_size metric with initial data.
+func (m *metricOracledbRecycleBinSize) init() {
+	m.data.SetName("oracledb.recycle_bin_size")
+	m.data.SetDescription("Total size of the recycle bin in megabytes.")
+	m.data.SetUnit("MBy")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbRecycleBinSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbRecycleBinSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbRecycleBinSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbRecycleBinSize(cfg OracledbRecycleBinSizeMetricConfig) metricOracledbRecycleBinSize {
+	m := metricOracledbRecycleBinSize{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbSessionsLimit struct {
 	data     pmetric.Metric                    // data buffer for generated metric.
 	config   OracledbSessionsLimitMetricConfig // metric config provided by user.
@@ -2086,6 +2202,106 @@ func (m *metricOracledbSessionsUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbSessionsUsage(cfg OracledbSessionsUsageMetricConfig) metricOracledbSessionsUsage {
 	m := metricOracledbSessionsUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbStorageAllocated struct {
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   OracledbStorageAllocatedMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.storage.allocated metric with initial data.
+func (m *metricOracledbStorageAllocated) init() {
+	m.data.SetName("oracledb.storage.allocated")
+	m.data.SetDescription("Total allocated database storage size in megabytes from dba_data_files.")
+	m.data.SetUnit("MBy")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbStorageAllocated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbStorageAllocated) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbStorageAllocated) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbStorageAllocated(cfg OracledbStorageAllocatedMetricConfig) metricOracledbStorageAllocated {
+	m := metricOracledbStorageAllocated{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbStorageUsedPct struct {
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   OracledbStorageUsedPctMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.storage.used_pct metric with initial data.
+func (m *metricOracledbStorageUsedPct) init() {
+	m.data.SetName("oracledb.storage.used_pct")
+	m.data.SetDescription("Percentage of allocated database storage that is used.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricOracledbStorageUsedPct) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbStorageUsedPct) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbStorageUsedPct) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbStorageUsedPct(cfg OracledbStorageUsedPctMetricConfig) metricOracledbStorageUsedPct {
+	m := metricOracledbStorageUsedPct{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -2488,6 +2704,7 @@ type MetricsBuilder struct {
 	resourceAttributeExcludeFilter                      map[string]filter.Filter
 	metricOracledbConsistentGets                        metricOracledbConsistentGets
 	metricOracledbCPUTime                               metricOracledbCPUTime
+	metricOracledbDataDictionaryHitRatio                metricOracledbDataDictionaryHitRatio
 	metricOracledbDbBlockGets                           metricOracledbDbBlockGets
 	metricOracledbDdlStatementsParallelized             metricOracledbDdlStatementsParallelized
 	metricOracledbDmlLocksLimit                         metricOracledbDmlLocksLimit
@@ -2520,8 +2737,11 @@ type MetricsBuilder struct {
 	metricOracledbProcessesLimit                        metricOracledbProcessesLimit
 	metricOracledbProcessesUsage                        metricOracledbProcessesUsage
 	metricOracledbQueriesParallelized                   metricOracledbQueriesParallelized
+	metricOracledbRecycleBinSize                        metricOracledbRecycleBinSize
 	metricOracledbSessionsLimit                         metricOracledbSessionsLimit
 	metricOracledbSessionsUsage                         metricOracledbSessionsUsage
+	metricOracledbStorageAllocated                      metricOracledbStorageAllocated
+	metricOracledbStorageUsedPct                        metricOracledbStorageUsedPct
 	metricOracledbTablespaceSizeLimit                   metricOracledbTablespaceSizeLimit
 	metricOracledbTablespaceSizeUsage                   metricOracledbTablespaceSizeUsage
 	metricOracledbTransactionsLimit                     metricOracledbTransactionsLimit
@@ -2555,6 +2775,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		buildInfo:                                           settings.BuildInfo,
 		metricOracledbConsistentGets:                        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
 		metricOracledbCPUTime:                               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
+		metricOracledbDataDictionaryHitRatio:                newMetricOracledbDataDictionaryHitRatio(mbc.Metrics.OracledbDataDictionaryHitRatio),
 		metricOracledbDbBlockGets:                           newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
 		metricOracledbDdlStatementsParallelized:             newMetricOracledbDdlStatementsParallelized(mbc.Metrics.OracledbDdlStatementsParallelized),
 		metricOracledbDmlLocksLimit:                         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
@@ -2587,8 +2808,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbProcessesLimit:                        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
 		metricOracledbProcessesUsage:                        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
 		metricOracledbQueriesParallelized:                   newMetricOracledbQueriesParallelized(mbc.Metrics.OracledbQueriesParallelized),
+		metricOracledbRecycleBinSize:                        newMetricOracledbRecycleBinSize(mbc.Metrics.OracledbRecycleBinSize),
 		metricOracledbSessionsLimit:                         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
 		metricOracledbSessionsUsage:                         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
+		metricOracledbStorageAllocated:                      newMetricOracledbStorageAllocated(mbc.Metrics.OracledbStorageAllocated),
+		metricOracledbStorageUsedPct:                        newMetricOracledbStorageUsedPct(mbc.Metrics.OracledbStorageUsedPct),
 		metricOracledbTablespaceSizeLimit:                   newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
 		metricOracledbTablespaceSizeUsage:                   newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
 		metricOracledbTransactionsLimit:                     newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
@@ -2687,6 +2911,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricOracledbConsistentGets.emit(ils.Metrics())
 	mb.metricOracledbCPUTime.emit(ils.Metrics())
+	mb.metricOracledbDataDictionaryHitRatio.emit(ils.Metrics())
 	mb.metricOracledbDbBlockGets.emit(ils.Metrics())
 	mb.metricOracledbDdlStatementsParallelized.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksLimit.emit(ils.Metrics())
@@ -2719,8 +2944,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
 	mb.metricOracledbQueriesParallelized.emit(ils.Metrics())
+	mb.metricOracledbRecycleBinSize.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
 	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
+	mb.metricOracledbStorageAllocated.emit(ils.Metrics())
+	mb.metricOracledbStorageUsedPct.emit(ils.Metrics())
 	mb.metricOracledbTablespaceSizeLimit.emit(ils.Metrics())
 	mb.metricOracledbTablespaceSizeUsage.emit(ils.Metrics())
 	mb.metricOracledbTransactionsLimit.emit(ils.Metrics())
@@ -2771,6 +2999,11 @@ func (mb *MetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Times
 // RecordOracledbCPUTimeDataPoint adds a data point to oracledb.cpu_time metric.
 func (mb *MetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbDataDictionaryHitRatioDataPoint adds a data point to oracledb.data_dictionary_hit_ratio metric.
+func (mb *MetricsBuilder) RecordOracledbDataDictionaryHitRatioDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricOracledbDataDictionaryHitRatio.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
@@ -3093,6 +3326,11 @@ func (mb *MetricsBuilder) RecordOracledbQueriesParallelizedDataPoint(ts pcommon.
 	return nil
 }
 
+// RecordOracledbRecycleBinSizeDataPoint adds a data point to oracledb.recycle_bin_size metric.
+func (mb *MetricsBuilder) RecordOracledbRecycleBinSizeDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricOracledbRecycleBinSize.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordOracledbSessionsLimitDataPoint adds a data point to oracledb.sessions.limit metric.
 func (mb *MetricsBuilder) RecordOracledbSessionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -3111,6 +3349,16 @@ func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timest
 	}
 	mb.metricOracledbSessionsUsage.recordDataPoint(mb.startTime, ts, val, sessionTypeAttributeValue, sessionStatusAttributeValue)
 	return nil
+}
+
+// RecordOracledbStorageAllocatedDataPoint adds a data point to oracledb.storage.allocated metric.
+func (mb *MetricsBuilder) RecordOracledbStorageAllocatedDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricOracledbStorageAllocated.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbStorageUsedPctDataPoint adds a data point to oracledb.storage.used_pct metric.
+func (mb *MetricsBuilder) RecordOracledbStorageUsedPctDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricOracledbStorageUsedPct.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordOracledbTablespaceSizeLimitDataPoint adds a data point to oracledb.tablespace_size.limit metric.

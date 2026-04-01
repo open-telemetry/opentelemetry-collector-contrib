@@ -18,6 +18,13 @@ $defs:
           enabled:
             type: boolean
             default: true
+      oracledb.data_dictionary_hit_ratio:
+        description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary_hit_ratio metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.db_block_gets:
         description: "OracledbDbBlockGetsMetricConfig provides config for the oracledb.db_block_gets metric."
         type: object
@@ -242,6 +249,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      oracledb.recycle_bin_size:
+        description: "OracledbRecycleBinSizeMetricConfig provides config for the oracledb.recycle_bin_size metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.sessions.limit:
         description: "OracledbSessionsLimitMetricConfig provides config for the oracledb.sessions.limit metric."
         type: object
@@ -274,6 +288,20 @@ $defs:
             default:
               - "session_type"
               - "session_status"
+      oracledb.storage.allocated:
+        description: "OracledbStorageAllocatedMetricConfig provides config for the oracledb.storage.allocated metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      oracledb.storage.used_pct:
+        description: "OracledbStorageUsedPctMetricConfig provides config for the oracledb.storage.used_pct metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       oracledb.tablespace_size.limit:
         description: "OracledbTablespaceSizeLimitMetricConfig provides config for the oracledb.tablespace_size.limit metric."
         type: object
