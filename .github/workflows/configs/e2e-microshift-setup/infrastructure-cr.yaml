@@ -1,0 +1,12 @@
+# Seed Infrastructure resource for MicroShift CI environments.
+# On a real OpenShift cluster this object is managed by the cluster-infrastructure
+# operator. On MicroShift we create it manually so the resource-detection
+# processor can query /apis/config.openshift.io/v1/infrastructures/cluster/status.
+#
+# NOTE: The status field is ignored by kubectl/oc apply (it is a subresource).
+# Use "oc patch --subresource=status" after applying this manifest to populate it.
+apiVersion: config.openshift.io/v1
+kind: Infrastructure
+metadata:
+  name: cluster
+spec: {}

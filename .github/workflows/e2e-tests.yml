@@ -180,7 +180,7 @@ jobs:
         env:
           KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
         run: |
-          SETUP_DIR=${{ matrix.component }}/testdata/e2e/openshift-real/microshift-setup
+          SETUP_DIR=.github/workflows/configs/e2e-microshift-setup
           oc apply -f "${SETUP_DIR}/infrastructure-crd.yaml"
           oc wait --for=condition=Established crd/infrastructures.config.openshift.io --timeout=30s
           oc apply -f "${SETUP_DIR}/infrastructure-cr.yaml"
