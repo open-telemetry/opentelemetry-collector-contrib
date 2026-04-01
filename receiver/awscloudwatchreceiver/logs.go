@@ -504,7 +504,7 @@ func (l *logsReceiver) ensureSession() error {
 
 	stsClient := sts.NewFromConfig(cfg)
 	stsResult, _ := stsClient.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{})
-	if len(*stsResult.Account) > 0 {
+	if stsClient != nil && len(*stsResult.Account) > 0 {
 		l.accountID = *stsResult.Account
 	}
 
