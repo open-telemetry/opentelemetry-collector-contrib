@@ -317,7 +317,7 @@ func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resour
 		case dimensionInstanceID:
 			attrs.PutStr(string(conventions.ServiceInstanceIDKey), v)
 		default:
-			attrs.PutStr(k, v)
+			attrs.PutStr(strcase.ToSnake(k), v)
 		}
 	}
 }

@@ -202,6 +202,36 @@ func TestConvertGetMetricDataToPdata_SingleMetric(t *testing.T) {
 	require.InDelta(t, 42.5, dp.DoubleValue(), 0.001)
 }
 
+func TestConvertGetMetricDataToPdata_NonSemconvDimensionsSnakeCase(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	results := []types.MetricDataResult{
+		{Id: aws.String("q0"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+	}
+	batch := []MetricQuery{
+		{Namespace: "AWS/ApplicationELB", MetricName: "RequestCount", Dimensions: map[string]string{
+			"LoadBalancer": "app/my-lb/abc123",
+			"TargetGroup":  "targetgroup/my-tg/def456",
+		}},
+	}
+
+	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	attrs := md.ResourceMetrics().At(0).Resource().Attributes()
+
+	// Non-semconv dimensions must be snake_cased, not emitted as PascalCase.
+	_, hasPascal := attrs.Get("LoadBalancer")
+	require.False(t, hasPascal, "dimension key should be snake_case, not PascalCase")
+	v, ok := attrs.Get("load_balancer")
+	require.True(t, ok)
+	require.Equal(t, "app/my-lb/abc123", v.Str())
+	v, ok = attrs.Get("target_group")
+	require.True(t, ok)
+	require.Equal(t, "targetgroup/my-tg/def456", v.Str())
+}
+
 func TestConvertGetMetricDataToPdata_GroupsSameResource(t *testing.T) {
 	cfg := &Config{Region: "us-east-1"}
 	scr := testScraper(cfg)
