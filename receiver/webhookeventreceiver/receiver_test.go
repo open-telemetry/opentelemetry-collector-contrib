@@ -433,8 +433,8 @@ func TestHMACSignatureFailures(t *testing.T) {
 			errMsg: "missing HMAC signature header",
 		},
 		{
-			desc:   "Invalid signature prefix",
-			cfg:    hmacCfg(),
+			desc: "Invalid signature prefix",
+			cfg:  hmacCfg(),
 			req: func() *http.Request {
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
 				req.Header.Set("X-Hub-Signature-256", "md5=abc123")
@@ -444,8 +444,8 @@ func TestHMACSignatureFailures(t *testing.T) {
 			errMsg: "invalid prefix",
 		},
 		{
-			desc:   "Invalid hex encoding",
-			cfg:    hmacCfg(),
+			desc: "Invalid hex encoding",
+			cfg:  hmacCfg(),
 			req: func() *http.Request {
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
 				req.Header.Set("X-Hub-Signature-256", "sha256=nothex!!!")
@@ -455,8 +455,8 @@ func TestHMACSignatureFailures(t *testing.T) {
 			errMsg: "hex encoding is invalid",
 		},
 		{
-			desc:   "Wrong secret produces signature mismatch",
-			cfg:    hmacCfg(),
+			desc: "Wrong secret produces signature mismatch",
+			cfg:  hmacCfg(),
 			req: func() *http.Request {
 				wrongSig := "sha256=" + computeHMACSHA256("wrong-secret", body)
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(body))
@@ -467,8 +467,8 @@ func TestHMACSignatureFailures(t *testing.T) {
 			errMsg: "does not match",
 		},
 		{
-			desc:   "Tampered body produces signature mismatch",
-			cfg:    hmacCfg(),
+			desc: "Tampered body produces signature mismatch",
+			cfg:  hmacCfg(),
 			req: func() *http.Request {
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/events", strings.NewReader(`{"event": "tampered"}`))
 				req.Header.Set("X-Hub-Signature-256", validSig)
