@@ -223,6 +223,7 @@ type Agent struct {
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
 	UseHUPConfigReload      bool              `mapstructure:"use_hup_config_reload"`
+	ValidateConfig          bool              `mapstructure:"validate_config"`
 	ConfigFiles             []string          `mapstructure:"config_files"`
 	Arguments               []string          `mapstructure:"args"`
 	Env                     map[string]string `mapstructure:"env"`
@@ -388,6 +389,7 @@ func DefaultSupervisor() Supervisor {
 			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
+			ValidateConfig:          false,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
