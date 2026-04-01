@@ -38,9 +38,9 @@ The number of hosts in the cluster.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| effective | Whether the host is effective in the vCenter cluster. | Any Bool | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| effective | Whether the host is effective in the vCenter cluster. | Any Bool | Recommended | - |
 
 ### vcenter.cluster.memory.effective
 
@@ -70,9 +70,9 @@ The number of virtual machines in the cluster.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | Recommended | - |
 
 ### vcenter.cluster.vm_template.count
 
@@ -100,9 +100,9 @@ The overall cluster latency while accessing vSAN storage.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of vSAN latency. | Str: ``read``, ``write`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of vSAN latency. | Str: ``read``, ``write`` | Recommended | - |
 
 ### vcenter.cluster.vsan.operations
 
@@ -114,9 +114,9 @@ The vSAN IOPs of a cluster.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | Recommended | - |
 
 ### vcenter.cluster.vsan.throughput
 
@@ -128,9 +128,9 @@ The vSAN throughput of a cluster.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | Recommended | - |
 
 ### vcenter.datacenter.cluster.count
 
@@ -142,9 +142,9 @@ The number of clusters in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended | - |
 
 ### vcenter.datacenter.cpu.limit
 
@@ -172,9 +172,9 @@ The amount of available and used disk space in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | Recommended | - |
 
 ### vcenter.datacenter.host.count
 
@@ -186,10 +186,10 @@ The number of hosts in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended |
-| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended | - |
+| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` | Recommended | - |
 
 ### vcenter.datacenter.memory.limit
 
@@ -209,10 +209,10 @@ The number of VM's in the datacenter.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` | Recommended | - |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` | Recommended | - |
 
 ### vcenter.datastore.disk.usage
 
@@ -224,9 +224,9 @@ The amount of space in the datastore.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | Recommended | - |
 
 ### vcenter.datastore.disk.utilization
 
@@ -254,9 +254,9 @@ The CPU of the host reserved for use by virtual machines.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cpu_reservation_type | The type of CPU reservation for the host. | Str: ``total``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu_reservation_type | The type of CPU reservation for the host. | Str: ``total``, ``used`` | Recommended | - |
 
 ### vcenter.host.cpu.usage
 
@@ -286,10 +286,10 @@ This latency is the sum of the device and kernel read and write latencies. Requi
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.disk.latency.max
 
@@ -303,9 +303,9 @@ As measured over the most recent 20s interval. Requires Performance Level 3.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.disk.throughput
 
@@ -319,10 +319,10 @@ As measured over the most recent 20s interval. Aggregated disk I/O rate. Require
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.memory.usage
 
@@ -352,10 +352,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.network.packet.error.rate
 
@@ -369,10 +369,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.network.packet.rate
 
@@ -386,10 +386,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.network.throughput
 
@@ -403,10 +403,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.network.usage
 
@@ -418,9 +418,9 @@ The sum of the data transmitted and received for all the NIC instances of the ho
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.host.vsan.cache.hit_rate
 
@@ -454,9 +454,9 @@ As measured over the most recent 5m interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of vSAN latency. | Str: ``read``, ``write`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of vSAN latency. | Str: ``read``, ``write`` | Recommended | - |
 
 ### vcenter.host.vsan.operations
 
@@ -470,9 +470,9 @@ As measured over the most recent 5m interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | Recommended | - |
 
 ### vcenter.host.vsan.throughput
 
@@ -486,9 +486,9 @@ As measured over the most recent 5m interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | Recommended | - |
 
 ### vcenter.resource_pool.cpu.shares
 
@@ -524,9 +524,9 @@ The amount of memory that is granted to VMs in the resource pool from shared and
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of memory granted. | Str: ``private``, ``shared`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of memory granted. | Str: ``private``, ``shared`` | Recommended | - |
 
 ### vcenter.resource_pool.memory.shares
 
@@ -554,9 +554,9 @@ The usage of the memory by the resource pool.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of memory usage. | Str: ``guest``, ``host``, ``overhead`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of memory usage. | Str: ``guest``, ``host``, ``overhead`` | Recommended | - |
 
 ### vcenter.vm.cpu.readiness
 
@@ -594,11 +594,11 @@ Requires Performance Counter level 2 for metric to populate. As measured over th
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended |
-| disk_type | The type of storage device that is being recorded. | Str: ``virtual``, ``physical`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended | - |
+| disk_type | The type of storage device that is being recorded. | Str: ``virtual``, ``physical`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.disk.latency.max
 
@@ -610,9 +610,9 @@ The highest reported total latency (device and kernel times) over an interval of
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.disk.throughput
 
@@ -626,10 +626,10 @@ As measured over the most recent 20s interval. Requires Performance Level 2.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.disk.usage
 
@@ -641,9 +641,9 @@ The amount of storage space used by the virtual machine.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` | Recommended | - |
 
 ### vcenter.vm.disk.utilization
 
@@ -705,10 +705,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.network.packet.rate
 
@@ -722,10 +722,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.network.throughput
 
@@ -739,10 +739,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.network.usage
 
@@ -756,9 +756,9 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.vsan.latency.avg
 
@@ -770,9 +770,9 @@ The virtual machine latency while accessing vSAN storage.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of vSAN latency. | Str: ``read``, ``write`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of vSAN latency. | Str: ``read``, ``write`` | Recommended | - |
 
 ### vcenter.vm.vsan.operations
 
@@ -784,9 +784,9 @@ The vSAN IOPs of a virtual machine.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` | Recommended | - |
 
 ### vcenter.vm.vsan.throughput
 
@@ -798,9 +798,9 @@ The vSAN throughput of a virtual machine.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The type of vSAN throughput. | Str: ``read``, ``write`` | Recommended | - |
 
 ## Optional Metrics
 
@@ -832,10 +832,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| cpu_state | CPU time spent in idle, ready or idle state. | Str: ``idle``, ``ready``, ``wait`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu_state | CPU time spent in idle, ready or idle state. | Str: ``idle``, ``ready``, ``wait`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.memory.granted
 
@@ -857,10 +857,10 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ### vcenter.vm.network.multicast.packet.rate
 
@@ -874,24 +874,24 @@ As measured over the most recent 20s interval.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended |
-| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` | Recommended | - |
+| object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true |
-| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true |
-| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
-| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
-| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
-| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true |
-| vcenter.virtual_app.name | The name of the vApp. | Any Str | true |
-| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
-| vcenter.vm.name | The name of the virtual machine. | Any Str | true |
-| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true |
-| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true | - |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true | - |
+| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true | - |
+| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true | - |
+| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true | - |
+| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true | - |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true | - |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | true | - |
+| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true | - |
+| vcenter.vm.name | The name of the virtual machine. | Any Str | true | - |
+| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true | - |
+| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true | - |

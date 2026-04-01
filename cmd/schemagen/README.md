@@ -79,7 +79,7 @@ allowedRefs:
 componentOverrides:
   receiver/namedpipe:
     configName: 'NamedPipeConfig'
-  receiver/filelog:
+  receiver/file_log:
     configName: 'FileLogConfig'
 ```
 

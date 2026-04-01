@@ -296,11 +296,11 @@ func TestOnAddForLogsWithHints(t *testing.T) {
 		expectedError          string
 	}{
 		{
-			name:                 "dynamically generated standard filelog receiver with explicit enablement",
+			name:                 "dynamically generated standard file_log receiver with explicit enablement",
 			target:               podContainerEndpointWithHints,
 			hintsConfig:          DiscoveryConfig{Enabled: true},
-			expectedReceiverType: &nopWithFilelogReceiver{},
-			expectedReceiverConfig: &nopWithFilelogConfig{
+			expectedReceiverType: &nopWithFileLogReceiver{},
+			expectedReceiverConfig: &nopWithFileLogConfig{
 				Include:         []string{"/var/log/pods/default_pod-2_pod-2-UID/redis/*.log"},
 				IncludeFileName: false,
 				IncludeFilePath: true,
@@ -344,7 +344,7 @@ func TestOnAddForLogsWithHints(t *testing.T) {
 			case *nopWithoutEndpointReceiver:
 				require.NotNil(t, v)
 				actualConfig = v.cfg
-			case *nopWithFilelogReceiver:
+			case *nopWithFileLogReceiver:
 				require.NotNil(t, v)
 				actualConfig = v.cfg
 			default:
@@ -616,7 +616,7 @@ func newMockHost(t *testing.T, host component.Host) *mockHost {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 	factories.Receivers[component.MustNewType("with_endpoint")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
-	factories.Receivers[component.MustNewType("filelog")] = &nopWithFilelogFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("file_log")] = &nopWithFileLogFactory{Factory: receivertest.NewNopFactory()}
 	factories.Receivers[component.MustNewType("without_endpoint")] = &nopWithoutEndpointFactory{Factory: receivertest.NewNopFactory()}
 	return &mockHost{t: t, factories: factories, Host: host}
 }
