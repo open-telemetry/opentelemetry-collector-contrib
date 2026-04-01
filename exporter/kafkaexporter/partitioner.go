@@ -41,7 +41,7 @@ type RecordPartitionerExtension interface {
 
 func buildPartitionerOpt(cfg RecordPartitionerConfig, host component.Host) (kgo.Opt, error) {
 	switch cfg.Type {
-	case "", RecordPartitionerTypeSaramaCompatible:
+	case RecordPartitionerTypeSaramaCompatible:
 		return kgo.RecordPartitioner(kafka.NewSaramaCompatPartitioner()), nil
 	case RecordPartitionerTypeRoundRobin:
 		return kgo.RecordPartitioner(kgo.RoundRobinPartitioner()), nil
