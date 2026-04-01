@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
@@ -132,7 +134,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return m.mb.Emit(), errs.Combine()
 }
 
-func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error) {
+func (m *mySQLScraper) scrapeTopQueryFunc(_ context.Context) (plog.Logs, error) {
 	if m.sqlclient == nil {
 		return plog.NewLogs(), errors.New("failed to connect to MySQL client")
 	}
@@ -144,7 +146,7 @@ func (m *mySQLScraper) scrapeTopQueryFunc(ctx context.Context) (plog.Logs, error
 	if m.lastExecutionTimestamp.Add(m.config.TopQueryCollection.CollectionInterval).After(now.AsTime()) {
 		m.logger.Debug("Skipping top queries scrape, not enough time has passed since last execution")
 	} else {
-		m.scrapeTopQueries(ctx, now, errs)
+		m.scrapeTopQueries(now, errs)
 	}
 	rb := m.lb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
@@ -651,7 +653,7 @@ func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 	}
 }
 
-func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	queries, err := m.sqlclient.getTopQueries(m.config.TopQueryCollection.MaxQuerySampleCount, m.config.TopQueryCollection.LookbackTime)
 	if err != nil {
 		m.logger.Error("Failed to fetch top queries", zap.Error(err))
@@ -713,7 +715,7 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
-			ctx,
+			context.Background(),
 			now,
 			metadata.AttributeDbSystemNameMysql,
 			obfuscatedQuery,
@@ -726,7 +728,7 @@ func (m *mySQLScraper) scrapeTopQueries(ctx context.Context, now pcommon.Timesta
 	}
 }
 
-func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	samples, err := m.sqlclient.getQuerySamples(m.config.QuerySampleCollection.MaxRowsPerQuery)
 	if err != nil {
 		m.logger.Error("Failed to fetch query samples", zap.Error(err))
@@ -754,13 +756,27 @@ func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Times
 			}
 		}
 
-		obfuscatedQuery, err := m.obfuscator.obfuscateSQLString(sample.sqlText)
-		if err != nil {
-			m.logger.Error("Failed to obfuscate query", zap.Error(err))
+		obfuscatedQuery, obfErr := m.obfuscator.obfuscateSQLString(sample.sqlText)
+		if obfErr != nil {
+			m.logger.Error("Failed to obfuscate query", zap.Error(obfErr))
+		}
+
+		// Use context.Background() as the default (not the scraper ctx) so that log
+		// records carry empty trace/span IDs when no application traceparent is present.
+		// This prevents the collector's own internal scrape span from being stamped onto
+		// query-sample records. If the sample carries a W3C traceparent, extract the
+		// application's trace context from it.
+		recordCtx := context.Background()
+		if sample.traceparent != "" {
+			var tpErr error
+			recordCtx, tpErr = contextWithTraceparent(sample.traceparent)
+			if tpErr != nil {
+				m.logger.Warn("Invalid traceparent; omitting trace context", zap.String("presented-traceparent", sample.traceparent), zap.String("db.query.digest", sample.digest), zap.Error(tpErr))
+			}
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
-			ctx,
+			recordCtx,
 			now,
 			metadata.AttributeDbSystemNameMysql,
 			sample.threadID,
@@ -782,6 +798,20 @@ func (m *mySQLScraper) scrapeQuerySamples(ctx context.Context, now pcommon.Times
 			networkPeerPort,
 		)
 	}
+}
+
+// contextWithTraceparent extracts a W3C TraceContext traceparent from the given
+// string and returns a new context.Background()-based context carrying the
+// resulting span context. On failure (invalid or absent traceparent), returns
+// an undecorated context.Background() and a non-nil error.
+func contextWithTraceparent(traceparent string) (context.Context, error) {
+	newCtx := propagation.TraceContext{}.Extract(context.Background(), propagation.MapCarrier{
+		"traceparent": traceparent,
+	})
+	if trace.SpanContextFromContext(newCtx).IsValid() {
+		return newCtx, nil
+	}
+	return context.Background(), errors.New("no valid span context extracted from traceparent")
 }
 
 func addPartialIfError(errors *scrapererror.ScrapeErrors, err error) {

@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/hostmetrics
-note: Enable re-aggregation for process scraper
-issues: [46623]
-subtext: Enabled the reaggregation feature gate for the process scraper and set all metric attributes (context_switch_type, direction, paging_fault_type, state) with requirement_level recommended.
