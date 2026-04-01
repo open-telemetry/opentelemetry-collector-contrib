@@ -932,229 +932,171 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	assert.Equal(t, "latestResourceVersion/pods.other", key2)
 }
 
-func TestObserverResourceVersionPriority(t *testing.T) {
-	mockClient := newMockDynamicClient()
-	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-
-	// Pre-populate storage with a persisted resourceVersion
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", "500")
-	require.NoError(t, err)
-	require.NoError(t, checkpointer.Flush(t.Context()))
-
-	// Set list resourceVersion
-	mockClient.setListResourceVersion("100")
-
-	tests := []struct {
-		name                  string
-		configResourceVersion string
-		expectUsedVersion     string // The version that should actually be used
-	}{
-		{
-			name:                  "config provided but persisted takes priority",
-			configResourceVersion: "999",
-			expectUsedVersion:     "500", // Persisted takes priority
-		},
-		{
-			name:                  "no config - uses persisted",
-			configResourceVersion: "",
-			expectUsedVersion:     "500", // Persisted version used
-		},
-		{
-			name:                  "config lower than persisted - persisted still wins",
-			configResourceVersion: "50",
-			expectUsedVersion:     "500", // Persisted takes priority over config
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg := Config{
-				Config: k8sinventory.Config{
-					Gvr: schema.GroupVersionResource{
-						Group:    "",
-						Version:  "v1",
-						Resource: "pods",
-					},
-					Namespaces:      []string{"default"},
-					ResourceVersion: tt.configResourceVersion,
-				},
-				PersistResourceVersion: true,
-			}
-
-			receivedEventsChan := make(chan *apiWatch.Event, 10)
-
-			obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
-				receivedEventsChan <- event
-			})
-
-			require.NoError(t, err)
-
-			// Test getResourceVersion directly to verify the logic
-			resource := mockClient.Resource(cfg.Gvr)
-			version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
-			require.NoError(t, err)
-			assert.Equal(t, tt.expectUsedVersion, version, "getResourceVersion should return persisted version when available")
-
-			wg := sync.WaitGroup{}
-			stopChan := obs.Start(t.Context(), &wg)
-
-			time.Sleep(time.Millisecond * 200)
-
-			// The observer should start watching from the expected version
-			assert.NotNil(t, obs)
-
-			close(stopChan)
-			wg.Wait()
-		})
-	}
-}
 
 func TestGetResourceVersion(t *testing.T) {
-	tests := []struct {
-		name              string
-		configVersion     string
-		persistedVersion  string
-		listVersion       string
-		expectedVersion   string
-		enablePersistence bool
-	}{
-		{
-			name:             "list version only (no persistence, no config)",
-			configVersion:    "",
-			persistedVersion: "",
-			listVersion:      "100",
-			expectedVersion:  "100",
-		},
-		{
-			name:             "config provided without persistence - config wins",
-			configVersion:    "150",
-			persistedVersion: "",
-			listVersion:      "100",
-			expectedVersion:  "150", // Config used when no persistence
-		},
-		{
-			name:              "persisted exists - takes priority over everything",
-			configVersion:     "999",
-			persistedVersion:  "200",
-			listVersion:       "100",
-			expectedVersion:   "200", // Persisted takes priority
-			enablePersistence: true,
-		},
-		{
-			name:              "config provided but persisted wins",
-			configVersion:     "50",
-			persistedVersion:  "200",
-			listVersion:       "100",
-			expectedVersion:   "200", // Persisted takes priority over config
-			enablePersistence: true,
-		},
-		{
-			name:              "no persisted - list and persist it",
-			configVersion:     "",
-			persistedVersion:  "",
-			listVersion:       "300",
-			expectedVersion:   "300", // List version used and persisted
-			enablePersistence: true,
-		},
-		{
-			name:             "all empty uses default",
-			configVersion:    "",
-			persistedVersion: "",
-			listVersion:      "",
-			expectedVersion:  "1", // defaultResourceVersion
-		},
-		{
-			name:             "zero values ignored - falls back to default",
-			configVersion:    "0",
-			persistedVersion: "",
-			listVersion:      "0",
-			expectedVersion:  "1", // defaultResourceVersion
-		},
-		{
-			name:              "persistence disabled with config",
-			configVersion:     "100",
-			persistedVersion:  "999", // Won't be loaded since persistence disabled
-			listVersion:       "200",
-			expectedVersion:   "100", // Config used when persistence disabled
-			enablePersistence: false,
-		},
-		{
-			name:              "persistence disabled without config",
-			configVersion:     "",
-			persistedVersion:  "999", // Won't be loaded since persistence disabled
-			listVersion:       "200",
-			expectedVersion:   "200", // List version used (persisted not loaded)
-			enablePersistence: false,
-		},
-		{
-			name:              "persisted zero value - falls back to list",
-			configVersion:     "",
-			persistedVersion:  "0",
-			listVersion:       "250",
-			expectedVersion:   "250", // Persisted "0" is invalid, use list
-			enablePersistence: true,
-		},
-		{
-			name:              "persisted empty - falls back to list",
-			configVersion:     "",
-			persistedVersion:  "",
-			listVersion:       "350",
-			expectedVersion:   "350", // No persisted value, use list
-			enablePersistence: true,
-		},
-	}
+	// Tests are grouped by which source of resourceVersion is active.
+	// Note: config resource_version and persist_resource_version are mutually
+	// exclusive at the receiver config level, so no test combines both.
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockClient := newMockDynamicClient()
+	t.Run("with persistence", func(t *testing.T) {
+		tests := []struct {
+			name             string
+			persistedVersion string
+			listVersion      string
+			expectedVersion  string
+		}{
+			{
+				name:             "persisted RV exists - use it",
+				persistedVersion: "200",
+				listVersion:      "100",
+				expectedVersion:  "200",
+			},
+			{
+				name:             "persisted RV is zero - fall back to list",
+				persistedVersion: "0",
+				listVersion:      "250",
+				expectedVersion:  "250",
+			},
+			{
+				name:            "no persisted RV - fetch from list and persist it",
+				listVersion:     "300",
+				expectedVersion: "300",
+			},
+		}
 
-			// Set the list resourceVersion that will be returned by List operations
-			if tt.listVersion != "" {
-				mockClient.setListResourceVersion(tt.listVersion)
-			}
-
-			cfg := Config{
-				Config: k8sinventory.Config{
-					Gvr: schema.GroupVersionResource{
-						Group:    "",
-						Version:  "v1",
-						Resource: "pods",
-					},
-					Namespaces:      []string{"default"},
-					ResourceVersion: tt.configVersion,
-				},
-				PersistResourceVersion: tt.enablePersistence,
-			}
-
-			var storageClient *storagetest.TestClient
-			if tt.enablePersistence {
-				storageClient = storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
-
-				// Pre-populate persisted version if provided
-				if tt.persistedVersion != "" {
-					checkpointer := newCheckpointer(storageClient, zap.NewNop())
-					err := checkpointer.SetCheckpoint(t.Context(), "default", "pods", tt.persistedVersion)
-					require.NoError(t, err)
-					require.NoError(t, checkpointer.Flush(t.Context()))
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockClient := newMockDynamicClient()
+				if tt.listVersion != "" {
+					mockClient.setListResourceVersion(tt.listVersion)
 				}
-			}
 
-			obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)
-			require.NoError(t, err)
+				storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
+				if tt.persistedVersion != "" {
+					cp := newCheckpointer(storageClient, zap.NewNop())
+					require.NoError(t, cp.SetCheckpoint(t.Context(), "default", "pods", tt.persistedVersion))
+					require.NoError(t, cp.Flush(t.Context()))
+				}
 
-			resource := mockClient.Resource(cfg.Gvr)
-			version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
-			require.NoError(t, err)
-			assert.Equal(t, tt.expectedVersion, version)
+				cfg := Config{
+					Config: k8sinventory.Config{
+						Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+						Namespaces: []string{"default"},
+					},
+					PersistResourceVersion: true,
+				}
 
-			// If persistence enabled and no initial persisted value, verify it was persisted
-			if tt.enablePersistence && tt.persistedVersion == "" && tt.listVersion != "" && tt.listVersion != "0" {
-				checkpointer := newCheckpointer(storageClient, zap.NewNop())
-				persistedAfter, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
+				obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)
 				require.NoError(t, err)
-				assert.Equal(t, tt.expectedVersion, persistedAfter, "list version should have been persisted")
-			}
-		})
-	}
+
+				resource := mockClient.Resource(cfg.Gvr)
+				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedVersion, version)
+
+				// When no persisted RV was set, verify the list version was persisted.
+				if tt.persistedVersion == "" && tt.listVersion != "" {
+					cp := newCheckpointer(storageClient, zap.NewNop())
+					persisted, err := cp.GetCheckpoint(t.Context(), "default", "pods")
+					require.NoError(t, err)
+					assert.Equal(t, tt.expectedVersion, persisted, "list version should have been persisted")
+				}
+			})
+		}
+	})
+
+	t.Run("with config resource version (no persistence)", func(t *testing.T) {
+		tests := []struct {
+			name            string
+			configVersion   string
+			listVersion     string
+			expectedVersion string
+		}{
+			{
+				name:            "config RV set - use it",
+				configVersion:   "150",
+				listVersion:     "100",
+				expectedVersion: "150",
+			},
+			{
+				name:            "config RV is zero - fall back to list",
+				configVersion:   "0",
+				listVersion:     "100",
+				expectedVersion: "100",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockClient := newMockDynamicClient()
+				if tt.listVersion != "" {
+					mockClient.setListResourceVersion(tt.listVersion)
+				}
+
+				cfg := Config{
+					Config: k8sinventory.Config{
+						Gvr:             schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+						Namespaces:      []string{"default"},
+						ResourceVersion: tt.configVersion,
+					},
+				}
+
+				obs, err := New(mockClient, cfg, zap.NewNop(), nil, nil)
+				require.NoError(t, err)
+
+				resource := mockClient.Resource(cfg.Gvr)
+				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedVersion, version)
+			})
+		}
+	})
+
+	t.Run("from list (no persistence, no config)", func(t *testing.T) {
+		tests := []struct {
+			name            string
+			listVersion     string
+			expectedVersion string
+		}{
+			{
+				name:            "list version returned",
+				listVersion:     "100",
+				expectedVersion: "100",
+			},
+			{
+				name:            "empty list version - use default",
+				listVersion:     "",
+				expectedVersion: "1",
+			},
+			{
+				name:            "zero list version - use default",
+				listVersion:     "0",
+				expectedVersion: "1",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				mockClient := newMockDynamicClient()
+				if tt.listVersion != "" {
+					mockClient.setListResourceVersion(tt.listVersion)
+				}
+
+				cfg := Config{
+					Config: k8sinventory.Config{
+						Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
+						Namespaces: []string{"default"},
+					},
+				}
+
+				obs, err := New(mockClient, cfg, zap.NewNop(), nil, nil)
+				require.NoError(t, err)
+
+				resource := mockClient.Resource(cfg.Gvr)
+				version, err := obs.getResourceVersion(t.Context(), resource.Namespace("default"), "default")
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedVersion, version)
+			})
+		}
+	})
 }
