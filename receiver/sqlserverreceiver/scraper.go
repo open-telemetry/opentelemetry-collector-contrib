@@ -13,6 +13,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -135,6 +136,7 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
 	var err error
 	var resources pcommon.Resource
+	var isQuerySample bool
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
 		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopQueryCollection.CollectionInterval.Seconds()) {
@@ -143,12 +145,165 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx)
 	case getSQLServerQuerySamplesQuery():
+		isQuerySample = true
 		resources, err = s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}
 
-	return s.lb.Emit(metadata.WithLogsResource(resources)), err
+	logs := s.lb.Emit(metadata.WithLogsResource(resources))
+	if isQuerySample {
+		sanitizeQuerySampleOptionalAttributes(logs)
+	}
+
+	return logs, err
+}
+
+func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				logRecord := logRecords.At(k)
+				if logRecord.EventName() != "db.server.query_sample" {
+					continue
+				}
+
+				blockingSessionIDAttr, hasBlockingSession := logRecord.Attributes().Get("sqlserver.blocking_session_id")
+				blockingStartTimeAttr, hasBlockingStartTime := logRecord.Attributes().Get("sqlserver.blocking_start_time")
+				if !hasBlockingSession || !hasBlockingStartTime || blockingSessionIDAttr.Int() <= 0 || blockingStartTimeAttr.Str() == "" {
+					logRecord.Attributes().Remove("sqlserver.blocking_start_time")
+				}
+				resourceTypeAttr, hasResourceType := logRecord.Attributes().Get("sqlserver.resource_type")
+				if !hasResourceType || resourceTypeAttr.Str() == "" {
+					logRecord.Attributes().Remove("sqlserver.resource_type")
+				}
+				resourceIDAttr, hasResourceID := logRecord.Attributes().Get("sqlserver.resource_id")
+				if !hasResourceID || resourceIDAttr.Str() == "" {
+					logRecord.Attributes().Remove("sqlserver.resource_id")
+				}
+			}
+		}
+	}
+}
+
+func parseWaitResource(waitResource string) (resourceType string, resourceID string) {
+	if waitResource == "" {
+		return "", ""
+	}
+	waitResource = strings.TrimSpace(waitResource)
+	if waitResource == "" {
+		return "", ""
+	}
+
+	sep := strings.IndexByte(waitResource, ':')
+	if sep <= 0 {
+		return "", ""
+	}
+	resourceType = waitResource[:sep]
+	rest := strings.TrimSpace(waitResource[sep+1:])
+	if rest == "" {
+		return "", ""
+	}
+	if space := strings.IndexByte(rest, ' '); space >= 0 {
+		rest = rest[:space]
+	}
+	if rest == "" {
+		return "", ""
+	}
+
+	switch resourceType {
+	case "DATABASE":
+		if !isDigits(rest) {
+			return "", ""
+		}
+		return resourceType, rest
+	case "FILE", "KEY":
+		_, second, ok := splitTwoSegments(rest)
+		if !ok || !isDigits(second) {
+			return "", ""
+		}
+		return resourceType, second
+	case "PAGE", "OBJECT":
+		_, tail, ok := splitAfterFirstSegment(rest)
+		if !ok || !isTwoNumericSegments(tail) {
+			return "", ""
+		}
+		return resourceType, tail
+	case "RID":
+		_, tail, ok := splitAfterFirstSegment(rest)
+		if !ok || !isThreeNumericSegments(tail) {
+			return "", ""
+		}
+		return resourceType, tail
+	default:
+		return "", ""
+	}
+}
+
+func splitTwoSegments(s string) (first, second string, ok bool) {
+	sep := strings.IndexByte(s, ':')
+	if sep <= 0 || sep >= len(s)-1 {
+		return "", "", false
+	}
+	if strings.IndexByte(s[sep+1:], ':') >= 0 {
+		return "", "", false
+	}
+	first, second = s[:sep], s[sep+1:]
+	if !isDigits(first) {
+		return "", "", false
+	}
+	return first, second, true
+}
+
+func splitAfterFirstSegment(s string) (first, tail string, ok bool) {
+	sep := strings.IndexByte(s, ':')
+	if sep <= 0 || sep >= len(s)-1 {
+		return "", "", false
+	}
+	first, tail = s[:sep], s[sep+1:]
+	if !isDigits(first) {
+		return "", "", false
+	}
+	return first, tail, true
+}
+
+func isDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func isTwoNumericSegments(s string) bool {
+	first, second, ok := splitTwoSegments(s)
+	return ok && isDigits(first) && isDigits(second)
+}
+
+func isThreeNumericSegments(s string) bool {
+	firstSep := strings.IndexByte(s, ':')
+	if firstSep <= 0 || firstSep >= len(s)-1 {
+		return false
+	}
+	secondSepRel := strings.IndexByte(s[firstSep+1:], ':')
+	if secondSepRel <= 0 {
+		return false
+	}
+	secondSep := firstSep + 1 + secondSepRel
+	if secondSep >= len(s)-1 {
+		return false
+	}
+	if strings.IndexByte(s[secondSep+1:], ':') >= 0 {
+		return false
+	}
+	return isDigits(s[:firstSep]) && isDigits(s[firstSep+1:secondSep]) && isDigits(s[secondSep+1:])
 }
 
 func (s *sqlServerScraperHelper) Shutdown(context.Context) error {
@@ -916,7 +1071,6 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
 	const blockingSessionID = "blocking_session_id"
-	const blockingStartTime = "blocking_start_time"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
 	const command = "command"
@@ -935,8 +1089,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const queryStart = "query_start"
 	const reads = "reads"
 	const requestStatus = "request_status"
-	const resourceID = "resource_id"
-	const resourceType = "resource_type"
 	const rowCount = "row_count"
 	const sessionID = "session_id"
 	const sessionStatus = "session_status"
@@ -991,7 +1143,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
-		blockingStartTimeVal := row[blockingStartTime]
 		commandVal := row[command]
 		cpuTimeSecondVal := s.retrieveValue(row, cpuTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
 			return float64(i) / 1000.0
@@ -1009,8 +1160,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryStartVal := row[queryStart]
 		readsVal := s.retrieveValue(row, reads, &errs, retrieveInt).(int64)
 		requestStatusVal := row[requestStatus]
-		resourceIDVal := row[resourceID]
-		resourceTypeVal := row[resourceType]
 		rowCountVal := s.retrieveValue(row, rowCount, &errs, retrieveInt).(int64)
 		sessionIDVal := s.retrieveValue(row, sessionID, &errs, retrieveInt).(int64)
 		sessionStatusVal := row[sessionStatus]
@@ -1021,9 +1170,13 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		transactionIsolationLevelVal := s.retrieveValue(row, transactionIsolationLevel, &errs, retrieveInt).(int64)
 		usernameVal := row[username]
 		waitResourceVal := row[waitResource]
-		waitTimeSecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveIntAndConvert(func(i int64) any {
-			return float64(i) / 1000.0
-		})).(float64)
+		waitTimeMillisecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveInt).(int64)
+		waitTimeSecondVal := float64(waitTimeMillisecondVal) / 1000.0
+		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
+		blockingStartTimeVal := ""
+		if blockSessionIDVal > 0 && waitTimeMillisecondVal > 0 {
+			blockingStartTimeVal = time.Now().Add(-time.Duration(waitTimeMillisecondVal) * time.Millisecond).Format(time.RFC3339)
+		}
 		waitTypeVal := row[waitType]
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
 

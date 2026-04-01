@@ -45,7 +45,7 @@ resourceLogs:
                   intValue: "59286"
               - key: sqlserver.blocking_session_id
                 value:
-                  intValue: "0"
+                  intValue: "71"
               - key: sqlserver.blocking_start_time
                 value:
                   stringValue: "2025-02-12T16:37:52.393+08:00"

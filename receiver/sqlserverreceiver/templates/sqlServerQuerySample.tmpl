@@ -20,6 +20,7 @@ SELECT TOP(@top)
         ) / 2
       ) + 1) AS statement_text,
   r.blocking_session_id,
+  ISNULL(blocking_info.blocking_start_time, '') AS blocking_start_time,
   ISNULL(blocking_info.resource_id, '') AS resource_id,
   ISNULL(blocking_info.resource_type, '') AS resource_type,
   ISNULL(r.wait_type, '') AS wait_type,
