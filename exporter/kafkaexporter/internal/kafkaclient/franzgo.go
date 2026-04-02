@@ -10,6 +10,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -45,14 +46,14 @@ func recordUserSize(r *kgo.Record) int {
 type FranzSyncProducer struct {
 	client          *kgo.Client
 	metadataKeys    []string
-	recordHeaders   map[string]string
+	recordHeaders   configopaque.MapList
 	maxMessageBytes int
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
-	recordHeaders map[string]string,
+	recordHeaders configopaque.MapList,
 	maxMessageBytes int,
 ) *FranzSyncProducer {
 	return &FranzSyncProducer{
@@ -96,7 +97,7 @@ func (p *FranzSyncProducer) Close() error {
 	return nil
 }
 
-func makeFranzMessages(messages Messages, recordHeaders map[string]string) []*kgo.Record {
+func makeFranzMessages(messages Messages, recordHeaders configopaque.MapList) []*kgo.Record {
 	msgs := make([]*kgo.Record, 0, messages.Count)
 	for _, msg := range messages.TopicMessages {
 		for _, message := range msg.Messages {
@@ -107,10 +108,10 @@ func makeFranzMessages(messages Messages, recordHeaders map[string]string) []*kg
 			if message.Value != nil {
 				record.Value = message.Value
 			}
-			for k, v := range recordHeaders {
+			for _, pair := range recordHeaders {
 				record.Headers = append(record.Headers, kgo.RecordHeader{
-					Key:   k,
-					Value: []byte(v),
+					Key:   pair.Name,
+					Value: []byte(string(pair.Value)),
 				})
 			}
 			msgs = append(msgs, record)
