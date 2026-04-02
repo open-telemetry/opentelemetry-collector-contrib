@@ -336,18 +336,18 @@ func (*nopWithoutEndpointFactory) ProfilesStability() component.StabilityLevel {
 	return component.StabilityLevelAlpha
 }
 
-type nopWithFilelogConfig struct {
+type nopWithFileLogConfig struct {
 	Include         []string `mapstructure:"include"`
 	IncludeFileName bool     `mapstructure:"include_file_name"`
 	IncludeFilePath bool     `mapstructure:"include_file_path"`
 	Operators       []any    `mapstructure:"operators"`
 }
 
-type nopWithFilelogFactory struct {
+type nopWithFileLogFactory struct {
 	rcvr.Factory
 }
 
-type nopWithFilelogReceiver struct {
+type nopWithFileLogReceiver struct {
 	mockComponent
 	consumer.Logs
 	consumer.Metrics
@@ -356,11 +356,11 @@ type nopWithFilelogReceiver struct {
 	cfg component.Config
 }
 
-func (*nopWithFilelogFactory) CreateDefaultConfig() component.Config {
-	return &nopWithFilelogConfig{}
+func (*nopWithFileLogFactory) CreateDefaultConfig() component.Config {
+	return &nopWithFileLogConfig{}
 }
 
-func (*nopWithFilelogFactory) CreateLogs(
+func (*nopWithFileLogFactory) CreateLogs(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,

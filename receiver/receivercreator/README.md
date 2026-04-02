@@ -415,7 +415,7 @@ receivers:
   receiver_creator/logs:
     watch_observers: [ k8s_observer ]
     receivers:
-      filelog/busybox:
+      file_log/busybox:
         rule: type == "pod.container" && container_name == "busybox"
         config:
           include:
@@ -428,7 +428,7 @@ receivers:
             - type: add
               field: attributes.log.template
               value: busybox
-      filelog/lazybox:
+      file_log/lazybox:
         rule: type == "pod.container" && container_name == "lazybox"
         config:
           include:
@@ -568,7 +568,7 @@ The hints are evaluated per container by extracting the annotations from each [`
 
 ### Supported logs annotations
 
-This feature enables `filelog` receiver in order to collect logs from the discovered Pods.
+This feature enables `file_log` receiver in order to collect logs from the discovered Pods.
 
 #### Enable/disable discovery
 
@@ -578,7 +578,7 @@ By default `"false"`.
 
 #### Define configuration
 
-The default configuration for the `filelog` receiver is the following:
+The default configuration for the `file_log` receiver is the following:
 
 ```yaml
 include:
