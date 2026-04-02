@@ -877,3 +877,88 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 	assert.Equal(t, []byte("first-matching-content"), processedKeys["logs/matched-key-1"])
 	assert.Equal(t, []byte("second-matching-content"), processedKeys["logs/matched-key-2"])
 }
+
+func TestS3SQSReader_ReadAllDirectS3TestEvent(t *testing.T) {
+	logger := zap.NewNop()
+	cfg := &Config{
+		S3Downloader: S3DownloaderConfig{
+			S3Bucket: "test-bucket",
+			Region:   "us-east-1",
+		},
+		SQS: &SQSConfig{
+			QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+			Region:   "us-east-1",
+		},
+	}
+
+	mockS3 := new(mockS3ClientSQS)
+	mockSQS := new(mockSQSClient)
+
+	// Create reader with mocks
+	reader := &s3SQSNotificationReader{
+		logger:              logger,
+		s3Client:            mockS3,
+		sqsClient:           mockSQS,
+		queueURL:            cfg.SQS.QueueURL,
+		s3Bucket:            cfg.S3Downloader.S3Bucket,
+		s3Prefix:            cfg.S3Downloader.S3Prefix,
+		maxNumberOfMessages: 10,
+		waitTimeSeconds:     20,
+	}
+
+	// This simulates the exact, complete payload AWS sends for an s3:TestEvent
+	testEventJSON := `{"Service":"Amazon S3","Event":"s3:TestEvent","Time":"2023-10-25T12:00:00.000Z","Bucket":"test-bucket","RequestId":"5582815E1EA5EF29","HostId":"8cLeGAmw098X5cv4Zkwcmo8vvZa3eH3eKxsPzbB9wrR+YstdA6Knx4Ip8EXAMPLE"}`
+
+	// Mock SQS message reception with the test event
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
+		return *input.QueueUrl == cfg.SQS.QueueURL
+	})).Return(
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{
+				{
+					Body:          aws.String(testEventJSON),
+					ReceiptHandle: aws.String("test-event-receipt-handle"),
+				},
+			},
+		},
+		nil,
+	).Once()
+
+	// After processing one message, return empty results to exit test loop
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{},
+		},
+		nil,
+	)
+
+	mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+		return *input.QueueUrl == cfg.SQS.QueueURL &&
+			*input.ReceiptHandle == "test-event-receipt-handle"
+	})).Return(
+		&sqs.DeleteMessageOutput{},
+		nil,
+	)
+
+	// Run test with callback
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+
+	var callbackCalled bool
+
+	err := reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+		callbackCalled = true
+		return nil
+	})
+
+	// Context cancellation is expected to break the infinite reader loop
+	assert.Error(t, err)
+	assert.Equal(t, context.DeadlineExceeded, err)
+
+	// Verify the data callback was NOT called (since there are 0 records in a TestEvent)
+	assert.False(t, callbackCalled)
+
+	// Verify all expectations (proves DeleteMessage was actually triggered)
+	mockS3.AssertExpectations(t)
+	mockSQS.AssertExpectations(t)
+}
