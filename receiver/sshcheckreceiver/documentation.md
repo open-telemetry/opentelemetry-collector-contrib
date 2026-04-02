@@ -30,9 +30,9 @@ Records errors occurring during SSH check.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| error.message | Error message recorded during check | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| error.message | Error message recorded during check | Any Str | Recommended | - |
 
 ### sshcheck.status
 
@@ -70,9 +70,9 @@ Records errors occurring during SFTP check.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| error.message | Error message recorded during check | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| error.message | Error message recorded during check | Any Str | Recommended | - |
 
 ### sshcheck.sftp_status
 
@@ -84,6 +84,6 @@ Records errors occurring during SFTP check.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| ssh.endpoint | Full SSH endpoint | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| ssh.endpoint | Full SSH endpoint | Any Str | false | - |

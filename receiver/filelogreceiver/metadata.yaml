@@ -1,5 +1,6 @@
 display_name: File Log Receiver
-type: filelog
+type: file_log
+deprecated_type: filelog
 
 description: |
   This receiver tails and parses logs from files.
