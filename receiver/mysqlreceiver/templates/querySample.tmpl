@@ -25,16 +25,23 @@ SELECT
             IF(wait.event_id = wait.end_event_id, 'CPU', wait.event_name)), 'CPU'
         )
     ) AS wait_event,
-    COALESCE(wait.timer_wait/1e12, 0) AS wait_time_seconds
+    COALESCE(wait.timer_wait/1e12, 0) AS wait_time_seconds,
+    -- Extension: Get @traceparent from user_variables_by_thread
+    -- Use CONVERT for MySQL 8.0 which stores user variables as binary.
+    -- utf8mb4 is used instead of the deprecated utf8 alias.
+    COALESCE(CONVERT(uvt.VARIABLE_VALUE USING utf8mb4), '') AS traceparent
 FROM
     performance_schema.threads AS thread
     LEFT JOIN performance_schema.events_statements_current AS statement ON statement.thread_id = thread.thread_id
     LEFT JOIN performance_schema.events_waits_current AS wait ON wait.thread_id = thread.thread_id
+    -- Extension: Join user_variables_by_thread to get @traceparent.
+    -- MySQL stores user variable names in lowercase in VARIABLE_NAME regardless
+    -- of how the client spelled them, so '= traceparent' matches any case variation.
+    LEFT JOIN performance_schema.user_variables_by_thread AS uvt ON uvt.thread_id = thread.thread_id AND uvt.VARIABLE_NAME = 'traceparent'
 WHERE
     thread.processlist_state IS NOT NULL
-    AND thread.processlist_command != 'Sleep'
+    AND thread.processlist_command NOT IN ('Sleep', 'Daemon')
     AND thread.processlist_id != CONNECTION_ID()
-    AND thread.PROCESSLIST_COMMAND != 'Daemon'
     AND (wait.EVENT_NAME != 'idle' OR wait.EVENT_NAME IS NULL)
     AND (wait.operation != 'idle' OR wait.operation IS NULL)
     -- events_waits_current can have multiple rows per thread, thus we use EVENT_ID to identify the row we want to use.
