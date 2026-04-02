@@ -49,11 +49,11 @@ type detector struct {
 	rb       *metadata.ResourceBuilder
 }
 
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	infra, err := d.provider.Infrastructure(ctx)
 	if err != nil {
 		d.logger.Error("OpenShift detector metadata retrieval failed", zap.Error(err))
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("openshift metadata unavailable: %w", err)
 		}
 		return pcommon.NewResource(), "", nil

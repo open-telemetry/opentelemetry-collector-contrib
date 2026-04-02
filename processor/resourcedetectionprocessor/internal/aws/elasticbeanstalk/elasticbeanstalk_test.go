@@ -43,7 +43,7 @@ func Test_windowsPath(t *testing.T) {
 	require.NoError(t, err)
 	d.(*Detector).fs = mfs
 
-	r, _, err := d.Detect(t.Context())
+	r, _, err := d.Detect(t.Context(), false)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
@@ -54,7 +54,7 @@ func Test_fileNotExists(t *testing.T) {
 	mfs := &mockFileSystem{exists: false}
 	d := Detector{fs: mfs}
 
-	r, _, err := d.Detect(t.Context())
+	r, _, err := d.Detect(t.Context(), false)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
@@ -65,7 +65,7 @@ func Test_fileMalformed(t *testing.T) {
 	mfs := &mockFileSystem{exists: true, contents: "some overwritten value"}
 	d := Detector{fs: mfs}
 
-	r, _, err := d.Detect(t.Context())
+	r, _, err := d.Detect(t.Context(), false)
 
 	assert.Error(t, err)
 	assert.NotNil(t, r)
@@ -85,7 +85,7 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 	attr.PutStr("service.instance.id", "23")
 	attr.PutStr("service.version", "env-version-1234")
 
-	r, _, err := d.Detect(t.Context())
+	r, _, err := d.Detect(t.Context(), false)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, r)

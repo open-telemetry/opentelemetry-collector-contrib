@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	classicprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/ibmcloud/classic"
-	rdpinternal "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/ibmcloud/classic/internal/metadata"
 )
 
@@ -40,7 +39,7 @@ func TestDetect(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.NotEmpty(t, schemaURL)
 
@@ -68,7 +67,7 @@ func TestDetectError(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err) // errors are swallowed, not returned
 	assert.Empty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len())
@@ -86,8 +85,7 @@ func TestDetectErrorWithFailOnMissingMetadata(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 
-	ctx := rdpinternal.ContextWithFailOnMissingMetadata(t.Context(), true)
-	res, schemaURL, err := detector.Detect(ctx)
+	res, schemaURL, err := detector.Detect(t.Context(), true)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "ibmcloud classic metadata unavailable")
 	assert.ErrorContains(t, err, "connection refused") // verify original error is wrapped
@@ -117,7 +115,7 @@ func TestDetectWithDisabledAttributes(t *testing.T) {
 		rb:       metadata.NewResourceBuilder(cfg),
 	}
 
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.NotEmpty(t, schemaURL)
 

@@ -37,7 +37,7 @@ type detector struct {
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	dynoIDMissing := false
 	if dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID"); ok {
 		d.rb.SetServiceInstanceID(dynoID)
@@ -52,7 +52,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		herokuAppIDMissing = true
 	}
 	if dynoIDMissing && herokuAppIDMissing {
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", errors.New("heroku metadata unavailable: HEROKU_DYNO_ID and HEROKU_APP_ID env vars not set")
 		}
 		d.logger.Debug("Heroku metadata is missing. Please check metadata is enabled.")

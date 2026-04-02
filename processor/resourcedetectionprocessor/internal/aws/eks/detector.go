@@ -99,15 +99,15 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	// Check if running on EKS.
 	if isEKS, err := d.isEKS(ctx); err != nil || !isEKS {
 		if err != nil {
 			d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
-			if internal.FailOnMissingMetadataFromContext(ctx) {
+			if failOnMissingMetadata {
 				return pcommon.NewResource(), "", fmt.Errorf("eks metadata unavailable: %w", err)
 			}
-		} else if internal.FailOnMissingMetadataFromContext(ctx) {
+		} else if failOnMissingMetadata {
 			return pcommon.NewResource(), "", errors.New("eks metadata unavailable: not running on EKS")
 		}
 		return pcommon.NewResource(), "", nil

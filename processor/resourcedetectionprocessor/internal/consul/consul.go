@@ -69,11 +69,11 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	md, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("consul metadata unavailable", zap.Error(err))
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
 		}
 		return pcommon.NewResource(), "", nil

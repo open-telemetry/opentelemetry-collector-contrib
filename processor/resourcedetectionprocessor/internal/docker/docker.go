@@ -46,10 +46,10 @@ func NewDetector(p processor.Settings, cfg internal.DetectorConfig) (internal.De
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	osType, err := d.provider.OSType(ctx)
 	if err != nil {
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("docker metadata unavailable: %w", err)
 		}
 		d.logger.Debug("docker metadata unavailable", zap.Error(err))
@@ -58,7 +58,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	hostname, err := d.provider.Hostname(ctx)
 	if err != nil {
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("docker metadata unavailable: %w", err)
 		}
 		d.logger.Debug("docker metadata unavailable", zap.Error(err))
@@ -67,7 +67,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	info, err := d.provider.ContainerInfo(ctx)
 	if err != nil {
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("docker metadata unavailable: %w", err)
 		}
 		d.logger.Debug("docker metadata unavailable", zap.Error(err))

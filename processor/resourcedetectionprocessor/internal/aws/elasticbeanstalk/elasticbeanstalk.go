@@ -44,7 +44,7 @@ func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	return &Detector{fs: &ebFileSystem{}, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
-func (d Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	var conf io.ReadCloser
 
 	if d.fs.IsWindows() {
@@ -55,7 +55,7 @@ func (d Detector) Detect(ctx context.Context) (resource pcommon.Resource, schema
 
 	// Do not want to return error so it fails silently on non-EB instances
 	if err != nil {
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("elastic_beanstalk metadata unavailable: %w", err)
 		}
 		return pcommon.NewResource(), "", nil

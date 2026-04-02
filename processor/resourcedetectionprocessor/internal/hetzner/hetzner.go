@@ -49,14 +49,13 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
 	// Quick check: if not running in Hetzner Cloud, return empty.
 	if !d.client.IsHcloudServer() {
 		d.logger.Debug("Hetzner detector: not running on a Hetzner Cloud server")
 		return pcommon.NewResource(), "", nil
 	}
 
-	failOnMissingMetadata := internal.FailOnMissingMetadataFromContext(ctx)
 	var errs []error
 
 	id, err := d.client.InstanceID()

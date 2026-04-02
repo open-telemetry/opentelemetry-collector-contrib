@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/oraclecloud"
-	rdpinternal "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	rdpmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
@@ -60,7 +59,7 @@ func TestDetect(t *testing.T) {
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(t.Context())
+		res, schemaURL, err := det.Detect(t.Context(), false)
 		require.NoError(t, err)
 		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
@@ -90,7 +89,7 @@ func TestDetect_ProbeFails_ReturnsEmptyResourceNoError(t *testing.T) {
 		det, err := NewDetector(processortest.NewNopSettings(rdpmetadata.Type), cfg)
 		require.NoError(t, err)
 
-		res, schemaURL, err := det.Detect(t.Context())
+		res, schemaURL, err := det.Detect(t.Context(), false)
 		require.NoError(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
@@ -110,8 +109,7 @@ func TestDetect_ProbeSucceeds_MetadataFails_ReturnsError(t *testing.T) {
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		ctx := rdpinternal.ContextWithFailOnMissingMetadata(t.Context(), true)
-		res, schemaURL, err := det.Detect(ctx)
+		res, schemaURL, err := det.Detect(t.Context(), true)
 		require.Error(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
@@ -131,7 +129,7 @@ func TestDetect_ProbeSucceeds_MetadataFails_FlagFalse_ReturnsEmpty(t *testing.T)
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(t.Context())
+		res, schemaURL, err := det.Detect(t.Context(), false)
 		require.NoError(t, err)
 		assert.Empty(t, res.Attributes().AsRaw())
 		assert.Empty(t, schemaURL)
@@ -161,7 +159,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 		require.NoError(t, err)
 		det.(*Detector).provider = md
 
-		res, schemaURL, err := det.Detect(t.Context())
+		res, schemaURL, err := det.Detect(t.Context(), false)
 		require.NoError(t, err)
 		assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 

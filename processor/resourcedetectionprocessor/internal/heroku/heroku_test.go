@@ -23,7 +23,7 @@ func TestDetectTrue(t *testing.T) {
 
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -46,7 +46,7 @@ func TestDetectTruePartial(t *testing.T) {
 
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -66,7 +66,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -81,7 +81,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 func TestDetectFalse(t *testing.T) {
 	detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
-	res, schemaURL, err := detector.Detect(t.Context())
+	res, schemaURL, err := detector.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 	assert.True(t, internal.IsEmptyResource(res))

@@ -60,7 +60,7 @@ type detector struct {
 	gceClientBuilder instancesBuilder
 }
 
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	if d.detector.CloudPlatform() == gcp.BareMetalSolution {
 		d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
 		errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.BareMetalSolutionProjectID)
@@ -76,8 +76,6 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if !metadata.OnGCE() {
 		return pcommon.NewResource(), "", nil
 	}
-
-	failOnMissingMetadata := internal.FailOnMissingMetadataFromContext(ctx)
 
 	d.rb.SetCloudProvider(conventions.CloudProviderGCP.Value.AsString())
 	errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.ProjectID)

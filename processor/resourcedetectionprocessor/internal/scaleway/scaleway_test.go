@@ -175,7 +175,7 @@ func TestScalewayDetector_Detect_OK(t *testing.T) {
 	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 
-	res, schemaURL, err := det.Detect(t.Context())
+	res, schemaURL, err := det.Detect(t.Context(), false)
 	require.NoError(t, err)
 	require.Contains(t, schemaURL, "https://opentelemetry.io/schemas/")
 
@@ -212,7 +212,7 @@ func TestScalewayDetector_NotOnScaleway(t *testing.T) {
 	det, err := NewDetector(processortest.NewNopSettings(processortest.NopType), CreateDefaultConfig())
 	require.NoError(t, err)
 
-	res, schemaURL, err := det.Detect(t.Context())
+	res, schemaURL, err := det.Detect(t.Context(), false)
 	require.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))
 	assert.Empty(t, schemaURL)

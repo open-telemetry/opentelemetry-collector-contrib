@@ -49,11 +49,11 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}, nil
 }
 
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	if d.ra.K8sNodeUID.Enabled {
 		nodeUID, err := d.provider.NodeUID(ctx)
 		if err != nil {
-			if internal.FailOnMissingMetadataFromContext(ctx) {
+			if failOnMissingMetadata {
 				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node UID: %w", err)
 			}
 			d.logger.Debug("k8snode metadata unavailable", zap.Error(err))
@@ -65,7 +65,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.ra.K8sNodeName.Enabled {
 		nodeName, err := d.provider.NodeName(ctx)
 		if err != nil {
-			if internal.FailOnMissingMetadataFromContext(ctx) {
+			if failOnMissingMetadata {
 				return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node name: %w", err)
 			}
 			d.logger.Debug("k8snode metadata unavailable", zap.Error(err))

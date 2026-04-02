@@ -48,11 +48,11 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 }
 
 // Detect queries the Upcloud metadata service and returns a populated resource.
-func (d *Detector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
 	md, err := d.provider.Metadata(ctx)
 	if err != nil {
 		d.logger.Debug("Upcloud metadata unavailable", zap.Error(err))
-		if d.failOnMissingMetadata || internal.FailOnMissingMetadataFromContext(ctx) {
+		if d.failOnMissingMetadata || failOnMissingMetadata {
 			return pcommon.NewResource(), "", err
 		}
 		return pcommon.NewResource(), "", nil

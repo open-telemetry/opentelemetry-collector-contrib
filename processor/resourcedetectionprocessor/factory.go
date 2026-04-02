@@ -234,11 +234,6 @@ func (f *factory) getResourceDetectionProcessor(
 
 	warnDeprecatedPerDetectorFlags(params.Logger, oCfg)
 
-	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	// Resolve the effective fail_on_missing_metadata: top-level OR any per-detector flag (OR logic).
 	failOnMissingMetadata := oCfg.FailOnMissingMetadata ||
 		oCfg.DetectorConfig.EC2Config.FailOnMissingMetadata || //nolint:staticcheck
@@ -248,13 +243,17 @@ func (f *factory) getResourceDetectionProcessor(
 		oCfg.DetectorConfig.VultrConfig.FailOnMissingMetadata || //nolint:staticcheck
 		oCfg.DetectorConfig.OpenStackNovaConfig.FailOnMissingMetadata //nolint:staticcheck
 
+	provider, err := f.getResourceProvider(params, oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig, failOnMissingMetadata)
+	if err != nil {
+		return nil, err
+	}
+
 	return &resourceDetectionProcessor{
-		provider:              provider,
-		override:              oCfg.Override,
-		httpClientSettings:    oCfg.ClientConfig,
-		refreshInterval:       oCfg.RefreshInterval,
-		telemetrySettings:     params.TelemetrySettings,
-		failOnMissingMetadata: failOnMissingMetadata,
+		provider:           provider,
+		override:           oCfg.Override,
+		httpClientSettings: oCfg.ClientConfig,
+		refreshInterval:    oCfg.RefreshInterval,
+		telemetrySettings:  params.TelemetrySettings,
 	}, nil
 }
 
@@ -296,6 +295,7 @@ func (f *factory) getResourceProvider(
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
+	failOnMissingMetadata bool,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -309,7 +309,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, failOnMissingMetadata, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

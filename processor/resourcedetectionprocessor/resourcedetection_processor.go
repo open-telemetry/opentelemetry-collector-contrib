@@ -18,12 +18,11 @@ import (
 )
 
 type resourceDetectionProcessor struct {
-	provider              *internal.ResourceProvider
-	override              bool
-	httpClientSettings    confighttp.ClientConfig
-	refreshInterval       time.Duration
-	telemetrySettings     component.TelemetrySettings
-	failOnMissingMetadata bool
+	provider           *internal.ResourceProvider
+	override           bool
+	httpClientSettings confighttp.ClientConfig
+	refreshInterval    time.Duration
+	telemetrySettings  component.TelemetrySettings
 }
 
 // Start is invoked during service startup.
@@ -33,7 +32,6 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 		return err
 	}
 	ctx = internal.ContextWithClient(ctx, client)
-	ctx = internal.ContextWithFailOnMissingMetadata(ctx, rdp.failOnMissingMetadata)
 
 	// Perform initial resource detection
 	err = rdp.provider.Refresh(ctx, client)

@@ -48,10 +48,10 @@ func NewDetector(params processor.Settings, dcfg internal.DetectorConfig) (inter
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	// don't attempt to fetch metadata if there's no provider (incompatible env)
 	if d.provider == nil {
-		if internal.FailOnMissingMetadataFromContext(ctx) {
+		if failOnMissingMetadata {
 			return pcommon.NewResource(), "", errors.New("ecs metadata unavailable: no task metadata endpoint detected")
 		}
 		return pcommon.NewResource(), "", nil
@@ -100,7 +100,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	selfMetaData, err := d.provider.FetchContainerMetadata()
 
 	if err != nil || selfMetaData == nil {
-		if err != nil && internal.FailOnMissingMetadataFromContext(ctx) {
+		if err != nil && failOnMissingMetadata {
 			return pcommon.NewResource(), "", fmt.Errorf("ecs container metadata unavailable: %w", err)
 		}
 		return d.rb.Emit(), "", err

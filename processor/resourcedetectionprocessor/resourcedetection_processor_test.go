@@ -36,7 +36,7 @@ type mockDetector struct {
 	mock.Mock
 }
 
-func (p *mockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (p *mockDetector) Detect(_ context.Context, _ bool) (resource pcommon.Resource, schemaURL string, err error) {
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }

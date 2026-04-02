@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	apiprovider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/eks"
-	rdpinternal "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
 
@@ -496,7 +495,7 @@ func TestDetect(t *testing.T) {
 				logger:         set.Logger,
 				imdsAccessible: tt.imdsAccessible,
 			}
-			res, schema, err := det.Detect(t.Context())
+			res, schema, err := det.Detect(t.Context(), false)
 			assert.NoError(t, err)
 			assert.Contains(t, schema, "https://opentelemetry.io/schemas/")
 			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
@@ -537,16 +536,14 @@ func TestDetectFailOnMissingMetadata(t *testing.T) {
 	t.Setenv(kubernetesServiceHostEnvVar, "1")
 
 	t.Run("err != nil and FailOnMissingMetadata=false suppresses error", func(t *testing.T) {
-		ctx := rdpinternal.ContextWithFailOnMissingMetadata(t.Context(), false)
-		res, schema, err := det.Detect(ctx)
+		res, schema, err := det.Detect(t.Context(), false)
 		assert.NoError(t, err)
 		assert.Empty(t, schema)
 		assert.Equal(t, 0, res.Attributes().Len())
 	})
 
 	t.Run("err != nil and FailOnMissingMetadata=true returns error", func(t *testing.T) {
-		ctx := rdpinternal.ContextWithFailOnMissingMetadata(t.Context(), true)
-		_, _, err := det.Detect(ctx)
+		_, _, err := det.Detect(t.Context(), true)
 		assert.ErrorContains(t, err, "eks metadata unavailable")
 		assert.ErrorContains(t, err, isEKSErr.Error())
 	})

@@ -41,7 +41,7 @@ func NewDetector(processor.Settings, internal.DetectorConfig) (internal.Detector
 	return &Detector{}, nil
 }
 
-func (*Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (*Detector) Detect(_ context.Context, _ bool) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	labels := strings.TrimSpace(os.Getenv(envVar))
