@@ -37,27 +37,24 @@ func TestType(t *testing.T) {
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
-	require.NoError(t, err)
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
+
 	assert.EqualExportedValues(t, &Config{
 		ErrorMode: ottl.PropagateError,
 	}, cfg)
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
-	err = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, true)
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
+	})
+
+	err := featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, true)
 	require.NoError(t, err)
 
-	cfgGateEnabled := factory.CreateDefaultConfig()
-	assert.EqualExportedValues(t, &Config{
-		ErrorMode: ottl.IgnoreError,
-	}, cfgGateEnabled)
-
-	err = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
-	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
 }
 
 func TestCreateProcessors(t *testing.T) {
