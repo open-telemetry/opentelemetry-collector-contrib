@@ -745,7 +745,7 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 			return nil, false, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
 		}
 
-		if _, ok := untypedVal.(literalGetter); !ok {
+		if !isLiteralArg(untypedVal) {
 			allLiteral = false
 		}
 

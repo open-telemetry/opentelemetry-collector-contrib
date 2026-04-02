@@ -1180,13 +1180,29 @@ func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 		// literal keys at parse time easily.
 		// We also skip folding when the result is nil, as that typically indicates
 		// the converter needs actual runtime context to produce a meaningful value.
-		val, err := exprG.Get(context.Background(), *new(K))
-		if err == nil && val != nil {
+		if val, ok := tryFoldConstant(exprG); ok {
 			return newLiteral[K, any](val), nil
 		}
 	}
 
 	return exprG, nil
+}
+
+// tryFoldConstant attempts to evaluate a getter at parse time for constant
+// folding. It calls the getter with a zero-value context and recovers from
+// any panics that may occur when the converter accesses the transform context.
+func tryFoldConstant[K any](g Getter[K]) (val any, ok bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			val = nil
+			ok = false
+		}
+	}()
+	v, err := g.Get(context.Background(), *new(K))
+	if err != nil || v == nil {
+		return nil, false
+	}
+	return v, true
 }
 
 // TimeGetter is a Getter that must return a time.Time.
