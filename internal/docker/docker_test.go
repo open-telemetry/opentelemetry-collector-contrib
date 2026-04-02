@@ -59,6 +59,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	expectedError := "context deadline exceeded"
 
@@ -67,9 +68,11 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.LoadContainerList(t.Context())
 	assert.ErrorContains(t, err, expectedError)
 	observed, logs := observer.New(zapcore.WarnLevel)
+	cli.Close() // close the first one
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	cnt, ofInterest := cli.inspectedContainerIsOfInterest(t.Context(), "SomeContainerId")
 	assert.False(t, ofInterest)
@@ -100,15 +103,18 @@ func TestFetchingTimeouts(t *testing.T) {
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	expectedError := "context deadline exceeded"
 
 	shouldHaveTaken := time.Now().Add(50 * time.Millisecond).UnixNano()
 
 	observed, logs := observer.New(zapcore.WarnLevel)
+	cli.Close()
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		t.Context(),
@@ -197,6 +203,117 @@ func TestFetchContainerStatsAsJSONWithSlowResponse(t *testing.T) {
 	require.NotNil(t, stats)
 }
 
+// TestStatsStreamUpdatesLatestStats verifies that startContainerStream populates
+// LatestContainerStats even when the server delays before sending the first frame.
+func TestStatsStreamUpdatesLatestStats(t *testing.T) {
+	const containerID = "testContainer"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.Header().Set("Content-Type", "application/json")
+			w.(http.Flusher).Flush()
+			time.Sleep(10 * time.Millisecond)
+			_, _ = w.Write([]byte(`{"cpu_stats":{"cpu_usage":{"total_usage":100}},"memory_stats":{}}`))
+		}
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+	defer cli.Close()
+
+	_, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	cli.startContainerStream(containerID)
+
+	require.Eventually(t, func() bool {
+		_, ok := cli.LatestContainerStats(containerID, 0)
+		return ok
+	}, 5*time.Second, 10*time.Millisecond, "timed out waiting for stats")
+
+	stats, _ := cli.LatestContainerStats(containerID, 0)
+	require.NotNil(t, stats)
+	assert.Equal(t, uint64(100), stats.CPUStats.CPUUsage.TotalUsage)
+}
+
+// TestStatsStreamHandlesInvalidJSON verifies that the stream goroutine logs a warning
+// and leaves LatestContainerStats empty when the server sends undecodable JSON.
+func TestStatsStreamHandlesInvalidJSON(t *testing.T) {
+	const containerID = "testContainer"
+	observed, logs := observer.New(zapcore.WarnLevel)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/stats") {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"Networks": 123}`))
+		}
+	}))
+	defer srv.Close()
+
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.New(observed))
+	require.NoError(t, err)
+	defer cli.Close()
+
+	_, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	cli.startContainerStream(containerID)
+
+	require.Eventually(t, func() bool {
+		for _, l := range logs.All() {
+			if strings.Contains(l.Message, "Error reading stats stream") {
+				return true
+			}
+		}
+		return false
+	}, 5*time.Second, 10*time.Millisecond, "expected warning about invalid JSON")
+
+	_, ok := cli.LatestContainerStats(containerID, 0)
+	assert.False(t, ok, "no valid stats should be available after decode error")
+}
+
+// TestLatestContainerStatsMaxAge verifies that LatestContainerStats respects the maxAge threshold.
+func TestLatestContainerStatsMaxAge(t *testing.T) {
+	const containerID = "testContainer"
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer srv.Close()
+	cli, err := NewDockerClient(&Config{Endpoint: srv.URL, Timeout: 5 * time.Second}, zap.NewNop())
+	require.NoError(t, err)
+	defer cli.Close()
+
+	freshStats := &cachedStats{
+		stats:    &ctypes.StatsResponse{},
+		recorded: time.Now(),
+	}
+	staleStats := &cachedStats{
+		stats:    &ctypes.StatsResponse{},
+		recorded: time.Now().Add(-10 * time.Second),
+	}
+
+	t.Run("no expiry when maxAge is zero", func(t *testing.T) {
+		cli.streamLatestStats.Store(containerID, staleStats)
+		_, ok := cli.LatestContainerStats(containerID, 0)
+		assert.True(t, ok)
+	})
+
+	t.Run("fresh entry within maxAge is returned", func(t *testing.T) {
+		cli.streamLatestStats.Store(containerID, freshStats)
+		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
+		assert.True(t, ok)
+	})
+
+	t.Run("stale entry beyond maxAge is a miss", func(t *testing.T) {
+		cli.streamLatestStats.Store(containerID, staleStats)
+		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
+		assert.False(t, ok)
+	})
+
+	t.Run("missing entry is a miss", func(t *testing.T) {
+		cli.streamLatestStats.Delete(containerID)
+		_, ok := cli.LatestContainerStats(containerID, 5*time.Second)
+		assert.False(t, ok)
+	})
+}
+
 func TestEventLoopHandlesError(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2) // confirm retry occurs
@@ -218,6 +335,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 	cli, err := NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
+	defer cli.Close()
 
 	ctx, cancel := context.WithCancel(t.Context())
 	go cli.ContainerEventLoop(ctx)

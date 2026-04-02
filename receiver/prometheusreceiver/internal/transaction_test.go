@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -2044,7 +2046,7 @@ func TestGetOrCreateMetricFamily_DistinctFamiliesForNativeVsClassic(t *testing.T
 }
 
 func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
-	// Build two label sets that differ only in labels likely excluded by getSortedNotUsefulLabels (e.g., _otel_* scope labels)
+	// Build two label sets that differ only in scope labels, which are excluded from series identity.
 	lsA := labels.FromStrings(
 		string(model.MetricNameLabel), "metric_x",
 		"env", "prod",
@@ -2058,10 +2060,23 @@ func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
 	)
 
 	var buf []byte
-	hashA, buf := getSeriesRef(buf, lsA, pmetric.MetricTypeSum)
-	hashB, _ := getSeriesRef(buf, lsB, pmetric.MetricTypeSum)
+	hashA, buf := getSeriesRefWithoutScopeLabels(buf, lsA, pmetric.MetricTypeSum)
+	hashB, _ := getSeriesRefWithoutScopeLabels(buf, lsB, pmetric.MetricTypeSum)
 
 	require.Equal(t, hashA, hashB, "series ref should be equal when differing only by excluded labels")
+}
+
+func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
+	scope, attrs := getScopeID(labels.FromStrings(
+		string(model.MetricNameLabel), "metric_x",
+		prometheus.ScopeNameLabelKey, "scope.with.info",
+		prometheus.ScopeVersionLabelKey, "v1.0.0",
+	))
+
+	require.Equal(t, "scope.with.info", scope.name)
+	require.Equal(t, "v1.0.0", scope.version)
+	require.Zero(t, scope.attrsHash)
+	require.Zero(t, attrs.Len())
 }
 
 func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {
