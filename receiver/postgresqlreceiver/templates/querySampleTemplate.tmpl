@@ -32,16 +32,6 @@ WHERE
     AND pid != pg_backend_pid()
     {{/* Require query_start to be set -- rows without it have no meaningful timestamp */}}
     AND query_start IS NOT NULL
-    {{/* Exclude transaction control and utility statements that provide no analytical value */}}
-    AND UPPER(LEFT(LTRIM(query), 11)) NOT IN (
-      'BEGIN', 'COMMIT', 'END', 'ROLLBACK', 'SAVEPOINT',
-      'RELEASE SAV',
-      'DEALLOCATE',
-      'DISCARD',
-      'LISTEN', 'NOTIFY', 'UNLISTEN',
-      'RESET',
-      'CLOSE', 'MOVE', 'FETCH'
-    )
     AND NOT (
     {{/* we only want query that is either still running that was started before our newestQueryTimestamp or idle but start after the newestQueryTimestamp */}}
       query_start < TO_TIMESTAMP({{ .newestQueryTimestamp }})
