@@ -15,7 +15,6 @@ package metrics
 // wildly wrong quantile estimates for the first sketch.
 
 import (
-	"context"
 	"testing"
 
 	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes"
@@ -36,7 +35,7 @@ import (
 // within the value range of the first data point, not jump to the value range
 // of the second data point due to pool-backed array reuse.
 func TestExponentialHistogramSketchPoolSafety(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// buildDeltaDP creates a delta ExponentialHistogram data point with
 	// scale=0 (base=2) so that bucket semantics are easy to reason about:
