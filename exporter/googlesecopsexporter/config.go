@@ -48,7 +48,7 @@ type Config struct {
 	// Only used for the Chronicle API.
 	APIVersion string `mapstructure:"api_version"`
 
-	// Region is the region of the Google SecOps instance to send logs to.
+	// Region is the GCP region of the Google SecOps instance to send logs to.
 	// Only used for the Chronicle API.
 	Region string `mapstructure:"region"`
 
