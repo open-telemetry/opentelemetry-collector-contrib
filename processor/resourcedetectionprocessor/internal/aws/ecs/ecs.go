@@ -48,7 +48,7 @@ func NewDetector(params processor.Settings, dcfg internal.DetectorConfig) (inter
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(_ context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	// don't attempt to fetch metadata if there's no provider (incompatible env)
 	if d.provider == nil {
 		if failOnMissingMetadata {

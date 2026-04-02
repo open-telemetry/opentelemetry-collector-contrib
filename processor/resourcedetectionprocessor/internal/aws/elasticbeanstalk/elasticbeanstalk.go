@@ -44,7 +44,7 @@ func NewDetector(_ processor.Settings, dcfg internal.DetectorConfig) (internal.D
 	return &Detector{fs: &ebFileSystem{}, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
-func (d Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d Detector) Detect(_ context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	var conf io.ReadCloser
 
 	if d.fs.IsWindows() {

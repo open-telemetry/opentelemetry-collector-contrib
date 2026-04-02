@@ -37,7 +37,7 @@ type detector struct {
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
-func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(_ context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	dynoIDMissing := false
 	if dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID"); ok {
 		d.rb.SetServiceInstanceID(dynoID)

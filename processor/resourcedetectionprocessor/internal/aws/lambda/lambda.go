@@ -43,7 +43,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
-func (d *detector) Detect(ctx context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(_ context.Context, failOnMissingMetadata bool) (resource pcommon.Resource, schemaURL string, err error) {
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)
 	if !ok || functionName == "" {
 		if failOnMissingMetadata {

@@ -49,7 +49,7 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 }
 
 // Detect detects system metadata and returns a resource with the available ones.
-func (d *Detector) Detect(ctx context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
+func (d *Detector) Detect(_ context.Context, failOnMissingMetadata bool) (pcommon.Resource, string, error) {
 	md, err := d.client.Metadata()
 	if err != nil || md == nil {
 		d.logger.Debug("DigitalOcean detector: not running on DigitalOcean or metadata unavailable", zap.Error(err))
