@@ -9,5 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"), goleak.IgnoreTopFunction("syscall.Syscall6"), goleak.IgnoreTopFunction("syscall.syscall6"), goleak.IgnoreTopFunction("syscall.SyscallN"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"), goleak.IgnoreTopFunction("syscall.Syscall6"), goleak.IgnoreTopFunction("syscall.SyscallN"))
 }
