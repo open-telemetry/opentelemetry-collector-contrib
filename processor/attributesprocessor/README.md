@@ -133,9 +133,8 @@ For the `convert` action,
 
 ## Default Values
 
-The `default_value` field can be used to specify a fallback value when the primary value source (e.g., environment variable, attribute, or context value) is not available. This is useful for:
+The `default_value` field can be used to specify a fallback value when the primary value source (e.g., attribute, or context value) is not available. This is useful for:
 
-- Handling optional environment variables
 - Providing sensible defaults when attributes don't exist
 - Ensuring the pipeline doesn't fail due to missing configuration
 
