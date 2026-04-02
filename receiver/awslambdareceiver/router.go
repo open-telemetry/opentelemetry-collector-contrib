@@ -28,7 +28,7 @@ type logsDecoderRouter struct {
 }
 
 // newLogsDecoderRouter creates a new S3 logs decoder router.
-//   - encodings: pre-sorted S3Encoding slice (use S3Config.SortedEncodings()).
+//   - encodings: pre-sorted S3Encoding slice.
 //   - decoders: maps encoding.Name => LogsDecoderFactory for entries with an Encoding field set.
 //   - defaultDecoder: used for entries with no Encoding (raw passthrough).
 //
