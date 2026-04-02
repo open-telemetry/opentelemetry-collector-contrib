@@ -1,0 +1,25 @@
+$defs:
+  encoding_config:
+    description: EncodingConfig holds the encoding extension configuration for a signal type.
+    type: object
+    properties:
+      encoding:
+        description: Encoding identifies the encoding of log records that triggered azure functions.
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+type: object
+properties:
+  auth:
+    description: Auth is the component.ID of the extension that provides Azure authentication
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+  http:
+    description: HTTP defines the HTTP server settings for the Azure Functions invoke endpoints.
+    x-pointer: true
+    $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+  include_invoke_metadata:
+    description: IncludeInvokeMetadata, when true, adds Azure Functions invoke metadata to resource attributes.
+    type: boolean
+  logs:
+    description: Logs defines configuration for log records received from Azure Functions.
+    $ref: encoding_config
