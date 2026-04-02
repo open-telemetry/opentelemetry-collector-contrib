@@ -167,11 +167,6 @@ processors:
       - key: http.status_code
         action: convert
         converted_type: int
-      # Use default_value when environment variable is not set
-      - key: deployment.environment
-        value: "${ENV}"
-        default_value: "development"
-        action: upsert
       # Use default_value when source attribute doesn't exist
       - key: region
         from_attribute: cloud.region
