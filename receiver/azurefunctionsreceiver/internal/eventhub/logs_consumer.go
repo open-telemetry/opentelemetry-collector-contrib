@@ -11,17 +11,17 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/handler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/common"
 )
 
-// LogsConsumer is a handler.Consumer that unmarshals each Content message as logs,
+// LogsConsumer is a common.Consumer that unmarshals each Content message as logs,
 // adds ParsedRequest.Metadata to resource attributes, merges them, and forwards to the logs pipeline.
 type LogsConsumer struct {
 	unmarshaler plog.Unmarshaler
 	nextLogs    consumer.Logs
 }
 
-// NewLogsConsumer returns a handler.Consumer for Event Hub log bindings.
+// NewLogsConsumer returns a common.Consumer for Event Hub log bindings.
 func NewLogsConsumer(unmarshaler plog.Unmarshaler, nextLogs consumer.Logs) *LogsConsumer {
 	return &LogsConsumer{
 		unmarshaler: unmarshaler,
@@ -29,8 +29,8 @@ func NewLogsConsumer(unmarshaler plog.Unmarshaler, nextLogs consumer.Logs) *Logs
 	}
 }
 
-// ConsumeEvents implements handler.Consumer.
-func (c *LogsConsumer) ConsumeEvents(ctx context.Context, req handler.ParsedRequest) error {
+// ConsumeEvents implements common.Consumer.
+func (c *LogsConsumer) ConsumeEvents(ctx context.Context, req common.ParsedRequest) error {
 	merged := plog.NewLogs()
 	for i, msg := range req.Content {
 		logs, err := c.unmarshaler.UnmarshalLogs(msg)
@@ -41,7 +41,7 @@ func (c *LogsConsumer) ConsumeEvents(ctx context.Context, req handler.ParsedRequ
 			continue
 		}
 		if len(req.Metadata) > 0 {
-			handler.AddMetadataToLogs(&logs, req.Metadata)
+			common.AddMetadataToLogs(&logs, req.Metadata)
 		}
 		for j := 0; j < logs.ResourceLogs().Len(); j++ {
 			logs.ResourceLogs().At(j).CopyTo(merged.ResourceLogs().AppendEmpty())
