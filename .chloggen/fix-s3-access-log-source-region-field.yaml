@@ -1,6 +1,6 @@
 change_type: bug_fix
 
-component: extension/awslogsencodingextension
+component: extension/aws_logs_encoding
 
 note: Add `source_region` field (27th field) to S3 server access log parser and skip unknown future fields gracefully.
 
