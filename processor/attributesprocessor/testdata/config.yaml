@@ -368,11 +368,6 @@ attributes/servicesmetrics:
 # The following demonstrates using default_value to handle missing environment variables or attributes
 attributes/with_defaults:
   actions:
-  # Use default when environment variable is not set
-  - key: deployment.environment
-    value: "${DEPLOYMENT_ENV}"
-    default_value: "development"
-    action: upsert
   # Use default when source attribute doesn't exist
   - key: service.namespace
     from_attribute: namespace
