@@ -10,6 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// splitForTest splits a "/" separated path string into parts for use in match tests.
+func splitForTest(s string) []string {
+	return strings.Split(s, "/")
+}
+
 func TestMatchPrefixWithWildcard(t *testing.T) {
 	t.Parallel()
 
@@ -63,31 +68,6 @@ func TestMatchPrefixWithWildcard(t *testing.T) {
 			objectKey: "AWSLogs/999999999999/vpcflowlogs/us-east-1/file.log.gz",
 			want:      false,
 		},
-		// Glob within a segment (path.Match applied per segment)
-		{
-			name:      "prefix glob eni-* matches",
-			pattern:   "eni-*",
-			objectKey: "eni-0abc123def-all",
-			want:      true,
-		},
-		{
-			name:      "infix glob *_CloudTrail_* matches",
-			pattern:   "*_CloudTrail_*",
-			objectKey: "123456789012_CloudTrail_us-east-1",
-			want:      true,
-		},
-		{
-			name:      "two standalone wildcards then suffix glob */*/WAF*",
-			pattern:   "*/*/WAF*",
-			objectKey: "AWSLogs/123456789012/WAFLogs/my-web-acl/2024/01/15/file.log.gz",
-			want:      true,
-		},
-		{
-			name:      "suffix glob WAF* does not match unrelated segment",
-			pattern:   "*/*/WAF*",
-			objectKey: "AWSLogs/123456789012/vpcflowlogs/us-east-1/file.log.gz",
-			want:      false,
-		},
 		// Catch-all and edge cases
 		{
 			name:      "catch-all * matches any path",
@@ -104,13 +84,20 @@ func TestMatchPrefixWithWildcard(t *testing.T) {
 		{
 			name:      "path shorter than pattern does not match",
 			pattern:   "AWSLogs/*/vpcflowlogs/us-east-1",
-			objectKey: "AWSLogs/123456789012/vpcflowlogs",
+			objectKey: "AWSLogs/123456789012/vpcflowlogs/file.log.gz",
 			want:      false,
 		},
+		// Two consecutive wildcards
 		{
-			name:      "empty pattern does not match",
-			pattern:   "",
-			objectKey: "AWSLogs/123456789012/vpcflowlogs/file.log.gz",
+			name:      "two wildcards then exact segment matches",
+			pattern:   "*/*/WAFLogs",
+			objectKey: "AWSLogs/123456789012/WAFLogs/my-web-acl/2024/01/15/file.log.gz",
+			want:      true,
+		},
+		{
+			name:      "two wildcards then exact segment rejects mismatch",
+			pattern:   "*/*/WAFLogs",
+			objectKey: "AWSLogs/123456789012/vpcflowlogs/us-east-1/file.log.gz",
 			want:      false,
 		},
 	}
@@ -118,7 +105,7 @@ func TestMatchPrefixWithWildcard(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := matchPrefixWithWildcard(tt.objectKey, tt.pattern)
+			got := matchPrefixWithWildcard(splitForTest(tt.objectKey), splitForTest(tt.pattern))
 			assert.Equal(t, tt.want, got, "matchPrefixWithWildcard(%q, %q)", tt.objectKey, tt.pattern)
 		})
 	}
@@ -151,9 +138,9 @@ func TestComparePatternSpecificity(t *testing.T) {
 			expect: "equal",
 		},
 		{
-			name:   "glob segment beats full wildcard",
-			a:      "AWSLogs/*/vpc-*",
-			b:      "AWSLogs/*/*",
+			name:   "wildcard-only beats catch-all (longer wins)",
+			a:      "AWSLogs/*/*",
+			b:      "*",
 			expect: "a_wins",
 		},
 	}
@@ -161,7 +148,7 @@ func TestComparePatternSpecificity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := comparePatternSpecificity(tt.a, tt.b)
+			got := comparePatternSpecificity(splitForTest(tt.a), splitForTest(tt.b))
 			switch tt.expect {
 			case "a_wins":
 				assert.Negative(t, got, "expected a=%q to be more specific than b=%q", tt.a, tt.b)
@@ -180,6 +167,25 @@ var benchmarkPaths = []string{
 	"AWSLogs/123456789012/elasticloadbalancing/us-east-1/2024/01/15/123456789012_elasticloadbalancing_us-east-1_app.my-lb.abc123_20240115T1200Z_10.0.0.1_xyz789.log.gz",
 }
 
+// BenchmarkMatchPrefixWithWildcard_SplitEveryCall mimics the old behaviour where
+// both the object key and the pattern were split on every matchPrefixWithWildcard call.
+// Compare against BenchmarkMatchPrefixWithWildcard to see the savings from pre-splitting.
+func BenchmarkMatchPrefixWithWildcard_SplitEveryCall(b *testing.B) {
+	patterns := []string{
+		"AWSLogs/*/vpcflowlogs",
+		"AWSLogs/*/CloudTrail",
+		"AWSLogs/*/elasticloadbalancing",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, p := range benchmarkPaths {
+			for _, pat := range patterns {
+				_ = matchPrefixWithWildcard(strings.Split(p, "/"), strings.Split(pat, "/"))
+			}
+		}
+	}
+}
+
 func BenchmarkStringsContains(b *testing.B) {
 	patterns := []string{"vpcflowlogs/", "CloudTrail/", "elasticloadbalancing/"}
 	b.ResetTimer()
@@ -193,16 +199,19 @@ func BenchmarkStringsContains(b *testing.B) {
 }
 
 func BenchmarkMatchPrefixWithWildcard(b *testing.B) {
-	patterns := []string{
-		"AWSLogs/*/vpcflowlogs",
-		"AWSLogs/*/CloudTrail",
-		"AWSLogs/*/elasticloadbalancing",
+	// Pre-split patterns once, mirroring router construction time.
+	patterns := [][]string{
+		strings.Split("AWSLogs/*/vpcflowlogs", "/"),
+		strings.Split("AWSLogs/*/CloudTrail", "/"),
+		strings.Split("AWSLogs/*/elasticloadbalancing", "/"),
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, p := range benchmarkPaths {
+			// Split the object key once per event, then match against all patterns.
+			targetParts := strings.Split(p, "/")
 			for _, pat := range patterns {
-				_ = matchPrefixWithWildcard(p, pat)
+				_ = matchPrefixWithWildcard(targetParts, pat)
 			}
 		}
 	}

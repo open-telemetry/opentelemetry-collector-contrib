@@ -113,6 +113,17 @@ func (c *S3Config) SortedEncodings() []S3Encoding {
 	}
 	sorted := make([]S3Encoding, len(c.Encodings))
 	copy(sorted, c.Encodings)
+
+	// Pre-split patterns once; keyed by pattern string so the map stays correct
+	// as the sort swaps elements.
+	splitCache := make(map[string][]string, len(sorted))
+	for _, enc := range sorted {
+		p := enc.ResolvePathPattern()
+		if _, ok := splitCache[p]; !ok {
+			splitCache[p] = strings.Split(p, "/")
+		}
+	}
+
 	sort.SliceStable(sorted, func(i, j int) bool {
 		pi := sorted[i].ResolvePathPattern()
 		pj := sorted[j].ResolvePathPattern()
@@ -122,7 +133,7 @@ func (c *S3Config) SortedEncodings() []S3Encoding {
 		if !isCatchAllPattern(pi) && isCatchAllPattern(pj) {
 			return true
 		}
-		return comparePatternSpecificity(pi, pj) < 0
+		return comparePatternSpecificity(splitCache[pi], splitCache[pj]) < 0
 	})
 	return sorted
 }
