@@ -40,7 +40,7 @@ func TestExponentialHistogramSketchPoolSafety(t *testing.T) {
 	// buildDeltaDP creates a delta ExponentialHistogram data point with
 	// scale=0 (base=2) so that bucket semantics are easy to reason about:
 	// bucket at offset+i covers the value range [2^(offset+i), 2^(offset+i+1)).
-	buildDeltaDP := func(offset int32, bucketCounts []uint64, sum, min, max float64) pmetric.ExponentialHistogramDataPoint {
+	buildDeltaDP := func(offset int32, bucketCounts []uint64, sum, minVal, maxVal float64) pmetric.ExponentialHistogramDataPoint {
 		dp := pmetric.NewExponentialHistogramDataPoint()
 		ts := pcommon.Timestamp(1_000_000_000)
 		dp.SetStartTimestamp(ts - 10_000_000_000)
@@ -51,8 +51,8 @@ func TestExponentialHistogramSketchPoolSafety(t *testing.T) {
 		}
 		dp.SetCount(total)
 		dp.SetSum(sum)
-		dp.SetMin(min)
-		dp.SetMax(max)
+		dp.SetMin(minVal)
+		dp.SetMax(maxVal)
 		dp.SetScale(0) // base = 2
 		dp.Positive().SetOffset(offset)
 		dp.Positive().BucketCounts().FromRaw(bucketCounts)
