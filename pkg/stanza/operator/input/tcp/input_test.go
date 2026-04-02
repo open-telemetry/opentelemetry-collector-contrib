@@ -375,6 +375,113 @@ func TestTLSTCPInput(t *testing.T) {
 	t.Run("CarriageReturn", tlsInputTest([]byte("message\r\n"), []string{"message"}))
 }
 
+func TestProxyProtocolV2Input(t *testing.T) {
+	t.Run("IPv4", proxyProtocolInputTest(false))
+	t.Run("IPv4WithAttributes", proxyProtocolInputTest(true))
+}
+
+// proxyProtocolInputTest sends a PPv2 header (with a spoofed source IPv4 address)
+// followed by a log line and verifies that the entry uses the proxied address.
+func proxyProtocolInputTest(addAttributes bool) func(t *testing.T) {
+	return func(t *testing.T) {
+		cfg := NewConfigWithID("test_id")
+		cfg.ListenAddress = ":0"
+		cfg.ProxyProtocol = true
+		cfg.AddAttributes = addAttributes
+
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		mockOutput := testutil.Operator{}
+		tcpInput := op.(*Input)
+		tcpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+		entryChan := make(chan *entry.Entry, 1)
+		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			entryChan <- args.Get(1).(*entry.Entry)
+		}).Return(nil)
+
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+		require.NoError(t, err)
+		defer func() {
+			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
+		}()
+
+		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Build a PPv2 header claiming the connection comes from 1.2.3.4:5678.
+		proxiedSrcIP := net.ParseIP("1.2.3.4").To4()
+		proxiedDstIP := net.ParseIP("127.0.0.1").To4()
+		addrBlock := buildIPv4AddrBlock(proxiedSrcIP, proxiedDstIP, 5678, 9000)
+		header := buildPPv2Header(ppV2CmdProxy, ppV2FamilyIPv4, addrBlock)
+
+		_, err = conn.Write(header)
+		require.NoError(t, err)
+		_, err = conn.Write([]byte("proxied message\n"))
+		require.NoError(t, err)
+
+		select {
+		case e := <-entryChan:
+			require.Equal(t, "proxied message", e.Body)
+			if addAttributes {
+				// The peer address must reflect the proxied source, not the raw TCP client.
+				require.Equal(t, "1.2.3.4", e.Attributes["net.peer.ip"])
+				require.Equal(t, "5678", e.Attributes["net.peer.port"])
+			}
+		case <-time.After(2 * time.Second):
+			require.FailNow(t, "Timed out waiting for proxied message")
+		}
+	}
+}
+
+func TestProxyProtocolV2LocalCommand(t *testing.T) {
+	// LOCAL command (health-check): the connection should fall back to the
+	// actual TCP remote address and the log body should still be received.
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+	cfg.ProxyProtocol = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	tcpInput := op.(*Input)
+	tcpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tcpInput.Stop())
+	}()
+
+	conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// LOCAL command with UNSPEC family and empty address block.
+	header := buildPPv2Header(ppV2CmdLocal, ppV2FamilyUnspec, nil)
+	_, err = conn.Write(header)
+	require.NoError(t, err)
+	_, err = conn.Write([]byte("local message\n"))
+	require.NoError(t, err)
+
+	select {
+	case e := <-entryChan:
+		require.Equal(t, "local message", e.Body)
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "Timed out waiting for local-command message")
+	}
+}
+
 func TestFailToBind(t *testing.T) {
 	ip := "localhost"
 	port := 0

@@ -213,6 +213,106 @@ func TestFailToBind(t *testing.T) {
 	require.Error(t, err, "expected second udp operator to fail to start")
 }
 
+func TestProxyProtocolV2Input(t *testing.T) {
+	t.Run("IPv4", proxyProtocolUDPTest(false))
+	t.Run("IPv4WithAttributes", proxyProtocolUDPTest(true))
+}
+
+func proxyProtocolUDPTest(addAttributes bool) func(t *testing.T) {
+	return func(t *testing.T) {
+		cfg := NewConfigWithID("test_id")
+		cfg.ListenAddress = ":0"
+		cfg.ProxyProtocol = true
+		cfg.AddAttributes = addAttributes
+
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
+		require.NoError(t, err)
+
+		mockOutput := testutil.Operator{}
+		udpInput := op.(*Input)
+		udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+		entryChan := make(chan *entry.Entry, 1)
+		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			entryChan <- args.Get(1).(*entry.Entry)
+		}).Return(nil)
+
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
+		require.NoError(t, err)
+		defer func() {
+			require.NoError(t, udpInput.Stop())
+		}()
+
+		conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+		require.NoError(t, err)
+		defer conn.Close()
+
+		// Build a PPv2 datagram claiming source 1.2.3.4:5678.
+		proxiedSrcIP := net.ParseIP("1.2.3.4").To4()
+		proxiedDstIP := net.ParseIP("127.0.0.1").To4()
+		addrBlock := buildIPv4AddrBlock(proxiedSrcIP, proxiedDstIP, 5678, 9000)
+		header := buildPPv2Header(ppV2CmdProxy, ppV2FamilyIPv4, addrBlock)
+		datagram := append(header, []byte("proxied udp message\n")...)
+
+		_, err = conn.Write(datagram)
+		require.NoError(t, err)
+
+		select {
+		case e := <-entryChan:
+			require.Equal(t, "proxied udp message", e.Body)
+			if addAttributes {
+				assert.Equal(t, "1.2.3.4", e.Attributes["net.peer.ip"])
+				assert.Equal(t, "5678", e.Attributes["net.peer.port"])
+			}
+		case <-time.After(2 * time.Second):
+			require.FailNow(t, "Timed out waiting for proxied UDP message")
+		}
+	}
+}
+
+func TestProxyProtocolV2LocalCommandUDP(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.ListenAddress = ":0"
+	cfg.ProxyProtocol = true
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	mockOutput := testutil.Operator{}
+	udpInput := op.(*Input)
+	udpInput.OutputOperators = []operator.Operator{&mockOutput}
+
+	entryChan := make(chan *entry.Entry, 1)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		entryChan <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, udpInput.Stop())
+	}()
+
+	conn, err := net.Dial("udp", udpInput.connection.LocalAddr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// LOCAL command — fallback to actual remote address, payload still processed.
+	header := buildPPv2Header(ppV2CmdLocal, ppV2FamilyUnspec, nil)
+	datagram := append(header, []byte("local udp message\n")...)
+	_, err = conn.Write(datagram)
+	require.NoError(t, err)
+
+	select {
+	case e := <-entryChan:
+		require.Equal(t, "local udp message", e.Body)
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "Timed out waiting for local-command UDP message")
+	}
+}
+
 func BenchmarkUDPInput(b *testing.B) {
 	cfg := NewConfigWithID("test_id")
 	cfg.ListenAddress = ":0"

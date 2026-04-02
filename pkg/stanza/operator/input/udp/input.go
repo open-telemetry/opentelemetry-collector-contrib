@@ -28,6 +28,7 @@ type Input struct {
 	addAttributes   bool
 	OneLogPerPacket bool
 	AsyncConfig     *AsyncConfig
+	proxyProtocol   bool
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -103,6 +104,14 @@ func (i *Input) readAndProcessMessages(ctx context.Context) {
 			break
 		}
 
+		if i.proxyProtocol {
+			message, remoteAddr, err = applyProxyProtocolV2(message, remoteAddr)
+			if err != nil {
+				i.Logger().Error("Failed to parse proxy protocol v2 header", zap.Error(err))
+				continue
+			}
+		}
+
 		i.processMessage(ctx, message, remoteAddr, dec, scannerBuffer)
 	}
 }
@@ -169,7 +178,19 @@ func (i *Input) processMessagesAsync(ctx context.Context) {
 		}
 
 		trimmedMessage := i.removeTrailingCharactersAndNULsFromBuffer(*messageAndAddr.Message, messageAndAddr.MessageLength)
-		i.processMessage(ctx, trimmedMessage, messageAndAddr.RemoteAddr, dec, scannerBuffer)
+		remoteAddr := messageAndAddr.RemoteAddr
+
+		if i.proxyProtocol {
+			var err error
+			trimmedMessage, remoteAddr, err = applyProxyProtocolV2(trimmedMessage, remoteAddr)
+			if err != nil {
+				i.Logger().Error("Failed to parse proxy protocol v2 header", zap.Error(err))
+				i.readBufferPool.Put(messageAndAddr.Message)
+				continue
+			}
+		}
+
+		i.processMessage(ctx, trimmedMessage, remoteAddr, dec, scannerBuffer)
 		i.readBufferPool.Put(messageAndAddr.Message)
 	}
 }

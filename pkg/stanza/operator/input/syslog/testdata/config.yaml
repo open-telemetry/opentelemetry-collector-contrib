@@ -29,3 +29,15 @@ udp:
     multiline:
       line_start_pattern: ABC
       line_end_pattern: ""
+tcp_with_proxy_protocol:
+  type: syslog_input
+  protocol: rfc5424
+  tcp:
+    listen_address: 10.0.0.1:9000
+    proxy_protocol: true
+udp_with_proxy_protocol:
+  type: syslog_input
+  protocol: rfc5424
+  udp:
+    listen_address: 10.0.0.1:9000
+    proxy_protocol: true

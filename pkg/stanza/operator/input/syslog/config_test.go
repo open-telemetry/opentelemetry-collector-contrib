@@ -67,6 +67,32 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name:               "tcp_with_proxy_protocol",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = "rfc5424"
+					cfg.TCP = &tcp.BaseConfig{
+						ListenAddress: "10.0.0.1:9000",
+						ProxyProtocol: true,
+					}
+					return cfg
+				}(),
+			},
+			{
+				Name:               "udp_with_proxy_protocol",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = "rfc5424"
+					cfg.UDP = &udp.BaseConfig{
+						ListenAddress: "10.0.0.1:9000",
+						ProxyProtocol: true,
+					}
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
 }

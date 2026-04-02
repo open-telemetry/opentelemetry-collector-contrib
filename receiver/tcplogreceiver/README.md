@@ -27,6 +27,7 @@ The TCP Log Receiver receives logs over TCP.
 | `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
 | `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource                                                         |
 | `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/semantic-conventions/blob/main/docs/registry/attributes/network.md#network-attributes] |
+| `proxy_protocol`          | false                | When `true`, each incoming TCP connection must begin with a [Proxy Protocol v2](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt) header. The source IP/port extracted from that header is used instead of the raw TCP remote address when populating `net.*` attributes. |
 | `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
 | `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |

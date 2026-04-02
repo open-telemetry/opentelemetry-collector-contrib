@@ -20,3 +20,7 @@ all_with_async:
     readers: 2
     processors: 2
     max_queue_length: 100
+proxy_protocol:
+  type: udp_input
+  listen_address: 10.0.0.1:9000
+  proxy_protocol: true

@@ -58,6 +58,7 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 | `preserve_trailing_whitespaces` | false    | Whether to preserve trailing whitespaces.                                                                                         |
 | `encoding`                      | `utf-8`  | The encoding of the file being read. See the list of supported encodings below for available options.                             |
 | `async`                         | nil      | An `async` configuration block. See below for details.                                                                            |
+| `proxy_protocol`                | false    | When `true`, each incoming UDP datagram must begin with a [Proxy Protocol v2](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt) header. The source address from the header is used instead of the raw UDP sender address for `net.*` attributes. |
 
 ### TCP Configuration
 
@@ -72,6 +73,7 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 | `preserve_leading_whitespaces`  | false    | Whether to preserve leading whitespaces.                                                                                          |
 | `preserve_trailing_whitespaces` | false    | Whether to preserve trailing whitespaces.                                                                                         |
 | `encoding`                      | `utf-8`  | The encoding of the file being read. See the list of supported encodings below for available options.                             |
+| `proxy_protocol`                | false    | When `true`, each incoming TCP connection must begin with a [Proxy Protocol v2](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt) header. The source address from the header is used instead of the raw TCP remote address for `net.*` attributes. |
 
 #### TLS Configuration
 

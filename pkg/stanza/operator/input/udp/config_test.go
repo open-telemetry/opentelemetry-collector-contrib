@@ -51,6 +51,16 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name:               "proxy_protocol",
+				ExpectUnmarshalErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.ListenAddress = "10.0.0.1:9000"
+					cfg.ProxyProtocol = true
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
 }

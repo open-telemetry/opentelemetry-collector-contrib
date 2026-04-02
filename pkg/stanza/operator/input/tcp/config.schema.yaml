@@ -15,6 +15,12 @@ $defs:
         $ref: /pkg/stanza/split.config
       one_log_per_packet:
         type: boolean
+      proxy_protocol:
+        description: >-
+          When true, each incoming TCP connection is expected to begin with a
+          Proxy Protocol v2 header. The receiver uses the source address carried
+          in that header instead of the raw TCP remote address.
+        type: boolean
       tls:
         x-pointer: true
         $ref: go.opentelemetry.io/collector/config/configtls.server_config

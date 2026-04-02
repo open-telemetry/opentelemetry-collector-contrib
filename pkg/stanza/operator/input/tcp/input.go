@@ -32,6 +32,7 @@ type Input struct {
 	MaxLogSize      int
 	addAttributes   bool
 	OneLogPerPacket bool
+	proxyProtocol   bool
 
 	listener net.Listener
 	cancel   context.CancelFunc
@@ -119,6 +120,21 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 	i.wg.Go(func() {
 		defer cancel()
 
+		// remoteAddr is the address we attribute log entries to. When proxy
+		// protocol v2 is enabled, we replace it with the address from the header.
+		remoteAddr := conn.RemoteAddr()
+
+		if i.proxyProtocol {
+			addr, err := parseProxyProtocolV2Header(conn)
+			if err != nil {
+				i.Logger().Error("Failed to parse proxy protocol v2 header", zap.Error(err))
+				return
+			}
+			if addr != nil {
+				remoteAddr = addr
+			}
+		}
+
 		dec := i.encoding.NewDecoder()
 		if i.OneLogPerPacket {
 			var buf bytes.Buffer
@@ -127,7 +143,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 				i.Logger().Error("IO copy net connection buffer error", zap.Error(err))
 			}
 			log := truncateMaxLog(buf.Bytes(), i.MaxLogSize)
-			i.handleMessage(ctx, conn, dec, log)
+			i.handleMessage(ctx, conn, remoteAddr, dec, log)
 			return
 		}
 
@@ -139,7 +155,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		scanner.Split(i.splitFunc)
 
 		for scanner.Scan() {
-			i.handleMessage(ctx, conn, dec, scanner.Bytes())
+			i.handleMessage(ctx, conn, remoteAddr, dec, scanner.Bytes())
 		}
 
 		if err := scanner.Err(); err != nil {
@@ -148,7 +164,7 @@ func (i *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 	})
 }
 
-func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.Decoder, log []byte) {
+func (i *Input) handleMessage(ctx context.Context, conn net.Conn, remoteAddr net.Addr, dec *encoding.Decoder, log []byte) {
 	decoded, err := textutils.DecodeAsString(dec, log)
 	if err != nil {
 		i.Logger().Error("Failed to decode data", zap.Error(err))
@@ -163,7 +179,7 @@ func (i *Input) handleMessage(ctx context.Context, conn net.Conn, dec *encoding.
 
 	if i.addAttributes {
 		entry.AddAttribute("net.transport", "IP.TCP")
-		if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+		if addr, ok := remoteAddr.(*net.TCPAddr); ok {
 			ip := addr.IP.String()
 			entry.AddAttribute("net.peer.ip", ip)
 			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))

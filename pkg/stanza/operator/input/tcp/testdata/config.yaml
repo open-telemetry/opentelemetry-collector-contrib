@@ -13,3 +13,7 @@ all:
     key_file: foo2
     ca_file: foo3
     client_ca_file: foo4
+proxy_protocol:
+  type: tcp_input
+  listen_address: 10.0.0.1:9000
+  proxy_protocol: true

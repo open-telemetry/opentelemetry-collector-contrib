@@ -73,6 +73,10 @@ type BaseConfig struct {
 	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
 	TrimConfig      trim.Config  `mapstructure:",squash"`
 	AsyncConfig     *AsyncConfig `mapstructure:"async,omitempty"`
+	// ProxyProtocol enables Proxy Protocol version 2 support. When true, each
+	// incoming UDP datagram is expected to begin with a PPv2 header whose source
+	// address is used instead of the raw UDP sender address.
+	ProxyProtocol bool `mapstructure:"proxy_protocol,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -130,6 +134,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		resolver:        resolver,
 		OneLogPerPacket: c.OneLogPerPacket,
 		AsyncConfig:     c.AsyncConfig,
+		proxyProtocol:   c.ProxyProtocol,
 	}
 
 	if c.AsyncConfig != nil {

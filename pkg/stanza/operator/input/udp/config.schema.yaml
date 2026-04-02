@@ -25,6 +25,12 @@ $defs:
         $ref: /pkg/stanza/split.config
       one_log_per_packet:
         type: boolean
+      proxy_protocol:
+        description: >-
+          When true, each incoming UDP datagram is expected to begin with a
+          Proxy Protocol v2 header. The source address carried in that header
+          is used instead of the raw UDP sender address.
+        type: boolean
     allOf:
       - $ref: /pkg/stanza/trim.config
   config:

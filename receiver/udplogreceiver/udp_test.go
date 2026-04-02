@@ -4,6 +4,8 @@
 package udplogreceiver
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -130,4 +132,59 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool {
 		return sink.LogRecordCount() == expected
 	}
+}
+
+// ppv2Signature is the 12-byte fixed signature of a Proxy Protocol v2 header.
+var ppv2Signature = []byte{0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A}
+
+// buildPPv2Datagram prepends a PPv2 header (IPv4 PROXY DGRAM) to payload.
+func buildPPv2Datagram(srcIP net.IP, srcPort uint16, dstIP net.IP, dstPort uint16, payload []byte) []byte {
+	var buf bytes.Buffer
+	buf.Write(ppv2Signature)
+	buf.WriteByte(0x21)                              // version 2 | PROXY command
+	buf.WriteByte(0x12)                              // IPv4 family | DGRAM transport
+	binary.Write(&buf, binary.BigEndian, uint16(12)) //nolint:errcheck // writing to a bytes.Buffer never fails
+	buf.Write(srcIP.To4())
+	buf.Write(dstIP.To4())
+	binary.Write(&buf, binary.BigEndian, srcPort) //nolint:errcheck
+	binary.Write(&buf, binary.BigEndian, dstPort) //nolint:errcheck
+	buf.Write(payload)
+	return buf.Bytes()
+}
+
+func TestProxyProtocolV2(t *testing.T) {
+	listenAddress := "127.0.0.1:29020"
+
+	cfg := testdataConfigYaml(listenAddress)
+	cfg.InputConfig.ProxyProtocol = true
+	cfg.InputConfig.AddAttributes = true
+
+	f := NewFactory()
+	sink := new(consumertest.LogsSink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, rcvr.Shutdown(t.Context()))
+	}()
+
+	conn, err := net.Dial("udp", listenAddress)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	proxiedSrcIP := net.ParseIP("1.2.3.4").To4()
+	dstIP := net.ParseIP("127.0.0.1").To4()
+	msg := []byte("<86>1 2021-02-28T00:00:02.003Z test proxied msg\n")
+	datagram := buildPPv2Datagram(proxiedSrcIP, 5678, dstIP, 29020, msg)
+
+	_, err = conn.Write(datagram)
+	require.NoError(t, err)
+
+	require.Eventually(t, expectNLogs(sink, 1), 2*time.Second, time.Millisecond)
+
+	logRecord := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "<86>1 2021-02-28T00:00:02.003Z test proxied msg", logRecord.Body().Str())
+	// The peer address should reflect the proxied source, not the raw UDP sender.
+	assert.Equal(t, "1.2.3.4", logRecord.Attributes().AsRaw()["net.peer.ip"])
+	assert.Equal(t, "5678", logRecord.Attributes().AsRaw()["net.peer.port"])
 }
