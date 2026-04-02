@@ -403,6 +403,20 @@ otelcontribcollite: genotelcontribcol
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
+.PHONY: genotelcolagentcore
+genotelcolagentcore: $(BUILDER)
+	./internal/buildscripts/ocb-add-replaces.sh otelcol-agentcore
+	$(BUILDER) --skip-compilation --skip-get-modules --config cmd/otelcol-agentcore/builder-config-replaced.yaml
+	cd ./cmd/otelcol-agentcore && \
+		$(GOCMD) get go.opentelemetry.io/otel/sdk/log@v0.17.0 go.opentelemetry.io/otel/exporters/stdout/stdoutlog@v0.17.0 go.opentelemetry.io/otel/log@v0.17.0 go.opentelemetry.io/otel/log/logtest@v0.17.0 && \
+		$(GOCMD) mod tidy -compat=1.23
+
+# Build the AgentCore Collector executable.
+.PHONY: otelcol-agentcore
+otelcol-agentcore: genotelcolagentcore
+	cd ./cmd/otelcol-agentcore && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcol-agentcore_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
+
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol

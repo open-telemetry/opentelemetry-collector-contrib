@@ -1,0 +1,72 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+  awscwotlpbatchsplit:
+
+connectors:
+  genaiadapterconnector:
+
+exporters:
+
+  otlphttp/xray:
+    compression: gzip
+    traces_endpoint: https://xray.${env:AWS_REGION:-us-east-1}.amazonaws.com/v1/traces
+    auth:
+      authenticator: sigv4auth/traces
+
+  otlphttp/logs:
+    compression: gzip
+    logs_endpoint: https://logs.${env:AWS_REGION:-us-east-1}.amazonaws.com/v1/logs
+    headers:
+      x-aws-log-group: ${env:AWS_APP_LOG_GROUP:-AgentCoreRuntimeLogs}
+      x-aws-log-stream: ${env:AWS_APP_LOG_STREAM:-default}
+    auth:
+      authenticator: sigv4auth/logs
+
+  awsemf:
+    region: ${env:AWS_REGION:-us-east-1}
+    namespace: ${env:AWS_EMF_NAMESPACE:-AgentCoreRuntime}
+    log_group_name: ${env:AWS_EMF_LOG_GROUP:-AgentCoreRuntimeEMF}
+    log_stream_name: ${env:AWS_EMF_LOG_STREAM:-default}
+    resource_to_telemetry_conversion:
+      enabled: true
+    dimension_rollup_option: "NoDimensionRollup"
+
+extensions:
+  sigv4auth/traces:
+    region: ${env:AWS_REGION:-us-east-1}
+    service: xray
+
+  sigv4auth/logs:
+    region: ${env:AWS_REGION:-us-east-1}
+    service: logs
+
+service:
+  extensions: [sigv4auth/traces, sigv4auth/logs]
+  pipelines:
+    logs/cloudwatch:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/logs]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [awsemf]
+    traces/input:
+      receivers: [otlp]
+      exporters: [genaiadapterconnector]
+    traces/output:
+      receivers: [genaiadapterconnector]
+      processors: [batch]
+      exporters: [otlphttp/xray]
+    logs/genai:
+      receivers: [genaiadapterconnector]
+      processors: [batch, awscwotlpbatchsplit]
+      exporters: [otlphttp/logs]

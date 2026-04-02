@@ -1,0 +1,6 @@
+type: otelcol-agentcore
+
+status:
+  class: cmd
+  codeowners:
+    active: []
