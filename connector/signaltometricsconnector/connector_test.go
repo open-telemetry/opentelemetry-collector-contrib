@@ -55,6 +55,12 @@ func TestConnectorWithTraces(t *testing.T) {
 				"x-dynamic-resource-attributes": {"resource.foo"},
 			},
 		},
+		{
+			name: "ottl_expression_priority",
+			clientMetadata: map[string][]string{
+				"x-dynamic-attrs": {"db.system"},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -186,154 +192,228 @@ func TestConnectorWithProfiles(t *testing.T) {
 	}
 }
 
+type benchCase struct {
+	name                      string
+	attrKey                   string
+	includeResourceAttributes []config.Attribute
+	clientMetadata            map[string][]string
+}
+
 func BenchmarkConnectorWithTraces(b *testing.B) {
-	factory := NewFactory()
-	settings := connectortest.NewNopSettings(metadata.Type)
-	settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
-	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
-		return nil
-	})
-	require.NoError(b, err)
-
-	cfg := &config.Config{Spans: testMetricInfo(b)}
-	require.NoError(b, cfg.Unmarshal(confmap.New())) // set required fields to default
-	require.NoError(b, cfg.Validate())
-	connector, err := factory.CreateTracesToMetrics(b.Context(), settings, cfg, next)
-	require.NoError(b, err)
-	inputTraces, err := golden.ReadTraces("testdata/traces/traces.yaml")
-	require.NoError(b, err)
-
-	b.ReportAllocs()
-
-	for b.Loop() {
-		if err := connector.ConsumeTraces(b.Context(), inputTraces); err != nil {
-			b.Fatal(err)
-		}
+	benchCases := []benchCase{
+		{name: "no_match", attrKey: "nonexistent.attribute"},
+		{name: "all_match", attrKey: ""},
+		{name: "partial_match", attrKey: "http.response.status_code"},
+		{
+			name: "keys_expression",
+			includeResourceAttributes: []config.Attribute{
+				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
+			},
+			clientMetadata: map[string][]string{
+				"x-dynamic-resource-attributes": {"resource.foo"},
+			},
+		},
+	}
+	for _, bc := range benchCases {
+		b.Run(bc.name, func(b *testing.B) {
+			factory := NewFactory()
+			settings := connectortest.NewNopSettings(metadata.Type)
+			settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
+			next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
+			require.NoError(b, err)
+			cfg := &config.Config{Spans: benchMetricInfo(b, bc)}
+			require.NoError(b, cfg.Unmarshal(confmap.New()))
+			require.NoError(b, cfg.Validate())
+			connector, err := factory.CreateTracesToMetrics(b.Context(), settings, cfg, next)
+			require.NoError(b, err)
+			inputTraces, err := golden.ReadTraces("testdata/traces/traces.yaml")
+			require.NoError(b, err)
+			ctx := b.Context()
+			if bc.clientMetadata != nil {
+				ctx = client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(bc.clientMetadata)})
+			}
+			b.ReportAllocs()
+			for b.Loop() {
+				if err := connector.ConsumeTraces(ctx, inputTraces); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }
 
 func BenchmarkConnectorWithMetrics(b *testing.B) {
-	factory := NewFactory()
-	settings := connectortest.NewNopSettings(metadata.Type)
-	settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
-	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
-		return nil
-	})
-	require.NoError(b, err)
-
-	cfg := &config.Config{Datapoints: testMetricInfo(b)}
-	require.NoError(b, cfg.Unmarshal(confmap.New())) // set required fields to default
-	require.NoError(b, cfg.Validate())
-	connector, err := factory.CreateMetricsToMetrics(b.Context(), settings, cfg, next)
-	require.NoError(b, err)
-	inputMetrics, err := golden.ReadMetrics("testdata/metrics/metrics.yaml")
-	require.NoError(b, err)
-
-	b.ReportAllocs()
-
-	for b.Loop() {
-		if err := connector.ConsumeMetrics(b.Context(), inputMetrics); err != nil {
-			b.Fatal(err)
-		}
+	benchCases := []benchCase{
+		{name: "no_match", attrKey: "nonexistent.attribute"},
+		{name: "all_match", attrKey: ""},
+		{name: "partial_match", attrKey: "datapoint.foo"},
+		{
+			name: "keys_expression",
+			includeResourceAttributes: []config.Attribute{
+				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
+			},
+			clientMetadata: map[string][]string{
+				"x-dynamic-resource-attributes": {"resource.foo"},
+			},
+		},
+	}
+	for _, bc := range benchCases {
+		b.Run(bc.name, func(b *testing.B) {
+			factory := NewFactory()
+			settings := connectortest.NewNopSettings(metadata.Type)
+			settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
+			next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
+			require.NoError(b, err)
+			cfg := &config.Config{Datapoints: benchMetricInfo(b, bc)}
+			require.NoError(b, cfg.Unmarshal(confmap.New()))
+			require.NoError(b, cfg.Validate())
+			connector, err := factory.CreateMetricsToMetrics(b.Context(), settings, cfg, next)
+			require.NoError(b, err)
+			inputMetrics, err := golden.ReadMetrics("testdata/metrics/metrics.yaml")
+			require.NoError(b, err)
+			ctx := b.Context()
+			if bc.clientMetadata != nil {
+				ctx = client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(bc.clientMetadata)})
+			}
+			b.ReportAllocs()
+			for b.Loop() {
+				if err := connector.ConsumeMetrics(ctx, inputMetrics); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }
 
 func BenchmarkConnectorWithLogs(b *testing.B) {
-	factory := NewFactory()
-	settings := connectortest.NewNopSettings(metadata.Type)
-	settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
-	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
-		return nil
-	})
-	require.NoError(b, err)
-
-	cfg := &config.Config{Logs: testMetricInfo(b)}
-	require.NoError(b, cfg.Unmarshal(confmap.New())) // set required fields to default
-	require.NoError(b, cfg.Validate())
-	connector, err := factory.CreateLogsToMetrics(b.Context(), settings, cfg, next)
-	require.NoError(b, err)
-	inputLogs, err := golden.ReadLogs("testdata/logs/logs.yaml")
-	require.NoError(b, err)
-
-	b.ReportAllocs()
-
-	for b.Loop() {
-		if err := connector.ConsumeLogs(b.Context(), inputLogs); err != nil {
-			b.Fatal(err)
-		}
+	benchCases := []benchCase{
+		{name: "no_match", attrKey: "nonexistent.attribute"},
+		{name: "all_match", attrKey: ""},
+		{name: "partial_match", attrKey: "log.foo"},
+		{
+			name: "keys_expression",
+			includeResourceAttributes: []config.Attribute{
+				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
+			},
+			clientMetadata: map[string][]string{
+				"x-dynamic-resource-attributes": {"resource.foo"},
+			},
+		},
+	}
+	for _, bc := range benchCases {
+		b.Run(bc.name, func(b *testing.B) {
+			factory := NewFactory()
+			settings := connectortest.NewNopSettings(metadata.Type)
+			settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
+			next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
+			require.NoError(b, err)
+			cfg := &config.Config{Logs: benchMetricInfo(b, bc)}
+			require.NoError(b, cfg.Unmarshal(confmap.New()))
+			require.NoError(b, cfg.Validate())
+			connector, err := factory.CreateLogsToMetrics(b.Context(), settings, cfg, next)
+			require.NoError(b, err)
+			inputLogs, err := golden.ReadLogs("testdata/logs/logs.yaml")
+			require.NoError(b, err)
+			ctx := b.Context()
+			if bc.clientMetadata != nil {
+				ctx = client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(bc.clientMetadata)})
+			}
+			b.ReportAllocs()
+			for b.Loop() {
+				if err := connector.ConsumeLogs(ctx, inputLogs); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
 }
 
-// testMetricInfo creates a metric info with all metric types that could be used
-// for all the supported signals. To do this, it uses common OTTL funcs and literals.
-func testMetricInfo(b *testing.B) []config.MetricInfo {
-	b.Helper()
+func BenchmarkConnectorWithProfiles(b *testing.B) {
+	// Profile attributes: profile.foo (on some), profile.bar (on some).
+	benchCases := []benchCase{
+		{name: "no_match", attrKey: "nonexistent.attribute"},
+		{name: "all_match", attrKey: ""},
+		{name: "partial_match", attrKey: "profile.foo"},
+		{
+			name: "keys_expression",
+			includeResourceAttributes: []config.Attribute{
+				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
+			},
+			clientMetadata: map[string][]string{
+				"x-dynamic-resource-attributes": {"resource.foo"},
+			},
+		},
+	}
+	for _, bc := range benchCases {
+		b.Run(bc.name, func(b *testing.B) {
+			factory := NewFactory().(xconnector.Factory)
+			settings := connectortest.NewNopSettings(metadata.Type)
+			settings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
+			next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
+			require.NoError(b, err)
+			cfg := &config.Config{Profiles: benchMetricInfo(b, bc)}
+			require.NoError(b, cfg.Unmarshal(confmap.New()))
+			require.NoError(b, cfg.Validate())
+			connector, err := factory.CreateProfilesToMetrics(b.Context(), settings, cfg, next)
+			require.NoError(b, err)
+			inputProfiles, err := golden.ReadProfiles("testdata/profiles/profiles.yaml")
+			require.NoError(b, err)
+			ctx := b.Context()
+			if bc.clientMetadata != nil {
+				ctx = client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(bc.clientMetadata)})
+			}
+			b.ReportAllocs()
+			for b.Loop() {
+				if err := connector.ConsumeProfiles(ctx, inputProfiles); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
 
+func benchMetricInfo(b *testing.B, bc benchCase) []config.MetricInfo {
+	b.Helper()
+	var attrs []config.Attribute
+	if bc.attrKey != "" {
+		attrs = []config.Attribute{{Key: bc.attrKey}}
+	}
+	resAttrs := bc.includeResourceAttributes
+	if resAttrs == nil {
+		resAttrs = []config.Attribute{
+			{Key: "resource.foo"},
+			{Key: "404.attribute", DefaultValue: "test_404_attribute"},
+		}
+	}
 	return []config.MetricInfo{
 		{
-			Name:        "test.histogram",
-			Description: "Test histogram",
-			Unit:        "ms",
-			IncludeResourceAttributes: []config.Attribute{
-				{
-					Key: "resource.foo",
-				},
-				{
-					Key:          "404.attribute",
-					DefaultValue: "test_404_attribute",
-				},
-			},
-			Attributes: []config.Attribute{
-				{
-					Key: "http.response.status_code",
-				},
-			},
+			Name:                      "test.histogram",
+			Description:               "Test histogram",
+			Unit:                      "ms",
+			IncludeResourceAttributes: resAttrs,
+			Attributes:                attrs,
 			Histogram: configoptional.Some(config.Histogram{
 				Buckets: []float64{2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000},
 				Value:   "1.4",
 			}),
 		},
 		{
-			Name:        "test.exphistogram",
-			Description: "Test exponential histogram",
-			Unit:        "ms",
-			IncludeResourceAttributes: []config.Attribute{
-				{
-					Key: "resource.foo",
-				},
-				{
-					Key:          "404.attribute",
-					DefaultValue: "test_404_attribute",
-				},
-			},
-			Attributes: []config.Attribute{
-				{
-					Key: "http.response.status_code",
-				},
-			},
+			Name:                      "test.exphistogram",
+			Description:               "Test exponential histogram",
+			Unit:                      "ms",
+			IncludeResourceAttributes: resAttrs,
+			Attributes:                attrs,
 			ExponentialHistogram: configoptional.Some(config.ExponentialHistogram{
 				Value:   "2.4",
 				MaxSize: 160,
 			}),
 		},
 		{
-			Name:        "test.sum",
-			Description: "Test sum",
-			Unit:        "ms",
-			IncludeResourceAttributes: []config.Attribute{
-				{
-					Key: "resource.foo",
-				},
-				{
-					Key:          "404.attribute",
-					DefaultValue: "test_404_attribute",
-				},
-			},
-			Attributes: []config.Attribute{
-				{
-					Key: "http.response.status_code",
-				},
-			},
+			Name:                      "test.sum",
+			Description:               "Test sum",
+			Unit:                      "ms",
+			IncludeResourceAttributes: resAttrs,
+			Attributes:                attrs,
 			Sum: configoptional.Some(config.Sum{
 				Value: "5.4",
 			}),

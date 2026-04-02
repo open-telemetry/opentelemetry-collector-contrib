@@ -208,7 +208,7 @@ type metricSystemProcessesCreated struct {
 // init fills system.processes.created metric with initial data.
 func (m *metricSystemProcessesCreated) init() {
 	m.data.SetName("system.processes.created")
-	m.data.SetDescription("Total number of created processes.")
+	m.data.SetDescription("Total number of created processes. Supported on Linux and OpenBSD.")
 	m.data.SetUnit("{processes}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
