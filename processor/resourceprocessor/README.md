@@ -59,12 +59,6 @@ processors:
     - key: redundant-attribute
       action: delete
     
-    # Use default_value when environment variable is not set
-    - key: deployment.environment
-      value: "${ENV}"
-      default_value: "development"
-      action: upsert
-    
     # Use default_value when source attribute doesn't exist
     - key: region
       from_attribute: cloud.region
