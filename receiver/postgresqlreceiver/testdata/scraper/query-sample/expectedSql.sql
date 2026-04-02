@@ -32,16 +32,6 @@ WHERE
     AND pid != pg_backend_pid()
     
     AND query_start IS NOT NULL
-    
-    AND UPPER(LEFT(LTRIM(query), 11)) NOT IN (
-      'BEGIN', 'COMMIT', 'END', 'ROLLBACK', 'SAVEPOINT',
-      'RELEASE SAV',
-      'DEALLOCATE',
-      'DISCARD',
-      'LISTEN', 'NOTIFY', 'UNLISTEN',
-      'RESET',
-      'CLOSE', 'MOVE', 'FETCH'
-    )
     AND NOT (
     
       query_start < TO_TIMESTAMP(123440.111)

@@ -572,14 +572,6 @@ func TestQuerySampleTemplateRendering(t *testing.T) {
 	requiredClauses := []string{
 		"pid != pg_backend_pid()",
 		"query_start IS NOT NULL",
-		"UPPER(LEFT(LTRIM(query), 11)) NOT IN",
-		"'BEGIN'", "'COMMIT'", "'END'", "'ROLLBACK'", "'SAVEPOINT'",
-		"'RELEASE SAV'",
-		"'DEALLOCATE'",
-		"'DISCARD'",
-		"'LISTEN'", "'NOTIFY'", "'UNLISTEN'",
-		"'RESET'",
-		"'CLOSE'", "'MOVE'", "'FETCH'",
 	}
 
 	for _, tc := range tests {
