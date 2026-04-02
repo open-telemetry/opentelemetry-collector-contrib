@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -36,7 +35,8 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config with no metric settings",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
 		},
@@ -67,19 +67,21 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config only datasource and none direct connect settings",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				DataSource:       "a connection string",
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				DataSource:           "a connection string",
 			},
 			expectedSuccess: true,
 		},
 		{
 			desc: "valid config with all direct connection settings",
 			cfg: &Config{
-				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				Server:           "0.0.0.0",
-				Username:         "sa",
-				Password:         "password",
-				Port:             1433,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				Server:               "0.0.0.0",
+				Username:             "sa",
+				Password:             "password",
+				Port:                 1433,
 			},
 			expectedSuccess: true,
 		},
@@ -224,7 +226,13 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, xconfmap.Validate(cfg))
-		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(Config{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.EventConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+		if diff := cmp.Diff(expected, cfg, cmp.FilterPath(func(p cmp.Path) bool {
+			if sf, ok := p.Last().(cmp.StructField); ok {
+				name := sf.Name()
+				return name != "" && name[0] >= 'a' && name[0] <= 'z'
+			}
+			return false
+		}, cmp.Ignore())); diff != "" {
 			t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 		}
 	})
