@@ -160,9 +160,3 @@ func TestComparePatternSpecificity(t *testing.T) {
 		})
 	}
 }
-
-var benchmarkPaths = []string{
-	"AWSLogs/123456789012/vpcflowlogs/us-east-1/2024/01/15/123456789012_vpcflowlogs_us-east-1_fl-0123456789abcdef0_20240115T1200Z_abc123.log.gz",
-	"AWSLogs/123456789012/CloudTrail/us-east-1/2024/01/15/123456789012_CloudTrail_us-east-1_20240115T1200Z_abc123.json.gz",
-	"AWSLogs/123456789012/elasticloadbalancing/us-east-1/2024/01/15/123456789012_elasticloadbalancing_us-east-1_app.my-lb.abc123_20240115T1200Z_10.0.0.1_xyz789.log.gz",
-}
