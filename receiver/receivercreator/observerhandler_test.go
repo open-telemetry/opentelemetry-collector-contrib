@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -79,11 +80,11 @@ func TestOnAddForMetrics(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
-					signals:            receiverSignals{metrics: true, logs: true, traces: true},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 				},
 			}
 
-			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil, nil)
 			handler.OnAdd([]observer.Endpoint{
 				portEndpoint,
 				unsupportedEndpoint,
@@ -143,7 +144,7 @@ func TestOnAddForMetricsWithHints(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Discovery.Enabled = true
 
-			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil, nil)
 			handler.OnAdd([]observer.Endpoint{
 				portEndpointWithHints,
 				unsupportedEndpoint,
@@ -242,11 +243,11 @@ func TestOnAddForLogs(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
-					signals:            receiverSignals{metrics: true, logs: true, traces: true},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 				},
 			}
 
-			handler, mr := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
+			handler, mr := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil, nil)
 			handler.OnAdd([]observer.Endpoint{
 				portEndpoint,
 				unsupportedEndpoint,
@@ -312,7 +313,7 @@ func TestOnAddForLogsWithHints(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Discovery = test.hintsConfig
 
-			handler, mr := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
+			handler, mr := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil, nil)
 			handler.OnAdd([]observer.Endpoint{
 				test.target,
 				unsupportedEndpoint,
@@ -414,11 +415,11 @@ func TestOnAddForTraces(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
-					signals:            receiverSignals{metrics: true, logs: true, traces: true},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 				},
 			}
 
-			handler, mr := newObserverHandler(t, cfg, nil, nil, consumertest.NewNop())
+			handler, mr := newObserverHandler(t, cfg, nil, nil, consumertest.NewNop(), nil)
 			handler.OnAdd([]observer.Endpoint{
 				portEndpoint,
 				unsupportedEndpoint,
@@ -471,10 +472,10 @@ func TestOnRemoveForMetrics(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
-			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 		},
 	}
-	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil, nil)
 	handler.OnAdd([]observer.Endpoint{portEndpoint})
 
 	rcvr := r.startedComponent
@@ -501,10 +502,10 @@ func TestOnRemoveForLogs(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
-			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 		},
 	}
-	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
+	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil, nil)
 	handler.OnAdd([]observer.Endpoint{portEndpoint})
 
 	rcvr := r.startedComponent
@@ -531,10 +532,144 @@ func TestOnRemoveForTraces(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
-			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 		},
 	}
-	handler, r := newObserverHandler(t, cfg, nil, nil, consumertest.NewNop())
+	handler, r := newObserverHandler(t, cfg, nil, nil, consumertest.NewNop(), nil)
+	handler.OnAdd([]observer.Endpoint{portEndpoint})
+
+	rcvr := r.startedComponent
+	require.NotNil(t, rcvr)
+	require.NoError(t, r.lastError)
+
+	handler.OnRemove([]observer.Endpoint{portEndpoint})
+
+	assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+	require.Same(t, rcvr, r.shutdownComponent)
+	require.NoError(t, r.lastError)
+}
+
+func TestOnAddForProfiles(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		receiverTemplateID     component.ID
+		receiverTemplateConfig userConfigMap
+		expectedReceiverType   component.Component
+		expectedReceiverConfig component.Config
+		expectedError          string
+	}{
+		{
+			name:                   "dynamically set with supported endpoint",
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
+			receiverTemplateConfig: userConfigMap{"int_field": 12345678},
+			expectedReceiverType:   &nopWithEndpointReceiver{},
+			expectedReceiverConfig: &nopWithEndpointConfig{
+				IntField: 12345678,
+				Endpoint: "localhost:1234",
+			},
+		},
+		{
+			name:                   "inherits supported endpoint",
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
+			receiverTemplateConfig: userConfigMap{"endpoint": "some.endpoint"},
+			expectedReceiverType:   &nopWithEndpointReceiver{},
+			expectedReceiverConfig: &nopWithEndpointConfig{
+				IntField: 1234,
+				Endpoint: "some.endpoint",
+			},
+		},
+		{
+			name:                   "not dynamically set with unsupported endpoint",
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
+			receiverTemplateConfig: userConfigMap{"int_field": 23456789, "not_endpoint": "not.an.endpoint"},
+			expectedReceiverType:   &nopWithoutEndpointReceiver{},
+			expectedReceiverConfig: &nopWithoutEndpointConfig{
+				IntField:    23456789,
+				NotEndpoint: "not.an.endpoint",
+			},
+		},
+		{
+			name:                   "inherits unsupported endpoint",
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
+			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
+			expectedError:          "'receivercreator.nopWithoutEndpointConfig' has invalid keys: endpoint",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			rcvrCfg := receiverConfig{
+				id:         test.receiverTemplateID,
+				config:     test.receiverTemplateConfig,
+				endpointID: portEndpoint.ID,
+			}
+			cfg.receiverTemplates = map[string]receiverTemplate{
+				rcvrCfg.id.String(): {
+					receiverConfig:     rcvrCfg,
+					rule:               portRule,
+					Rule:               `type == "port"`,
+					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
+				},
+			}
+
+			handler, mr := newObserverHandler(t, cfg, nil, nil, nil, &consumertest.ProfilesSink{})
+			handler.OnAdd([]observer.Endpoint{
+				portEndpoint,
+				unsupportedEndpoint,
+			})
+
+			if test.expectedError != "" {
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+				require.Error(t, mr.lastError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
+				require.Nil(t, mr.startedComponent)
+				return
+			}
+
+			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			require.NoError(t, mr.lastError)
+			require.NotNil(t, mr.startedComponent)
+
+			wr, ok := mr.startedComponent.(*wrappedReceiver)
+			require.True(t, ok)
+
+			require.Nil(t, wr.logs)
+			require.Nil(t, wr.metrics)
+			require.Nil(t, wr.traces)
+
+			var actualConfig component.Config
+			switch v := wr.profiles.(type) {
+			case *nopWithEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			default:
+				t.Fatalf("unexpected startedComponent: %T", v)
+			}
+			require.Equal(t, test.expectedReceiverConfig, actualConfig)
+		})
+	}
+}
+
+func TestOnRemoveForProfiles(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	rcvrCfg := receiverConfig{
+		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
+		config:     userConfigMap{"endpoint": "some.endpoint"},
+		endpointID: portEndpoint.ID,
+	}
+	cfg.receiverTemplates = map[string]receiverTemplate{
+		rcvrCfg.id.String(): {
+			receiverConfig:     rcvrCfg,
+			rule:               portRule,
+			Rule:               `type == "port"`,
+			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
+		},
+	}
+	handler, r := newObserverHandler(t, cfg, nil, nil, nil, &consumertest.ProfilesSink{})
 	handler.OnAdd([]observer.Endpoint{portEndpoint})
 
 	rcvr := r.startedComponent
@@ -561,10 +696,10 @@ func TestOnChange(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
-			signals:            receiverSignals{metrics: true, logs: true, traces: true},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 		},
 	}
-	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil, nil)
 	handler.OnAdd([]observer.Endpoint{portEndpoint})
 
 	origRcvr := r.startedComponent
@@ -635,6 +770,7 @@ func newMockRunner(t *testing.T) *mockRunner {
 	cs := receivertest.NewNopSettings(metadata.Type)
 	return &mockRunner{
 		receiverRunner: receiverRunner{
+			logger:      cs.Logger,
 			params:      cs,
 			idNamespace: component.MustNewIDWithName("some_type", "some.name"),
 			host: newMockHost(t, &reportingHost{
@@ -651,6 +787,7 @@ func newObserverHandler(
 	nextLogs consumer.Logs,
 	nextMetrics consumer.Metrics,
 	nextTraces consumer.Traces,
+	nextProfiles xconsumer.Profiles,
 ) (*observerHandler, *mockRunner) {
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("some_type", "some.name")
@@ -663,6 +800,7 @@ func newObserverHandler(
 		nextLogsConsumer:      nextLogs,
 		nextMetricsConsumer:   nextMetrics,
 		nextTracesConsumer:    nextTraces,
+		nextProfilesConsumer:  nextProfiles,
 	}, mr
 }
 
