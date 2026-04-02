@@ -105,7 +105,7 @@ func NewFactory[K any](name string, args Arguments, createFunctionFunc CreateFun
 		option(f)
 	}
 
-	if f.nonDeterministic && (len(name) == 0 || !unicode.IsUpper(rune(name[0]))) {
+	if f.nonDeterministic && (name == "" || !unicode.IsUpper(rune(name[0]))) {
 		panic(fmt.Sprintf("NonDeterministicConverter can only be used with converters (uppercase name), got %q", name))
 	}
 
