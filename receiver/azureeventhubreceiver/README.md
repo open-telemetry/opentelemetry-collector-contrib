@@ -179,16 +179,6 @@ receivers:
       metrics: ["01/02/2006 15:04:05"]
 ```
 
-## Feature Gates
-
-The following feature gates are available for this receiver:
-
-### `receiver.azureeventhubreceiver.UseAzeventhubs`
-
-| Status | Default | From Version | To Version |
-|--------|---------|--------------|------------|
-| Stable | `true`  | v0.129.0     | v0.144.0   |
-
 ## Known Limitations
 
 Before using this receiver, be aware of the following limitations:
