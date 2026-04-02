@@ -22,6 +22,6 @@ Time difference between local and NTP server clocks
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| ntp.host | NTP server used. Corresponds to configured `host`. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| ntp.host | NTP server used. Corresponds to configured `host`. | Any Str | true | - |

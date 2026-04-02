@@ -54,7 +54,7 @@ Standard deviation of round-trip time in milliseconds.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| net.peer.ip | The IP address of the host being pinged. | Any Str | true |
-| net.peer.name | The hostname of the host being pinged. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| net.peer.ip | The IP address of the host being pinged. | Any Str | true | - |
+| net.peer.name | The hostname of the host being pinged. | Any Str | true | - |

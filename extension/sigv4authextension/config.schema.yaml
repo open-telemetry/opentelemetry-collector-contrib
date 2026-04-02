@@ -5,6 +5,8 @@ $defs:
     properties:
       arn:
         type: string
+      external_id:
+        type: string
       session_name:
         type: string
       sts_region:

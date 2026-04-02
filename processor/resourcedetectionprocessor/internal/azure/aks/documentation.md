@@ -6,8 +6,8 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.platform | The cloud.platform | Any Str | true |
-| cloud.provider | The cloud.provider | Any Str | true |
-| k8s.cluster.name | The k8s.cluster.name parsed from the Azure Instance Metadata Service's infrastructure resource group field | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| cloud.platform | The cloud.platform | Any Str | true | - |
+| cloud.provider | The cloud.provider | Any Str | true | - |
+| k8s.cluster.name | The k8s.cluster.name parsed from the Azure Instance Metadata Service's infrastructure resource group field | Any Str | false | - |
