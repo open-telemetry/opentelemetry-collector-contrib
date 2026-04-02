@@ -21,8 +21,14 @@ feature_gates:
     stage: beta
     from_version: "v0.98.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849
+  - id: hostmetrics.process.onWindowsUseNewGetProcesses
+    description: If disabled, the scraper will use the legacy implementation to retrieve process handles.
+    stage: stable
+    from_version: "v0.123.0"
+    to_version: "v0.127.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38589
   - id: receiver.hostmetricsreceiver.UseLinuxMemAvailable
-    description: When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel’s MemAvailable statistic instead of MemFree, Buffers, and Cached.
+    description: When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel's MemAvailable statistic instead of MemFree, Buffers, and Cached.
     stage: beta
     from_version: "v0.137.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221

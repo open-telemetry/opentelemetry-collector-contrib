@@ -9,6 +9,7 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `hostmetrics.process.bootTimeCache` | beta | When enabled, all process scrapes will use the boot time value that is cached at the start of the process. | v0.98.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849) |
-| `receiver.hostmetricsreceiver.UseLinuxMemAvailable` | beta | When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel’s MemAvailable statistic instead of MemFree, Buffers, and Cached. | v0.137.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221) |
+| `hostmetrics.process.onWindowsUseNewGetProcesses` | stable | If disabled, the scraper will use the legacy implementation to retrieve process handles. | v0.123.0 | v0.127.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38589) |
+| `receiver.hostmetricsreceiver.UseLinuxMemAvailable` | beta | When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel's MemAvailable statistic instead of MemFree, Buffers, and Cached. | v0.137.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
