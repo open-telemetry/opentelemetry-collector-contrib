@@ -1,0 +1,17 @@
+change_type: bug_fix
+
+component: extension/aws_logs_encoding
+
+note: Add `source_region` field (27th field) to S3 server access log parser and skip unknown future fields gracefully.
+
+issues: [47149]
+
+subtext: |
+  AWS added a `source_region` field to the S3 server access log format. The parser
+  previously returned an error ("values in log line exceed the number of available fields")
+  when it encountered log lines with more fields than defined. This fix:
+  - Adds `source_region` as field index 26 mapped to `aws.s3.source_region`.
+  - Makes the parser skip any fields beyond the known schema instead of failing,
+    providing forward compatibility with future AWS S3 access log additions.
+
+change_logs: [user]
