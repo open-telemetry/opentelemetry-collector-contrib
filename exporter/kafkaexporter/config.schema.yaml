@@ -45,9 +45,7 @@ properties:
     $ref: signal_config
   record_headers:
     description: RecordHeaders sets static headers on every outgoing Kafka record.
-    type: object
-    additionalProperties:
-      type: string
+    $ref: go.opentelemetry.io/collector/config/configopaque.map_list
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
