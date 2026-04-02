@@ -737,47 +737,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.network.errors":
-<<<<<<< HEAD
-					assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
-					validatedMetrics["k8s.node.network.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Node network errors", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					interfaceAttrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", interfaceAttrVal.Str())
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
-				case "k8s.node.network.io":
-					assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
-					validatedMetrics["k8s.node.network.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Node network IO", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					interfaceAttrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", interfaceAttrVal.Str())
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
-=======
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
 						validatedMetrics["k8s.node.network.errors"] = true
@@ -792,12 +751,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
 						validatedMetrics["k8s.node.network.errors"] = true
@@ -841,12 +800,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
 						validatedMetrics["k8s.node.network.io"] = true
@@ -875,7 +834,6 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("direction")
 						assert.False(t, ok)
 					}
->>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
 				case "k8s.node.uptime":
 					assert.False(t, validatedMetrics["k8s.node.uptime"], "Found a duplicate in the metrics slice: k8s.node.uptime")
 					validatedMetrics["k8s.node.uptime"] = true
@@ -1097,47 +1055,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "k8s.pod.network.errors":
-<<<<<<< HEAD
-					assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
-					validatedMetrics["k8s.pod.network.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Pod network errors", mi.Description())
-					assert.Equal(t, "1", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					interfaceAttrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", interfaceAttrVal.Str())
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
-				case "k8s.pod.network.io":
-					assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
-					validatedMetrics["k8s.pod.network.io"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Pod network IO", mi.Description())
-					assert.Equal(t, "By", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					interfaceAttrVal, ok := dp.Attributes().Get("interface")
-					assert.True(t, ok)
-					assert.Equal(t, "interface-val", interfaceAttrVal.Str())
-					directionAttrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.Equal(t, "receive", directionAttrVal.Str())
-=======
 					if tt.name != "reaggregate_set" {
 						assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
 						validatedMetrics["k8s.pod.network.errors"] = true
@@ -1152,12 +1069,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
 						validatedMetrics["k8s.pod.network.errors"] = true
@@ -1201,12 +1118,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("interface")
+						interfaceAttrVal, ok := dp.Attributes().Get("interface")
 						assert.True(t, ok)
-						assert.Equal(t, "interface-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("direction")
+						assert.Equal(t, "interface-val", interfaceAttrVal.Str())
+						directionAttrVal, ok := dp.Attributes().Get("direction")
 						assert.True(t, ok)
-						assert.Equal(t, "receive", attrVal.Str())
+						assert.Equal(t, "receive", directionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
 						validatedMetrics["k8s.pod.network.io"] = true
@@ -1235,7 +1152,6 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("direction")
 						assert.False(t, ok)
 					}
->>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
 				case "k8s.pod.uptime":
 					assert.False(t, validatedMetrics["k8s.pod.uptime"], "Found a duplicate in the metrics slice: k8s.pod.uptime")
 					validatedMetrics["k8s.pod.uptime"] = true

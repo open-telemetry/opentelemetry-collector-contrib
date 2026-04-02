@@ -198,21 +198,10 @@ Node network errors
 
 #### Attributes
 
-<<<<<<< HEAD
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | interface | Name of the network interface. | Any Str | Recommended | - |
 | direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
-=======
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-<<<<<<< HEAD
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Required |
->>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
-=======
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
->>>>>>> 017e3c677b (receiver/kubeletstats: keep requirement_level recommended per review)
 
 ### k8s.node.network.io
 
@@ -224,21 +213,10 @@ Node network IO
 
 #### Attributes
 
-<<<<<<< HEAD
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | interface | Name of the network interface. | Any Str | Recommended | - |
 | direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
-=======
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-<<<<<<< HEAD
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Required |
->>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
-=======
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
->>>>>>> 017e3c677b (receiver/kubeletstats: keep requirement_level recommended per review)
 
 ### k8s.pod.cpu.time
 
@@ -338,21 +316,10 @@ Pod network errors
 
 #### Attributes
 
-<<<<<<< HEAD
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | interface | Name of the network interface. | Any Str | Recommended | - |
 | direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
-=======
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-<<<<<<< HEAD
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Required |
->>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
-=======
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
->>>>>>> 017e3c677b (receiver/kubeletstats: keep requirement_level recommended per review)
 
 ### k8s.pod.network.io
 
@@ -364,21 +331,10 @@ Pod network IO
 
 #### Attributes
 
-<<<<<<< HEAD
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | interface | Name of the network interface. | Any Str | Recommended | - |
 | direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
-=======
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-<<<<<<< HEAD
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Required |
->>>>>>> 1b3dbf5fb6 (chore(receiver/kubeletstats): regenerate metadata outputs after schema update)
-=======
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
->>>>>>> 017e3c677b (receiver/kubeletstats: keep requirement_level recommended per review)
 
 ### k8s.volume.available
 
