@@ -102,12 +102,12 @@ func (p *invokeProtocol) Failure(w http.ResponseWriter, err error, body []byte) 
 // The same flow is used for every trigger; no trigger-specific logic here.
 func createHandler(p profile) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			p.protocol.Failure(w, fmt.Errorf("read body: %w", err), nil)
 			return
 		}
-		defer r.Body.Close()
 
 		parsed, err := p.protocol.ParseRequest(p.method, body)
 		if err != nil {
