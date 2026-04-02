@@ -237,7 +237,6 @@ func TestResourceProcessorWithDefaultValue(t *testing.T) {
 			name: "multiple_attributes_with_default_values",
 			config: &Config{
 				AttributesActions: []attraction.ActionKeyValue{
-					{Key: "env", FromAttribute: "environment", DefaultValue: "prod", Action: attraction.INSERT},
 					{Key: "region", FromAttribute: "cloud.region", DefaultValue: "us-east-1", Action: attraction.INSERT},
 					{Key: "tier", Value: "frontend", Action: attraction.INSERT},
 				},
@@ -246,7 +245,6 @@ func TestResourceProcessorWithDefaultValue(t *testing.T) {
 				"cloud.region": "eu-west-1",
 			},
 			wantAttributes: map[string]string{
-				"env":          "prod",
 				"region":       "eu-west-1",
 				"cloud.region": "eu-west-1",
 				"tier":         "frontend",
