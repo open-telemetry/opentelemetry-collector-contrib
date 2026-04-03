@@ -17,6 +17,7 @@ awss3/3:
     s3_partition_timezone: "Asia/Tokyo"
     file_prefix: "otel"
     file_prefix_include_telemetry_type: false
+    tag_object_after_ingestion: false
   starttime: "2024-01-31 15:00"
   endtime: "2024-02-03"
   encodings:
@@ -29,6 +30,7 @@ awss3/3:
 awss3/4:
   s3downloader:
     s3_bucket: abucket
+    tag_object_after_ingestion: true
   starttime: "2024-01-31T15:00:00Z"
   endtime: "2024-02-03T00:00:00Z"
 awss3/5:
