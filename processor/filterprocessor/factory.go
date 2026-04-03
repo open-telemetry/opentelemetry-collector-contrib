@@ -259,6 +259,8 @@ func (f *filterProcessorFactory) createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
+	warnIfDeprecatedMetricConfig(set.Logger, cfg.(*Config))
+
 	if f.defaultResourceFunctionsOverridden || f.defaultDataPointFunctionsOverridden || f.defaultMetricFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL metric functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
@@ -285,6 +287,8 @@ func (f *filterProcessorFactory) createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
+	warnIfDeprecatedLogConfig(set.Logger, cfg.(*Config))
+
 	if f.defaultResourceFunctionsOverridden || f.defaultLogFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL log functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
@@ -310,6 +314,8 @@ func (f *filterProcessorFactory) createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
+	warnIfDeprecatedTraceConfig(set.Logger, cfg.(*Config))
+
 	if f.defaultResourceFunctionsOverridden || f.defaultSpanEventFunctionsOverridden || f.defaultSpanFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL trace functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
@@ -336,6 +342,8 @@ func (f *filterProcessorFactory) createProfilesProcessor(
 	cfg component.Config,
 	nextConsumer xconsumer.Profiles,
 ) (xprocessor.Profiles, error) {
+	warnIfDeprecatedProfileConfig(set.Logger, cfg.(*Config))
+
 	if f.defaultResourceFunctionsOverridden || f.defaultProfileFunctionsOverridden {
 		set.Logger.Debug("non-default OTTL profile functions have been registered in the \"filter\" processor",
 			zap.Bool("resource", f.defaultResourceFunctionsOverridden),
@@ -364,5 +372,42 @@ func fromNonPointerFunction[K any](legacy func(fCtx ottl.FunctionContext, args o
 		return func(ctx context.Context, tCtx *K) (any, error) {
 			return legacyExpr(ctx, *tCtx)
 		}, nil
+	}
+}
+
+func warnIfDeprecatedTraceConfig(logger *zap.Logger, cfg *Config) {
+	if cfg.Spans.Include != nil || cfg.Spans.Exclude != nil ||
+		len(cfg.Traces.ResourceConditions) > 0 ||
+		len(cfg.Traces.SpanConditions) > 0 ||
+		len(cfg.Traces.SpanEventConditions) > 0 {
+		logger.Warn(`Deprecated trace config fields are set in the "filter" processor. ` +
+			`Please migrate to "trace_conditions" instead of "spans", "traces.resource", "traces.span", or "traces.spanevent".`)
+	}
+}
+
+func warnIfDeprecatedMetricConfig(logger *zap.Logger, cfg *Config) {
+	if cfg.Metrics.Include != nil || cfg.Metrics.Exclude != nil ||
+		len(cfg.Metrics.ResourceConditions) > 0 ||
+		len(cfg.Metrics.MetricConditions) > 0 ||
+		len(cfg.Metrics.DataPointConditions) > 0 {
+		logger.Warn(`Deprecated metric config fields are set in the "filter" processor. ` +
+			`Please migrate to "metric_conditions" instead of "metrics.include", "metrics.exclude", "metrics.resource", "metrics.metric", or "metrics.datapoint".`)
+	}
+}
+
+func warnIfDeprecatedLogConfig(logger *zap.Logger, cfg *Config) {
+	if cfg.Logs.Include != nil || cfg.Logs.Exclude != nil ||
+		len(cfg.Logs.ResourceConditions) > 0 ||
+		len(cfg.Logs.LogConditions) > 0 {
+		logger.Warn(`Deprecated log config fields are set in the "filter" processor. ` +
+			`Please migrate to "log_conditions" instead of "logs.include", "logs.exclude", "logs.resource", or "logs.log_record".`)
+	}
+}
+
+func warnIfDeprecatedProfileConfig(logger *zap.Logger, cfg *Config) {
+	if len(cfg.Profiles.ResourceConditions) > 0 ||
+		len(cfg.Profiles.ProfileConditions) > 0 {
+		logger.Warn(`Deprecated profile config fields are set in the "filter" processor. ` +
+			`Please migrate to "profile_conditions" instead of "profiles.resource" or "profiles.profile".`)
 	}
 }
