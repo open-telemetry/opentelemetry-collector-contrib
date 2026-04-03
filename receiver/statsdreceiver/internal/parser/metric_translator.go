@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/lightstep/go-expohisto/structure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"gonum.org/v1/gonum/stat"

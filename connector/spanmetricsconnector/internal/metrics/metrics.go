@@ -6,7 +6,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"sort"
 
-	"github.com/lightstep/go-expohisto/structure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -224,7 +224,7 @@ func (m *exponentialHistogramMetrics) BuildMetrics(
 	}
 }
 
-// expoHistToExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to
+// expoHistToExponentialDataPoint copies `pkg/expohisto` structure.Histogram to
 // pmetric.ExponentialHistogramDataPoint
 func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetric.ExponentialHistogramDataPoint) {
 	dp.SetCount(agg.Count())

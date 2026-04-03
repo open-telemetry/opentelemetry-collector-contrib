@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/lightstep/go-expohisto/structure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"
 

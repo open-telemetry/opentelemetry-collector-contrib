@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lightstep/go-expohisto/structure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -276,7 +276,7 @@ func (w *worker) flushBuffer(exporter sdkmetric.Exporter) {
 	w.metricBuffer = w.metricBuffer[:0]
 }
 
-// expoHistToSDKExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to
+// expoHistToSDKExponentialDataPoint copies `pkg/expohisto` structure.Histogram to
 // metricdata.ExponentialHistogramDataPoint
 func expoHistToSDKExponentialDataPoint(agg *structure.Histogram[float64], dp *metricdata.ExponentialHistogramDataPoint[int64]) {
 	dp.Count = agg.Count()

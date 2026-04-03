@@ -6,9 +6,9 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.149.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.149.0
 	github.com/stretchr/testify v1.11.1
@@ -80,3 +80,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto => ../../pkg/expohisto

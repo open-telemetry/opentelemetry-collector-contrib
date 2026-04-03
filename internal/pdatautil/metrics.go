@@ -4,11 +4,11 @@
 package pdatautil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 
 import (
-	"github.com/lightstep/go-expohisto/structure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// ExpoHistToExponentialDataPoint copies `lightstep/go-expohisto` structure.Histogram to
+// ExpoHistToExponentialDataPoint copies `pkg/expohisto` structure.Histogram to
 // pmetric.ExponentialHistogramDataPoint
 func ExpoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetric.ExponentialHistogramDataPoint) {
 	dp.SetCount(agg.Count())

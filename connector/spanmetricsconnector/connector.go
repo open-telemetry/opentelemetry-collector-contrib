@@ -12,7 +12,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/jonboulle/clockwork"
-	"github.com/lightstep/go-expohisto/structure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/structure"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"

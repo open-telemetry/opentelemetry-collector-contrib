@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lightstep/go-expohisto/mapping/logarithm"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto/mapping/logarithm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

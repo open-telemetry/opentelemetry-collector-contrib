@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetryge
 go 1.25.0
 
 require (
-	github.com/lightstep/go-expohisto v1.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto v0.149.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
@@ -64,3 +64,5 @@ retract (
 
 // IMPORTANT NOTE: Do not add replace statements to this go.mod. This will break go install.
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27855.
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto => ../../pkg/expohisto

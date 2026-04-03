@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsd
 go 1.25.0
 
 require (
-	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.149.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto v0.149.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.55.1-0.20260402195938-76ede073ee8e
 	go.opentelemetry.io/collector/component v1.55.1-0.20260402195938-76ede073ee8e
@@ -81,3 +81,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto => ../../pkg/expohisto
