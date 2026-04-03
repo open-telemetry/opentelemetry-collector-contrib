@@ -904,7 +904,7 @@ func TestStatsV2_EndToEnd(t *testing.T) {
 		metric := metrics.At(0)
 		assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 		assert.Equal(t, "dd.internal.stats.payload", metric.Name())
-assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
+		assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Sum().AggregationTemporality())
 		assert.Equal(t, 1, metric.Sum().DataPoints().Len())
 
 		if payload, ok := metric.Sum().DataPoints().At(0).Attributes().Get("dd.internal.stats.payload"); ok {
