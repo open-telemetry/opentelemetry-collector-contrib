@@ -295,7 +295,7 @@ govulncheck:
 	@set -e; \
 	$(GOVULNCHECK) -format json ./... > govulncheck-output.json; \
 	FOUND="$$( $(GOJQ) -r 'select(.finding!=null)|.finding.osv' govulncheck-output.json | sort -u )"; \
-	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && exit 0; \
+	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && rm -f govulncheck-output.json && exit 0; \
 	echo "Found: $$FOUND"; \
 	\
 	UNIGNORED=""; \
@@ -303,13 +303,14 @@ govulncheck:
 		echo "$(IGNORED_VULNS)" | grep -qw "$$id" || UNIGNORED="$$UNIGNORED $$id"; \
 	done; \
 	UNIGNORED="$$(echo $$UNIGNORED | xargs)"; \
-	[ -z "$$UNIGNORED" ] && echo "All vulnerabilities ignored" && exit 0; \
+	[ -z "$$UNIGNORED" ] && echo "All vulnerabilities ignored" && rm -f govulncheck-output.json && exit 0; \
 	\
 	echo "Vulnerabilities need attention: $$UNIGNORED"; \
 	echo ""; \
 	echo "Vulnerability Summary:"; \
 	echo "ID    SUMMARY"; \
 	$(GOJQ) -r 'select(.finding!=null)|[.finding.osv,.finding.summary]|@tsv' govulncheck-output.json; \
+	rm -f govulncheck-output.json; \
 	exit 1
 
 .PHONY: modernize
