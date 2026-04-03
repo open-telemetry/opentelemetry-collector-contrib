@@ -71,3 +71,31 @@ func TestFloat64Val(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkFloat64Val(b *testing.B) {
+	benchmarks := []struct {
+		name  string
+		input float64
+	}{
+		{name: "integer", input: 42},
+		{name: "integer with exponent", input: 1e+20},
+		{name: "decimal", input: 3.14},
+		{name: "decimal with exponent", input: 3.14e+20},
+	}
+
+	for _, bb := range benchmarks {
+		b.Run(bb.name, func(b *testing.B) {
+			var buf bytes.Buffer
+			buf.Grow(64)
+			w := newJSONWriter(&buf)
+
+			b.ReportAllocs()
+			b.ResetTimer()
+
+			for b.Loop() {
+				buf.Reset()
+				w.float64Val(bb.input)
+			}
+		})
+	}
+}
