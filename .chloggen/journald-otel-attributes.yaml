@@ -19,11 +19,11 @@ subtext: |
     `_EXE` → `process.executable.path`, `_CMDLINE` → `process.command_line`,
     `_HOSTNAME` → `host.name`
   - Code, thread, and syslog fields become log attributes:
-    `CODE_FILE` → `code.filepath`, `CODE_FUNC` → `code.function`,
-    `CODE_LINE` → `code.lineno`, `TID` → `thread.id`,
-    `SYSLOG_FACILITY` → `syslog.facility`,
-    `SYSLOG_IDENTIFIER` → `syslog.identifier`,
-    `SYSLOG_PID` → `syslog.pid`, `ERRNO` → `system.errno`
+    `CODE_FILE` → `code.file.path`, `CODE_FUNC` → `code.function.name`,
+    `CODE_LINE` → `code.line.number`, `TID` → `thread.id`,
+    `SYSLOG_FACILITY` → `syslog.facility.code`,
+    `SYSLOG_IDENTIFIER` → `syslog.msg.id`,
+    `SYSLOG_PID` → `syslog.pid`
   - All remaining journald fields are kept as log attributes with their original names.
 
   The default is `false` to preserve backward compatibility.
