@@ -6,7 +6,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsentry%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsentry) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsentry%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsentry) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_sentry)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_sentry&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@AbhiPrasad](https://www.github.com/AbhiPrasad) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@AbhiPrasad](https://www.github.com/AbhiPrasad), [@giortzisg](https://www.github.com/giortzisg) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -30,6 +30,8 @@ Supported options:
 - `url`: Base URL for the Sentry organization (required).
 - `org_slug`: Target organization slug (required).
 - `auth_token`: Authentication token with access to Sentry APIs (required).
+  - basic functionality requires both `project:read` and `org:read` or higher
+  - `auto_create_projects` requires `project:write` or higher. If your organization has disabled member project creation, the `org:write` or `team:admin` scope is required.
 - `auto_create_projects` (default: `false`): Create missing projects using the first team found in the org.
 - `routing`: Controls how telemetry is mapped to projects.
   - `project_from_attribute`: Resource attribute to use (default: `service.name`).

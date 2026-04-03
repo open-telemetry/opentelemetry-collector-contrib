@@ -1,3 +1,4 @@
+namespace: github.com/open-telemetry/opentelemetry-collector-contrib
 mappings:
   time:
     Time:
@@ -24,9 +25,9 @@ allowedRefs:
   - go.opentelemetry.io/collector
   - github.com/open-telemetry/opentelemetry-collector-contrib
 componentOverrides:
-  receiver/namedpipe:
+  receiver/named_pipe:
     configName: 'NamedPipeConfig'
-  receiver/filelog:
+  receiver/file_log:
     configName: 'FileLogConfig'
   receiver/journald:
     configName: 'JournaldConfig'

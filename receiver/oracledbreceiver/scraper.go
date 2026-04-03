@@ -93,11 +93,13 @@ const (
 	queryDiskReadsMetric        = "DISK_READS"
 	queryDirectReadsMetric      = "DIRECT_READS"
 	queryDirectWritesMetric     = "DIRECT_WRITES"
+	procedureExecutionsMetric   = "PROCEDURE_EXECUTIONS"
 
 	// Stored procedure columns
-	objectIDAttr   = "PROGRAM_ID"
-	objectNameAttr = "PROCEDURE_NAME"
-	objectTypeAttr = "PROCEDURE_TYPE"
+	objectIDAttr    = "PROGRAM_ID"
+	objectNameAttr  = "PROCEDURE_NAME"
+	objectTypeAttr  = "PROCEDURE_TYPE"
+	commandTypeAttr = "COMMAND_TYPE"
 )
 
 var (
@@ -532,6 +534,7 @@ type queryMetricCacheHit struct {
 	objectID     int64
 	objectName   string
 	objectType   string
+	commandType  int64
 }
 
 func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
@@ -600,6 +603,11 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectID, _ = strconv.ParseInt(row[objectIDAttr], 10, 64)
 			}
 
+			var commandType int64
+			if row[commandTypeAttr] != "" {
+				commandType, _ = strconv.ParseInt(row[commandTypeAttr], 10, 64)
+			}
+
 			hit := queryMetricCacheHit{
 				sqlID:        row[sqlIDAttr],
 				queryText:    row[sqlTextAttr],
@@ -609,10 +617,10 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				objectID:     objectID,
 				objectName:   row[objectNameAttr],
 				objectType:   row[objectTypeAttr],
+				commandType:  commandType,
 			}
 
-			// it is possible we get a record with all deltas equal to zero. we don't want to process it any further
-			var possiblePurge, positiveDelta bool
+			var possiblePurge bool
 			for _, columnName := range metricNames {
 				delta := newCacheVal[columnName] - oldCacheVal[columnName]
 
@@ -620,15 +628,13 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 				if delta < 0 {
 					possiblePurge = true
 					break
-				} else if delta > 0 {
-					positiveDelta = true
 				}
 
 				hit.metrics[columnName] = delta
 			}
 
-			// skip if possible purge or all the deltas are equal to zero
-			if !possiblePurge && positiveDelta {
+			// skip if possible purge or no new executions since last scrape
+			if !possiblePurge && hit.metrics[queryExecutionMetric] > 0 {
 				hits = append(hits, hit)
 			} else {
 				discardedHits++
@@ -679,6 +685,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			asFloatInSeconds(hit.metrics[applicationWaitTimeMetric]),
 			hit.metrics[bufferGetsMetric],
 			asFloatInSeconds(hit.metrics[clusterWaitTimeMetric]),
+			hit.commandType,
 			asFloatInSeconds(hit.metrics[concurrencyWaitTimeMetric]),
 			asFloatInSeconds(hit.metrics[cpuTimeMetric]),
 			hit.metrics[queryDirectReadsMetric],
@@ -692,6 +699,7 @@ func (s *oracleScraper) collectTopNMetricData(ctx context.Context, logs plog.Log
 			hit.metrics[physicalWriteRequestsMetric],
 			hit.metrics[rowsProcessedMetric],
 			asFloatInSeconds(hit.metrics[userIoWaitTimeMetric]),
+			hit.metrics[procedureExecutionsMetric],
 			hit.objectID,
 			hit.objectName,
 			hit.objectType)
@@ -801,7 +809,7 @@ func (s *oracleScraper) obfuscateCacheHits(hits []queryMetricCacheHit) []queryMe
 		// obfuscate and normalize the query text
 		obfuscatedSQL, err := s.obfuscator.obfuscateSQLString(hit.queryText)
 		if err != nil {
-			s.logger.Error("oracleScraper failed getting metric rows", zap.Error(err))
+			s.logger.Warn("oracleScraper failed to obfuscate SQL query, skipping entry", zap.String("sql_id", hit.sqlID), zap.Error(err))
 		} else {
 			hit.queryText = obfuscatedSQL
 			obfuscatedHits = append(obfuscatedHits, hit)
@@ -850,7 +858,7 @@ func (*oracleScraper) getTopNMetricNames() []string {
 		elapsedTimeMetric, queryExecutionMetric, cpuTimeMetric, applicationWaitTimeMetric,
 		concurrencyWaitTimeMetric, userIoWaitTimeMetric, clusterWaitTimeMetric, rowsProcessedMetric, bufferGetsMetric,
 		physicalReadRequestsMetric, physicalWriteRequestsMetric, physicalReadBytesMetric, physicalWriteBytesMetric,
-		queryDirectReadsMetric, queryDirectWritesMetric, queryDiskReadsMetric,
+		queryDirectReadsMetric, queryDirectWritesMetric, queryDiskReadsMetric, procedureExecutionsMetric,
 	}
 }
 
@@ -912,11 +920,11 @@ func (s *oracleScraper) calculateLookbackSeconds() int {
 		return int(s.topQueryCollectCfg.CollectionInterval.Seconds())
 	}
 
-	// vsqlRefreshLagSec is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
+	// vsqlRefreshLag is the buffer to account for v$sql maximum refresh latency (5 seconds) + 5 seconds to offset any collection delays.
 	// PS: https://docs.oracle.com/en/database/oracle/oracle-database/21/refrn/V-SQL.html
-	const vsqlRefreshLagSec = 10 * time.Second
+	const vsqlRefreshLag = 10 * time.Second
 
 	return int(math.Ceil(time.Now().
-		Add(vsqlRefreshLagSec).
+		Add(vsqlRefreshLag).
 		Sub(s.lastExecutionTimestamp).Seconds()))
 }

@@ -86,9 +86,9 @@ func TestE2EClusterScoped(t *testing.T) {
 	time.Sleep(calculateCronJobExecution())
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
+	waitForData(t, wantEntries, metricsConsumer)
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileClusterScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
-	waitForData(t, wantEntries, metricsConsumer)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
@@ -107,7 +107,9 @@ func TestE2EClusterScoped(t *testing.T) {
 				"k8s.job.failed_pods",
 				"k8s.job.max_parallel_pods",
 				"k8s.hpa.current_replicas",
-				"k8s.job.successful_pods"),
+				"k8s.job.successful_pods",
+				"k8s.service.endpoint.count",
+				"k8s.service.load_balancer.ingress.count"),
 			pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
 			pmetrictest.ChangeResourceAttributeValue("container.image.tag", replaceWithStar),
@@ -124,6 +126,8 @@ func TestE2EClusterScoped(t *testing.T) {
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.uid", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.service.name", shortenNames),
+			pmetrictest.ChangeResourceAttributeValue("k8s.service.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.statefulset.uid", replaceWithStar),
 			pmetrictest.IgnoreScopeVersion(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
@@ -177,9 +181,9 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	time.Sleep(calculateCronJobExecution())
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
+	waitForData(t, wantEntries, metricsConsumer)
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
-	waitForData(t, wantEntries, metricsConsumer)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
@@ -198,7 +202,9 @@ func TestE2ENamespaceScoped(t *testing.T) {
 				"k8s.job.failed_pods",
 				"k8s.job.max_parallel_pods",
 				"k8s.hpa.current_replicas",
-				"k8s.job.successful_pods"),
+				"k8s.job.successful_pods",
+				"k8s.service.endpoint.count",
+				"k8s.service.load_balancer.ingress.count"),
 			pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
 			pmetrictest.ChangeResourceAttributeValue("container.image.tag", replaceWithStar),
@@ -215,6 +221,8 @@ func TestE2ENamespaceScoped(t *testing.T) {
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.uid", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.service.name", shortenNames),
+			pmetrictest.ChangeResourceAttributeValue("k8s.service.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.statefulset.uid", replaceWithStar),
 			pmetrictest.IgnoreScopeVersion(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
@@ -268,9 +276,9 @@ func TestE2ENamespaceScopedMultipleNamespaces(t *testing.T) {
 	time.Sleep(calculateCronJobExecution())
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
+	waitForData(t, wantEntries, metricsConsumer)
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScopedMultipleNamespaces, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
-	waitForData(t, wantEntries, metricsConsumer)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],

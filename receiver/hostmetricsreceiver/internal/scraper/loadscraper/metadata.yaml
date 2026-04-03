@@ -8,6 +8,8 @@ status:
   codeowners:
     active: [dmitryax, braydonk]
 
+reaggregation_enabled: true
+
 sem_conv_version: 1.9.0
 
 metrics:
@@ -15,8 +17,7 @@ metrics:
     enabled: true
     description: Average CPU Load over 15 minutes.
     unit: "{thread}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
 
@@ -24,8 +25,7 @@ metrics:
     enabled: true
     description: Average CPU Load over 1 minute.
     unit: "{thread}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double
 
@@ -33,7 +33,6 @@ metrics:
     enabled: true
     description: Average CPU Load over 5 minutes.
     unit: "{thread}"
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: double

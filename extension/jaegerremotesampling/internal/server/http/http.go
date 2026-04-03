@@ -67,14 +67,11 @@ func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) err
 		return err
 	}
 
-	h.shutdownWG.Add(1)
-	go func() {
-		defer h.shutdownWG.Done()
-
+	h.shutdownWG.Go(func() {
 		if err := h.srv.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-	}()
+	})
 
 	return nil
 }

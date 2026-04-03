@@ -1,3 +1,4 @@
+display_name: MySQL Receiver
 type: mysql
 
 status:
@@ -11,6 +12,8 @@ status:
     seeking_new: true
     emeritus: [djaglowski]
 
+reaggregation_enabled: true
+
 resource_attributes:
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
@@ -23,21 +26,25 @@ attributes:
     description: The status of buffer pool data.
     type: string
     enum: [dirty, clean]
+    requirement_level: recommended
   buffer_pool_operations:
     name_override: operation
     description: The buffer pool operations types.
     type: string
     enum: [read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests]
+    requirement_level: recommended
   buffer_pool_pages:
     name_override: kind
     description: The buffer pool pages types.
     type: string
     enum: [data, free, misc, total]
+    requirement_level: recommended
   cache_status:
     name_override: status
     description: The status of cache access.
     type: string
     enum: [hit, miss, overflow]
+    requirement_level: recommended
   client.address:
     description: Hostname or address of the client.
     type: string
@@ -48,16 +55,19 @@ attributes:
     description: The command types.
     type: string
     enum: [delete, delete_multi, insert, select, update, update_multi]
+    requirement_level: recommended
   connection_error:
     name_override: error
     description: The connection error type.
     type: string
     enum: [accept, internal, max_connections, peer_address, select, tcpwrap, aborted, aborted_clients, locked]
+    requirement_level: recommended
   connection_status:
     name_override: status
     description: The connection status.
     type: string
     enum: [accepted, closed, rejected]
+    requirement_level: recommended
   db.namespace:
     description: The default database for the thread, or empty if none has been selected (originally processlist_db).
     type: string
@@ -71,53 +81,64 @@ attributes:
   digest:
     description: Digest.
     type: string
+    requirement_level: recommended
   digest_text:
     description: Text before digestion.
     type: string
+    requirement_level: recommended
   direction:
     name_override: kind
     description: The name of the transmission direction.
     type: string
     enum: [received, sent]
+    requirement_level: recommended
   double_writes:
     name_override: kind
     description: The doublewrite types.
     type: string
     enum: [pages_written, writes]
+    requirement_level: recommended
   event_state:
     name_override: kind
     description: Possible event states.
     type: string
     enum: [errors, warnings, rows_affected, rows_sent, rows_examined, created_tmp_disk_tables, created_tmp_tables, sort_merge_passes, sort_rows, no_index_used]
+    requirement_level: recommended
   handler:
     name_override: kind
     description: The handler types.
     type: string
     enum: [commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write]
+    requirement_level: recommended
   index_name:
     name_override: index
     type: string
     description: The name of the index.
+    requirement_level: recommended
   io_waits_operations:
     name_override: operation
     description: The io_waits operation type.
     type: string
     enum: [delete, fetch, insert, update]
+    requirement_level: recommended
   join_kind:
     name_override: kind
     description: The kind of join.
     type: string
     enum: [full, full_range, range, range_check, scan]
+    requirement_level: recommended
   locks:
     name_override: kind
     description: The table locks type.
     type: string
     enum: [immediate, waited]
+    requirement_level: recommended
   log_operations:
     name_override: operation
     description: The log operation types. 'fsyncs' aren't available in MariaDB 10.8 or later.
     type: string
     enum: [waits, write_requests, writes, fsyncs]
+    requirement_level: recommended
   mysql.event_id:
     description: The thread associated with the event and the thread current event number when the event starts.
     type: int
@@ -140,6 +161,15 @@ attributes:
   mysql.query_plan:
     description: The query plan for the statement, if available.
     type: string
+  mysql.query_plan.hash:
+    description: This attribute is set to the same value as mysql.events_statements_summary_by_digest.digest (query digest) by design.
+    type: string
+  mysql.session.id:
+    description: The unique identifier for the session associated with the event.
+    type: int
+  mysql.session.status:
+    description: Simplified session status, either 'waiting', 'running' or 'other'.
+    type: string
   mysql.threads.processlist_command:
     description: The type of command the thread is executing on behalf of the client for foreground threads, or `Sleep` if the session is idle.
     type: string
@@ -157,6 +187,7 @@ attributes:
     description: The worker thread count kind.
     type: string
     enum: [available, active]
+    requirement_level: recommended
   network.peer.address:
     description: IP address of the peer client.
     type: string
@@ -168,63 +199,76 @@ attributes:
     description: The kind of the resource.
     type: string
     enum: [file, table_definition, table]
+    requirement_level: recommended
   operations:
     name_override: operation
     description: The operation types.
     type: string
     enum: [fsyncs, reads, writes]
+    requirement_level: recommended
   page_operations:
     name_override: operation
     description: The page operation types.
     type: string
     enum: [created, read, written]
+    requirement_level: recommended
   prepared_statements_command:
     name_override: command
     description: The prepare statement command types.
     type: string
     enum: [execute, close, fetch, prepare, reset, send_long_data]
+    requirement_level: recommended
   read_lock_type:
     name_override: kind
     description: Read operation types.
     type: string
     enum: [normal, with_shared_locks, high_priority, no_insert, external]
+    requirement_level: recommended
   row_locks:
     name_override: kind
     description: The row lock type.
     type: string
     enum: [waits, time]
+    requirement_level: recommended
   row_operations:
     name_override: operation
     description: The row operation type.
     type: string
     enum: [deleted, inserted, read, updated]
+    requirement_level: recommended
   schema:
     description: The schema of the object.
     type: string
+    requirement_level: recommended
   sorts:
     name_override: kind
     description: The sort count type.
     type: string
     enum: [merge_passes, range, rows, scan]
+    requirement_level: recommended
   table_name:
     name_override: table
     type: string
     description: Table name for event or process.
+    requirement_level: recommended
   table_size_type:
     name_override: kind
     description: The table size types.
     type: string
     enum: [data, index]
+    requirement_level: recommended
   threads:
     name_override: kind
     description: The thread count type.
     type: string
     enum: [cached, connected, created, running]
+    requirement_level: recommended
   tmp_resource:
     name_override: resource
     description: The kind of temporary resources.
     type: string
     enum: [disk_tables, files, tables]
+    requirement_level: recommended
   user.name:
     description: The user associated with a foreground thread, empty for a background thread (originally processlist_user).
     type: string
@@ -233,9 +277,10 @@ attributes:
     description: Write operation types.
     type: string
     enum: [allow_write, concurrent_insert, low_priority, normal, external]
+    requirement_level: recommended
 events:
   db.server.query_sample:
-    enabled: true
+    enabled: false
     description: |
       Query sample collection enables monitoring of current running database statements.
       This provides real-time visibility into active queries, helping users monitor database activity and performance as part of their observability pipeline.
@@ -248,8 +293,11 @@ events:
       - mysql.threads.processlist_state
       - db.query.text
       - mysql.events_statements_current.digest
+      - mysql.query_plan.hash
       - mysql.event_id
       - mysql.wait_type
+      - mysql.session.status
+      - mysql.session.id
       - mysql.events_waits_current.timer_wait
       - client.address
       - client.port
@@ -265,6 +313,7 @@ events:
       - db.system.name
       - db.query.text
       - mysql.query_plan
+      - mysql.query_plan.hash
       - mysql.events_statements_summary_by_digest.digest
       - mysql.events_statements_summary_by_digest.count_star
       - mysql.events_statements_summary_by_digest.sum_timer_wait
@@ -273,8 +322,7 @@ metrics:
   mysql.buffer_pool.data_pages:
     enabled: true
     description: The number of data pages in the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -284,8 +332,7 @@ metrics:
   mysql.buffer_pool.limit:
     enabled: true
     description: The configured size of the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -295,8 +342,7 @@ metrics:
   mysql.buffer_pool.operations:
     enabled: true
     description: The number of operations on the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -307,8 +353,7 @@ metrics:
   mysql.buffer_pool.page_flushes:
     enabled: true
     description: The number of requests to flush pages from the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -318,8 +363,7 @@ metrics:
   mysql.buffer_pool.pages:
     enabled: true
     description: The number of pages in the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -330,8 +374,7 @@ metrics:
   mysql.buffer_pool.usage:
     enabled: true
     description: The number of bytes in the InnoDB buffer pool.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -341,8 +384,7 @@ metrics:
   mysql.client.network.io:
     enabled: false
     description: The number of transmitted bytes between server and clients.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -353,8 +395,7 @@ metrics:
   mysql.commands:
     enabled: false
     description: The number of times each type of command has been executed.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -365,8 +406,7 @@ metrics:
   mysql.connection.count:
     enabled: false
     description: The number of connection attempts (successful or not) to the MySQL server.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -376,8 +416,7 @@ metrics:
   mysql.connection.errors:
     enabled: false
     description: Errors that occur during the client connection process.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -388,8 +427,7 @@ metrics:
   mysql.double_writes:
     enabled: true
     description: The number of writes to the InnoDB doublewrite buffer.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -400,8 +438,7 @@ metrics:
   mysql.handlers:
     enabled: true
     description: The number of requests to various MySQL handlers.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -412,8 +449,7 @@ metrics:
   mysql.index.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for an index.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -423,8 +459,7 @@ metrics:
   mysql.index.io.wait.time:
     enabled: true
     description: The total time of I/O wait events for an index.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -434,8 +469,7 @@ metrics:
   mysql.joins:
     enabled: false
     description: The number of joins that perform table scans.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -446,8 +480,7 @@ metrics:
   mysql.locks:
     enabled: true
     description: The number of MySQL locks.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -458,8 +491,7 @@ metrics:
   mysql.log_operations:
     enabled: true
     description: The number of InnoDB log operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -470,8 +502,7 @@ metrics:
   mysql.max_used_connections:
     enabled: false
     description: Maximum number of connections used simultaneously since the server started.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -482,8 +513,7 @@ metrics:
     enabled: true
     description: The number of mysqlx connections.
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -496,8 +526,7 @@ metrics:
     description: The number of worker threads available.
     unit: "1"
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       input_type: string
@@ -507,8 +536,7 @@ metrics:
   mysql.opened_resources:
     enabled: true
     description: The number of opened resources.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -519,8 +547,7 @@ metrics:
   mysql.operations:
     enabled: true
     description: The number of InnoDB operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -531,8 +558,7 @@ metrics:
   mysql.page_operations:
     enabled: true
     description: The number of InnoDB page operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -543,8 +569,7 @@ metrics:
   mysql.page_size:
     enabled: false
     description: InnoDB page size.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -555,8 +580,7 @@ metrics:
   mysql.prepared_statements:
     enabled: true
     description: The number of times each type of prepared statement command has been issued.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -567,8 +591,7 @@ metrics:
   mysql.query.client.count:
     enabled: false
     description: The number of statements executed by the server. This includes only statements sent to the server by clients.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -578,8 +601,7 @@ metrics:
   mysql.query.count:
     enabled: false
     description: The number of statements executed by the server.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -589,8 +611,7 @@ metrics:
   mysql.query.slow.count:
     enabled: false
     description: The number of slow queries.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -600,8 +621,7 @@ metrics:
   mysql.replica.sql_delay:
     enabled: false
     description: The number of seconds that the replica must lag the source.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -611,8 +631,7 @@ metrics:
   mysql.replica.time_behind_source:
     enabled: false
     description: This field is an indication of how “late” the replica is.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -622,8 +641,7 @@ metrics:
   mysql.row_locks:
     enabled: true
     description: The number of InnoDB row locks.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -634,8 +652,7 @@ metrics:
   mysql.row_operations:
     enabled: true
     description: The number of InnoDB row operations.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -646,8 +663,7 @@ metrics:
   mysql.sorts:
     enabled: true
     description: The number of MySQL sorts.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -658,8 +674,7 @@ metrics:
   mysql.statement_event.count:
     enabled: false
     description: Summary of current and recent statement events.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -669,8 +684,7 @@ metrics:
   mysql.statement_event.wait.time:
     enabled: false
     description: The total wait time of the summarized timed events.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -680,8 +694,7 @@ metrics:
   mysql.table.average_row_length:
     enabled: false
     description: The average row length in bytes for a given table.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -691,8 +704,7 @@ metrics:
   mysql.table.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for a table.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -702,8 +714,7 @@ metrics:
   mysql.table.io.wait.time:
     enabled: true
     description: The total time of I/O wait events for a table.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -713,8 +724,7 @@ metrics:
   mysql.table.lock_wait.read.count:
     enabled: false
     description: The total table lock wait read events.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -724,8 +734,7 @@ metrics:
   mysql.table.lock_wait.read.time:
     enabled: false
     description: The total table lock wait read events times.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -735,8 +744,7 @@ metrics:
   mysql.table.lock_wait.write.count:
     enabled: false
     description: The total table lock wait write events.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -746,8 +754,7 @@ metrics:
   mysql.table.lock_wait.write.time:
     enabled: false
     description: The total table lock wait write events times.
-    stability:
-      level: development
+    stability: development
     unit: ns
     sum:
       value_type: int
@@ -757,8 +764,7 @@ metrics:
   mysql.table.rows:
     enabled: false
     description: The number of rows for a given table.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -768,8 +774,7 @@ metrics:
   mysql.table.size:
     enabled: false
     description: The table size in bytes for a given table.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       value_type: int
@@ -779,8 +784,7 @@ metrics:
   mysql.table_open_cache:
     enabled: false
     description: The number of hits, misses or overflows for open tables cache lookups.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -791,8 +795,7 @@ metrics:
   mysql.threads:
     enabled: true
     description: The state of MySQL threads.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -803,8 +806,7 @@ metrics:
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.
-    stability:
-      level: development
+    stability: development
     unit: "1"
     sum:
       value_type: int
@@ -815,8 +817,7 @@ metrics:
   mysql.uptime:
     enabled: true
     description: The number of seconds that the server has been up.
-    stability:
-      level: development
+    stability: development
     unit: s
     sum:
       value_type: int
@@ -826,6 +827,8 @@ metrics:
 
 tests:
   config:
+    tls:
+      insecure: true
   goleak:
     ignore:
       any:

@@ -7,6 +7,124 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.149.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Change signature of `adapter.NewFactory` to accept `xreceiver.FactoryOption`s (#45339)
+  While the change is technically breaking, the existing calls to `adapter.NewFactory` will continue to work.
+
+### 💡 Enhancements 💡
+
+- `pkg/expohisto`: Move Go exponential histogram data structure into collector-contrib repository (#46646)
+- `receiver/docker_stats`: Add TLS configuration support for connecting to the Docker daemon over HTTPS with client and server certificates. (#33557)
+  A new optional `tls` configuration block is available in `docker_stats` receiver config (and the
+  shared `internal/docker` package). When omitted the connection remains insecure (plain HTTP or
+  Unix socket), preserving existing behavior. When provided it supports the standard
+  `configtls.ClientConfig` fields: `ca_file`, `cert_file`, `key_file`, `insecure_skip_verify`,
+  `min_version`, and `max_version`.
+  A warning is now emitted when a plain `tcp://` or `http://` endpoint is used without TLS,
+  reflecting Docker's deprecation of unauthenticated TCP connections since Docker v26.0
+  (see https://docs.docker.com/engine/deprecated/#unauthenticated-tcp-connections).
+  
+- `receiver/docker_stats`: Add "stream_stats" config option to maintain a persistent Docker stats stream per container instead of opening a new connection on every scrape cycle. (#46493)
+  When `stream_stats: true` is set, each container maintains a persistent open Docker stats
+  stream instead of opening and closing a new connection on every scrape cycle. The scraper
+  reads from the cached latest value, which reduces connection overhead.
+  
+- `receiver/sqlquery`: Add `row_condition` to metric configuration for filtering result rows by column value (#45862)
+  Enables extracting individual metrics from pivot-style result sets where each row
+  represents a different metric (e.g. pgbouncer's `SHOW LISTS` command). When
+  `row_condition` is configured on a metric, only rows where the specified column
+  equals the specified value are used; all other rows are silently skipped.
+  
+
+<!-- previous-version -->
+
+## v0.148.0
+
+### 💡 Enhancements 💡
+
+- `pkg/azurelogs`: Remove semconv v1.28.0 and v1.34.0 dependencies, migrating to v1.38.0 via paired feature gates (#45033, #45034)
+  Two new alpha feature gates control the migration:
+  `pkg.translator.azurelogs.EmitV1LogConventions` emits stable attribute names (`code.function.name`, `code.file.path`, `eventName` per log record).
+  `pkg.translator.azurelogs.DontEmitV0LogConventions` suppresses the old names (`code.function`, `code.filepath`, `event.name` on resource).
+  Both gates default to off; enable `EmitV1LogConventions` first for a dual-emit migration window.
+  
+- `pkg/datadog`: Expose feature gate to infer intervals for delta metrics. (#46851)
+- `pkg/xstreamencoding`: Add stream decoding adapters for unmarshaler interfaces (#46754)
+- `processor/tail_sampling`: Add hooks to call when a sampling decision is made for a trace. (#46161)
+- `receiver/github`: Enables dynamic metric reaggregation in the GitHub receiver. This does not break existing configuration files. (#46385)
+
+<!-- previous-version -->
+
+## v0.147.0
+
+### 💡 Enhancements 💡
+
+- `extension/oauth2client`: Expose a context-aware Token method from oauth2clientauth extension (#45917)
+  This change exposes a `Token(ctx context.Context) (*oauth2.Token, error)` method that
+  clients can use to obtain a Token. This may be used by components that are not HTTP-based,
+  such as the Kafka components for use with SASL/OAUTHBEARER.
+  
+- `pkg/pdatatest`: Add entity references comparison to CompareResource and IgnoreResourceEntityRefs option (#46345)
+- `pkg/xk8stest`: Display pod events and logs on collector startup timeout for easier diagnosis of e2e failures. (#46305)
+- `receiver/splunkenterprise`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
+## v0.146.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors" instead (#45006)
+- `pkg/stanza`: Package "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time" has been deprecated. Use "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/timeparser" instead (#45006)
+
+### 💡 Enhancements 💡
+
+- `processor/filter`: Introduces inferred context conditions for filtering (#37904)
+  Introduces three new top-level config fields [metric_conditions, log_conditions, trace_conditions].
+  A user can supply OTTL conditions for each without needing to supply context.
+  
+- `receiver/pprof`: Implement the functionality of transforming pprof to OTel Profiles (#45411)
+
+### 🧰 Bug fixes 🧰
+
+- `processor/sumologic`: Export config types to allow programmatic configuration via Go API (#45880)
+- `receiver/filestats`: Ensure that bsd build tags are respected by renaming filestats_darwin.go to filestats_bsd.go (#42645)
+
+<!-- previous-version -->
+
+## v0.145.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/translator/azure`: Updated OpenTelemetry semantic conversion to the latest version 1.38.0 in azure pkg. (#44801)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/ottl`: Use pointer when passing TransformContext around or calling into. (#44944)
+  Change Expr/Parser/Getter/Setter and all ottl related funcs to accept pointers to avoid unnecessary copy of a large
+  TransformContext(96B). Avoid allocating a new pcommon.Map every time a new context is created by using a Borrow/Return
+  pattern and reuse objects between calls. Deprecated funcs are:
+  - `ottlprofile.NewTransformContext` in favor of `ottlprofile.NewTransformContextPtr`;
+  - `ottlprofilesample.NewTransformContext` in favor of `ottlprofilesample.NewTransformContextPtr`;
+  - `filterprocessor.DefaultProfileFunctions` in favor of `filterprocessor.DefaultProfileFunctionsNew`
+  - `filterprocessor.WithProfileFunctions` in favor of `filterprocessor.WithProfileFunctionsNew`
+  - `transformprocessor.DefaultProfileFunctions` in favor of `transformprocessor.DefaultProfileFunctionsNew`
+  - `transformprocessor.WithProfileFunctions` in favor of `transformprocessor.WithProfileFunctionsNew`
+  
+
+### 💡 Enhancements 💡
+
+- `connector/routing`: Update existing util functions to reduce allocs. (#45061)
+- `connector/routing`: Add new util functions to copy data in routing connector. (#45061)
+- `receiver/snowflake`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+- `receiver/windowsservice`: Enables dynamic metric reaggregation in the Splunk Enterprise receiver. This does not break existing configuration files. (#45396)
+
+<!-- previous-version -->
+
 ## v0.144.0
 
 ### 🛑 Breaking changes 🛑

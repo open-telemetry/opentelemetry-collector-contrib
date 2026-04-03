@@ -6,10 +6,15 @@ package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"strings"
 
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventionsv134 "go.opentelemetry.io/otel/semconv/v1.34.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs/internal/metadata"
 )
+
+// az.service_request_id was removed from semconv in v1.36.0 without a replacement
+// ("removed due to lack of applicability or use"). Keeping as a custom attribute
+// for backward compatibility. TODO: revisit if semconv adds an equivalent.
+const azServiceRequestIDKey = "az.service_request_id"
 
 // TODO @constanca-m remove this file once the logic for the remaining categories
 // is added to category_logs.go
@@ -17,7 +22,7 @@ import (
 func handleFrontDoorAccessLog(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "trackingReference":
-		attrs[string(conventionsv134.AzServiceRequestIDKey)] = value
+		attrs[azServiceRequestIDKey] = value
 	case "httpMethod":
 		attrs[string(conventions.HTTPRequestMethodKey)] = value
 	case "httpVersion":
@@ -33,10 +38,10 @@ func handleFrontDoorAccessLog(field string, value any, attrs, attrsProps map[str
 	case "userAgent":
 		attrs[string(conventions.UserAgentOriginalKey)] = value
 	case "ClientIp", "clientIp":
-		attrs["client.address"] = value
+		attrs[string(conventions.ClientAddressKey)] = value
 	case "ClientPort", "clientPort":
 		// TODO Should be a port
-		attrs["client.port"] = value
+		attrs[string(conventions.ClientPortKey)] = value
 	case "socketIp":
 		attrs[string(conventions.NetworkPeerAddressKey)] = value
 	case "timeTaken":
@@ -113,9 +118,19 @@ func handleAppServiceAppLogs(field string, value any, attrs, attrsProps map[stri
 	case "Host":
 		attrs[string(conventions.HostIDKey)] = value
 	case "Method":
-		attrs[string(conventionsv128.CodeFunctionKey)] = value
+		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
+			attrs["code.function"] = value
+		}
+		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+			attrs[string(conventions.CodeFunctionNameKey)] = value
+		}
 	case "Source":
-		attrs[string(conventionsv128.CodeFilepathKey)] = value
+		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
+			attrs["code.filepath"] = value
+		}
+		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+			attrs[string(conventions.CodeFilePathKey)] = value
+		}
 	case "Stacktrace", "StackTrace":
 		attrs[string(conventions.ExceptionStacktraceKey)] = value
 	default:
@@ -128,9 +143,9 @@ func handleAppServiceAuditLogs(field string, value any, attrs, attrsProps map[st
 	case "Protocol":
 		attrs[string(conventions.NetworkProtocolNameKey)] = toLower(value)
 	case "User":
-		attrs["enduser.id"] = value
+		attrs[string(conventions.EnduserIDKey)] = value
 	case "UserAddress":
-		attrs["client.address"] = value
+		attrs[string(conventions.ClientAddressKey)] = value
 	default:
 		attrsProps[field] = value
 	}
@@ -159,7 +174,7 @@ func handleAppServiceConsoleLogs(field string, value any, attrs, attrsProps map[
 func handleAppServiceHTTPLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "CIp":
-		attrs["client.address"] = value
+		attrs[string(conventions.ClientAddressKey)] = value
 	case "ComputerName":
 		attrs[string(conventions.HostNameKey)] = value
 	case "CsBytes":
@@ -212,9 +227,9 @@ func handleAppServiceHTTPLogs(field string, value any, attrs, attrsProps map[str
 func handleAppServiceIPSecAuditLogs(field string, value any, attrs, attrsProps map[string]any) {
 	switch field {
 	case "CIp":
-		attrs["client.address"] = value
+		attrs[string(conventions.ClientAddressKey)] = value
 	case "CsHost":
-		attrs["url.domain"] = value
+		attrs[string(conventions.URLDomainKey)] = value
 	case "XAzureFDID":
 		attrs["http.request.header.x-azure-fdid"] = value
 	case "XFDHealthProbe":

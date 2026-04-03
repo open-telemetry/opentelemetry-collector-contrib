@@ -345,13 +345,11 @@ func TestEventConsumeConsistency(t *testing.T) {
 			realTraceID := workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100)
 			var wg sync.WaitGroup
 			for range 50 {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					for range 30 {
 						assert.Equal(t, realTraceID, workerIndexForTraceID(pcommon.TraceID(tt.traceID), 100))
 					}
-				}()
+				})
 			}
 			wg.Wait()
 		})
@@ -403,11 +401,9 @@ func TestEventShutdown(t *testing.T) {
 	assert.Equal(t, 1, em.numEvents())
 
 	shutdownWg := sync.WaitGroup{}
-	shutdownWg.Add(1)
-	go func() {
+	shutdownWg.Go(func() {
 		em.shutdown()
-		shutdownWg.Done()
-	}()
+	})
 
 	wg.Done() // the pending event should be processed
 	// wait for shutdown to process remaining events
@@ -416,17 +412,17 @@ func TestEventShutdown(t *testing.T) {
 	}, 1*time.Second, 10*time.Millisecond)
 	assert.Equal(t, 0, em.numEvents())
 
-	// new events should *not* be processed
-	em.workers[0].fire(event{
-		typ:     traceExpired,
-		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
-	})
-
 	// verify
 	assert.Equal(t, int64(1), traceReceivedFired.Load())
 
 	// wait until the shutdown has returned
 	shutdownWg.Wait()
+
+	// new events should *not* be processed after shutdown
+	em.workers[0].fire(event{
+		typ:     traceExpired,
+		payload: pcommon.TraceID([16]byte{1, 2, 3, 4}),
+	})
 
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
@@ -468,11 +464,9 @@ func TestEventShutdownMultipleWorkers(t *testing.T) {
 	}, 1*time.Second, 10*time.Millisecond)
 
 	shutdownWg := sync.WaitGroup{}
-	shutdownWg.Add(1)
-	go func() {
+	shutdownWg.Go(func() {
 		em.shutdown()
-		shutdownWg.Done()
-	}()
+	})
 
 	shutdownWg.Wait()
 

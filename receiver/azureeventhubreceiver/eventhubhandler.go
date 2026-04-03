@@ -6,8 +6,10 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver"
@@ -18,7 +20,7 @@ import (
 
 type hubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*hubRuntimeInfo, error)
-	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool) (listenerHandleWrapper, error)
+	Receive(ctx context.Context, partitionID string, handler hubHandler, applyOffset bool, logger *zap.Logger) (listenerHandleWrapper, error)
 	Close(ctx context.Context) error
 }
 
@@ -39,12 +41,14 @@ type hubRuntimeInfo struct {
 var errNoConfig = errors.New("Configuration error, hub not accessible")
 
 type eventhubHandler struct {
-	hub           hubWrapper
-	dataConsumer  dataConsumer
-	config        *Config
-	settings      receiver.Settings
-	cancel        context.CancelFunc
-	storageClient storage.Client
+	hub            hubWrapper
+	dataConsumer   dataConsumer
+	config         *Config
+	settings       receiver.Settings
+	cancel         context.CancelFunc
+	storageClient  storage.Client
+	consumerClient *azeventhubs.ConsumerClient // non-nil when in distributed mode
+	wg             sync.WaitGroup              // tracks goroutines spawned by runDistributed
 }
 
 func shouldInitializeStorageClient(storageClient storage.Client, storageID *component.ID) bool {
@@ -53,7 +57,13 @@ func shouldInitializeStorageClient(storageClient storage.Client, storageID *comp
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
+	if h.config.BlobCheckpointStore != nil {
+		return h.runDistributed(ctx, host)
+	}
+	return h.runSingle(ctx, host)
+}
 
+func (h *eventhubHandler) runSingle(ctx context.Context, host component.Host) error {
 	if shouldInitializeStorageClient(h.storageClient, h.config.StorageID) { // set manually for testing.
 		storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
 		if err != nil {
@@ -97,8 +107,42 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	return errors.Join(errs...)
 }
 
+func (h *eventhubHandler) runDistributed(ctx context.Context, host component.Host) error {
+	h.settings.Logger.Info("Starting distributed Event Hub consumption with blob checkpoint store")
+
+	processor, consumerClient, err := createProcessor(h.config, host, h.settings.Logger)
+	if err != nil {
+		return err
+	}
+	h.consumerClient = consumerClient
+
+	// Dispatch partition clients as the Processor assigns them.
+	h.wg.Go(func() {
+		for {
+			partitionClient := processor.NextPartitionClient(ctx)
+			if partitionClient == nil {
+				// Processor has stopped
+				return
+			}
+			h.wg.Go(func() {
+				processPartitionEvents(ctx, partitionClient, h.newMessageHandler, h.config, h.settings.Logger)
+			})
+		}
+	})
+
+	// Run the processor's load balancer in a background goroutine.
+	// It returns when the context is cancelled.
+	h.wg.Go(func() {
+		if err := processor.Run(ctx); err != nil {
+			h.settings.Logger.Error("Processor exited with error", zap.Error(err))
+		}
+	})
+
+	return nil
+}
+
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset)
+	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, applyOffset, h.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -141,6 +185,17 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 	}
 	if h.cancel != nil {
 		h.cancel()
+	}
+
+	// Wait for goroutines spawned by runDistributed to finish before closing
+	// the consumer client they depend on.
+	h.wg.Wait()
+
+	if h.consumerClient != nil {
+		if err := h.consumerClient.Close(ctx); err != nil {
+			errs = errors.Join(errs, err)
+		}
+		h.consumerClient = nil
 	}
 
 	return errs

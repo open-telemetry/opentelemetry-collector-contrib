@@ -198,10 +198,10 @@ Node network errors
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ### k8s.node.network.io
 
@@ -213,10 +213,10 @@ Node network IO
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ### k8s.pod.cpu.time
 
@@ -316,10 +316,10 @@ Pod network errors
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ### k8s.pod.network.io
 
@@ -331,10 +331,10 @@ Pod network IO
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| interface | Name of the network interface. | Any Str | Recommended |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| interface | Name of the network interface. | Any Str | Recommended | - |
+| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` | Recommended | - |
 
 ### k8s.volume.available
 
@@ -516,20 +516,20 @@ The number of used bytes in the pod volume.
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| aws.volume.id | The id of the AWS Volume | Any Str | true |
-| container.id | Container id used to identify container | Any Str | true |
-| fs.type | The filesystem type of the Volume | Any Str | true |
-| gce.pd.name | The name of the persistent disk in GCE | Any Str | true |
-| glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | Any Str | true |
-| glusterfs.path | Glusterfs volume path | Any Str | true |
-| k8s.container.name | Container name used by container runtime | Any Str | true |
-| k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true |
-| k8s.node.name | The name of the Node | Any Str | true |
-| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true |
-| k8s.pod.name | The name of the Pod | Any Str | true |
-| k8s.pod.uid | The UID of the Pod | Any Str | true |
-| k8s.volume.name | The name of the Volume | Any Str | true |
-| k8s.volume.type | The type of the Volume | Any Str | true |
-| partition | The partition in the Volume | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| aws.volume.id | [DEPRECATED] The id of the AWS Volume | Any Str | true | - |
+| container.id | Container id used to identify container | Any Str | true | - |
+| fs.type | [DEPRECATED] The filesystem type of the Volume | Any Str | true | - |
+| gce.pd.name | [DEPRECATED] The name of the persistent disk in GCE | Any Str | true | - |
+| glusterfs.endpoints.name | [DEPRECATED] The endpoint name that details Glusterfs topology | Any Str | true | - |
+| glusterfs.path | [DEPRECATED] Glusterfs volume path | Any Str | true | - |
+| k8s.container.name | Container name used by container runtime | Any Str | true | - |
+| k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true | - |
+| k8s.node.name | The name of the Node | Any Str | true | - |
+| k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true | - |
+| k8s.pod.name | The name of the Pod | Any Str | true | - |
+| k8s.pod.uid | The UID of the Pod | Any Str | true | - |
+| k8s.volume.name | The name of the Volume | Any Str | true | - |
+| k8s.volume.type | The type of the Volume | Any Str | true | - |
+| partition | [DEPRECATED] The partition in the Volume | Any Str | true | - |

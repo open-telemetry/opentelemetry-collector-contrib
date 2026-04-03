@@ -35,7 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonparser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.MustNewID("filelog").String())
+	sub, err := cm.Sub(component.MustNewID("file_log").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
@@ -315,7 +315,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 	}
 }
 
-// TestConsumeContract tests the contract between the filelog receiver and the next consumer with enabled retry.
+// TestConsumeContract tests the contract between the File Log receiver and the next consumer with enabled retry.
 func TestConsumeContract(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePattern := "test-*.log"
@@ -327,7 +327,7 @@ func TestConsumeContract(t *testing.T) {
 	cfg.RetryOnFailure.MaxInterval = 10 * time.Millisecond
 	cfg.InputConfig.Include = []string{filepath.Join(tmpDir, filePattern)}
 	cfg.InputConfig.StartAt = "beginning"
-	jsonParser := json.NewConfig()
+	jsonParser := jsonparser.NewConfig()
 	tsField := entry.NewAttributeField("ts")
 	jsonParser.TimeParser = &helper.TimeParser{
 		ParseFrom:  &tsField,
@@ -354,7 +354,7 @@ type fileLogGenerator struct {
 	tmpDir      string
 	filePattern string
 	tmpFile     *os.File
-	sequenceNum int64
+	sequenceNum atomic.Int64
 }
 
 func (g *fileLogGenerator) Start() {
@@ -369,7 +369,7 @@ func (g *fileLogGenerator) Stop() {
 }
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
-	seq := atomic.AddInt64(&g.sequenceNum, 1)
+	seq := g.sequenceNum.Add(1)
 	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(seq, 10))
 	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id, //nolint:gocritic //sprintfQuotedString for JSON
 		receivertest.UniqueIDAttrName, id)
@@ -416,7 +416,7 @@ func TestMultilineWithUTF16Encoding(t *testing.T) {
 	require.NoError(t, utf16Writer.Close())
 	require.NoError(t, testFile.Close())
 
-	// Configure filelog receiver with UTF-16LE encoding and multiline
+	// Configure file_log receiver with UTF-16LE encoding and multiline
 	cfg := &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() file.Config {

@@ -63,8 +63,8 @@ receivers:
       container.blockio.io_serviced_recursive:
         enabled: true
 
-  # Read more about the filelog receiver here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
-  filelog:
+  # Read more about the File Log receiver here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
+  file_log:
     include_file_path: true
     poll_interval: 500ms
     include:
@@ -155,7 +155,7 @@ connectors:
 # https://opentelemetry.io/docs/collector/configuration/#exporters
 exporters:
   # The OTLP exporter is necessary **only** on gateway deployment mode, to relay telemetry data to the gateway.
-  ## otlp:
+  ## otlp_grpc:
     ## @param endpoint - string - required
     ## Endpoint where to send telemetry. On gateway mode, we set it to the gateway host IP.
     #
@@ -466,7 +466,7 @@ exporters:
 
       ## @param dump_payloads - bool - optional
       ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
-      ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
+      ## This may result in an escaping loop if a File Log receiver is watching the collector log output.
       ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
       ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is enabled (now enabled by default).
       ## Deprecated since v0.107.0: This config option is not supported in the Datadog Agent logs pipeline.
@@ -523,8 +523,8 @@ service:
 
     # Pipelines starting with `logs` or `logs/` define a logs pipeline.
     logs:
-      # This pipeline has an OTLP receiver, filelog receiver and a Datadog exporter.
-      receivers: [otlp, filelog]
+      # This pipeline has an OTLP receiver, a File Log receiver and a Datadog exporter.
+      receivers: [otlp, file_log]
       processors: [k8sattributes]
       exporters: [datadog]
 

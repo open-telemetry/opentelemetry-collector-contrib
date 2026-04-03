@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest"
 
 import (
@@ -88,11 +90,9 @@ func TestIntegration(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_config.yaml", factories)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
-		wg.Done()
-	}()
+	})
 	defer func() {
 		app.Shutdown()
 		wg.Wait()
@@ -287,11 +287,9 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_toplevel_config.yaml", factories)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
-		wg.Done()
-	}()
+	})
 	defer func() {
 		app.Shutdown()
 		wg.Wait()
@@ -480,11 +478,9 @@ func TestIntegrationLogs(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
-		wg.Done()
-	}()
+	})
 	defer func() {
 		app.Shutdown()
 		wg.Wait()
@@ -637,11 +633,9 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_host_metrics_config.yaml", factories)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
-		wg.Done()
-	}()
+	})
 	defer func() {
 		app.Shutdown()
 		wg.Wait()
@@ -787,11 +781,9 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_internal_metrics_config.yaml", factories)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
-		wg.Done()
-	}()
+	})
 	defer func() {
 		app.Shutdown()
 		wg.Wait()
@@ -842,11 +834,9 @@ func TestIntegrationLogsHostMetadata(t *testing.T) {
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_only_host_metadata_config.yaml", factories)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		_ = app.Run(t.Context()) // ignore shutdown error, core collector has race in shutdown: https://github.com/open-telemetry/opentelemetry-collector/issues/12944
-		wg.Done()
-	}()
+	})
 	defer func() {
 		app.Shutdown()
 		wg.Wait()

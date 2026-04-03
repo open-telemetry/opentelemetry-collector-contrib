@@ -1,4 +1,8 @@
+display_name: Prometheus Receiver
 type: prometheus
+
+description: |
+  The Prometheus Receiver receives metric data in [Prometheus](https://prometheus.io/) format.
 
 status:
   class: receiver
@@ -39,28 +43,18 @@ feature_gates:
     to_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/34473
 
-  - id: receiver.prometheusreceiver.EnableReportExtraScrapeMetrics
+  - id: receiver.prometheusreceiver.IgnoreScopeInfoMetric
     stage: alpha
     description: >-
-      Enables reporting of extra Prometheus scrape metrics. This replaces the deprecated
-      'report_extra_scrape_metrics' configuration option.
-    from_version: v0.143.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181
-
-  - id: receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig
-    stage: beta
-    description: >-
-      When enabled, the 'report_extra_scrape_metrics' configuration option is ignored,
-      and extra scrape metrics are controlled solely by the EnableReportExtraScrapeMetrics
-      feature gate. The intention is to have extra scrape metrics enabled all the time in the future.
-    from_version: v0.143.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181
+      When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction.
+    from_version: v0.148.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502
 
   - id: receiver.prometheusreceiver.RemoveStartTimeAdjustment
     stage: stable
     description: >-
       When enabled, the Prometheus receiver will leave the start time unset.
-      Use the metricstarttime processor instead if you need this functionality.
+      Use the metric_start_time processor instead if you need this functionality.
     from_version: v0.121.0
     to_version: v0.142.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36364

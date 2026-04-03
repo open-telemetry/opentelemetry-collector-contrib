@@ -33,8 +33,7 @@ telemetry:
     loadbalancer_backend_latency:
       attributes: [endpoint]
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Response latency in ms for the backends.
       unit: ms
       histogram:
@@ -43,8 +42,7 @@ telemetry:
     loadbalancer_backend_outcome:
       attributes: [success]
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of successes and failures for each endpoint.
       unit: "{outcomes}"
       sum:
@@ -54,8 +52,7 @@ telemetry:
     loadbalancer_num_backend_updates:
       attributes: [resolver]
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of times the list of backends was updated.
       unit: "{updates}"
       sum:
@@ -64,8 +61,7 @@ telemetry:
     loadbalancer_num_backends:
       attributes: [resolver]
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Current number of backends in use.
       unit: "{backends}"
       gauge:
@@ -73,8 +69,7 @@ telemetry:
     loadbalancer_num_resolutions:
       attributes: [success, resolver]
       enabled: true
-      stability:
-        level: development
+      stability: development
       description: Number of times the resolver has triggered new resolutions.
       unit: "{resolutions}"
       sum:
