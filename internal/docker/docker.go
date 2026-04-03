@@ -15,11 +15,9 @@ import (
 	"time"
 
 	cerrdefs "github.com/containerd/errdefs"
-	dtypes "github.com/docker/docker/api/types"
-	ctypes "github.com/docker/docker/api/types/container"
-	etypes "github.com/docker/docker/api/types/events"
-	dfilters "github.com/docker/docker/api/types/filters"
-	docker "github.com/docker/docker/client"
+	ctypes "github.com/moby/moby/api/types/container"
+	etypes "github.com/moby/moby/api/types/events"
+	docker "github.com/moby/moby/client"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -29,12 +27,12 @@ const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 // Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.
 type Container struct {
-	*dtypes.ContainerJSON
+	*ctypes.InspectResponse
 	EnvMap map[string]string
 }
 
 // Client provides the core metric gathering functionality from the Docker Daemon.
-// It retrieves container information in two forms to produce metric data: dtypes.ContainerJSON
+// It retrieves container information in two forms to produce metric data: ctypes.InspectResponse
 // from client.ContainerInspect() for container information (id, name, hostname, labels, and env)
 // and ctypes.StatsResponse from client.ContainerStats() for metric values.
 // A persistent streaming connection is maintained per container so that the latest stats are
@@ -136,9 +134,9 @@ func (dc *Client) Containers() []Container {
 // by the receiver.
 func (dc *Client) LoadContainerList(ctx context.Context) error {
 	// Build initial container maps before starting loop
-	filters := dfilters.NewArgs()
+	filters := make(docker.Filters)
 	filters.Add("status", "running")
-	options := ctypes.ListOptions{
+	options := docker.ContainerListOptions{
 		Filters: filters,
 	}
 
@@ -150,8 +148,8 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 	}
 
 	wg := sync.WaitGroup{}
-	for i := range containerList {
-		c := &containerList[i]
+	for i := range containerList.Items {
+		c := &containerList.Items[i]
 		wg.Add(1)
 		go func(container *ctypes.Summary) {
 			if !dc.shouldBeExcluded(container.Image) {
@@ -197,9 +195,9 @@ func (dc *Client) FetchContainerStatsAsJSON(
 func (dc *Client) FetchContainerStats(
 	ctx context.Context,
 	container Container,
-) (ctypes.StatsResponseReader, error) {
+) (docker.ContainerStatsResult, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
-	containerStats, err := dc.client.ContainerStats(ctx, container.ID, false)
+	containerStats, err := dc.client.ContainerStats(ctx, container.ID, docker.ContainerStatsOptions{Stream: false})
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
 			dc.logger.Debug(
@@ -220,7 +218,7 @@ func (dc *Client) FetchContainerStats(
 }
 
 func (dc *Client) toStatsJSON(
-	containerStats ctypes.StatsResponseReader,
+	containerStats docker.ContainerStatsResult,
 	container *Container,
 ) (*ctypes.StatsResponse, error) {
 	var statsJSON ctypes.StatsResponse
@@ -285,7 +283,7 @@ func (dc *Client) startContainerStream(containerID string) {
 // Reconnects automatically on transient errors. Stops when ctx is cancelled.
 func (dc *Client) runStatsStream(ctx context.Context, containerID string) error {
 	for {
-		resp, err := dc.client.ContainerStats(ctx, containerID, true)
+		resp, err := dc.client.ContainerStats(ctx, containerID, docker.ContainerStatsOptions{Stream: true})
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				return nil
@@ -334,27 +332,27 @@ func (dc *Client) runStatsStream(ctx context.Context, containerID string) error 
 // Events exposes the underlying Docker clients Events channel.
 // Caller should close the events channel by canceling the context.
 // If an error occurs, processing stops and caller must reinvoke this method.
-func (dc *Client) Events(ctx context.Context, options etypes.ListOptions) (<-chan etypes.Message, <-chan error) {
-	return dc.client.Events(ctx, options)
+func (dc *Client) Events(ctx context.Context, options docker.EventsListOptions) (<-chan etypes.Message, <-chan error) {
+	result := dc.client.Events(ctx, options)
+	return result.Messages, result.Err
 }
 
 func (dc *Client) ContainerEventLoop(ctx context.Context) {
-	filters := dfilters.NewArgs([]dfilters.KeyValuePair{
-		{Key: "type", Value: "container"},
-		{Key: "event", Value: "destroy"},
-		{Key: "event", Value: "die"},
-		{Key: "event", Value: "pause"},
-		{Key: "event", Value: "rename"},
-		{Key: "event", Value: "stop"},
-		{Key: "event", Value: "start"},
-		{Key: "event", Value: "unpause"},
-		{Key: "event", Value: "update"},
-	}...)
+	filters := make(docker.Filters).
+		Add("type", "container").
+		Add("event", "destroy").
+		Add("event", "die").
+		Add("event", "pause").
+		Add("event", "rename").
+		Add("event", "stop").
+		Add("event", "start").
+		Add("event", "unpause").
+		Add("event", "update")
 	lastTime := time.Now()
 
 EVENT_LOOP:
 	for {
-		options := etypes.ListOptions{
+		options := docker.EventsListOptions{
 			Filters: filters,
 			Since:   lastTime.Format(time.RFC3339Nano),
 		}
@@ -418,7 +416,7 @@ func (dc *Client) InspectAndPersistContainer(ctx context.Context, cid string) (*
 // nil and false otherwise.
 func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*ctypes.InspectResponse, bool) {
 	inspectCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
-	container, err := dc.client.ContainerInspect(inspectCtx, cid)
+	result, err := dc.client.ContainerInspect(inspectCtx, cid, docker.ContainerInspectOptions{})
 	defer cancel()
 	if err != nil {
 		dc.logger.Error(
@@ -426,7 +424,8 @@ func (dc *Client) inspectedContainerIsOfInterest(ctx context.Context, cid string
 			zap.String("id", cid),
 			zap.Error(err),
 		)
-	} else if !dc.shouldBeExcluded(container.Config.Image) {
+	} else if !dc.shouldBeExcluded(result.Container.Config.Image) {
+		container := result.Container
 		return &container, true
 	}
 	return nil, false
@@ -447,8 +446,8 @@ func (dc *Client) persistContainer(containerJSON *ctypes.InspectResponse) {
 	dc.logger.Debug("Monitoring Docker container", zap.String("id", cid))
 	dc.containersLock.Lock()
 	dc.containers[cid] = Container{
-		ContainerJSON: containerJSON,
-		EnvMap:        ContainerEnvToMap(containerJSON.Config.Env),
+		InspectResponse: containerJSON,
+		EnvMap:          ContainerEnvToMap(containerJSON.Config.Env),
 	}
 	dc.containersLock.Unlock()
 
