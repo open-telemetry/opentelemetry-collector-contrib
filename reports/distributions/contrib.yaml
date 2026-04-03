@@ -225,7 +225,7 @@ components:
         - syslog
         - systemd
         - tcpcheck
-        - tcplog
+        - tcp_log
         - tlscheck
         - udplog
         - vcenter

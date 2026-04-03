@@ -329,7 +329,7 @@ components:
     - receiver/syslog
     - receiver/systemd
     - receiver/tcpcheck
-    - receiver/tcplog
+    - receiver/tcp_log
     - receiver/tlscheck
     - receiver/udplog
     - receiver/vcenter
