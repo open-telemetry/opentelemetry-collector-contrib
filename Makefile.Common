@@ -32,7 +32,10 @@ GOTESTARCH?=$(GOARCH)
 # Indirect dependency via Docker client usage in testing/building.
 # The vulnerability affects Docker daemon plugin privilege validation.
 # OpenTelemetry collector does not expose Docker API endpoints.
-IGNORED_VULNS = GO-2026-4887 GO-2026-4883
+# GO-2026-4514: jsonparser Delete function offset validation panic (CVE-2026-32285)
+# The vulnerability requires malformed JSON input to trigger a panic in the Delete function.
+# OpenTelemetry collector uses jsonparser for parsing valid JSON only; no fix available yet.
+IGNORED_VULNS = GO-2026-4887 GO-2026-4883 GO-2026-4514
 
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
