@@ -7,7 +7,7 @@ change_type: enhancement
 component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add vulnerability exclusion support to govulncheck Makefile target with justifications for ignored vulnerabilities (GO-2026-4887, GO-2026-4883, GO-2026-4514)
+note: Add vulnerability exclusion support to govulncheck Makefile target with justifications for ignored vulnerabilities (GO-2026-4887, GO-2026-4883, GO-2026-4514, GO-2022-0635, GO-2022-0646)
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47350]
@@ -19,5 +19,5 @@ subtext: |
   The govulncheck target now supports an IGNORED_VULNS list to exclude known vulnerabilities that don't affect the project:
   - GO-2026-4887, GO-2026-4883: Moby/Docker daemon vulnerabilities (only affects daemon, not client usage)
   - GO-2026-4514: jsonparser Delete function panic on malformed JSON (no fix available; requires invalid input)
+  - GO-2022-0635, GO-2022-0646: AWS S3 Crypto SDK vulnerabilities (deprecated v1 SDK; collector doesn't use crypto features)
   Added gojq as a build tool for JSON parsing instead of relying on Docker.
-  Vulnerabilities are validated against known Moby/Docker issues that only affect daemon operations, not client usage.

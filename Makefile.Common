@@ -35,7 +35,15 @@ GOTESTARCH?=$(GOARCH)
 # GO-2026-4514: jsonparser Delete function offset validation panic (CVE-2026-32285)
 # The vulnerability requires malformed JSON input to trigger a panic in the Delete function.
 # OpenTelemetry collector uses jsonparser for parsing valid JSON only; no fix available yet.
-IGNORED_VULNS = GO-2026-4887 GO-2026-4883 GO-2026-4514
+# GO-2022-0635: AWS S3 Crypto SDK in-band key negotiation vulnerability (CVE-2020-8912)
+# Indirect dependency via AWS SDK v1 (deprecated) in some modules.
+# The vulnerability affects S3 encryption clients using AES-GCM.
+# OpenTelemetry collector does not use S3 crypto functionality.
+# GO-2022-0646: AWS S3 Crypto SDK padding oracle vulnerability (CVE-2020-8911)
+# Indirect dependency via AWS SDK v1 (deprecated) in some modules.
+# The vulnerability affects S3 encryption clients using AES-CBC without MAC.
+# OpenTelemetry collector does not use S3 crypto functionality.
+IGNORED_VULNS = GO-2026-4887 GO-2026-4883 GO-2026-4514 GO-2022-0635 GO-2022-0646
 
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
