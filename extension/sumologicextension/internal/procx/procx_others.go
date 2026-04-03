@@ -3,7 +3,7 @@
 
 //go:build !windows
 
-package procx
+package procx // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/procx"
 
 import (
 	"fmt"

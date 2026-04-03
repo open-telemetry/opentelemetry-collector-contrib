@@ -717,16 +717,12 @@ func baseURL() (string, error) {
 	return h, nil
 }
 
-func (se *SumologicExtension) filteredProcessList() ([]string, error) {
-	return se.procx.FilteredProcessList()
-}
-
 func (se *SumologicExtension) discoverTags() (map[string]any, error) {
 	t := map[string]any{
 		"sumo.disco.enabled": "true",
 	}
 
-	pl, err := se.filteredProcessList()
+	pl, err := se.procx.FilteredProcessList()
 	if err != nil {
 		return t, err
 	}

@@ -208,7 +208,7 @@ func TestFilteredProcessList(t *testing.T) {
 			}
 			pl, err := procx.FilteredProcessList()
 			assert.Equal(t, tt.want, pl)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		})
 	}
 }
