@@ -43,7 +43,11 @@ GOTESTARCH?=$(GOARCH)
 # Indirect dependency via AWS SDK v1 (deprecated) in some modules.
 # The vulnerability affects S3 encryption clients using AES-CBC without MAC.
 # OpenTelemetry collector does not use S3 crypto functionality.
-IGNORED_VULNS = GO-2026-4887 GO-2026-4883 GO-2026-4514 GO-2022-0635 GO-2022-0646
+# GO-2026-4762: gRPC-Go authorization bypass via missing leading slash in :path (CVE-2026-33186)
+# Indirect dependency in test modules with older gRPC versions.
+# The vulnerability affects gRPC servers when handling HTTP/2 requests.
+# Test applications do not run production gRPC servers; main project uses fixed version v1.79.3+.
+IGNORED_VULNS = GO-2026-4887 GO-2026-4883 GO-2026-4514 GO-2022-0635 GO-2022-0646 GO-2026-4762
 
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
