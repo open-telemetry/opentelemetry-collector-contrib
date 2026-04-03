@@ -27,11 +27,11 @@ GOTESTARCH?=$(GOARCH)
 # GO-2026-4887: Moby AuthZ plugin bypass with oversized request bodies (CVE-2026-34040)
 # Indirect dependency via Docker client usage in testing/building.
 # The vulnerability affects Docker daemon when using authorization plugins.
-# OpenTelemetry collector does not expose Docker API endpoints and only uses Docker as a build/test tool.
+# OpenTelemetry collector does not expose Docker API endpoints.
 # GO-2026-4883: Moby off-by-one error in plugin privilege validation (CVE-2026-33997)
 # Indirect dependency via Docker client usage in testing/building.
 # The vulnerability affects Docker daemon plugin privilege validation.
-# OpenTelemetry collector does not expose Docker API endpoints and only uses Docker as a build/test tool.
+# OpenTelemetry collector does not expose Docker API endpoints.
 IGNORED_VULNS = GO-2026-4887 GO-2026-4883
 
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
