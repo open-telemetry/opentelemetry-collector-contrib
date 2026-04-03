@@ -1,0 +1,21 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: all
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add vulnerability exclusion support to govulncheck Makefile target with justifications for ignored vulnerabilities (GO-2026-4887, GO-2026-4883)
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [47350]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The govulncheck target now supports an IGNORED_VULNS list to exclude known vulnerabilities that don't affect the project.
+  Added gojq as a build tool for JSON parsing.
+  Vulnerabilities are validated against known Moby/Docker issues that only affect daemon operations, not client usage.

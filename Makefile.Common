@@ -23,6 +23,17 @@ GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
 
+# Ignored vulnerabilities with justification:
+# GO-2026-4887: Moby AuthZ plugin bypass with oversized request bodies (CVE-2026-34040)
+# Indirect dependency via Docker client usage in testing/building.
+# The vulnerability affects Docker daemon when using authorization plugins.
+# OpenTelemetry collector does not expose Docker API endpoints and only uses Docker as a build/test tool.
+# GO-2026-4883: Moby off-by-one error in plugin privilege validation (CVE-2026-33997)
+# Indirect dependency via Docker client usage in testing/building.
+# The vulnerability affects Docker daemon plugin privilege validation.
+# OpenTelemetry collector does not expose Docker API endpoints and only uses Docker as a build/test tool.
+IGNORED_VULNS = GO-2026-4887 GO-2026-4883
+
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
 	CGO_ENABLED_OPT?=0
@@ -79,6 +90,7 @@ BUILDER             = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/coll
 GOFUMPT             = $(subst \,/,$(shell $(GO_TOOL) -n mvdan.cc/gofumpt))
 GOVULNCHECK         = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/vuln/cmd/govulncheck))
 GCI                 = $(subst \,/,$(shell $(GO_TOOL) -n github.com/daixiang0/gci))
+GOJQ                = $(subst \,/,$(shell $(GO_TOOL) -n github.com/itchyny/gojq/cmd/gojq))
 GOTESTSUM           = $(subst \,/,$(shell $(GO_TOOL) -n gotest.tools/gotestsum))
 CHECKAPI            = $(subst \,/,$(shell $(GO_TOOL) -n go.opentelemetry.io/build-tools/checkapi))
 MODERNIZE           = $(subst \,/,$(shell $(GO_TOOL) -n golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize))
@@ -265,7 +277,29 @@ lint: checklicense misspell
 
 .PHONY: govulncheck
 govulncheck:
-	$(GOVULNCHECK) ./...
+	@set -e; \
+	$(GOVULNCHECK) -format json ./... > govulncheck-output.json; \
+	FOUND="$$( $(GOJQ) -r 'select(.finding!=null)|.finding.osv' govulncheck-output.json | sort -u )"; \
+	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && exit 0; \
+	echo "Found: $$FOUND"; \
+	\
+	for id in $(IGNORED_VULNS); do \
+		echo "$$FOUND" | grep -qw "$$id" || { echo "Unknown ignored ID: $$id"; exit 1; }; \
+	done; \
+	\
+	UNIGNORED=""; \
+	for id in $$FOUND; do \
+		echo "$(IGNORED_VULNS)" | grep -qw "$$id" || UNIGNORED="$$UNIGNORED $$id"; \
+	done; \
+	UNIGNORED="$$(echo $$UNIGNORED | xargs)"; \
+	[ -z "$$UNIGNORED" ] && echo "All vulnerabilities ignored" && exit 0; \
+	\
+	echo "Vulnerabilities need attention: $$UNIGNORED"; \
+	echo ""; \
+	echo "Vulnerability Summary:"; \
+	echo "ID    SUMMARY"; \
+	$(GOJQ) -r 'select(.finding!=null)|[.finding.osv,.finding.summary]|@tsv' govulncheck-output.json; \
+	exit 1
 
 .PHONY: modernize
 modernize:
