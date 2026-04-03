@@ -231,7 +231,7 @@ components:
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
         - yang_grpc

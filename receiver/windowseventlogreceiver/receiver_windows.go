@@ -19,15 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/sidcache"
 )
 
-// newFactoryAdapter creates a factory for windowseventlog receiver
-func newFactoryAdapter() receiver.Factory {
-	return receiver.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-	)
-}
-
 // createLogsReceiver creates a logs receiver with SID enrichment support
 func createLogsReceiver(
 	ctx context.Context,
