@@ -35,7 +35,7 @@ componentOverrides:
     configName: 'SysLogConfig'
   receiver/tcplog:
     configName: 'TCPLogConfig'
-  receiver/udplog:
+  receiver/udp_log:
     configName: 'UDPLogConfig'
   receiver/windowseventlog:
     configName: 'WindowsLogConfig'
