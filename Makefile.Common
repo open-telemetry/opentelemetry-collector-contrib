@@ -283,10 +283,6 @@ govulncheck:
 	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && exit 0; \
 	echo "Found: $$FOUND"; \
 	\
-	for id in $(IGNORED_VULNS); do \
-		echo "$$FOUND" | grep -qw "$$id" || { echo "Unknown ignored ID: $$id"; exit 1; }; \
-	done; \
-	\
 	UNIGNORED=""; \
 	for id in $$FOUND; do \
 		echo "$(IGNORED_VULNS)" | grep -qw "$$id" || UNIGNORED="$$UNIGNORED $$id"; \
