@@ -218,6 +218,7 @@ To wait for the metadata to be synced before the processor is ready, set the `wa
 Then the processor will not be ready until the metadata is fully synced. As a result, the start-up of the Collector will be blocked. If the metadata cannot be synced, the Collector will ultimately fail to start.
 If a timeout is reached, the processor will fail to start and return an error, which will cause the collector to exit.
 The timeout defaults to 10s and can be configured with the `wait_for_metadata_timeout` option.
+When `processor.k8sattributes.ShareInformerCaches` is enabled, `processor.k8sattributes` instances with strictly equivalent defaulted configuration share the same watcher and informer caches across signals and pipelines.
 
 example for setting the processor to wait for metadata to be synced before it is ready:
 
@@ -1094,6 +1095,10 @@ Feature gates can be enabled using the `--feature-gates` flag:
 ```shell
 "--feature-gates=<feature-gate>"
 ```
+
+### Shared Informer Cache Feature Gate
+
+See `testdata/manual-validation/shareinformercaches/README.md` for the shared informer cache feature-gate details and the runnable manual validation flow, which requires enabling `processor.k8sattributes.ShareInformerCaches`.
 
 ## Semantic Conventions Compatibility
 

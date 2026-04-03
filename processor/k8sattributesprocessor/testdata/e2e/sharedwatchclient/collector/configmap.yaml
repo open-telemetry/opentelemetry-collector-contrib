@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: e2ek8sattribute-sharedwatchclient
+data:
+  relay: |
+    exporters:
+      otlp_grpc:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      k8sattributes:
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+        pod_association:
+          - sources:
+              - from: connection
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+        - health_check
+      pipelines:
+        traces:
+          receivers:
+            - otlp
+          processors:
+            - k8sattributes
+          exporters:
+            - otlp_grpc
+        metrics:
+          receivers:
+            - otlp
+          processors:
+            - k8sattributes
+          exporters:
+            - otlp_grpc
+        logs:
+          receivers:
+            - otlp
+          processors:
+            - k8sattributes
+          exporters:
+            - otlp_grpc

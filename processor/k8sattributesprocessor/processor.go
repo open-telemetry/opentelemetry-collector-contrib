@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
@@ -32,6 +33,16 @@ const (
 	clientIPLabelName string = "ip"
 )
 
+type kubeMetadataClient interface {
+	GetPod(kube.PodIdentifier) (*kube.Pod, bool)
+	GetNamespace(string) (*kube.Namespace, bool)
+	GetNode(string) (*kube.Node, bool)
+	GetDeployment(string) (*kube.Deployment, bool)
+	GetStatefulSet(string) (*kube.StatefulSet, bool)
+	GetDaemonSet(string) (*kube.DaemonSet, bool)
+	GetJob(string) (*kube.Job, bool)
+}
+
 type kubernetesprocessor struct {
 	cfg                    component.Config
 	options                []option
@@ -39,7 +50,9 @@ type kubernetesprocessor struct {
 	telemetry              *metadata.TelemetryBuilder
 	logger                 *zap.Logger
 	apiConfig              k8sconfig.APIConfig
-	kc                     kube.Client
+	clientProvider         kube.ClientProvider
+	kc                     kubeMetadataClient
+	sharedKubeComponent    *sharedcomponent.SharedComponent
 	passthroughMode        bool
 	rules                  kube.ExtractionRules
 	filters                kube.Filters
@@ -49,12 +62,13 @@ type kubernetesprocessor struct {
 	waitForMetadataTimeout time.Duration
 }
 
-func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
+func (kp *kubernetesprocessor) initKubeClient() error {
+	kubeClient := kp.clientProvider
 	if kubeClient == nil {
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(kp.telemetrySettings, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
 		if err != nil {
 			return err
 		}
@@ -63,7 +77,39 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 	return nil
 }
 
-func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
+func (kp *kubernetesprocessor) dedicatedKubeClient() kube.Client {
+	return kp.kc.(kube.Client)
+}
+
+func (kp *kubernetesprocessor) sharedWatchClient() *sharedWatchClient {
+	if kp.sharedKubeComponent == nil {
+		return nil
+	}
+
+	sharedKubeClient, ok := kp.sharedKubeComponent.Unwrap().(*sharedWatchClient)
+	if !ok {
+		return nil
+	}
+
+	return sharedKubeClient
+}
+
+func (kp *kubernetesprocessor) applyOptions() error {
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
+	for _, opt := range allOptions {
+		if opt == nil {
+			continue
+		}
+		if err := opt(kp); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (kp *kubernetesprocessor) Start(ctx context.Context, host component.Host) error {
 	if metadata.ProcessorK8sattributesDontEmitV0K8sConventionsFeatureGate.IsEnabled() && !metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled() {
 		err := errors.New("processor.k8sattributes.DontEmitV0K8sConventions cannot be enabled without enabling processor.k8sattributes.EmitV1K8sConventions")
 		kp.logger.Error("Invalid feature gate combination", zap.Error(err))
@@ -96,44 +142,59 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		)
 	}
 
-	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+	if kp.passthroughMode {
+		return nil
+	}
 
-	for _, opt := range allOptions {
-		if err := opt(kp); err != nil {
-			kp.logger.Error("Could not apply option", zap.Error(err))
+	if kp.sharedKubeComponent != nil {
+		sharedKubeClient := kp.sharedWatchClient()
+		kp.logger.Info(
+			"using shared k8sattributes watch client",
+			zap.String("shared_cache_instance_id", sharedKubeClient.instanceID),
+			zap.String("shared_cache_key", sharedKubeClient.key),
+		)
+
+		// TODO: Follow up PR by fixing or wrapping sharedcomponent so the first Start error is
+		// persisted for every caller; today sync.Once can mask a failed shared startup after
+		// the first processor sees the error. Add a failing client-provider test with that fix.
+		if err := kp.sharedKubeComponent.Start(ctx, host); err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return err
 		}
+		return nil
 	}
 
-	// This might have been set by an option already
 	if kp.kc == nil {
-		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
+		err := kp.initKubeClient()
 		if err != nil {
-			kp.logger.Error("Could not initialize kube client", zap.Error(err))
+			kp.logger.Error("could not initialize kube client", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return err
 		}
 	}
-	if !kp.passthroughMode {
-		err := kp.kc.Start()
-		if err != nil {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			return err
-		}
+
+	kp.logger.Info("starting dedicated k8sattributes watch client")
+
+	err := kp.dedicatedKubeClient().Start()
+	if err != nil {
+		componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		return err
 	}
 	return nil
 }
 
-func (kp *kubernetesprocessor) Shutdown(context.Context) error {
+func (kp *kubernetesprocessor) Shutdown(ctx context.Context) error {
 	if kp.telemetry != nil {
 		kp.telemetry.Shutdown()
+	}
+	if kp.sharedKubeComponent != nil {
+		return kp.sharedKubeComponent.Shutdown(ctx)
 	}
 	if kp.kc == nil {
 		return nil
 	}
 	if !kp.passthroughMode {
-		kp.kc.Stop()
+		kp.dedicatedKubeClient().Stop()
 	}
 	return nil
 }

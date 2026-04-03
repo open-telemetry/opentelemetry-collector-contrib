@@ -12,6 +12,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,6 +44,10 @@ const (
 	testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 	uidRe          = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 	startTimeRe    = "^\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}%3A\\\\d{2}%3A\\\\d{2}(?:%2E\\\\d+)?[A-Z]?(?:[+.-](?:08%3A\\\\d{2}|\\\\d{2}[A-Z]))?$"
+
+	// kube-apiserver watch metrics are cluster-wide and can shift slightly if unrelated
+	// control-plane activity starts or ends a watch while the e2e test is running.
+	apiServerWatchDeltaSlack = 1.0
 )
 
 type expectedValue struct {
@@ -1966,6 +1973,392 @@ func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc 
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
 		"failed to receive %d entries,  received %d metrics, %d traces, %d logs, %d profiles in %d minutes", entriesNum,
 		len(mc.AllMetrics()), len(tc.AllTraces()), len(lc.AllLogs()), len(pc.AllProfiles()), timeoutMinutes)
+}
+
+func TestE2E_SharedWatchClientReuse(t *testing.T) {
+	testDir := filepath.Join("testdata", "e2e", "sharedwatchclient")
+	var sharedModeWatchDeltas map[string]float64
+
+	testCases := []struct {
+		name                     string
+		featureGates             string
+		wantSharedStartCount     int
+		wantSharedUsageCount     int
+		wantDedicatedStartCount  int
+		wantSharedInstanceIDs    int
+		wantPodWatchDelta        float64
+		wantReplicaSetWatchDelta float64
+	}{
+		{
+			name:                     "shared-watch-client-feature-gate-on",
+			featureGates:             "processor.k8sattributes.ShareInformerCaches",
+			wantSharedStartCount:     1,
+			wantSharedUsageCount:     3,
+			wantDedicatedStartCount:  0,
+			wantSharedInstanceIDs:    1,
+			wantPodWatchDelta:        1,
+			wantReplicaSetWatchDelta: 1,
+		},
+		{
+			name:                     "feature-gate-off",
+			wantSharedStartCount:     0,
+			wantSharedUsageCount:     0,
+			wantDedicatedStartCount:  3,
+			wantSharedInstanceIDs:    0,
+			wantPodWatchDelta:        3,
+			wantReplicaSetWatchDelta: 3,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+			require.NoError(t, err)
+
+			nsFile := filepath.Join(testDir, "namespace.yaml")
+			buf, err := os.ReadFile(nsFile)
+			require.NoErrorf(t, err, "failed to read namespace object file %s", nsFile)
+			nsObj, err := k8stest.CreateObject(k8sClient, buf)
+			require.NoErrorf(t, err, "failed to create k8s namespace from file %s", nsFile)
+
+			testNs := nsObj.GetName()
+			defer func() {
+				require.NoErrorf(t, k8stest.DeleteObject(k8sClient, nsObj), "failed to delete namespace %s", testNs)
+			}()
+
+			metricsConsumer := new(consumertest.MetricsSink)
+			tracesConsumer := new(consumertest.TracesSink)
+			logsConsumer := new(consumertest.LogsSink)
+			profilesConsumer := new(consumertest.ProfilesSink)
+
+			shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+			defer shutdownSinks()
+
+			apiServerBefore := captureAPIServerWatchSnapshot(t)
+
+			testID := uuid.NewString()[:8]
+			templateValues := map[string]string{}
+			if tc.featureGates != "" {
+				templateValues["FeatureGates"] = tc.featureGates
+			}
+
+			collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), templateValues, "")
+			createTeleOpts := &k8stest.TelemetrygenCreateOpts{
+				ManifestsDir: filepath.Join(testDir, "telemetrygen"),
+				TestID:       testID,
+				OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs),
+				DataTypes:    []string{"metrics", "logs", "traces"},
+			}
+			telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
+			defer func() {
+				for _, obj := range append(collectorObjs, telemetryGenObjs...) {
+					require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+				}
+			}()
+
+			for _, info := range telemetryGenObjInfos {
+				k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
+			}
+
+			waitForData(t, 10, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
+
+			enrichmentChecks := []struct {
+				name     string
+				dataType pipeline.Signal
+				service  string
+				attrs    map[string]*expectedValue
+			}{
+				{
+					name:     "traces",
+					dataType: pipeline.SignalTraces,
+					service:  "test-traces-deployment",
+					attrs: map[string]*expectedValue{
+						"k8s.pod.name":       newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
+						"k8s.pod.uid":        newExpectedValue(regex, uidRe),
+						"k8s.namespace.name": newExpectedValue(equal, testNs),
+						"k8s.node.name":      newExpectedValue(exist, ""),
+						"k8s.deployment.name": newExpectedValue(
+							equal,
+							"telemetrygen-"+testID+"-traces-deployment",
+						),
+					},
+				},
+				{
+					name:     "metrics",
+					dataType: pipeline.SignalMetrics,
+					service:  "test-metrics-deployment",
+					attrs: map[string]*expectedValue{
+						"k8s.pod.name":       newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
+						"k8s.pod.uid":        newExpectedValue(regex, uidRe),
+						"k8s.namespace.name": newExpectedValue(equal, testNs),
+						"k8s.node.name":      newExpectedValue(exist, ""),
+						"k8s.deployment.name": newExpectedValue(
+							equal,
+							"telemetrygen-"+testID+"-metrics-deployment",
+						),
+					},
+				},
+				{
+					name:     "logs",
+					dataType: pipeline.SignalLogs,
+					service:  "test-logs-deployment",
+					attrs: map[string]*expectedValue{
+						"k8s.pod.name":       newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
+						"k8s.pod.uid":        newExpectedValue(regex, uidRe),
+						"k8s.namespace.name": newExpectedValue(equal, testNs),
+						"k8s.node.name":      newExpectedValue(exist, ""),
+						"k8s.deployment.name": newExpectedValue(
+							equal,
+							"telemetrygen-"+testID+"-logs-deployment",
+						),
+					},
+				},
+			}
+
+			for _, check := range enrichmentChecks {
+				t.Run(check.name, func(t *testing.T) {
+					switch check.dataType {
+					case pipeline.SignalTraces:
+						scanTracesForAttributes(t, tracesConsumer, check.service, check.attrs)
+					case pipeline.SignalMetrics:
+						scanMetricsForAttributes(t, metricsConsumer, check.service, check.attrs)
+					case pipeline.SignalLogs:
+						scanLogsForAttributes(t, logsConsumer, check.service, check.attrs)
+					default:
+						t.Fatalf("unknown data type %s", check.dataType)
+					}
+				})
+			}
+
+			collectorLogs := waitForCollectorLogs(
+				t,
+				testNs,
+				"otelcol-"+testID,
+				tc.wantSharedStartCount,
+				tc.wantSharedUsageCount,
+				tc.wantDedicatedStartCount,
+			)
+
+			sharedInstanceIDs := sharedCacheInstanceIDs(collectorLogs)
+			assert.Len(t, sharedInstanceIDs, tc.wantSharedInstanceIDs)
+			if tc.wantSharedInstanceIDs > 0 {
+				assert.Equal(t, 1, len(sharedInstanceIDs))
+			}
+
+			require.NotEmpty(t, apiServerBefore, "failed to capture kube-apiserver watch metrics before starting the collector")
+
+			apiServerAfter := captureAPIServerWatchSnapshot(t)
+			require.NotEmpty(t, apiServerAfter, "failed to capture kube-apiserver watch metrics after starting the collector")
+
+			apiServerDeltas := apiServerWatchDeltas(apiServerBefore, apiServerAfter)
+			logAPIServerWatchDelta(t, apiServerDeltas)
+			assertAPIServerWatchDelta(t, apiServerDeltas, "pods", tc.wantPodWatchDelta)
+			assertAPIServerWatchDelta(t, apiServerDeltas, "replicasets", tc.wantReplicaSetWatchDelta)
+
+			if tc.featureGates != "" {
+				sharedModeWatchDeltas = apiServerDeltas
+				return
+			}
+
+			require.NotNil(t, sharedModeWatchDeltas, "shared-mode watch evidence must be captured before running the gate-off comparison")
+			assertAPIServerWatchHigherThanShared(t, sharedModeWatchDeltas, apiServerDeltas, "pods")
+			assertAPIServerWatchHigherThanShared(t, sharedModeWatchDeltas, apiServerDeltas, "replicasets")
+		})
+	}
+}
+
+var sharedCacheInstanceIDPattern = regexp.MustCompile(`shared_cache_instance_id["=: ]+"?([a-z0-9-]+)`)
+
+func waitForCollectorLogs(t *testing.T, namespace, deploymentName string, wantSharedStartCount, wantSharedUsageCount, wantDedicatedStartCount int) string {
+	t.Helper()
+
+	var collectorLogs string
+	require.Eventuallyf(t, func() bool {
+		logs, err := fetchCollectorLogs(namespace, deploymentName)
+		if err != nil {
+			t.Logf("failed to fetch collector logs: %v", err)
+			return false
+		}
+
+		collectorLogs = logs
+		return strings.Count(collectorLogs, "starting shared k8sattributes watch client") == wantSharedStartCount &&
+			strings.Count(collectorLogs, "using shared k8sattributes watch client") == wantSharedUsageCount &&
+			strings.Count(collectorLogs, "starting dedicated k8sattributes watch client") == wantDedicatedStartCount
+	}, time.Minute, 2*time.Second, "collector logs did not reach the expected watcher log counts")
+
+	return collectorLogs
+}
+
+func fetchCollectorLogs(namespace, deploymentName string) (string, error) {
+	cmd := exec.Command("kubectl", "--kubeconfig", testKubeConfig, "-n", namespace, "logs", "deployment/"+deploymentName)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("kubectl logs failed: %w: %s", err, string(output))
+	}
+	return string(output), nil
+}
+
+func sharedCacheInstanceIDs(collectorLogs string) []string {
+	uniqueIDs := map[string]struct{}{}
+	for _, match := range sharedCacheInstanceIDPattern.FindAllStringSubmatch(collectorLogs, -1) {
+		if len(match) > 1 {
+			uniqueIDs[match[1]] = struct{}{}
+		}
+	}
+
+	ids := make([]string, 0, len(uniqueIDs))
+	for id := range uniqueIDs {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+var (
+	apiServerMetricLinePattern = regexp.MustCompile(`^(apiserver_(?:registered_watchers|longrunning_requests))\{([^}]*)\}\s+([0-9]+(?:\.[0-9]+)?)$`)
+	resourceLabelPattern       = regexp.MustCompile(`resource="([^"]+)"`)
+)
+
+func captureAPIServerWatchSnapshot(t *testing.T) map[string]float64 {
+	t.Helper()
+
+	cmd := exec.Command("kubectl", "--kubeconfig", testKubeConfig, "get", "--raw", "/metrics")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("kube-apiserver metrics are unavailable for non-blocking watch evidence: %v", err)
+		return nil
+	}
+
+	relevantResources := map[string]struct{}{
+		"pods":         {},
+		"namespaces":   {},
+		"nodes":        {},
+		"replicasets":  {},
+		"deployments":  {},
+		"statefulsets": {},
+		"daemonsets":   {},
+		"jobs":         {},
+	}
+
+	snapshot := map[string]float64{}
+	for _, line := range strings.Split(string(output), "\n") {
+		matches := apiServerMetricLinePattern.FindStringSubmatch(line)
+		if len(matches) != 4 {
+			continue
+		}
+		if strings.HasPrefix(matches[1], "apiserver_longrunning_requests") && !strings.Contains(matches[2], `verb="WATCH"`) {
+			continue
+		}
+
+		resourceMatch := resourceLabelPattern.FindStringSubmatch(matches[2])
+		if len(resourceMatch) != 2 {
+			continue
+		}
+		if _, ok := relevantResources[resourceMatch[1]]; !ok {
+			continue
+		}
+
+		value, err := strconv.ParseFloat(matches[3], 64)
+		if err != nil {
+			continue
+		}
+		snapshot[matches[1]+"/"+resourceMatch[1]] += value
+	}
+
+	if len(snapshot) == 0 {
+		t.Log("kube-apiserver metrics were fetched but no relevant watch metrics were parsed")
+		return nil
+	}
+
+	return snapshot
+}
+
+func apiServerWatchDeltas(before, after map[string]float64) map[string]float64 {
+	deltas := map[string]float64{}
+
+	seenKeys := map[string]struct{}{}
+	for key := range before {
+		seenKeys[key] = struct{}{}
+	}
+	for key := range after {
+		seenKeys[key] = struct{}{}
+	}
+
+	for key := range seenKeys {
+		deltas[key] = after[key] - before[key]
+	}
+
+	return deltas
+}
+
+func logAPIServerWatchDelta(t *testing.T, deltas map[string]float64) {
+	t.Helper()
+
+	if len(deltas) == 0 {
+		return
+	}
+
+	keys := make([]string, 0, len(deltas))
+	for key := range deltas {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		t.Logf("kube-apiserver watch evidence %s delta=%0.0f", key, deltas[key])
+	}
+}
+
+func apiServerWatchDeltaForResource(t *testing.T, deltas map[string]float64, resource string) (string, float64) {
+	t.Helper()
+
+	for _, metricName := range []string{"apiserver_registered_watchers", "apiserver_longrunning_requests"} {
+		key := metricName + "/" + resource
+		if delta, ok := deltas[key]; ok {
+			return key, delta
+		}
+	}
+
+	require.Failf(t, "missing kube-apiserver watch evidence", "no watch delta metric found for resource %q", resource)
+	return "", 0
+}
+
+func assertAPIServerWatchDelta(t *testing.T, deltas map[string]float64, resource string, want float64) {
+	t.Helper()
+
+	metricKey, delta := apiServerWatchDeltaForResource(t, deltas, resource)
+	assert.InDeltaf(
+		t,
+		want,
+		delta,
+		apiServerWatchDeltaSlack,
+		"expected %s delta for %s to stay within %.0f of %.0f",
+		metricKey,
+		resource,
+		apiServerWatchDeltaSlack,
+		want,
+	)
+}
+
+func assertAPIServerWatchHigherThanShared(t *testing.T, sharedDeltas, dedicatedDeltas map[string]float64, resource string) {
+	t.Helper()
+
+	sharedMetricKey, sharedDelta := apiServerWatchDeltaForResource(t, sharedDeltas, resource)
+	dedicatedMetricKey, dedicatedDelta := apiServerWatchDeltaForResource(t, dedicatedDeltas, resource)
+	require.Equalf(
+		t,
+		sharedMetricKey,
+		dedicatedMetricKey,
+		"shared and dedicated watch comparisons for %s must use the same kube-apiserver metric family",
+		resource,
+	)
+	assert.Greaterf(
+		t,
+		dedicatedDelta,
+		sharedDelta,
+		"expected dedicated mode to create more %s watch streams than shared mode",
+		resource,
+	)
 }
 
 func TestE2E_ContainerIDAssociation(t *testing.T) {

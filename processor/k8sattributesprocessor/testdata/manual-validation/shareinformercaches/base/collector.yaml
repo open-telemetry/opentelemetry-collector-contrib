@@ -1,0 +1,157 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otelcol-shared-watch-manual-config
+  namespace: k8sattributes-shared-manual
+data:
+  relay: |
+    exporters:
+      debug:
+        verbosity: normal
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      k8sattributes:
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+        pod_association:
+          - sources:
+              - from: connection
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+        - health_check
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug]
+        metrics:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug]
+        logs:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otelcol-shared-watch-manual
+  namespace: k8sattributes-shared-manual
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otelcol-shared-watch-manual
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "namespaces"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets", "deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "watch", "list"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otelcol-shared-watch-manual
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otelcol-shared-watch-manual
+subjects:
+  - kind: ServiceAccount
+    name: otelcol-shared-watch-manual
+    namespace: k8sattributes-shared-manual
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otelcol-shared-watch-manual
+  namespace: k8sattributes-shared-manual
+spec:
+  type: ClusterIP
+  ports:
+    - name: otlp
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+      appProtocol: grpc
+  selector:
+    app.kubernetes.io/name: opentelemetry-collector
+    app.kubernetes.io/instance: otelcol-shared-watch-manual
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otelcol-shared-watch-manual
+  namespace: k8sattributes-shared-manual
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: opentelemetry-collector
+      app.kubernetes.io/instance: otelcol-shared-watch-manual
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: opentelemetry-collector
+        app.kubernetes.io/instance: otelcol-shared-watch-manual
+    spec:
+      serviceAccountName: otelcol-shared-watch-manual
+      containers:
+        - name: opentelemetry-collector
+          command:
+            - /otelcontribcol
+            - --config=/conf/relay.yaml
+          image: otelcontribcol:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: otlp
+              containerPort: 4317
+              protocol: TCP
+          env:
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 3
+          resources:
+            limits:
+              cpu: 128m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /conf
+              name: opentelemetry-collector-configmap
+      volumes:
+        - name: opentelemetry-collector-configmap
+          configMap:
+            name: otelcol-shared-watch-manual-config
+            items:
+              - key: relay
+                path: relay.yaml

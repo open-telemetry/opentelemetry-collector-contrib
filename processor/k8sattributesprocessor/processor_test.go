@@ -45,11 +45,14 @@ func newPodIdentifier(from, name, value string) kube.PodIdentifier {
 	}
 }
 
-func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
-	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+func newTestFactory() *kubernetesProcessorFactory {
+	return newKubernetesProcessorFactory(nil)
+}
+
+func newTracesProcessorWithFactory(factory *kubernetesProcessorFactory, cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
+	opts := append([]option{withKubeClientProvider(newFakeClient)}, options...)
 	set := processortest.NewNopSettings(metadata.Type)
-	return createTracesProcessorWithOptions(
+	return factory.createTracesProcessorWithOptions(
 		context.Background(),
 		set,
 		cfg,
@@ -58,11 +61,14 @@ func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...o
 	)
 }
 
-func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (processor.Metrics, error) {
-	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
+	return newTracesProcessorWithFactory(newTestFactory(), cfg, next, options...)
+}
+
+func newMetricsProcessorWithFactory(factory *kubernetesProcessorFactory, cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (processor.Metrics, error) {
+	opts := append([]option{withKubeClientProvider(newFakeClient)}, options...)
 	set := processortest.NewNopSettings(metadata.Type)
-	return createMetricsProcessorWithOptions(
+	return factory.createMetricsProcessorWithOptions(
 		context.Background(),
 		set,
 		cfg,
@@ -71,11 +77,14 @@ func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metr
 	)
 }
 
-func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (processor.Logs, error) {
-	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (processor.Metrics, error) {
+	return newMetricsProcessorWithFactory(newTestFactory(), cfg, nextMetricsConsumer, options...)
+}
+
+func newLogsProcessorWithFactory(factory *kubernetesProcessorFactory, cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (processor.Logs, error) {
+	opts := append([]option{withKubeClientProvider(newFakeClient)}, options...)
 	set := processortest.NewNopSettings(metadata.Type)
-	return createLogsProcessorWithOptions(
+	return factory.createLogsProcessorWithOptions(
 		context.Background(),
 		set,
 		cfg,
@@ -84,11 +93,14 @@ func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, opti
 	)
 }
 
-func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.Profiles, options ...option) (xprocessor.Profiles, error) {
-	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (processor.Logs, error) {
+	return newLogsProcessorWithFactory(newTestFactory(), cfg, nextLogsConsumer, options...)
+}
+
+func newProfilesProcessorWithFactory(factory *kubernetesProcessorFactory, cfg component.Config, nextProfilesConsumer xconsumer.Profiles, options ...option) (xprocessor.Profiles, error) {
+	opts := append([]option{withKubeClientProvider(newFakeClient)}, options...)
 	set := processortest.NewNopSettings(metadata.Type)
-	return createProfilesProcessorWithOptions(
+	return factory.createProfilesProcessorWithOptions(
 		context.Background(),
 		set,
 		cfg,
@@ -97,10 +109,15 @@ func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.P
 	)
 }
 
+func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.Profiles, options ...option) (xprocessor.Profiles, error) {
+	return newProfilesProcessorWithFactory(newTestFactory(), cfg, nextProfilesConsumer, options...)
+}
+
 // withKubeClientProvider sets the specific implementation for getting K8s Client instances
 func withKubeClientProvider(kcp kube.ClientProvider) option {
 	return func(p *kubernetesprocessor) error {
-		return p.initKubeClient(p.telemetrySettings, kcp)
+		p.clientProvider = kcp
+		return nil
 	}
 }
 
@@ -144,8 +161,9 @@ func newMultiTest(
 		nextLogs:     new(consumertest.LogsSink),
 		nextProfiles: new(consumertest.ProfilesSink),
 	}
+	factory := newTestFactory()
 
-	tp, err := newTracesProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
+	tp, err := newTracesProcessorWithFactory(factory, cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
 	require.NoError(t, err)
 	err = tp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
@@ -157,7 +175,7 @@ func newMultiTest(
 		require.NoError(t, err)
 	}
 
-	mp, err := newMetricsProcessor(cfg, m.nextMetrics, append(options, withExtractKubernetesProcessorInto(&m.kpMetrics))...)
+	mp, err := newMetricsProcessorWithFactory(factory, cfg, m.nextMetrics, append(options, withExtractKubernetesProcessorInto(&m.kpMetrics))...)
 	require.NoError(t, err)
 	err = mp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
@@ -169,7 +187,7 @@ func newMultiTest(
 		require.NoError(t, err)
 	}
 
-	lp, err := newLogsProcessor(cfg, m.nextLogs, append(options, withExtractKubernetesProcessorInto(&m.kpLogs))...)
+	lp, err := newLogsProcessorWithFactory(factory, cfg, m.nextLogs, append(options, withExtractKubernetesProcessorInto(&m.kpLogs))...)
 	require.NoError(t, err)
 	err = lp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
@@ -181,7 +199,7 @@ func newMultiTest(
 		require.NoError(t, err)
 	}
 
-	pp, err := newProfilesProcessor(cfg, m.nextProfiles, append(options, withExtractKubernetesProcessorInto(&m.kpProfiles))...)
+	pp, err := newProfilesProcessorWithFactory(factory, cfg, m.nextProfiles, append(options, withExtractKubernetesProcessorInto(&m.kpProfiles))...)
 	require.NoError(t, err)
 	err = pp.Start(t.Context(), &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
@@ -1727,7 +1745,7 @@ func TestRealClient(t *testing.T) {
 		func(err error) {
 			require.EqualError(t, err, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		},
-		withKubeClientProvider(kubeClientProvider),
+		withKubeClientProvider(nil),
 		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
 	)
 }

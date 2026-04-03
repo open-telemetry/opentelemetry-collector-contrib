@@ -163,6 +163,12 @@ feature_gates:
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.ShareInformerCaches
+    stage: alpha
+    description: >-
+      When enabled, processor instances with strictly equivalent defaulted configuration share the same watcher and informer caches across signals and pipelines.
+    from_version: v0.149.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36234
   - id: processor.k8sattributes.telemetry.disableOldFormatMetrics
     stage: alpha
     description: >-

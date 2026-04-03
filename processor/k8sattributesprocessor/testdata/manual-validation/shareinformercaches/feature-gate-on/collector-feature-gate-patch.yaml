@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otelcol-shared-watch-manual
+  namespace: k8sattributes-shared-manual
+spec:
+  template:
+    spec:
+      containers:
+        - name: opentelemetry-collector
+          command:
+            - /otelcontribcol
+            - --config=/conf/relay.yaml
+            - --feature-gates=processor.k8sattributes.ShareInformerCaches

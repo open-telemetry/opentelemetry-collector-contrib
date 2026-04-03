@@ -31,6 +31,14 @@ var ProcessorK8sattributesEmitV1K8sConventionsFeatureGate = featuregate.GlobalRe
 	featuregate.WithRegisterFromVersion("v0.145.0"),
 )
 
+var ProcessorK8sattributesShareInformerCachesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.k8sattributes.ShareInformerCaches",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, processor instances with strictly equivalent defaulted configuration share the same watcher and informer caches across signals and pipelines."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36234"),
+	featuregate.WithRegisterFromVersion("v0.149.0"),
+)
+
 var ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.k8sattributes.telemetry.disableOldFormatMetrics",
 	featuregate.StageAlpha,
