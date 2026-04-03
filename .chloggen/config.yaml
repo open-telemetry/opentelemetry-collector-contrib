@@ -290,7 +290,7 @@ components:
     - receiver/mongodb
     - receiver/mongodb_atlas
     - receiver/mysql
-    - receiver/namedpipe
+    - receiver/named_pipe
     - receiver/netflow
     - receiver/nginx
     - receiver/nsxt
