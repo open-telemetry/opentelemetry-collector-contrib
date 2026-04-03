@@ -188,7 +188,7 @@ components:
         - mongodb
         - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
