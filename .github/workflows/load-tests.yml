@@ -128,7 +128,10 @@ jobs:
   notify-failure:
     runs-on: ubuntu-24.04
     needs: [loadtest]
-    if: failure() && github.repository_owner == 'open-telemetry'
+    if: >-
+      failure() &&
+      github.event_name != 'pull_request' &&
+      github.repository_owner == 'open-telemetry'
     permissions:
       issues: write
     steps:
@@ -144,14 +147,62 @@ jobs:
           echo "exists=$( [ "$count" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: File an issue for load test failure
+      - name: Collect failure details and file issue
         if: steps.check.outputs.exists == 'false'
         run: |
-          run_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json url -q '.url')"
-          body="$(printf 'The load-tests workflow has failed.\n\n[Link to workflow run](%s)\n\ncc @open-telemetry/collector-contrib-maintainers' "$run_url")"
-          gh issue create -R ${{ github.repository }} \
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          short_sha=$(echo "${{ github.sha }}" | cut -c1-7)
+          commit_url="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+
+          # Extract PR number from merge commit message (contains "(#NNNNN)")
+          commit_msg=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}" --jq '.commit.message' 2>/dev/null || true)
+          pr_number=$(echo "$commit_msg" | head -1 | grep -oP '\(#\K\d+' | head -1 || true)
+
+          # Get failed job names (excluding notify-failure itself)
+          failed_jobs=$(gh run view "${{ github.run_id }}" -R "${{ github.repository }}" \
+            --json jobs \
+            -q '[.jobs[] | select(.conclusion == "failure" and (.name | startswith("notify-failure") | not)) | .name] | map("- " + .) | join("\n")')
+
+          # Get test failure logs from failed steps (last 80 lines to capture test summary)
+          failure_logs=$(gh run view "${{ github.run_id }}" -R "${{ github.repository }}" --log-failed 2>/dev/null \
+            | tail -80 || echo "No logs available")
+          # Truncate to 3000 chars to keep issue body reasonable
+          if [ "${#failure_logs}" -gt 3000 ]; then
+            failure_logs="${failure_logs:0:3000}
+          ... (truncated, see full logs in workflow run)"
+          fi
+
+          # Build issue body to a file to avoid shell escaping issues with log output
+          {
+            echo "Auto-generated report for load-tests workflow."
+            echo ""
+            echo "Link to failed build: ${run_url}"
+            echo "Commit: [${short_sha}](${commit_url})"
+            if [ -n "$pr_number" ]; then
+              echo "PR: [#${pr_number}](${{ github.server_url }}/${{ github.repository }}/pull/${pr_number})"
+            fi
+            echo ""
+            echo "### Component(s)"
+            echo ""
+            echo "testbed"
+            echo ""
+            echo "### Failed jobs"
+            echo ""
+            echo "$failed_jobs"
+            echo ""
+            echo "#### Test failure logs"
+            echo ""
+            echo '```'
+            echo "$failure_logs"
+            echo '```'
+            echo ""
+            echo "**Note**: Information about any subsequent build failures that happen while"
+            echo "this issue is open, will be added as comments with more information to this issue."
+          } > /tmp/issue-body.md
+
+          gh issue create -R "${{ github.repository }}" \
             -t 'load-tests workflow failed' \
-            -b "$body" \
+            --body-file /tmp/issue-body.md \
             -l 'needs triage' \
             -l 'flaky tests'
         env:
