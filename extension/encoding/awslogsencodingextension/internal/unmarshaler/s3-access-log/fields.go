@@ -14,6 +14,7 @@ const (
 	attributeAWSS3ObjectSize     = "aws.s3.object.size"
 	attributeAWSS3TurnAroundTime = "aws.s3.turn_around_time"
 	attributeAWSS3AclRequired    = "aws.s3.acl_required"
+	attributeAWSS3SourceRegion   = "aws.s3.source_region"
 
 	fieldIndexS3BucketOwner    = 0
 	fieldIndexS3BucketName     = 1
@@ -41,6 +42,7 @@ const (
 	fieldIndexTLSVersion       = 23
 	fieldIndexAccessPointARN   = 24
 	fieldIndexACLRequired      = 25
+	fieldIndexSourceRegion     = 26
 )
 
 // Some of the attribute names are based on semantic conventions for AWS S3.
@@ -75,4 +77,5 @@ var attributeNames = [...]string{
 	fieldIndexTLSVersion:       string(conventions.TLSProtocolVersionKey),     // TLS version
 	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",                     // access point ARN
 	fieldIndexACLRequired:      attributeAWSS3AclRequired,                     // acl required
+	fieldIndexSourceRegion:     attributeAWSS3SourceRegion,                    // source region
 }

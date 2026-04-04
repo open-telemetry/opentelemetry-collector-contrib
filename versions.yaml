@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.147.0
+    version: v0.149.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -55,6 +55,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudstorageexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlesecopsexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
@@ -163,6 +164,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/expohisto
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
@@ -192,7 +194,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor
@@ -233,6 +234,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver

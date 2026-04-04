@@ -35,9 +35,9 @@ components:
         - elasticsearch
         - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
-        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
@@ -139,6 +139,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awslambda
         - awss3
         - awsxray
         - azure_blob
@@ -146,6 +147,7 @@ components:
         - azure_monitor
         - carbon
         - chrony
+        - cisco_os
         - cloudflare
         - cloudfoundry
         - collectd
@@ -156,7 +158,7 @@ components:
         - envoyals
         - expvar
         - faro
-        - filelog
+        - file_log
         - filestats
         - flinkmetrics
         - fluentforward
@@ -186,7 +188,7 @@ components:
         - mongodb
         - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
@@ -196,6 +198,7 @@ components:
         - otlpjsonfile
         - podman_stats
         - postgresql
+        - pprof
         - prometheus
         - prometheus_remote_write
         - prometheus_simple
@@ -221,10 +224,10 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
         - tlscheck
-        - udplog
+        - udp_log
         - vcenter
         - wavefront
         - webhookevent

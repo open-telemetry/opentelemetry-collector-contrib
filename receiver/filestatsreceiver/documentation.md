@@ -64,13 +64,13 @@ Elapsed time since the last change of the file or folder, in seconds since Epoch
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| file.permissions | the permissions associated with the file, using an octal format. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| file.permissions | the permissions associated with the file, using an octal format. | Any Str | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| file.name | The name of the file | Any Str | true |
-| file.path | The absolute path of the file | Any Str | false |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| file.name | The name of the file | Any Str | true | - |
+| file.path | The absolute path of the file | Any Str | false | - |

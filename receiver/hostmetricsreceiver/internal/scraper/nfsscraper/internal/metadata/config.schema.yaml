@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       nfs.client.net.count:
-        description: "NfsClientNetCountConfig provides config for the nfs.client.net.count metric."
+        description: "NfsClientNetCountMetricConfig provides config for the nfs.client.net.count metric."
         type: object
         properties:
           enabled:
@@ -28,14 +28,14 @@ $defs:
             default:
               - "network.transport"
       nfs.client.net.tcp.connection.accepted:
-        description: "NfsClientNetTCPConnectionAcceptedConfig provides config for the nfs.client.net.tcp.connection.accepted metric."
+        description: "NfsClientNetTCPConnectionAcceptedMetricConfig provides config for the nfs.client.net.tcp.connection.accepted metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nfs.client.operation.count:
-        description: "NfsClientOperationCountConfig provides config for the nfs.client.operation.count metric."
+        description: "NfsClientOperationCountMetricConfig provides config for the nfs.client.operation.count metric."
         type: object
         properties:
           enabled:
@@ -60,7 +60,7 @@ $defs:
               - "onc_rpc.version"
               - "nfs.operation.name"
       nfs.client.procedure.count:
-        description: "NfsClientProcedureCountConfig provides config for the nfs.client.procedure.count metric."
+        description: "NfsClientProcedureCountMetricConfig provides config for the nfs.client.procedure.count metric."
         type: object
         properties:
           enabled:
@@ -85,35 +85,35 @@ $defs:
               - "onc_rpc.version"
               - "onc_rpc.procedure.name"
       nfs.client.rpc.authrefresh.count:
-        description: "NfsClientRPCAuthrefreshCountConfig provides config for the nfs.client.rpc.authrefresh.count metric."
+        description: "NfsClientRPCAuthrefreshCountMetricConfig provides config for the nfs.client.rpc.authrefresh.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nfs.client.rpc.count:
-        description: "NfsClientRPCCountConfig provides config for the nfs.client.rpc.count metric."
+        description: "NfsClientRPCCountMetricConfig provides config for the nfs.client.rpc.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nfs.client.rpc.retransmit.count:
-        description: "NfsClientRPCRetransmitCountConfig provides config for the nfs.client.rpc.retransmit.count metric."
+        description: "NfsClientRPCRetransmitCountMetricConfig provides config for the nfs.client.rpc.retransmit.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nfs.server.fh.stale.count:
-        description: "NfsServerFhStaleCountConfig provides config for the nfs.server.fh.stale.count metric."
+        description: "NfsServerFhStaleCountMetricConfig provides config for the nfs.server.fh.stale.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nfs.server.io:
-        description: "NfsServerIoConfig provides config for the nfs.server.io metric."
+        description: "NfsServerIoMetricConfig provides config for the nfs.server.io metric."
         type: object
         properties:
           enabled:
@@ -136,7 +136,7 @@ $defs:
             default:
               - "network.io.direction"
       nfs.server.net.count:
-        description: "NfsServerNetCountConfig provides config for the nfs.server.net.count metric."
+        description: "NfsServerNetCountMetricConfig provides config for the nfs.server.net.count metric."
         type: object
         properties:
           enabled:
@@ -159,14 +159,14 @@ $defs:
             default:
               - "network.transport"
       nfs.server.net.tcp.connection.accepted:
-        description: "NfsServerNetTCPConnectionAcceptedConfig provides config for the nfs.server.net.tcp.connection.accepted metric."
+        description: "NfsServerNetTCPConnectionAcceptedMetricConfig provides config for the nfs.server.net.tcp.connection.accepted metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       nfs.server.operation.count:
-        description: "NfsServerOperationCountConfig provides config for the nfs.server.operation.count metric."
+        description: "NfsServerOperationCountMetricConfig provides config for the nfs.server.operation.count metric."
         type: object
         properties:
           enabled:
@@ -191,7 +191,7 @@ $defs:
               - "onc_rpc.version"
               - "nfs.operation.name"
       nfs.server.procedure.count:
-        description: "NfsServerProcedureCountConfig provides config for the nfs.server.procedure.count metric."
+        description: "NfsServerProcedureCountMetricConfig provides config for the nfs.server.procedure.count metric."
         type: object
         properties:
           enabled:
@@ -216,7 +216,7 @@ $defs:
               - "onc_rpc.version"
               - "onc_rpc.procedure.name"
       nfs.server.repcache.requests:
-        description: "NfsServerRepcacheRequestsConfig provides config for the nfs.server.repcache.requests metric."
+        description: "NfsServerRepcacheRequestsMetricConfig provides config for the nfs.server.repcache.requests metric."
         type: object
         properties:
           enabled:
@@ -239,7 +239,7 @@ $defs:
             default:
               - "nfs.server.repcache.status"
       nfs.server.rpc.count:
-        description: "NfsServerRPCCountConfig provides config for the nfs.server.rpc.count metric."
+        description: "NfsServerRPCCountMetricConfig provides config for the nfs.server.rpc.count metric."
         type: object
         properties:
           enabled:
@@ -262,7 +262,7 @@ $defs:
             default:
               - "error.type"
       nfs.server.thread.count:
-        description: "NfsServerThreadCountConfig provides config for the nfs.server.thread.count metric."
+        description: "NfsServerThreadCountMetricConfig provides config for the nfs.server.thread.count metric."
         type: object
         properties:
           enabled:

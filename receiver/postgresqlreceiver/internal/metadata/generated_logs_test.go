@@ -131,10 +131,10 @@ func TestLogsBuilder(t *testing.T) {
 
 			defaultEventsCount := 0
 			allEventsCount := 0
-			defaultEventsCount++
+
 			allEventsCount++
 			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "db.namespace-val", "db.query.text-val", "user.name-val", "postgresql.state-val", 14, "postgresql.application_name-val", "network.peer.address-val", 17, "postgresql.client_hostname-val", "postgresql.query_start-val", "postgresql.wait_event-val", "postgresql.wait_event_type-val", "postgresql.query_id-val", 26.100000)
-			defaultEventsCount++
+
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, AttributeDbSystemNamePostgresql, "db.namespace-val", "db.query.text-val", 16, 15, 30, 26, 27, 30, 25, 28, "postgresql.queryid-val", "postgresql.rolname-val", 26.100000, 26.100000, "postgresql.query_plan-val")
 

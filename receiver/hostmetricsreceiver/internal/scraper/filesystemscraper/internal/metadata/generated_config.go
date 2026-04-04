@@ -8,27 +8,27 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// SystemFilesystemInodesUsageAttributeKey specifies the key of an attribute for the system.filesystem.inodes.usage metric.
-type SystemFilesystemInodesUsageAttributeKey string
+// SystemFilesystemInodesUsageMetricAttributeKey specifies the key of an attribute for the system.filesystem.inodes.usage metric.
+type SystemFilesystemInodesUsageMetricAttributeKey string
 
 const (
-	SystemFilesystemInodesUsageAttributeKeyDevice     SystemFilesystemInodesUsageAttributeKey = "device"
-	SystemFilesystemInodesUsageAttributeKeyMode       SystemFilesystemInodesUsageAttributeKey = "mode"
-	SystemFilesystemInodesUsageAttributeKeyMountpoint SystemFilesystemInodesUsageAttributeKey = "mountpoint"
-	SystemFilesystemInodesUsageAttributeKeyType       SystemFilesystemInodesUsageAttributeKey = "type"
-	SystemFilesystemInodesUsageAttributeKeyState      SystemFilesystemInodesUsageAttributeKey = "state"
+	SystemFilesystemInodesUsageMetricAttributeKeyDevice     SystemFilesystemInodesUsageMetricAttributeKey = "device"
+	SystemFilesystemInodesUsageMetricAttributeKeyMode       SystemFilesystemInodesUsageMetricAttributeKey = "mode"
+	SystemFilesystemInodesUsageMetricAttributeKeyMountpoint SystemFilesystemInodesUsageMetricAttributeKey = "mountpoint"
+	SystemFilesystemInodesUsageMetricAttributeKeyType       SystemFilesystemInodesUsageMetricAttributeKey = "type"
+	SystemFilesystemInodesUsageMetricAttributeKeyState      SystemFilesystemInodesUsageMetricAttributeKey = "state"
 )
 
-// SystemFilesystemInodesUsageConfig provides config for the system.filesystem.inodes.usage metric.
-type SystemFilesystemInodesUsageConfig struct {
+// SystemFilesystemInodesUsageMetricConfig provides config for the system.filesystem.inodes.usage metric.
+type SystemFilesystemInodesUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemFilesystemInodesUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemFilesystemInodesUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemFilesystemInodesUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemFilesystemInodesUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -42,10 +42,10 @@ func (ms *SystemFilesystemInodesUsageConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *SystemFilesystemInodesUsageConfig) Validate() error {
+func (ms *SystemFilesystemInodesUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemFilesystemInodesUsageAttributeKeyDevice, SystemFilesystemInodesUsageAttributeKeyMode, SystemFilesystemInodesUsageAttributeKeyMountpoint, SystemFilesystemInodesUsageAttributeKeyType, SystemFilesystemInodesUsageAttributeKeyState:
+		case SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.filesystem.inodes.usage doesn't have an attribute %v, valid attributes: [device, mode, mountpoint, type, state]", val)
 		}
@@ -60,27 +60,27 @@ func (ms *SystemFilesystemInodesUsageConfig) Validate() error {
 	return nil
 }
 
-// SystemFilesystemUsageAttributeKey specifies the key of an attribute for the system.filesystem.usage metric.
-type SystemFilesystemUsageAttributeKey string
+// SystemFilesystemUsageMetricAttributeKey specifies the key of an attribute for the system.filesystem.usage metric.
+type SystemFilesystemUsageMetricAttributeKey string
 
 const (
-	SystemFilesystemUsageAttributeKeyDevice     SystemFilesystemUsageAttributeKey = "device"
-	SystemFilesystemUsageAttributeKeyMode       SystemFilesystemUsageAttributeKey = "mode"
-	SystemFilesystemUsageAttributeKeyMountpoint SystemFilesystemUsageAttributeKey = "mountpoint"
-	SystemFilesystemUsageAttributeKeyType       SystemFilesystemUsageAttributeKey = "type"
-	SystemFilesystemUsageAttributeKeyState      SystemFilesystemUsageAttributeKey = "state"
+	SystemFilesystemUsageMetricAttributeKeyDevice     SystemFilesystemUsageMetricAttributeKey = "device"
+	SystemFilesystemUsageMetricAttributeKeyMode       SystemFilesystemUsageMetricAttributeKey = "mode"
+	SystemFilesystemUsageMetricAttributeKeyMountpoint SystemFilesystemUsageMetricAttributeKey = "mountpoint"
+	SystemFilesystemUsageMetricAttributeKeyType       SystemFilesystemUsageMetricAttributeKey = "type"
+	SystemFilesystemUsageMetricAttributeKeyState      SystemFilesystemUsageMetricAttributeKey = "state"
 )
 
-// SystemFilesystemUsageConfig provides config for the system.filesystem.usage metric.
-type SystemFilesystemUsageConfig struct {
+// SystemFilesystemUsageMetricConfig provides config for the system.filesystem.usage metric.
+type SystemFilesystemUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemFilesystemUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemFilesystemUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemFilesystemUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -94,10 +94,10 @@ func (ms *SystemFilesystemUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemFilesystemUsageConfig) Validate() error {
+func (ms *SystemFilesystemUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemFilesystemUsageAttributeKeyDevice, SystemFilesystemUsageAttributeKeyMode, SystemFilesystemUsageAttributeKeyMountpoint, SystemFilesystemUsageAttributeKeyType, SystemFilesystemUsageAttributeKeyState:
+		case SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.filesystem.usage doesn't have an attribute %v, valid attributes: [device, mode, mountpoint, type, state]", val)
 		}
@@ -112,26 +112,26 @@ func (ms *SystemFilesystemUsageConfig) Validate() error {
 	return nil
 }
 
-// SystemFilesystemUtilizationAttributeKey specifies the key of an attribute for the system.filesystem.utilization metric.
-type SystemFilesystemUtilizationAttributeKey string
+// SystemFilesystemUtilizationMetricAttributeKey specifies the key of an attribute for the system.filesystem.utilization metric.
+type SystemFilesystemUtilizationMetricAttributeKey string
 
 const (
-	SystemFilesystemUtilizationAttributeKeyDevice     SystemFilesystemUtilizationAttributeKey = "device"
-	SystemFilesystemUtilizationAttributeKeyMode       SystemFilesystemUtilizationAttributeKey = "mode"
-	SystemFilesystemUtilizationAttributeKeyMountpoint SystemFilesystemUtilizationAttributeKey = "mountpoint"
-	SystemFilesystemUtilizationAttributeKeyType       SystemFilesystemUtilizationAttributeKey = "type"
+	SystemFilesystemUtilizationMetricAttributeKeyDevice     SystemFilesystemUtilizationMetricAttributeKey = "device"
+	SystemFilesystemUtilizationMetricAttributeKeyMode       SystemFilesystemUtilizationMetricAttributeKey = "mode"
+	SystemFilesystemUtilizationMetricAttributeKeyMountpoint SystemFilesystemUtilizationMetricAttributeKey = "mountpoint"
+	SystemFilesystemUtilizationMetricAttributeKeyType       SystemFilesystemUtilizationMetricAttributeKey = "type"
 )
 
-// SystemFilesystemUtilizationConfig provides config for the system.filesystem.utilization metric.
-type SystemFilesystemUtilizationConfig struct {
+// SystemFilesystemUtilizationMetricConfig provides config for the system.filesystem.utilization metric.
+type SystemFilesystemUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemFilesystemUtilizationAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemFilesystemUtilizationMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemFilesystemUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemFilesystemUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -145,10 +145,10 @@ func (ms *SystemFilesystemUtilizationConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *SystemFilesystemUtilizationConfig) Validate() error {
+func (ms *SystemFilesystemUtilizationMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemFilesystemUtilizationAttributeKeyDevice, SystemFilesystemUtilizationAttributeKeyMode, SystemFilesystemUtilizationAttributeKeyMountpoint, SystemFilesystemUtilizationAttributeKeyType:
+		case SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType:
 		default:
 			return fmt.Errorf("metric system.filesystem.utilization doesn't have an attribute %v, valid attributes: [device, mode, mountpoint, type]", val)
 		}
@@ -165,27 +165,27 @@ func (ms *SystemFilesystemUtilizationConfig) Validate() error {
 
 // MetricsConfig provides config for filesystem metrics.
 type MetricsConfig struct {
-	SystemFilesystemInodesUsage SystemFilesystemInodesUsageConfig `mapstructure:"system.filesystem.inodes.usage"`
-	SystemFilesystemUsage       SystemFilesystemUsageConfig       `mapstructure:"system.filesystem.usage"`
-	SystemFilesystemUtilization SystemFilesystemUtilizationConfig `mapstructure:"system.filesystem.utilization"`
+	SystemFilesystemInodesUsage SystemFilesystemInodesUsageMetricConfig `mapstructure:"system.filesystem.inodes.usage"`
+	SystemFilesystemUsage       SystemFilesystemUsageMetricConfig       `mapstructure:"system.filesystem.usage"`
+	SystemFilesystemUtilization SystemFilesystemUtilizationMetricConfig `mapstructure:"system.filesystem.utilization"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemFilesystemInodesUsage: SystemFilesystemInodesUsageConfig{
+		SystemFilesystemInodesUsage: SystemFilesystemInodesUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemFilesystemInodesUsageAttributeKey{SystemFilesystemInodesUsageAttributeKeyDevice, SystemFilesystemInodesUsageAttributeKeyMode, SystemFilesystemInodesUsageAttributeKeyMountpoint, SystemFilesystemInodesUsageAttributeKeyType, SystemFilesystemInodesUsageAttributeKeyState},
+			EnabledAttributes:   []SystemFilesystemInodesUsageMetricAttributeKey{SystemFilesystemInodesUsageMetricAttributeKeyDevice, SystemFilesystemInodesUsageMetricAttributeKeyMode, SystemFilesystemInodesUsageMetricAttributeKeyMountpoint, SystemFilesystemInodesUsageMetricAttributeKeyType, SystemFilesystemInodesUsageMetricAttributeKeyState},
 		},
-		SystemFilesystemUsage: SystemFilesystemUsageConfig{
+		SystemFilesystemUsage: SystemFilesystemUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemFilesystemUsageAttributeKey{SystemFilesystemUsageAttributeKeyDevice, SystemFilesystemUsageAttributeKeyMode, SystemFilesystemUsageAttributeKeyMountpoint, SystemFilesystemUsageAttributeKeyType, SystemFilesystemUsageAttributeKeyState},
+			EnabledAttributes:   []SystemFilesystemUsageMetricAttributeKey{SystemFilesystemUsageMetricAttributeKeyDevice, SystemFilesystemUsageMetricAttributeKeyMode, SystemFilesystemUsageMetricAttributeKeyMountpoint, SystemFilesystemUsageMetricAttributeKeyType, SystemFilesystemUsageMetricAttributeKeyState},
 		},
-		SystemFilesystemUtilization: SystemFilesystemUtilizationConfig{
+		SystemFilesystemUtilization: SystemFilesystemUtilizationMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []SystemFilesystemUtilizationAttributeKey{SystemFilesystemUtilizationAttributeKeyDevice, SystemFilesystemUtilizationAttributeKeyMode, SystemFilesystemUtilizationAttributeKeyMountpoint, SystemFilesystemUtilizationAttributeKeyType},
+			EnabledAttributes:   []SystemFilesystemUtilizationMetricAttributeKey{SystemFilesystemUtilizationMetricAttributeKeyDevice, SystemFilesystemUtilizationMetricAttributeKeyMode, SystemFilesystemUtilizationMetricAttributeKeyMountpoint, SystemFilesystemUtilizationMetricAttributeKeyType},
 		},
 	}
 }

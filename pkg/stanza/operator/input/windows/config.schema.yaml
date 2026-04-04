@@ -5,6 +5,8 @@ $defs:
     properties:
       channel:
         type: string
+      event_data_format:
+        $ref: event_data_format
       exclude_providers:
         type: array
         items:
@@ -31,8 +33,15 @@ $defs:
         type: string
       suppress_rendering_info:
         type: boolean
+      wait_timeout:
+        description: WaitTimeout is the maximum duration to wait for new events before performing a safety-net poll in event-driven mode (see stanza.windows.eventDrivenScraping feature gate). Under normal conditions the subscription signal fires immediately, so this value is rarely reached. Defaults to 5s. Ignored when the feature gate is not enabled.
+        type: string
+        format: duration
     allOf:
-      - $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.input_config
+      - $ref: /pkg/stanza/operator/helper.input_config
+  event_data_format:
+    description: EventDataFormat controls the structure of the event_data field in the log body.
+    type: string
   remote_config:
     description: RemoteConfig is the configuration for a remote server.
     type: object
