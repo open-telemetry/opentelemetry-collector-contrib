@@ -152,7 +152,7 @@ jobs:
           gh issue create -R ${{ github.repository }} \
             -t 'load-tests workflow failed' \
             -b "$body" \
-            -l 'flaky triage' \
-            -l 'load tests'
+            -l 'needs triage' \
+            -l 'flaky tests'
         env:
           GH_TOKEN: ${{ github.token }}
