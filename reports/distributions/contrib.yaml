@@ -224,8 +224,8 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
         - tlscheck
         - udp_log
         - vcenter

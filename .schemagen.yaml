@@ -33,7 +33,7 @@ componentOverrides:
     configName: 'JournaldConfig'
   receiver/syslog:
     configName: 'SysLogConfig'
-  receiver/tcplog:
+  receiver/tcp_log:
     configName: 'TCPLogConfig'
   receiver/udp_log:
     configName: 'UDPLogConfig'
