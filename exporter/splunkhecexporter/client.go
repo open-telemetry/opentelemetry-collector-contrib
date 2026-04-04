@@ -678,7 +678,7 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 }
 
 var jsonBufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return new(bytes.Buffer)
 	},
 }
