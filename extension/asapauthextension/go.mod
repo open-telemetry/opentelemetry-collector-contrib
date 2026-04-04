@@ -6,14 +6,14 @@ require (
 	bitbucket.org/atlassian/go-asap/v2 v2.15.3
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.54.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/component/componenttest v0.148.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/config/configopaque v1.54.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/confmap v1.54.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/confmap/xconfmap v0.148.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/extension v1.54.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/extension/extensionauth v1.54.1-0.20260326211300-c04f6776a74c
-	go.opentelemetry.io/collector/extension/extensiontest v0.148.1-0.20260326211300-c04f6776a74c
+	go.opentelemetry.io/collector/component v1.55.1-0.20260402195938-76ede073ee8e
+	go.opentelemetry.io/collector/component/componenttest v0.149.1-0.20260402195938-76ede073ee8e
+	go.opentelemetry.io/collector/config/configopaque v1.55.1-0.20260402195938-76ede073ee8e
+	go.opentelemetry.io/collector/confmap v1.55.1-0.20260402195938-76ede073ee8e
+	go.opentelemetry.io/collector/confmap/xconfmap v0.149.1-0.20260402195938-76ede073ee8e
+	go.opentelemetry.io/collector/extension v1.55.1-0.20260402195938-76ede073ee8e
+	go.opentelemetry.io/collector/extension/extensionauth v1.55.1-0.20260402195938-76ede073ee8e
+	go.opentelemetry.io/collector/extension/extensiontest v0.149.1-0.20260402195938-76ede073ee8e
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.79.3
 )
@@ -27,12 +27,12 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.8.0 // indirect
+	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
-	github.com/knadh/koanf/v2 v2.3.3 // indirect
+	github.com/knadh/koanf/v2 v2.3.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -42,9 +42,9 @@ require (
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.148.1-0.20260326211300-c04f6776a74c // indirect
-	go.opentelemetry.io/collector/pdata v1.54.1-0.20260326211300-c04f6776a74c // indirect
+	go.opentelemetry.io/collector/featuregate v1.55.1-0.20260402195938-76ede073ee8e // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.149.1-0.20260402195938-76ede073ee8e // indirect
+	go.opentelemetry.io/collector/pdata v1.55.1-0.20260402195938-76ede073ee8e // indirect
 	go.opentelemetry.io/otel v1.42.0 // indirect
 	go.opentelemetry.io/otel/metric v1.42.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.42.0 // indirect

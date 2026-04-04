@@ -12,6 +12,13 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
+)
+
 var MetricsInfo = metricsInfo{
 	SystemUptime: metricInfo{
 		Name: "system.uptime",
@@ -27,9 +34,9 @@ type metricInfo struct {
 }
 
 type metricSystemUptime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric           // data buffer for generated metric.
+	config   SystemUptimeMetricConfig // metric config provided by user.
+	capacity int                      // max observed number of data points added to the metric.
 }
 
 // init fills system.uptime metric with initial data.
@@ -66,7 +73,7 @@ func (m *metricSystemUptime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemUptime(cfg MetricConfig) metricSystemUptime {
+func newMetricSystemUptime(cfg SystemUptimeMetricConfig) metricSystemUptime {
 	m := metricSystemUptime{config: cfg}
 
 	if cfg.Enabled {
