@@ -6,10 +6,10 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.platform | The cloud.platform | Any Str | true |
-| cloud.provider | The cloud.provider | Any Str | true |
-| deployment.environment | The deployment.environment | Any Str | true |
-| service.instance.id | The service.instance.id | Any Str | true |
-| service.version | The service.version | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| cloud.platform | The cloud.platform | Any Str | true | - |
+| cloud.provider | The cloud.provider | Any Str | true | - |
+| deployment.environment | The deployment.environment | Any Str | true | - |
+| service.instance.id | The service.instance.id | Any Str | true | - |
+| service.version | The service.version | Any Str | true | - |

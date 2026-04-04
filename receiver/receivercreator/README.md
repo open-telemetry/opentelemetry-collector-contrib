@@ -6,7 +6,7 @@ This receiver can instantiate other receivers at runtime based on whether observ
 
 | Status        |           |
 | ------------- |-----------|
-| Stability     | [alpha]: logs, traces   |
+| Stability     | [alpha]: logs, traces, profiles   |
 |               | [beta]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Freceivercreator%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Freceivercreator) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Freceivercreator%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Freceivercreator) |
@@ -415,7 +415,7 @@ receivers:
   receiver_creator/logs:
     watch_observers: [ k8s_observer ]
     receivers:
-      filelog/busybox:
+      file_log/busybox:
         rule: type == "pod.container" && container_name == "busybox"
         config:
           include:
@@ -428,7 +428,7 @@ receivers:
             - type: add
               field: attributes.log.template
               value: busybox
-      filelog/lazybox:
+      file_log/lazybox:
         rule: type == "pod.container" && container_name == "lazybox"
         config:
           include:
@@ -568,7 +568,7 @@ The hints are evaluated per container by extracting the annotations from each [`
 
 ### Supported logs annotations
 
-This feature enables `filelog` receiver in order to collect logs from the discovered Pods.
+This feature enables `file_log` receiver in order to collect logs from the discovered Pods.
 
 #### Enable/disable discovery
 
@@ -578,7 +578,7 @@ By default `"false"`.
 
 #### Define configuration
 
-The default configuration for the `filelog` receiver is the following:
+The default configuration for the `file_log` receiver is the following:
 
 ```yaml
 include:
