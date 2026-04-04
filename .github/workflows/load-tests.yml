@@ -135,6 +135,12 @@ jobs:
     permissions:
       issues: write
     steps:
+      - name: Download test result archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: test-result-archive-*
+          path: /tmp/test-results/
+        continue-on-error: true
       - name: Check for existing issue
         id: check
         run: |
@@ -163,16 +169,21 @@ jobs:
             --json jobs \
             -q '[.jobs[] | select(.conclusion == "failure" and (.name | startswith("notify-failure") | not)) | .name] | map("- " + .) | join("\n")')
 
-          # Get test failure logs from failed steps (last 80 lines to capture test summary)
-          failure_logs=$(gh run view "${{ github.run_id }}" -R "${{ github.repository }}" --log-failed 2>/dev/null \
-            | tail -80 || echo "No logs available")
-          # Truncate to 3000 chars to keep issue body reasonable
-          if [ "${#failure_logs}" -gt 3000 ]; then
-            failure_logs="${failure_logs:0:3000}
-          ... (truncated, see full logs in workflow run)"
+          # Extract performance table and test failures from archived test results
+          performance_table=""
+          failure_msgs=""
+          for tarfile in /tmp/test-results/*/*.tar; do
+            tar -xf "$tarfile" testbed/tests/results/TESTRESULTS.md 2>/dev/null || true
+            tar -xf "$tarfile" testbed/tests/results/testoutput.log 2>/dev/null || true
+          done
+          if [ -f testbed/tests/results/TESTRESULTS.md ]; then
+            performance_table=$(cat testbed/tests/results/TESTRESULTS.md)
+          fi
+          if [ -f testbed/tests/results/testoutput.log ]; then
+            failure_msgs=$(grep -E '(--- FAIL|^FAIL)' testbed/tests/results/testoutput.log | head -20)
           fi
 
-          # Build issue body to a file to avoid shell escaping issues with log output
+          # Build issue body to a file to avoid shell escaping issues
           {
             echo "Auto-generated report for load-tests workflow."
             echo ""
@@ -189,12 +200,22 @@ jobs:
             echo "### Failed jobs"
             echo ""
             echo "$failed_jobs"
-            echo ""
-            echo "#### Test failure logs"
-            echo ""
-            echo '```'
-            echo "$failure_logs"
-            echo '```'
+            if [ -n "$performance_table" ]; then
+              echo ""
+              echo "### Performance results"
+              echo ""
+              echo '```'
+              echo "$performance_table"
+              echo '```'
+            fi
+            if [ -n "$failure_msgs" ]; then
+              echo ""
+              echo "#### Test failures"
+              echo ""
+              echo '```'
+              echo "$failure_msgs"
+              echo '```'
+            fi
             echo ""
             echo "**Note**: Information about any subsequent build failures that happen while"
             echo "this issue is open, will be added as comments with more information to this issue."
