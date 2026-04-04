@@ -138,7 +138,7 @@ jobs:
           count=$(gh issue list -R ${{ github.repository }} \
             --search "load-tests workflow failed" \
             --state open \
-            --label "load tests" \
+            --label "flaky tests" \
             --json number \
             --jq 'length')
           echo "exists=$( [ "$count" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
@@ -152,7 +152,7 @@ jobs:
           gh issue create -R ${{ github.repository }} \
             -t 'load-tests workflow failed' \
             -b "$body" \
-            -l 'needs triage' \
+            -l 'flaky triage' \
             -l 'load tests'
         env:
           GH_TOKEN: ${{ github.token }}
