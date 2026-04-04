@@ -9,13 +9,13 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// SparkDriverBlockManagerDiskUsageConfig provides config for the spark.driver.block_manager.disk.usage metric.
-type SparkDriverBlockManagerDiskUsageConfig struct {
+// SparkDriverBlockManagerDiskUsageMetricConfig provides config for the spark.driver.block_manager.disk.usage metric.
+type SparkDriverBlockManagerDiskUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverBlockManagerDiskUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverBlockManagerDiskUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,24 +29,24 @@ func (ms *SparkDriverBlockManagerDiskUsageConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// SparkDriverBlockManagerMemoryUsageAttributeKey specifies the key of an attribute for the spark.driver.block_manager.memory.usage metric.
-type SparkDriverBlockManagerMemoryUsageAttributeKey string
+// SparkDriverBlockManagerMemoryUsageMetricAttributeKey specifies the key of an attribute for the spark.driver.block_manager.memory.usage metric.
+type SparkDriverBlockManagerMemoryUsageMetricAttributeKey string
 
 const (
-	SparkDriverBlockManagerMemoryUsageAttributeKeyLocation SparkDriverBlockManagerMemoryUsageAttributeKey = "location"
-	SparkDriverBlockManagerMemoryUsageAttributeKeyState    SparkDriverBlockManagerMemoryUsageAttributeKey = "state"
+	SparkDriverBlockManagerMemoryUsageMetricAttributeKeyLocation SparkDriverBlockManagerMemoryUsageMetricAttributeKey = "location"
+	SparkDriverBlockManagerMemoryUsageMetricAttributeKeyState    SparkDriverBlockManagerMemoryUsageMetricAttributeKey = "state"
 )
 
-// SparkDriverBlockManagerMemoryUsageConfig provides config for the spark.driver.block_manager.memory.usage metric.
-type SparkDriverBlockManagerMemoryUsageConfig struct {
+// SparkDriverBlockManagerMemoryUsageMetricConfig provides config for the spark.driver.block_manager.memory.usage metric.
+type SparkDriverBlockManagerMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverBlockManagerMemoryUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverBlockManagerMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverBlockManagerMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverBlockManagerMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -60,10 +60,10 @@ func (ms *SparkDriverBlockManagerMemoryUsageConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *SparkDriverBlockManagerMemoryUsageConfig) Validate() error {
+func (ms *SparkDriverBlockManagerMemoryUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverBlockManagerMemoryUsageAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageAttributeKeyState:
+		case SparkDriverBlockManagerMemoryUsageMetricAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric spark.driver.block_manager.memory.usage doesn't have an attribute %v, valid attributes: [location, state]", val)
 		}
@@ -78,13 +78,13 @@ func (ms *SparkDriverBlockManagerMemoryUsageConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverCodeGeneratorCompilationAverageTimeConfig provides config for the spark.driver.code_generator.compilation.average_time metric.
-type SparkDriverCodeGeneratorCompilationAverageTimeConfig struct {
+// SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig provides config for the spark.driver.code_generator.compilation.average_time metric.
+type SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorCompilationAverageTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -98,13 +98,13 @@ func (ms *SparkDriverCodeGeneratorCompilationAverageTimeConfig) Unmarshal(parser
 	return nil
 }
 
-// SparkDriverCodeGeneratorCompilationCountConfig provides config for the spark.driver.code_generator.compilation.count metric.
-type SparkDriverCodeGeneratorCompilationCountConfig struct {
+// SparkDriverCodeGeneratorCompilationCountMetricConfig provides config for the spark.driver.code_generator.compilation.count metric.
+type SparkDriverCodeGeneratorCompilationCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorCompilationCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorCompilationCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -118,13 +118,13 @@ func (ms *SparkDriverCodeGeneratorCompilationCountConfig) Unmarshal(parser *conf
 	return nil
 }
 
-// SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig provides config for the spark.driver.code_generator.generated_class.average_size metric.
-type SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig struct {
+// SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig provides config for the spark.driver.code_generator.generated_class.average_size metric.
+type SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -138,13 +138,13 @@ func (ms *SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig) Unmarshal(par
 	return nil
 }
 
-// SparkDriverCodeGeneratorGeneratedClassCountConfig provides config for the spark.driver.code_generator.generated_class.count metric.
-type SparkDriverCodeGeneratorGeneratedClassCountConfig struct {
+// SparkDriverCodeGeneratorGeneratedClassCountMetricConfig provides config for the spark.driver.code_generator.generated_class.count metric.
+type SparkDriverCodeGeneratorGeneratedClassCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorGeneratedClassCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorGeneratedClassCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -158,13 +158,13 @@ func (ms *SparkDriverCodeGeneratorGeneratedClassCountConfig) Unmarshal(parser *c
 	return nil
 }
 
-// SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig provides config for the spark.driver.code_generator.generated_method.average_size metric.
-type SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig struct {
+// SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig provides config for the spark.driver.code_generator.generated_method.average_size metric.
+type SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -178,13 +178,13 @@ func (ms *SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig) Unmarshal(pa
 	return nil
 }
 
-// SparkDriverCodeGeneratorGeneratedMethodCountConfig provides config for the spark.driver.code_generator.generated_method.count metric.
-type SparkDriverCodeGeneratorGeneratedMethodCountConfig struct {
+// SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig provides config for the spark.driver.code_generator.generated_method.count metric.
+type SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorGeneratedMethodCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -198,13 +198,13 @@ func (ms *SparkDriverCodeGeneratorGeneratedMethodCountConfig) Unmarshal(parser *
 	return nil
 }
 
-// SparkDriverCodeGeneratorSourceCodeAverageSizeConfig provides config for the spark.driver.code_generator.source_code.average_size metric.
-type SparkDriverCodeGeneratorSourceCodeAverageSizeConfig struct {
+// SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig provides config for the spark.driver.code_generator.source_code.average_size metric.
+type SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorSourceCodeAverageSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -218,13 +218,13 @@ func (ms *SparkDriverCodeGeneratorSourceCodeAverageSizeConfig) Unmarshal(parser 
 	return nil
 }
 
-// SparkDriverCodeGeneratorSourceCodeOperationsConfig provides config for the spark.driver.code_generator.source_code.operations metric.
-type SparkDriverCodeGeneratorSourceCodeOperationsConfig struct {
+// SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig provides config for the spark.driver.code_generator.source_code.operations metric.
+type SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverCodeGeneratorSourceCodeOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -238,13 +238,13 @@ func (ms *SparkDriverCodeGeneratorSourceCodeOperationsConfig) Unmarshal(parser *
 	return nil
 }
 
-// SparkDriverDagSchedulerJobActiveConfig provides config for the spark.driver.dag_scheduler.job.active metric.
-type SparkDriverDagSchedulerJobActiveConfig struct {
+// SparkDriverDagSchedulerJobActiveMetricConfig provides config for the spark.driver.dag_scheduler.job.active metric.
+type SparkDriverDagSchedulerJobActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverDagSchedulerJobActiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverDagSchedulerJobActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -258,13 +258,13 @@ func (ms *SparkDriverDagSchedulerJobActiveConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// SparkDriverDagSchedulerJobCountConfig provides config for the spark.driver.dag_scheduler.job.count metric.
-type SparkDriverDagSchedulerJobCountConfig struct {
+// SparkDriverDagSchedulerJobCountMetricConfig provides config for the spark.driver.dag_scheduler.job.count metric.
+type SparkDriverDagSchedulerJobCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverDagSchedulerJobCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverDagSchedulerJobCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -278,23 +278,23 @@ func (ms *SparkDriverDagSchedulerJobCountConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-// SparkDriverDagSchedulerStageCountAttributeKey specifies the key of an attribute for the spark.driver.dag_scheduler.stage.count metric.
-type SparkDriverDagSchedulerStageCountAttributeKey string
+// SparkDriverDagSchedulerStageCountMetricAttributeKey specifies the key of an attribute for the spark.driver.dag_scheduler.stage.count metric.
+type SparkDriverDagSchedulerStageCountMetricAttributeKey string
 
 const (
-	SparkDriverDagSchedulerStageCountAttributeKeySchedulerStatus SparkDriverDagSchedulerStageCountAttributeKey = "status"
+	SparkDriverDagSchedulerStageCountMetricAttributeKeySchedulerStatus SparkDriverDagSchedulerStageCountMetricAttributeKey = "status"
 )
 
-// SparkDriverDagSchedulerStageCountConfig provides config for the spark.driver.dag_scheduler.stage.count metric.
-type SparkDriverDagSchedulerStageCountConfig struct {
+// SparkDriverDagSchedulerStageCountMetricConfig provides config for the spark.driver.dag_scheduler.stage.count metric.
+type SparkDriverDagSchedulerStageCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverDagSchedulerStageCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverDagSchedulerStageCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverDagSchedulerStageCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverDagSchedulerStageCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -308,10 +308,10 @@ func (ms *SparkDriverDagSchedulerStageCountConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-func (ms *SparkDriverDagSchedulerStageCountConfig) Validate() error {
+func (ms *SparkDriverDagSchedulerStageCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverDagSchedulerStageCountAttributeKeySchedulerStatus:
+		case SparkDriverDagSchedulerStageCountMetricAttributeKeySchedulerStatus:
 		default:
 			return fmt.Errorf("metric spark.driver.dag_scheduler.stage.count doesn't have an attribute %v, valid attributes: [status]", val)
 		}
@@ -326,13 +326,13 @@ func (ms *SparkDriverDagSchedulerStageCountConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverDagSchedulerStageFailedConfig provides config for the spark.driver.dag_scheduler.stage.failed metric.
-type SparkDriverDagSchedulerStageFailedConfig struct {
+// SparkDriverDagSchedulerStageFailedMetricConfig provides config for the spark.driver.dag_scheduler.stage.failed metric.
+type SparkDriverDagSchedulerStageFailedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverDagSchedulerStageFailedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverDagSchedulerStageFailedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -346,23 +346,23 @@ func (ms *SparkDriverDagSchedulerStageFailedConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// SparkDriverExecutorGcOperationsAttributeKey specifies the key of an attribute for the spark.driver.executor.gc.operations metric.
-type SparkDriverExecutorGcOperationsAttributeKey string
+// SparkDriverExecutorGcOperationsMetricAttributeKey specifies the key of an attribute for the spark.driver.executor.gc.operations metric.
+type SparkDriverExecutorGcOperationsMetricAttributeKey string
 
 const (
-	SparkDriverExecutorGcOperationsAttributeKeyGcType SparkDriverExecutorGcOperationsAttributeKey = "gc_type"
+	SparkDriverExecutorGcOperationsMetricAttributeKeyGcType SparkDriverExecutorGcOperationsMetricAttributeKey = "gc_type"
 )
 
-// SparkDriverExecutorGcOperationsConfig provides config for the spark.driver.executor.gc.operations metric.
-type SparkDriverExecutorGcOperationsConfig struct {
+// SparkDriverExecutorGcOperationsMetricConfig provides config for the spark.driver.executor.gc.operations metric.
+type SparkDriverExecutorGcOperationsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverExecutorGcOperationsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverExecutorGcOperationsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverExecutorGcOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverExecutorGcOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -376,10 +376,10 @@ func (ms *SparkDriverExecutorGcOperationsConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *SparkDriverExecutorGcOperationsConfig) Validate() error {
+func (ms *SparkDriverExecutorGcOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverExecutorGcOperationsAttributeKeyGcType:
+		case SparkDriverExecutorGcOperationsMetricAttributeKeyGcType:
 		default:
 			return fmt.Errorf("metric spark.driver.executor.gc.operations doesn't have an attribute %v, valid attributes: [gc_type]", val)
 		}
@@ -394,23 +394,23 @@ func (ms *SparkDriverExecutorGcOperationsConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverExecutorGcTimeAttributeKey specifies the key of an attribute for the spark.driver.executor.gc.time metric.
-type SparkDriverExecutorGcTimeAttributeKey string
+// SparkDriverExecutorGcTimeMetricAttributeKey specifies the key of an attribute for the spark.driver.executor.gc.time metric.
+type SparkDriverExecutorGcTimeMetricAttributeKey string
 
 const (
-	SparkDriverExecutorGcTimeAttributeKeyGcType SparkDriverExecutorGcTimeAttributeKey = "gc_type"
+	SparkDriverExecutorGcTimeMetricAttributeKeyGcType SparkDriverExecutorGcTimeMetricAttributeKey = "gc_type"
 )
 
-// SparkDriverExecutorGcTimeConfig provides config for the spark.driver.executor.gc.time metric.
-type SparkDriverExecutorGcTimeConfig struct {
+// SparkDriverExecutorGcTimeMetricConfig provides config for the spark.driver.executor.gc.time metric.
+type SparkDriverExecutorGcTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverExecutorGcTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverExecutorGcTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverExecutorGcTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverExecutorGcTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -424,10 +424,10 @@ func (ms *SparkDriverExecutorGcTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-func (ms *SparkDriverExecutorGcTimeConfig) Validate() error {
+func (ms *SparkDriverExecutorGcTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverExecutorGcTimeAttributeKeyGcType:
+		case SparkDriverExecutorGcTimeMetricAttributeKeyGcType:
 		default:
 			return fmt.Errorf("metric spark.driver.executor.gc.time doesn't have an attribute %v, valid attributes: [gc_type]", val)
 		}
@@ -442,23 +442,23 @@ func (ms *SparkDriverExecutorGcTimeConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverExecutorMemoryExecutionAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.execution metric.
-type SparkDriverExecutorMemoryExecutionAttributeKey string
+// SparkDriverExecutorMemoryExecutionMetricAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.execution metric.
+type SparkDriverExecutorMemoryExecutionMetricAttributeKey string
 
 const (
-	SparkDriverExecutorMemoryExecutionAttributeKeyLocation SparkDriverExecutorMemoryExecutionAttributeKey = "location"
+	SparkDriverExecutorMemoryExecutionMetricAttributeKeyLocation SparkDriverExecutorMemoryExecutionMetricAttributeKey = "location"
 )
 
-// SparkDriverExecutorMemoryExecutionConfig provides config for the spark.driver.executor.memory.execution metric.
-type SparkDriverExecutorMemoryExecutionConfig struct {
+// SparkDriverExecutorMemoryExecutionMetricConfig provides config for the spark.driver.executor.memory.execution metric.
+type SparkDriverExecutorMemoryExecutionMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverExecutorMemoryExecutionAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverExecutorMemoryExecutionMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverExecutorMemoryExecutionConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverExecutorMemoryExecutionMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -472,10 +472,10 @@ func (ms *SparkDriverExecutorMemoryExecutionConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *SparkDriverExecutorMemoryExecutionConfig) Validate() error {
+func (ms *SparkDriverExecutorMemoryExecutionMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverExecutorMemoryExecutionAttributeKeyLocation:
+		case SparkDriverExecutorMemoryExecutionMetricAttributeKeyLocation:
 		default:
 			return fmt.Errorf("metric spark.driver.executor.memory.execution doesn't have an attribute %v, valid attributes: [location]", val)
 		}
@@ -490,23 +490,23 @@ func (ms *SparkDriverExecutorMemoryExecutionConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverExecutorMemoryJvmAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.jvm metric.
-type SparkDriverExecutorMemoryJvmAttributeKey string
+// SparkDriverExecutorMemoryJvmMetricAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.jvm metric.
+type SparkDriverExecutorMemoryJvmMetricAttributeKey string
 
 const (
-	SparkDriverExecutorMemoryJvmAttributeKeyLocation SparkDriverExecutorMemoryJvmAttributeKey = "location"
+	SparkDriverExecutorMemoryJvmMetricAttributeKeyLocation SparkDriverExecutorMemoryJvmMetricAttributeKey = "location"
 )
 
-// SparkDriverExecutorMemoryJvmConfig provides config for the spark.driver.executor.memory.jvm metric.
-type SparkDriverExecutorMemoryJvmConfig struct {
+// SparkDriverExecutorMemoryJvmMetricConfig provides config for the spark.driver.executor.memory.jvm metric.
+type SparkDriverExecutorMemoryJvmMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverExecutorMemoryJvmAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverExecutorMemoryJvmMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverExecutorMemoryJvmConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverExecutorMemoryJvmMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -520,10 +520,10 @@ func (ms *SparkDriverExecutorMemoryJvmConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-func (ms *SparkDriverExecutorMemoryJvmConfig) Validate() error {
+func (ms *SparkDriverExecutorMemoryJvmMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverExecutorMemoryJvmAttributeKeyLocation:
+		case SparkDriverExecutorMemoryJvmMetricAttributeKeyLocation:
 		default:
 			return fmt.Errorf("metric spark.driver.executor.memory.jvm doesn't have an attribute %v, valid attributes: [location]", val)
 		}
@@ -538,23 +538,23 @@ func (ms *SparkDriverExecutorMemoryJvmConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverExecutorMemoryPoolAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.pool metric.
-type SparkDriverExecutorMemoryPoolAttributeKey string
+// SparkDriverExecutorMemoryPoolMetricAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.pool metric.
+type SparkDriverExecutorMemoryPoolMetricAttributeKey string
 
 const (
-	SparkDriverExecutorMemoryPoolAttributeKeyPoolMemoryType SparkDriverExecutorMemoryPoolAttributeKey = "type"
+	SparkDriverExecutorMemoryPoolMetricAttributeKeyPoolMemoryType SparkDriverExecutorMemoryPoolMetricAttributeKey = "type"
 )
 
-// SparkDriverExecutorMemoryPoolConfig provides config for the spark.driver.executor.memory.pool metric.
-type SparkDriverExecutorMemoryPoolConfig struct {
+// SparkDriverExecutorMemoryPoolMetricConfig provides config for the spark.driver.executor.memory.pool metric.
+type SparkDriverExecutorMemoryPoolMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverExecutorMemoryPoolAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverExecutorMemoryPoolMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverExecutorMemoryPoolConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverExecutorMemoryPoolMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -568,10 +568,10 @@ func (ms *SparkDriverExecutorMemoryPoolConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-func (ms *SparkDriverExecutorMemoryPoolConfig) Validate() error {
+func (ms *SparkDriverExecutorMemoryPoolMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverExecutorMemoryPoolAttributeKeyPoolMemoryType:
+		case SparkDriverExecutorMemoryPoolMetricAttributeKeyPoolMemoryType:
 		default:
 			return fmt.Errorf("metric spark.driver.executor.memory.pool doesn't have an attribute %v, valid attributes: [type]", val)
 		}
@@ -586,23 +586,23 @@ func (ms *SparkDriverExecutorMemoryPoolConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverExecutorMemoryStorageAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.storage metric.
-type SparkDriverExecutorMemoryStorageAttributeKey string
+// SparkDriverExecutorMemoryStorageMetricAttributeKey specifies the key of an attribute for the spark.driver.executor.memory.storage metric.
+type SparkDriverExecutorMemoryStorageMetricAttributeKey string
 
 const (
-	SparkDriverExecutorMemoryStorageAttributeKeyLocation SparkDriverExecutorMemoryStorageAttributeKey = "location"
+	SparkDriverExecutorMemoryStorageMetricAttributeKeyLocation SparkDriverExecutorMemoryStorageMetricAttributeKey = "location"
 )
 
-// SparkDriverExecutorMemoryStorageConfig provides config for the spark.driver.executor.memory.storage metric.
-type SparkDriverExecutorMemoryStorageConfig struct {
+// SparkDriverExecutorMemoryStorageMetricConfig provides config for the spark.driver.executor.memory.storage metric.
+type SparkDriverExecutorMemoryStorageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkDriverExecutorMemoryStorageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkDriverExecutorMemoryStorageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkDriverExecutorMemoryStorageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverExecutorMemoryStorageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -616,10 +616,10 @@ func (ms *SparkDriverExecutorMemoryStorageConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *SparkDriverExecutorMemoryStorageConfig) Validate() error {
+func (ms *SparkDriverExecutorMemoryStorageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkDriverExecutorMemoryStorageAttributeKeyLocation:
+		case SparkDriverExecutorMemoryStorageMetricAttributeKeyLocation:
 		default:
 			return fmt.Errorf("metric spark.driver.executor.memory.storage doesn't have an attribute %v, valid attributes: [location]", val)
 		}
@@ -634,13 +634,13 @@ func (ms *SparkDriverExecutorMemoryStorageConfig) Validate() error {
 	return nil
 }
 
-// SparkDriverHiveExternalCatalogFileCacheHitsConfig provides config for the spark.driver.hive_external_catalog.file_cache_hits metric.
-type SparkDriverHiveExternalCatalogFileCacheHitsConfig struct {
+// SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig provides config for the spark.driver.hive_external_catalog.file_cache_hits metric.
+type SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverHiveExternalCatalogFileCacheHitsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -654,13 +654,13 @@ func (ms *SparkDriverHiveExternalCatalogFileCacheHitsConfig) Unmarshal(parser *c
 	return nil
 }
 
-// SparkDriverHiveExternalCatalogFilesDiscoveredConfig provides config for the spark.driver.hive_external_catalog.files_discovered metric.
-type SparkDriverHiveExternalCatalogFilesDiscoveredConfig struct {
+// SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig provides config for the spark.driver.hive_external_catalog.files_discovered metric.
+type SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverHiveExternalCatalogFilesDiscoveredConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -674,13 +674,13 @@ func (ms *SparkDriverHiveExternalCatalogFilesDiscoveredConfig) Unmarshal(parser 
 	return nil
 }
 
-// SparkDriverHiveExternalCatalogHiveClientCallsConfig provides config for the spark.driver.hive_external_catalog.hive_client_calls metric.
-type SparkDriverHiveExternalCatalogHiveClientCallsConfig struct {
+// SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig provides config for the spark.driver.hive_external_catalog.hive_client_calls metric.
+type SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverHiveExternalCatalogHiveClientCallsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -694,13 +694,13 @@ func (ms *SparkDriverHiveExternalCatalogHiveClientCallsConfig) Unmarshal(parser 
 	return nil
 }
 
-// SparkDriverHiveExternalCatalogParallelListingJobsConfig provides config for the spark.driver.hive_external_catalog.parallel_listing_jobs metric.
-type SparkDriverHiveExternalCatalogParallelListingJobsConfig struct {
+// SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig provides config for the spark.driver.hive_external_catalog.parallel_listing_jobs metric.
+type SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverHiveExternalCatalogParallelListingJobsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -714,13 +714,13 @@ func (ms *SparkDriverHiveExternalCatalogParallelListingJobsConfig) Unmarshal(par
 	return nil
 }
 
-// SparkDriverHiveExternalCatalogPartitionsFetchedConfig provides config for the spark.driver.hive_external_catalog.partitions_fetched metric.
-type SparkDriverHiveExternalCatalogPartitionsFetchedConfig struct {
+// SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig provides config for the spark.driver.hive_external_catalog.partitions_fetched metric.
+type SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverHiveExternalCatalogPartitionsFetchedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -734,13 +734,13 @@ func (ms *SparkDriverHiveExternalCatalogPartitionsFetchedConfig) Unmarshal(parse
 	return nil
 }
 
-// SparkDriverJvmCPUTimeConfig provides config for the spark.driver.jvm_cpu_time metric.
-type SparkDriverJvmCPUTimeConfig struct {
+// SparkDriverJvmCPUTimeMetricConfig provides config for the spark.driver.jvm_cpu_time metric.
+type SparkDriverJvmCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverJvmCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverJvmCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -754,13 +754,13 @@ func (ms *SparkDriverJvmCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkDriverLiveListenerBusDroppedConfig provides config for the spark.driver.live_listener_bus.dropped metric.
-type SparkDriverLiveListenerBusDroppedConfig struct {
+// SparkDriverLiveListenerBusDroppedMetricConfig provides config for the spark.driver.live_listener_bus.dropped metric.
+type SparkDriverLiveListenerBusDroppedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverLiveListenerBusDroppedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverLiveListenerBusDroppedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -774,13 +774,13 @@ func (ms *SparkDriverLiveListenerBusDroppedConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// SparkDriverLiveListenerBusPostedConfig provides config for the spark.driver.live_listener_bus.posted metric.
-type SparkDriverLiveListenerBusPostedConfig struct {
+// SparkDriverLiveListenerBusPostedMetricConfig provides config for the spark.driver.live_listener_bus.posted metric.
+type SparkDriverLiveListenerBusPostedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverLiveListenerBusPostedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverLiveListenerBusPostedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -794,13 +794,13 @@ func (ms *SparkDriverLiveListenerBusPostedConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// SparkDriverLiveListenerBusProcessingTimeAverageConfig provides config for the spark.driver.live_listener_bus.processing_time.average metric.
-type SparkDriverLiveListenerBusProcessingTimeAverageConfig struct {
+// SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig provides config for the spark.driver.live_listener_bus.processing_time.average metric.
+type SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverLiveListenerBusProcessingTimeAverageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -814,13 +814,13 @@ func (ms *SparkDriverLiveListenerBusProcessingTimeAverageConfig) Unmarshal(parse
 	return nil
 }
 
-// SparkDriverLiveListenerBusQueueSizeConfig provides config for the spark.driver.live_listener_bus.queue_size metric.
-type SparkDriverLiveListenerBusQueueSizeConfig struct {
+// SparkDriverLiveListenerBusQueueSizeMetricConfig provides config for the spark.driver.live_listener_bus.queue_size metric.
+type SparkDriverLiveListenerBusQueueSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkDriverLiveListenerBusQueueSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkDriverLiveListenerBusQueueSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -834,13 +834,13 @@ func (ms *SparkDriverLiveListenerBusQueueSizeConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// SparkExecutorDiskUsageConfig provides config for the spark.executor.disk.usage metric.
-type SparkExecutorDiskUsageConfig struct {
+// SparkExecutorDiskUsageMetricConfig provides config for the spark.executor.disk.usage metric.
+type SparkExecutorDiskUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkExecutorDiskUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorDiskUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -854,13 +854,13 @@ func (ms *SparkExecutorDiskUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkExecutorGcTimeConfig provides config for the spark.executor.gc_time metric.
-type SparkExecutorGcTimeConfig struct {
+// SparkExecutorGcTimeMetricConfig provides config for the spark.executor.gc_time metric.
+type SparkExecutorGcTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkExecutorGcTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorGcTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -874,13 +874,13 @@ func (ms *SparkExecutorGcTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkExecutorInputSizeConfig provides config for the spark.executor.input_size metric.
-type SparkExecutorInputSizeConfig struct {
+// SparkExecutorInputSizeMetricConfig provides config for the spark.executor.input_size metric.
+type SparkExecutorInputSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkExecutorInputSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorInputSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -894,13 +894,13 @@ func (ms *SparkExecutorInputSizeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkExecutorMemoryUsageConfig provides config for the spark.executor.memory.usage metric.
-type SparkExecutorMemoryUsageConfig struct {
+// SparkExecutorMemoryUsageMetricConfig provides config for the spark.executor.memory.usage metric.
+type SparkExecutorMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkExecutorMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -914,23 +914,23 @@ func (ms *SparkExecutorMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// SparkExecutorShuffleIoSizeAttributeKey specifies the key of an attribute for the spark.executor.shuffle.io.size metric.
-type SparkExecutorShuffleIoSizeAttributeKey string
+// SparkExecutorShuffleIoSizeMetricAttributeKey specifies the key of an attribute for the spark.executor.shuffle.io.size metric.
+type SparkExecutorShuffleIoSizeMetricAttributeKey string
 
 const (
-	SparkExecutorShuffleIoSizeAttributeKeyDirection SparkExecutorShuffleIoSizeAttributeKey = "direction"
+	SparkExecutorShuffleIoSizeMetricAttributeKeyDirection SparkExecutorShuffleIoSizeMetricAttributeKey = "direction"
 )
 
-// SparkExecutorShuffleIoSizeConfig provides config for the spark.executor.shuffle.io.size metric.
-type SparkExecutorShuffleIoSizeConfig struct {
+// SparkExecutorShuffleIoSizeMetricConfig provides config for the spark.executor.shuffle.io.size metric.
+type SparkExecutorShuffleIoSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkExecutorShuffleIoSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkExecutorShuffleIoSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkExecutorShuffleIoSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorShuffleIoSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -944,10 +944,10 @@ func (ms *SparkExecutorShuffleIoSizeConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *SparkExecutorShuffleIoSizeConfig) Validate() error {
+func (ms *SparkExecutorShuffleIoSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkExecutorShuffleIoSizeAttributeKeyDirection:
+		case SparkExecutorShuffleIoSizeMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric spark.executor.shuffle.io.size doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -962,24 +962,24 @@ func (ms *SparkExecutorShuffleIoSizeConfig) Validate() error {
 	return nil
 }
 
-// SparkExecutorStorageMemoryUsageAttributeKey specifies the key of an attribute for the spark.executor.storage_memory.usage metric.
-type SparkExecutorStorageMemoryUsageAttributeKey string
+// SparkExecutorStorageMemoryUsageMetricAttributeKey specifies the key of an attribute for the spark.executor.storage_memory.usage metric.
+type SparkExecutorStorageMemoryUsageMetricAttributeKey string
 
 const (
-	SparkExecutorStorageMemoryUsageAttributeKeyLocation SparkExecutorStorageMemoryUsageAttributeKey = "location"
-	SparkExecutorStorageMemoryUsageAttributeKeyState    SparkExecutorStorageMemoryUsageAttributeKey = "state"
+	SparkExecutorStorageMemoryUsageMetricAttributeKeyLocation SparkExecutorStorageMemoryUsageMetricAttributeKey = "location"
+	SparkExecutorStorageMemoryUsageMetricAttributeKeyState    SparkExecutorStorageMemoryUsageMetricAttributeKey = "state"
 )
 
-// SparkExecutorStorageMemoryUsageConfig provides config for the spark.executor.storage_memory.usage metric.
-type SparkExecutorStorageMemoryUsageConfig struct {
+// SparkExecutorStorageMemoryUsageMetricConfig provides config for the spark.executor.storage_memory.usage metric.
+type SparkExecutorStorageMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkExecutorStorageMemoryUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkExecutorStorageMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkExecutorStorageMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorStorageMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -993,10 +993,10 @@ func (ms *SparkExecutorStorageMemoryUsageConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *SparkExecutorStorageMemoryUsageConfig) Validate() error {
+func (ms *SparkExecutorStorageMemoryUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkExecutorStorageMemoryUsageAttributeKeyLocation, SparkExecutorStorageMemoryUsageAttributeKeyState:
+		case SparkExecutorStorageMemoryUsageMetricAttributeKeyLocation, SparkExecutorStorageMemoryUsageMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric spark.executor.storage_memory.usage doesn't have an attribute %v, valid attributes: [location, state]", val)
 		}
@@ -1011,13 +1011,13 @@ func (ms *SparkExecutorStorageMemoryUsageConfig) Validate() error {
 	return nil
 }
 
-// SparkExecutorTaskActiveConfig provides config for the spark.executor.task.active metric.
-type SparkExecutorTaskActiveConfig struct {
+// SparkExecutorTaskActiveMetricConfig provides config for the spark.executor.task.active metric.
+type SparkExecutorTaskActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkExecutorTaskActiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorTaskActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1031,13 +1031,13 @@ func (ms *SparkExecutorTaskActiveConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkExecutorTaskLimitConfig provides config for the spark.executor.task.limit metric.
-type SparkExecutorTaskLimitConfig struct {
+// SparkExecutorTaskLimitMetricConfig provides config for the spark.executor.task.limit metric.
+type SparkExecutorTaskLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkExecutorTaskLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorTaskLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1051,23 +1051,23 @@ func (ms *SparkExecutorTaskLimitConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkExecutorTaskResultAttributeKey specifies the key of an attribute for the spark.executor.task.result metric.
-type SparkExecutorTaskResultAttributeKey string
+// SparkExecutorTaskResultMetricAttributeKey specifies the key of an attribute for the spark.executor.task.result metric.
+type SparkExecutorTaskResultMetricAttributeKey string
 
 const (
-	SparkExecutorTaskResultAttributeKeyExecutorTaskResult SparkExecutorTaskResultAttributeKey = "result"
+	SparkExecutorTaskResultMetricAttributeKeyExecutorTaskResult SparkExecutorTaskResultMetricAttributeKey = "result"
 )
 
-// SparkExecutorTaskResultConfig provides config for the spark.executor.task.result metric.
-type SparkExecutorTaskResultConfig struct {
+// SparkExecutorTaskResultMetricConfig provides config for the spark.executor.task.result metric.
+type SparkExecutorTaskResultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkExecutorTaskResultAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkExecutorTaskResultMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkExecutorTaskResultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorTaskResultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1081,10 +1081,10 @@ func (ms *SparkExecutorTaskResultConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SparkExecutorTaskResultConfig) Validate() error {
+func (ms *SparkExecutorTaskResultMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkExecutorTaskResultAttributeKeyExecutorTaskResult:
+		case SparkExecutorTaskResultMetricAttributeKeyExecutorTaskResult:
 		default:
 			return fmt.Errorf("metric spark.executor.task.result doesn't have an attribute %v, valid attributes: [result]", val)
 		}
@@ -1099,13 +1099,13 @@ func (ms *SparkExecutorTaskResultConfig) Validate() error {
 	return nil
 }
 
-// SparkExecutorTimeConfig provides config for the spark.executor.time metric.
-type SparkExecutorTimeConfig struct {
+// SparkExecutorTimeMetricConfig provides config for the spark.executor.time metric.
+type SparkExecutorTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkExecutorTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkExecutorTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1119,13 +1119,13 @@ func (ms *SparkExecutorTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkJobStageActiveConfig provides config for the spark.job.stage.active metric.
-type SparkJobStageActiveConfig struct {
+// SparkJobStageActiveMetricConfig provides config for the spark.job.stage.active metric.
+type SparkJobStageActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkJobStageActiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkJobStageActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1139,23 +1139,23 @@ func (ms *SparkJobStageActiveConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkJobStageResultAttributeKey specifies the key of an attribute for the spark.job.stage.result metric.
-type SparkJobStageResultAttributeKey string
+// SparkJobStageResultMetricAttributeKey specifies the key of an attribute for the spark.job.stage.result metric.
+type SparkJobStageResultMetricAttributeKey string
 
 const (
-	SparkJobStageResultAttributeKeyJobResult SparkJobStageResultAttributeKey = "result"
+	SparkJobStageResultMetricAttributeKeyJobResult SparkJobStageResultMetricAttributeKey = "result"
 )
 
-// SparkJobStageResultConfig provides config for the spark.job.stage.result metric.
-type SparkJobStageResultConfig struct {
+// SparkJobStageResultMetricConfig provides config for the spark.job.stage.result metric.
+type SparkJobStageResultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkJobStageResultAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkJobStageResultMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkJobStageResultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkJobStageResultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1169,10 +1169,10 @@ func (ms *SparkJobStageResultConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SparkJobStageResultConfig) Validate() error {
+func (ms *SparkJobStageResultMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkJobStageResultAttributeKeyJobResult:
+		case SparkJobStageResultMetricAttributeKeyJobResult:
 		default:
 			return fmt.Errorf("metric spark.job.stage.result doesn't have an attribute %v, valid attributes: [result]", val)
 		}
@@ -1187,13 +1187,13 @@ func (ms *SparkJobStageResultConfig) Validate() error {
 	return nil
 }
 
-// SparkJobTaskActiveConfig provides config for the spark.job.task.active metric.
-type SparkJobTaskActiveConfig struct {
+// SparkJobTaskActiveMetricConfig provides config for the spark.job.task.active metric.
+type SparkJobTaskActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkJobTaskActiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkJobTaskActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1207,23 +1207,23 @@ func (ms *SparkJobTaskActiveConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkJobTaskResultAttributeKey specifies the key of an attribute for the spark.job.task.result metric.
-type SparkJobTaskResultAttributeKey string
+// SparkJobTaskResultMetricAttributeKey specifies the key of an attribute for the spark.job.task.result metric.
+type SparkJobTaskResultMetricAttributeKey string
 
 const (
-	SparkJobTaskResultAttributeKeyJobResult SparkJobTaskResultAttributeKey = "result"
+	SparkJobTaskResultMetricAttributeKeyJobResult SparkJobTaskResultMetricAttributeKey = "result"
 )
 
-// SparkJobTaskResultConfig provides config for the spark.job.task.result metric.
-type SparkJobTaskResultConfig struct {
+// SparkJobTaskResultMetricConfig provides config for the spark.job.task.result metric.
+type SparkJobTaskResultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkJobTaskResultAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkJobTaskResultMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkJobTaskResultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkJobTaskResultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1237,10 +1237,10 @@ func (ms *SparkJobTaskResultConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SparkJobTaskResultConfig) Validate() error {
+func (ms *SparkJobTaskResultMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkJobTaskResultAttributeKeyJobResult:
+		case SparkJobTaskResultMetricAttributeKeyJobResult:
 		default:
 			return fmt.Errorf("metric spark.job.task.result doesn't have an attribute %v, valid attributes: [result]", val)
 		}
@@ -1255,13 +1255,13 @@ func (ms *SparkJobTaskResultConfig) Validate() error {
 	return nil
 }
 
-// SparkStageDiskSpilledConfig provides config for the spark.stage.disk.spilled metric.
-type SparkStageDiskSpilledConfig struct {
+// SparkStageDiskSpilledMetricConfig provides config for the spark.stage.disk.spilled metric.
+type SparkStageDiskSpilledMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageDiskSpilledConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageDiskSpilledMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1275,13 +1275,13 @@ func (ms *SparkStageDiskSpilledConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkStageExecutorCPUTimeConfig provides config for the spark.stage.executor.cpu_time metric.
-type SparkStageExecutorCPUTimeConfig struct {
+// SparkStageExecutorCPUTimeMetricConfig provides config for the spark.stage.executor.cpu_time metric.
+type SparkStageExecutorCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageExecutorCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageExecutorCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1295,13 +1295,13 @@ func (ms *SparkStageExecutorCPUTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// SparkStageExecutorRunTimeConfig provides config for the spark.stage.executor.run_time metric.
-type SparkStageExecutorRunTimeConfig struct {
+// SparkStageExecutorRunTimeMetricConfig provides config for the spark.stage.executor.run_time metric.
+type SparkStageExecutorRunTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageExecutorRunTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageExecutorRunTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1315,23 +1315,23 @@ func (ms *SparkStageExecutorRunTimeConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// SparkStageIoRecordsAttributeKey specifies the key of an attribute for the spark.stage.io.records metric.
-type SparkStageIoRecordsAttributeKey string
+// SparkStageIoRecordsMetricAttributeKey specifies the key of an attribute for the spark.stage.io.records metric.
+type SparkStageIoRecordsMetricAttributeKey string
 
 const (
-	SparkStageIoRecordsAttributeKeyDirection SparkStageIoRecordsAttributeKey = "direction"
+	SparkStageIoRecordsMetricAttributeKeyDirection SparkStageIoRecordsMetricAttributeKey = "direction"
 )
 
-// SparkStageIoRecordsConfig provides config for the spark.stage.io.records metric.
-type SparkStageIoRecordsConfig struct {
+// SparkStageIoRecordsMetricConfig provides config for the spark.stage.io.records metric.
+type SparkStageIoRecordsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkStageIoRecordsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkStageIoRecordsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkStageIoRecordsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageIoRecordsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1345,10 +1345,10 @@ func (ms *SparkStageIoRecordsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SparkStageIoRecordsConfig) Validate() error {
+func (ms *SparkStageIoRecordsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkStageIoRecordsAttributeKeyDirection:
+		case SparkStageIoRecordsMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric spark.stage.io.records doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -1363,23 +1363,23 @@ func (ms *SparkStageIoRecordsConfig) Validate() error {
 	return nil
 }
 
-// SparkStageIoSizeAttributeKey specifies the key of an attribute for the spark.stage.io.size metric.
-type SparkStageIoSizeAttributeKey string
+// SparkStageIoSizeMetricAttributeKey specifies the key of an attribute for the spark.stage.io.size metric.
+type SparkStageIoSizeMetricAttributeKey string
 
 const (
-	SparkStageIoSizeAttributeKeyDirection SparkStageIoSizeAttributeKey = "direction"
+	SparkStageIoSizeMetricAttributeKeyDirection SparkStageIoSizeMetricAttributeKey = "direction"
 )
 
-// SparkStageIoSizeConfig provides config for the spark.stage.io.size metric.
-type SparkStageIoSizeConfig struct {
+// SparkStageIoSizeMetricConfig provides config for the spark.stage.io.size metric.
+type SparkStageIoSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkStageIoSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkStageIoSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkStageIoSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageIoSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1393,10 +1393,10 @@ func (ms *SparkStageIoSizeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SparkStageIoSizeConfig) Validate() error {
+func (ms *SparkStageIoSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkStageIoSizeAttributeKeyDirection:
+		case SparkStageIoSizeMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric spark.stage.io.size doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -1411,13 +1411,13 @@ func (ms *SparkStageIoSizeConfig) Validate() error {
 	return nil
 }
 
-// SparkStageJvmGcTimeConfig provides config for the spark.stage.jvm_gc_time metric.
-type SparkStageJvmGcTimeConfig struct {
+// SparkStageJvmGcTimeMetricConfig provides config for the spark.stage.jvm_gc_time metric.
+type SparkStageJvmGcTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageJvmGcTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageJvmGcTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1431,13 +1431,13 @@ func (ms *SparkStageJvmGcTimeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkStageMemoryPeakConfig provides config for the spark.stage.memory.peak metric.
-type SparkStageMemoryPeakConfig struct {
+// SparkStageMemoryPeakMetricConfig provides config for the spark.stage.memory.peak metric.
+type SparkStageMemoryPeakMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageMemoryPeakConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageMemoryPeakMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1451,13 +1451,13 @@ func (ms *SparkStageMemoryPeakConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkStageMemorySpilledConfig provides config for the spark.stage.memory.spilled metric.
-type SparkStageMemorySpilledConfig struct {
+// SparkStageMemorySpilledMetricConfig provides config for the spark.stage.memory.spilled metric.
+type SparkStageMemorySpilledMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageMemorySpilledConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageMemorySpilledMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1471,23 +1471,23 @@ func (ms *SparkStageMemorySpilledConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkStageShuffleBlocksFetchedAttributeKey specifies the key of an attribute for the spark.stage.shuffle.blocks_fetched metric.
-type SparkStageShuffleBlocksFetchedAttributeKey string
+// SparkStageShuffleBlocksFetchedMetricAttributeKey specifies the key of an attribute for the spark.stage.shuffle.blocks_fetched metric.
+type SparkStageShuffleBlocksFetchedMetricAttributeKey string
 
 const (
-	SparkStageShuffleBlocksFetchedAttributeKeySource SparkStageShuffleBlocksFetchedAttributeKey = "source"
+	SparkStageShuffleBlocksFetchedMetricAttributeKeySource SparkStageShuffleBlocksFetchedMetricAttributeKey = "source"
 )
 
-// SparkStageShuffleBlocksFetchedConfig provides config for the spark.stage.shuffle.blocks_fetched metric.
-type SparkStageShuffleBlocksFetchedConfig struct {
+// SparkStageShuffleBlocksFetchedMetricConfig provides config for the spark.stage.shuffle.blocks_fetched metric.
+type SparkStageShuffleBlocksFetchedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkStageShuffleBlocksFetchedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkStageShuffleBlocksFetchedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkStageShuffleBlocksFetchedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageShuffleBlocksFetchedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1501,10 +1501,10 @@ func (ms *SparkStageShuffleBlocksFetchedConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *SparkStageShuffleBlocksFetchedConfig) Validate() error {
+func (ms *SparkStageShuffleBlocksFetchedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkStageShuffleBlocksFetchedAttributeKeySource:
+		case SparkStageShuffleBlocksFetchedMetricAttributeKeySource:
 		default:
 			return fmt.Errorf("metric spark.stage.shuffle.blocks_fetched doesn't have an attribute %v, valid attributes: [source]", val)
 		}
@@ -1519,13 +1519,13 @@ func (ms *SparkStageShuffleBlocksFetchedConfig) Validate() error {
 	return nil
 }
 
-// SparkStageShuffleFetchWaitTimeConfig provides config for the spark.stage.shuffle.fetch_wait_time metric.
-type SparkStageShuffleFetchWaitTimeConfig struct {
+// SparkStageShuffleFetchWaitTimeMetricConfig provides config for the spark.stage.shuffle.fetch_wait_time metric.
+type SparkStageShuffleFetchWaitTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageShuffleFetchWaitTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageShuffleFetchWaitTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1539,13 +1539,13 @@ func (ms *SparkStageShuffleFetchWaitTimeConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// SparkStageShuffleIoDiskConfig provides config for the spark.stage.shuffle.io.disk metric.
-type SparkStageShuffleIoDiskConfig struct {
+// SparkStageShuffleIoDiskMetricConfig provides config for the spark.stage.shuffle.io.disk metric.
+type SparkStageShuffleIoDiskMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageShuffleIoDiskConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageShuffleIoDiskMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1559,23 +1559,23 @@ func (ms *SparkStageShuffleIoDiskConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkStageShuffleIoReadSizeAttributeKey specifies the key of an attribute for the spark.stage.shuffle.io.read.size metric.
-type SparkStageShuffleIoReadSizeAttributeKey string
+// SparkStageShuffleIoReadSizeMetricAttributeKey specifies the key of an attribute for the spark.stage.shuffle.io.read.size metric.
+type SparkStageShuffleIoReadSizeMetricAttributeKey string
 
 const (
-	SparkStageShuffleIoReadSizeAttributeKeySource SparkStageShuffleIoReadSizeAttributeKey = "source"
+	SparkStageShuffleIoReadSizeMetricAttributeKeySource SparkStageShuffleIoReadSizeMetricAttributeKey = "source"
 )
 
-// SparkStageShuffleIoReadSizeConfig provides config for the spark.stage.shuffle.io.read.size metric.
-type SparkStageShuffleIoReadSizeConfig struct {
+// SparkStageShuffleIoReadSizeMetricConfig provides config for the spark.stage.shuffle.io.read.size metric.
+type SparkStageShuffleIoReadSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkStageShuffleIoReadSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkStageShuffleIoReadSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkStageShuffleIoReadSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageShuffleIoReadSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1589,10 +1589,10 @@ func (ms *SparkStageShuffleIoReadSizeConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *SparkStageShuffleIoReadSizeConfig) Validate() error {
+func (ms *SparkStageShuffleIoReadSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkStageShuffleIoReadSizeAttributeKeySource:
+		case SparkStageShuffleIoReadSizeMetricAttributeKeySource:
 		default:
 			return fmt.Errorf("metric spark.stage.shuffle.io.read.size doesn't have an attribute %v, valid attributes: [source]", val)
 		}
@@ -1607,23 +1607,23 @@ func (ms *SparkStageShuffleIoReadSizeConfig) Validate() error {
 	return nil
 }
 
-// SparkStageShuffleIoRecordsAttributeKey specifies the key of an attribute for the spark.stage.shuffle.io.records metric.
-type SparkStageShuffleIoRecordsAttributeKey string
+// SparkStageShuffleIoRecordsMetricAttributeKey specifies the key of an attribute for the spark.stage.shuffle.io.records metric.
+type SparkStageShuffleIoRecordsMetricAttributeKey string
 
 const (
-	SparkStageShuffleIoRecordsAttributeKeyDirection SparkStageShuffleIoRecordsAttributeKey = "direction"
+	SparkStageShuffleIoRecordsMetricAttributeKeyDirection SparkStageShuffleIoRecordsMetricAttributeKey = "direction"
 )
 
-// SparkStageShuffleIoRecordsConfig provides config for the spark.stage.shuffle.io.records metric.
-type SparkStageShuffleIoRecordsConfig struct {
+// SparkStageShuffleIoRecordsMetricConfig provides config for the spark.stage.shuffle.io.records metric.
+type SparkStageShuffleIoRecordsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkStageShuffleIoRecordsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkStageShuffleIoRecordsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkStageShuffleIoRecordsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageShuffleIoRecordsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1637,10 +1637,10 @@ func (ms *SparkStageShuffleIoRecordsConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *SparkStageShuffleIoRecordsConfig) Validate() error {
+func (ms *SparkStageShuffleIoRecordsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkStageShuffleIoRecordsAttributeKeyDirection:
+		case SparkStageShuffleIoRecordsMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric spark.stage.shuffle.io.records doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -1655,13 +1655,13 @@ func (ms *SparkStageShuffleIoRecordsConfig) Validate() error {
 	return nil
 }
 
-// SparkStageShuffleIoWriteSizeConfig provides config for the spark.stage.shuffle.io.write.size metric.
-type SparkStageShuffleIoWriteSizeConfig struct {
+// SparkStageShuffleIoWriteSizeMetricConfig provides config for the spark.stage.shuffle.io.write.size metric.
+type SparkStageShuffleIoWriteSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageShuffleIoWriteSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageShuffleIoWriteSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1675,13 +1675,13 @@ func (ms *SparkStageShuffleIoWriteSizeConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// SparkStageShuffleWriteTimeConfig provides config for the spark.stage.shuffle.write_time metric.
-type SparkStageShuffleWriteTimeConfig struct {
+// SparkStageShuffleWriteTimeMetricConfig provides config for the spark.stage.shuffle.write_time metric.
+type SparkStageShuffleWriteTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageShuffleWriteTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageShuffleWriteTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1695,26 +1695,26 @@ func (ms *SparkStageShuffleWriteTimeConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// SparkStageStatusAttributeKey specifies the key of an attribute for the spark.stage.status metric.
-type SparkStageStatusAttributeKey string
+// SparkStageStatusMetricAttributeKey specifies the key of an attribute for the spark.stage.status metric.
+type SparkStageStatusMetricAttributeKey string
 
 const (
-	SparkStageStatusAttributeKeyStageActive   SparkStageStatusAttributeKey = "active"
-	SparkStageStatusAttributeKeyStageComplete SparkStageStatusAttributeKey = "complete"
-	SparkStageStatusAttributeKeyStagePending  SparkStageStatusAttributeKey = "pending"
-	SparkStageStatusAttributeKeyStageFailed   SparkStageStatusAttributeKey = "failed"
+	SparkStageStatusMetricAttributeKeyStageActive   SparkStageStatusMetricAttributeKey = "active"
+	SparkStageStatusMetricAttributeKeyStageComplete SparkStageStatusMetricAttributeKey = "complete"
+	SparkStageStatusMetricAttributeKeyStagePending  SparkStageStatusMetricAttributeKey = "pending"
+	SparkStageStatusMetricAttributeKeyStageFailed   SparkStageStatusMetricAttributeKey = "failed"
 )
 
-// SparkStageStatusConfig provides config for the spark.stage.status metric.
-type SparkStageStatusConfig struct {
+// SparkStageStatusMetricConfig provides config for the spark.stage.status metric.
+type SparkStageStatusMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkStageStatusAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkStageStatusMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkStageStatusConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageStatusMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1728,10 +1728,10 @@ func (ms *SparkStageStatusConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SparkStageStatusConfig) Validate() error {
+func (ms *SparkStageStatusMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkStageStatusAttributeKeyStageActive, SparkStageStatusAttributeKeyStageComplete, SparkStageStatusAttributeKeyStagePending, SparkStageStatusAttributeKeyStageFailed:
+		case SparkStageStatusMetricAttributeKeyStageActive, SparkStageStatusMetricAttributeKeyStageComplete, SparkStageStatusMetricAttributeKeyStagePending, SparkStageStatusMetricAttributeKeyStageFailed:
 		default:
 			return fmt.Errorf("metric spark.stage.status doesn't have an attribute %v, valid attributes: [active, complete, pending, failed]", val)
 		}
@@ -1746,13 +1746,13 @@ func (ms *SparkStageStatusConfig) Validate() error {
 	return nil
 }
 
-// SparkStageTaskActiveConfig provides config for the spark.stage.task.active metric.
-type SparkStageTaskActiveConfig struct {
+// SparkStageTaskActiveMetricConfig provides config for the spark.stage.task.active metric.
+type SparkStageTaskActiveMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageTaskActiveConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageTaskActiveMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1766,23 +1766,23 @@ func (ms *SparkStageTaskActiveConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// SparkStageTaskResultAttributeKey specifies the key of an attribute for the spark.stage.task.result metric.
-type SparkStageTaskResultAttributeKey string
+// SparkStageTaskResultMetricAttributeKey specifies the key of an attribute for the spark.stage.task.result metric.
+type SparkStageTaskResultMetricAttributeKey string
 
 const (
-	SparkStageTaskResultAttributeKeyStageTaskResult SparkStageTaskResultAttributeKey = "result"
+	SparkStageTaskResultMetricAttributeKeyStageTaskResult SparkStageTaskResultMetricAttributeKey = "result"
 )
 
-// SparkStageTaskResultConfig provides config for the spark.stage.task.result metric.
-type SparkStageTaskResultConfig struct {
+// SparkStageTaskResultMetricConfig provides config for the spark.stage.task.result metric.
+type SparkStageTaskResultMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SparkStageTaskResultAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SparkStageTaskResultMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SparkStageTaskResultConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageTaskResultMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1796,10 +1796,10 @@ func (ms *SparkStageTaskResultConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SparkStageTaskResultConfig) Validate() error {
+func (ms *SparkStageTaskResultMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SparkStageTaskResultAttributeKeyStageTaskResult:
+		case SparkStageTaskResultMetricAttributeKeyStageTaskResult:
 		default:
 			return fmt.Errorf("metric spark.stage.task.result doesn't have an attribute %v, valid attributes: [result]", val)
 		}
@@ -1814,13 +1814,13 @@ func (ms *SparkStageTaskResultConfig) Validate() error {
 	return nil
 }
 
-// SparkStageTaskResultSizeConfig provides config for the spark.stage.task.result_size metric.
-type SparkStageTaskResultSizeConfig struct {
+// SparkStageTaskResultSizeMetricConfig provides config for the spark.stage.task.result_size metric.
+type SparkStageTaskResultSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SparkStageTaskResultSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SparkStageTaskResultSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1836,300 +1836,300 @@ func (ms *SparkStageTaskResultSizeConfig) Unmarshal(parser *confmap.Conf) error 
 
 // MetricsConfig provides config for apachespark metrics.
 type MetricsConfig struct {
-	SparkDriverBlockManagerDiskUsage                   SparkDriverBlockManagerDiskUsageConfig                   `mapstructure:"spark.driver.block_manager.disk.usage"`
-	SparkDriverBlockManagerMemoryUsage                 SparkDriverBlockManagerMemoryUsageConfig                 `mapstructure:"spark.driver.block_manager.memory.usage"`
-	SparkDriverCodeGeneratorCompilationAverageTime     SparkDriverCodeGeneratorCompilationAverageTimeConfig     `mapstructure:"spark.driver.code_generator.compilation.average_time"`
-	SparkDriverCodeGeneratorCompilationCount           SparkDriverCodeGeneratorCompilationCountConfig           `mapstructure:"spark.driver.code_generator.compilation.count"`
-	SparkDriverCodeGeneratorGeneratedClassAverageSize  SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig  `mapstructure:"spark.driver.code_generator.generated_class.average_size"`
-	SparkDriverCodeGeneratorGeneratedClassCount        SparkDriverCodeGeneratorGeneratedClassCountConfig        `mapstructure:"spark.driver.code_generator.generated_class.count"`
-	SparkDriverCodeGeneratorGeneratedMethodAverageSize SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig `mapstructure:"spark.driver.code_generator.generated_method.average_size"`
-	SparkDriverCodeGeneratorGeneratedMethodCount       SparkDriverCodeGeneratorGeneratedMethodCountConfig       `mapstructure:"spark.driver.code_generator.generated_method.count"`
-	SparkDriverCodeGeneratorSourceCodeAverageSize      SparkDriverCodeGeneratorSourceCodeAverageSizeConfig      `mapstructure:"spark.driver.code_generator.source_code.average_size"`
-	SparkDriverCodeGeneratorSourceCodeOperations       SparkDriverCodeGeneratorSourceCodeOperationsConfig       `mapstructure:"spark.driver.code_generator.source_code.operations"`
-	SparkDriverDagSchedulerJobActive                   SparkDriverDagSchedulerJobActiveConfig                   `mapstructure:"spark.driver.dag_scheduler.job.active"`
-	SparkDriverDagSchedulerJobCount                    SparkDriverDagSchedulerJobCountConfig                    `mapstructure:"spark.driver.dag_scheduler.job.count"`
-	SparkDriverDagSchedulerStageCount                  SparkDriverDagSchedulerStageCountConfig                  `mapstructure:"spark.driver.dag_scheduler.stage.count"`
-	SparkDriverDagSchedulerStageFailed                 SparkDriverDagSchedulerStageFailedConfig                 `mapstructure:"spark.driver.dag_scheduler.stage.failed"`
-	SparkDriverExecutorGcOperations                    SparkDriverExecutorGcOperationsConfig                    `mapstructure:"spark.driver.executor.gc.operations"`
-	SparkDriverExecutorGcTime                          SparkDriverExecutorGcTimeConfig                          `mapstructure:"spark.driver.executor.gc.time"`
-	SparkDriverExecutorMemoryExecution                 SparkDriverExecutorMemoryExecutionConfig                 `mapstructure:"spark.driver.executor.memory.execution"`
-	SparkDriverExecutorMemoryJvm                       SparkDriverExecutorMemoryJvmConfig                       `mapstructure:"spark.driver.executor.memory.jvm"`
-	SparkDriverExecutorMemoryPool                      SparkDriverExecutorMemoryPoolConfig                      `mapstructure:"spark.driver.executor.memory.pool"`
-	SparkDriverExecutorMemoryStorage                   SparkDriverExecutorMemoryStorageConfig                   `mapstructure:"spark.driver.executor.memory.storage"`
-	SparkDriverHiveExternalCatalogFileCacheHits        SparkDriverHiveExternalCatalogFileCacheHitsConfig        `mapstructure:"spark.driver.hive_external_catalog.file_cache_hits"`
-	SparkDriverHiveExternalCatalogFilesDiscovered      SparkDriverHiveExternalCatalogFilesDiscoveredConfig      `mapstructure:"spark.driver.hive_external_catalog.files_discovered"`
-	SparkDriverHiveExternalCatalogHiveClientCalls      SparkDriverHiveExternalCatalogHiveClientCallsConfig      `mapstructure:"spark.driver.hive_external_catalog.hive_client_calls"`
-	SparkDriverHiveExternalCatalogParallelListingJobs  SparkDriverHiveExternalCatalogParallelListingJobsConfig  `mapstructure:"spark.driver.hive_external_catalog.parallel_listing_jobs"`
-	SparkDriverHiveExternalCatalogPartitionsFetched    SparkDriverHiveExternalCatalogPartitionsFetchedConfig    `mapstructure:"spark.driver.hive_external_catalog.partitions_fetched"`
-	SparkDriverJvmCPUTime                              SparkDriverJvmCPUTimeConfig                              `mapstructure:"spark.driver.jvm_cpu_time"`
-	SparkDriverLiveListenerBusDropped                  SparkDriverLiveListenerBusDroppedConfig                  `mapstructure:"spark.driver.live_listener_bus.dropped"`
-	SparkDriverLiveListenerBusPosted                   SparkDriverLiveListenerBusPostedConfig                   `mapstructure:"spark.driver.live_listener_bus.posted"`
-	SparkDriverLiveListenerBusProcessingTimeAverage    SparkDriverLiveListenerBusProcessingTimeAverageConfig    `mapstructure:"spark.driver.live_listener_bus.processing_time.average"`
-	SparkDriverLiveListenerBusQueueSize                SparkDriverLiveListenerBusQueueSizeConfig                `mapstructure:"spark.driver.live_listener_bus.queue_size"`
-	SparkExecutorDiskUsage                             SparkExecutorDiskUsageConfig                             `mapstructure:"spark.executor.disk.usage"`
-	SparkExecutorGcTime                                SparkExecutorGcTimeConfig                                `mapstructure:"spark.executor.gc_time"`
-	SparkExecutorInputSize                             SparkExecutorInputSizeConfig                             `mapstructure:"spark.executor.input_size"`
-	SparkExecutorMemoryUsage                           SparkExecutorMemoryUsageConfig                           `mapstructure:"spark.executor.memory.usage"`
-	SparkExecutorShuffleIoSize                         SparkExecutorShuffleIoSizeConfig                         `mapstructure:"spark.executor.shuffle.io.size"`
-	SparkExecutorStorageMemoryUsage                    SparkExecutorStorageMemoryUsageConfig                    `mapstructure:"spark.executor.storage_memory.usage"`
-	SparkExecutorTaskActive                            SparkExecutorTaskActiveConfig                            `mapstructure:"spark.executor.task.active"`
-	SparkExecutorTaskLimit                             SparkExecutorTaskLimitConfig                             `mapstructure:"spark.executor.task.limit"`
-	SparkExecutorTaskResult                            SparkExecutorTaskResultConfig                            `mapstructure:"spark.executor.task.result"`
-	SparkExecutorTime                                  SparkExecutorTimeConfig                                  `mapstructure:"spark.executor.time"`
-	SparkJobStageActive                                SparkJobStageActiveConfig                                `mapstructure:"spark.job.stage.active"`
-	SparkJobStageResult                                SparkJobStageResultConfig                                `mapstructure:"spark.job.stage.result"`
-	SparkJobTaskActive                                 SparkJobTaskActiveConfig                                 `mapstructure:"spark.job.task.active"`
-	SparkJobTaskResult                                 SparkJobTaskResultConfig                                 `mapstructure:"spark.job.task.result"`
-	SparkStageDiskSpilled                              SparkStageDiskSpilledConfig                              `mapstructure:"spark.stage.disk.spilled"`
-	SparkStageExecutorCPUTime                          SparkStageExecutorCPUTimeConfig                          `mapstructure:"spark.stage.executor.cpu_time"`
-	SparkStageExecutorRunTime                          SparkStageExecutorRunTimeConfig                          `mapstructure:"spark.stage.executor.run_time"`
-	SparkStageIoRecords                                SparkStageIoRecordsConfig                                `mapstructure:"spark.stage.io.records"`
-	SparkStageIoSize                                   SparkStageIoSizeConfig                                   `mapstructure:"spark.stage.io.size"`
-	SparkStageJvmGcTime                                SparkStageJvmGcTimeConfig                                `mapstructure:"spark.stage.jvm_gc_time"`
-	SparkStageMemoryPeak                               SparkStageMemoryPeakConfig                               `mapstructure:"spark.stage.memory.peak"`
-	SparkStageMemorySpilled                            SparkStageMemorySpilledConfig                            `mapstructure:"spark.stage.memory.spilled"`
-	SparkStageShuffleBlocksFetched                     SparkStageShuffleBlocksFetchedConfig                     `mapstructure:"spark.stage.shuffle.blocks_fetched"`
-	SparkStageShuffleFetchWaitTime                     SparkStageShuffleFetchWaitTimeConfig                     `mapstructure:"spark.stage.shuffle.fetch_wait_time"`
-	SparkStageShuffleIoDisk                            SparkStageShuffleIoDiskConfig                            `mapstructure:"spark.stage.shuffle.io.disk"`
-	SparkStageShuffleIoReadSize                        SparkStageShuffleIoReadSizeConfig                        `mapstructure:"spark.stage.shuffle.io.read.size"`
-	SparkStageShuffleIoRecords                         SparkStageShuffleIoRecordsConfig                         `mapstructure:"spark.stage.shuffle.io.records"`
-	SparkStageShuffleIoWriteSize                       SparkStageShuffleIoWriteSizeConfig                       `mapstructure:"spark.stage.shuffle.io.write.size"`
-	SparkStageShuffleWriteTime                         SparkStageShuffleWriteTimeConfig                         `mapstructure:"spark.stage.shuffle.write_time"`
-	SparkStageStatus                                   SparkStageStatusConfig                                   `mapstructure:"spark.stage.status"`
-	SparkStageTaskActive                               SparkStageTaskActiveConfig                               `mapstructure:"spark.stage.task.active"`
-	SparkStageTaskResult                               SparkStageTaskResultConfig                               `mapstructure:"spark.stage.task.result"`
-	SparkStageTaskResultSize                           SparkStageTaskResultSizeConfig                           `mapstructure:"spark.stage.task.result_size"`
+	SparkDriverBlockManagerDiskUsage                   SparkDriverBlockManagerDiskUsageMetricConfig                   `mapstructure:"spark.driver.block_manager.disk.usage"`
+	SparkDriverBlockManagerMemoryUsage                 SparkDriverBlockManagerMemoryUsageMetricConfig                 `mapstructure:"spark.driver.block_manager.memory.usage"`
+	SparkDriverCodeGeneratorCompilationAverageTime     SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig     `mapstructure:"spark.driver.code_generator.compilation.average_time"`
+	SparkDriverCodeGeneratorCompilationCount           SparkDriverCodeGeneratorCompilationCountMetricConfig           `mapstructure:"spark.driver.code_generator.compilation.count"`
+	SparkDriverCodeGeneratorGeneratedClassAverageSize  SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig  `mapstructure:"spark.driver.code_generator.generated_class.average_size"`
+	SparkDriverCodeGeneratorGeneratedClassCount        SparkDriverCodeGeneratorGeneratedClassCountMetricConfig        `mapstructure:"spark.driver.code_generator.generated_class.count"`
+	SparkDriverCodeGeneratorGeneratedMethodAverageSize SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig `mapstructure:"spark.driver.code_generator.generated_method.average_size"`
+	SparkDriverCodeGeneratorGeneratedMethodCount       SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig       `mapstructure:"spark.driver.code_generator.generated_method.count"`
+	SparkDriverCodeGeneratorSourceCodeAverageSize      SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig      `mapstructure:"spark.driver.code_generator.source_code.average_size"`
+	SparkDriverCodeGeneratorSourceCodeOperations       SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig       `mapstructure:"spark.driver.code_generator.source_code.operations"`
+	SparkDriverDagSchedulerJobActive                   SparkDriverDagSchedulerJobActiveMetricConfig                   `mapstructure:"spark.driver.dag_scheduler.job.active"`
+	SparkDriverDagSchedulerJobCount                    SparkDriverDagSchedulerJobCountMetricConfig                    `mapstructure:"spark.driver.dag_scheduler.job.count"`
+	SparkDriverDagSchedulerStageCount                  SparkDriverDagSchedulerStageCountMetricConfig                  `mapstructure:"spark.driver.dag_scheduler.stage.count"`
+	SparkDriverDagSchedulerStageFailed                 SparkDriverDagSchedulerStageFailedMetricConfig                 `mapstructure:"spark.driver.dag_scheduler.stage.failed"`
+	SparkDriverExecutorGcOperations                    SparkDriverExecutorGcOperationsMetricConfig                    `mapstructure:"spark.driver.executor.gc.operations"`
+	SparkDriverExecutorGcTime                          SparkDriverExecutorGcTimeMetricConfig                          `mapstructure:"spark.driver.executor.gc.time"`
+	SparkDriverExecutorMemoryExecution                 SparkDriverExecutorMemoryExecutionMetricConfig                 `mapstructure:"spark.driver.executor.memory.execution"`
+	SparkDriverExecutorMemoryJvm                       SparkDriverExecutorMemoryJvmMetricConfig                       `mapstructure:"spark.driver.executor.memory.jvm"`
+	SparkDriverExecutorMemoryPool                      SparkDriverExecutorMemoryPoolMetricConfig                      `mapstructure:"spark.driver.executor.memory.pool"`
+	SparkDriverExecutorMemoryStorage                   SparkDriverExecutorMemoryStorageMetricConfig                   `mapstructure:"spark.driver.executor.memory.storage"`
+	SparkDriverHiveExternalCatalogFileCacheHits        SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig        `mapstructure:"spark.driver.hive_external_catalog.file_cache_hits"`
+	SparkDriverHiveExternalCatalogFilesDiscovered      SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig      `mapstructure:"spark.driver.hive_external_catalog.files_discovered"`
+	SparkDriverHiveExternalCatalogHiveClientCalls      SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig      `mapstructure:"spark.driver.hive_external_catalog.hive_client_calls"`
+	SparkDriverHiveExternalCatalogParallelListingJobs  SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig  `mapstructure:"spark.driver.hive_external_catalog.parallel_listing_jobs"`
+	SparkDriverHiveExternalCatalogPartitionsFetched    SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig    `mapstructure:"spark.driver.hive_external_catalog.partitions_fetched"`
+	SparkDriverJvmCPUTime                              SparkDriverJvmCPUTimeMetricConfig                              `mapstructure:"spark.driver.jvm_cpu_time"`
+	SparkDriverLiveListenerBusDropped                  SparkDriverLiveListenerBusDroppedMetricConfig                  `mapstructure:"spark.driver.live_listener_bus.dropped"`
+	SparkDriverLiveListenerBusPosted                   SparkDriverLiveListenerBusPostedMetricConfig                   `mapstructure:"spark.driver.live_listener_bus.posted"`
+	SparkDriverLiveListenerBusProcessingTimeAverage    SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig    `mapstructure:"spark.driver.live_listener_bus.processing_time.average"`
+	SparkDriverLiveListenerBusQueueSize                SparkDriverLiveListenerBusQueueSizeMetricConfig                `mapstructure:"spark.driver.live_listener_bus.queue_size"`
+	SparkExecutorDiskUsage                             SparkExecutorDiskUsageMetricConfig                             `mapstructure:"spark.executor.disk.usage"`
+	SparkExecutorGcTime                                SparkExecutorGcTimeMetricConfig                                `mapstructure:"spark.executor.gc_time"`
+	SparkExecutorInputSize                             SparkExecutorInputSizeMetricConfig                             `mapstructure:"spark.executor.input_size"`
+	SparkExecutorMemoryUsage                           SparkExecutorMemoryUsageMetricConfig                           `mapstructure:"spark.executor.memory.usage"`
+	SparkExecutorShuffleIoSize                         SparkExecutorShuffleIoSizeMetricConfig                         `mapstructure:"spark.executor.shuffle.io.size"`
+	SparkExecutorStorageMemoryUsage                    SparkExecutorStorageMemoryUsageMetricConfig                    `mapstructure:"spark.executor.storage_memory.usage"`
+	SparkExecutorTaskActive                            SparkExecutorTaskActiveMetricConfig                            `mapstructure:"spark.executor.task.active"`
+	SparkExecutorTaskLimit                             SparkExecutorTaskLimitMetricConfig                             `mapstructure:"spark.executor.task.limit"`
+	SparkExecutorTaskResult                            SparkExecutorTaskResultMetricConfig                            `mapstructure:"spark.executor.task.result"`
+	SparkExecutorTime                                  SparkExecutorTimeMetricConfig                                  `mapstructure:"spark.executor.time"`
+	SparkJobStageActive                                SparkJobStageActiveMetricConfig                                `mapstructure:"spark.job.stage.active"`
+	SparkJobStageResult                                SparkJobStageResultMetricConfig                                `mapstructure:"spark.job.stage.result"`
+	SparkJobTaskActive                                 SparkJobTaskActiveMetricConfig                                 `mapstructure:"spark.job.task.active"`
+	SparkJobTaskResult                                 SparkJobTaskResultMetricConfig                                 `mapstructure:"spark.job.task.result"`
+	SparkStageDiskSpilled                              SparkStageDiskSpilledMetricConfig                              `mapstructure:"spark.stage.disk.spilled"`
+	SparkStageExecutorCPUTime                          SparkStageExecutorCPUTimeMetricConfig                          `mapstructure:"spark.stage.executor.cpu_time"`
+	SparkStageExecutorRunTime                          SparkStageExecutorRunTimeMetricConfig                          `mapstructure:"spark.stage.executor.run_time"`
+	SparkStageIoRecords                                SparkStageIoRecordsMetricConfig                                `mapstructure:"spark.stage.io.records"`
+	SparkStageIoSize                                   SparkStageIoSizeMetricConfig                                   `mapstructure:"spark.stage.io.size"`
+	SparkStageJvmGcTime                                SparkStageJvmGcTimeMetricConfig                                `mapstructure:"spark.stage.jvm_gc_time"`
+	SparkStageMemoryPeak                               SparkStageMemoryPeakMetricConfig                               `mapstructure:"spark.stage.memory.peak"`
+	SparkStageMemorySpilled                            SparkStageMemorySpilledMetricConfig                            `mapstructure:"spark.stage.memory.spilled"`
+	SparkStageShuffleBlocksFetched                     SparkStageShuffleBlocksFetchedMetricConfig                     `mapstructure:"spark.stage.shuffle.blocks_fetched"`
+	SparkStageShuffleFetchWaitTime                     SparkStageShuffleFetchWaitTimeMetricConfig                     `mapstructure:"spark.stage.shuffle.fetch_wait_time"`
+	SparkStageShuffleIoDisk                            SparkStageShuffleIoDiskMetricConfig                            `mapstructure:"spark.stage.shuffle.io.disk"`
+	SparkStageShuffleIoReadSize                        SparkStageShuffleIoReadSizeMetricConfig                        `mapstructure:"spark.stage.shuffle.io.read.size"`
+	SparkStageShuffleIoRecords                         SparkStageShuffleIoRecordsMetricConfig                         `mapstructure:"spark.stage.shuffle.io.records"`
+	SparkStageShuffleIoWriteSize                       SparkStageShuffleIoWriteSizeMetricConfig                       `mapstructure:"spark.stage.shuffle.io.write.size"`
+	SparkStageShuffleWriteTime                         SparkStageShuffleWriteTimeMetricConfig                         `mapstructure:"spark.stage.shuffle.write_time"`
+	SparkStageStatus                                   SparkStageStatusMetricConfig                                   `mapstructure:"spark.stage.status"`
+	SparkStageTaskActive                               SparkStageTaskActiveMetricConfig                               `mapstructure:"spark.stage.task.active"`
+	SparkStageTaskResult                               SparkStageTaskResultMetricConfig                               `mapstructure:"spark.stage.task.result"`
+	SparkStageTaskResultSize                           SparkStageTaskResultSizeMetricConfig                           `mapstructure:"spark.stage.task.result_size"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SparkDriverBlockManagerDiskUsage: SparkDriverBlockManagerDiskUsageConfig{
+		SparkDriverBlockManagerDiskUsage: SparkDriverBlockManagerDiskUsageMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverBlockManagerMemoryUsage: SparkDriverBlockManagerMemoryUsageConfig{
+		SparkDriverBlockManagerMemoryUsage: SparkDriverBlockManagerMemoryUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverBlockManagerMemoryUsageAttributeKey{SparkDriverBlockManagerMemoryUsageAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageAttributeKeyState},
+			EnabledAttributes:   []SparkDriverBlockManagerMemoryUsageMetricAttributeKey{SparkDriverBlockManagerMemoryUsageMetricAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageMetricAttributeKeyState},
 		},
-		SparkDriverCodeGeneratorCompilationAverageTime: SparkDriverCodeGeneratorCompilationAverageTimeConfig{
+		SparkDriverCodeGeneratorCompilationAverageTime: SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverCodeGeneratorCompilationCount: SparkDriverCodeGeneratorCompilationCountConfig{
+		SparkDriverCodeGeneratorCompilationCount: SparkDriverCodeGeneratorCompilationCountMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverCodeGeneratorGeneratedClassAverageSize: SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig{
+		SparkDriverCodeGeneratorGeneratedClassAverageSize: SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverCodeGeneratorGeneratedClassCount: SparkDriverCodeGeneratorGeneratedClassCountConfig{
+		SparkDriverCodeGeneratorGeneratedClassCount: SparkDriverCodeGeneratorGeneratedClassCountMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverCodeGeneratorGeneratedMethodAverageSize: SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig{
+		SparkDriverCodeGeneratorGeneratedMethodAverageSize: SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverCodeGeneratorGeneratedMethodCount: SparkDriverCodeGeneratorGeneratedMethodCountConfig{
+		SparkDriverCodeGeneratorGeneratedMethodCount: SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverCodeGeneratorSourceCodeAverageSize: SparkDriverCodeGeneratorSourceCodeAverageSizeConfig{
+		SparkDriverCodeGeneratorSourceCodeAverageSize: SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverCodeGeneratorSourceCodeOperations: SparkDriverCodeGeneratorSourceCodeOperationsConfig{
+		SparkDriverCodeGeneratorSourceCodeOperations: SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerJobActive: SparkDriverDagSchedulerJobActiveConfig{
+		SparkDriverDagSchedulerJobActive: SparkDriverDagSchedulerJobActiveMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerJobCount: SparkDriverDagSchedulerJobCountConfig{
+		SparkDriverDagSchedulerJobCount: SparkDriverDagSchedulerJobCountMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerStageCount: SparkDriverDagSchedulerStageCountConfig{
+		SparkDriverDagSchedulerStageCount: SparkDriverDagSchedulerStageCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverDagSchedulerStageCountAttributeKey{SparkDriverDagSchedulerStageCountAttributeKeySchedulerStatus},
+			EnabledAttributes:   []SparkDriverDagSchedulerStageCountMetricAttributeKey{SparkDriverDagSchedulerStageCountMetricAttributeKeySchedulerStatus},
 		},
-		SparkDriverDagSchedulerStageFailed: SparkDriverDagSchedulerStageFailedConfig{
+		SparkDriverDagSchedulerStageFailed: SparkDriverDagSchedulerStageFailedMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverExecutorGcOperations: SparkDriverExecutorGcOperationsConfig{
+		SparkDriverExecutorGcOperations: SparkDriverExecutorGcOperationsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverExecutorGcOperationsAttributeKey{SparkDriverExecutorGcOperationsAttributeKeyGcType},
+			EnabledAttributes:   []SparkDriverExecutorGcOperationsMetricAttributeKey{SparkDriverExecutorGcOperationsMetricAttributeKeyGcType},
 		},
-		SparkDriverExecutorGcTime: SparkDriverExecutorGcTimeConfig{
+		SparkDriverExecutorGcTime: SparkDriverExecutorGcTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverExecutorGcTimeAttributeKey{SparkDriverExecutorGcTimeAttributeKeyGcType},
+			EnabledAttributes:   []SparkDriverExecutorGcTimeMetricAttributeKey{SparkDriverExecutorGcTimeMetricAttributeKeyGcType},
 		},
-		SparkDriverExecutorMemoryExecution: SparkDriverExecutorMemoryExecutionConfig{
+		SparkDriverExecutorMemoryExecution: SparkDriverExecutorMemoryExecutionMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverExecutorMemoryExecutionAttributeKey{SparkDriverExecutorMemoryExecutionAttributeKeyLocation},
+			EnabledAttributes:   []SparkDriverExecutorMemoryExecutionMetricAttributeKey{SparkDriverExecutorMemoryExecutionMetricAttributeKeyLocation},
 		},
-		SparkDriverExecutorMemoryJvm: SparkDriverExecutorMemoryJvmConfig{
+		SparkDriverExecutorMemoryJvm: SparkDriverExecutorMemoryJvmMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverExecutorMemoryJvmAttributeKey{SparkDriverExecutorMemoryJvmAttributeKeyLocation},
+			EnabledAttributes:   []SparkDriverExecutorMemoryJvmMetricAttributeKey{SparkDriverExecutorMemoryJvmMetricAttributeKeyLocation},
 		},
-		SparkDriverExecutorMemoryPool: SparkDriverExecutorMemoryPoolConfig{
+		SparkDriverExecutorMemoryPool: SparkDriverExecutorMemoryPoolMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverExecutorMemoryPoolAttributeKey{SparkDriverExecutorMemoryPoolAttributeKeyPoolMemoryType},
+			EnabledAttributes:   []SparkDriverExecutorMemoryPoolMetricAttributeKey{SparkDriverExecutorMemoryPoolMetricAttributeKeyPoolMemoryType},
 		},
-		SparkDriverExecutorMemoryStorage: SparkDriverExecutorMemoryStorageConfig{
+		SparkDriverExecutorMemoryStorage: SparkDriverExecutorMemoryStorageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkDriverExecutorMemoryStorageAttributeKey{SparkDriverExecutorMemoryStorageAttributeKeyLocation},
+			EnabledAttributes:   []SparkDriverExecutorMemoryStorageMetricAttributeKey{SparkDriverExecutorMemoryStorageMetricAttributeKeyLocation},
 		},
-		SparkDriverHiveExternalCatalogFileCacheHits: SparkDriverHiveExternalCatalogFileCacheHitsConfig{
+		SparkDriverHiveExternalCatalogFileCacheHits: SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverHiveExternalCatalogFilesDiscovered: SparkDriverHiveExternalCatalogFilesDiscoveredConfig{
+		SparkDriverHiveExternalCatalogFilesDiscovered: SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverHiveExternalCatalogHiveClientCalls: SparkDriverHiveExternalCatalogHiveClientCallsConfig{
+		SparkDriverHiveExternalCatalogHiveClientCalls: SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverHiveExternalCatalogParallelListingJobs: SparkDriverHiveExternalCatalogParallelListingJobsConfig{
+		SparkDriverHiveExternalCatalogParallelListingJobs: SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverHiveExternalCatalogPartitionsFetched: SparkDriverHiveExternalCatalogPartitionsFetchedConfig{
+		SparkDriverHiveExternalCatalogPartitionsFetched: SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverJvmCPUTime: SparkDriverJvmCPUTimeConfig{
+		SparkDriverJvmCPUTime: SparkDriverJvmCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverLiveListenerBusDropped: SparkDriverLiveListenerBusDroppedConfig{
+		SparkDriverLiveListenerBusDropped: SparkDriverLiveListenerBusDroppedMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverLiveListenerBusPosted: SparkDriverLiveListenerBusPostedConfig{
+		SparkDriverLiveListenerBusPosted: SparkDriverLiveListenerBusPostedMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverLiveListenerBusProcessingTimeAverage: SparkDriverLiveListenerBusProcessingTimeAverageConfig{
+		SparkDriverLiveListenerBusProcessingTimeAverage: SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig{
 			Enabled: true,
 		},
-		SparkDriverLiveListenerBusQueueSize: SparkDriverLiveListenerBusQueueSizeConfig{
+		SparkDriverLiveListenerBusQueueSize: SparkDriverLiveListenerBusQueueSizeMetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorDiskUsage: SparkExecutorDiskUsageConfig{
+		SparkExecutorDiskUsage: SparkExecutorDiskUsageMetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorGcTime: SparkExecutorGcTimeConfig{
+		SparkExecutorGcTime: SparkExecutorGcTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorInputSize: SparkExecutorInputSizeConfig{
+		SparkExecutorInputSize: SparkExecutorInputSizeMetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorMemoryUsage: SparkExecutorMemoryUsageConfig{
+		SparkExecutorMemoryUsage: SparkExecutorMemoryUsageMetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorShuffleIoSize: SparkExecutorShuffleIoSizeConfig{
+		SparkExecutorShuffleIoSize: SparkExecutorShuffleIoSizeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkExecutorShuffleIoSizeAttributeKey{SparkExecutorShuffleIoSizeAttributeKeyDirection},
+			EnabledAttributes:   []SparkExecutorShuffleIoSizeMetricAttributeKey{SparkExecutorShuffleIoSizeMetricAttributeKeyDirection},
 		},
-		SparkExecutorStorageMemoryUsage: SparkExecutorStorageMemoryUsageConfig{
+		SparkExecutorStorageMemoryUsage: SparkExecutorStorageMemoryUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkExecutorStorageMemoryUsageAttributeKey{SparkExecutorStorageMemoryUsageAttributeKeyLocation, SparkExecutorStorageMemoryUsageAttributeKeyState},
+			EnabledAttributes:   []SparkExecutorStorageMemoryUsageMetricAttributeKey{SparkExecutorStorageMemoryUsageMetricAttributeKeyLocation, SparkExecutorStorageMemoryUsageMetricAttributeKeyState},
 		},
-		SparkExecutorTaskActive: SparkExecutorTaskActiveConfig{
+		SparkExecutorTaskActive: SparkExecutorTaskActiveMetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorTaskLimit: SparkExecutorTaskLimitConfig{
+		SparkExecutorTaskLimit: SparkExecutorTaskLimitMetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorTaskResult: SparkExecutorTaskResultConfig{
+		SparkExecutorTaskResult: SparkExecutorTaskResultMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkExecutorTaskResultAttributeKey{SparkExecutorTaskResultAttributeKeyExecutorTaskResult},
+			EnabledAttributes:   []SparkExecutorTaskResultMetricAttributeKey{SparkExecutorTaskResultMetricAttributeKeyExecutorTaskResult},
 		},
-		SparkExecutorTime: SparkExecutorTimeConfig{
+		SparkExecutorTime: SparkExecutorTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkJobStageActive: SparkJobStageActiveConfig{
+		SparkJobStageActive: SparkJobStageActiveMetricConfig{
 			Enabled: true,
 		},
-		SparkJobStageResult: SparkJobStageResultConfig{
+		SparkJobStageResult: SparkJobStageResultMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkJobStageResultAttributeKey{SparkJobStageResultAttributeKeyJobResult},
+			EnabledAttributes:   []SparkJobStageResultMetricAttributeKey{SparkJobStageResultMetricAttributeKeyJobResult},
 		},
-		SparkJobTaskActive: SparkJobTaskActiveConfig{
+		SparkJobTaskActive: SparkJobTaskActiveMetricConfig{
 			Enabled: true,
 		},
-		SparkJobTaskResult: SparkJobTaskResultConfig{
+		SparkJobTaskResult: SparkJobTaskResultMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkJobTaskResultAttributeKey{SparkJobTaskResultAttributeKeyJobResult},
+			EnabledAttributes:   []SparkJobTaskResultMetricAttributeKey{SparkJobTaskResultMetricAttributeKeyJobResult},
 		},
-		SparkStageDiskSpilled: SparkStageDiskSpilledConfig{
+		SparkStageDiskSpilled: SparkStageDiskSpilledMetricConfig{
 			Enabled: true,
 		},
-		SparkStageExecutorCPUTime: SparkStageExecutorCPUTimeConfig{
+		SparkStageExecutorCPUTime: SparkStageExecutorCPUTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkStageExecutorRunTime: SparkStageExecutorRunTimeConfig{
+		SparkStageExecutorRunTime: SparkStageExecutorRunTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkStageIoRecords: SparkStageIoRecordsConfig{
+		SparkStageIoRecords: SparkStageIoRecordsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkStageIoRecordsAttributeKey{SparkStageIoRecordsAttributeKeyDirection},
+			EnabledAttributes:   []SparkStageIoRecordsMetricAttributeKey{SparkStageIoRecordsMetricAttributeKeyDirection},
 		},
-		SparkStageIoSize: SparkStageIoSizeConfig{
+		SparkStageIoSize: SparkStageIoSizeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkStageIoSizeAttributeKey{SparkStageIoSizeAttributeKeyDirection},
+			EnabledAttributes:   []SparkStageIoSizeMetricAttributeKey{SparkStageIoSizeMetricAttributeKeyDirection},
 		},
-		SparkStageJvmGcTime: SparkStageJvmGcTimeConfig{
+		SparkStageJvmGcTime: SparkStageJvmGcTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkStageMemoryPeak: SparkStageMemoryPeakConfig{
+		SparkStageMemoryPeak: SparkStageMemoryPeakMetricConfig{
 			Enabled: true,
 		},
-		SparkStageMemorySpilled: SparkStageMemorySpilledConfig{
+		SparkStageMemorySpilled: SparkStageMemorySpilledMetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleBlocksFetched: SparkStageShuffleBlocksFetchedConfig{
+		SparkStageShuffleBlocksFetched: SparkStageShuffleBlocksFetchedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkStageShuffleBlocksFetchedAttributeKey{SparkStageShuffleBlocksFetchedAttributeKeySource},
+			EnabledAttributes:   []SparkStageShuffleBlocksFetchedMetricAttributeKey{SparkStageShuffleBlocksFetchedMetricAttributeKeySource},
 		},
-		SparkStageShuffleFetchWaitTime: SparkStageShuffleFetchWaitTimeConfig{
+		SparkStageShuffleFetchWaitTime: SparkStageShuffleFetchWaitTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleIoDisk: SparkStageShuffleIoDiskConfig{
+		SparkStageShuffleIoDisk: SparkStageShuffleIoDiskMetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleIoReadSize: SparkStageShuffleIoReadSizeConfig{
+		SparkStageShuffleIoReadSize: SparkStageShuffleIoReadSizeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkStageShuffleIoReadSizeAttributeKey{SparkStageShuffleIoReadSizeAttributeKeySource},
+			EnabledAttributes:   []SparkStageShuffleIoReadSizeMetricAttributeKey{SparkStageShuffleIoReadSizeMetricAttributeKeySource},
 		},
-		SparkStageShuffleIoRecords: SparkStageShuffleIoRecordsConfig{
+		SparkStageShuffleIoRecords: SparkStageShuffleIoRecordsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkStageShuffleIoRecordsAttributeKey{SparkStageShuffleIoRecordsAttributeKeyDirection},
+			EnabledAttributes:   []SparkStageShuffleIoRecordsMetricAttributeKey{SparkStageShuffleIoRecordsMetricAttributeKeyDirection},
 		},
-		SparkStageShuffleIoWriteSize: SparkStageShuffleIoWriteSizeConfig{
+		SparkStageShuffleIoWriteSize: SparkStageShuffleIoWriteSizeMetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleWriteTime: SparkStageShuffleWriteTimeConfig{
+		SparkStageShuffleWriteTime: SparkStageShuffleWriteTimeMetricConfig{
 			Enabled: true,
 		},
-		SparkStageStatus: SparkStageStatusConfig{
+		SparkStageStatus: SparkStageStatusMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkStageStatusAttributeKey{SparkStageStatusAttributeKeyStageActive, SparkStageStatusAttributeKeyStageComplete, SparkStageStatusAttributeKeyStagePending, SparkStageStatusAttributeKeyStageFailed},
+			EnabledAttributes:   []SparkStageStatusMetricAttributeKey{SparkStageStatusMetricAttributeKeyStageActive, SparkStageStatusMetricAttributeKeyStageComplete, SparkStageStatusMetricAttributeKeyStagePending, SparkStageStatusMetricAttributeKeyStageFailed},
 		},
-		SparkStageTaskActive: SparkStageTaskActiveConfig{
+		SparkStageTaskActive: SparkStageTaskActiveMetricConfig{
 			Enabled: true,
 		},
-		SparkStageTaskResult: SparkStageTaskResultConfig{
+		SparkStageTaskResult: SparkStageTaskResultMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SparkStageTaskResultAttributeKey{SparkStageTaskResultAttributeKeyStageTaskResult},
+			EnabledAttributes:   []SparkStageTaskResultMetricAttributeKey{SparkStageTaskResultMetricAttributeKeyStageTaskResult},
 		},
-		SparkStageTaskResultSize: SparkStageTaskResultSizeConfig{
+		SparkStageTaskResultSize: SparkStageTaskResultSizeMetricConfig{
 			Enabled: true,
 		},
 	}

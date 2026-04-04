@@ -26,233 +26,233 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SparkDriverBlockManagerDiskUsage: SparkDriverBlockManagerDiskUsageConfig{
+					SparkDriverBlockManagerDiskUsage: SparkDriverBlockManagerDiskUsageMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverBlockManagerMemoryUsage: SparkDriverBlockManagerMemoryUsageConfig{
+					SparkDriverBlockManagerMemoryUsage: SparkDriverBlockManagerMemoryUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverBlockManagerMemoryUsageAttributeKey{SparkDriverBlockManagerMemoryUsageAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SparkDriverBlockManagerMemoryUsageMetricAttributeKey{SparkDriverBlockManagerMemoryUsageMetricAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageMetricAttributeKeyState},
 					},
-					SparkDriverCodeGeneratorCompilationAverageTime: SparkDriverCodeGeneratorCompilationAverageTimeConfig{
+					SparkDriverCodeGeneratorCompilationAverageTime: SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverCodeGeneratorCompilationCount: SparkDriverCodeGeneratorCompilationCountConfig{
+					SparkDriverCodeGeneratorCompilationCount: SparkDriverCodeGeneratorCompilationCountMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverCodeGeneratorGeneratedClassAverageSize: SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig{
+					SparkDriverCodeGeneratorGeneratedClassAverageSize: SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverCodeGeneratorGeneratedClassCount: SparkDriverCodeGeneratorGeneratedClassCountConfig{
+					SparkDriverCodeGeneratorGeneratedClassCount: SparkDriverCodeGeneratorGeneratedClassCountMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverCodeGeneratorGeneratedMethodAverageSize: SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig{
+					SparkDriverCodeGeneratorGeneratedMethodAverageSize: SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverCodeGeneratorGeneratedMethodCount: SparkDriverCodeGeneratorGeneratedMethodCountConfig{
+					SparkDriverCodeGeneratorGeneratedMethodCount: SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverCodeGeneratorSourceCodeAverageSize: SparkDriverCodeGeneratorSourceCodeAverageSizeConfig{
+					SparkDriverCodeGeneratorSourceCodeAverageSize: SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverCodeGeneratorSourceCodeOperations: SparkDriverCodeGeneratorSourceCodeOperationsConfig{
+					SparkDriverCodeGeneratorSourceCodeOperations: SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverDagSchedulerJobActive: SparkDriverDagSchedulerJobActiveConfig{
+					SparkDriverDagSchedulerJobActive: SparkDriverDagSchedulerJobActiveMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverDagSchedulerJobCount: SparkDriverDagSchedulerJobCountConfig{
+					SparkDriverDagSchedulerJobCount: SparkDriverDagSchedulerJobCountMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverDagSchedulerStageCount: SparkDriverDagSchedulerStageCountConfig{
+					SparkDriverDagSchedulerStageCount: SparkDriverDagSchedulerStageCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverDagSchedulerStageCountAttributeKey{SparkDriverDagSchedulerStageCountAttributeKeySchedulerStatus},
+						EnabledAttributes:   []SparkDriverDagSchedulerStageCountMetricAttributeKey{SparkDriverDagSchedulerStageCountMetricAttributeKeySchedulerStatus},
 					},
-					SparkDriverDagSchedulerStageFailed: SparkDriverDagSchedulerStageFailedConfig{
+					SparkDriverDagSchedulerStageFailed: SparkDriverDagSchedulerStageFailedMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverExecutorGcOperations: SparkDriverExecutorGcOperationsConfig{
+					SparkDriverExecutorGcOperations: SparkDriverExecutorGcOperationsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorGcOperationsAttributeKey{SparkDriverExecutorGcOperationsAttributeKeyGcType},
+						EnabledAttributes:   []SparkDriverExecutorGcOperationsMetricAttributeKey{SparkDriverExecutorGcOperationsMetricAttributeKeyGcType},
 					},
-					SparkDriverExecutorGcTime: SparkDriverExecutorGcTimeConfig{
+					SparkDriverExecutorGcTime: SparkDriverExecutorGcTimeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorGcTimeAttributeKey{SparkDriverExecutorGcTimeAttributeKeyGcType},
+						EnabledAttributes:   []SparkDriverExecutorGcTimeMetricAttributeKey{SparkDriverExecutorGcTimeMetricAttributeKeyGcType},
 					},
-					SparkDriverExecutorMemoryExecution: SparkDriverExecutorMemoryExecutionConfig{
+					SparkDriverExecutorMemoryExecution: SparkDriverExecutorMemoryExecutionMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryExecutionAttributeKey{SparkDriverExecutorMemoryExecutionAttributeKeyLocation},
+						EnabledAttributes:   []SparkDriverExecutorMemoryExecutionMetricAttributeKey{SparkDriverExecutorMemoryExecutionMetricAttributeKeyLocation},
 					},
-					SparkDriverExecutorMemoryJvm: SparkDriverExecutorMemoryJvmConfig{
+					SparkDriverExecutorMemoryJvm: SparkDriverExecutorMemoryJvmMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryJvmAttributeKey{SparkDriverExecutorMemoryJvmAttributeKeyLocation},
+						EnabledAttributes:   []SparkDriverExecutorMemoryJvmMetricAttributeKey{SparkDriverExecutorMemoryJvmMetricAttributeKeyLocation},
 					},
-					SparkDriverExecutorMemoryPool: SparkDriverExecutorMemoryPoolConfig{
+					SparkDriverExecutorMemoryPool: SparkDriverExecutorMemoryPoolMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryPoolAttributeKey{SparkDriverExecutorMemoryPoolAttributeKeyPoolMemoryType},
+						EnabledAttributes:   []SparkDriverExecutorMemoryPoolMetricAttributeKey{SparkDriverExecutorMemoryPoolMetricAttributeKeyPoolMemoryType},
 					},
-					SparkDriverExecutorMemoryStorage: SparkDriverExecutorMemoryStorageConfig{
+					SparkDriverExecutorMemoryStorage: SparkDriverExecutorMemoryStorageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryStorageAttributeKey{SparkDriverExecutorMemoryStorageAttributeKeyLocation},
+						EnabledAttributes:   []SparkDriverExecutorMemoryStorageMetricAttributeKey{SparkDriverExecutorMemoryStorageMetricAttributeKeyLocation},
 					},
-					SparkDriverHiveExternalCatalogFileCacheHits: SparkDriverHiveExternalCatalogFileCacheHitsConfig{
+					SparkDriverHiveExternalCatalogFileCacheHits: SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverHiveExternalCatalogFilesDiscovered: SparkDriverHiveExternalCatalogFilesDiscoveredConfig{
+					SparkDriverHiveExternalCatalogFilesDiscovered: SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverHiveExternalCatalogHiveClientCalls: SparkDriverHiveExternalCatalogHiveClientCallsConfig{
+					SparkDriverHiveExternalCatalogHiveClientCalls: SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverHiveExternalCatalogParallelListingJobs: SparkDriverHiveExternalCatalogParallelListingJobsConfig{
+					SparkDriverHiveExternalCatalogParallelListingJobs: SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverHiveExternalCatalogPartitionsFetched: SparkDriverHiveExternalCatalogPartitionsFetchedConfig{
+					SparkDriverHiveExternalCatalogPartitionsFetched: SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverJvmCPUTime: SparkDriverJvmCPUTimeConfig{
+					SparkDriverJvmCPUTime: SparkDriverJvmCPUTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverLiveListenerBusDropped: SparkDriverLiveListenerBusDroppedConfig{
+					SparkDriverLiveListenerBusDropped: SparkDriverLiveListenerBusDroppedMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverLiveListenerBusPosted: SparkDriverLiveListenerBusPostedConfig{
+					SparkDriverLiveListenerBusPosted: SparkDriverLiveListenerBusPostedMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverLiveListenerBusProcessingTimeAverage: SparkDriverLiveListenerBusProcessingTimeAverageConfig{
+					SparkDriverLiveListenerBusProcessingTimeAverage: SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig{
 						Enabled: true,
 					},
-					SparkDriverLiveListenerBusQueueSize: SparkDriverLiveListenerBusQueueSizeConfig{
+					SparkDriverLiveListenerBusQueueSize: SparkDriverLiveListenerBusQueueSizeMetricConfig{
 						Enabled: true,
 					},
-					SparkExecutorDiskUsage: SparkExecutorDiskUsageConfig{
+					SparkExecutorDiskUsage: SparkExecutorDiskUsageMetricConfig{
 						Enabled: true,
 					},
-					SparkExecutorGcTime: SparkExecutorGcTimeConfig{
+					SparkExecutorGcTime: SparkExecutorGcTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkExecutorInputSize: SparkExecutorInputSizeConfig{
+					SparkExecutorInputSize: SparkExecutorInputSizeMetricConfig{
 						Enabled: true,
 					},
-					SparkExecutorMemoryUsage: SparkExecutorMemoryUsageConfig{
+					SparkExecutorMemoryUsage: SparkExecutorMemoryUsageMetricConfig{
 						Enabled: true,
 					},
-					SparkExecutorShuffleIoSize: SparkExecutorShuffleIoSizeConfig{
+					SparkExecutorShuffleIoSize: SparkExecutorShuffleIoSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkExecutorShuffleIoSizeAttributeKey{SparkExecutorShuffleIoSizeAttributeKeyDirection},
+						EnabledAttributes:   []SparkExecutorShuffleIoSizeMetricAttributeKey{SparkExecutorShuffleIoSizeMetricAttributeKeyDirection},
 					},
-					SparkExecutorStorageMemoryUsage: SparkExecutorStorageMemoryUsageConfig{
+					SparkExecutorStorageMemoryUsage: SparkExecutorStorageMemoryUsageMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkExecutorStorageMemoryUsageAttributeKey{SparkExecutorStorageMemoryUsageAttributeKeyLocation, SparkExecutorStorageMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SparkExecutorStorageMemoryUsageMetricAttributeKey{SparkExecutorStorageMemoryUsageMetricAttributeKeyLocation, SparkExecutorStorageMemoryUsageMetricAttributeKeyState},
 					},
-					SparkExecutorTaskActive: SparkExecutorTaskActiveConfig{
+					SparkExecutorTaskActive: SparkExecutorTaskActiveMetricConfig{
 						Enabled: true,
 					},
-					SparkExecutorTaskLimit: SparkExecutorTaskLimitConfig{
+					SparkExecutorTaskLimit: SparkExecutorTaskLimitMetricConfig{
 						Enabled: true,
 					},
-					SparkExecutorTaskResult: SparkExecutorTaskResultConfig{
+					SparkExecutorTaskResult: SparkExecutorTaskResultMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkExecutorTaskResultAttributeKey{SparkExecutorTaskResultAttributeKeyExecutorTaskResult},
+						EnabledAttributes:   []SparkExecutorTaskResultMetricAttributeKey{SparkExecutorTaskResultMetricAttributeKeyExecutorTaskResult},
 					},
-					SparkExecutorTime: SparkExecutorTimeConfig{
+					SparkExecutorTime: SparkExecutorTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkJobStageActive: SparkJobStageActiveConfig{
+					SparkJobStageActive: SparkJobStageActiveMetricConfig{
 						Enabled: true,
 					},
-					SparkJobStageResult: SparkJobStageResultConfig{
+					SparkJobStageResult: SparkJobStageResultMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkJobStageResultAttributeKey{SparkJobStageResultAttributeKeyJobResult},
+						EnabledAttributes:   []SparkJobStageResultMetricAttributeKey{SparkJobStageResultMetricAttributeKeyJobResult},
 					},
-					SparkJobTaskActive: SparkJobTaskActiveConfig{
+					SparkJobTaskActive: SparkJobTaskActiveMetricConfig{
 						Enabled: true,
 					},
-					SparkJobTaskResult: SparkJobTaskResultConfig{
+					SparkJobTaskResult: SparkJobTaskResultMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkJobTaskResultAttributeKey{SparkJobTaskResultAttributeKeyJobResult},
+						EnabledAttributes:   []SparkJobTaskResultMetricAttributeKey{SparkJobTaskResultMetricAttributeKeyJobResult},
 					},
-					SparkStageDiskSpilled: SparkStageDiskSpilledConfig{
+					SparkStageDiskSpilled: SparkStageDiskSpilledMetricConfig{
 						Enabled: true,
 					},
-					SparkStageExecutorCPUTime: SparkStageExecutorCPUTimeConfig{
+					SparkStageExecutorCPUTime: SparkStageExecutorCPUTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkStageExecutorRunTime: SparkStageExecutorRunTimeConfig{
+					SparkStageExecutorRunTime: SparkStageExecutorRunTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkStageIoRecords: SparkStageIoRecordsConfig{
+					SparkStageIoRecords: SparkStageIoRecordsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageIoRecordsAttributeKey{SparkStageIoRecordsAttributeKeyDirection},
+						EnabledAttributes:   []SparkStageIoRecordsMetricAttributeKey{SparkStageIoRecordsMetricAttributeKeyDirection},
 					},
-					SparkStageIoSize: SparkStageIoSizeConfig{
+					SparkStageIoSize: SparkStageIoSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageIoSizeAttributeKey{SparkStageIoSizeAttributeKeyDirection},
+						EnabledAttributes:   []SparkStageIoSizeMetricAttributeKey{SparkStageIoSizeMetricAttributeKeyDirection},
 					},
-					SparkStageJvmGcTime: SparkStageJvmGcTimeConfig{
+					SparkStageJvmGcTime: SparkStageJvmGcTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkStageMemoryPeak: SparkStageMemoryPeakConfig{
+					SparkStageMemoryPeak: SparkStageMemoryPeakMetricConfig{
 						Enabled: true,
 					},
-					SparkStageMemorySpilled: SparkStageMemorySpilledConfig{
+					SparkStageMemorySpilled: SparkStageMemorySpilledMetricConfig{
 						Enabled: true,
 					},
-					SparkStageShuffleBlocksFetched: SparkStageShuffleBlocksFetchedConfig{
+					SparkStageShuffleBlocksFetched: SparkStageShuffleBlocksFetchedMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageShuffleBlocksFetchedAttributeKey{SparkStageShuffleBlocksFetchedAttributeKeySource},
+						EnabledAttributes:   []SparkStageShuffleBlocksFetchedMetricAttributeKey{SparkStageShuffleBlocksFetchedMetricAttributeKeySource},
 					},
-					SparkStageShuffleFetchWaitTime: SparkStageShuffleFetchWaitTimeConfig{
+					SparkStageShuffleFetchWaitTime: SparkStageShuffleFetchWaitTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkStageShuffleIoDisk: SparkStageShuffleIoDiskConfig{
+					SparkStageShuffleIoDisk: SparkStageShuffleIoDiskMetricConfig{
 						Enabled: true,
 					},
-					SparkStageShuffleIoReadSize: SparkStageShuffleIoReadSizeConfig{
+					SparkStageShuffleIoReadSize: SparkStageShuffleIoReadSizeMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageShuffleIoReadSizeAttributeKey{SparkStageShuffleIoReadSizeAttributeKeySource},
+						EnabledAttributes:   []SparkStageShuffleIoReadSizeMetricAttributeKey{SparkStageShuffleIoReadSizeMetricAttributeKeySource},
 					},
-					SparkStageShuffleIoRecords: SparkStageShuffleIoRecordsConfig{
+					SparkStageShuffleIoRecords: SparkStageShuffleIoRecordsMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageShuffleIoRecordsAttributeKey{SparkStageShuffleIoRecordsAttributeKeyDirection},
+						EnabledAttributes:   []SparkStageShuffleIoRecordsMetricAttributeKey{SparkStageShuffleIoRecordsMetricAttributeKeyDirection},
 					},
-					SparkStageShuffleIoWriteSize: SparkStageShuffleIoWriteSizeConfig{
+					SparkStageShuffleIoWriteSize: SparkStageShuffleIoWriteSizeMetricConfig{
 						Enabled: true,
 					},
-					SparkStageShuffleWriteTime: SparkStageShuffleWriteTimeConfig{
+					SparkStageShuffleWriteTime: SparkStageShuffleWriteTimeMetricConfig{
 						Enabled: true,
 					},
-					SparkStageStatus: SparkStageStatusConfig{
+					SparkStageStatus: SparkStageStatusMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageStatusAttributeKey{SparkStageStatusAttributeKeyStageActive, SparkStageStatusAttributeKeyStageComplete, SparkStageStatusAttributeKeyStagePending, SparkStageStatusAttributeKeyStageFailed},
+						EnabledAttributes:   []SparkStageStatusMetricAttributeKey{SparkStageStatusMetricAttributeKeyStageActive, SparkStageStatusMetricAttributeKeyStageComplete, SparkStageStatusMetricAttributeKeyStagePending, SparkStageStatusMetricAttributeKeyStageFailed},
 					},
-					SparkStageTaskActive: SparkStageTaskActiveConfig{
+					SparkStageTaskActive: SparkStageTaskActiveMetricConfig{
 						Enabled: true,
 					},
-					SparkStageTaskResult: SparkStageTaskResultConfig{
+					SparkStageTaskResult: SparkStageTaskResultMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageTaskResultAttributeKey{SparkStageTaskResultAttributeKeyStageTaskResult},
+						EnabledAttributes:   []SparkStageTaskResultMetricAttributeKey{SparkStageTaskResultMetricAttributeKeyStageTaskResult},
 					},
-					SparkStageTaskResultSize: SparkStageTaskResultSizeConfig{
+					SparkStageTaskResultSize: SparkStageTaskResultSizeMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -270,233 +270,233 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SparkDriverBlockManagerDiskUsage: SparkDriverBlockManagerDiskUsageConfig{
+					SparkDriverBlockManagerDiskUsage: SparkDriverBlockManagerDiskUsageMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverBlockManagerMemoryUsage: SparkDriverBlockManagerMemoryUsageConfig{
+					SparkDriverBlockManagerMemoryUsage: SparkDriverBlockManagerMemoryUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverBlockManagerMemoryUsageAttributeKey{SparkDriverBlockManagerMemoryUsageAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SparkDriverBlockManagerMemoryUsageMetricAttributeKey{SparkDriverBlockManagerMemoryUsageMetricAttributeKeyLocation, SparkDriverBlockManagerMemoryUsageMetricAttributeKeyState},
 					},
-					SparkDriverCodeGeneratorCompilationAverageTime: SparkDriverCodeGeneratorCompilationAverageTimeConfig{
+					SparkDriverCodeGeneratorCompilationAverageTime: SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverCodeGeneratorCompilationCount: SparkDriverCodeGeneratorCompilationCountConfig{
+					SparkDriverCodeGeneratorCompilationCount: SparkDriverCodeGeneratorCompilationCountMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverCodeGeneratorGeneratedClassAverageSize: SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig{
+					SparkDriverCodeGeneratorGeneratedClassAverageSize: SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverCodeGeneratorGeneratedClassCount: SparkDriverCodeGeneratorGeneratedClassCountConfig{
+					SparkDriverCodeGeneratorGeneratedClassCount: SparkDriverCodeGeneratorGeneratedClassCountMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverCodeGeneratorGeneratedMethodAverageSize: SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig{
+					SparkDriverCodeGeneratorGeneratedMethodAverageSize: SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverCodeGeneratorGeneratedMethodCount: SparkDriverCodeGeneratorGeneratedMethodCountConfig{
+					SparkDriverCodeGeneratorGeneratedMethodCount: SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverCodeGeneratorSourceCodeAverageSize: SparkDriverCodeGeneratorSourceCodeAverageSizeConfig{
+					SparkDriverCodeGeneratorSourceCodeAverageSize: SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverCodeGeneratorSourceCodeOperations: SparkDriverCodeGeneratorSourceCodeOperationsConfig{
+					SparkDriverCodeGeneratorSourceCodeOperations: SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverDagSchedulerJobActive: SparkDriverDagSchedulerJobActiveConfig{
+					SparkDriverDagSchedulerJobActive: SparkDriverDagSchedulerJobActiveMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverDagSchedulerJobCount: SparkDriverDagSchedulerJobCountConfig{
+					SparkDriverDagSchedulerJobCount: SparkDriverDagSchedulerJobCountMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverDagSchedulerStageCount: SparkDriverDagSchedulerStageCountConfig{
+					SparkDriverDagSchedulerStageCount: SparkDriverDagSchedulerStageCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverDagSchedulerStageCountAttributeKey{SparkDriverDagSchedulerStageCountAttributeKeySchedulerStatus},
+						EnabledAttributes:   []SparkDriverDagSchedulerStageCountMetricAttributeKey{SparkDriverDagSchedulerStageCountMetricAttributeKeySchedulerStatus},
 					},
-					SparkDriverDagSchedulerStageFailed: SparkDriverDagSchedulerStageFailedConfig{
+					SparkDriverDagSchedulerStageFailed: SparkDriverDagSchedulerStageFailedMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverExecutorGcOperations: SparkDriverExecutorGcOperationsConfig{
+					SparkDriverExecutorGcOperations: SparkDriverExecutorGcOperationsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorGcOperationsAttributeKey{SparkDriverExecutorGcOperationsAttributeKeyGcType},
+						EnabledAttributes:   []SparkDriverExecutorGcOperationsMetricAttributeKey{SparkDriverExecutorGcOperationsMetricAttributeKeyGcType},
 					},
-					SparkDriverExecutorGcTime: SparkDriverExecutorGcTimeConfig{
+					SparkDriverExecutorGcTime: SparkDriverExecutorGcTimeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorGcTimeAttributeKey{SparkDriverExecutorGcTimeAttributeKeyGcType},
+						EnabledAttributes:   []SparkDriverExecutorGcTimeMetricAttributeKey{SparkDriverExecutorGcTimeMetricAttributeKeyGcType},
 					},
-					SparkDriverExecutorMemoryExecution: SparkDriverExecutorMemoryExecutionConfig{
+					SparkDriverExecutorMemoryExecution: SparkDriverExecutorMemoryExecutionMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryExecutionAttributeKey{SparkDriverExecutorMemoryExecutionAttributeKeyLocation},
+						EnabledAttributes:   []SparkDriverExecutorMemoryExecutionMetricAttributeKey{SparkDriverExecutorMemoryExecutionMetricAttributeKeyLocation},
 					},
-					SparkDriverExecutorMemoryJvm: SparkDriverExecutorMemoryJvmConfig{
+					SparkDriverExecutorMemoryJvm: SparkDriverExecutorMemoryJvmMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryJvmAttributeKey{SparkDriverExecutorMemoryJvmAttributeKeyLocation},
+						EnabledAttributes:   []SparkDriverExecutorMemoryJvmMetricAttributeKey{SparkDriverExecutorMemoryJvmMetricAttributeKeyLocation},
 					},
-					SparkDriverExecutorMemoryPool: SparkDriverExecutorMemoryPoolConfig{
+					SparkDriverExecutorMemoryPool: SparkDriverExecutorMemoryPoolMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryPoolAttributeKey{SparkDriverExecutorMemoryPoolAttributeKeyPoolMemoryType},
+						EnabledAttributes:   []SparkDriverExecutorMemoryPoolMetricAttributeKey{SparkDriverExecutorMemoryPoolMetricAttributeKeyPoolMemoryType},
 					},
-					SparkDriverExecutorMemoryStorage: SparkDriverExecutorMemoryStorageConfig{
+					SparkDriverExecutorMemoryStorage: SparkDriverExecutorMemoryStorageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkDriverExecutorMemoryStorageAttributeKey{SparkDriverExecutorMemoryStorageAttributeKeyLocation},
+						EnabledAttributes:   []SparkDriverExecutorMemoryStorageMetricAttributeKey{SparkDriverExecutorMemoryStorageMetricAttributeKeyLocation},
 					},
-					SparkDriverHiveExternalCatalogFileCacheHits: SparkDriverHiveExternalCatalogFileCacheHitsConfig{
+					SparkDriverHiveExternalCatalogFileCacheHits: SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverHiveExternalCatalogFilesDiscovered: SparkDriverHiveExternalCatalogFilesDiscoveredConfig{
+					SparkDriverHiveExternalCatalogFilesDiscovered: SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverHiveExternalCatalogHiveClientCalls: SparkDriverHiveExternalCatalogHiveClientCallsConfig{
+					SparkDriverHiveExternalCatalogHiveClientCalls: SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverHiveExternalCatalogParallelListingJobs: SparkDriverHiveExternalCatalogParallelListingJobsConfig{
+					SparkDriverHiveExternalCatalogParallelListingJobs: SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverHiveExternalCatalogPartitionsFetched: SparkDriverHiveExternalCatalogPartitionsFetchedConfig{
+					SparkDriverHiveExternalCatalogPartitionsFetched: SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverJvmCPUTime: SparkDriverJvmCPUTimeConfig{
+					SparkDriverJvmCPUTime: SparkDriverJvmCPUTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverLiveListenerBusDropped: SparkDriverLiveListenerBusDroppedConfig{
+					SparkDriverLiveListenerBusDropped: SparkDriverLiveListenerBusDroppedMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverLiveListenerBusPosted: SparkDriverLiveListenerBusPostedConfig{
+					SparkDriverLiveListenerBusPosted: SparkDriverLiveListenerBusPostedMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverLiveListenerBusProcessingTimeAverage: SparkDriverLiveListenerBusProcessingTimeAverageConfig{
+					SparkDriverLiveListenerBusProcessingTimeAverage: SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig{
 						Enabled: false,
 					},
-					SparkDriverLiveListenerBusQueueSize: SparkDriverLiveListenerBusQueueSizeConfig{
+					SparkDriverLiveListenerBusQueueSize: SparkDriverLiveListenerBusQueueSizeMetricConfig{
 						Enabled: false,
 					},
-					SparkExecutorDiskUsage: SparkExecutorDiskUsageConfig{
+					SparkExecutorDiskUsage: SparkExecutorDiskUsageMetricConfig{
 						Enabled: false,
 					},
-					SparkExecutorGcTime: SparkExecutorGcTimeConfig{
+					SparkExecutorGcTime: SparkExecutorGcTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkExecutorInputSize: SparkExecutorInputSizeConfig{
+					SparkExecutorInputSize: SparkExecutorInputSizeMetricConfig{
 						Enabled: false,
 					},
-					SparkExecutorMemoryUsage: SparkExecutorMemoryUsageConfig{
+					SparkExecutorMemoryUsage: SparkExecutorMemoryUsageMetricConfig{
 						Enabled: false,
 					},
-					SparkExecutorShuffleIoSize: SparkExecutorShuffleIoSizeConfig{
+					SparkExecutorShuffleIoSize: SparkExecutorShuffleIoSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkExecutorShuffleIoSizeAttributeKey{SparkExecutorShuffleIoSizeAttributeKeyDirection},
+						EnabledAttributes:   []SparkExecutorShuffleIoSizeMetricAttributeKey{SparkExecutorShuffleIoSizeMetricAttributeKeyDirection},
 					},
-					SparkExecutorStorageMemoryUsage: SparkExecutorStorageMemoryUsageConfig{
+					SparkExecutorStorageMemoryUsage: SparkExecutorStorageMemoryUsageMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkExecutorStorageMemoryUsageAttributeKey{SparkExecutorStorageMemoryUsageAttributeKeyLocation, SparkExecutorStorageMemoryUsageAttributeKeyState},
+						EnabledAttributes:   []SparkExecutorStorageMemoryUsageMetricAttributeKey{SparkExecutorStorageMemoryUsageMetricAttributeKeyLocation, SparkExecutorStorageMemoryUsageMetricAttributeKeyState},
 					},
-					SparkExecutorTaskActive: SparkExecutorTaskActiveConfig{
+					SparkExecutorTaskActive: SparkExecutorTaskActiveMetricConfig{
 						Enabled: false,
 					},
-					SparkExecutorTaskLimit: SparkExecutorTaskLimitConfig{
+					SparkExecutorTaskLimit: SparkExecutorTaskLimitMetricConfig{
 						Enabled: false,
 					},
-					SparkExecutorTaskResult: SparkExecutorTaskResultConfig{
+					SparkExecutorTaskResult: SparkExecutorTaskResultMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkExecutorTaskResultAttributeKey{SparkExecutorTaskResultAttributeKeyExecutorTaskResult},
+						EnabledAttributes:   []SparkExecutorTaskResultMetricAttributeKey{SparkExecutorTaskResultMetricAttributeKeyExecutorTaskResult},
 					},
-					SparkExecutorTime: SparkExecutorTimeConfig{
+					SparkExecutorTime: SparkExecutorTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkJobStageActive: SparkJobStageActiveConfig{
+					SparkJobStageActive: SparkJobStageActiveMetricConfig{
 						Enabled: false,
 					},
-					SparkJobStageResult: SparkJobStageResultConfig{
+					SparkJobStageResult: SparkJobStageResultMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkJobStageResultAttributeKey{SparkJobStageResultAttributeKeyJobResult},
+						EnabledAttributes:   []SparkJobStageResultMetricAttributeKey{SparkJobStageResultMetricAttributeKeyJobResult},
 					},
-					SparkJobTaskActive: SparkJobTaskActiveConfig{
+					SparkJobTaskActive: SparkJobTaskActiveMetricConfig{
 						Enabled: false,
 					},
-					SparkJobTaskResult: SparkJobTaskResultConfig{
+					SparkJobTaskResult: SparkJobTaskResultMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkJobTaskResultAttributeKey{SparkJobTaskResultAttributeKeyJobResult},
+						EnabledAttributes:   []SparkJobTaskResultMetricAttributeKey{SparkJobTaskResultMetricAttributeKeyJobResult},
 					},
-					SparkStageDiskSpilled: SparkStageDiskSpilledConfig{
+					SparkStageDiskSpilled: SparkStageDiskSpilledMetricConfig{
 						Enabled: false,
 					},
-					SparkStageExecutorCPUTime: SparkStageExecutorCPUTimeConfig{
+					SparkStageExecutorCPUTime: SparkStageExecutorCPUTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkStageExecutorRunTime: SparkStageExecutorRunTimeConfig{
+					SparkStageExecutorRunTime: SparkStageExecutorRunTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkStageIoRecords: SparkStageIoRecordsConfig{
+					SparkStageIoRecords: SparkStageIoRecordsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageIoRecordsAttributeKey{SparkStageIoRecordsAttributeKeyDirection},
+						EnabledAttributes:   []SparkStageIoRecordsMetricAttributeKey{SparkStageIoRecordsMetricAttributeKeyDirection},
 					},
-					SparkStageIoSize: SparkStageIoSizeConfig{
+					SparkStageIoSize: SparkStageIoSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageIoSizeAttributeKey{SparkStageIoSizeAttributeKeyDirection},
+						EnabledAttributes:   []SparkStageIoSizeMetricAttributeKey{SparkStageIoSizeMetricAttributeKeyDirection},
 					},
-					SparkStageJvmGcTime: SparkStageJvmGcTimeConfig{
+					SparkStageJvmGcTime: SparkStageJvmGcTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkStageMemoryPeak: SparkStageMemoryPeakConfig{
+					SparkStageMemoryPeak: SparkStageMemoryPeakMetricConfig{
 						Enabled: false,
 					},
-					SparkStageMemorySpilled: SparkStageMemorySpilledConfig{
+					SparkStageMemorySpilled: SparkStageMemorySpilledMetricConfig{
 						Enabled: false,
 					},
-					SparkStageShuffleBlocksFetched: SparkStageShuffleBlocksFetchedConfig{
+					SparkStageShuffleBlocksFetched: SparkStageShuffleBlocksFetchedMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageShuffleBlocksFetchedAttributeKey{SparkStageShuffleBlocksFetchedAttributeKeySource},
+						EnabledAttributes:   []SparkStageShuffleBlocksFetchedMetricAttributeKey{SparkStageShuffleBlocksFetchedMetricAttributeKeySource},
 					},
-					SparkStageShuffleFetchWaitTime: SparkStageShuffleFetchWaitTimeConfig{
+					SparkStageShuffleFetchWaitTime: SparkStageShuffleFetchWaitTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkStageShuffleIoDisk: SparkStageShuffleIoDiskConfig{
+					SparkStageShuffleIoDisk: SparkStageShuffleIoDiskMetricConfig{
 						Enabled: false,
 					},
-					SparkStageShuffleIoReadSize: SparkStageShuffleIoReadSizeConfig{
+					SparkStageShuffleIoReadSize: SparkStageShuffleIoReadSizeMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageShuffleIoReadSizeAttributeKey{SparkStageShuffleIoReadSizeAttributeKeySource},
+						EnabledAttributes:   []SparkStageShuffleIoReadSizeMetricAttributeKey{SparkStageShuffleIoReadSizeMetricAttributeKeySource},
 					},
-					SparkStageShuffleIoRecords: SparkStageShuffleIoRecordsConfig{
+					SparkStageShuffleIoRecords: SparkStageShuffleIoRecordsMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageShuffleIoRecordsAttributeKey{SparkStageShuffleIoRecordsAttributeKeyDirection},
+						EnabledAttributes:   []SparkStageShuffleIoRecordsMetricAttributeKey{SparkStageShuffleIoRecordsMetricAttributeKeyDirection},
 					},
-					SparkStageShuffleIoWriteSize: SparkStageShuffleIoWriteSizeConfig{
+					SparkStageShuffleIoWriteSize: SparkStageShuffleIoWriteSizeMetricConfig{
 						Enabled: false,
 					},
-					SparkStageShuffleWriteTime: SparkStageShuffleWriteTimeConfig{
+					SparkStageShuffleWriteTime: SparkStageShuffleWriteTimeMetricConfig{
 						Enabled: false,
 					},
-					SparkStageStatus: SparkStageStatusConfig{
+					SparkStageStatus: SparkStageStatusMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageStatusAttributeKey{SparkStageStatusAttributeKeyStageActive, SparkStageStatusAttributeKeyStageComplete, SparkStageStatusAttributeKeyStagePending, SparkStageStatusAttributeKeyStageFailed},
+						EnabledAttributes:   []SparkStageStatusMetricAttributeKey{SparkStageStatusMetricAttributeKeyStageActive, SparkStageStatusMetricAttributeKeyStageComplete, SparkStageStatusMetricAttributeKeyStagePending, SparkStageStatusMetricAttributeKeyStageFailed},
 					},
-					SparkStageTaskActive: SparkStageTaskActiveConfig{
+					SparkStageTaskActive: SparkStageTaskActiveMetricConfig{
 						Enabled: false,
 					},
-					SparkStageTaskResult: SparkStageTaskResultConfig{
+					SparkStageTaskResult: SparkStageTaskResultMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []SparkStageTaskResultAttributeKey{SparkStageTaskResultAttributeKeyStageTaskResult},
+						EnabledAttributes:   []SparkStageTaskResultMetricAttributeKey{SparkStageTaskResultMetricAttributeKeyStageTaskResult},
 					},
-					SparkStageTaskResultSize: SparkStageTaskResultSizeConfig{
+					SparkStageTaskResultSize: SparkStageTaskResultSizeMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -514,7 +514,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SparkDriverBlockManagerDiskUsageConfig{}, SparkDriverBlockManagerMemoryUsageConfig{}, SparkDriverCodeGeneratorCompilationAverageTimeConfig{}, SparkDriverCodeGeneratorCompilationCountConfig{}, SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig{}, SparkDriverCodeGeneratorGeneratedClassCountConfig{}, SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig{}, SparkDriverCodeGeneratorGeneratedMethodCountConfig{}, SparkDriverCodeGeneratorSourceCodeAverageSizeConfig{}, SparkDriverCodeGeneratorSourceCodeOperationsConfig{}, SparkDriverDagSchedulerJobActiveConfig{}, SparkDriverDagSchedulerJobCountConfig{}, SparkDriverDagSchedulerStageCountConfig{}, SparkDriverDagSchedulerStageFailedConfig{}, SparkDriverExecutorGcOperationsConfig{}, SparkDriverExecutorGcTimeConfig{}, SparkDriverExecutorMemoryExecutionConfig{}, SparkDriverExecutorMemoryJvmConfig{}, SparkDriverExecutorMemoryPoolConfig{}, SparkDriverExecutorMemoryStorageConfig{}, SparkDriverHiveExternalCatalogFileCacheHitsConfig{}, SparkDriverHiveExternalCatalogFilesDiscoveredConfig{}, SparkDriverHiveExternalCatalogHiveClientCallsConfig{}, SparkDriverHiveExternalCatalogParallelListingJobsConfig{}, SparkDriverHiveExternalCatalogPartitionsFetchedConfig{}, SparkDriverJvmCPUTimeConfig{}, SparkDriverLiveListenerBusDroppedConfig{}, SparkDriverLiveListenerBusPostedConfig{}, SparkDriverLiveListenerBusProcessingTimeAverageConfig{}, SparkDriverLiveListenerBusQueueSizeConfig{}, SparkExecutorDiskUsageConfig{}, SparkExecutorGcTimeConfig{}, SparkExecutorInputSizeConfig{}, SparkExecutorMemoryUsageConfig{}, SparkExecutorShuffleIoSizeConfig{}, SparkExecutorStorageMemoryUsageConfig{}, SparkExecutorTaskActiveConfig{}, SparkExecutorTaskLimitConfig{}, SparkExecutorTaskResultConfig{}, SparkExecutorTimeConfig{}, SparkJobStageActiveConfig{}, SparkJobStageResultConfig{}, SparkJobTaskActiveConfig{}, SparkJobTaskResultConfig{}, SparkStageDiskSpilledConfig{}, SparkStageExecutorCPUTimeConfig{}, SparkStageExecutorRunTimeConfig{}, SparkStageIoRecordsConfig{}, SparkStageIoSizeConfig{}, SparkStageJvmGcTimeConfig{}, SparkStageMemoryPeakConfig{}, SparkStageMemorySpilledConfig{}, SparkStageShuffleBlocksFetchedConfig{}, SparkStageShuffleFetchWaitTimeConfig{}, SparkStageShuffleIoDiskConfig{}, SparkStageShuffleIoReadSizeConfig{}, SparkStageShuffleIoRecordsConfig{}, SparkStageShuffleIoWriteSizeConfig{}, SparkStageShuffleWriteTimeConfig{}, SparkStageStatusConfig{}, SparkStageTaskActiveConfig{}, SparkStageTaskResultConfig{}, SparkStageTaskResultSizeConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SparkDriverBlockManagerDiskUsageMetricConfig{}, SparkDriverBlockManagerMemoryUsageMetricConfig{}, SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig{}, SparkDriverCodeGeneratorCompilationCountMetricConfig{}, SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig{}, SparkDriverCodeGeneratorGeneratedClassCountMetricConfig{}, SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig{}, SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig{}, SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig{}, SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig{}, SparkDriverDagSchedulerJobActiveMetricConfig{}, SparkDriverDagSchedulerJobCountMetricConfig{}, SparkDriverDagSchedulerStageCountMetricConfig{}, SparkDriverDagSchedulerStageFailedMetricConfig{}, SparkDriverExecutorGcOperationsMetricConfig{}, SparkDriverExecutorGcTimeMetricConfig{}, SparkDriverExecutorMemoryExecutionMetricConfig{}, SparkDriverExecutorMemoryJvmMetricConfig{}, SparkDriverExecutorMemoryPoolMetricConfig{}, SparkDriverExecutorMemoryStorageMetricConfig{}, SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig{}, SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig{}, SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig{}, SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig{}, SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig{}, SparkDriverJvmCPUTimeMetricConfig{}, SparkDriverLiveListenerBusDroppedMetricConfig{}, SparkDriverLiveListenerBusPostedMetricConfig{}, SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig{}, SparkDriverLiveListenerBusQueueSizeMetricConfig{}, SparkExecutorDiskUsageMetricConfig{}, SparkExecutorGcTimeMetricConfig{}, SparkExecutorInputSizeMetricConfig{}, SparkExecutorMemoryUsageMetricConfig{}, SparkExecutorShuffleIoSizeMetricConfig{}, SparkExecutorStorageMemoryUsageMetricConfig{}, SparkExecutorTaskActiveMetricConfig{}, SparkExecutorTaskLimitMetricConfig{}, SparkExecutorTaskResultMetricConfig{}, SparkExecutorTimeMetricConfig{}, SparkJobStageActiveMetricConfig{}, SparkJobStageResultMetricConfig{}, SparkJobTaskActiveMetricConfig{}, SparkJobTaskResultMetricConfig{}, SparkStageDiskSpilledMetricConfig{}, SparkStageExecutorCPUTimeMetricConfig{}, SparkStageExecutorRunTimeMetricConfig{}, SparkStageIoRecordsMetricConfig{}, SparkStageIoSizeMetricConfig{}, SparkStageJvmGcTimeMetricConfig{}, SparkStageMemoryPeakMetricConfig{}, SparkStageMemorySpilledMetricConfig{}, SparkStageShuffleBlocksFetchedMetricConfig{}, SparkStageShuffleFetchWaitTimeMetricConfig{}, SparkStageShuffleIoDiskMetricConfig{}, SparkStageShuffleIoReadSizeMetricConfig{}, SparkStageShuffleIoRecordsMetricConfig{}, SparkStageShuffleIoWriteSizeMetricConfig{}, SparkStageShuffleWriteTimeMetricConfig{}, SparkStageStatusMetricConfig{}, SparkStageTaskActiveMetricConfig{}, SparkStageTaskResultMetricConfig{}, SparkStageTaskResultSizeMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

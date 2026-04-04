@@ -551,9 +551,9 @@ type metricInfo struct {
 }
 
 type metricSparkDriverBlockManagerDiskUsage struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   SparkDriverBlockManagerDiskUsageConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   SparkDriverBlockManagerDiskUsageMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.block_manager.disk.usage metric with initial data.
@@ -592,7 +592,7 @@ func (m *metricSparkDriverBlockManagerDiskUsage) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSparkDriverBlockManagerDiskUsage(cfg SparkDriverBlockManagerDiskUsageConfig) metricSparkDriverBlockManagerDiskUsage {
+func newMetricSparkDriverBlockManagerDiskUsage(cfg SparkDriverBlockManagerDiskUsageMetricConfig) metricSparkDriverBlockManagerDiskUsage {
 	m := metricSparkDriverBlockManagerDiskUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -603,10 +603,10 @@ func newMetricSparkDriverBlockManagerDiskUsage(cfg SparkDriverBlockManagerDiskUs
 }
 
 type metricSparkDriverBlockManagerMemoryUsage struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SparkDriverBlockManagerMemoryUsageConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SparkDriverBlockManagerMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.block_manager.memory.usage metric with initial data.
@@ -629,10 +629,10 @@ func (m *metricSparkDriverBlockManagerMemoryUsage) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverBlockManagerMemoryUsageAttributeKeyLocation) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverBlockManagerMemoryUsageMetricAttributeKeyLocation) {
 		dp.Attributes().PutStr("location", locationAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverBlockManagerMemoryUsageAttributeKeyState) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverBlockManagerMemoryUsageMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -686,7 +686,7 @@ func (m *metricSparkDriverBlockManagerMemoryUsage) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSparkDriverBlockManagerMemoryUsage(cfg SparkDriverBlockManagerMemoryUsageConfig) metricSparkDriverBlockManagerMemoryUsage {
+func newMetricSparkDriverBlockManagerMemoryUsage(cfg SparkDriverBlockManagerMemoryUsageMetricConfig) metricSparkDriverBlockManagerMemoryUsage {
 	m := metricSparkDriverBlockManagerMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -697,9 +697,9 @@ func newMetricSparkDriverBlockManagerMemoryUsage(cfg SparkDriverBlockManagerMemo
 }
 
 type metricSparkDriverCodeGeneratorCompilationAverageTime struct {
-	data     pmetric.Metric                                       // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorCompilationAverageTimeConfig // metric config provided by user.
-	capacity int                                                  // max observed number of data points added to the metric.
+	data     pmetric.Metric                                             // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig // metric config provided by user.
+	capacity int                                                        // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.compilation.average_time metric with initial data.
@@ -736,7 +736,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationAverageTime) emit(metrics pmet
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorCompilationAverageTime(cfg SparkDriverCodeGeneratorCompilationAverageTimeConfig) metricSparkDriverCodeGeneratorCompilationAverageTime {
+func newMetricSparkDriverCodeGeneratorCompilationAverageTime(cfg SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig) metricSparkDriverCodeGeneratorCompilationAverageTime {
 	m := metricSparkDriverCodeGeneratorCompilationAverageTime{config: cfg}
 
 	if cfg.Enabled {
@@ -747,9 +747,9 @@ func newMetricSparkDriverCodeGeneratorCompilationAverageTime(cfg SparkDriverCode
 }
 
 type metricSparkDriverCodeGeneratorCompilationCount struct {
-	data     pmetric.Metric                                 // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorCompilationCountConfig // metric config provided by user.
-	capacity int                                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                       // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorCompilationCountMetricConfig // metric config provided by user.
+	capacity int                                                  // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.compilation.count metric with initial data.
@@ -788,7 +788,7 @@ func (m *metricSparkDriverCodeGeneratorCompilationCount) emit(metrics pmetric.Me
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorCompilationCount(cfg SparkDriverCodeGeneratorCompilationCountConfig) metricSparkDriverCodeGeneratorCompilationCount {
+func newMetricSparkDriverCodeGeneratorCompilationCount(cfg SparkDriverCodeGeneratorCompilationCountMetricConfig) metricSparkDriverCodeGeneratorCompilationCount {
 	m := metricSparkDriverCodeGeneratorCompilationCount{config: cfg}
 
 	if cfg.Enabled {
@@ -799,9 +799,9 @@ func newMetricSparkDriverCodeGeneratorCompilationCount(cfg SparkDriverCodeGenera
 }
 
 type metricSparkDriverCodeGeneratorGeneratedClassAverageSize struct {
-	data     pmetric.Metric                                          // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig // metric config provided by user.
-	capacity int                                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                                // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig // metric config provided by user.
+	capacity int                                                           // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.generated_class.average_size metric with initial data.
@@ -838,7 +838,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassAverageSize) emit(metrics p
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorGeneratedClassAverageSize(cfg SparkDriverCodeGeneratorGeneratedClassAverageSizeConfig) metricSparkDriverCodeGeneratorGeneratedClassAverageSize {
+func newMetricSparkDriverCodeGeneratorGeneratedClassAverageSize(cfg SparkDriverCodeGeneratorGeneratedClassAverageSizeMetricConfig) metricSparkDriverCodeGeneratorGeneratedClassAverageSize {
 	m := metricSparkDriverCodeGeneratorGeneratedClassAverageSize{config: cfg}
 
 	if cfg.Enabled {
@@ -849,9 +849,9 @@ func newMetricSparkDriverCodeGeneratorGeneratedClassAverageSize(cfg SparkDriverC
 }
 
 type metricSparkDriverCodeGeneratorGeneratedClassCount struct {
-	data     pmetric.Metric                                    // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorGeneratedClassCountConfig // metric config provided by user.
-	capacity int                                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                                          // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorGeneratedClassCountMetricConfig // metric config provided by user.
+	capacity int                                                     // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.generated_class.count metric with initial data.
@@ -890,7 +890,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedClassCount) emit(metrics pmetric
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorGeneratedClassCount(cfg SparkDriverCodeGeneratorGeneratedClassCountConfig) metricSparkDriverCodeGeneratorGeneratedClassCount {
+func newMetricSparkDriverCodeGeneratorGeneratedClassCount(cfg SparkDriverCodeGeneratorGeneratedClassCountMetricConfig) metricSparkDriverCodeGeneratorGeneratedClassCount {
 	m := metricSparkDriverCodeGeneratorGeneratedClassCount{config: cfg}
 
 	if cfg.Enabled {
@@ -901,9 +901,9 @@ func newMetricSparkDriverCodeGeneratorGeneratedClassCount(cfg SparkDriverCodeGen
 }
 
 type metricSparkDriverCodeGeneratorGeneratedMethodAverageSize struct {
-	data     pmetric.Metric                                           // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig // metric config provided by user.
-	capacity int                                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                                 // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig // metric config provided by user.
+	capacity int                                                            // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.generated_method.average_size metric with initial data.
@@ -940,7 +940,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodAverageSize) emit(metrics 
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorGeneratedMethodAverageSize(cfg SparkDriverCodeGeneratorGeneratedMethodAverageSizeConfig) metricSparkDriverCodeGeneratorGeneratedMethodAverageSize {
+func newMetricSparkDriverCodeGeneratorGeneratedMethodAverageSize(cfg SparkDriverCodeGeneratorGeneratedMethodAverageSizeMetricConfig) metricSparkDriverCodeGeneratorGeneratedMethodAverageSize {
 	m := metricSparkDriverCodeGeneratorGeneratedMethodAverageSize{config: cfg}
 
 	if cfg.Enabled {
@@ -951,9 +951,9 @@ func newMetricSparkDriverCodeGeneratorGeneratedMethodAverageSize(cfg SparkDriver
 }
 
 type metricSparkDriverCodeGeneratorGeneratedMethodCount struct {
-	data     pmetric.Metric                                     // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorGeneratedMethodCountConfig // metric config provided by user.
-	capacity int                                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                                           // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig // metric config provided by user.
+	capacity int                                                      // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.generated_method.count metric with initial data.
@@ -992,7 +992,7 @@ func (m *metricSparkDriverCodeGeneratorGeneratedMethodCount) emit(metrics pmetri
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorGeneratedMethodCount(cfg SparkDriverCodeGeneratorGeneratedMethodCountConfig) metricSparkDriverCodeGeneratorGeneratedMethodCount {
+func newMetricSparkDriverCodeGeneratorGeneratedMethodCount(cfg SparkDriverCodeGeneratorGeneratedMethodCountMetricConfig) metricSparkDriverCodeGeneratorGeneratedMethodCount {
 	m := metricSparkDriverCodeGeneratorGeneratedMethodCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1003,9 +1003,9 @@ func newMetricSparkDriverCodeGeneratorGeneratedMethodCount(cfg SparkDriverCodeGe
 }
 
 type metricSparkDriverCodeGeneratorSourceCodeAverageSize struct {
-	data     pmetric.Metric                                      // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorSourceCodeAverageSizeConfig // metric config provided by user.
-	capacity int                                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                                            // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig // metric config provided by user.
+	capacity int                                                       // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.source_code.average_size metric with initial data.
@@ -1042,7 +1042,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeAverageSize) emit(metrics pmetr
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorSourceCodeAverageSize(cfg SparkDriverCodeGeneratorSourceCodeAverageSizeConfig) metricSparkDriverCodeGeneratorSourceCodeAverageSize {
+func newMetricSparkDriverCodeGeneratorSourceCodeAverageSize(cfg SparkDriverCodeGeneratorSourceCodeAverageSizeMetricConfig) metricSparkDriverCodeGeneratorSourceCodeAverageSize {
 	m := metricSparkDriverCodeGeneratorSourceCodeAverageSize{config: cfg}
 
 	if cfg.Enabled {
@@ -1053,9 +1053,9 @@ func newMetricSparkDriverCodeGeneratorSourceCodeAverageSize(cfg SparkDriverCodeG
 }
 
 type metricSparkDriverCodeGeneratorSourceCodeOperations struct {
-	data     pmetric.Metric                                     // data buffer for generated metric.
-	config   SparkDriverCodeGeneratorSourceCodeOperationsConfig // metric config provided by user.
-	capacity int                                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                                           // data buffer for generated metric.
+	config   SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig // metric config provided by user.
+	capacity int                                                      // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.code_generator.source_code.operations metric with initial data.
@@ -1094,7 +1094,7 @@ func (m *metricSparkDriverCodeGeneratorSourceCodeOperations) emit(metrics pmetri
 	}
 }
 
-func newMetricSparkDriverCodeGeneratorSourceCodeOperations(cfg SparkDriverCodeGeneratorSourceCodeOperationsConfig) metricSparkDriverCodeGeneratorSourceCodeOperations {
+func newMetricSparkDriverCodeGeneratorSourceCodeOperations(cfg SparkDriverCodeGeneratorSourceCodeOperationsMetricConfig) metricSparkDriverCodeGeneratorSourceCodeOperations {
 	m := metricSparkDriverCodeGeneratorSourceCodeOperations{config: cfg}
 
 	if cfg.Enabled {
@@ -1105,9 +1105,9 @@ func newMetricSparkDriverCodeGeneratorSourceCodeOperations(cfg SparkDriverCodeGe
 }
 
 type metricSparkDriverDagSchedulerJobActive struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   SparkDriverDagSchedulerJobActiveConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   SparkDriverDagSchedulerJobActiveMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.dag_scheduler.job.active metric with initial data.
@@ -1146,7 +1146,7 @@ func (m *metricSparkDriverDagSchedulerJobActive) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSparkDriverDagSchedulerJobActive(cfg SparkDriverDagSchedulerJobActiveConfig) metricSparkDriverDagSchedulerJobActive {
+func newMetricSparkDriverDagSchedulerJobActive(cfg SparkDriverDagSchedulerJobActiveMetricConfig) metricSparkDriverDagSchedulerJobActive {
 	m := metricSparkDriverDagSchedulerJobActive{config: cfg}
 
 	if cfg.Enabled {
@@ -1157,9 +1157,9 @@ func newMetricSparkDriverDagSchedulerJobActive(cfg SparkDriverDagSchedulerJobAct
 }
 
 type metricSparkDriverDagSchedulerJobCount struct {
-	data     pmetric.Metric                        // data buffer for generated metric.
-	config   SparkDriverDagSchedulerJobCountConfig // metric config provided by user.
-	capacity int                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   SparkDriverDagSchedulerJobCountMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.dag_scheduler.job.count metric with initial data.
@@ -1198,7 +1198,7 @@ func (m *metricSparkDriverDagSchedulerJobCount) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricSparkDriverDagSchedulerJobCount(cfg SparkDriverDagSchedulerJobCountConfig) metricSparkDriverDagSchedulerJobCount {
+func newMetricSparkDriverDagSchedulerJobCount(cfg SparkDriverDagSchedulerJobCountMetricConfig) metricSparkDriverDagSchedulerJobCount {
 	m := metricSparkDriverDagSchedulerJobCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1209,10 +1209,10 @@ func newMetricSparkDriverDagSchedulerJobCount(cfg SparkDriverDagSchedulerJobCoun
 }
 
 type metricSparkDriverDagSchedulerStageCount struct {
-	data          pmetric.Metric                          // data buffer for generated metric.
-	config        SparkDriverDagSchedulerStageCountConfig // metric config provided by user.
-	capacity      int                                     // max observed number of data points added to the metric.
-	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                // data buffer for generated metric.
+	config        SparkDriverDagSchedulerStageCountMetricConfig // metric config provided by user.
+	capacity      int                                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.dag_scheduler.stage.count metric with initial data.
@@ -1235,7 +1235,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverDagSchedulerStageCountAttributeKeySchedulerStatus) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverDagSchedulerStageCountMetricAttributeKeySchedulerStatus) {
 		dp.Attributes().PutStr("status", schedulerStatusAttributeValue)
 	}
 
@@ -1289,7 +1289,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricSparkDriverDagSchedulerStageCount(cfg SparkDriverDagSchedulerStageCountConfig) metricSparkDriverDagSchedulerStageCount {
+func newMetricSparkDriverDagSchedulerStageCount(cfg SparkDriverDagSchedulerStageCountMetricConfig) metricSparkDriverDagSchedulerStageCount {
 	m := metricSparkDriverDagSchedulerStageCount{config: cfg}
 
 	if cfg.Enabled {
@@ -1300,9 +1300,9 @@ func newMetricSparkDriverDagSchedulerStageCount(cfg SparkDriverDagSchedulerStage
 }
 
 type metricSparkDriverDagSchedulerStageFailed struct {
-	data     pmetric.Metric                           // data buffer for generated metric.
-	config   SparkDriverDagSchedulerStageFailedConfig // metric config provided by user.
-	capacity int                                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   SparkDriverDagSchedulerStageFailedMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.dag_scheduler.stage.failed metric with initial data.
@@ -1341,7 +1341,7 @@ func (m *metricSparkDriverDagSchedulerStageFailed) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSparkDriverDagSchedulerStageFailed(cfg SparkDriverDagSchedulerStageFailedConfig) metricSparkDriverDagSchedulerStageFailed {
+func newMetricSparkDriverDagSchedulerStageFailed(cfg SparkDriverDagSchedulerStageFailedMetricConfig) metricSparkDriverDagSchedulerStageFailed {
 	m := metricSparkDriverDagSchedulerStageFailed{config: cfg}
 
 	if cfg.Enabled {
@@ -1352,10 +1352,10 @@ func newMetricSparkDriverDagSchedulerStageFailed(cfg SparkDriverDagSchedulerStag
 }
 
 type metricSparkDriverExecutorGcOperations struct {
-	data          pmetric.Metric                        // data buffer for generated metric.
-	config        SparkDriverExecutorGcOperationsConfig // metric config provided by user.
-	capacity      int                                   // max observed number of data points added to the metric.
-	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        SparkDriverExecutorGcOperationsMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.executor.gc.operations metric with initial data.
@@ -1378,7 +1378,7 @@ func (m *metricSparkDriverExecutorGcOperations) recordDataPoint(start pcommon.Ti
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorGcOperationsAttributeKeyGcType) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorGcOperationsMetricAttributeKeyGcType) {
 		dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
 	}
 
@@ -1432,7 +1432,7 @@ func (m *metricSparkDriverExecutorGcOperations) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricSparkDriverExecutorGcOperations(cfg SparkDriverExecutorGcOperationsConfig) metricSparkDriverExecutorGcOperations {
+func newMetricSparkDriverExecutorGcOperations(cfg SparkDriverExecutorGcOperationsMetricConfig) metricSparkDriverExecutorGcOperations {
 	m := metricSparkDriverExecutorGcOperations{config: cfg}
 
 	if cfg.Enabled {
@@ -1443,10 +1443,10 @@ func newMetricSparkDriverExecutorGcOperations(cfg SparkDriverExecutorGcOperation
 }
 
 type metricSparkDriverExecutorGcTime struct {
-	data          pmetric.Metric                  // data buffer for generated metric.
-	config        SparkDriverExecutorGcTimeConfig // metric config provided by user.
-	capacity      int                             // max observed number of data points added to the metric.
-	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                        // data buffer for generated metric.
+	config        SparkDriverExecutorGcTimeMetricConfig // metric config provided by user.
+	capacity      int                                   // max observed number of data points added to the metric.
+	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.executor.gc.time metric with initial data.
@@ -1469,7 +1469,7 @@ func (m *metricSparkDriverExecutorGcTime) recordDataPoint(start pcommon.Timestam
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorGcTimeAttributeKeyGcType) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorGcTimeMetricAttributeKeyGcType) {
 		dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
 	}
 
@@ -1523,7 +1523,7 @@ func (m *metricSparkDriverExecutorGcTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkDriverExecutorGcTime(cfg SparkDriverExecutorGcTimeConfig) metricSparkDriverExecutorGcTime {
+func newMetricSparkDriverExecutorGcTime(cfg SparkDriverExecutorGcTimeMetricConfig) metricSparkDriverExecutorGcTime {
 	m := metricSparkDriverExecutorGcTime{config: cfg}
 
 	if cfg.Enabled {
@@ -1534,10 +1534,10 @@ func newMetricSparkDriverExecutorGcTime(cfg SparkDriverExecutorGcTimeConfig) met
 }
 
 type metricSparkDriverExecutorMemoryExecution struct {
-	data          pmetric.Metric                           // data buffer for generated metric.
-	config        SparkDriverExecutorMemoryExecutionConfig // metric config provided by user.
-	capacity      int                                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                                 // data buffer for generated metric.
+	config        SparkDriverExecutorMemoryExecutionMetricConfig // metric config provided by user.
+	capacity      int                                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.executor.memory.execution metric with initial data.
@@ -1560,7 +1560,7 @@ func (m *metricSparkDriverExecutorMemoryExecution) recordDataPoint(start pcommon
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryExecutionAttributeKeyLocation) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryExecutionMetricAttributeKeyLocation) {
 		dp.Attributes().PutStr("location", locationAttributeValue)
 	}
 
@@ -1614,7 +1614,7 @@ func (m *metricSparkDriverExecutorMemoryExecution) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSparkDriverExecutorMemoryExecution(cfg SparkDriverExecutorMemoryExecutionConfig) metricSparkDriverExecutorMemoryExecution {
+func newMetricSparkDriverExecutorMemoryExecution(cfg SparkDriverExecutorMemoryExecutionMetricConfig) metricSparkDriverExecutorMemoryExecution {
 	m := metricSparkDriverExecutorMemoryExecution{config: cfg}
 
 	if cfg.Enabled {
@@ -1625,10 +1625,10 @@ func newMetricSparkDriverExecutorMemoryExecution(cfg SparkDriverExecutorMemoryEx
 }
 
 type metricSparkDriverExecutorMemoryJvm struct {
-	data          pmetric.Metric                     // data buffer for generated metric.
-	config        SparkDriverExecutorMemoryJvmConfig // metric config provided by user.
-	capacity      int                                // max observed number of data points added to the metric.
-	aggDataPoints []int64                            // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                           // data buffer for generated metric.
+	config        SparkDriverExecutorMemoryJvmMetricConfig // metric config provided by user.
+	capacity      int                                      // max observed number of data points added to the metric.
+	aggDataPoints []int64                                  // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.executor.memory.jvm metric with initial data.
@@ -1651,7 +1651,7 @@ func (m *metricSparkDriverExecutorMemoryJvm) recordDataPoint(start pcommon.Times
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryJvmAttributeKeyLocation) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryJvmMetricAttributeKeyLocation) {
 		dp.Attributes().PutStr("location", locationAttributeValue)
 	}
 
@@ -1705,7 +1705,7 @@ func (m *metricSparkDriverExecutorMemoryJvm) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkDriverExecutorMemoryJvm(cfg SparkDriverExecutorMemoryJvmConfig) metricSparkDriverExecutorMemoryJvm {
+func newMetricSparkDriverExecutorMemoryJvm(cfg SparkDriverExecutorMemoryJvmMetricConfig) metricSparkDriverExecutorMemoryJvm {
 	m := metricSparkDriverExecutorMemoryJvm{config: cfg}
 
 	if cfg.Enabled {
@@ -1716,10 +1716,10 @@ func newMetricSparkDriverExecutorMemoryJvm(cfg SparkDriverExecutorMemoryJvmConfi
 }
 
 type metricSparkDriverExecutorMemoryPool struct {
-	data          pmetric.Metric                      // data buffer for generated metric.
-	config        SparkDriverExecutorMemoryPoolConfig // metric config provided by user.
-	capacity      int                                 // max observed number of data points added to the metric.
-	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                            // data buffer for generated metric.
+	config        SparkDriverExecutorMemoryPoolMetricConfig // metric config provided by user.
+	capacity      int                                       // max observed number of data points added to the metric.
+	aggDataPoints []int64                                   // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.executor.memory.pool metric with initial data.
@@ -1742,7 +1742,7 @@ func (m *metricSparkDriverExecutorMemoryPool) recordDataPoint(start pcommon.Time
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryPoolAttributeKeyPoolMemoryType) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryPoolMetricAttributeKeyPoolMemoryType) {
 		dp.Attributes().PutStr("type", poolMemoryTypeAttributeValue)
 	}
 
@@ -1796,7 +1796,7 @@ func (m *metricSparkDriverExecutorMemoryPool) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricSparkDriverExecutorMemoryPool(cfg SparkDriverExecutorMemoryPoolConfig) metricSparkDriverExecutorMemoryPool {
+func newMetricSparkDriverExecutorMemoryPool(cfg SparkDriverExecutorMemoryPoolMetricConfig) metricSparkDriverExecutorMemoryPool {
 	m := metricSparkDriverExecutorMemoryPool{config: cfg}
 
 	if cfg.Enabled {
@@ -1807,10 +1807,10 @@ func newMetricSparkDriverExecutorMemoryPool(cfg SparkDriverExecutorMemoryPoolCon
 }
 
 type metricSparkDriverExecutorMemoryStorage struct {
-	data          pmetric.Metric                         // data buffer for generated metric.
-	config        SparkDriverExecutorMemoryStorageConfig // metric config provided by user.
-	capacity      int                                    // max observed number of data points added to the metric.
-	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                               // data buffer for generated metric.
+	config        SparkDriverExecutorMemoryStorageMetricConfig // metric config provided by user.
+	capacity      int                                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.driver.executor.memory.storage metric with initial data.
@@ -1833,7 +1833,7 @@ func (m *metricSparkDriverExecutorMemoryStorage) recordDataPoint(start pcommon.T
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryStorageAttributeKeyLocation) {
+	if slices.Contains(m.config.EnabledAttributes, SparkDriverExecutorMemoryStorageMetricAttributeKeyLocation) {
 		dp.Attributes().PutStr("location", locationAttributeValue)
 	}
 
@@ -1887,7 +1887,7 @@ func (m *metricSparkDriverExecutorMemoryStorage) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSparkDriverExecutorMemoryStorage(cfg SparkDriverExecutorMemoryStorageConfig) metricSparkDriverExecutorMemoryStorage {
+func newMetricSparkDriverExecutorMemoryStorage(cfg SparkDriverExecutorMemoryStorageMetricConfig) metricSparkDriverExecutorMemoryStorage {
 	m := metricSparkDriverExecutorMemoryStorage{config: cfg}
 
 	if cfg.Enabled {
@@ -1898,9 +1898,9 @@ func newMetricSparkDriverExecutorMemoryStorage(cfg SparkDriverExecutorMemoryStor
 }
 
 type metricSparkDriverHiveExternalCatalogFileCacheHits struct {
-	data     pmetric.Metric                                    // data buffer for generated metric.
-	config   SparkDriverHiveExternalCatalogFileCacheHitsConfig // metric config provided by user.
-	capacity int                                               // max observed number of data points added to the metric.
+	data     pmetric.Metric                                          // data buffer for generated metric.
+	config   SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig // metric config provided by user.
+	capacity int                                                     // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.hive_external_catalog.file_cache_hits metric with initial data.
@@ -1939,7 +1939,7 @@ func (m *metricSparkDriverHiveExternalCatalogFileCacheHits) emit(metrics pmetric
 	}
 }
 
-func newMetricSparkDriverHiveExternalCatalogFileCacheHits(cfg SparkDriverHiveExternalCatalogFileCacheHitsConfig) metricSparkDriverHiveExternalCatalogFileCacheHits {
+func newMetricSparkDriverHiveExternalCatalogFileCacheHits(cfg SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig) metricSparkDriverHiveExternalCatalogFileCacheHits {
 	m := metricSparkDriverHiveExternalCatalogFileCacheHits{config: cfg}
 
 	if cfg.Enabled {
@@ -1950,9 +1950,9 @@ func newMetricSparkDriverHiveExternalCatalogFileCacheHits(cfg SparkDriverHiveExt
 }
 
 type metricSparkDriverHiveExternalCatalogFilesDiscovered struct {
-	data     pmetric.Metric                                      // data buffer for generated metric.
-	config   SparkDriverHiveExternalCatalogFilesDiscoveredConfig // metric config provided by user.
-	capacity int                                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                                            // data buffer for generated metric.
+	config   SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig // metric config provided by user.
+	capacity int                                                       // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.hive_external_catalog.files_discovered metric with initial data.
@@ -1991,7 +1991,7 @@ func (m *metricSparkDriverHiveExternalCatalogFilesDiscovered) emit(metrics pmetr
 	}
 }
 
-func newMetricSparkDriverHiveExternalCatalogFilesDiscovered(cfg SparkDriverHiveExternalCatalogFilesDiscoveredConfig) metricSparkDriverHiveExternalCatalogFilesDiscovered {
+func newMetricSparkDriverHiveExternalCatalogFilesDiscovered(cfg SparkDriverHiveExternalCatalogFilesDiscoveredMetricConfig) metricSparkDriverHiveExternalCatalogFilesDiscovered {
 	m := metricSparkDriverHiveExternalCatalogFilesDiscovered{config: cfg}
 
 	if cfg.Enabled {
@@ -2002,9 +2002,9 @@ func newMetricSparkDriverHiveExternalCatalogFilesDiscovered(cfg SparkDriverHiveE
 }
 
 type metricSparkDriverHiveExternalCatalogHiveClientCalls struct {
-	data     pmetric.Metric                                      // data buffer for generated metric.
-	config   SparkDriverHiveExternalCatalogHiveClientCallsConfig // metric config provided by user.
-	capacity int                                                 // max observed number of data points added to the metric.
+	data     pmetric.Metric                                            // data buffer for generated metric.
+	config   SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig // metric config provided by user.
+	capacity int                                                       // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.hive_external_catalog.hive_client_calls metric with initial data.
@@ -2043,7 +2043,7 @@ func (m *metricSparkDriverHiveExternalCatalogHiveClientCalls) emit(metrics pmetr
 	}
 }
 
-func newMetricSparkDriverHiveExternalCatalogHiveClientCalls(cfg SparkDriverHiveExternalCatalogHiveClientCallsConfig) metricSparkDriverHiveExternalCatalogHiveClientCalls {
+func newMetricSparkDriverHiveExternalCatalogHiveClientCalls(cfg SparkDriverHiveExternalCatalogHiveClientCallsMetricConfig) metricSparkDriverHiveExternalCatalogHiveClientCalls {
 	m := metricSparkDriverHiveExternalCatalogHiveClientCalls{config: cfg}
 
 	if cfg.Enabled {
@@ -2054,9 +2054,9 @@ func newMetricSparkDriverHiveExternalCatalogHiveClientCalls(cfg SparkDriverHiveE
 }
 
 type metricSparkDriverHiveExternalCatalogParallelListingJobs struct {
-	data     pmetric.Metric                                          // data buffer for generated metric.
-	config   SparkDriverHiveExternalCatalogParallelListingJobsConfig // metric config provided by user.
-	capacity int                                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                                // data buffer for generated metric.
+	config   SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig // metric config provided by user.
+	capacity int                                                           // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.hive_external_catalog.parallel_listing_jobs metric with initial data.
@@ -2095,7 +2095,7 @@ func (m *metricSparkDriverHiveExternalCatalogParallelListingJobs) emit(metrics p
 	}
 }
 
-func newMetricSparkDriverHiveExternalCatalogParallelListingJobs(cfg SparkDriverHiveExternalCatalogParallelListingJobsConfig) metricSparkDriverHiveExternalCatalogParallelListingJobs {
+func newMetricSparkDriverHiveExternalCatalogParallelListingJobs(cfg SparkDriverHiveExternalCatalogParallelListingJobsMetricConfig) metricSparkDriverHiveExternalCatalogParallelListingJobs {
 	m := metricSparkDriverHiveExternalCatalogParallelListingJobs{config: cfg}
 
 	if cfg.Enabled {
@@ -2106,9 +2106,9 @@ func newMetricSparkDriverHiveExternalCatalogParallelListingJobs(cfg SparkDriverH
 }
 
 type metricSparkDriverHiveExternalCatalogPartitionsFetched struct {
-	data     pmetric.Metric                                        // data buffer for generated metric.
-	config   SparkDriverHiveExternalCatalogPartitionsFetchedConfig // metric config provided by user.
-	capacity int                                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                                              // data buffer for generated metric.
+	config   SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig // metric config provided by user.
+	capacity int                                                         // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.hive_external_catalog.partitions_fetched metric with initial data.
@@ -2147,7 +2147,7 @@ func (m *metricSparkDriverHiveExternalCatalogPartitionsFetched) emit(metrics pme
 	}
 }
 
-func newMetricSparkDriverHiveExternalCatalogPartitionsFetched(cfg SparkDriverHiveExternalCatalogPartitionsFetchedConfig) metricSparkDriverHiveExternalCatalogPartitionsFetched {
+func newMetricSparkDriverHiveExternalCatalogPartitionsFetched(cfg SparkDriverHiveExternalCatalogPartitionsFetchedMetricConfig) metricSparkDriverHiveExternalCatalogPartitionsFetched {
 	m := metricSparkDriverHiveExternalCatalogPartitionsFetched{config: cfg}
 
 	if cfg.Enabled {
@@ -2158,9 +2158,9 @@ func newMetricSparkDriverHiveExternalCatalogPartitionsFetched(cfg SparkDriverHiv
 }
 
 type metricSparkDriverJvmCPUTime struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   SparkDriverJvmCPUTimeConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   SparkDriverJvmCPUTimeMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.jvm_cpu_time metric with initial data.
@@ -2199,7 +2199,7 @@ func (m *metricSparkDriverJvmCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkDriverJvmCPUTime(cfg SparkDriverJvmCPUTimeConfig) metricSparkDriverJvmCPUTime {
+func newMetricSparkDriverJvmCPUTime(cfg SparkDriverJvmCPUTimeMetricConfig) metricSparkDriverJvmCPUTime {
 	m := metricSparkDriverJvmCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -2210,9 +2210,9 @@ func newMetricSparkDriverJvmCPUTime(cfg SparkDriverJvmCPUTimeConfig) metricSpark
 }
 
 type metricSparkDriverLiveListenerBusDropped struct {
-	data     pmetric.Metric                          // data buffer for generated metric.
-	config   SparkDriverLiveListenerBusDroppedConfig // metric config provided by user.
-	capacity int                                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   SparkDriverLiveListenerBusDroppedMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.live_listener_bus.dropped metric with initial data.
@@ -2251,7 +2251,7 @@ func (m *metricSparkDriverLiveListenerBusDropped) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricSparkDriverLiveListenerBusDropped(cfg SparkDriverLiveListenerBusDroppedConfig) metricSparkDriverLiveListenerBusDropped {
+func newMetricSparkDriverLiveListenerBusDropped(cfg SparkDriverLiveListenerBusDroppedMetricConfig) metricSparkDriverLiveListenerBusDropped {
 	m := metricSparkDriverLiveListenerBusDropped{config: cfg}
 
 	if cfg.Enabled {
@@ -2262,9 +2262,9 @@ func newMetricSparkDriverLiveListenerBusDropped(cfg SparkDriverLiveListenerBusDr
 }
 
 type metricSparkDriverLiveListenerBusPosted struct {
-	data     pmetric.Metric                         // data buffer for generated metric.
-	config   SparkDriverLiveListenerBusPostedConfig // metric config provided by user.
-	capacity int                                    // max observed number of data points added to the metric.
+	data     pmetric.Metric                               // data buffer for generated metric.
+	config   SparkDriverLiveListenerBusPostedMetricConfig // metric config provided by user.
+	capacity int                                          // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.live_listener_bus.posted metric with initial data.
@@ -2303,7 +2303,7 @@ func (m *metricSparkDriverLiveListenerBusPosted) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSparkDriverLiveListenerBusPosted(cfg SparkDriverLiveListenerBusPostedConfig) metricSparkDriverLiveListenerBusPosted {
+func newMetricSparkDriverLiveListenerBusPosted(cfg SparkDriverLiveListenerBusPostedMetricConfig) metricSparkDriverLiveListenerBusPosted {
 	m := metricSparkDriverLiveListenerBusPosted{config: cfg}
 
 	if cfg.Enabled {
@@ -2314,9 +2314,9 @@ func newMetricSparkDriverLiveListenerBusPosted(cfg SparkDriverLiveListenerBusPos
 }
 
 type metricSparkDriverLiveListenerBusProcessingTimeAverage struct {
-	data     pmetric.Metric                                        // data buffer for generated metric.
-	config   SparkDriverLiveListenerBusProcessingTimeAverageConfig // metric config provided by user.
-	capacity int                                                   // max observed number of data points added to the metric.
+	data     pmetric.Metric                                              // data buffer for generated metric.
+	config   SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig // metric config provided by user.
+	capacity int                                                         // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.live_listener_bus.processing_time.average metric with initial data.
@@ -2353,7 +2353,7 @@ func (m *metricSparkDriverLiveListenerBusProcessingTimeAverage) emit(metrics pme
 	}
 }
 
-func newMetricSparkDriverLiveListenerBusProcessingTimeAverage(cfg SparkDriverLiveListenerBusProcessingTimeAverageConfig) metricSparkDriverLiveListenerBusProcessingTimeAverage {
+func newMetricSparkDriverLiveListenerBusProcessingTimeAverage(cfg SparkDriverLiveListenerBusProcessingTimeAverageMetricConfig) metricSparkDriverLiveListenerBusProcessingTimeAverage {
 	m := metricSparkDriverLiveListenerBusProcessingTimeAverage{config: cfg}
 
 	if cfg.Enabled {
@@ -2364,9 +2364,9 @@ func newMetricSparkDriverLiveListenerBusProcessingTimeAverage(cfg SparkDriverLiv
 }
 
 type metricSparkDriverLiveListenerBusQueueSize struct {
-	data     pmetric.Metric                            // data buffer for generated metric.
-	config   SparkDriverLiveListenerBusQueueSizeConfig // metric config provided by user.
-	capacity int                                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                                  // data buffer for generated metric.
+	config   SparkDriverLiveListenerBusQueueSizeMetricConfig // metric config provided by user.
+	capacity int                                             // max observed number of data points added to the metric.
 }
 
 // init fills spark.driver.live_listener_bus.queue_size metric with initial data.
@@ -2405,7 +2405,7 @@ func (m *metricSparkDriverLiveListenerBusQueueSize) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricSparkDriverLiveListenerBusQueueSize(cfg SparkDriverLiveListenerBusQueueSizeConfig) metricSparkDriverLiveListenerBusQueueSize {
+func newMetricSparkDriverLiveListenerBusQueueSize(cfg SparkDriverLiveListenerBusQueueSizeMetricConfig) metricSparkDriverLiveListenerBusQueueSize {
 	m := metricSparkDriverLiveListenerBusQueueSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2416,9 +2416,9 @@ func newMetricSparkDriverLiveListenerBusQueueSize(cfg SparkDriverLiveListenerBus
 }
 
 type metricSparkExecutorDiskUsage struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   SparkExecutorDiskUsageConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SparkExecutorDiskUsageMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills spark.executor.disk.usage metric with initial data.
@@ -2457,7 +2457,7 @@ func (m *metricSparkExecutorDiskUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorDiskUsage(cfg SparkExecutorDiskUsageConfig) metricSparkExecutorDiskUsage {
+func newMetricSparkExecutorDiskUsage(cfg SparkExecutorDiskUsageMetricConfig) metricSparkExecutorDiskUsage {
 	m := metricSparkExecutorDiskUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2468,9 +2468,9 @@ func newMetricSparkExecutorDiskUsage(cfg SparkExecutorDiskUsageConfig) metricSpa
 }
 
 type metricSparkExecutorGcTime struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   SparkExecutorGcTimeConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   SparkExecutorGcTimeMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills spark.executor.gc_time metric with initial data.
@@ -2509,7 +2509,7 @@ func (m *metricSparkExecutorGcTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorGcTime(cfg SparkExecutorGcTimeConfig) metricSparkExecutorGcTime {
+func newMetricSparkExecutorGcTime(cfg SparkExecutorGcTimeMetricConfig) metricSparkExecutorGcTime {
 	m := metricSparkExecutorGcTime{config: cfg}
 
 	if cfg.Enabled {
@@ -2520,9 +2520,9 @@ func newMetricSparkExecutorGcTime(cfg SparkExecutorGcTimeConfig) metricSparkExec
 }
 
 type metricSparkExecutorInputSize struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   SparkExecutorInputSizeConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SparkExecutorInputSizeMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills spark.executor.input_size metric with initial data.
@@ -2561,7 +2561,7 @@ func (m *metricSparkExecutorInputSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorInputSize(cfg SparkExecutorInputSizeConfig) metricSparkExecutorInputSize {
+func newMetricSparkExecutorInputSize(cfg SparkExecutorInputSizeMetricConfig) metricSparkExecutorInputSize {
 	m := metricSparkExecutorInputSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2572,9 +2572,9 @@ func newMetricSparkExecutorInputSize(cfg SparkExecutorInputSizeConfig) metricSpa
 }
 
 type metricSparkExecutorMemoryUsage struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   SparkExecutorMemoryUsageConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   SparkExecutorMemoryUsageMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills spark.executor.memory.usage metric with initial data.
@@ -2613,7 +2613,7 @@ func (m *metricSparkExecutorMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorMemoryUsage(cfg SparkExecutorMemoryUsageConfig) metricSparkExecutorMemoryUsage {
+func newMetricSparkExecutorMemoryUsage(cfg SparkExecutorMemoryUsageMetricConfig) metricSparkExecutorMemoryUsage {
 	m := metricSparkExecutorMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2624,10 +2624,10 @@ func newMetricSparkExecutorMemoryUsage(cfg SparkExecutorMemoryUsageConfig) metri
 }
 
 type metricSparkExecutorShuffleIoSize struct {
-	data          pmetric.Metric                   // data buffer for generated metric.
-	config        SparkExecutorShuffleIoSizeConfig // metric config provided by user.
-	capacity      int                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SparkExecutorShuffleIoSizeMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.executor.shuffle.io.size metric with initial data.
@@ -2650,7 +2650,7 @@ func (m *metricSparkExecutorShuffleIoSize) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkExecutorShuffleIoSizeAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, SparkExecutorShuffleIoSizeMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -2704,7 +2704,7 @@ func (m *metricSparkExecutorShuffleIoSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorShuffleIoSize(cfg SparkExecutorShuffleIoSizeConfig) metricSparkExecutorShuffleIoSize {
+func newMetricSparkExecutorShuffleIoSize(cfg SparkExecutorShuffleIoSizeMetricConfig) metricSparkExecutorShuffleIoSize {
 	m := metricSparkExecutorShuffleIoSize{config: cfg}
 
 	if cfg.Enabled {
@@ -2715,10 +2715,10 @@ func newMetricSparkExecutorShuffleIoSize(cfg SparkExecutorShuffleIoSizeConfig) m
 }
 
 type metricSparkExecutorStorageMemoryUsage struct {
-	data          pmetric.Metric                        // data buffer for generated metric.
-	config        SparkExecutorStorageMemoryUsageConfig // metric config provided by user.
-	capacity      int                                   // max observed number of data points added to the metric.
-	aggDataPoints []int64                               // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        SparkExecutorStorageMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.executor.storage_memory.usage metric with initial data.
@@ -2741,10 +2741,10 @@ func (m *metricSparkExecutorStorageMemoryUsage) recordDataPoint(start pcommon.Ti
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkExecutorStorageMemoryUsageAttributeKeyLocation) {
+	if slices.Contains(m.config.EnabledAttributes, SparkExecutorStorageMemoryUsageMetricAttributeKeyLocation) {
 		dp.Attributes().PutStr("location", locationAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SparkExecutorStorageMemoryUsageAttributeKeyState) {
+	if slices.Contains(m.config.EnabledAttributes, SparkExecutorStorageMemoryUsageMetricAttributeKeyState) {
 		dp.Attributes().PutStr("state", stateAttributeValue)
 	}
 
@@ -2798,7 +2798,7 @@ func (m *metricSparkExecutorStorageMemoryUsage) emit(metrics pmetric.MetricSlice
 	}
 }
 
-func newMetricSparkExecutorStorageMemoryUsage(cfg SparkExecutorStorageMemoryUsageConfig) metricSparkExecutorStorageMemoryUsage {
+func newMetricSparkExecutorStorageMemoryUsage(cfg SparkExecutorStorageMemoryUsageMetricConfig) metricSparkExecutorStorageMemoryUsage {
 	m := metricSparkExecutorStorageMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2809,9 +2809,9 @@ func newMetricSparkExecutorStorageMemoryUsage(cfg SparkExecutorStorageMemoryUsag
 }
 
 type metricSparkExecutorTaskActive struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   SparkExecutorTaskActiveConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   SparkExecutorTaskActiveMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills spark.executor.task.active metric with initial data.
@@ -2850,7 +2850,7 @@ func (m *metricSparkExecutorTaskActive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorTaskActive(cfg SparkExecutorTaskActiveConfig) metricSparkExecutorTaskActive {
+func newMetricSparkExecutorTaskActive(cfg SparkExecutorTaskActiveMetricConfig) metricSparkExecutorTaskActive {
 	m := metricSparkExecutorTaskActive{config: cfg}
 
 	if cfg.Enabled {
@@ -2861,9 +2861,9 @@ func newMetricSparkExecutorTaskActive(cfg SparkExecutorTaskActiveConfig) metricS
 }
 
 type metricSparkExecutorTaskLimit struct {
-	data     pmetric.Metric               // data buffer for generated metric.
-	config   SparkExecutorTaskLimitConfig // metric config provided by user.
-	capacity int                          // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SparkExecutorTaskLimitMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills spark.executor.task.limit metric with initial data.
@@ -2902,7 +2902,7 @@ func (m *metricSparkExecutorTaskLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorTaskLimit(cfg SparkExecutorTaskLimitConfig) metricSparkExecutorTaskLimit {
+func newMetricSparkExecutorTaskLimit(cfg SparkExecutorTaskLimitMetricConfig) metricSparkExecutorTaskLimit {
 	m := metricSparkExecutorTaskLimit{config: cfg}
 
 	if cfg.Enabled {
@@ -2913,10 +2913,10 @@ func newMetricSparkExecutorTaskLimit(cfg SparkExecutorTaskLimitConfig) metricSpa
 }
 
 type metricSparkExecutorTaskResult struct {
-	data          pmetric.Metric                // data buffer for generated metric.
-	config        SparkExecutorTaskResultConfig // metric config provided by user.
-	capacity      int                           // max observed number of data points added to the metric.
-	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SparkExecutorTaskResultMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []int64                             // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.executor.task.result metric with initial data.
@@ -2939,7 +2939,7 @@ func (m *metricSparkExecutorTaskResult) recordDataPoint(start pcommon.Timestamp,
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkExecutorTaskResultAttributeKeyExecutorTaskResult) {
+	if slices.Contains(m.config.EnabledAttributes, SparkExecutorTaskResultMetricAttributeKeyExecutorTaskResult) {
 		dp.Attributes().PutStr("result", executorTaskResultAttributeValue)
 	}
 
@@ -2993,7 +2993,7 @@ func (m *metricSparkExecutorTaskResult) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorTaskResult(cfg SparkExecutorTaskResultConfig) metricSparkExecutorTaskResult {
+func newMetricSparkExecutorTaskResult(cfg SparkExecutorTaskResultMetricConfig) metricSparkExecutorTaskResult {
 	m := metricSparkExecutorTaskResult{config: cfg}
 
 	if cfg.Enabled {
@@ -3004,9 +3004,9 @@ func newMetricSparkExecutorTaskResult(cfg SparkExecutorTaskResultConfig) metricS
 }
 
 type metricSparkExecutorTime struct {
-	data     pmetric.Metric          // data buffer for generated metric.
-	config   SparkExecutorTimeConfig // metric config provided by user.
-	capacity int                     // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   SparkExecutorTimeMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills spark.executor.time metric with initial data.
@@ -3045,7 +3045,7 @@ func (m *metricSparkExecutorTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkExecutorTime(cfg SparkExecutorTimeConfig) metricSparkExecutorTime {
+func newMetricSparkExecutorTime(cfg SparkExecutorTimeMetricConfig) metricSparkExecutorTime {
 	m := metricSparkExecutorTime{config: cfg}
 
 	if cfg.Enabled {
@@ -3056,9 +3056,9 @@ func newMetricSparkExecutorTime(cfg SparkExecutorTimeConfig) metricSparkExecutor
 }
 
 type metricSparkJobStageActive struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   SparkJobStageActiveConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   SparkJobStageActiveMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills spark.job.stage.active metric with initial data.
@@ -3097,7 +3097,7 @@ func (m *metricSparkJobStageActive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkJobStageActive(cfg SparkJobStageActiveConfig) metricSparkJobStageActive {
+func newMetricSparkJobStageActive(cfg SparkJobStageActiveMetricConfig) metricSparkJobStageActive {
 	m := metricSparkJobStageActive{config: cfg}
 
 	if cfg.Enabled {
@@ -3108,10 +3108,10 @@ func newMetricSparkJobStageActive(cfg SparkJobStageActiveConfig) metricSparkJobS
 }
 
 type metricSparkJobStageResult struct {
-	data          pmetric.Metric            // data buffer for generated metric.
-	config        SparkJobStageResultConfig // metric config provided by user.
-	capacity      int                       // max observed number of data points added to the metric.
-	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SparkJobStageResultMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.job.stage.result metric with initial data.
@@ -3134,7 +3134,7 @@ func (m *metricSparkJobStageResult) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkJobStageResultAttributeKeyJobResult) {
+	if slices.Contains(m.config.EnabledAttributes, SparkJobStageResultMetricAttributeKeyJobResult) {
 		dp.Attributes().PutStr("result", jobResultAttributeValue)
 	}
 
@@ -3188,7 +3188,7 @@ func (m *metricSparkJobStageResult) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkJobStageResult(cfg SparkJobStageResultConfig) metricSparkJobStageResult {
+func newMetricSparkJobStageResult(cfg SparkJobStageResultMetricConfig) metricSparkJobStageResult {
 	m := metricSparkJobStageResult{config: cfg}
 
 	if cfg.Enabled {
@@ -3199,9 +3199,9 @@ func newMetricSparkJobStageResult(cfg SparkJobStageResultConfig) metricSparkJobS
 }
 
 type metricSparkJobTaskActive struct {
-	data     pmetric.Metric           // data buffer for generated metric.
-	config   SparkJobTaskActiveConfig // metric config provided by user.
-	capacity int                      // max observed number of data points added to the metric.
+	data     pmetric.Metric                 // data buffer for generated metric.
+	config   SparkJobTaskActiveMetricConfig // metric config provided by user.
+	capacity int                            // max observed number of data points added to the metric.
 }
 
 // init fills spark.job.task.active metric with initial data.
@@ -3240,7 +3240,7 @@ func (m *metricSparkJobTaskActive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkJobTaskActive(cfg SparkJobTaskActiveConfig) metricSparkJobTaskActive {
+func newMetricSparkJobTaskActive(cfg SparkJobTaskActiveMetricConfig) metricSparkJobTaskActive {
 	m := metricSparkJobTaskActive{config: cfg}
 
 	if cfg.Enabled {
@@ -3251,10 +3251,10 @@ func newMetricSparkJobTaskActive(cfg SparkJobTaskActiveConfig) metricSparkJobTas
 }
 
 type metricSparkJobTaskResult struct {
-	data          pmetric.Metric           // data buffer for generated metric.
-	config        SparkJobTaskResultConfig // metric config provided by user.
-	capacity      int                      // max observed number of data points added to the metric.
-	aggDataPoints []int64                  // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                 // data buffer for generated metric.
+	config        SparkJobTaskResultMetricConfig // metric config provided by user.
+	capacity      int                            // max observed number of data points added to the metric.
+	aggDataPoints []int64                        // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.job.task.result metric with initial data.
@@ -3277,7 +3277,7 @@ func (m *metricSparkJobTaskResult) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkJobTaskResultAttributeKeyJobResult) {
+	if slices.Contains(m.config.EnabledAttributes, SparkJobTaskResultMetricAttributeKeyJobResult) {
 		dp.Attributes().PutStr("result", jobResultAttributeValue)
 	}
 
@@ -3331,7 +3331,7 @@ func (m *metricSparkJobTaskResult) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkJobTaskResult(cfg SparkJobTaskResultConfig) metricSparkJobTaskResult {
+func newMetricSparkJobTaskResult(cfg SparkJobTaskResultMetricConfig) metricSparkJobTaskResult {
 	m := metricSparkJobTaskResult{config: cfg}
 
 	if cfg.Enabled {
@@ -3342,9 +3342,9 @@ func newMetricSparkJobTaskResult(cfg SparkJobTaskResultConfig) metricSparkJobTas
 }
 
 type metricSparkStageDiskSpilled struct {
-	data     pmetric.Metric              // data buffer for generated metric.
-	config   SparkStageDiskSpilledConfig // metric config provided by user.
-	capacity int                         // max observed number of data points added to the metric.
+	data     pmetric.Metric                    // data buffer for generated metric.
+	config   SparkStageDiskSpilledMetricConfig // metric config provided by user.
+	capacity int                               // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.disk.spilled metric with initial data.
@@ -3383,7 +3383,7 @@ func (m *metricSparkStageDiskSpilled) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageDiskSpilled(cfg SparkStageDiskSpilledConfig) metricSparkStageDiskSpilled {
+func newMetricSparkStageDiskSpilled(cfg SparkStageDiskSpilledMetricConfig) metricSparkStageDiskSpilled {
 	m := metricSparkStageDiskSpilled{config: cfg}
 
 	if cfg.Enabled {
@@ -3394,9 +3394,9 @@ func newMetricSparkStageDiskSpilled(cfg SparkStageDiskSpilledConfig) metricSpark
 }
 
 type metricSparkStageExecutorCPUTime struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   SparkStageExecutorCPUTimeConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   SparkStageExecutorCPUTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.executor.cpu_time metric with initial data.
@@ -3435,7 +3435,7 @@ func (m *metricSparkStageExecutorCPUTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageExecutorCPUTime(cfg SparkStageExecutorCPUTimeConfig) metricSparkStageExecutorCPUTime {
+func newMetricSparkStageExecutorCPUTime(cfg SparkStageExecutorCPUTimeMetricConfig) metricSparkStageExecutorCPUTime {
 	m := metricSparkStageExecutorCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -3446,9 +3446,9 @@ func newMetricSparkStageExecutorCPUTime(cfg SparkStageExecutorCPUTimeConfig) met
 }
 
 type metricSparkStageExecutorRunTime struct {
-	data     pmetric.Metric                  // data buffer for generated metric.
-	config   SparkStageExecutorRunTimeConfig // metric config provided by user.
-	capacity int                             // max observed number of data points added to the metric.
+	data     pmetric.Metric                        // data buffer for generated metric.
+	config   SparkStageExecutorRunTimeMetricConfig // metric config provided by user.
+	capacity int                                   // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.executor.run_time metric with initial data.
@@ -3487,7 +3487,7 @@ func (m *metricSparkStageExecutorRunTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageExecutorRunTime(cfg SparkStageExecutorRunTimeConfig) metricSparkStageExecutorRunTime {
+func newMetricSparkStageExecutorRunTime(cfg SparkStageExecutorRunTimeMetricConfig) metricSparkStageExecutorRunTime {
 	m := metricSparkStageExecutorRunTime{config: cfg}
 
 	if cfg.Enabled {
@@ -3498,10 +3498,10 @@ func newMetricSparkStageExecutorRunTime(cfg SparkStageExecutorRunTimeConfig) met
 }
 
 type metricSparkStageIoRecords struct {
-	data          pmetric.Metric            // data buffer for generated metric.
-	config        SparkStageIoRecordsConfig // metric config provided by user.
-	capacity      int                       // max observed number of data points added to the metric.
-	aggDataPoints []int64                   // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SparkStageIoRecordsMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.stage.io.records metric with initial data.
@@ -3524,7 +3524,7 @@ func (m *metricSparkStageIoRecords) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkStageIoRecordsAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageIoRecordsMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -3578,7 +3578,7 @@ func (m *metricSparkStageIoRecords) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageIoRecords(cfg SparkStageIoRecordsConfig) metricSparkStageIoRecords {
+func newMetricSparkStageIoRecords(cfg SparkStageIoRecordsMetricConfig) metricSparkStageIoRecords {
 	m := metricSparkStageIoRecords{config: cfg}
 
 	if cfg.Enabled {
@@ -3589,10 +3589,10 @@ func newMetricSparkStageIoRecords(cfg SparkStageIoRecordsConfig) metricSparkStag
 }
 
 type metricSparkStageIoSize struct {
-	data          pmetric.Metric         // data buffer for generated metric.
-	config        SparkStageIoSizeConfig // metric config provided by user.
-	capacity      int                    // max observed number of data points added to the metric.
-	aggDataPoints []int64                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SparkStageIoSizeMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.stage.io.size metric with initial data.
@@ -3615,7 +3615,7 @@ func (m *metricSparkStageIoSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkStageIoSizeAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageIoSizeMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -3669,7 +3669,7 @@ func (m *metricSparkStageIoSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageIoSize(cfg SparkStageIoSizeConfig) metricSparkStageIoSize {
+func newMetricSparkStageIoSize(cfg SparkStageIoSizeMetricConfig) metricSparkStageIoSize {
 	m := metricSparkStageIoSize{config: cfg}
 
 	if cfg.Enabled {
@@ -3680,9 +3680,9 @@ func newMetricSparkStageIoSize(cfg SparkStageIoSizeConfig) metricSparkStageIoSiz
 }
 
 type metricSparkStageJvmGcTime struct {
-	data     pmetric.Metric            // data buffer for generated metric.
-	config   SparkStageJvmGcTimeConfig // metric config provided by user.
-	capacity int                       // max observed number of data points added to the metric.
+	data     pmetric.Metric                  // data buffer for generated metric.
+	config   SparkStageJvmGcTimeMetricConfig // metric config provided by user.
+	capacity int                             // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.jvm_gc_time metric with initial data.
@@ -3721,7 +3721,7 @@ func (m *metricSparkStageJvmGcTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageJvmGcTime(cfg SparkStageJvmGcTimeConfig) metricSparkStageJvmGcTime {
+func newMetricSparkStageJvmGcTime(cfg SparkStageJvmGcTimeMetricConfig) metricSparkStageJvmGcTime {
 	m := metricSparkStageJvmGcTime{config: cfg}
 
 	if cfg.Enabled {
@@ -3732,9 +3732,9 @@ func newMetricSparkStageJvmGcTime(cfg SparkStageJvmGcTimeConfig) metricSparkStag
 }
 
 type metricSparkStageMemoryPeak struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   SparkStageMemoryPeakConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SparkStageMemoryPeakMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.memory.peak metric with initial data.
@@ -3773,7 +3773,7 @@ func (m *metricSparkStageMemoryPeak) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageMemoryPeak(cfg SparkStageMemoryPeakConfig) metricSparkStageMemoryPeak {
+func newMetricSparkStageMemoryPeak(cfg SparkStageMemoryPeakMetricConfig) metricSparkStageMemoryPeak {
 	m := metricSparkStageMemoryPeak{config: cfg}
 
 	if cfg.Enabled {
@@ -3784,9 +3784,9 @@ func newMetricSparkStageMemoryPeak(cfg SparkStageMemoryPeakConfig) metricSparkSt
 }
 
 type metricSparkStageMemorySpilled struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   SparkStageMemorySpilledConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   SparkStageMemorySpilledMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.memory.spilled metric with initial data.
@@ -3825,7 +3825,7 @@ func (m *metricSparkStageMemorySpilled) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageMemorySpilled(cfg SparkStageMemorySpilledConfig) metricSparkStageMemorySpilled {
+func newMetricSparkStageMemorySpilled(cfg SparkStageMemorySpilledMetricConfig) metricSparkStageMemorySpilled {
 	m := metricSparkStageMemorySpilled{config: cfg}
 
 	if cfg.Enabled {
@@ -3836,10 +3836,10 @@ func newMetricSparkStageMemorySpilled(cfg SparkStageMemorySpilledConfig) metricS
 }
 
 type metricSparkStageShuffleBlocksFetched struct {
-	data          pmetric.Metric                       // data buffer for generated metric.
-	config        SparkStageShuffleBlocksFetchedConfig // metric config provided by user.
-	capacity      int                                  // max observed number of data points added to the metric.
-	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                             // data buffer for generated metric.
+	config        SparkStageShuffleBlocksFetchedMetricConfig // metric config provided by user.
+	capacity      int                                        // max observed number of data points added to the metric.
+	aggDataPoints []int64                                    // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.stage.shuffle.blocks_fetched metric with initial data.
@@ -3862,7 +3862,7 @@ func (m *metricSparkStageShuffleBlocksFetched) recordDataPoint(start pcommon.Tim
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkStageShuffleBlocksFetchedAttributeKeySource) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageShuffleBlocksFetchedMetricAttributeKeySource) {
 		dp.Attributes().PutStr("source", sourceAttributeValue)
 	}
 
@@ -3916,7 +3916,7 @@ func (m *metricSparkStageShuffleBlocksFetched) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSparkStageShuffleBlocksFetched(cfg SparkStageShuffleBlocksFetchedConfig) metricSparkStageShuffleBlocksFetched {
+func newMetricSparkStageShuffleBlocksFetched(cfg SparkStageShuffleBlocksFetchedMetricConfig) metricSparkStageShuffleBlocksFetched {
 	m := metricSparkStageShuffleBlocksFetched{config: cfg}
 
 	if cfg.Enabled {
@@ -3927,9 +3927,9 @@ func newMetricSparkStageShuffleBlocksFetched(cfg SparkStageShuffleBlocksFetchedC
 }
 
 type metricSparkStageShuffleFetchWaitTime struct {
-	data     pmetric.Metric                       // data buffer for generated metric.
-	config   SparkStageShuffleFetchWaitTimeConfig // metric config provided by user.
-	capacity int                                  // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   SparkStageShuffleFetchWaitTimeMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.shuffle.fetch_wait_time metric with initial data.
@@ -3968,7 +3968,7 @@ func (m *metricSparkStageShuffleFetchWaitTime) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSparkStageShuffleFetchWaitTime(cfg SparkStageShuffleFetchWaitTimeConfig) metricSparkStageShuffleFetchWaitTime {
+func newMetricSparkStageShuffleFetchWaitTime(cfg SparkStageShuffleFetchWaitTimeMetricConfig) metricSparkStageShuffleFetchWaitTime {
 	m := metricSparkStageShuffleFetchWaitTime{config: cfg}
 
 	if cfg.Enabled {
@@ -3979,9 +3979,9 @@ func newMetricSparkStageShuffleFetchWaitTime(cfg SparkStageShuffleFetchWaitTimeC
 }
 
 type metricSparkStageShuffleIoDisk struct {
-	data     pmetric.Metric                // data buffer for generated metric.
-	config   SparkStageShuffleIoDiskConfig // metric config provided by user.
-	capacity int                           // max observed number of data points added to the metric.
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   SparkStageShuffleIoDiskMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.shuffle.io.disk metric with initial data.
@@ -4020,7 +4020,7 @@ func (m *metricSparkStageShuffleIoDisk) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageShuffleIoDisk(cfg SparkStageShuffleIoDiskConfig) metricSparkStageShuffleIoDisk {
+func newMetricSparkStageShuffleIoDisk(cfg SparkStageShuffleIoDiskMetricConfig) metricSparkStageShuffleIoDisk {
 	m := metricSparkStageShuffleIoDisk{config: cfg}
 
 	if cfg.Enabled {
@@ -4031,10 +4031,10 @@ func newMetricSparkStageShuffleIoDisk(cfg SparkStageShuffleIoDiskConfig) metricS
 }
 
 type metricSparkStageShuffleIoReadSize struct {
-	data          pmetric.Metric                    // data buffer for generated metric.
-	config        SparkStageShuffleIoReadSizeConfig // metric config provided by user.
-	capacity      int                               // max observed number of data points added to the metric.
-	aggDataPoints []int64                           // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                          // data buffer for generated metric.
+	config        SparkStageShuffleIoReadSizeMetricConfig // metric config provided by user.
+	capacity      int                                     // max observed number of data points added to the metric.
+	aggDataPoints []int64                                 // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.stage.shuffle.io.read.size metric with initial data.
@@ -4057,7 +4057,7 @@ func (m *metricSparkStageShuffleIoReadSize) recordDataPoint(start pcommon.Timest
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkStageShuffleIoReadSizeAttributeKeySource) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageShuffleIoReadSizeMetricAttributeKeySource) {
 		dp.Attributes().PutStr("source", sourceAttributeValue)
 	}
 
@@ -4111,7 +4111,7 @@ func (m *metricSparkStageShuffleIoReadSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageShuffleIoReadSize(cfg SparkStageShuffleIoReadSizeConfig) metricSparkStageShuffleIoReadSize {
+func newMetricSparkStageShuffleIoReadSize(cfg SparkStageShuffleIoReadSizeMetricConfig) metricSparkStageShuffleIoReadSize {
 	m := metricSparkStageShuffleIoReadSize{config: cfg}
 
 	if cfg.Enabled {
@@ -4122,10 +4122,10 @@ func newMetricSparkStageShuffleIoReadSize(cfg SparkStageShuffleIoReadSizeConfig)
 }
 
 type metricSparkStageShuffleIoRecords struct {
-	data          pmetric.Metric                   // data buffer for generated metric.
-	config        SparkStageShuffleIoRecordsConfig // metric config provided by user.
-	capacity      int                              // max observed number of data points added to the metric.
-	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                         // data buffer for generated metric.
+	config        SparkStageShuffleIoRecordsMetricConfig // metric config provided by user.
+	capacity      int                                    // max observed number of data points added to the metric.
+	aggDataPoints []int64                                // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.stage.shuffle.io.records metric with initial data.
@@ -4148,7 +4148,7 @@ func (m *metricSparkStageShuffleIoRecords) recordDataPoint(start pcommon.Timesta
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkStageShuffleIoRecordsAttributeKeyDirection) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageShuffleIoRecordsMetricAttributeKeyDirection) {
 		dp.Attributes().PutStr("direction", directionAttributeValue)
 	}
 
@@ -4202,7 +4202,7 @@ func (m *metricSparkStageShuffleIoRecords) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageShuffleIoRecords(cfg SparkStageShuffleIoRecordsConfig) metricSparkStageShuffleIoRecords {
+func newMetricSparkStageShuffleIoRecords(cfg SparkStageShuffleIoRecordsMetricConfig) metricSparkStageShuffleIoRecords {
 	m := metricSparkStageShuffleIoRecords{config: cfg}
 
 	if cfg.Enabled {
@@ -4213,9 +4213,9 @@ func newMetricSparkStageShuffleIoRecords(cfg SparkStageShuffleIoRecordsConfig) m
 }
 
 type metricSparkStageShuffleIoWriteSize struct {
-	data     pmetric.Metric                     // data buffer for generated metric.
-	config   SparkStageShuffleIoWriteSizeConfig // metric config provided by user.
-	capacity int                                // max observed number of data points added to the metric.
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SparkStageShuffleIoWriteSizeMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.shuffle.io.write.size metric with initial data.
@@ -4254,7 +4254,7 @@ func (m *metricSparkStageShuffleIoWriteSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageShuffleIoWriteSize(cfg SparkStageShuffleIoWriteSizeConfig) metricSparkStageShuffleIoWriteSize {
+func newMetricSparkStageShuffleIoWriteSize(cfg SparkStageShuffleIoWriteSizeMetricConfig) metricSparkStageShuffleIoWriteSize {
 	m := metricSparkStageShuffleIoWriteSize{config: cfg}
 
 	if cfg.Enabled {
@@ -4265,9 +4265,9 @@ func newMetricSparkStageShuffleIoWriteSize(cfg SparkStageShuffleIoWriteSizeConfi
 }
 
 type metricSparkStageShuffleWriteTime struct {
-	data     pmetric.Metric                   // data buffer for generated metric.
-	config   SparkStageShuffleWriteTimeConfig // metric config provided by user.
-	capacity int                              // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   SparkStageShuffleWriteTimeMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.shuffle.write_time metric with initial data.
@@ -4306,7 +4306,7 @@ func (m *metricSparkStageShuffleWriteTime) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageShuffleWriteTime(cfg SparkStageShuffleWriteTimeConfig) metricSparkStageShuffleWriteTime {
+func newMetricSparkStageShuffleWriteTime(cfg SparkStageShuffleWriteTimeMetricConfig) metricSparkStageShuffleWriteTime {
 	m := metricSparkStageShuffleWriteTime{config: cfg}
 
 	if cfg.Enabled {
@@ -4317,10 +4317,10 @@ func newMetricSparkStageShuffleWriteTime(cfg SparkStageShuffleWriteTimeConfig) m
 }
 
 type metricSparkStageStatus struct {
-	data          pmetric.Metric         // data buffer for generated metric.
-	config        SparkStageStatusConfig // metric config provided by user.
-	capacity      int                    // max observed number of data points added to the metric.
-	aggDataPoints []int64                // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric               // data buffer for generated metric.
+	config        SparkStageStatusMetricConfig // metric config provided by user.
+	capacity      int                          // max observed number of data points added to the metric.
+	aggDataPoints []int64                      // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.stage.status metric with initial data.
@@ -4343,16 +4343,16 @@ func (m *metricSparkStageStatus) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusAttributeKeyStageActive) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusMetricAttributeKeyStageActive) {
 		dp.Attributes().PutBool("active", stageActiveAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusAttributeKeyStageComplete) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusMetricAttributeKeyStageComplete) {
 		dp.Attributes().PutBool("complete", stageCompleteAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusAttributeKeyStagePending) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusMetricAttributeKeyStagePending) {
 		dp.Attributes().PutBool("pending", stagePendingAttributeValue)
 	}
-	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusAttributeKeyStageFailed) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageStatusMetricAttributeKeyStageFailed) {
 		dp.Attributes().PutBool("failed", stageFailedAttributeValue)
 	}
 
@@ -4406,7 +4406,7 @@ func (m *metricSparkStageStatus) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageStatus(cfg SparkStageStatusConfig) metricSparkStageStatus {
+func newMetricSparkStageStatus(cfg SparkStageStatusMetricConfig) metricSparkStageStatus {
 	m := metricSparkStageStatus{config: cfg}
 
 	if cfg.Enabled {
@@ -4417,9 +4417,9 @@ func newMetricSparkStageStatus(cfg SparkStageStatusConfig) metricSparkStageStatu
 }
 
 type metricSparkStageTaskActive struct {
-	data     pmetric.Metric             // data buffer for generated metric.
-	config   SparkStageTaskActiveConfig // metric config provided by user.
-	capacity int                        // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SparkStageTaskActiveMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.task.active metric with initial data.
@@ -4458,7 +4458,7 @@ func (m *metricSparkStageTaskActive) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageTaskActive(cfg SparkStageTaskActiveConfig) metricSparkStageTaskActive {
+func newMetricSparkStageTaskActive(cfg SparkStageTaskActiveMetricConfig) metricSparkStageTaskActive {
 	m := metricSparkStageTaskActive{config: cfg}
 
 	if cfg.Enabled {
@@ -4469,10 +4469,10 @@ func newMetricSparkStageTaskActive(cfg SparkStageTaskActiveConfig) metricSparkSt
 }
 
 type metricSparkStageTaskResult struct {
-	data          pmetric.Metric             // data buffer for generated metric.
-	config        SparkStageTaskResultConfig // metric config provided by user.
-	capacity      int                        // max observed number of data points added to the metric.
-	aggDataPoints []int64                    // slice containing number of aggregated datapoints at each index
+	data          pmetric.Metric                   // data buffer for generated metric.
+	config        SparkStageTaskResultMetricConfig // metric config provided by user.
+	capacity      int                              // max observed number of data points added to the metric.
+	aggDataPoints []int64                          // slice containing number of aggregated datapoints at each index
 }
 
 // init fills spark.stage.task.result metric with initial data.
@@ -4495,7 +4495,7 @@ func (m *metricSparkStageTaskResult) recordDataPoint(start pcommon.Timestamp, ts
 	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	if slices.Contains(m.config.EnabledAttributes, SparkStageTaskResultAttributeKeyStageTaskResult) {
+	if slices.Contains(m.config.EnabledAttributes, SparkStageTaskResultMetricAttributeKeyStageTaskResult) {
 		dp.Attributes().PutStr("result", stageTaskResultAttributeValue)
 	}
 
@@ -4549,7 +4549,7 @@ func (m *metricSparkStageTaskResult) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageTaskResult(cfg SparkStageTaskResultConfig) metricSparkStageTaskResult {
+func newMetricSparkStageTaskResult(cfg SparkStageTaskResultMetricConfig) metricSparkStageTaskResult {
 	m := metricSparkStageTaskResult{config: cfg}
 
 	if cfg.Enabled {
@@ -4560,9 +4560,9 @@ func newMetricSparkStageTaskResult(cfg SparkStageTaskResultConfig) metricSparkSt
 }
 
 type metricSparkStageTaskResultSize struct {
-	data     pmetric.Metric                 // data buffer for generated metric.
-	config   SparkStageTaskResultSizeConfig // metric config provided by user.
-	capacity int                            // max observed number of data points added to the metric.
+	data     pmetric.Metric                       // data buffer for generated metric.
+	config   SparkStageTaskResultSizeMetricConfig // metric config provided by user.
+	capacity int                                  // max observed number of data points added to the metric.
 }
 
 // init fills spark.stage.task.result_size metric with initial data.
@@ -4601,7 +4601,7 @@ func (m *metricSparkStageTaskResultSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageTaskResultSize(cfg SparkStageTaskResultSizeConfig) metricSparkStageTaskResultSize {
+func newMetricSparkStageTaskResultSize(cfg SparkStageTaskResultSizeMetricConfig) metricSparkStageTaskResultSize {
 	m := metricSparkStageTaskResultSize{config: cfg}
 
 	if cfg.Enabled {
