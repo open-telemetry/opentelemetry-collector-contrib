@@ -9,23 +9,23 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-// ElasticsearchBreakerMemoryEstimatedAttributeKey specifies the key of an attribute for the elasticsearch.breaker.memory.estimated metric.
-type ElasticsearchBreakerMemoryEstimatedAttributeKey string
+// ElasticsearchBreakerMemoryEstimatedMetricAttributeKey specifies the key of an attribute for the elasticsearch.breaker.memory.estimated metric.
+type ElasticsearchBreakerMemoryEstimatedMetricAttributeKey string
 
 const (
-	ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName ElasticsearchBreakerMemoryEstimatedAttributeKey = "name"
+	ElasticsearchBreakerMemoryEstimatedMetricAttributeKeyCircuitBreakerName ElasticsearchBreakerMemoryEstimatedMetricAttributeKey = "name"
 )
 
-// ElasticsearchBreakerMemoryEstimatedConfig provides config for the elasticsearch.breaker.memory.estimated metric.
-type ElasticsearchBreakerMemoryEstimatedConfig struct {
+// ElasticsearchBreakerMemoryEstimatedMetricConfig provides config for the elasticsearch.breaker.memory.estimated metric.
+type ElasticsearchBreakerMemoryEstimatedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchBreakerMemoryEstimatedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchBreakerMemoryEstimatedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchBreakerMemoryEstimatedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchBreakerMemoryEstimatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -39,10 +39,10 @@ func (ms *ElasticsearchBreakerMemoryEstimatedConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *ElasticsearchBreakerMemoryEstimatedConfig) Validate() error {
+func (ms *ElasticsearchBreakerMemoryEstimatedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName:
+		case ElasticsearchBreakerMemoryEstimatedMetricAttributeKeyCircuitBreakerName:
 		default:
 			return fmt.Errorf("metric elasticsearch.breaker.memory.estimated doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -57,23 +57,23 @@ func (ms *ElasticsearchBreakerMemoryEstimatedConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchBreakerMemoryLimitAttributeKey specifies the key of an attribute for the elasticsearch.breaker.memory.limit metric.
-type ElasticsearchBreakerMemoryLimitAttributeKey string
+// ElasticsearchBreakerMemoryLimitMetricAttributeKey specifies the key of an attribute for the elasticsearch.breaker.memory.limit metric.
+type ElasticsearchBreakerMemoryLimitMetricAttributeKey string
 
 const (
-	ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName ElasticsearchBreakerMemoryLimitAttributeKey = "name"
+	ElasticsearchBreakerMemoryLimitMetricAttributeKeyCircuitBreakerName ElasticsearchBreakerMemoryLimitMetricAttributeKey = "name"
 )
 
-// ElasticsearchBreakerMemoryLimitConfig provides config for the elasticsearch.breaker.memory.limit metric.
-type ElasticsearchBreakerMemoryLimitConfig struct {
+// ElasticsearchBreakerMemoryLimitMetricConfig provides config for the elasticsearch.breaker.memory.limit metric.
+type ElasticsearchBreakerMemoryLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchBreakerMemoryLimitAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchBreakerMemoryLimitMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchBreakerMemoryLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchBreakerMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -87,10 +87,10 @@ func (ms *ElasticsearchBreakerMemoryLimitConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ElasticsearchBreakerMemoryLimitConfig) Validate() error {
+func (ms *ElasticsearchBreakerMemoryLimitMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName:
+		case ElasticsearchBreakerMemoryLimitMetricAttributeKeyCircuitBreakerName:
 		default:
 			return fmt.Errorf("metric elasticsearch.breaker.memory.limit doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -105,23 +105,23 @@ func (ms *ElasticsearchBreakerMemoryLimitConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchBreakerTrippedAttributeKey specifies the key of an attribute for the elasticsearch.breaker.tripped metric.
-type ElasticsearchBreakerTrippedAttributeKey string
+// ElasticsearchBreakerTrippedMetricAttributeKey specifies the key of an attribute for the elasticsearch.breaker.tripped metric.
+type ElasticsearchBreakerTrippedMetricAttributeKey string
 
 const (
-	ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName ElasticsearchBreakerTrippedAttributeKey = "name"
+	ElasticsearchBreakerTrippedMetricAttributeKeyCircuitBreakerName ElasticsearchBreakerTrippedMetricAttributeKey = "name"
 )
 
-// ElasticsearchBreakerTrippedConfig provides config for the elasticsearch.breaker.tripped metric.
-type ElasticsearchBreakerTrippedConfig struct {
+// ElasticsearchBreakerTrippedMetricConfig provides config for the elasticsearch.breaker.tripped metric.
+type ElasticsearchBreakerTrippedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchBreakerTrippedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchBreakerTrippedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchBreakerTrippedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchBreakerTrippedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -135,10 +135,10 @@ func (ms *ElasticsearchBreakerTrippedConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *ElasticsearchBreakerTrippedConfig) Validate() error {
+func (ms *ElasticsearchBreakerTrippedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName:
+		case ElasticsearchBreakerTrippedMetricAttributeKeyCircuitBreakerName:
 		default:
 			return fmt.Errorf("metric elasticsearch.breaker.tripped doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -153,13 +153,13 @@ func (ms *ElasticsearchBreakerTrippedConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchClusterDataNodesConfig provides config for the elasticsearch.cluster.data_nodes metric.
-type ElasticsearchClusterDataNodesConfig struct {
+// ElasticsearchClusterDataNodesMetricConfig provides config for the elasticsearch.cluster.data_nodes metric.
+type ElasticsearchClusterDataNodesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchClusterDataNodesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterDataNodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -173,23 +173,23 @@ func (ms *ElasticsearchClusterDataNodesConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// ElasticsearchClusterHealthAttributeKey specifies the key of an attribute for the elasticsearch.cluster.health metric.
-type ElasticsearchClusterHealthAttributeKey string
+// ElasticsearchClusterHealthMetricAttributeKey specifies the key of an attribute for the elasticsearch.cluster.health metric.
+type ElasticsearchClusterHealthMetricAttributeKey string
 
 const (
-	ElasticsearchClusterHealthAttributeKeyHealthStatus ElasticsearchClusterHealthAttributeKey = "status"
+	ElasticsearchClusterHealthMetricAttributeKeyHealthStatus ElasticsearchClusterHealthMetricAttributeKey = "status"
 )
 
-// ElasticsearchClusterHealthConfig provides config for the elasticsearch.cluster.health metric.
-type ElasticsearchClusterHealthConfig struct {
+// ElasticsearchClusterHealthMetricConfig provides config for the elasticsearch.cluster.health metric.
+type ElasticsearchClusterHealthMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchClusterHealthAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterHealthMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchClusterHealthConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterHealthMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -203,10 +203,10 @@ func (ms *ElasticsearchClusterHealthConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *ElasticsearchClusterHealthConfig) Validate() error {
+func (ms *ElasticsearchClusterHealthMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchClusterHealthAttributeKeyHealthStatus:
+		case ElasticsearchClusterHealthMetricAttributeKeyHealthStatus:
 		default:
 			return fmt.Errorf("metric elasticsearch.cluster.health doesn't have an attribute %v, valid attributes: [status]", val)
 		}
@@ -221,13 +221,13 @@ func (ms *ElasticsearchClusterHealthConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchClusterInFlightFetchConfig provides config for the elasticsearch.cluster.in_flight_fetch metric.
-type ElasticsearchClusterInFlightFetchConfig struct {
+// ElasticsearchClusterInFlightFetchMetricConfig provides config for the elasticsearch.cluster.in_flight_fetch metric.
+type ElasticsearchClusterInFlightFetchMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchClusterInFlightFetchConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterInFlightFetchMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -241,23 +241,23 @@ func (ms *ElasticsearchClusterInFlightFetchConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// ElasticsearchClusterIndicesCacheEvictionsAttributeKey specifies the key of an attribute for the elasticsearch.cluster.indices.cache.evictions metric.
-type ElasticsearchClusterIndicesCacheEvictionsAttributeKey string
+// ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey specifies the key of an attribute for the elasticsearch.cluster.indices.cache.evictions metric.
+type ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey string
 
 const (
-	ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName ElasticsearchClusterIndicesCacheEvictionsAttributeKey = "cache_name"
+	ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKeyCacheName ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey = "cache_name"
 )
 
-// ElasticsearchClusterIndicesCacheEvictionsConfig provides config for the elasticsearch.cluster.indices.cache.evictions metric.
-type ElasticsearchClusterIndicesCacheEvictionsConfig struct {
+// ElasticsearchClusterIndicesCacheEvictionsMetricConfig provides config for the elasticsearch.cluster.indices.cache.evictions metric.
+type ElasticsearchClusterIndicesCacheEvictionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchClusterIndicesCacheEvictionsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchClusterIndicesCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterIndicesCacheEvictionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -271,10 +271,10 @@ func (ms *ElasticsearchClusterIndicesCacheEvictionsConfig) Unmarshal(parser *con
 	return nil
 }
 
-func (ms *ElasticsearchClusterIndicesCacheEvictionsConfig) Validate() error {
+func (ms *ElasticsearchClusterIndicesCacheEvictionsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName:
+		case ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKeyCacheName:
 		default:
 			return fmt.Errorf("metric elasticsearch.cluster.indices.cache.evictions doesn't have an attribute %v, valid attributes: [cache_name]", val)
 		}
@@ -289,13 +289,13 @@ func (ms *ElasticsearchClusterIndicesCacheEvictionsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchClusterNodesConfig provides config for the elasticsearch.cluster.nodes metric.
-type ElasticsearchClusterNodesConfig struct {
+// ElasticsearchClusterNodesMetricConfig provides config for the elasticsearch.cluster.nodes metric.
+type ElasticsearchClusterNodesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchClusterNodesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterNodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -309,13 +309,13 @@ func (ms *ElasticsearchClusterNodesConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// ElasticsearchClusterPendingTasksConfig provides config for the elasticsearch.cluster.pending_tasks metric.
-type ElasticsearchClusterPendingTasksConfig struct {
+// ElasticsearchClusterPendingTasksMetricConfig provides config for the elasticsearch.cluster.pending_tasks metric.
+type ElasticsearchClusterPendingTasksMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchClusterPendingTasksConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterPendingTasksMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -329,23 +329,23 @@ func (ms *ElasticsearchClusterPendingTasksConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// ElasticsearchClusterPublishedStatesDifferencesAttributeKey specifies the key of an attribute for the elasticsearch.cluster.published_states.differences metric.
-type ElasticsearchClusterPublishedStatesDifferencesAttributeKey string
+// ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey specifies the key of an attribute for the elasticsearch.cluster.published_states.differences metric.
+type ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey string
 
 const (
-	ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState ElasticsearchClusterPublishedStatesDifferencesAttributeKey = "state"
+	ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKeyClusterPublishedDifferenceState ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey = "state"
 )
 
-// ElasticsearchClusterPublishedStatesDifferencesConfig provides config for the elasticsearch.cluster.published_states.differences metric.
-type ElasticsearchClusterPublishedStatesDifferencesConfig struct {
+// ElasticsearchClusterPublishedStatesDifferencesMetricConfig provides config for the elasticsearch.cluster.published_states.differences metric.
+type ElasticsearchClusterPublishedStatesDifferencesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchClusterPublishedStatesDifferencesAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchClusterPublishedStatesDifferencesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterPublishedStatesDifferencesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -359,10 +359,10 @@ func (ms *ElasticsearchClusterPublishedStatesDifferencesConfig) Unmarshal(parser
 	return nil
 }
 
-func (ms *ElasticsearchClusterPublishedStatesDifferencesConfig) Validate() error {
+func (ms *ElasticsearchClusterPublishedStatesDifferencesMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState:
+		case ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKeyClusterPublishedDifferenceState:
 		default:
 			return fmt.Errorf("metric elasticsearch.cluster.published_states.differences doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -377,13 +377,13 @@ func (ms *ElasticsearchClusterPublishedStatesDifferencesConfig) Validate() error
 	return nil
 }
 
-// ElasticsearchClusterPublishedStatesFullConfig provides config for the elasticsearch.cluster.published_states.full metric.
-type ElasticsearchClusterPublishedStatesFullConfig struct {
+// ElasticsearchClusterPublishedStatesFullMetricConfig provides config for the elasticsearch.cluster.published_states.full metric.
+type ElasticsearchClusterPublishedStatesFullMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchClusterPublishedStatesFullConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterPublishedStatesFullMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -397,23 +397,23 @@ func (ms *ElasticsearchClusterPublishedStatesFullConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// ElasticsearchClusterShardsAttributeKey specifies the key of an attribute for the elasticsearch.cluster.shards metric.
-type ElasticsearchClusterShardsAttributeKey string
+// ElasticsearchClusterShardsMetricAttributeKey specifies the key of an attribute for the elasticsearch.cluster.shards metric.
+type ElasticsearchClusterShardsMetricAttributeKey string
 
 const (
-	ElasticsearchClusterShardsAttributeKeyShardState ElasticsearchClusterShardsAttributeKey = "state"
+	ElasticsearchClusterShardsMetricAttributeKeyShardState ElasticsearchClusterShardsMetricAttributeKey = "state"
 )
 
-// ElasticsearchClusterShardsConfig provides config for the elasticsearch.cluster.shards metric.
-type ElasticsearchClusterShardsConfig struct {
+// ElasticsearchClusterShardsMetricConfig provides config for the elasticsearch.cluster.shards metric.
+type ElasticsearchClusterShardsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchClusterShardsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterShardsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchClusterShardsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterShardsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -427,10 +427,10 @@ func (ms *ElasticsearchClusterShardsConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *ElasticsearchClusterShardsConfig) Validate() error {
+func (ms *ElasticsearchClusterShardsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchClusterShardsAttributeKeyShardState:
+		case ElasticsearchClusterShardsMetricAttributeKeyShardState:
 		default:
 			return fmt.Errorf("metric elasticsearch.cluster.shards doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -445,23 +445,23 @@ func (ms *ElasticsearchClusterShardsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchClusterStateQueueAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_queue metric.
-type ElasticsearchClusterStateQueueAttributeKey string
+// ElasticsearchClusterStateQueueMetricAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_queue metric.
+type ElasticsearchClusterStateQueueMetricAttributeKey string
 
 const (
-	ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState ElasticsearchClusterStateQueueAttributeKey = "state"
+	ElasticsearchClusterStateQueueMetricAttributeKeyClusterStateQueueState ElasticsearchClusterStateQueueMetricAttributeKey = "state"
 )
 
-// ElasticsearchClusterStateQueueConfig provides config for the elasticsearch.cluster.state_queue metric.
-type ElasticsearchClusterStateQueueConfig struct {
+// ElasticsearchClusterStateQueueMetricConfig provides config for the elasticsearch.cluster.state_queue metric.
+type ElasticsearchClusterStateQueueMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchClusterStateQueueAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterStateQueueMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchClusterStateQueueConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterStateQueueMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -475,10 +475,10 @@ func (ms *ElasticsearchClusterStateQueueConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *ElasticsearchClusterStateQueueConfig) Validate() error {
+func (ms *ElasticsearchClusterStateQueueMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState:
+		case ElasticsearchClusterStateQueueMetricAttributeKeyClusterStateQueueState:
 		default:
 			return fmt.Errorf("metric elasticsearch.cluster.state_queue doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -493,23 +493,23 @@ func (ms *ElasticsearchClusterStateQueueConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchClusterStateUpdateCountAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_update.count metric.
-type ElasticsearchClusterStateUpdateCountAttributeKey string
+// ElasticsearchClusterStateUpdateCountMetricAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_update.count metric.
+type ElasticsearchClusterStateUpdateCountMetricAttributeKey string
 
 const (
-	ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState ElasticsearchClusterStateUpdateCountAttributeKey = "state"
+	ElasticsearchClusterStateUpdateCountMetricAttributeKeyClusterStateUpdateState ElasticsearchClusterStateUpdateCountMetricAttributeKey = "state"
 )
 
-// ElasticsearchClusterStateUpdateCountConfig provides config for the elasticsearch.cluster.state_update.count metric.
-type ElasticsearchClusterStateUpdateCountConfig struct {
+// ElasticsearchClusterStateUpdateCountMetricConfig provides config for the elasticsearch.cluster.state_update.count metric.
+type ElasticsearchClusterStateUpdateCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchClusterStateUpdateCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterStateUpdateCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchClusterStateUpdateCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterStateUpdateCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -523,10 +523,10 @@ func (ms *ElasticsearchClusterStateUpdateCountConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *ElasticsearchClusterStateUpdateCountConfig) Validate() error {
+func (ms *ElasticsearchClusterStateUpdateCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState:
+		case ElasticsearchClusterStateUpdateCountMetricAttributeKeyClusterStateUpdateState:
 		default:
 			return fmt.Errorf("metric elasticsearch.cluster.state_update.count doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -541,24 +541,24 @@ func (ms *ElasticsearchClusterStateUpdateCountConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchClusterStateUpdateTimeAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_update.time metric.
-type ElasticsearchClusterStateUpdateTimeAttributeKey string
+// ElasticsearchClusterStateUpdateTimeMetricAttributeKey specifies the key of an attribute for the elasticsearch.cluster.state_update.time metric.
+type ElasticsearchClusterStateUpdateTimeMetricAttributeKey string
 
 const (
-	ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState ElasticsearchClusterStateUpdateTimeAttributeKey = "state"
-	ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType  ElasticsearchClusterStateUpdateTimeAttributeKey = "type"
+	ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateState ElasticsearchClusterStateUpdateTimeMetricAttributeKey = "state"
+	ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateType  ElasticsearchClusterStateUpdateTimeMetricAttributeKey = "type"
 )
 
-// ElasticsearchClusterStateUpdateTimeConfig provides config for the elasticsearch.cluster.state_update.time metric.
-type ElasticsearchClusterStateUpdateTimeConfig struct {
+// ElasticsearchClusterStateUpdateTimeMetricConfig provides config for the elasticsearch.cluster.state_update.time metric.
+type ElasticsearchClusterStateUpdateTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchClusterStateUpdateTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchClusterStateUpdateTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchClusterStateUpdateTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchClusterStateUpdateTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -572,10 +572,10 @@ func (ms *ElasticsearchClusterStateUpdateTimeConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *ElasticsearchClusterStateUpdateTimeConfig) Validate() error {
+func (ms *ElasticsearchClusterStateUpdateTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType:
+		case ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateType:
 		default:
 			return fmt.Errorf("metric elasticsearch.cluster.state_update.time doesn't have an attribute %v, valid attributes: [state, type]", val)
 		}
@@ -590,24 +590,24 @@ func (ms *ElasticsearchClusterStateUpdateTimeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexCacheEvictionsAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.evictions metric.
-type ElasticsearchIndexCacheEvictionsAttributeKey string
+// ElasticsearchIndexCacheEvictionsMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.evictions metric.
+type ElasticsearchIndexCacheEvictionsMetricAttributeKey string
 
 const (
-	ElasticsearchIndexCacheEvictionsAttributeKeyCacheName            ElasticsearchIndexCacheEvictionsAttributeKey = "cache_name"
-	ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType ElasticsearchIndexCacheEvictionsAttributeKey = "aggregation"
+	ElasticsearchIndexCacheEvictionsMetricAttributeKeyCacheName            ElasticsearchIndexCacheEvictionsMetricAttributeKey = "cache_name"
+	ElasticsearchIndexCacheEvictionsMetricAttributeKeyIndexAggregationType ElasticsearchIndexCacheEvictionsMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexCacheEvictionsConfig provides config for the elasticsearch.index.cache.evictions metric.
-type ElasticsearchIndexCacheEvictionsConfig struct {
+// ElasticsearchIndexCacheEvictionsMetricConfig provides config for the elasticsearch.index.cache.evictions metric.
+type ElasticsearchIndexCacheEvictionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexCacheEvictionsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexCacheEvictionsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexCacheEvictionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -621,10 +621,10 @@ func (ms *ElasticsearchIndexCacheEvictionsConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ElasticsearchIndexCacheEvictionsConfig) Validate() error {
+func (ms *ElasticsearchIndexCacheEvictionsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexCacheEvictionsAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexCacheEvictionsMetricAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.cache.evictions doesn't have an attribute %v, valid attributes: [cache_name, aggregation]", val)
 		}
@@ -639,24 +639,24 @@ func (ms *ElasticsearchIndexCacheEvictionsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexCacheMemoryUsageAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.memory.usage metric.
-type ElasticsearchIndexCacheMemoryUsageAttributeKey string
+// ElasticsearchIndexCacheMemoryUsageMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.memory.usage metric.
+type ElasticsearchIndexCacheMemoryUsageMetricAttributeKey string
 
 const (
-	ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName            ElasticsearchIndexCacheMemoryUsageAttributeKey = "cache_name"
-	ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType ElasticsearchIndexCacheMemoryUsageAttributeKey = "aggregation"
+	ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyCacheName            ElasticsearchIndexCacheMemoryUsageMetricAttributeKey = "cache_name"
+	ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyIndexAggregationType ElasticsearchIndexCacheMemoryUsageMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexCacheMemoryUsageConfig provides config for the elasticsearch.index.cache.memory.usage metric.
-type ElasticsearchIndexCacheMemoryUsageConfig struct {
+// ElasticsearchIndexCacheMemoryUsageMetricConfig provides config for the elasticsearch.index.cache.memory.usage metric.
+type ElasticsearchIndexCacheMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexCacheMemoryUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexCacheMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexCacheMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexCacheMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -670,10 +670,10 @@ func (ms *ElasticsearchIndexCacheMemoryUsageConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *ElasticsearchIndexCacheMemoryUsageConfig) Validate() error {
+func (ms *ElasticsearchIndexCacheMemoryUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.cache.memory.usage doesn't have an attribute %v, valid attributes: [cache_name, aggregation]", val)
 		}
@@ -688,23 +688,23 @@ func (ms *ElasticsearchIndexCacheMemoryUsageConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexCacheSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.size metric.
-type ElasticsearchIndexCacheSizeAttributeKey string
+// ElasticsearchIndexCacheSizeMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.cache.size metric.
+type ElasticsearchIndexCacheSizeMetricAttributeKey string
 
 const (
-	ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType ElasticsearchIndexCacheSizeAttributeKey = "aggregation"
+	ElasticsearchIndexCacheSizeMetricAttributeKeyIndexAggregationType ElasticsearchIndexCacheSizeMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexCacheSizeConfig provides config for the elasticsearch.index.cache.size metric.
-type ElasticsearchIndexCacheSizeConfig struct {
+// ElasticsearchIndexCacheSizeMetricConfig provides config for the elasticsearch.index.cache.size metric.
+type ElasticsearchIndexCacheSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexCacheSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexCacheSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexCacheSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -718,10 +718,10 @@ func (ms *ElasticsearchIndexCacheSizeConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *ElasticsearchIndexCacheSizeConfig) Validate() error {
+func (ms *ElasticsearchIndexCacheSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexCacheSizeMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.cache.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -736,24 +736,24 @@ func (ms *ElasticsearchIndexCacheSizeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexDocumentsAttributeKey specifies the key of an attribute for the elasticsearch.index.documents metric.
-type ElasticsearchIndexDocumentsAttributeKey string
+// ElasticsearchIndexDocumentsMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.documents metric.
+type ElasticsearchIndexDocumentsMetricAttributeKey string
 
 const (
-	ElasticsearchIndexDocumentsAttributeKeyDocumentState        ElasticsearchIndexDocumentsAttributeKey = "state"
-	ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType ElasticsearchIndexDocumentsAttributeKey = "aggregation"
+	ElasticsearchIndexDocumentsMetricAttributeKeyDocumentState        ElasticsearchIndexDocumentsMetricAttributeKey = "state"
+	ElasticsearchIndexDocumentsMetricAttributeKeyIndexAggregationType ElasticsearchIndexDocumentsMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexDocumentsConfig provides config for the elasticsearch.index.documents metric.
-type ElasticsearchIndexDocumentsConfig struct {
+// ElasticsearchIndexDocumentsMetricConfig provides config for the elasticsearch.index.documents metric.
+type ElasticsearchIndexDocumentsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexDocumentsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexDocumentsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexDocumentsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexDocumentsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -767,10 +767,10 @@ func (ms *ElasticsearchIndexDocumentsConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *ElasticsearchIndexDocumentsConfig) Validate() error {
+func (ms *ElasticsearchIndexDocumentsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexDocumentsAttributeKeyDocumentState, ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexDocumentsMetricAttributeKeyDocumentState, ElasticsearchIndexDocumentsMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.documents doesn't have an attribute %v, valid attributes: [state, aggregation]", val)
 		}
@@ -785,24 +785,24 @@ func (ms *ElasticsearchIndexDocumentsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexOperationsCompletedAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.completed metric.
-type ElasticsearchIndexOperationsCompletedAttributeKey string
+// ElasticsearchIndexOperationsCompletedMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.completed metric.
+type ElasticsearchIndexOperationsCompletedMetricAttributeKey string
 
 const (
-	ElasticsearchIndexOperationsCompletedAttributeKeyOperation            ElasticsearchIndexOperationsCompletedAttributeKey = "operation"
-	ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType ElasticsearchIndexOperationsCompletedAttributeKey = "aggregation"
+	ElasticsearchIndexOperationsCompletedMetricAttributeKeyOperation            ElasticsearchIndexOperationsCompletedMetricAttributeKey = "operation"
+	ElasticsearchIndexOperationsCompletedMetricAttributeKeyIndexAggregationType ElasticsearchIndexOperationsCompletedMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexOperationsCompletedConfig provides config for the elasticsearch.index.operations.completed metric.
-type ElasticsearchIndexOperationsCompletedConfig struct {
+// ElasticsearchIndexOperationsCompletedMetricConfig provides config for the elasticsearch.index.operations.completed metric.
+type ElasticsearchIndexOperationsCompletedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexOperationsCompletedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsCompletedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexOperationsCompletedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexOperationsCompletedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -816,10 +816,10 @@ func (ms *ElasticsearchIndexOperationsCompletedConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-func (ms *ElasticsearchIndexOperationsCompletedConfig) Validate() error {
+func (ms *ElasticsearchIndexOperationsCompletedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexOperationsCompletedAttributeKeyOperation, ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexOperationsCompletedMetricAttributeKeyOperation, ElasticsearchIndexOperationsCompletedMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.operations.completed doesn't have an attribute %v, valid attributes: [operation, aggregation]", val)
 		}
@@ -834,23 +834,23 @@ func (ms *ElasticsearchIndexOperationsCompletedConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexOperationsMergeCurrentAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.current metric.
-type ElasticsearchIndexOperationsMergeCurrentAttributeKey string
+// ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.current metric.
+type ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey string
 
 const (
-	ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeCurrentAttributeKey = "aggregation"
+	ElasticsearchIndexOperationsMergeCurrentMetricAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexOperationsMergeCurrentConfig provides config for the elasticsearch.index.operations.merge.current metric.
-type ElasticsearchIndexOperationsMergeCurrentConfig struct {
+// ElasticsearchIndexOperationsMergeCurrentMetricConfig provides config for the elasticsearch.index.operations.merge.current metric.
+type ElasticsearchIndexOperationsMergeCurrentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexOperationsMergeCurrentAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexOperationsMergeCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexOperationsMergeCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -864,10 +864,10 @@ func (ms *ElasticsearchIndexOperationsMergeCurrentConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *ElasticsearchIndexOperationsMergeCurrentConfig) Validate() error {
+func (ms *ElasticsearchIndexOperationsMergeCurrentMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexOperationsMergeCurrentMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.operations.merge.current doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -882,23 +882,23 @@ func (ms *ElasticsearchIndexOperationsMergeCurrentConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexOperationsMergeDocsCountAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.docs_count metric.
-type ElasticsearchIndexOperationsMergeDocsCountAttributeKey string
+// ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.docs_count metric.
+type ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey string
 
 const (
-	ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeDocsCountAttributeKey = "aggregation"
+	ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexOperationsMergeDocsCountConfig provides config for the elasticsearch.index.operations.merge.docs_count metric.
-type ElasticsearchIndexOperationsMergeDocsCountConfig struct {
+// ElasticsearchIndexOperationsMergeDocsCountMetricConfig provides config for the elasticsearch.index.operations.merge.docs_count metric.
+type ElasticsearchIndexOperationsMergeDocsCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexOperationsMergeDocsCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexOperationsMergeDocsCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexOperationsMergeDocsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -912,10 +912,10 @@ func (ms *ElasticsearchIndexOperationsMergeDocsCountConfig) Unmarshal(parser *co
 	return nil
 }
 
-func (ms *ElasticsearchIndexOperationsMergeDocsCountConfig) Validate() error {
+func (ms *ElasticsearchIndexOperationsMergeDocsCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.operations.merge.docs_count doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -930,23 +930,23 @@ func (ms *ElasticsearchIndexOperationsMergeDocsCountConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexOperationsMergeSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.size metric.
-type ElasticsearchIndexOperationsMergeSizeAttributeKey string
+// ElasticsearchIndexOperationsMergeSizeMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.merge.size metric.
+type ElasticsearchIndexOperationsMergeSizeMetricAttributeKey string
 
 const (
-	ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeSizeAttributeKey = "aggregation"
+	ElasticsearchIndexOperationsMergeSizeMetricAttributeKeyIndexAggregationType ElasticsearchIndexOperationsMergeSizeMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexOperationsMergeSizeConfig provides config for the elasticsearch.index.operations.merge.size metric.
-type ElasticsearchIndexOperationsMergeSizeConfig struct {
+// ElasticsearchIndexOperationsMergeSizeMetricConfig provides config for the elasticsearch.index.operations.merge.size metric.
+type ElasticsearchIndexOperationsMergeSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexOperationsMergeSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsMergeSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexOperationsMergeSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexOperationsMergeSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -960,10 +960,10 @@ func (ms *ElasticsearchIndexOperationsMergeSizeConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-func (ms *ElasticsearchIndexOperationsMergeSizeConfig) Validate() error {
+func (ms *ElasticsearchIndexOperationsMergeSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexOperationsMergeSizeMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.operations.merge.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -978,24 +978,24 @@ func (ms *ElasticsearchIndexOperationsMergeSizeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexOperationsTimeAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.time metric.
-type ElasticsearchIndexOperationsTimeAttributeKey string
+// ElasticsearchIndexOperationsTimeMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.operations.time metric.
+type ElasticsearchIndexOperationsTimeMetricAttributeKey string
 
 const (
-	ElasticsearchIndexOperationsTimeAttributeKeyOperation            ElasticsearchIndexOperationsTimeAttributeKey = "operation"
-	ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType ElasticsearchIndexOperationsTimeAttributeKey = "aggregation"
+	ElasticsearchIndexOperationsTimeMetricAttributeKeyOperation            ElasticsearchIndexOperationsTimeMetricAttributeKey = "operation"
+	ElasticsearchIndexOperationsTimeMetricAttributeKeyIndexAggregationType ElasticsearchIndexOperationsTimeMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexOperationsTimeConfig provides config for the elasticsearch.index.operations.time metric.
-type ElasticsearchIndexOperationsTimeConfig struct {
+// ElasticsearchIndexOperationsTimeMetricConfig provides config for the elasticsearch.index.operations.time metric.
+type ElasticsearchIndexOperationsTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexOperationsTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexOperationsTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexOperationsTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexOperationsTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1009,10 +1009,10 @@ func (ms *ElasticsearchIndexOperationsTimeConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ElasticsearchIndexOperationsTimeConfig) Validate() error {
+func (ms *ElasticsearchIndexOperationsTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexOperationsTimeAttributeKeyOperation, ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexOperationsTimeMetricAttributeKeyOperation, ElasticsearchIndexOperationsTimeMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.operations.time doesn't have an attribute %v, valid attributes: [operation, aggregation]", val)
 		}
@@ -1027,23 +1027,23 @@ func (ms *ElasticsearchIndexOperationsTimeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexSegmentsCountAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.count metric.
-type ElasticsearchIndexSegmentsCountAttributeKey string
+// ElasticsearchIndexSegmentsCountMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.count metric.
+type ElasticsearchIndexSegmentsCountMetricAttributeKey string
 
 const (
-	ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType ElasticsearchIndexSegmentsCountAttributeKey = "aggregation"
+	ElasticsearchIndexSegmentsCountMetricAttributeKeyIndexAggregationType ElasticsearchIndexSegmentsCountMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexSegmentsCountConfig provides config for the elasticsearch.index.segments.count metric.
-type ElasticsearchIndexSegmentsCountConfig struct {
+// ElasticsearchIndexSegmentsCountMetricConfig provides config for the elasticsearch.index.segments.count metric.
+type ElasticsearchIndexSegmentsCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexSegmentsCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexSegmentsCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexSegmentsCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexSegmentsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1057,10 +1057,10 @@ func (ms *ElasticsearchIndexSegmentsCountConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ElasticsearchIndexSegmentsCountConfig) Validate() error {
+func (ms *ElasticsearchIndexSegmentsCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexSegmentsCountMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.segments.count doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -1075,24 +1075,24 @@ func (ms *ElasticsearchIndexSegmentsCountConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexSegmentsMemoryAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.memory metric.
-type ElasticsearchIndexSegmentsMemoryAttributeKey string
+// ElasticsearchIndexSegmentsMemoryMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.memory metric.
+type ElasticsearchIndexSegmentsMemoryMetricAttributeKey string
 
 const (
-	ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType     ElasticsearchIndexSegmentsMemoryAttributeKey = "aggregation"
-	ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType ElasticsearchIndexSegmentsMemoryAttributeKey = "object"
+	ElasticsearchIndexSegmentsMemoryMetricAttributeKeyIndexAggregationType     ElasticsearchIndexSegmentsMemoryMetricAttributeKey = "aggregation"
+	ElasticsearchIndexSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType ElasticsearchIndexSegmentsMemoryMetricAttributeKey = "object"
 )
 
-// ElasticsearchIndexSegmentsMemoryConfig provides config for the elasticsearch.index.segments.memory metric.
-type ElasticsearchIndexSegmentsMemoryConfig struct {
+// ElasticsearchIndexSegmentsMemoryMetricConfig provides config for the elasticsearch.index.segments.memory metric.
+type ElasticsearchIndexSegmentsMemoryMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexSegmentsMemoryAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexSegmentsMemoryMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexSegmentsMemoryConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexSegmentsMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1106,10 +1106,10 @@ func (ms *ElasticsearchIndexSegmentsMemoryConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-func (ms *ElasticsearchIndexSegmentsMemoryConfig) Validate() error {
+func (ms *ElasticsearchIndexSegmentsMemoryMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType:
+		case ElasticsearchIndexSegmentsMemoryMetricAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.segments.memory doesn't have an attribute %v, valid attributes: [aggregation, object]", val)
 		}
@@ -1124,23 +1124,23 @@ func (ms *ElasticsearchIndexSegmentsMemoryConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexSegmentsSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.size metric.
-type ElasticsearchIndexSegmentsSizeAttributeKey string
+// ElasticsearchIndexSegmentsSizeMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.segments.size metric.
+type ElasticsearchIndexSegmentsSizeMetricAttributeKey string
 
 const (
-	ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType ElasticsearchIndexSegmentsSizeAttributeKey = "aggregation"
+	ElasticsearchIndexSegmentsSizeMetricAttributeKeyIndexAggregationType ElasticsearchIndexSegmentsSizeMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexSegmentsSizeConfig provides config for the elasticsearch.index.segments.size metric.
-type ElasticsearchIndexSegmentsSizeConfig struct {
+// ElasticsearchIndexSegmentsSizeMetricConfig provides config for the elasticsearch.index.segments.size metric.
+type ElasticsearchIndexSegmentsSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexSegmentsSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexSegmentsSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexSegmentsSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexSegmentsSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1154,10 +1154,10 @@ func (ms *ElasticsearchIndexSegmentsSizeConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *ElasticsearchIndexSegmentsSizeConfig) Validate() error {
+func (ms *ElasticsearchIndexSegmentsSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexSegmentsSizeMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.segments.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -1172,23 +1172,23 @@ func (ms *ElasticsearchIndexSegmentsSizeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexShardsSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.shards.size metric.
-type ElasticsearchIndexShardsSizeAttributeKey string
+// ElasticsearchIndexShardsSizeMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.shards.size metric.
+type ElasticsearchIndexShardsSizeMetricAttributeKey string
 
 const (
-	ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType ElasticsearchIndexShardsSizeAttributeKey = "aggregation"
+	ElasticsearchIndexShardsSizeMetricAttributeKeyIndexAggregationType ElasticsearchIndexShardsSizeMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexShardsSizeConfig provides config for the elasticsearch.index.shards.size metric.
-type ElasticsearchIndexShardsSizeConfig struct {
+// ElasticsearchIndexShardsSizeMetricConfig provides config for the elasticsearch.index.shards.size metric.
+type ElasticsearchIndexShardsSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexShardsSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexShardsSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexShardsSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexShardsSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1202,10 +1202,10 @@ func (ms *ElasticsearchIndexShardsSizeConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-func (ms *ElasticsearchIndexShardsSizeConfig) Validate() error {
+func (ms *ElasticsearchIndexShardsSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexShardsSizeMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.shards.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -1220,23 +1220,23 @@ func (ms *ElasticsearchIndexShardsSizeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexTranslogOperationsAttributeKey specifies the key of an attribute for the elasticsearch.index.translog.operations metric.
-type ElasticsearchIndexTranslogOperationsAttributeKey string
+// ElasticsearchIndexTranslogOperationsMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.translog.operations metric.
+type ElasticsearchIndexTranslogOperationsMetricAttributeKey string
 
 const (
-	ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType ElasticsearchIndexTranslogOperationsAttributeKey = "aggregation"
+	ElasticsearchIndexTranslogOperationsMetricAttributeKeyIndexAggregationType ElasticsearchIndexTranslogOperationsMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexTranslogOperationsConfig provides config for the elasticsearch.index.translog.operations metric.
-type ElasticsearchIndexTranslogOperationsConfig struct {
+// ElasticsearchIndexTranslogOperationsMetricConfig provides config for the elasticsearch.index.translog.operations metric.
+type ElasticsearchIndexTranslogOperationsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexTranslogOperationsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexTranslogOperationsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexTranslogOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexTranslogOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1250,10 +1250,10 @@ func (ms *ElasticsearchIndexTranslogOperationsConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *ElasticsearchIndexTranslogOperationsConfig) Validate() error {
+func (ms *ElasticsearchIndexTranslogOperationsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexTranslogOperationsMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.translog.operations doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -1268,23 +1268,23 @@ func (ms *ElasticsearchIndexTranslogOperationsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexTranslogSizeAttributeKey specifies the key of an attribute for the elasticsearch.index.translog.size metric.
-type ElasticsearchIndexTranslogSizeAttributeKey string
+// ElasticsearchIndexTranslogSizeMetricAttributeKey specifies the key of an attribute for the elasticsearch.index.translog.size metric.
+type ElasticsearchIndexTranslogSizeMetricAttributeKey string
 
 const (
-	ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType ElasticsearchIndexTranslogSizeAttributeKey = "aggregation"
+	ElasticsearchIndexTranslogSizeMetricAttributeKeyIndexAggregationType ElasticsearchIndexTranslogSizeMetricAttributeKey = "aggregation"
 )
 
-// ElasticsearchIndexTranslogSizeConfig provides config for the elasticsearch.index.translog.size metric.
-type ElasticsearchIndexTranslogSizeConfig struct {
+// ElasticsearchIndexTranslogSizeMetricConfig provides config for the elasticsearch.index.translog.size metric.
+type ElasticsearchIndexTranslogSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchIndexTranslogSizeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchIndexTranslogSizeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchIndexTranslogSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexTranslogSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1298,10 +1298,10 @@ func (ms *ElasticsearchIndexTranslogSizeConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-func (ms *ElasticsearchIndexTranslogSizeConfig) Validate() error {
+func (ms *ElasticsearchIndexTranslogSizeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType:
+		case ElasticsearchIndexTranslogSizeMetricAttributeKeyIndexAggregationType:
 		default:
 			return fmt.Errorf("metric elasticsearch.index.translog.size doesn't have an attribute %v, valid attributes: [aggregation]", val)
 		}
@@ -1316,13 +1316,13 @@ func (ms *ElasticsearchIndexTranslogSizeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchIndexingPressureMemoryLimitConfig provides config for the elasticsearch.indexing_pressure.memory.limit metric.
-type ElasticsearchIndexingPressureMemoryLimitConfig struct {
+// ElasticsearchIndexingPressureMemoryLimitMetricConfig provides config for the elasticsearch.indexing_pressure.memory.limit metric.
+type ElasticsearchIndexingPressureMemoryLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchIndexingPressureMemoryLimitConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexingPressureMemoryLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1336,13 +1336,13 @@ func (ms *ElasticsearchIndexingPressureMemoryLimitConfig) Unmarshal(parser *conf
 	return nil
 }
 
-// ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig provides config for the elasticsearch.indexing_pressure.memory.total.primary_rejections metric.
-type ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig struct {
+// ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig provides config for the elasticsearch.indexing_pressure.memory.total.primary_rejections metric.
+type ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1356,13 +1356,13 @@ func (ms *ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig) Unmar
 	return nil
 }
 
-// ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig provides config for the elasticsearch.indexing_pressure.memory.total.replica_rejections metric.
-type ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig struct {
+// ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig provides config for the elasticsearch.indexing_pressure.memory.total.replica_rejections metric.
+type ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1376,23 +1376,23 @@ func (ms *ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig) Unmar
 	return nil
 }
 
-// ElasticsearchMemoryIndexingPressureAttributeKey specifies the key of an attribute for the elasticsearch.memory.indexing_pressure metric.
-type ElasticsearchMemoryIndexingPressureAttributeKey string
+// ElasticsearchMemoryIndexingPressureMetricAttributeKey specifies the key of an attribute for the elasticsearch.memory.indexing_pressure metric.
+type ElasticsearchMemoryIndexingPressureMetricAttributeKey string
 
 const (
-	ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage ElasticsearchMemoryIndexingPressureAttributeKey = "stage"
+	ElasticsearchMemoryIndexingPressureMetricAttributeKeyIndexingPressureStage ElasticsearchMemoryIndexingPressureMetricAttributeKey = "stage"
 )
 
-// ElasticsearchMemoryIndexingPressureConfig provides config for the elasticsearch.memory.indexing_pressure metric.
-type ElasticsearchMemoryIndexingPressureConfig struct {
+// ElasticsearchMemoryIndexingPressureMetricConfig provides config for the elasticsearch.memory.indexing_pressure metric.
+type ElasticsearchMemoryIndexingPressureMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchMemoryIndexingPressureAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchMemoryIndexingPressureMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchMemoryIndexingPressureConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchMemoryIndexingPressureMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1406,10 +1406,10 @@ func (ms *ElasticsearchMemoryIndexingPressureConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-func (ms *ElasticsearchMemoryIndexingPressureConfig) Validate() error {
+func (ms *ElasticsearchMemoryIndexingPressureMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage:
+		case ElasticsearchMemoryIndexingPressureMetricAttributeKeyIndexingPressureStage:
 		default:
 			return fmt.Errorf("metric elasticsearch.memory.indexing_pressure doesn't have an attribute %v, valid attributes: [stage]", val)
 		}
@@ -1424,23 +1424,23 @@ func (ms *ElasticsearchMemoryIndexingPressureConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeCacheCountAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.count metric.
-type ElasticsearchNodeCacheCountAttributeKey string
+// ElasticsearchNodeCacheCountMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.count metric.
+type ElasticsearchNodeCacheCountMetricAttributeKey string
 
 const (
-	ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType ElasticsearchNodeCacheCountAttributeKey = "type"
+	ElasticsearchNodeCacheCountMetricAttributeKeyQueryCacheCountType ElasticsearchNodeCacheCountMetricAttributeKey = "type"
 )
 
-// ElasticsearchNodeCacheCountConfig provides config for the elasticsearch.node.cache.count metric.
-type ElasticsearchNodeCacheCountConfig struct {
+// ElasticsearchNodeCacheCountMetricConfig provides config for the elasticsearch.node.cache.count metric.
+type ElasticsearchNodeCacheCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeCacheCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeCacheCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeCacheCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeCacheCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1454,10 +1454,10 @@ func (ms *ElasticsearchNodeCacheCountConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-func (ms *ElasticsearchNodeCacheCountConfig) Validate() error {
+func (ms *ElasticsearchNodeCacheCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType:
+		case ElasticsearchNodeCacheCountMetricAttributeKeyQueryCacheCountType:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.cache.count doesn't have an attribute %v, valid attributes: [type]", val)
 		}
@@ -1472,23 +1472,23 @@ func (ms *ElasticsearchNodeCacheCountConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeCacheEvictionsAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.evictions metric.
-type ElasticsearchNodeCacheEvictionsAttributeKey string
+// ElasticsearchNodeCacheEvictionsMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.evictions metric.
+type ElasticsearchNodeCacheEvictionsMetricAttributeKey string
 
 const (
-	ElasticsearchNodeCacheEvictionsAttributeKeyCacheName ElasticsearchNodeCacheEvictionsAttributeKey = "cache_name"
+	ElasticsearchNodeCacheEvictionsMetricAttributeKeyCacheName ElasticsearchNodeCacheEvictionsMetricAttributeKey = "cache_name"
 )
 
-// ElasticsearchNodeCacheEvictionsConfig provides config for the elasticsearch.node.cache.evictions metric.
-type ElasticsearchNodeCacheEvictionsConfig struct {
+// ElasticsearchNodeCacheEvictionsMetricConfig provides config for the elasticsearch.node.cache.evictions metric.
+type ElasticsearchNodeCacheEvictionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeCacheEvictionsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeCacheEvictionsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeCacheEvictionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1502,10 +1502,10 @@ func (ms *ElasticsearchNodeCacheEvictionsConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ElasticsearchNodeCacheEvictionsConfig) Validate() error {
+func (ms *ElasticsearchNodeCacheEvictionsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeCacheEvictionsAttributeKeyCacheName:
+		case ElasticsearchNodeCacheEvictionsMetricAttributeKeyCacheName:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.cache.evictions doesn't have an attribute %v, valid attributes: [cache_name]", val)
 		}
@@ -1520,23 +1520,23 @@ func (ms *ElasticsearchNodeCacheEvictionsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeCacheMemoryUsageAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.memory.usage metric.
-type ElasticsearchNodeCacheMemoryUsageAttributeKey string
+// ElasticsearchNodeCacheMemoryUsageMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.cache.memory.usage metric.
+type ElasticsearchNodeCacheMemoryUsageMetricAttributeKey string
 
 const (
-	ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName ElasticsearchNodeCacheMemoryUsageAttributeKey = "cache_name"
+	ElasticsearchNodeCacheMemoryUsageMetricAttributeKeyCacheName ElasticsearchNodeCacheMemoryUsageMetricAttributeKey = "cache_name"
 )
 
-// ElasticsearchNodeCacheMemoryUsageConfig provides config for the elasticsearch.node.cache.memory.usage metric.
-type ElasticsearchNodeCacheMemoryUsageConfig struct {
+// ElasticsearchNodeCacheMemoryUsageMetricConfig provides config for the elasticsearch.node.cache.memory.usage metric.
+type ElasticsearchNodeCacheMemoryUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeCacheMemoryUsageAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeCacheMemoryUsageMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeCacheMemoryUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeCacheMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1550,10 +1550,10 @@ func (ms *ElasticsearchNodeCacheMemoryUsageConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-func (ms *ElasticsearchNodeCacheMemoryUsageConfig) Validate() error {
+func (ms *ElasticsearchNodeCacheMemoryUsageMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName:
+		case ElasticsearchNodeCacheMemoryUsageMetricAttributeKeyCacheName:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.cache.memory.usage doesn't have an attribute %v, valid attributes: [cache_name]", val)
 		}
@@ -1568,13 +1568,13 @@ func (ms *ElasticsearchNodeCacheMemoryUsageConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeCacheSizeConfig provides config for the elasticsearch.node.cache.size metric.
-type ElasticsearchNodeCacheSizeConfig struct {
+// ElasticsearchNodeCacheSizeMetricConfig provides config for the elasticsearch.node.cache.size metric.
+type ElasticsearchNodeCacheSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeCacheSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeCacheSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1588,13 +1588,13 @@ func (ms *ElasticsearchNodeCacheSizeConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// ElasticsearchNodeClusterConnectionsConfig provides config for the elasticsearch.node.cluster.connections metric.
-type ElasticsearchNodeClusterConnectionsConfig struct {
+// ElasticsearchNodeClusterConnectionsMetricConfig provides config for the elasticsearch.node.cluster.connections metric.
+type ElasticsearchNodeClusterConnectionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeClusterConnectionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeClusterConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1608,23 +1608,23 @@ func (ms *ElasticsearchNodeClusterConnectionsConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// ElasticsearchNodeClusterIoAttributeKey specifies the key of an attribute for the elasticsearch.node.cluster.io metric.
-type ElasticsearchNodeClusterIoAttributeKey string
+// ElasticsearchNodeClusterIoMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.cluster.io metric.
+type ElasticsearchNodeClusterIoMetricAttributeKey string
 
 const (
-	ElasticsearchNodeClusterIoAttributeKeyDirection ElasticsearchNodeClusterIoAttributeKey = "direction"
+	ElasticsearchNodeClusterIoMetricAttributeKeyDirection ElasticsearchNodeClusterIoMetricAttributeKey = "direction"
 )
 
-// ElasticsearchNodeClusterIoConfig provides config for the elasticsearch.node.cluster.io metric.
-type ElasticsearchNodeClusterIoConfig struct {
+// ElasticsearchNodeClusterIoMetricConfig provides config for the elasticsearch.node.cluster.io metric.
+type ElasticsearchNodeClusterIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeClusterIoAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeClusterIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeClusterIoConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeClusterIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1638,10 +1638,10 @@ func (ms *ElasticsearchNodeClusterIoConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *ElasticsearchNodeClusterIoConfig) Validate() error {
+func (ms *ElasticsearchNodeClusterIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeClusterIoAttributeKeyDirection:
+		case ElasticsearchNodeClusterIoMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.cluster.io doesn't have an attribute %v, valid attributes: [direction]", val)
 		}
@@ -1656,13 +1656,13 @@ func (ms *ElasticsearchNodeClusterIoConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeDiskIoReadConfig provides config for the elasticsearch.node.disk.io.read metric.
-type ElasticsearchNodeDiskIoReadConfig struct {
+// ElasticsearchNodeDiskIoReadMetricConfig provides config for the elasticsearch.node.disk.io.read metric.
+type ElasticsearchNodeDiskIoReadMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeDiskIoReadConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeDiskIoReadMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1676,13 +1676,13 @@ func (ms *ElasticsearchNodeDiskIoReadConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ElasticsearchNodeDiskIoWriteConfig provides config for the elasticsearch.node.disk.io.write metric.
-type ElasticsearchNodeDiskIoWriteConfig struct {
+// ElasticsearchNodeDiskIoWriteMetricConfig provides config for the elasticsearch.node.disk.io.write metric.
+type ElasticsearchNodeDiskIoWriteMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeDiskIoWriteConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeDiskIoWriteMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1696,23 +1696,23 @@ func (ms *ElasticsearchNodeDiskIoWriteConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// ElasticsearchNodeDocumentsAttributeKey specifies the key of an attribute for the elasticsearch.node.documents metric.
-type ElasticsearchNodeDocumentsAttributeKey string
+// ElasticsearchNodeDocumentsMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.documents metric.
+type ElasticsearchNodeDocumentsMetricAttributeKey string
 
 const (
-	ElasticsearchNodeDocumentsAttributeKeyDocumentState ElasticsearchNodeDocumentsAttributeKey = "state"
+	ElasticsearchNodeDocumentsMetricAttributeKeyDocumentState ElasticsearchNodeDocumentsMetricAttributeKey = "state"
 )
 
-// ElasticsearchNodeDocumentsConfig provides config for the elasticsearch.node.documents metric.
-type ElasticsearchNodeDocumentsConfig struct {
+// ElasticsearchNodeDocumentsMetricConfig provides config for the elasticsearch.node.documents metric.
+type ElasticsearchNodeDocumentsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeDocumentsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeDocumentsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeDocumentsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeDocumentsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1726,10 +1726,10 @@ func (ms *ElasticsearchNodeDocumentsConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-func (ms *ElasticsearchNodeDocumentsConfig) Validate() error {
+func (ms *ElasticsearchNodeDocumentsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeDocumentsAttributeKeyDocumentState:
+		case ElasticsearchNodeDocumentsMetricAttributeKeyDocumentState:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.documents doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -1744,13 +1744,13 @@ func (ms *ElasticsearchNodeDocumentsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeFsDiskAvailableConfig provides config for the elasticsearch.node.fs.disk.available metric.
-type ElasticsearchNodeFsDiskAvailableConfig struct {
+// ElasticsearchNodeFsDiskAvailableMetricConfig provides config for the elasticsearch.node.fs.disk.available metric.
+type ElasticsearchNodeFsDiskAvailableMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeFsDiskAvailableConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeFsDiskAvailableMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1764,13 +1764,13 @@ func (ms *ElasticsearchNodeFsDiskAvailableConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// ElasticsearchNodeFsDiskFreeConfig provides config for the elasticsearch.node.fs.disk.free metric.
-type ElasticsearchNodeFsDiskFreeConfig struct {
+// ElasticsearchNodeFsDiskFreeMetricConfig provides config for the elasticsearch.node.fs.disk.free metric.
+type ElasticsearchNodeFsDiskFreeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeFsDiskFreeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeFsDiskFreeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1784,13 +1784,13 @@ func (ms *ElasticsearchNodeFsDiskFreeConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ElasticsearchNodeFsDiskTotalConfig provides config for the elasticsearch.node.fs.disk.total metric.
-type ElasticsearchNodeFsDiskTotalConfig struct {
+// ElasticsearchNodeFsDiskTotalMetricConfig provides config for the elasticsearch.node.fs.disk.total metric.
+type ElasticsearchNodeFsDiskTotalMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeFsDiskTotalConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeFsDiskTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1804,13 +1804,13 @@ func (ms *ElasticsearchNodeFsDiskTotalConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// ElasticsearchNodeHTTPConnectionsConfig provides config for the elasticsearch.node.http.connections metric.
-type ElasticsearchNodeHTTPConnectionsConfig struct {
+// ElasticsearchNodeHTTPConnectionsMetricConfig provides config for the elasticsearch.node.http.connections metric.
+type ElasticsearchNodeHTTPConnectionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeHTTPConnectionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeHTTPConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1824,13 +1824,13 @@ func (ms *ElasticsearchNodeHTTPConnectionsConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// ElasticsearchNodeIngestDocumentsConfig provides config for the elasticsearch.node.ingest.documents metric.
-type ElasticsearchNodeIngestDocumentsConfig struct {
+// ElasticsearchNodeIngestDocumentsMetricConfig provides config for the elasticsearch.node.ingest.documents metric.
+type ElasticsearchNodeIngestDocumentsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeIngestDocumentsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeIngestDocumentsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1844,13 +1844,13 @@ func (ms *ElasticsearchNodeIngestDocumentsConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
-// ElasticsearchNodeIngestDocumentsCurrentConfig provides config for the elasticsearch.node.ingest.documents.current metric.
-type ElasticsearchNodeIngestDocumentsCurrentConfig struct {
+// ElasticsearchNodeIngestDocumentsCurrentMetricConfig provides config for the elasticsearch.node.ingest.documents.current metric.
+type ElasticsearchNodeIngestDocumentsCurrentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeIngestDocumentsCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeIngestDocumentsCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1864,13 +1864,13 @@ func (ms *ElasticsearchNodeIngestDocumentsCurrentConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// ElasticsearchNodeIngestOperationsFailedConfig provides config for the elasticsearch.node.ingest.operations.failed metric.
-type ElasticsearchNodeIngestOperationsFailedConfig struct {
+// ElasticsearchNodeIngestOperationsFailedMetricConfig provides config for the elasticsearch.node.ingest.operations.failed metric.
+type ElasticsearchNodeIngestOperationsFailedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeIngestOperationsFailedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeIngestOperationsFailedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1884,13 +1884,13 @@ func (ms *ElasticsearchNodeIngestOperationsFailedConfig) Unmarshal(parser *confm
 	return nil
 }
 
-// ElasticsearchNodeOpenFilesConfig provides config for the elasticsearch.node.open_files metric.
-type ElasticsearchNodeOpenFilesConfig struct {
+// ElasticsearchNodeOpenFilesMetricConfig provides config for the elasticsearch.node.open_files metric.
+type ElasticsearchNodeOpenFilesMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeOpenFilesConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeOpenFilesMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1904,23 +1904,23 @@ func (ms *ElasticsearchNodeOpenFilesConfig) Unmarshal(parser *confmap.Conf) erro
 	return nil
 }
 
-// ElasticsearchNodeOperationsCompletedAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.completed metric.
-type ElasticsearchNodeOperationsCompletedAttributeKey string
+// ElasticsearchNodeOperationsCompletedMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.completed metric.
+type ElasticsearchNodeOperationsCompletedMetricAttributeKey string
 
 const (
-	ElasticsearchNodeOperationsCompletedAttributeKeyOperation ElasticsearchNodeOperationsCompletedAttributeKey = "operation"
+	ElasticsearchNodeOperationsCompletedMetricAttributeKeyOperation ElasticsearchNodeOperationsCompletedMetricAttributeKey = "operation"
 )
 
-// ElasticsearchNodeOperationsCompletedConfig provides config for the elasticsearch.node.operations.completed metric.
-type ElasticsearchNodeOperationsCompletedConfig struct {
+// ElasticsearchNodeOperationsCompletedMetricConfig provides config for the elasticsearch.node.operations.completed metric.
+type ElasticsearchNodeOperationsCompletedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeOperationsCompletedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsCompletedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeOperationsCompletedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeOperationsCompletedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1934,10 +1934,10 @@ func (ms *ElasticsearchNodeOperationsCompletedConfig) Unmarshal(parser *confmap.
 	return nil
 }
 
-func (ms *ElasticsearchNodeOperationsCompletedConfig) Validate() error {
+func (ms *ElasticsearchNodeOperationsCompletedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeOperationsCompletedAttributeKeyOperation:
+		case ElasticsearchNodeOperationsCompletedMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.operations.completed doesn't have an attribute %v, valid attributes: [operation]", val)
 		}
@@ -1952,23 +1952,23 @@ func (ms *ElasticsearchNodeOperationsCompletedConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeOperationsCurrentAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.current metric.
-type ElasticsearchNodeOperationsCurrentAttributeKey string
+// ElasticsearchNodeOperationsCurrentMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.current metric.
+type ElasticsearchNodeOperationsCurrentMetricAttributeKey string
 
 const (
-	ElasticsearchNodeOperationsCurrentAttributeKeyOperation ElasticsearchNodeOperationsCurrentAttributeKey = "operation"
+	ElasticsearchNodeOperationsCurrentMetricAttributeKeyOperation ElasticsearchNodeOperationsCurrentMetricAttributeKey = "operation"
 )
 
-// ElasticsearchNodeOperationsCurrentConfig provides config for the elasticsearch.node.operations.current metric.
-type ElasticsearchNodeOperationsCurrentConfig struct {
+// ElasticsearchNodeOperationsCurrentMetricConfig provides config for the elasticsearch.node.operations.current metric.
+type ElasticsearchNodeOperationsCurrentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeOperationsCurrentAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsCurrentMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeOperationsCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeOperationsCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1982,10 +1982,10 @@ func (ms *ElasticsearchNodeOperationsCurrentConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *ElasticsearchNodeOperationsCurrentConfig) Validate() error {
+func (ms *ElasticsearchNodeOperationsCurrentMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeOperationsCurrentAttributeKeyOperation:
+		case ElasticsearchNodeOperationsCurrentMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.operations.current doesn't have an attribute %v, valid attributes: [operation]", val)
 		}
@@ -2000,23 +2000,23 @@ func (ms *ElasticsearchNodeOperationsCurrentConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeOperationsGetCompletedAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.get.completed metric.
-type ElasticsearchNodeOperationsGetCompletedAttributeKey string
+// ElasticsearchNodeOperationsGetCompletedMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.get.completed metric.
+type ElasticsearchNodeOperationsGetCompletedMetricAttributeKey string
 
 const (
-	ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult ElasticsearchNodeOperationsGetCompletedAttributeKey = "result"
+	ElasticsearchNodeOperationsGetCompletedMetricAttributeKeyGetResult ElasticsearchNodeOperationsGetCompletedMetricAttributeKey = "result"
 )
 
-// ElasticsearchNodeOperationsGetCompletedConfig provides config for the elasticsearch.node.operations.get.completed metric.
-type ElasticsearchNodeOperationsGetCompletedConfig struct {
+// ElasticsearchNodeOperationsGetCompletedMetricConfig provides config for the elasticsearch.node.operations.get.completed metric.
+type ElasticsearchNodeOperationsGetCompletedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeOperationsGetCompletedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsGetCompletedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeOperationsGetCompletedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeOperationsGetCompletedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2030,10 +2030,10 @@ func (ms *ElasticsearchNodeOperationsGetCompletedConfig) Unmarshal(parser *confm
 	return nil
 }
 
-func (ms *ElasticsearchNodeOperationsGetCompletedConfig) Validate() error {
+func (ms *ElasticsearchNodeOperationsGetCompletedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult:
+		case ElasticsearchNodeOperationsGetCompletedMetricAttributeKeyGetResult:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.operations.get.completed doesn't have an attribute %v, valid attributes: [result]", val)
 		}
@@ -2048,23 +2048,23 @@ func (ms *ElasticsearchNodeOperationsGetCompletedConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeOperationsGetTimeAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.get.time metric.
-type ElasticsearchNodeOperationsGetTimeAttributeKey string
+// ElasticsearchNodeOperationsGetTimeMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.get.time metric.
+type ElasticsearchNodeOperationsGetTimeMetricAttributeKey string
 
 const (
-	ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult ElasticsearchNodeOperationsGetTimeAttributeKey = "result"
+	ElasticsearchNodeOperationsGetTimeMetricAttributeKeyGetResult ElasticsearchNodeOperationsGetTimeMetricAttributeKey = "result"
 )
 
-// ElasticsearchNodeOperationsGetTimeConfig provides config for the elasticsearch.node.operations.get.time metric.
-type ElasticsearchNodeOperationsGetTimeConfig struct {
+// ElasticsearchNodeOperationsGetTimeMetricConfig provides config for the elasticsearch.node.operations.get.time metric.
+type ElasticsearchNodeOperationsGetTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeOperationsGetTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsGetTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeOperationsGetTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeOperationsGetTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2078,10 +2078,10 @@ func (ms *ElasticsearchNodeOperationsGetTimeConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *ElasticsearchNodeOperationsGetTimeConfig) Validate() error {
+func (ms *ElasticsearchNodeOperationsGetTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult:
+		case ElasticsearchNodeOperationsGetTimeMetricAttributeKeyGetResult:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.operations.get.time doesn't have an attribute %v, valid attributes: [result]", val)
 		}
@@ -2096,23 +2096,23 @@ func (ms *ElasticsearchNodeOperationsGetTimeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeOperationsTimeAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.time metric.
-type ElasticsearchNodeOperationsTimeAttributeKey string
+// ElasticsearchNodeOperationsTimeMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.operations.time metric.
+type ElasticsearchNodeOperationsTimeMetricAttributeKey string
 
 const (
-	ElasticsearchNodeOperationsTimeAttributeKeyOperation ElasticsearchNodeOperationsTimeAttributeKey = "operation"
+	ElasticsearchNodeOperationsTimeMetricAttributeKeyOperation ElasticsearchNodeOperationsTimeMetricAttributeKey = "operation"
 )
 
-// ElasticsearchNodeOperationsTimeConfig provides config for the elasticsearch.node.operations.time metric.
-type ElasticsearchNodeOperationsTimeConfig struct {
+// ElasticsearchNodeOperationsTimeMetricConfig provides config for the elasticsearch.node.operations.time metric.
+type ElasticsearchNodeOperationsTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeOperationsTimeAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeOperationsTimeMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeOperationsTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeOperationsTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2126,10 +2126,10 @@ func (ms *ElasticsearchNodeOperationsTimeConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ElasticsearchNodeOperationsTimeConfig) Validate() error {
+func (ms *ElasticsearchNodeOperationsTimeMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeOperationsTimeAttributeKeyOperation:
+		case ElasticsearchNodeOperationsTimeMetricAttributeKeyOperation:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.operations.time doesn't have an attribute %v, valid attributes: [operation]", val)
 		}
@@ -2144,23 +2144,23 @@ func (ms *ElasticsearchNodeOperationsTimeConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.documents.current metric.
-type ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey string
+// ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.documents.current metric.
+type ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey string
 
 const (
-	ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey = "name"
+	ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey = "name"
 )
 
-// ElasticsearchNodePipelineIngestDocumentsCurrentConfig provides config for the elasticsearch.node.pipeline.ingest.documents.current metric.
-type ElasticsearchNodePipelineIngestDocumentsCurrentConfig struct {
+// ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.current metric.
+type ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2174,10 +2174,10 @@ func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentConfig) Unmarshal(parse
 	return nil
 }
 
-func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentConfig) Validate() error {
+func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName:
+		case ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKeyIngestPipelineName:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.pipeline.ingest.documents.current doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -2192,23 +2192,23 @@ func (ms *ElasticsearchNodePipelineIngestDocumentsCurrentConfig) Validate() erro
 	return nil
 }
 
-// ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric.
-type ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey string
+// ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric.
+type ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey string
 
 const (
-	ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey = "name"
+	ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey = "name"
 )
 
-// ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig provides config for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric.
-type ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig struct {
+// ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.documents.preprocessed metric.
+type ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2222,10 +2222,10 @@ func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig) Unmarshal(
 	return nil
 }
 
-func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig) Validate() error {
+func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName:
+		case ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKeyIngestPipelineName:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.pipeline.ingest.documents.preprocessed doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -2240,23 +2240,23 @@ func (ms *ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig) Validate()
 	return nil
 }
 
-// ElasticsearchNodePipelineIngestOperationsFailedAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.operations.failed metric.
-type ElasticsearchNodePipelineIngestOperationsFailedAttributeKey string
+// ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.pipeline.ingest.operations.failed metric.
+type ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey string
 
 const (
-	ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestOperationsFailedAttributeKey = "name"
+	ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKeyIngestPipelineName ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey = "name"
 )
 
-// ElasticsearchNodePipelineIngestOperationsFailedConfig provides config for the elasticsearch.node.pipeline.ingest.operations.failed metric.
-type ElasticsearchNodePipelineIngestOperationsFailedConfig struct {
+// ElasticsearchNodePipelineIngestOperationsFailedMetricConfig provides config for the elasticsearch.node.pipeline.ingest.operations.failed metric.
+type ElasticsearchNodePipelineIngestOperationsFailedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodePipelineIngestOperationsFailedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodePipelineIngestOperationsFailedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodePipelineIngestOperationsFailedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2270,10 +2270,10 @@ func (ms *ElasticsearchNodePipelineIngestOperationsFailedConfig) Unmarshal(parse
 	return nil
 }
 
-func (ms *ElasticsearchNodePipelineIngestOperationsFailedConfig) Validate() error {
+func (ms *ElasticsearchNodePipelineIngestOperationsFailedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName:
+		case ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKeyIngestPipelineName:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.pipeline.ingest.operations.failed doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -2288,13 +2288,13 @@ func (ms *ElasticsearchNodePipelineIngestOperationsFailedConfig) Validate() erro
 	return nil
 }
 
-// ElasticsearchNodeScriptCacheEvictionsConfig provides config for the elasticsearch.node.script.cache_evictions metric.
-type ElasticsearchNodeScriptCacheEvictionsConfig struct {
+// ElasticsearchNodeScriptCacheEvictionsMetricConfig provides config for the elasticsearch.node.script.cache_evictions metric.
+type ElasticsearchNodeScriptCacheEvictionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeScriptCacheEvictionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeScriptCacheEvictionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2308,13 +2308,13 @@ func (ms *ElasticsearchNodeScriptCacheEvictionsConfig) Unmarshal(parser *confmap
 	return nil
 }
 
-// ElasticsearchNodeScriptCompilationLimitTriggeredConfig provides config for the elasticsearch.node.script.compilation_limit_triggered metric.
-type ElasticsearchNodeScriptCompilationLimitTriggeredConfig struct {
+// ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig provides config for the elasticsearch.node.script.compilation_limit_triggered metric.
+type ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeScriptCompilationLimitTriggeredConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2328,13 +2328,13 @@ func (ms *ElasticsearchNodeScriptCompilationLimitTriggeredConfig) Unmarshal(pars
 	return nil
 }
 
-// ElasticsearchNodeScriptCompilationsConfig provides config for the elasticsearch.node.script.compilations metric.
-type ElasticsearchNodeScriptCompilationsConfig struct {
+// ElasticsearchNodeScriptCompilationsMetricConfig provides config for the elasticsearch.node.script.compilations metric.
+type ElasticsearchNodeScriptCompilationsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeScriptCompilationsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeScriptCompilationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2348,23 +2348,23 @@ func (ms *ElasticsearchNodeScriptCompilationsConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// ElasticsearchNodeSegmentsMemoryAttributeKey specifies the key of an attribute for the elasticsearch.node.segments.memory metric.
-type ElasticsearchNodeSegmentsMemoryAttributeKey string
+// ElasticsearchNodeSegmentsMemoryMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.segments.memory metric.
+type ElasticsearchNodeSegmentsMemoryMetricAttributeKey string
 
 const (
-	ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType ElasticsearchNodeSegmentsMemoryAttributeKey = "object"
+	ElasticsearchNodeSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType ElasticsearchNodeSegmentsMemoryMetricAttributeKey = "object"
 )
 
-// ElasticsearchNodeSegmentsMemoryConfig provides config for the elasticsearch.node.segments.memory metric.
-type ElasticsearchNodeSegmentsMemoryConfig struct {
+// ElasticsearchNodeSegmentsMemoryMetricConfig provides config for the elasticsearch.node.segments.memory metric.
+type ElasticsearchNodeSegmentsMemoryMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeSegmentsMemoryAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeSegmentsMemoryMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeSegmentsMemoryConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeSegmentsMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2378,10 +2378,10 @@ func (ms *ElasticsearchNodeSegmentsMemoryConfig) Unmarshal(parser *confmap.Conf)
 	return nil
 }
 
-func (ms *ElasticsearchNodeSegmentsMemoryConfig) Validate() error {
+func (ms *ElasticsearchNodeSegmentsMemoryMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType:
+		case ElasticsearchNodeSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.segments.memory doesn't have an attribute %v, valid attributes: [object]", val)
 		}
@@ -2396,13 +2396,13 @@ func (ms *ElasticsearchNodeSegmentsMemoryConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeShardsDataSetSizeConfig provides config for the elasticsearch.node.shards.data_set.size metric.
-type ElasticsearchNodeShardsDataSetSizeConfig struct {
+// ElasticsearchNodeShardsDataSetSizeMetricConfig provides config for the elasticsearch.node.shards.data_set.size metric.
+type ElasticsearchNodeShardsDataSetSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeShardsDataSetSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeShardsDataSetSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2416,13 +2416,13 @@ func (ms *ElasticsearchNodeShardsDataSetSizeConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-// ElasticsearchNodeShardsReservedSizeConfig provides config for the elasticsearch.node.shards.reserved.size metric.
-type ElasticsearchNodeShardsReservedSizeConfig struct {
+// ElasticsearchNodeShardsReservedSizeMetricConfig provides config for the elasticsearch.node.shards.reserved.size metric.
+type ElasticsearchNodeShardsReservedSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeShardsReservedSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeShardsReservedSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2436,13 +2436,13 @@ func (ms *ElasticsearchNodeShardsReservedSizeConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// ElasticsearchNodeShardsSizeConfig provides config for the elasticsearch.node.shards.size metric.
-type ElasticsearchNodeShardsSizeConfig struct {
+// ElasticsearchNodeShardsSizeMetricConfig provides config for the elasticsearch.node.shards.size metric.
+type ElasticsearchNodeShardsSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeShardsSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeShardsSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2456,24 +2456,24 @@ func (ms *ElasticsearchNodeShardsSizeConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ElasticsearchNodeThreadPoolTasksFinishedAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.tasks.finished metric.
-type ElasticsearchNodeThreadPoolTasksFinishedAttributeKey string
+// ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.tasks.finished metric.
+type ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey string
 
 const (
-	ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolTasksFinishedAttributeKey = "thread_pool_name"
-	ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState      ElasticsearchNodeThreadPoolTasksFinishedAttributeKey = "state"
+	ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey = "thread_pool_name"
+	ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyTaskState      ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey = "state"
 )
 
-// ElasticsearchNodeThreadPoolTasksFinishedConfig provides config for the elasticsearch.node.thread_pool.tasks.finished metric.
-type ElasticsearchNodeThreadPoolTasksFinishedConfig struct {
+// ElasticsearchNodeThreadPoolTasksFinishedMetricConfig provides config for the elasticsearch.node.thread_pool.tasks.finished metric.
+type ElasticsearchNodeThreadPoolTasksFinishedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeThreadPoolTasksFinishedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeThreadPoolTasksFinishedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeThreadPoolTasksFinishedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2487,10 +2487,10 @@ func (ms *ElasticsearchNodeThreadPoolTasksFinishedConfig) Unmarshal(parser *conf
 	return nil
 }
 
-func (ms *ElasticsearchNodeThreadPoolTasksFinishedConfig) Validate() error {
+func (ms *ElasticsearchNodeThreadPoolTasksFinishedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState:
+		case ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyTaskState:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.thread_pool.tasks.finished doesn't have an attribute %v, valid attributes: [thread_pool_name, state]", val)
 		}
@@ -2505,23 +2505,23 @@ func (ms *ElasticsearchNodeThreadPoolTasksFinishedConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeThreadPoolTasksQueuedAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.tasks.queued metric.
-type ElasticsearchNodeThreadPoolTasksQueuedAttributeKey string
+// ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.tasks.queued metric.
+type ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey string
 
 const (
-	ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolTasksQueuedAttributeKey = "thread_pool_name"
+	ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey = "thread_pool_name"
 )
 
-// ElasticsearchNodeThreadPoolTasksQueuedConfig provides config for the elasticsearch.node.thread_pool.tasks.queued metric.
-type ElasticsearchNodeThreadPoolTasksQueuedConfig struct {
+// ElasticsearchNodeThreadPoolTasksQueuedMetricConfig provides config for the elasticsearch.node.thread_pool.tasks.queued metric.
+type ElasticsearchNodeThreadPoolTasksQueuedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                               `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeThreadPoolTasksQueuedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                     `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeThreadPoolTasksQueuedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeThreadPoolTasksQueuedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2535,10 +2535,10 @@ func (ms *ElasticsearchNodeThreadPoolTasksQueuedConfig) Unmarshal(parser *confma
 	return nil
 }
 
-func (ms *ElasticsearchNodeThreadPoolTasksQueuedConfig) Validate() error {
+func (ms *ElasticsearchNodeThreadPoolTasksQueuedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName:
+		case ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKeyThreadPoolName:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.thread_pool.tasks.queued doesn't have an attribute %v, valid attributes: [thread_pool_name]", val)
 		}
@@ -2553,24 +2553,24 @@ func (ms *ElasticsearchNodeThreadPoolTasksQueuedConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeThreadPoolThreadsAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.threads metric.
-type ElasticsearchNodeThreadPoolThreadsAttributeKey string
+// ElasticsearchNodeThreadPoolThreadsMetricAttributeKey specifies the key of an attribute for the elasticsearch.node.thread_pool.threads metric.
+type ElasticsearchNodeThreadPoolThreadsMetricAttributeKey string
 
 const (
-	ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolThreadsAttributeKey = "thread_pool_name"
-	ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState    ElasticsearchNodeThreadPoolThreadsAttributeKey = "state"
+	ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadPoolName ElasticsearchNodeThreadPoolThreadsMetricAttributeKey = "thread_pool_name"
+	ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadState    ElasticsearchNodeThreadPoolThreadsMetricAttributeKey = "state"
 )
 
-// ElasticsearchNodeThreadPoolThreadsConfig provides config for the elasticsearch.node.thread_pool.threads metric.
-type ElasticsearchNodeThreadPoolThreadsConfig struct {
+// ElasticsearchNodeThreadPoolThreadsMetricConfig provides config for the elasticsearch.node.thread_pool.threads metric.
+type ElasticsearchNodeThreadPoolThreadsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchNodeThreadPoolThreadsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                                 `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchNodeThreadPoolThreadsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchNodeThreadPoolThreadsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeThreadPoolThreadsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2584,10 +2584,10 @@ func (ms *ElasticsearchNodeThreadPoolThreadsConfig) Unmarshal(parser *confmap.Co
 	return nil
 }
 
-func (ms *ElasticsearchNodeThreadPoolThreadsConfig) Validate() error {
+func (ms *ElasticsearchNodeThreadPoolThreadsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState:
+		case ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadState:
 		default:
 			return fmt.Errorf("metric elasticsearch.node.thread_pool.threads doesn't have an attribute %v, valid attributes: [thread_pool_name, state]", val)
 		}
@@ -2602,13 +2602,13 @@ func (ms *ElasticsearchNodeThreadPoolThreadsConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchNodeTranslogOperationsConfig provides config for the elasticsearch.node.translog.operations metric.
-type ElasticsearchNodeTranslogOperationsConfig struct {
+// ElasticsearchNodeTranslogOperationsMetricConfig provides config for the elasticsearch.node.translog.operations metric.
+type ElasticsearchNodeTranslogOperationsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeTranslogOperationsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeTranslogOperationsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2622,13 +2622,13 @@ func (ms *ElasticsearchNodeTranslogOperationsConfig) Unmarshal(parser *confmap.C
 	return nil
 }
 
-// ElasticsearchNodeTranslogSizeConfig provides config for the elasticsearch.node.translog.size metric.
-type ElasticsearchNodeTranslogSizeConfig struct {
+// ElasticsearchNodeTranslogSizeMetricConfig provides config for the elasticsearch.node.translog.size metric.
+type ElasticsearchNodeTranslogSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeTranslogSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeTranslogSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2642,13 +2642,13 @@ func (ms *ElasticsearchNodeTranslogSizeConfig) Unmarshal(parser *confmap.Conf) e
 	return nil
 }
 
-// ElasticsearchNodeTranslogUncommittedSizeConfig provides config for the elasticsearch.node.translog.uncommitted.size metric.
-type ElasticsearchNodeTranslogUncommittedSizeConfig struct {
+// ElasticsearchNodeTranslogUncommittedSizeMetricConfig provides config for the elasticsearch.node.translog.uncommitted.size metric.
+type ElasticsearchNodeTranslogUncommittedSizeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchNodeTranslogUncommittedSizeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchNodeTranslogUncommittedSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2662,13 +2662,13 @@ func (ms *ElasticsearchNodeTranslogUncommittedSizeConfig) Unmarshal(parser *conf
 	return nil
 }
 
-// ElasticsearchOsCPULoadAvg15mConfig provides config for the elasticsearch.os.cpu.load_avg.15m metric.
-type ElasticsearchOsCPULoadAvg15mConfig struct {
+// ElasticsearchOsCPULoadAvg15mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.15m metric.
+type ElasticsearchOsCPULoadAvg15mMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchOsCPULoadAvg15mConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchOsCPULoadAvg15mMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2682,13 +2682,13 @@ func (ms *ElasticsearchOsCPULoadAvg15mConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// ElasticsearchOsCPULoadAvg1mConfig provides config for the elasticsearch.os.cpu.load_avg.1m metric.
-type ElasticsearchOsCPULoadAvg1mConfig struct {
+// ElasticsearchOsCPULoadAvg1mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.1m metric.
+type ElasticsearchOsCPULoadAvg1mMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchOsCPULoadAvg1mConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchOsCPULoadAvg1mMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2702,13 +2702,13 @@ func (ms *ElasticsearchOsCPULoadAvg1mConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ElasticsearchOsCPULoadAvg5mConfig provides config for the elasticsearch.os.cpu.load_avg.5m metric.
-type ElasticsearchOsCPULoadAvg5mConfig struct {
+// ElasticsearchOsCPULoadAvg5mMetricConfig provides config for the elasticsearch.os.cpu.load_avg.5m metric.
+type ElasticsearchOsCPULoadAvg5mMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchOsCPULoadAvg5mConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchOsCPULoadAvg5mMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2722,13 +2722,13 @@ func (ms *ElasticsearchOsCPULoadAvg5mConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ElasticsearchOsCPUUsageConfig provides config for the elasticsearch.os.cpu.usage metric.
-type ElasticsearchOsCPUUsageConfig struct {
+// ElasticsearchOsCPUUsageMetricConfig provides config for the elasticsearch.os.cpu.usage metric.
+type ElasticsearchOsCPUUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchOsCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchOsCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2742,23 +2742,23 @@ func (ms *ElasticsearchOsCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ElasticsearchOsMemoryAttributeKey specifies the key of an attribute for the elasticsearch.os.memory metric.
-type ElasticsearchOsMemoryAttributeKey string
+// ElasticsearchOsMemoryMetricAttributeKey specifies the key of an attribute for the elasticsearch.os.memory metric.
+type ElasticsearchOsMemoryMetricAttributeKey string
 
 const (
-	ElasticsearchOsMemoryAttributeKeyMemoryState ElasticsearchOsMemoryAttributeKey = "state"
+	ElasticsearchOsMemoryMetricAttributeKeyMemoryState ElasticsearchOsMemoryMetricAttributeKey = "state"
 )
 
-// ElasticsearchOsMemoryConfig provides config for the elasticsearch.os.memory metric.
-type ElasticsearchOsMemoryConfig struct {
+// ElasticsearchOsMemoryMetricConfig provides config for the elasticsearch.os.memory metric.
+type ElasticsearchOsMemoryMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []ElasticsearchOsMemoryAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []ElasticsearchOsMemoryMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *ElasticsearchOsMemoryConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchOsMemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2772,10 +2772,10 @@ func (ms *ElasticsearchOsMemoryConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *ElasticsearchOsMemoryConfig) Validate() error {
+func (ms *ElasticsearchOsMemoryMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case ElasticsearchOsMemoryAttributeKeyMemoryState:
+		case ElasticsearchOsMemoryMetricAttributeKeyMemoryState:
 		default:
 			return fmt.Errorf("metric elasticsearch.os.memory doesn't have an attribute %v, valid attributes: [state]", val)
 		}
@@ -2790,13 +2790,13 @@ func (ms *ElasticsearchOsMemoryConfig) Validate() error {
 	return nil
 }
 
-// ElasticsearchProcessCPUTimeConfig provides config for the elasticsearch.process.cpu.time metric.
-type ElasticsearchProcessCPUTimeConfig struct {
+// ElasticsearchProcessCPUTimeMetricConfig provides config for the elasticsearch.process.cpu.time metric.
+type ElasticsearchProcessCPUTimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchProcessCPUTimeConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchProcessCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2810,13 +2810,13 @@ func (ms *ElasticsearchProcessCPUTimeConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// ElasticsearchProcessCPUUsageConfig provides config for the elasticsearch.process.cpu.usage metric.
-type ElasticsearchProcessCPUUsageConfig struct {
+// ElasticsearchProcessCPUUsageMetricConfig provides config for the elasticsearch.process.cpu.usage metric.
+type ElasticsearchProcessCPUUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchProcessCPUUsageConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchProcessCPUUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2830,13 +2830,13 @@ func (ms *ElasticsearchProcessCPUUsageConfig) Unmarshal(parser *confmap.Conf) er
 	return nil
 }
 
-// ElasticsearchProcessMemoryVirtualConfig provides config for the elasticsearch.process.memory.virtual metric.
-type ElasticsearchProcessMemoryVirtualConfig struct {
+// ElasticsearchProcessMemoryVirtualMetricConfig provides config for the elasticsearch.process.memory.virtual metric.
+type ElasticsearchProcessMemoryVirtualMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *ElasticsearchProcessMemoryVirtualConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ElasticsearchProcessMemoryVirtualMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2850,13 +2850,13 @@ func (ms *ElasticsearchProcessMemoryVirtualConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// JvmClassesLoadedConfig provides config for the jvm.classes.loaded metric.
-type JvmClassesLoadedConfig struct {
+// JvmClassesLoadedMetricConfig provides config for the jvm.classes.loaded metric.
+type JvmClassesLoadedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmClassesLoadedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmClassesLoadedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2870,23 +2870,23 @@ func (ms *JvmClassesLoadedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// JvmGcCollectionsCountAttributeKey specifies the key of an attribute for the jvm.gc.collections.count metric.
-type JvmGcCollectionsCountAttributeKey string
+// JvmGcCollectionsCountMetricAttributeKey specifies the key of an attribute for the jvm.gc.collections.count metric.
+type JvmGcCollectionsCountMetricAttributeKey string
 
 const (
-	JvmGcCollectionsCountAttributeKeyCollectorName JvmGcCollectionsCountAttributeKey = "name"
+	JvmGcCollectionsCountMetricAttributeKeyCollectorName JvmGcCollectionsCountMetricAttributeKey = "name"
 )
 
-// JvmGcCollectionsCountConfig provides config for the jvm.gc.collections.count metric.
-type JvmGcCollectionsCountConfig struct {
+// JvmGcCollectionsCountMetricConfig provides config for the jvm.gc.collections.count metric.
+type JvmGcCollectionsCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []JvmGcCollectionsCountAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                    `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmGcCollectionsCountMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *JvmGcCollectionsCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmGcCollectionsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2900,10 +2900,10 @@ func (ms *JvmGcCollectionsCountConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *JvmGcCollectionsCountConfig) Validate() error {
+func (ms *JvmGcCollectionsCountMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case JvmGcCollectionsCountAttributeKeyCollectorName:
+		case JvmGcCollectionsCountMetricAttributeKeyCollectorName:
 		default:
 			return fmt.Errorf("metric jvm.gc.collections.count doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -2918,23 +2918,23 @@ func (ms *JvmGcCollectionsCountConfig) Validate() error {
 	return nil
 }
 
-// JvmGcCollectionsElapsedAttributeKey specifies the key of an attribute for the jvm.gc.collections.elapsed metric.
-type JvmGcCollectionsElapsedAttributeKey string
+// JvmGcCollectionsElapsedMetricAttributeKey specifies the key of an attribute for the jvm.gc.collections.elapsed metric.
+type JvmGcCollectionsElapsedMetricAttributeKey string
 
 const (
-	JvmGcCollectionsElapsedAttributeKeyCollectorName JvmGcCollectionsElapsedAttributeKey = "name"
+	JvmGcCollectionsElapsedMetricAttributeKeyCollectorName JvmGcCollectionsElapsedMetricAttributeKey = "name"
 )
 
-// JvmGcCollectionsElapsedConfig provides config for the jvm.gc.collections.elapsed metric.
-type JvmGcCollectionsElapsedConfig struct {
+// JvmGcCollectionsElapsedMetricConfig provides config for the jvm.gc.collections.elapsed metric.
+type JvmGcCollectionsElapsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []JvmGcCollectionsElapsedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmGcCollectionsElapsedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *JvmGcCollectionsElapsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmGcCollectionsElapsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2948,10 +2948,10 @@ func (ms *JvmGcCollectionsElapsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *JvmGcCollectionsElapsedConfig) Validate() error {
+func (ms *JvmGcCollectionsElapsedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case JvmGcCollectionsElapsedAttributeKeyCollectorName:
+		case JvmGcCollectionsElapsedMetricAttributeKeyCollectorName:
 		default:
 			return fmt.Errorf("metric jvm.gc.collections.elapsed doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -2966,13 +2966,13 @@ func (ms *JvmGcCollectionsElapsedConfig) Validate() error {
 	return nil
 }
 
-// JvmMemoryHeapCommittedConfig provides config for the jvm.memory.heap.committed metric.
-type JvmMemoryHeapCommittedConfig struct {
+// JvmMemoryHeapCommittedMetricConfig provides config for the jvm.memory.heap.committed metric.
+type JvmMemoryHeapCommittedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmMemoryHeapCommittedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryHeapCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -2986,13 +2986,13 @@ func (ms *JvmMemoryHeapCommittedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// JvmMemoryHeapMaxConfig provides config for the jvm.memory.heap.max metric.
-type JvmMemoryHeapMaxConfig struct {
+// JvmMemoryHeapMaxMetricConfig provides config for the jvm.memory.heap.max metric.
+type JvmMemoryHeapMaxMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmMemoryHeapMaxConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryHeapMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3006,13 +3006,13 @@ func (ms *JvmMemoryHeapMaxConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// JvmMemoryHeapUsedConfig provides config for the jvm.memory.heap.used metric.
-type JvmMemoryHeapUsedConfig struct {
+// JvmMemoryHeapUsedMetricConfig provides config for the jvm.memory.heap.used metric.
+type JvmMemoryHeapUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmMemoryHeapUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryHeapUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3026,13 +3026,13 @@ func (ms *JvmMemoryHeapUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// JvmMemoryHeapUtilizationConfig provides config for the jvm.memory.heap.utilization metric.
-type JvmMemoryHeapUtilizationConfig struct {
+// JvmMemoryHeapUtilizationMetricConfig provides config for the jvm.memory.heap.utilization metric.
+type JvmMemoryHeapUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmMemoryHeapUtilizationConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryHeapUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3046,13 +3046,13 @@ func (ms *JvmMemoryHeapUtilizationConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-// JvmMemoryNonheapCommittedConfig provides config for the jvm.memory.nonheap.committed metric.
-type JvmMemoryNonheapCommittedConfig struct {
+// JvmMemoryNonheapCommittedMetricConfig provides config for the jvm.memory.nonheap.committed metric.
+type JvmMemoryNonheapCommittedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmMemoryNonheapCommittedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryNonheapCommittedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3066,13 +3066,13 @@ func (ms *JvmMemoryNonheapCommittedConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// JvmMemoryNonheapUsedConfig provides config for the jvm.memory.nonheap.used metric.
-type JvmMemoryNonheapUsedConfig struct {
+// JvmMemoryNonheapUsedMetricConfig provides config for the jvm.memory.nonheap.used metric.
+type JvmMemoryNonheapUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmMemoryNonheapUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryNonheapUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3086,23 +3086,23 @@ func (ms *JvmMemoryNonheapUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// JvmMemoryPoolMaxAttributeKey specifies the key of an attribute for the jvm.memory.pool.max metric.
-type JvmMemoryPoolMaxAttributeKey string
+// JvmMemoryPoolMaxMetricAttributeKey specifies the key of an attribute for the jvm.memory.pool.max metric.
+type JvmMemoryPoolMaxMetricAttributeKey string
 
 const (
-	JvmMemoryPoolMaxAttributeKeyMemoryPoolName JvmMemoryPoolMaxAttributeKey = "name"
+	JvmMemoryPoolMaxMetricAttributeKeyMemoryPoolName JvmMemoryPoolMaxMetricAttributeKey = "name"
 )
 
-// JvmMemoryPoolMaxConfig provides config for the jvm.memory.pool.max metric.
-type JvmMemoryPoolMaxConfig struct {
+// JvmMemoryPoolMaxMetricConfig provides config for the jvm.memory.pool.max metric.
+type JvmMemoryPoolMaxMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                         `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []JvmMemoryPoolMaxAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                               `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmMemoryPoolMaxMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *JvmMemoryPoolMaxConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryPoolMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3116,10 +3116,10 @@ func (ms *JvmMemoryPoolMaxConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *JvmMemoryPoolMaxConfig) Validate() error {
+func (ms *JvmMemoryPoolMaxMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case JvmMemoryPoolMaxAttributeKeyMemoryPoolName:
+		case JvmMemoryPoolMaxMetricAttributeKeyMemoryPoolName:
 		default:
 			return fmt.Errorf("metric jvm.memory.pool.max doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -3134,23 +3134,23 @@ func (ms *JvmMemoryPoolMaxConfig) Validate() error {
 	return nil
 }
 
-// JvmMemoryPoolUsedAttributeKey specifies the key of an attribute for the jvm.memory.pool.used metric.
-type JvmMemoryPoolUsedAttributeKey string
+// JvmMemoryPoolUsedMetricAttributeKey specifies the key of an attribute for the jvm.memory.pool.used metric.
+type JvmMemoryPoolUsedMetricAttributeKey string
 
 const (
-	JvmMemoryPoolUsedAttributeKeyMemoryPoolName JvmMemoryPoolUsedAttributeKey = "name"
+	JvmMemoryPoolUsedMetricAttributeKeyMemoryPoolName JvmMemoryPoolUsedMetricAttributeKey = "name"
 )
 
-// JvmMemoryPoolUsedConfig provides config for the jvm.memory.pool.used metric.
-type JvmMemoryPoolUsedConfig struct {
+// JvmMemoryPoolUsedMetricConfig provides config for the jvm.memory.pool.used metric.
+type JvmMemoryPoolUsedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []JvmMemoryPoolUsedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []JvmMemoryPoolUsedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *JvmMemoryPoolUsedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmMemoryPoolUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3164,10 +3164,10 @@ func (ms *JvmMemoryPoolUsedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *JvmMemoryPoolUsedConfig) Validate() error {
+func (ms *JvmMemoryPoolUsedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case JvmMemoryPoolUsedAttributeKeyMemoryPoolName:
+		case JvmMemoryPoolUsedMetricAttributeKeyMemoryPoolName:
 		default:
 			return fmt.Errorf("metric jvm.memory.pool.used doesn't have an attribute %v, valid attributes: [name]", val)
 		}
@@ -3182,13 +3182,13 @@ func (ms *JvmMemoryPoolUsedConfig) Validate() error {
 	return nil
 }
 
-// JvmThreadsCountConfig provides config for the jvm.threads.count metric.
-type JvmThreadsCountConfig struct {
+// JvmThreadsCountMetricConfig provides config for the jvm.threads.count metric.
+type JvmThreadsCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *JvmThreadsCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *JvmThreadsCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -3204,472 +3204,472 @@ func (ms *JvmThreadsCountConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for elasticsearch metrics.
 type MetricsConfig struct {
-	ElasticsearchBreakerMemoryEstimated                       ElasticsearchBreakerMemoryEstimatedConfig                       `mapstructure:"elasticsearch.breaker.memory.estimated"`
-	ElasticsearchBreakerMemoryLimit                           ElasticsearchBreakerMemoryLimitConfig                           `mapstructure:"elasticsearch.breaker.memory.limit"`
-	ElasticsearchBreakerTripped                               ElasticsearchBreakerTrippedConfig                               `mapstructure:"elasticsearch.breaker.tripped"`
-	ElasticsearchClusterDataNodes                             ElasticsearchClusterDataNodesConfig                             `mapstructure:"elasticsearch.cluster.data_nodes"`
-	ElasticsearchClusterHealth                                ElasticsearchClusterHealthConfig                                `mapstructure:"elasticsearch.cluster.health"`
-	ElasticsearchClusterInFlightFetch                         ElasticsearchClusterInFlightFetchConfig                         `mapstructure:"elasticsearch.cluster.in_flight_fetch"`
-	ElasticsearchClusterIndicesCacheEvictions                 ElasticsearchClusterIndicesCacheEvictionsConfig                 `mapstructure:"elasticsearch.cluster.indices.cache.evictions"`
-	ElasticsearchClusterNodes                                 ElasticsearchClusterNodesConfig                                 `mapstructure:"elasticsearch.cluster.nodes"`
-	ElasticsearchClusterPendingTasks                          ElasticsearchClusterPendingTasksConfig                          `mapstructure:"elasticsearch.cluster.pending_tasks"`
-	ElasticsearchClusterPublishedStatesDifferences            ElasticsearchClusterPublishedStatesDifferencesConfig            `mapstructure:"elasticsearch.cluster.published_states.differences"`
-	ElasticsearchClusterPublishedStatesFull                   ElasticsearchClusterPublishedStatesFullConfig                   `mapstructure:"elasticsearch.cluster.published_states.full"`
-	ElasticsearchClusterShards                                ElasticsearchClusterShardsConfig                                `mapstructure:"elasticsearch.cluster.shards"`
-	ElasticsearchClusterStateQueue                            ElasticsearchClusterStateQueueConfig                            `mapstructure:"elasticsearch.cluster.state_queue"`
-	ElasticsearchClusterStateUpdateCount                      ElasticsearchClusterStateUpdateCountConfig                      `mapstructure:"elasticsearch.cluster.state_update.count"`
-	ElasticsearchClusterStateUpdateTime                       ElasticsearchClusterStateUpdateTimeConfig                       `mapstructure:"elasticsearch.cluster.state_update.time"`
-	ElasticsearchIndexCacheEvictions                          ElasticsearchIndexCacheEvictionsConfig                          `mapstructure:"elasticsearch.index.cache.evictions"`
-	ElasticsearchIndexCacheMemoryUsage                        ElasticsearchIndexCacheMemoryUsageConfig                        `mapstructure:"elasticsearch.index.cache.memory.usage"`
-	ElasticsearchIndexCacheSize                               ElasticsearchIndexCacheSizeConfig                               `mapstructure:"elasticsearch.index.cache.size"`
-	ElasticsearchIndexDocuments                               ElasticsearchIndexDocumentsConfig                               `mapstructure:"elasticsearch.index.documents"`
-	ElasticsearchIndexOperationsCompleted                     ElasticsearchIndexOperationsCompletedConfig                     `mapstructure:"elasticsearch.index.operations.completed"`
-	ElasticsearchIndexOperationsMergeCurrent                  ElasticsearchIndexOperationsMergeCurrentConfig                  `mapstructure:"elasticsearch.index.operations.merge.current"`
-	ElasticsearchIndexOperationsMergeDocsCount                ElasticsearchIndexOperationsMergeDocsCountConfig                `mapstructure:"elasticsearch.index.operations.merge.docs_count"`
-	ElasticsearchIndexOperationsMergeSize                     ElasticsearchIndexOperationsMergeSizeConfig                     `mapstructure:"elasticsearch.index.operations.merge.size"`
-	ElasticsearchIndexOperationsTime                          ElasticsearchIndexOperationsTimeConfig                          `mapstructure:"elasticsearch.index.operations.time"`
-	ElasticsearchIndexSegmentsCount                           ElasticsearchIndexSegmentsCountConfig                           `mapstructure:"elasticsearch.index.segments.count"`
-	ElasticsearchIndexSegmentsMemory                          ElasticsearchIndexSegmentsMemoryConfig                          `mapstructure:"elasticsearch.index.segments.memory"`
-	ElasticsearchIndexSegmentsSize                            ElasticsearchIndexSegmentsSizeConfig                            `mapstructure:"elasticsearch.index.segments.size"`
-	ElasticsearchIndexShardsSize                              ElasticsearchIndexShardsSizeConfig                              `mapstructure:"elasticsearch.index.shards.size"`
-	ElasticsearchIndexTranslogOperations                      ElasticsearchIndexTranslogOperationsConfig                      `mapstructure:"elasticsearch.index.translog.operations"`
-	ElasticsearchIndexTranslogSize                            ElasticsearchIndexTranslogSizeConfig                            `mapstructure:"elasticsearch.index.translog.size"`
-	ElasticsearchIndexingPressureMemoryLimit                  ElasticsearchIndexingPressureMemoryLimitConfig                  `mapstructure:"elasticsearch.indexing_pressure.memory.limit"`
-	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.primary_rejections"`
-	ElasticsearchIndexingPressureMemoryTotalReplicaRejections ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.replica_rejections"`
-	ElasticsearchMemoryIndexingPressure                       ElasticsearchMemoryIndexingPressureConfig                       `mapstructure:"elasticsearch.memory.indexing_pressure"`
-	ElasticsearchNodeCacheCount                               ElasticsearchNodeCacheCountConfig                               `mapstructure:"elasticsearch.node.cache.count"`
-	ElasticsearchNodeCacheEvictions                           ElasticsearchNodeCacheEvictionsConfig                           `mapstructure:"elasticsearch.node.cache.evictions"`
-	ElasticsearchNodeCacheMemoryUsage                         ElasticsearchNodeCacheMemoryUsageConfig                         `mapstructure:"elasticsearch.node.cache.memory.usage"`
-	ElasticsearchNodeCacheSize                                ElasticsearchNodeCacheSizeConfig                                `mapstructure:"elasticsearch.node.cache.size"`
-	ElasticsearchNodeClusterConnections                       ElasticsearchNodeClusterConnectionsConfig                       `mapstructure:"elasticsearch.node.cluster.connections"`
-	ElasticsearchNodeClusterIo                                ElasticsearchNodeClusterIoConfig                                `mapstructure:"elasticsearch.node.cluster.io"`
-	ElasticsearchNodeDiskIoRead                               ElasticsearchNodeDiskIoReadConfig                               `mapstructure:"elasticsearch.node.disk.io.read"`
-	ElasticsearchNodeDiskIoWrite                              ElasticsearchNodeDiskIoWriteConfig                              `mapstructure:"elasticsearch.node.disk.io.write"`
-	ElasticsearchNodeDocuments                                ElasticsearchNodeDocumentsConfig                                `mapstructure:"elasticsearch.node.documents"`
-	ElasticsearchNodeFsDiskAvailable                          ElasticsearchNodeFsDiskAvailableConfig                          `mapstructure:"elasticsearch.node.fs.disk.available"`
-	ElasticsearchNodeFsDiskFree                               ElasticsearchNodeFsDiskFreeConfig                               `mapstructure:"elasticsearch.node.fs.disk.free"`
-	ElasticsearchNodeFsDiskTotal                              ElasticsearchNodeFsDiskTotalConfig                              `mapstructure:"elasticsearch.node.fs.disk.total"`
-	ElasticsearchNodeHTTPConnections                          ElasticsearchNodeHTTPConnectionsConfig                          `mapstructure:"elasticsearch.node.http.connections"`
-	ElasticsearchNodeIngestDocuments                          ElasticsearchNodeIngestDocumentsConfig                          `mapstructure:"elasticsearch.node.ingest.documents"`
-	ElasticsearchNodeIngestDocumentsCurrent                   ElasticsearchNodeIngestDocumentsCurrentConfig                   `mapstructure:"elasticsearch.node.ingest.documents.current"`
-	ElasticsearchNodeIngestOperationsFailed                   ElasticsearchNodeIngestOperationsFailedConfig                   `mapstructure:"elasticsearch.node.ingest.operations.failed"`
-	ElasticsearchNodeOpenFiles                                ElasticsearchNodeOpenFilesConfig                                `mapstructure:"elasticsearch.node.open_files"`
-	ElasticsearchNodeOperationsCompleted                      ElasticsearchNodeOperationsCompletedConfig                      `mapstructure:"elasticsearch.node.operations.completed"`
-	ElasticsearchNodeOperationsCurrent                        ElasticsearchNodeOperationsCurrentConfig                        `mapstructure:"elasticsearch.node.operations.current"`
-	ElasticsearchNodeOperationsGetCompleted                   ElasticsearchNodeOperationsGetCompletedConfig                   `mapstructure:"elasticsearch.node.operations.get.completed"`
-	ElasticsearchNodeOperationsGetTime                        ElasticsearchNodeOperationsGetTimeConfig                        `mapstructure:"elasticsearch.node.operations.get.time"`
-	ElasticsearchNodeOperationsTime                           ElasticsearchNodeOperationsTimeConfig                           `mapstructure:"elasticsearch.node.operations.time"`
-	ElasticsearchNodePipelineIngestDocumentsCurrent           ElasticsearchNodePipelineIngestDocumentsCurrentConfig           `mapstructure:"elasticsearch.node.pipeline.ingest.documents.current"`
-	ElasticsearchNodePipelineIngestDocumentsPreprocessed      ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig      `mapstructure:"elasticsearch.node.pipeline.ingest.documents.preprocessed"`
-	ElasticsearchNodePipelineIngestOperationsFailed           ElasticsearchNodePipelineIngestOperationsFailedConfig           `mapstructure:"elasticsearch.node.pipeline.ingest.operations.failed"`
-	ElasticsearchNodeScriptCacheEvictions                     ElasticsearchNodeScriptCacheEvictionsConfig                     `mapstructure:"elasticsearch.node.script.cache_evictions"`
-	ElasticsearchNodeScriptCompilationLimitTriggered          ElasticsearchNodeScriptCompilationLimitTriggeredConfig          `mapstructure:"elasticsearch.node.script.compilation_limit_triggered"`
-	ElasticsearchNodeScriptCompilations                       ElasticsearchNodeScriptCompilationsConfig                       `mapstructure:"elasticsearch.node.script.compilations"`
-	ElasticsearchNodeSegmentsMemory                           ElasticsearchNodeSegmentsMemoryConfig                           `mapstructure:"elasticsearch.node.segments.memory"`
-	ElasticsearchNodeShardsDataSetSize                        ElasticsearchNodeShardsDataSetSizeConfig                        `mapstructure:"elasticsearch.node.shards.data_set.size"`
-	ElasticsearchNodeShardsReservedSize                       ElasticsearchNodeShardsReservedSizeConfig                       `mapstructure:"elasticsearch.node.shards.reserved.size"`
-	ElasticsearchNodeShardsSize                               ElasticsearchNodeShardsSizeConfig                               `mapstructure:"elasticsearch.node.shards.size"`
-	ElasticsearchNodeThreadPoolTasksFinished                  ElasticsearchNodeThreadPoolTasksFinishedConfig                  `mapstructure:"elasticsearch.node.thread_pool.tasks.finished"`
-	ElasticsearchNodeThreadPoolTasksQueued                    ElasticsearchNodeThreadPoolTasksQueuedConfig                    `mapstructure:"elasticsearch.node.thread_pool.tasks.queued"`
-	ElasticsearchNodeThreadPoolThreads                        ElasticsearchNodeThreadPoolThreadsConfig                        `mapstructure:"elasticsearch.node.thread_pool.threads"`
-	ElasticsearchNodeTranslogOperations                       ElasticsearchNodeTranslogOperationsConfig                       `mapstructure:"elasticsearch.node.translog.operations"`
-	ElasticsearchNodeTranslogSize                             ElasticsearchNodeTranslogSizeConfig                             `mapstructure:"elasticsearch.node.translog.size"`
-	ElasticsearchNodeTranslogUncommittedSize                  ElasticsearchNodeTranslogUncommittedSizeConfig                  `mapstructure:"elasticsearch.node.translog.uncommitted.size"`
-	ElasticsearchOsCPULoadAvg15m                              ElasticsearchOsCPULoadAvg15mConfig                              `mapstructure:"elasticsearch.os.cpu.load_avg.15m"`
-	ElasticsearchOsCPULoadAvg1m                               ElasticsearchOsCPULoadAvg1mConfig                               `mapstructure:"elasticsearch.os.cpu.load_avg.1m"`
-	ElasticsearchOsCPULoadAvg5m                               ElasticsearchOsCPULoadAvg5mConfig                               `mapstructure:"elasticsearch.os.cpu.load_avg.5m"`
-	ElasticsearchOsCPUUsage                                   ElasticsearchOsCPUUsageConfig                                   `mapstructure:"elasticsearch.os.cpu.usage"`
-	ElasticsearchOsMemory                                     ElasticsearchOsMemoryConfig                                     `mapstructure:"elasticsearch.os.memory"`
-	ElasticsearchProcessCPUTime                               ElasticsearchProcessCPUTimeConfig                               `mapstructure:"elasticsearch.process.cpu.time"`
-	ElasticsearchProcessCPUUsage                              ElasticsearchProcessCPUUsageConfig                              `mapstructure:"elasticsearch.process.cpu.usage"`
-	ElasticsearchProcessMemoryVirtual                         ElasticsearchProcessMemoryVirtualConfig                         `mapstructure:"elasticsearch.process.memory.virtual"`
-	JvmClassesLoaded                                          JvmClassesLoadedConfig                                          `mapstructure:"jvm.classes.loaded"`
-	JvmGcCollectionsCount                                     JvmGcCollectionsCountConfig                                     `mapstructure:"jvm.gc.collections.count"`
-	JvmGcCollectionsElapsed                                   JvmGcCollectionsElapsedConfig                                   `mapstructure:"jvm.gc.collections.elapsed"`
-	JvmMemoryHeapCommitted                                    JvmMemoryHeapCommittedConfig                                    `mapstructure:"jvm.memory.heap.committed"`
-	JvmMemoryHeapMax                                          JvmMemoryHeapMaxConfig                                          `mapstructure:"jvm.memory.heap.max"`
-	JvmMemoryHeapUsed                                         JvmMemoryHeapUsedConfig                                         `mapstructure:"jvm.memory.heap.used"`
-	JvmMemoryHeapUtilization                                  JvmMemoryHeapUtilizationConfig                                  `mapstructure:"jvm.memory.heap.utilization"`
-	JvmMemoryNonheapCommitted                                 JvmMemoryNonheapCommittedConfig                                 `mapstructure:"jvm.memory.nonheap.committed"`
-	JvmMemoryNonheapUsed                                      JvmMemoryNonheapUsedConfig                                      `mapstructure:"jvm.memory.nonheap.used"`
-	JvmMemoryPoolMax                                          JvmMemoryPoolMaxConfig                                          `mapstructure:"jvm.memory.pool.max"`
-	JvmMemoryPoolUsed                                         JvmMemoryPoolUsedConfig                                         `mapstructure:"jvm.memory.pool.used"`
-	JvmThreadsCount                                           JvmThreadsCountConfig                                           `mapstructure:"jvm.threads.count"`
+	ElasticsearchBreakerMemoryEstimated                       ElasticsearchBreakerMemoryEstimatedMetricConfig                       `mapstructure:"elasticsearch.breaker.memory.estimated"`
+	ElasticsearchBreakerMemoryLimit                           ElasticsearchBreakerMemoryLimitMetricConfig                           `mapstructure:"elasticsearch.breaker.memory.limit"`
+	ElasticsearchBreakerTripped                               ElasticsearchBreakerTrippedMetricConfig                               `mapstructure:"elasticsearch.breaker.tripped"`
+	ElasticsearchClusterDataNodes                             ElasticsearchClusterDataNodesMetricConfig                             `mapstructure:"elasticsearch.cluster.data_nodes"`
+	ElasticsearchClusterHealth                                ElasticsearchClusterHealthMetricConfig                                `mapstructure:"elasticsearch.cluster.health"`
+	ElasticsearchClusterInFlightFetch                         ElasticsearchClusterInFlightFetchMetricConfig                         `mapstructure:"elasticsearch.cluster.in_flight_fetch"`
+	ElasticsearchClusterIndicesCacheEvictions                 ElasticsearchClusterIndicesCacheEvictionsMetricConfig                 `mapstructure:"elasticsearch.cluster.indices.cache.evictions"`
+	ElasticsearchClusterNodes                                 ElasticsearchClusterNodesMetricConfig                                 `mapstructure:"elasticsearch.cluster.nodes"`
+	ElasticsearchClusterPendingTasks                          ElasticsearchClusterPendingTasksMetricConfig                          `mapstructure:"elasticsearch.cluster.pending_tasks"`
+	ElasticsearchClusterPublishedStatesDifferences            ElasticsearchClusterPublishedStatesDifferencesMetricConfig            `mapstructure:"elasticsearch.cluster.published_states.differences"`
+	ElasticsearchClusterPublishedStatesFull                   ElasticsearchClusterPublishedStatesFullMetricConfig                   `mapstructure:"elasticsearch.cluster.published_states.full"`
+	ElasticsearchClusterShards                                ElasticsearchClusterShardsMetricConfig                                `mapstructure:"elasticsearch.cluster.shards"`
+	ElasticsearchClusterStateQueue                            ElasticsearchClusterStateQueueMetricConfig                            `mapstructure:"elasticsearch.cluster.state_queue"`
+	ElasticsearchClusterStateUpdateCount                      ElasticsearchClusterStateUpdateCountMetricConfig                      `mapstructure:"elasticsearch.cluster.state_update.count"`
+	ElasticsearchClusterStateUpdateTime                       ElasticsearchClusterStateUpdateTimeMetricConfig                       `mapstructure:"elasticsearch.cluster.state_update.time"`
+	ElasticsearchIndexCacheEvictions                          ElasticsearchIndexCacheEvictionsMetricConfig                          `mapstructure:"elasticsearch.index.cache.evictions"`
+	ElasticsearchIndexCacheMemoryUsage                        ElasticsearchIndexCacheMemoryUsageMetricConfig                        `mapstructure:"elasticsearch.index.cache.memory.usage"`
+	ElasticsearchIndexCacheSize                               ElasticsearchIndexCacheSizeMetricConfig                               `mapstructure:"elasticsearch.index.cache.size"`
+	ElasticsearchIndexDocuments                               ElasticsearchIndexDocumentsMetricConfig                               `mapstructure:"elasticsearch.index.documents"`
+	ElasticsearchIndexOperationsCompleted                     ElasticsearchIndexOperationsCompletedMetricConfig                     `mapstructure:"elasticsearch.index.operations.completed"`
+	ElasticsearchIndexOperationsMergeCurrent                  ElasticsearchIndexOperationsMergeCurrentMetricConfig                  `mapstructure:"elasticsearch.index.operations.merge.current"`
+	ElasticsearchIndexOperationsMergeDocsCount                ElasticsearchIndexOperationsMergeDocsCountMetricConfig                `mapstructure:"elasticsearch.index.operations.merge.docs_count"`
+	ElasticsearchIndexOperationsMergeSize                     ElasticsearchIndexOperationsMergeSizeMetricConfig                     `mapstructure:"elasticsearch.index.operations.merge.size"`
+	ElasticsearchIndexOperationsTime                          ElasticsearchIndexOperationsTimeMetricConfig                          `mapstructure:"elasticsearch.index.operations.time"`
+	ElasticsearchIndexSegmentsCount                           ElasticsearchIndexSegmentsCountMetricConfig                           `mapstructure:"elasticsearch.index.segments.count"`
+	ElasticsearchIndexSegmentsMemory                          ElasticsearchIndexSegmentsMemoryMetricConfig                          `mapstructure:"elasticsearch.index.segments.memory"`
+	ElasticsearchIndexSegmentsSize                            ElasticsearchIndexSegmentsSizeMetricConfig                            `mapstructure:"elasticsearch.index.segments.size"`
+	ElasticsearchIndexShardsSize                              ElasticsearchIndexShardsSizeMetricConfig                              `mapstructure:"elasticsearch.index.shards.size"`
+	ElasticsearchIndexTranslogOperations                      ElasticsearchIndexTranslogOperationsMetricConfig                      `mapstructure:"elasticsearch.index.translog.operations"`
+	ElasticsearchIndexTranslogSize                            ElasticsearchIndexTranslogSizeMetricConfig                            `mapstructure:"elasticsearch.index.translog.size"`
+	ElasticsearchIndexingPressureMemoryLimit                  ElasticsearchIndexingPressureMemoryLimitMetricConfig                  `mapstructure:"elasticsearch.indexing_pressure.memory.limit"`
+	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.primary_rejections"`
+	ElasticsearchIndexingPressureMemoryTotalReplicaRejections ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig `mapstructure:"elasticsearch.indexing_pressure.memory.total.replica_rejections"`
+	ElasticsearchMemoryIndexingPressure                       ElasticsearchMemoryIndexingPressureMetricConfig                       `mapstructure:"elasticsearch.memory.indexing_pressure"`
+	ElasticsearchNodeCacheCount                               ElasticsearchNodeCacheCountMetricConfig                               `mapstructure:"elasticsearch.node.cache.count"`
+	ElasticsearchNodeCacheEvictions                           ElasticsearchNodeCacheEvictionsMetricConfig                           `mapstructure:"elasticsearch.node.cache.evictions"`
+	ElasticsearchNodeCacheMemoryUsage                         ElasticsearchNodeCacheMemoryUsageMetricConfig                         `mapstructure:"elasticsearch.node.cache.memory.usage"`
+	ElasticsearchNodeCacheSize                                ElasticsearchNodeCacheSizeMetricConfig                                `mapstructure:"elasticsearch.node.cache.size"`
+	ElasticsearchNodeClusterConnections                       ElasticsearchNodeClusterConnectionsMetricConfig                       `mapstructure:"elasticsearch.node.cluster.connections"`
+	ElasticsearchNodeClusterIo                                ElasticsearchNodeClusterIoMetricConfig                                `mapstructure:"elasticsearch.node.cluster.io"`
+	ElasticsearchNodeDiskIoRead                               ElasticsearchNodeDiskIoReadMetricConfig                               `mapstructure:"elasticsearch.node.disk.io.read"`
+	ElasticsearchNodeDiskIoWrite                              ElasticsearchNodeDiskIoWriteMetricConfig                              `mapstructure:"elasticsearch.node.disk.io.write"`
+	ElasticsearchNodeDocuments                                ElasticsearchNodeDocumentsMetricConfig                                `mapstructure:"elasticsearch.node.documents"`
+	ElasticsearchNodeFsDiskAvailable                          ElasticsearchNodeFsDiskAvailableMetricConfig                          `mapstructure:"elasticsearch.node.fs.disk.available"`
+	ElasticsearchNodeFsDiskFree                               ElasticsearchNodeFsDiskFreeMetricConfig                               `mapstructure:"elasticsearch.node.fs.disk.free"`
+	ElasticsearchNodeFsDiskTotal                              ElasticsearchNodeFsDiskTotalMetricConfig                              `mapstructure:"elasticsearch.node.fs.disk.total"`
+	ElasticsearchNodeHTTPConnections                          ElasticsearchNodeHTTPConnectionsMetricConfig                          `mapstructure:"elasticsearch.node.http.connections"`
+	ElasticsearchNodeIngestDocuments                          ElasticsearchNodeIngestDocumentsMetricConfig                          `mapstructure:"elasticsearch.node.ingest.documents"`
+	ElasticsearchNodeIngestDocumentsCurrent                   ElasticsearchNodeIngestDocumentsCurrentMetricConfig                   `mapstructure:"elasticsearch.node.ingest.documents.current"`
+	ElasticsearchNodeIngestOperationsFailed                   ElasticsearchNodeIngestOperationsFailedMetricConfig                   `mapstructure:"elasticsearch.node.ingest.operations.failed"`
+	ElasticsearchNodeOpenFiles                                ElasticsearchNodeOpenFilesMetricConfig                                `mapstructure:"elasticsearch.node.open_files"`
+	ElasticsearchNodeOperationsCompleted                      ElasticsearchNodeOperationsCompletedMetricConfig                      `mapstructure:"elasticsearch.node.operations.completed"`
+	ElasticsearchNodeOperationsCurrent                        ElasticsearchNodeOperationsCurrentMetricConfig                        `mapstructure:"elasticsearch.node.operations.current"`
+	ElasticsearchNodeOperationsGetCompleted                   ElasticsearchNodeOperationsGetCompletedMetricConfig                   `mapstructure:"elasticsearch.node.operations.get.completed"`
+	ElasticsearchNodeOperationsGetTime                        ElasticsearchNodeOperationsGetTimeMetricConfig                        `mapstructure:"elasticsearch.node.operations.get.time"`
+	ElasticsearchNodeOperationsTime                           ElasticsearchNodeOperationsTimeMetricConfig                           `mapstructure:"elasticsearch.node.operations.time"`
+	ElasticsearchNodePipelineIngestDocumentsCurrent           ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig           `mapstructure:"elasticsearch.node.pipeline.ingest.documents.current"`
+	ElasticsearchNodePipelineIngestDocumentsPreprocessed      ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig      `mapstructure:"elasticsearch.node.pipeline.ingest.documents.preprocessed"`
+	ElasticsearchNodePipelineIngestOperationsFailed           ElasticsearchNodePipelineIngestOperationsFailedMetricConfig           `mapstructure:"elasticsearch.node.pipeline.ingest.operations.failed"`
+	ElasticsearchNodeScriptCacheEvictions                     ElasticsearchNodeScriptCacheEvictionsMetricConfig                     `mapstructure:"elasticsearch.node.script.cache_evictions"`
+	ElasticsearchNodeScriptCompilationLimitTriggered          ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig          `mapstructure:"elasticsearch.node.script.compilation_limit_triggered"`
+	ElasticsearchNodeScriptCompilations                       ElasticsearchNodeScriptCompilationsMetricConfig                       `mapstructure:"elasticsearch.node.script.compilations"`
+	ElasticsearchNodeSegmentsMemory                           ElasticsearchNodeSegmentsMemoryMetricConfig                           `mapstructure:"elasticsearch.node.segments.memory"`
+	ElasticsearchNodeShardsDataSetSize                        ElasticsearchNodeShardsDataSetSizeMetricConfig                        `mapstructure:"elasticsearch.node.shards.data_set.size"`
+	ElasticsearchNodeShardsReservedSize                       ElasticsearchNodeShardsReservedSizeMetricConfig                       `mapstructure:"elasticsearch.node.shards.reserved.size"`
+	ElasticsearchNodeShardsSize                               ElasticsearchNodeShardsSizeMetricConfig                               `mapstructure:"elasticsearch.node.shards.size"`
+	ElasticsearchNodeThreadPoolTasksFinished                  ElasticsearchNodeThreadPoolTasksFinishedMetricConfig                  `mapstructure:"elasticsearch.node.thread_pool.tasks.finished"`
+	ElasticsearchNodeThreadPoolTasksQueued                    ElasticsearchNodeThreadPoolTasksQueuedMetricConfig                    `mapstructure:"elasticsearch.node.thread_pool.tasks.queued"`
+	ElasticsearchNodeThreadPoolThreads                        ElasticsearchNodeThreadPoolThreadsMetricConfig                        `mapstructure:"elasticsearch.node.thread_pool.threads"`
+	ElasticsearchNodeTranslogOperations                       ElasticsearchNodeTranslogOperationsMetricConfig                       `mapstructure:"elasticsearch.node.translog.operations"`
+	ElasticsearchNodeTranslogSize                             ElasticsearchNodeTranslogSizeMetricConfig                             `mapstructure:"elasticsearch.node.translog.size"`
+	ElasticsearchNodeTranslogUncommittedSize                  ElasticsearchNodeTranslogUncommittedSizeMetricConfig                  `mapstructure:"elasticsearch.node.translog.uncommitted.size"`
+	ElasticsearchOsCPULoadAvg15m                              ElasticsearchOsCPULoadAvg15mMetricConfig                              `mapstructure:"elasticsearch.os.cpu.load_avg.15m"`
+	ElasticsearchOsCPULoadAvg1m                               ElasticsearchOsCPULoadAvg1mMetricConfig                               `mapstructure:"elasticsearch.os.cpu.load_avg.1m"`
+	ElasticsearchOsCPULoadAvg5m                               ElasticsearchOsCPULoadAvg5mMetricConfig                               `mapstructure:"elasticsearch.os.cpu.load_avg.5m"`
+	ElasticsearchOsCPUUsage                                   ElasticsearchOsCPUUsageMetricConfig                                   `mapstructure:"elasticsearch.os.cpu.usage"`
+	ElasticsearchOsMemory                                     ElasticsearchOsMemoryMetricConfig                                     `mapstructure:"elasticsearch.os.memory"`
+	ElasticsearchProcessCPUTime                               ElasticsearchProcessCPUTimeMetricConfig                               `mapstructure:"elasticsearch.process.cpu.time"`
+	ElasticsearchProcessCPUUsage                              ElasticsearchProcessCPUUsageMetricConfig                              `mapstructure:"elasticsearch.process.cpu.usage"`
+	ElasticsearchProcessMemoryVirtual                         ElasticsearchProcessMemoryVirtualMetricConfig                         `mapstructure:"elasticsearch.process.memory.virtual"`
+	JvmClassesLoaded                                          JvmClassesLoadedMetricConfig                                          `mapstructure:"jvm.classes.loaded"`
+	JvmGcCollectionsCount                                     JvmGcCollectionsCountMetricConfig                                     `mapstructure:"jvm.gc.collections.count"`
+	JvmGcCollectionsElapsed                                   JvmGcCollectionsElapsedMetricConfig                                   `mapstructure:"jvm.gc.collections.elapsed"`
+	JvmMemoryHeapCommitted                                    JvmMemoryHeapCommittedMetricConfig                                    `mapstructure:"jvm.memory.heap.committed"`
+	JvmMemoryHeapMax                                          JvmMemoryHeapMaxMetricConfig                                          `mapstructure:"jvm.memory.heap.max"`
+	JvmMemoryHeapUsed                                         JvmMemoryHeapUsedMetricConfig                                         `mapstructure:"jvm.memory.heap.used"`
+	JvmMemoryHeapUtilization                                  JvmMemoryHeapUtilizationMetricConfig                                  `mapstructure:"jvm.memory.heap.utilization"`
+	JvmMemoryNonheapCommitted                                 JvmMemoryNonheapCommittedMetricConfig                                 `mapstructure:"jvm.memory.nonheap.committed"`
+	JvmMemoryNonheapUsed                                      JvmMemoryNonheapUsedMetricConfig                                      `mapstructure:"jvm.memory.nonheap.used"`
+	JvmMemoryPoolMax                                          JvmMemoryPoolMaxMetricConfig                                          `mapstructure:"jvm.memory.pool.max"`
+	JvmMemoryPoolUsed                                         JvmMemoryPoolUsedMetricConfig                                         `mapstructure:"jvm.memory.pool.used"`
+	JvmThreadsCount                                           JvmThreadsCountMetricConfig                                           `mapstructure:"jvm.threads.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ElasticsearchBreakerMemoryEstimated: ElasticsearchBreakerMemoryEstimatedConfig{
+		ElasticsearchBreakerMemoryEstimated: ElasticsearchBreakerMemoryEstimatedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ElasticsearchBreakerMemoryEstimatedAttributeKey{ElasticsearchBreakerMemoryEstimatedAttributeKeyCircuitBreakerName},
+			EnabledAttributes:   []ElasticsearchBreakerMemoryEstimatedMetricAttributeKey{ElasticsearchBreakerMemoryEstimatedMetricAttributeKeyCircuitBreakerName},
 		},
-		ElasticsearchBreakerMemoryLimit: ElasticsearchBreakerMemoryLimitConfig{
+		ElasticsearchBreakerMemoryLimit: ElasticsearchBreakerMemoryLimitMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchBreakerMemoryLimitAttributeKey{ElasticsearchBreakerMemoryLimitAttributeKeyCircuitBreakerName},
+			EnabledAttributes:   []ElasticsearchBreakerMemoryLimitMetricAttributeKey{ElasticsearchBreakerMemoryLimitMetricAttributeKeyCircuitBreakerName},
 		},
-		ElasticsearchBreakerTripped: ElasticsearchBreakerTrippedConfig{
+		ElasticsearchBreakerTripped: ElasticsearchBreakerTrippedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchBreakerTrippedAttributeKey{ElasticsearchBreakerTrippedAttributeKeyCircuitBreakerName},
+			EnabledAttributes:   []ElasticsearchBreakerTrippedMetricAttributeKey{ElasticsearchBreakerTrippedMetricAttributeKeyCircuitBreakerName},
 		},
-		ElasticsearchClusterDataNodes: ElasticsearchClusterDataNodesConfig{
+		ElasticsearchClusterDataNodes: ElasticsearchClusterDataNodesMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterHealth: ElasticsearchClusterHealthConfig{
+		ElasticsearchClusterHealth: ElasticsearchClusterHealthMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchClusterHealthAttributeKey{ElasticsearchClusterHealthAttributeKeyHealthStatus},
+			EnabledAttributes:   []ElasticsearchClusterHealthMetricAttributeKey{ElasticsearchClusterHealthMetricAttributeKeyHealthStatus},
 		},
-		ElasticsearchClusterInFlightFetch: ElasticsearchClusterInFlightFetchConfig{
+		ElasticsearchClusterInFlightFetch: ElasticsearchClusterInFlightFetchMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterIndicesCacheEvictions: ElasticsearchClusterIndicesCacheEvictionsConfig{
+		ElasticsearchClusterIndicesCacheEvictions: ElasticsearchClusterIndicesCacheEvictionsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchClusterIndicesCacheEvictionsAttributeKey{ElasticsearchClusterIndicesCacheEvictionsAttributeKeyCacheName},
+			EnabledAttributes:   []ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKey{ElasticsearchClusterIndicesCacheEvictionsMetricAttributeKeyCacheName},
 		},
-		ElasticsearchClusterNodes: ElasticsearchClusterNodesConfig{
+		ElasticsearchClusterNodes: ElasticsearchClusterNodesMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterPendingTasks: ElasticsearchClusterPendingTasksConfig{
+		ElasticsearchClusterPendingTasks: ElasticsearchClusterPendingTasksMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterPublishedStatesDifferences: ElasticsearchClusterPublishedStatesDifferencesConfig{
+		ElasticsearchClusterPublishedStatesDifferences: ElasticsearchClusterPublishedStatesDifferencesMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchClusterPublishedStatesDifferencesAttributeKey{ElasticsearchClusterPublishedStatesDifferencesAttributeKeyClusterPublishedDifferenceState},
+			EnabledAttributes:   []ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKey{ElasticsearchClusterPublishedStatesDifferencesMetricAttributeKeyClusterPublishedDifferenceState},
 		},
-		ElasticsearchClusterPublishedStatesFull: ElasticsearchClusterPublishedStatesFullConfig{
+		ElasticsearchClusterPublishedStatesFull: ElasticsearchClusterPublishedStatesFullMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchClusterShards: ElasticsearchClusterShardsConfig{
+		ElasticsearchClusterShards: ElasticsearchClusterShardsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchClusterShardsAttributeKey{ElasticsearchClusterShardsAttributeKeyShardState},
+			EnabledAttributes:   []ElasticsearchClusterShardsMetricAttributeKey{ElasticsearchClusterShardsMetricAttributeKeyShardState},
 		},
-		ElasticsearchClusterStateQueue: ElasticsearchClusterStateQueueConfig{
+		ElasticsearchClusterStateQueue: ElasticsearchClusterStateQueueMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchClusterStateQueueAttributeKey{ElasticsearchClusterStateQueueAttributeKeyClusterStateQueueState},
+			EnabledAttributes:   []ElasticsearchClusterStateQueueMetricAttributeKey{ElasticsearchClusterStateQueueMetricAttributeKeyClusterStateQueueState},
 		},
-		ElasticsearchClusterStateUpdateCount: ElasticsearchClusterStateUpdateCountConfig{
+		ElasticsearchClusterStateUpdateCount: ElasticsearchClusterStateUpdateCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchClusterStateUpdateCountAttributeKey{ElasticsearchClusterStateUpdateCountAttributeKeyClusterStateUpdateState},
+			EnabledAttributes:   []ElasticsearchClusterStateUpdateCountMetricAttributeKey{ElasticsearchClusterStateUpdateCountMetricAttributeKeyClusterStateUpdateState},
 		},
-		ElasticsearchClusterStateUpdateTime: ElasticsearchClusterStateUpdateTimeConfig{
+		ElasticsearchClusterStateUpdateTime: ElasticsearchClusterStateUpdateTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchClusterStateUpdateTimeAttributeKey{ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeAttributeKeyClusterStateUpdateType},
+			EnabledAttributes:   []ElasticsearchClusterStateUpdateTimeMetricAttributeKey{ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateState, ElasticsearchClusterStateUpdateTimeMetricAttributeKeyClusterStateUpdateType},
 		},
-		ElasticsearchIndexCacheEvictions: ElasticsearchIndexCacheEvictionsConfig{
+		ElasticsearchIndexCacheEvictions: ElasticsearchIndexCacheEvictionsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexCacheEvictionsAttributeKey{ElasticsearchIndexCacheEvictionsAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexCacheEvictionsMetricAttributeKey{ElasticsearchIndexCacheEvictionsMetricAttributeKeyCacheName, ElasticsearchIndexCacheEvictionsMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexCacheMemoryUsage: ElasticsearchIndexCacheMemoryUsageConfig{
+		ElasticsearchIndexCacheMemoryUsage: ElasticsearchIndexCacheMemoryUsageMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexCacheMemoryUsageAttributeKey{ElasticsearchIndexCacheMemoryUsageAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexCacheMemoryUsageMetricAttributeKey{ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyCacheName, ElasticsearchIndexCacheMemoryUsageMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexCacheSize: ElasticsearchIndexCacheSizeConfig{
+		ElasticsearchIndexCacheSize: ElasticsearchIndexCacheSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexCacheSizeAttributeKey{ElasticsearchIndexCacheSizeAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexCacheSizeMetricAttributeKey{ElasticsearchIndexCacheSizeMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexDocuments: ElasticsearchIndexDocumentsConfig{
+		ElasticsearchIndexDocuments: ElasticsearchIndexDocumentsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexDocumentsAttributeKey{ElasticsearchIndexDocumentsAttributeKeyDocumentState, ElasticsearchIndexDocumentsAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexDocumentsMetricAttributeKey{ElasticsearchIndexDocumentsMetricAttributeKeyDocumentState, ElasticsearchIndexDocumentsMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsCompleted: ElasticsearchIndexOperationsCompletedConfig{
+		ElasticsearchIndexOperationsCompleted: ElasticsearchIndexOperationsCompletedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexOperationsCompletedAttributeKey{ElasticsearchIndexOperationsCompletedAttributeKeyOperation, ElasticsearchIndexOperationsCompletedAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexOperationsCompletedMetricAttributeKey{ElasticsearchIndexOperationsCompletedMetricAttributeKeyOperation, ElasticsearchIndexOperationsCompletedMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsMergeCurrent: ElasticsearchIndexOperationsMergeCurrentConfig{
+		ElasticsearchIndexOperationsMergeCurrent: ElasticsearchIndexOperationsMergeCurrentMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ElasticsearchIndexOperationsMergeCurrentAttributeKey{ElasticsearchIndexOperationsMergeCurrentAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexOperationsMergeCurrentMetricAttributeKey{ElasticsearchIndexOperationsMergeCurrentMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsMergeDocsCount: ElasticsearchIndexOperationsMergeDocsCountConfig{
+		ElasticsearchIndexOperationsMergeDocsCount: ElasticsearchIndexOperationsMergeDocsCountMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexOperationsMergeDocsCountAttributeKey{ElasticsearchIndexOperationsMergeDocsCountAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKey{ElasticsearchIndexOperationsMergeDocsCountMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsMergeSize: ElasticsearchIndexOperationsMergeSizeConfig{
+		ElasticsearchIndexOperationsMergeSize: ElasticsearchIndexOperationsMergeSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexOperationsMergeSizeAttributeKey{ElasticsearchIndexOperationsMergeSizeAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexOperationsMergeSizeMetricAttributeKey{ElasticsearchIndexOperationsMergeSizeMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexOperationsTime: ElasticsearchIndexOperationsTimeConfig{
+		ElasticsearchIndexOperationsTime: ElasticsearchIndexOperationsTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexOperationsTimeAttributeKey{ElasticsearchIndexOperationsTimeAttributeKeyOperation, ElasticsearchIndexOperationsTimeAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexOperationsTimeMetricAttributeKey{ElasticsearchIndexOperationsTimeMetricAttributeKeyOperation, ElasticsearchIndexOperationsTimeMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexSegmentsCount: ElasticsearchIndexSegmentsCountConfig{
+		ElasticsearchIndexSegmentsCount: ElasticsearchIndexSegmentsCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexSegmentsCountAttributeKey{ElasticsearchIndexSegmentsCountAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexSegmentsCountMetricAttributeKey{ElasticsearchIndexSegmentsCountMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexSegmentsMemory: ElasticsearchIndexSegmentsMemoryConfig{
+		ElasticsearchIndexSegmentsMemory: ElasticsearchIndexSegmentsMemoryMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexSegmentsMemoryAttributeKey{ElasticsearchIndexSegmentsMemoryAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
+			EnabledAttributes:   []ElasticsearchIndexSegmentsMemoryMetricAttributeKey{ElasticsearchIndexSegmentsMemoryMetricAttributeKeyIndexAggregationType, ElasticsearchIndexSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType},
 		},
-		ElasticsearchIndexSegmentsSize: ElasticsearchIndexSegmentsSizeConfig{
+		ElasticsearchIndexSegmentsSize: ElasticsearchIndexSegmentsSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexSegmentsSizeAttributeKey{ElasticsearchIndexSegmentsSizeAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexSegmentsSizeMetricAttributeKey{ElasticsearchIndexSegmentsSizeMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexShardsSize: ElasticsearchIndexShardsSizeConfig{
+		ElasticsearchIndexShardsSize: ElasticsearchIndexShardsSizeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexShardsSizeAttributeKey{ElasticsearchIndexShardsSizeAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexShardsSizeMetricAttributeKey{ElasticsearchIndexShardsSizeMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexTranslogOperations: ElasticsearchIndexTranslogOperationsConfig{
+		ElasticsearchIndexTranslogOperations: ElasticsearchIndexTranslogOperationsMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexTranslogOperationsAttributeKey{ElasticsearchIndexTranslogOperationsAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexTranslogOperationsMetricAttributeKey{ElasticsearchIndexTranslogOperationsMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexTranslogSize: ElasticsearchIndexTranslogSizeConfig{
+		ElasticsearchIndexTranslogSize: ElasticsearchIndexTranslogSizeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchIndexTranslogSizeAttributeKey{ElasticsearchIndexTranslogSizeAttributeKeyIndexAggregationType},
+			EnabledAttributes:   []ElasticsearchIndexTranslogSizeMetricAttributeKey{ElasticsearchIndexTranslogSizeMetricAttributeKeyIndexAggregationType},
 		},
-		ElasticsearchIndexingPressureMemoryLimit: ElasticsearchIndexingPressureMemoryLimitConfig{
+		ElasticsearchIndexingPressureMemoryLimit: ElasticsearchIndexingPressureMemoryLimitMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsConfig{
+		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: ElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsConfig{
+		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: ElasticsearchIndexingPressureMemoryTotalReplicaRejectionsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchMemoryIndexingPressure: ElasticsearchMemoryIndexingPressureConfig{
+		ElasticsearchMemoryIndexingPressure: ElasticsearchMemoryIndexingPressureMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchMemoryIndexingPressureAttributeKey{ElasticsearchMemoryIndexingPressureAttributeKeyIndexingPressureStage},
+			EnabledAttributes:   []ElasticsearchMemoryIndexingPressureMetricAttributeKey{ElasticsearchMemoryIndexingPressureMetricAttributeKeyIndexingPressureStage},
 		},
-		ElasticsearchNodeCacheCount: ElasticsearchNodeCacheCountConfig{
+		ElasticsearchNodeCacheCount: ElasticsearchNodeCacheCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeCacheCountAttributeKey{ElasticsearchNodeCacheCountAttributeKeyQueryCacheCountType},
+			EnabledAttributes:   []ElasticsearchNodeCacheCountMetricAttributeKey{ElasticsearchNodeCacheCountMetricAttributeKeyQueryCacheCountType},
 		},
-		ElasticsearchNodeCacheEvictions: ElasticsearchNodeCacheEvictionsConfig{
+		ElasticsearchNodeCacheEvictions: ElasticsearchNodeCacheEvictionsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeCacheEvictionsAttributeKey{ElasticsearchNodeCacheEvictionsAttributeKeyCacheName},
+			EnabledAttributes:   []ElasticsearchNodeCacheEvictionsMetricAttributeKey{ElasticsearchNodeCacheEvictionsMetricAttributeKeyCacheName},
 		},
-		ElasticsearchNodeCacheMemoryUsage: ElasticsearchNodeCacheMemoryUsageConfig{
+		ElasticsearchNodeCacheMemoryUsage: ElasticsearchNodeCacheMemoryUsageMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeCacheMemoryUsageAttributeKey{ElasticsearchNodeCacheMemoryUsageAttributeKeyCacheName},
+			EnabledAttributes:   []ElasticsearchNodeCacheMemoryUsageMetricAttributeKey{ElasticsearchNodeCacheMemoryUsageMetricAttributeKeyCacheName},
 		},
-		ElasticsearchNodeCacheSize: ElasticsearchNodeCacheSizeConfig{
+		ElasticsearchNodeCacheSize: ElasticsearchNodeCacheSizeMetricConfig{
 			Enabled: false,
 		},
-		ElasticsearchNodeClusterConnections: ElasticsearchNodeClusterConnectionsConfig{
+		ElasticsearchNodeClusterConnections: ElasticsearchNodeClusterConnectionsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeClusterIo: ElasticsearchNodeClusterIoConfig{
+		ElasticsearchNodeClusterIo: ElasticsearchNodeClusterIoMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeClusterIoAttributeKey{ElasticsearchNodeClusterIoAttributeKeyDirection},
+			EnabledAttributes:   []ElasticsearchNodeClusterIoMetricAttributeKey{ElasticsearchNodeClusterIoMetricAttributeKeyDirection},
 		},
-		ElasticsearchNodeDiskIoRead: ElasticsearchNodeDiskIoReadConfig{
+		ElasticsearchNodeDiskIoRead: ElasticsearchNodeDiskIoReadMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeDiskIoWrite: ElasticsearchNodeDiskIoWriteConfig{
+		ElasticsearchNodeDiskIoWrite: ElasticsearchNodeDiskIoWriteMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeDocuments: ElasticsearchNodeDocumentsConfig{
+		ElasticsearchNodeDocuments: ElasticsearchNodeDocumentsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeDocumentsAttributeKey{ElasticsearchNodeDocumentsAttributeKeyDocumentState},
+			EnabledAttributes:   []ElasticsearchNodeDocumentsMetricAttributeKey{ElasticsearchNodeDocumentsMetricAttributeKeyDocumentState},
 		},
-		ElasticsearchNodeFsDiskAvailable: ElasticsearchNodeFsDiskAvailableConfig{
+		ElasticsearchNodeFsDiskAvailable: ElasticsearchNodeFsDiskAvailableMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsDiskFree: ElasticsearchNodeFsDiskFreeConfig{
+		ElasticsearchNodeFsDiskFree: ElasticsearchNodeFsDiskFreeMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsDiskTotal: ElasticsearchNodeFsDiskTotalConfig{
+		ElasticsearchNodeFsDiskTotal: ElasticsearchNodeFsDiskTotalMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeHTTPConnections: ElasticsearchNodeHTTPConnectionsConfig{
+		ElasticsearchNodeHTTPConnections: ElasticsearchNodeHTTPConnectionsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeIngestDocuments: ElasticsearchNodeIngestDocumentsConfig{
+		ElasticsearchNodeIngestDocuments: ElasticsearchNodeIngestDocumentsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeIngestDocumentsCurrent: ElasticsearchNodeIngestDocumentsCurrentConfig{
+		ElasticsearchNodeIngestDocumentsCurrent: ElasticsearchNodeIngestDocumentsCurrentMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeIngestOperationsFailed: ElasticsearchNodeIngestOperationsFailedConfig{
+		ElasticsearchNodeIngestOperationsFailed: ElasticsearchNodeIngestOperationsFailedMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeOpenFiles: ElasticsearchNodeOpenFilesConfig{
+		ElasticsearchNodeOpenFiles: ElasticsearchNodeOpenFilesMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeOperationsCompleted: ElasticsearchNodeOperationsCompletedConfig{
+		ElasticsearchNodeOperationsCompleted: ElasticsearchNodeOperationsCompletedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeOperationsCompletedAttributeKey{ElasticsearchNodeOperationsCompletedAttributeKeyOperation},
+			EnabledAttributes:   []ElasticsearchNodeOperationsCompletedMetricAttributeKey{ElasticsearchNodeOperationsCompletedMetricAttributeKeyOperation},
 		},
-		ElasticsearchNodeOperationsCurrent: ElasticsearchNodeOperationsCurrentConfig{
+		ElasticsearchNodeOperationsCurrent: ElasticsearchNodeOperationsCurrentMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ElasticsearchNodeOperationsCurrentAttributeKey{ElasticsearchNodeOperationsCurrentAttributeKeyOperation},
+			EnabledAttributes:   []ElasticsearchNodeOperationsCurrentMetricAttributeKey{ElasticsearchNodeOperationsCurrentMetricAttributeKeyOperation},
 		},
-		ElasticsearchNodeOperationsGetCompleted: ElasticsearchNodeOperationsGetCompletedConfig{
+		ElasticsearchNodeOperationsGetCompleted: ElasticsearchNodeOperationsGetCompletedMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeOperationsGetCompletedAttributeKey{ElasticsearchNodeOperationsGetCompletedAttributeKeyGetResult},
+			EnabledAttributes:   []ElasticsearchNodeOperationsGetCompletedMetricAttributeKey{ElasticsearchNodeOperationsGetCompletedMetricAttributeKeyGetResult},
 		},
-		ElasticsearchNodeOperationsGetTime: ElasticsearchNodeOperationsGetTimeConfig{
+		ElasticsearchNodeOperationsGetTime: ElasticsearchNodeOperationsGetTimeMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeOperationsGetTimeAttributeKey{ElasticsearchNodeOperationsGetTimeAttributeKeyGetResult},
+			EnabledAttributes:   []ElasticsearchNodeOperationsGetTimeMetricAttributeKey{ElasticsearchNodeOperationsGetTimeMetricAttributeKeyGetResult},
 		},
-		ElasticsearchNodeOperationsTime: ElasticsearchNodeOperationsTimeConfig{
+		ElasticsearchNodeOperationsTime: ElasticsearchNodeOperationsTimeMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeOperationsTimeAttributeKey{ElasticsearchNodeOperationsTimeAttributeKeyOperation},
+			EnabledAttributes:   []ElasticsearchNodeOperationsTimeMetricAttributeKey{ElasticsearchNodeOperationsTimeMetricAttributeKeyOperation},
 		},
-		ElasticsearchNodePipelineIngestDocumentsCurrent: ElasticsearchNodePipelineIngestDocumentsCurrentConfig{
+		ElasticsearchNodePipelineIngestDocumentsCurrent: ElasticsearchNodePipelineIngestDocumentsCurrentMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKey{ElasticsearchNodePipelineIngestDocumentsCurrentAttributeKeyIngestPipelineName},
+			EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKey{ElasticsearchNodePipelineIngestDocumentsCurrentMetricAttributeKeyIngestPipelineName},
 		},
-		ElasticsearchNodePipelineIngestDocumentsPreprocessed: ElasticsearchNodePipelineIngestDocumentsPreprocessedConfig{
+		ElasticsearchNodePipelineIngestDocumentsPreprocessed: ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKey{ElasticsearchNodePipelineIngestDocumentsPreprocessedAttributeKeyIngestPipelineName},
+			EnabledAttributes:   []ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKey{ElasticsearchNodePipelineIngestDocumentsPreprocessedMetricAttributeKeyIngestPipelineName},
 		},
-		ElasticsearchNodePipelineIngestOperationsFailed: ElasticsearchNodePipelineIngestOperationsFailedConfig{
+		ElasticsearchNodePipelineIngestOperationsFailed: ElasticsearchNodePipelineIngestOperationsFailedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodePipelineIngestOperationsFailedAttributeKey{ElasticsearchNodePipelineIngestOperationsFailedAttributeKeyIngestPipelineName},
+			EnabledAttributes:   []ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKey{ElasticsearchNodePipelineIngestOperationsFailedMetricAttributeKeyIngestPipelineName},
 		},
-		ElasticsearchNodeScriptCacheEvictions: ElasticsearchNodeScriptCacheEvictionsConfig{
+		ElasticsearchNodeScriptCacheEvictions: ElasticsearchNodeScriptCacheEvictionsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeScriptCompilationLimitTriggered: ElasticsearchNodeScriptCompilationLimitTriggeredConfig{
+		ElasticsearchNodeScriptCompilationLimitTriggered: ElasticsearchNodeScriptCompilationLimitTriggeredMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeScriptCompilations: ElasticsearchNodeScriptCompilationsConfig{
+		ElasticsearchNodeScriptCompilations: ElasticsearchNodeScriptCompilationsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeSegmentsMemory: ElasticsearchNodeSegmentsMemoryConfig{
+		ElasticsearchNodeSegmentsMemory: ElasticsearchNodeSegmentsMemoryMetricConfig{
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeSegmentsMemoryAttributeKey{ElasticsearchNodeSegmentsMemoryAttributeKeySegmentsMemoryObjectType},
+			EnabledAttributes:   []ElasticsearchNodeSegmentsMemoryMetricAttributeKey{ElasticsearchNodeSegmentsMemoryMetricAttributeKeySegmentsMemoryObjectType},
 		},
-		ElasticsearchNodeShardsDataSetSize: ElasticsearchNodeShardsDataSetSizeConfig{
+		ElasticsearchNodeShardsDataSetSize: ElasticsearchNodeShardsDataSetSizeMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeShardsReservedSize: ElasticsearchNodeShardsReservedSizeConfig{
+		ElasticsearchNodeShardsReservedSize: ElasticsearchNodeShardsReservedSizeMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeShardsSize: ElasticsearchNodeShardsSizeConfig{
+		ElasticsearchNodeShardsSize: ElasticsearchNodeShardsSizeMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeThreadPoolTasksFinished: ElasticsearchNodeThreadPoolTasksFinishedConfig{
+		ElasticsearchNodeThreadPoolTasksFinished: ElasticsearchNodeThreadPoolTasksFinishedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksFinishedAttributeKey{ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedAttributeKeyTaskState},
+			EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKey{ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolTasksFinishedMetricAttributeKeyTaskState},
 		},
-		ElasticsearchNodeThreadPoolTasksQueued: ElasticsearchNodeThreadPoolTasksQueuedConfig{
+		ElasticsearchNodeThreadPoolTasksQueued: ElasticsearchNodeThreadPoolTasksQueuedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksQueuedAttributeKey{ElasticsearchNodeThreadPoolTasksQueuedAttributeKeyThreadPoolName},
+			EnabledAttributes:   []ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKey{ElasticsearchNodeThreadPoolTasksQueuedMetricAttributeKeyThreadPoolName},
 		},
-		ElasticsearchNodeThreadPoolThreads: ElasticsearchNodeThreadPoolThreadsConfig{
+		ElasticsearchNodeThreadPoolThreads: ElasticsearchNodeThreadPoolThreadsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []ElasticsearchNodeThreadPoolThreadsAttributeKey{ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsAttributeKeyThreadState},
+			EnabledAttributes:   []ElasticsearchNodeThreadPoolThreadsMetricAttributeKey{ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadPoolName, ElasticsearchNodeThreadPoolThreadsMetricAttributeKeyThreadState},
 		},
-		ElasticsearchNodeTranslogOperations: ElasticsearchNodeTranslogOperationsConfig{
+		ElasticsearchNodeTranslogOperations: ElasticsearchNodeTranslogOperationsMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeTranslogSize: ElasticsearchNodeTranslogSizeConfig{
+		ElasticsearchNodeTranslogSize: ElasticsearchNodeTranslogSizeMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchNodeTranslogUncommittedSize: ElasticsearchNodeTranslogUncommittedSizeConfig{
+		ElasticsearchNodeTranslogUncommittedSize: ElasticsearchNodeTranslogUncommittedSizeMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPULoadAvg15m: ElasticsearchOsCPULoadAvg15mConfig{
+		ElasticsearchOsCPULoadAvg15m: ElasticsearchOsCPULoadAvg15mMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPULoadAvg1m: ElasticsearchOsCPULoadAvg1mConfig{
+		ElasticsearchOsCPULoadAvg1m: ElasticsearchOsCPULoadAvg1mMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPULoadAvg5m: ElasticsearchOsCPULoadAvg5mConfig{
+		ElasticsearchOsCPULoadAvg5m: ElasticsearchOsCPULoadAvg5mMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsCPUUsage: ElasticsearchOsCPUUsageConfig{
+		ElasticsearchOsCPUUsage: ElasticsearchOsCPUUsageMetricConfig{
 			Enabled: true,
 		},
-		ElasticsearchOsMemory: ElasticsearchOsMemoryConfig{
+		ElasticsearchOsMemory: ElasticsearchOsMemoryMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []ElasticsearchOsMemoryAttributeKey{ElasticsearchOsMemoryAttributeKeyMemoryState},
+			EnabledAttributes:   []ElasticsearchOsMemoryMetricAttributeKey{ElasticsearchOsMemoryMetricAttributeKeyMemoryState},
 		},
-		ElasticsearchProcessCPUTime: ElasticsearchProcessCPUTimeConfig{
+		ElasticsearchProcessCPUTime: ElasticsearchProcessCPUTimeMetricConfig{
 			Enabled: false,
 		},
-		ElasticsearchProcessCPUUsage: ElasticsearchProcessCPUUsageConfig{
+		ElasticsearchProcessCPUUsage: ElasticsearchProcessCPUUsageMetricConfig{
 			Enabled: false,
 		},
-		ElasticsearchProcessMemoryVirtual: ElasticsearchProcessMemoryVirtualConfig{
+		ElasticsearchProcessMemoryVirtual: ElasticsearchProcessMemoryVirtualMetricConfig{
 			Enabled: false,
 		},
-		JvmClassesLoaded: JvmClassesLoadedConfig{
+		JvmClassesLoaded: JvmClassesLoadedMetricConfig{
 			Enabled: true,
 		},
-		JvmGcCollectionsCount: JvmGcCollectionsCountConfig{
+		JvmGcCollectionsCount: JvmGcCollectionsCountMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []JvmGcCollectionsCountAttributeKey{JvmGcCollectionsCountAttributeKeyCollectorName},
+			EnabledAttributes:   []JvmGcCollectionsCountMetricAttributeKey{JvmGcCollectionsCountMetricAttributeKeyCollectorName},
 		},
-		JvmGcCollectionsElapsed: JvmGcCollectionsElapsedConfig{
+		JvmGcCollectionsElapsed: JvmGcCollectionsElapsedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []JvmGcCollectionsElapsedAttributeKey{JvmGcCollectionsElapsedAttributeKeyCollectorName},
+			EnabledAttributes:   []JvmGcCollectionsElapsedMetricAttributeKey{JvmGcCollectionsElapsedMetricAttributeKeyCollectorName},
 		},
-		JvmMemoryHeapCommitted: JvmMemoryHeapCommittedConfig{
+		JvmMemoryHeapCommitted: JvmMemoryHeapCommittedMetricConfig{
 			Enabled: true,
 		},
-		JvmMemoryHeapMax: JvmMemoryHeapMaxConfig{
+		JvmMemoryHeapMax: JvmMemoryHeapMaxMetricConfig{
 			Enabled: true,
 		},
-		JvmMemoryHeapUsed: JvmMemoryHeapUsedConfig{
+		JvmMemoryHeapUsed: JvmMemoryHeapUsedMetricConfig{
 			Enabled: true,
 		},
-		JvmMemoryHeapUtilization: JvmMemoryHeapUtilizationConfig{
+		JvmMemoryHeapUtilization: JvmMemoryHeapUtilizationMetricConfig{
 			Enabled: false,
 		},
-		JvmMemoryNonheapCommitted: JvmMemoryNonheapCommittedConfig{
+		JvmMemoryNonheapCommitted: JvmMemoryNonheapCommittedMetricConfig{
 			Enabled: true,
 		},
-		JvmMemoryNonheapUsed: JvmMemoryNonheapUsedConfig{
+		JvmMemoryNonheapUsed: JvmMemoryNonheapUsedMetricConfig{
 			Enabled: true,
 		},
-		JvmMemoryPoolMax: JvmMemoryPoolMaxConfig{
+		JvmMemoryPoolMax: JvmMemoryPoolMaxMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []JvmMemoryPoolMaxAttributeKey{JvmMemoryPoolMaxAttributeKeyMemoryPoolName},
+			EnabledAttributes:   []JvmMemoryPoolMaxMetricAttributeKey{JvmMemoryPoolMaxMetricAttributeKeyMemoryPoolName},
 		},
-		JvmMemoryPoolUsed: JvmMemoryPoolUsedConfig{
+		JvmMemoryPoolUsed: JvmMemoryPoolUsedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategyAvg,
-			EnabledAttributes:   []JvmMemoryPoolUsedAttributeKey{JvmMemoryPoolUsedAttributeKeyMemoryPoolName},
+			EnabledAttributes:   []JvmMemoryPoolUsedMetricAttributeKey{JvmMemoryPoolUsedMetricAttributeKeyMemoryPoolName},
 		},
-		JvmThreadsCount: JvmThreadsCountConfig{
+		JvmThreadsCount: JvmThreadsCountMetricConfig{
 			Enabled: true,
 		},
 	}
