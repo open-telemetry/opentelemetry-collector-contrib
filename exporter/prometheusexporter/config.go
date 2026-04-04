@@ -85,4 +85,3 @@ const (
 	// noTranslation bypasses all metric and label name translation, passing them through unaltered
 	noTranslation translationStrategy = "NoTranslation"
 )
-
