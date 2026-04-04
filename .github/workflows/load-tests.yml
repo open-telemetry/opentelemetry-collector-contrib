@@ -42,7 +42,7 @@ jobs:
           path: ./bin/*
       - name: Split Loadtest Jobs
         id: splitloadtest
-        run: echo 'loadtest_matrix={"include":[{"test":"TestTraceNoBackend10kSPS|TestTrace1kSPSWithAttrs"}]}' >> "$GITHUB_OUTPUT"
+        run: ./.github/workflows/scripts/setup_e2e_tests.sh
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
