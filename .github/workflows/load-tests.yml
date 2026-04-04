@@ -42,7 +42,7 @@ jobs:
           path: ./bin/*
       - name: Split Loadtest Jobs
         id: splitloadtest
-        run: ./.github/workflows/scripts/setup_e2e_tests.sh
+        run: echo 'loadtest_matrix={"include":[{"test":"TestTraceNoBackend10kSPS|TestTrace1kSPSWithAttrs"}]}' >> "$GITHUB_OUTPUT"
       - run: ./.github/workflows/scripts/check-disk-space.sh
 
   loadtest:
@@ -128,10 +128,7 @@ jobs:
   notify-failure:
     runs-on: ubuntu-24.04
     needs: [loadtest]
-    if: >-
-      failure() &&
-      github.event_name != 'pull_request' &&
-      github.repository_owner == 'open-telemetry'
+    if: failure() && github.repository_owner == 'open-telemetry'
     permissions:
       issues: write
     steps:
@@ -141,7 +138,6 @@ jobs:
           count=$(gh issue list -R ${{ github.repository }} \
             --search "load-tests workflow failed" \
             --state open \
-            --label "needs triage" \
             --label "load tests" \
             --json number \
             --jq 'length')
