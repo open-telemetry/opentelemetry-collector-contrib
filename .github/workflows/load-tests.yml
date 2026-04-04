@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
+  pull_request:
   workflow_dispatch:
   schedule:
     - cron: "27 0,12 * * *" # Run at 00:27 and 12:27 UTC every day.
@@ -123,3 +124,39 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: "docs/benchmarks/loadtests"
           auto-push: true
+
+  notify-failure:
+    runs-on: ubuntu-24.04
+    needs: [loadtest]
+    if: >-
+      failure() &&
+      github.event_name != 'pull_request' &&
+      github.repository_owner == 'open-telemetry'
+    permissions:
+      issues: write
+    steps:
+      - name: Check for existing issue
+        id: check
+        run: |
+          count=$(gh issue list -R ${{ github.repository }} \
+            --search "load-tests workflow failed" \
+            --state open \
+            --label "needs triage" \
+            --label "load tests" \
+            --json number \
+            --jq 'length')
+          echo "exists=$( [ "$count" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: File an issue for load test failure
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          run_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json url -q '.url')"
+          body="$(printf 'The load-tests workflow has failed.\n\n[Link to workflow run](%s)\n\ncc @open-telemetry/collector-contrib-maintainers' "$run_url")"
+          gh issue create -R ${{ github.repository }} \
+            -t 'load-tests workflow failed' \
+            -b "$body" \
+            -l 'needs triage' \
+            -l 'load tests'
+        env:
+          GH_TOKEN: ${{ github.token }}
