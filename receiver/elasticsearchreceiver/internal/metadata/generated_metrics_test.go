@@ -701,133 +701,54 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "elasticsearch.breaker.memory.estimated":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.breaker.memory.estimated"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.estimated")
-						validatedMetrics["elasticsearch.breaker.memory.estimated"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Estimated memory used for the operation.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "circuit_breaker_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.breaker.memory.estimated"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.estimated")
-						validatedMetrics["elasticsearch.breaker.memory.estimated"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Estimated memory used for the operation.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.breaker.memory.estimated"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.breaker.memory.estimated"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.estimated")
+					validatedMetrics["elasticsearch.breaker.memory.estimated"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Estimated memory used for the operation.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					circuitBreakerNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "circuit_breaker_name-val", circuitBreakerNameAttrVal.Str())
 				case "elasticsearch.breaker.memory.limit":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.breaker.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.limit")
-						validatedMetrics["elasticsearch.breaker.memory.limit"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Memory limit for the circuit breaker.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "circuit_breaker_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.breaker.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.limit")
-						validatedMetrics["elasticsearch.breaker.memory.limit"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Memory limit for the circuit breaker.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.breaker.memory.limit"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.breaker.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.limit")
+					validatedMetrics["elasticsearch.breaker.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Memory limit for the circuit breaker.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					circuitBreakerNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "circuit_breaker_name-val", circuitBreakerNameAttrVal.Str())
 				case "elasticsearch.breaker.tripped":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.breaker.tripped"], "Found a duplicate in the metrics slice: elasticsearch.breaker.tripped")
-						validatedMetrics["elasticsearch.breaker.tripped"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of times the circuit breaker has been triggered and prevented an out of memory error.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "circuit_breaker_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.breaker.tripped"], "Found a duplicate in the metrics slice: elasticsearch.breaker.tripped")
-						validatedMetrics["elasticsearch.breaker.tripped"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of times the circuit breaker has been triggered and prevented an out of memory error.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.breaker.tripped"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.breaker.tripped"], "Found a duplicate in the metrics slice: elasticsearch.breaker.tripped")
+					validatedMetrics["elasticsearch.breaker.tripped"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of times the circuit breaker has been triggered and prevented an out of memory error.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					circuitBreakerNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "circuit_breaker_name-val", circuitBreakerNameAttrVal.Str())
 				case "elasticsearch.cluster.data_nodes":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.data_nodes"], "Found a duplicate in the metrics slice: elasticsearch.cluster.data_nodes")
 					validatedMetrics["elasticsearch.cluster.data_nodes"] = true
@@ -843,49 +764,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.cluster.health":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.health"], "Found a duplicate in the metrics slice: elasticsearch.cluster.health")
-						validatedMetrics["elasticsearch.cluster.health"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The health status of the cluster.", mi.Description())
-						assert.Equal(t, "{status}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("status")
-						assert.True(t, ok)
-						assert.Equal(t, "green", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.health"], "Found a duplicate in the metrics slice: elasticsearch.cluster.health")
-						validatedMetrics["elasticsearch.cluster.health"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The health status of the cluster.", mi.Description())
-						assert.Equal(t, "{status}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.cluster.health"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("status")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.cluster.health"], "Found a duplicate in the metrics slice: elasticsearch.cluster.health")
+					validatedMetrics["elasticsearch.cluster.health"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The health status of the cluster.", mi.Description())
+					assert.Equal(t, "{status}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					healthStatusAttrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.Equal(t, "green", healthStatusAttrVal.Str())
 				case "elasticsearch.cluster.in_flight_fetch":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.in_flight_fetch"], "Found a duplicate in the metrics slice: elasticsearch.cluster.in_flight_fetch")
 					validatedMetrics["elasticsearch.cluster.in_flight_fetch"] = true
@@ -901,49 +795,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.cluster.indices.cache.evictions":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.indices.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.cluster.indices.cache.evictions")
-						validatedMetrics["elasticsearch.cluster.indices.cache.evictions"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of evictions from the cache for indices in cluster.", mi.Description())
-						assert.Equal(t, "{evictions}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cache_name")
-						assert.True(t, ok)
-						assert.Equal(t, "fielddata", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.indices.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.cluster.indices.cache.evictions")
-						validatedMetrics["elasticsearch.cluster.indices.cache.evictions"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of evictions from the cache for indices in cluster.", mi.Description())
-						assert.Equal(t, "{evictions}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.cluster.indices.cache.evictions"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("cache_name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.cluster.indices.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.cluster.indices.cache.evictions")
+					validatedMetrics["elasticsearch.cluster.indices.cache.evictions"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of evictions from the cache for indices in cluster.", mi.Description())
+					assert.Equal(t, "{evictions}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					cacheNameAttrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.Equal(t, "fielddata", cacheNameAttrVal.Str())
 				case "elasticsearch.cluster.nodes":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.nodes"], "Found a duplicate in the metrics slice: elasticsearch.cluster.nodes")
 					validatedMetrics["elasticsearch.cluster.nodes"] = true
@@ -973,49 +840,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.cluster.published_states.differences":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.differences"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.differences")
-						validatedMetrics["elasticsearch.cluster.published_states.differences"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of differences between published cluster states.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "incompatible", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.differences"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.differences")
-						validatedMetrics["elasticsearch.cluster.published_states.differences"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of differences between published cluster states.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.cluster.published_states.differences"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.differences"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.differences")
+					validatedMetrics["elasticsearch.cluster.published_states.differences"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of differences between published cluster states.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					clusterPublishedDifferenceStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "incompatible", clusterPublishedDifferenceStateAttrVal.Str())
 				case "elasticsearch.cluster.published_states.full":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.full"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.full")
 					validatedMetrics["elasticsearch.cluster.published_states.full"] = true
@@ -1031,872 +871,347 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.cluster.shards":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.shards"], "Found a duplicate in the metrics slice: elasticsearch.cluster.shards")
-						validatedMetrics["elasticsearch.cluster.shards"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of shards in the cluster.", mi.Description())
-						assert.Equal(t, "{shards}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "active", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.shards"], "Found a duplicate in the metrics slice: elasticsearch.cluster.shards")
-						validatedMetrics["elasticsearch.cluster.shards"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of shards in the cluster.", mi.Description())
-						assert.Equal(t, "{shards}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.cluster.shards"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.cluster.shards"], "Found a duplicate in the metrics slice: elasticsearch.cluster.shards")
+					validatedMetrics["elasticsearch.cluster.shards"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of shards in the cluster.", mi.Description())
+					assert.Equal(t, "{shards}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					shardStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "active", shardStateAttrVal.Str())
 				case "elasticsearch.cluster.state_queue":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.state_queue"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_queue")
-						validatedMetrics["elasticsearch.cluster.state_queue"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of cluster states in queue.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "pending", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.state_queue"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_queue")
-						validatedMetrics["elasticsearch.cluster.state_queue"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of cluster states in queue.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.cluster.state_queue"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.cluster.state_queue"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_queue")
+					validatedMetrics["elasticsearch.cluster.state_queue"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of cluster states in queue.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					clusterStateQueueStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "pending", clusterStateQueueStateAttrVal.Str())
 				case "elasticsearch.cluster.state_update.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.count"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.count")
-						validatedMetrics["elasticsearch.cluster.state_update.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of cluster state update attempts that changed the cluster state since the node started.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "cluster_state_update_state-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.count"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.count")
-						validatedMetrics["elasticsearch.cluster.state_update.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of cluster state update attempts that changed the cluster state since the node started.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.cluster.state_update.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.count"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.count")
+					validatedMetrics["elasticsearch.cluster.state_update.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of cluster state update attempts that changed the cluster state since the node started.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					clusterStateUpdateStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "cluster_state_update_state-val", clusterStateUpdateStateAttrVal.Str())
 				case "elasticsearch.cluster.state_update.time":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.time"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.time")
-						validatedMetrics["elasticsearch.cluster.state_update.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The cumulative amount of time updating the cluster state since the node started.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "cluster_state_update_state-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("type")
-						assert.True(t, ok)
-						assert.Equal(t, "computation", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.time"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.time")
-						validatedMetrics["elasticsearch.cluster.state_update.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The cumulative amount of time updating the cluster state since the node started.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.cluster.state_update.time"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("type")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.time"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.time")
+					validatedMetrics["elasticsearch.cluster.state_update.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The cumulative amount of time updating the cluster state since the node started.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					clusterStateUpdateStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "cluster_state_update_state-val", clusterStateUpdateStateAttrVal.Str())
+					clusterStateUpdateTypeAttrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.Equal(t, "computation", clusterStateUpdateTypeAttrVal.Str())
 				case "elasticsearch.index.cache.evictions":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.evictions")
-						validatedMetrics["elasticsearch.index.cache.evictions"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of evictions from the cache for an index.", mi.Description())
-						assert.Equal(t, "{evictions}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cache_name")
-						assert.True(t, ok)
-						assert.Equal(t, "fielddata", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.evictions")
-						validatedMetrics["elasticsearch.index.cache.evictions"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of evictions from the cache for an index.", mi.Description())
-						assert.Equal(t, "{evictions}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.cache.evictions"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("cache_name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.evictions")
+					validatedMetrics["elasticsearch.index.cache.evictions"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of evictions from the cache for an index.", mi.Description())
+					assert.Equal(t, "{evictions}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					cacheNameAttrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.Equal(t, "fielddata", cacheNameAttrVal.Str())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.cache.memory.usage":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.memory.usage")
-						validatedMetrics["elasticsearch.index.cache.memory.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The size in bytes of the cache for an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cache_name")
-						assert.True(t, ok)
-						assert.Equal(t, "fielddata", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.memory.usage")
-						validatedMetrics["elasticsearch.index.cache.memory.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The size in bytes of the cache for an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.cache.memory.usage"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("cache_name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.memory.usage")
+					validatedMetrics["elasticsearch.index.cache.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The size in bytes of the cache for an index.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					cacheNameAttrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.Equal(t, "fielddata", cacheNameAttrVal.Str())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.cache.size":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.size")
-						validatedMetrics["elasticsearch.index.cache.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of elements of the query cache for an index.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.size")
-						validatedMetrics["elasticsearch.index.cache.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of elements of the query cache for an index.", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.cache.size"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.size")
+					validatedMetrics["elasticsearch.index.cache.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of elements of the query cache for an index.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.documents":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.documents"], "Found a duplicate in the metrics slice: elasticsearch.index.documents")
-						validatedMetrics["elasticsearch.index.documents"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of documents for an index.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "active", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.documents"], "Found a duplicate in the metrics slice: elasticsearch.index.documents")
-						validatedMetrics["elasticsearch.index.documents"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of documents for an index.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.documents"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.documents"], "Found a duplicate in the metrics slice: elasticsearch.index.documents")
+					validatedMetrics["elasticsearch.index.documents"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of documents for an index.", mi.Description())
+					assert.Equal(t, "{documents}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					documentStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "active", documentStateAttrVal.Str())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.operations.completed":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.completed")
-						validatedMetrics["elasticsearch.index.operations.completed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of operations completed for an index.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
-						assert.Equal(t, "index", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.completed")
-						validatedMetrics["elasticsearch.index.operations.completed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of operations completed for an index.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.operations.completed"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("operation")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.completed")
+					validatedMetrics["elasticsearch.index.operations.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of operations completed for an index.", mi.Description())
+					assert.Equal(t, "{operations}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					operationAttrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.Equal(t, "index", operationAttrVal.Str())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.operations.merge.current":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.current"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.current")
-						validatedMetrics["elasticsearch.index.operations.merge.current"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of currently active segment merges", mi.Description())
-						assert.Equal(t, "{merges}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.current"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.current")
-						validatedMetrics["elasticsearch.index.operations.merge.current"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The number of currently active segment merges", mi.Description())
-						assert.Equal(t, "{merges}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.operations.merge.current"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.current"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.current")
+					validatedMetrics["elasticsearch.index.operations.merge.current"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of currently active segment merges", mi.Description())
+					assert.Equal(t, "{merges}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.operations.merge.docs_count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.docs_count"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.docs_count")
-						validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total number of documents in merge operations for an index.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.docs_count"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.docs_count")
-						validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total number of documents in merge operations for an index.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.operations.merge.docs_count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.docs_count"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.docs_count")
+					validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of documents in merge operations for an index.", mi.Description())
+					assert.Equal(t, "{documents}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.operations.merge.size":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.size"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.size")
-						validatedMetrics["elasticsearch.index.operations.merge.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total size of merged segments for an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.size"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.size")
-						validatedMetrics["elasticsearch.index.operations.merge.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total size of merged segments for an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.operations.merge.size"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.size"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.size")
+					validatedMetrics["elasticsearch.index.operations.merge.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total size of merged segments for an index.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.operations.time":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.time")
-						validatedMetrics["elasticsearch.index.operations.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Time spent on operations for an index.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
-						assert.Equal(t, "index", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.time")
-						validatedMetrics["elasticsearch.index.operations.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Time spent on operations for an index.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.operations.time"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("operation")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.time")
+					validatedMetrics["elasticsearch.index.operations.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Time spent on operations for an index.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					operationAttrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.Equal(t, "index", operationAttrVal.Str())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.segments.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.segments.count"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.count")
-						validatedMetrics["elasticsearch.index.segments.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of segments of an index.", mi.Description())
-						assert.Equal(t, "{segments}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.segments.count"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.count")
-						validatedMetrics["elasticsearch.index.segments.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of segments of an index.", mi.Description())
-						assert.Equal(t, "{segments}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.segments.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.segments.count"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.count")
+					validatedMetrics["elasticsearch.index.segments.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of segments of an index.", mi.Description())
+					assert.Equal(t, "{segments}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.segments.memory":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.memory")
-						validatedMetrics["elasticsearch.index.segments.memory"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of memory for segment object of an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("object")
-						assert.True(t, ok)
-						assert.Equal(t, "term", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.memory")
-						validatedMetrics["elasticsearch.index.segments.memory"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of memory for segment object of an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.segments.memory"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("object")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.memory")
+					validatedMetrics["elasticsearch.index.segments.memory"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Size of memory for segment object of an index.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
+					segmentsMemoryObjectTypeAttrVal, ok := dp.Attributes().Get("object")
+					assert.True(t, ok)
+					assert.Equal(t, "term", segmentsMemoryObjectTypeAttrVal.Str())
 				case "elasticsearch.index.segments.size":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.segments.size"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.size")
-						validatedMetrics["elasticsearch.index.segments.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of segments of an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.segments.size"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.size")
-						validatedMetrics["elasticsearch.index.segments.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of segments of an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.segments.size"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.segments.size"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.size")
+					validatedMetrics["elasticsearch.index.segments.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Size of segments of an index.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.shards.size":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.shards.size"], "Found a duplicate in the metrics slice: elasticsearch.index.shards.size")
-						validatedMetrics["elasticsearch.index.shards.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The size of the shards assigned to this index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.shards.size"], "Found a duplicate in the metrics slice: elasticsearch.index.shards.size")
-						validatedMetrics["elasticsearch.index.shards.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The size of the shards assigned to this index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.shards.size"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.shards.size"], "Found a duplicate in the metrics slice: elasticsearch.index.shards.size")
+					validatedMetrics["elasticsearch.index.shards.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The size of the shards assigned to this index.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.translog.operations":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.operations")
-						validatedMetrics["elasticsearch.index.translog.operations"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of transaction log operations for an index.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.operations")
-						validatedMetrics["elasticsearch.index.translog.operations"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of transaction log operations for an index.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.translog.operations"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.operations")
+					validatedMetrics["elasticsearch.index.translog.operations"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of transaction log operations for an index.", mi.Description())
+					assert.Equal(t, "{operations}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.index.translog.size":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.index.translog.size"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.size")
-						validatedMetrics["elasticsearch.index.translog.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of the transaction log for an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("aggregation")
-						assert.True(t, ok)
-						assert.Equal(t, "primary_shards", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.index.translog.size"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.size")
-						validatedMetrics["elasticsearch.index.translog.size"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of the transaction log for an index.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.index.translog.size"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("aggregation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.index.translog.size"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.size")
+					validatedMetrics["elasticsearch.index.translog.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Size of the transaction log for an index.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexAggregationTypeAttrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.Equal(t, "primary_shards", indexAggregationTypeAttrVal.Str())
 				case "elasticsearch.indexing_pressure.memory.limit":
 					assert.False(t, validatedMetrics["elasticsearch.indexing_pressure.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.indexing_pressure.memory.limit")
 					validatedMetrics["elasticsearch.indexing_pressure.memory.limit"] = true
@@ -1938,181 +1253,73 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.memory.indexing_pressure":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.memory.indexing_pressure"], "Found a duplicate in the metrics slice: elasticsearch.memory.indexing_pressure")
-						validatedMetrics["elasticsearch.memory.indexing_pressure"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Memory consumed, in bytes, by indexing requests in the specified stage.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("stage")
-						assert.True(t, ok)
-						assert.Equal(t, "coordinating", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.memory.indexing_pressure"], "Found a duplicate in the metrics slice: elasticsearch.memory.indexing_pressure")
-						validatedMetrics["elasticsearch.memory.indexing_pressure"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Memory consumed, in bytes, by indexing requests in the specified stage.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.memory.indexing_pressure"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("stage")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.memory.indexing_pressure"], "Found a duplicate in the metrics slice: elasticsearch.memory.indexing_pressure")
+					validatedMetrics["elasticsearch.memory.indexing_pressure"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Memory consumed, in bytes, by indexing requests in the specified stage.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					indexingPressureStageAttrVal, ok := dp.Attributes().Get("stage")
+					assert.True(t, ok)
+					assert.Equal(t, "coordinating", indexingPressureStageAttrVal.Str())
 				case "elasticsearch.node.cache.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.cache.count"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.count")
-						validatedMetrics["elasticsearch.node.cache.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total count of query cache misses across all shards assigned to selected nodes.", mi.Description())
-						assert.Equal(t, "{count}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
-						assert.True(t, ok)
-						assert.Equal(t, "hit", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.cache.count"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.count")
-						validatedMetrics["elasticsearch.node.cache.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total count of query cache misses across all shards assigned to selected nodes.", mi.Description())
-						assert.Equal(t, "{count}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.cache.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("type")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.cache.count"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.count")
+					validatedMetrics["elasticsearch.node.cache.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total count of query cache misses across all shards assigned to selected nodes.", mi.Description())
+					assert.Equal(t, "{count}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					queryCacheCountTypeAttrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.Equal(t, "hit", queryCacheCountTypeAttrVal.Str())
 				case "elasticsearch.node.cache.evictions":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.evictions")
-						validatedMetrics["elasticsearch.node.cache.evictions"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of evictions from the cache on a node.", mi.Description())
-						assert.Equal(t, "{evictions}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cache_name")
-						assert.True(t, ok)
-						assert.Equal(t, "fielddata", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.evictions")
-						validatedMetrics["elasticsearch.node.cache.evictions"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of evictions from the cache on a node.", mi.Description())
-						assert.Equal(t, "{evictions}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.cache.evictions"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("cache_name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.evictions")
+					validatedMetrics["elasticsearch.node.cache.evictions"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of evictions from the cache on a node.", mi.Description())
+					assert.Equal(t, "{evictions}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					cacheNameAttrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.Equal(t, "fielddata", cacheNameAttrVal.Str())
 				case "elasticsearch.node.cache.memory.usage":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.memory.usage")
-						validatedMetrics["elasticsearch.node.cache.memory.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The size in bytes of the cache on a node.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cache_name")
-						assert.True(t, ok)
-						assert.Equal(t, "fielddata", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.memory.usage")
-						validatedMetrics["elasticsearch.node.cache.memory.usage"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The size in bytes of the cache on a node.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.cache.memory.usage"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("cache_name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.memory.usage")
+					validatedMetrics["elasticsearch.node.cache.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The size in bytes of the cache on a node.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					cacheNameAttrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.Equal(t, "fielddata", cacheNameAttrVal.Str())
 				case "elasticsearch.node.cache.size":
 					assert.False(t, validatedMetrics["elasticsearch.node.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.size")
 					validatedMetrics["elasticsearch.node.cache.size"] = true
@@ -2142,49 +1349,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.node.cluster.io":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.cluster.io"], "Found a duplicate in the metrics slice: elasticsearch.node.cluster.io")
-						validatedMetrics["elasticsearch.node.cluster.io"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of bytes sent and received on the network for internal cluster communication.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("direction")
-						assert.True(t, ok)
-						assert.Equal(t, "received", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.cluster.io"], "Found a duplicate in the metrics slice: elasticsearch.node.cluster.io")
-						validatedMetrics["elasticsearch.node.cluster.io"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of bytes sent and received on the network for internal cluster communication.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.cluster.io"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("direction")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.cluster.io"], "Found a duplicate in the metrics slice: elasticsearch.node.cluster.io")
+					validatedMetrics["elasticsearch.node.cluster.io"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of bytes sent and received on the network for internal cluster communication.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					directionAttrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.Equal(t, "received", directionAttrVal.Str())
 				case "elasticsearch.node.disk.io.read":
 					assert.False(t, validatedMetrics["elasticsearch.node.disk.io.read"], "Found a duplicate in the metrics slice: elasticsearch.node.disk.io.read")
 					validatedMetrics["elasticsearch.node.disk.io.read"] = true
@@ -2214,49 +1394,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.node.documents":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.documents"], "Found a duplicate in the metrics slice: elasticsearch.node.documents")
-						validatedMetrics["elasticsearch.node.documents"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of documents on the node.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "active", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.documents"], "Found a duplicate in the metrics slice: elasticsearch.node.documents")
-						validatedMetrics["elasticsearch.node.documents"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of documents on the node.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.documents"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.documents"], "Found a duplicate in the metrics slice: elasticsearch.node.documents")
+					validatedMetrics["elasticsearch.node.documents"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of documents on the node.", mi.Description())
+					assert.Equal(t, "{documents}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					documentStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "active", documentStateAttrVal.Str())
 				case "elasticsearch.node.fs.disk.available":
 					assert.False(t, validatedMetrics["elasticsearch.node.fs.disk.available"], "Found a duplicate in the metrics slice: elasticsearch.node.fs.disk.available")
 					validatedMetrics["elasticsearch.node.fs.disk.available"] = true
@@ -2370,353 +1523,139 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.node.operations.completed":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.completed")
-						validatedMetrics["elasticsearch.node.operations.completed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of operations completed by a node.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
-						assert.Equal(t, "index", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.completed")
-						validatedMetrics["elasticsearch.node.operations.completed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of operations completed by a node.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.operations.completed"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("operation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.completed")
+					validatedMetrics["elasticsearch.node.operations.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of operations completed by a node.", mi.Description())
+					assert.Equal(t, "{operations}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					operationAttrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.Equal(t, "index", operationAttrVal.Str())
 				case "elasticsearch.node.operations.current":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.current"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.current")
-						validatedMetrics["elasticsearch.node.operations.current"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of query operations currently running.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
-						assert.Equal(t, "index", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.current"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.current")
-						validatedMetrics["elasticsearch.node.operations.current"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Number of query operations currently running.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.operations.current"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("operation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.current"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.current")
+					validatedMetrics["elasticsearch.node.operations.current"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of query operations currently running.", mi.Description())
+					assert.Equal(t, "{operations}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					operationAttrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.Equal(t, "index", operationAttrVal.Str())
 				case "elasticsearch.node.operations.get.completed":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.get.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.completed")
-						validatedMetrics["elasticsearch.node.operations.get.completed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of hits and misses resulting from GET operations.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("result")
-						assert.True(t, ok)
-						assert.Equal(t, "hit", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.get.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.completed")
-						validatedMetrics["elasticsearch.node.operations.get.completed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of hits and misses resulting from GET operations.", mi.Description())
-						assert.Equal(t, "{operations}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.operations.get.completed"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("result")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.get.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.completed")
+					validatedMetrics["elasticsearch.node.operations.get.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of hits and misses resulting from GET operations.", mi.Description())
+					assert.Equal(t, "{operations}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					getResultAttrVal, ok := dp.Attributes().Get("result")
+					assert.True(t, ok)
+					assert.Equal(t, "hit", getResultAttrVal.Str())
 				case "elasticsearch.node.operations.get.time":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.get.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.time")
-						validatedMetrics["elasticsearch.node.operations.get.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The time spent on hits and misses resulting from GET operations.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("result")
-						assert.True(t, ok)
-						assert.Equal(t, "hit", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.get.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.time")
-						validatedMetrics["elasticsearch.node.operations.get.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The time spent on hits and misses resulting from GET operations.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.operations.get.time"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("result")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.get.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.time")
+					validatedMetrics["elasticsearch.node.operations.get.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The time spent on hits and misses resulting from GET operations.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					getResultAttrVal, ok := dp.Attributes().Get("result")
+					assert.True(t, ok)
+					assert.Equal(t, "hit", getResultAttrVal.Str())
 				case "elasticsearch.node.operations.time":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.time")
-						validatedMetrics["elasticsearch.node.operations.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Time spent on operations by a node.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
-						assert.True(t, ok)
-						assert.Equal(t, "index", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.time")
-						validatedMetrics["elasticsearch.node.operations.time"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Time spent on operations by a node.", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.operations.time"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("operation")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.time")
+					validatedMetrics["elasticsearch.node.operations.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Time spent on operations by a node.", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					operationAttrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.Equal(t, "index", operationAttrVal.Str())
 				case "elasticsearch.node.pipeline.ingest.documents.current":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.current")
-						validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of documents currently being ingested by a pipeline.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "ingest_pipeline_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.current")
-						validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of documents currently being ingested by a pipeline.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.pipeline.ingest.documents.current"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.current")
+					validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of documents currently being ingested by a pipeline.", mi.Description())
+					assert.Equal(t, "{documents}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					ingestPipelineNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "ingest_pipeline_name-val", ingestPipelineNameAttrVal.Str())
 				case "elasticsearch.node.pipeline.ingest.documents.preprocessed":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.preprocessed")
-						validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of documents preprocessed by the ingest pipeline.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "ingest_pipeline_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.preprocessed")
-						validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Number of documents preprocessed by the ingest pipeline.", mi.Description())
-						assert.Equal(t, "{documents}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.pipeline.ingest.documents.preprocessed"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.preprocessed")
+					validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Number of documents preprocessed by the ingest pipeline.", mi.Description())
+					assert.Equal(t, "{documents}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					ingestPipelineNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "ingest_pipeline_name-val", ingestPipelineNameAttrVal.Str())
 				case "elasticsearch.node.pipeline.ingest.operations.failed":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.operations.failed")
-						validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of failed operations for the ingest pipeline.", mi.Description())
-						assert.Equal(t, "{operation}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "ingest_pipeline_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.operations.failed")
-						validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Total number of failed operations for the ingest pipeline.", mi.Description())
-						assert.Equal(t, "{operation}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.pipeline.ingest.operations.failed"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.operations.failed")
+					validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of failed operations for the ingest pipeline.", mi.Description())
+					assert.Equal(t, "{operation}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					ingestPipelineNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "ingest_pipeline_name-val", ingestPipelineNameAttrVal.Str())
 				case "elasticsearch.node.script.cache_evictions":
 					assert.False(t, validatedMetrics["elasticsearch.node.script.cache_evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.script.cache_evictions")
 					validatedMetrics["elasticsearch.node.script.cache_evictions"] = true
@@ -2760,49 +1699,22 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.node.segments.memory":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.node.segments.memory")
-						validatedMetrics["elasticsearch.node.segments.memory"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of memory for segment object of a node.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("object")
-						assert.True(t, ok)
-						assert.Equal(t, "term", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.node.segments.memory")
-						validatedMetrics["elasticsearch.node.segments.memory"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "Size of memory for segment object of a node.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.segments.memory"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("object")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.node.segments.memory")
+					validatedMetrics["elasticsearch.node.segments.memory"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Size of memory for segment object of a node.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					segmentsMemoryObjectTypeAttrVal, ok := dp.Attributes().Get("object")
+					assert.True(t, ok)
+					assert.Equal(t, "term", segmentsMemoryObjectTypeAttrVal.Str())
 				case "elasticsearch.node.shards.data_set.size":
 					assert.False(t, validatedMetrics["elasticsearch.node.shards.data_set.size"], "Found a duplicate in the metrics slice: elasticsearch.node.shards.data_set.size")
 					validatedMetrics["elasticsearch.node.shards.data_set.size"] = true
@@ -2846,147 +1758,62 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.node.thread_pool.tasks.finished":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.finished")
-						validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of tasks finished by the thread pool.", mi.Description())
-						assert.Equal(t, "{tasks}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("thread_pool_name")
-						assert.True(t, ok)
-						assert.Equal(t, "thread_pool_name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "rejected", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.finished")
-						validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of tasks finished by the thread pool.", mi.Description())
-						assert.Equal(t, "{tasks}", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.thread_pool.tasks.finished"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("thread_pool_name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.finished")
+					validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of tasks finished by the thread pool.", mi.Description())
+					assert.Equal(t, "{tasks}", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					threadPoolNameAttrVal, ok := dp.Attributes().Get("thread_pool_name")
+					assert.True(t, ok)
+					assert.Equal(t, "thread_pool_name-val", threadPoolNameAttrVal.Str())
+					taskStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "rejected", taskStateAttrVal.Str())
 				case "elasticsearch.node.thread_pool.tasks.queued":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.queued")
-						validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of queued tasks in the thread pool.", mi.Description())
-						assert.Equal(t, "{tasks}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("thread_pool_name")
-						assert.True(t, ok)
-						assert.Equal(t, "thread_pool_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.queued")
-						validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of queued tasks in the thread pool.", mi.Description())
-						assert.Equal(t, "{tasks}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.thread_pool.tasks.queued"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("thread_pool_name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.queued")
+					validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of queued tasks in the thread pool.", mi.Description())
+					assert.Equal(t, "{tasks}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					threadPoolNameAttrVal, ok := dp.Attributes().Get("thread_pool_name")
+					assert.True(t, ok)
+					assert.Equal(t, "thread_pool_name-val", threadPoolNameAttrVal.Str())
 				case "elasticsearch.node.thread_pool.threads":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.threads"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.threads")
-						validatedMetrics["elasticsearch.node.thread_pool.threads"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of threads in the thread pool.", mi.Description())
-						assert.Equal(t, "{threads}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("thread_pool_name")
-						assert.True(t, ok)
-						assert.Equal(t, "thread_pool_name-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "active", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.threads"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.threads")
-						validatedMetrics["elasticsearch.node.thread_pool.threads"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The number of threads in the thread pool.", mi.Description())
-						assert.Equal(t, "{threads}", mi.Unit())
-						assert.False(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.node.thread_pool.threads"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("thread_pool_name")
-						assert.False(t, ok)
-						_, ok = dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.threads"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.threads")
+					validatedMetrics["elasticsearch.node.thread_pool.threads"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The number of threads in the thread pool.", mi.Description())
+					assert.Equal(t, "{threads}", mi.Unit())
+					assert.False(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					threadPoolNameAttrVal, ok := dp.Attributes().Get("thread_pool_name")
+					assert.True(t, ok)
+					assert.Equal(t, "thread_pool_name-val", threadPoolNameAttrVal.Str())
+					threadStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "active", threadStateAttrVal.Str())
 				case "elasticsearch.node.translog.operations":
 					assert.False(t, validatedMetrics["elasticsearch.node.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.node.translog.operations")
 					validatedMetrics["elasticsearch.node.translog.operations"] = true
@@ -3078,45 +1905,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "elasticsearch.os.memory":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["elasticsearch.os.memory"], "Found a duplicate in the metrics slice: elasticsearch.os.memory")
-						validatedMetrics["elasticsearch.os.memory"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Amount of physical memory.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
-						assert.True(t, ok)
-						assert.Equal(t, "free", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["elasticsearch.os.memory"], "Found a duplicate in the metrics slice: elasticsearch.os.memory")
-						validatedMetrics["elasticsearch.os.memory"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "Amount of physical memory.", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["elasticsearch.os.memory"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("state")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["elasticsearch.os.memory"], "Found a duplicate in the metrics slice: elasticsearch.os.memory")
+					validatedMetrics["elasticsearch.os.memory"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Amount of physical memory.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					memoryStateAttrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "free", memoryStateAttrVal.Str())
 				case "elasticsearch.process.cpu.time":
 					assert.False(t, validatedMetrics["elasticsearch.process.cpu.time"], "Found a duplicate in the metrics slice: elasticsearch.process.cpu.time")
 					validatedMetrics["elasticsearch.process.cpu.time"] = true
@@ -3170,93 +1972,39 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "jvm.gc.collections.count":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["jvm.gc.collections.count"], "Found a duplicate in the metrics slice: jvm.gc.collections.count")
-						validatedMetrics["jvm.gc.collections.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total number of garbage collections that have occurred", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "collector_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["jvm.gc.collections.count"], "Found a duplicate in the metrics slice: jvm.gc.collections.count")
-						validatedMetrics["jvm.gc.collections.count"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The total number of garbage collections that have occurred", mi.Description())
-						assert.Equal(t, "1", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["jvm.gc.collections.count"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["jvm.gc.collections.count"], "Found a duplicate in the metrics slice: jvm.gc.collections.count")
+					validatedMetrics["jvm.gc.collections.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of garbage collections that have occurred", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					collectorNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "collector_name-val", collectorNameAttrVal.Str())
 				case "jvm.gc.collections.elapsed":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["jvm.gc.collections.elapsed"], "Found a duplicate in the metrics slice: jvm.gc.collections.elapsed")
-						validatedMetrics["jvm.gc.collections.elapsed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The approximate accumulated collection elapsed time", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "collector_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["jvm.gc.collections.elapsed"], "Found a duplicate in the metrics slice: jvm.gc.collections.elapsed")
-						validatedMetrics["jvm.gc.collections.elapsed"] = true
-						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-						assert.Equal(t, "The approximate accumulated collection elapsed time", mi.Description())
-						assert.Equal(t, "ms", mi.Unit())
-						assert.True(t, mi.Sum().IsMonotonic())
-						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-						dp := mi.Sum().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["jvm.gc.collections.elapsed"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["jvm.gc.collections.elapsed"], "Found a duplicate in the metrics slice: jvm.gc.collections.elapsed")
+					validatedMetrics["jvm.gc.collections.elapsed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "The approximate accumulated collection elapsed time", mi.Description())
+					assert.Equal(t, "ms", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					collectorNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "collector_name-val", collectorNameAttrVal.Str())
 				case "jvm.memory.heap.committed":
 					assert.False(t, validatedMetrics["jvm.memory.heap.committed"], "Found a duplicate in the metrics slice: jvm.memory.heap.committed")
 					validatedMetrics["jvm.memory.heap.committed"] = true
@@ -3330,85 +2078,35 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "jvm.memory.pool.max":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["jvm.memory.pool.max"], "Found a duplicate in the metrics slice: jvm.memory.pool.max")
-						validatedMetrics["jvm.memory.pool.max"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The maximum amount of memory can be used for the memory pool", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "memory_pool_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["jvm.memory.pool.max"], "Found a duplicate in the metrics slice: jvm.memory.pool.max")
-						validatedMetrics["jvm.memory.pool.max"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The maximum amount of memory can be used for the memory pool", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["jvm.memory.pool.max"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["jvm.memory.pool.max"], "Found a duplicate in the metrics slice: jvm.memory.pool.max")
+					validatedMetrics["jvm.memory.pool.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The maximum amount of memory can be used for the memory pool", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					memoryPoolNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "memory_pool_name-val", memoryPoolNameAttrVal.Str())
 				case "jvm.memory.pool.used":
-					if tt.name != "reaggregate_set" {
-						assert.False(t, validatedMetrics["jvm.memory.pool.used"], "Found a duplicate in the metrics slice: jvm.memory.pool.used")
-						validatedMetrics["jvm.memory.pool.used"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The current memory pool memory usage", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("name")
-						assert.True(t, ok)
-						assert.Equal(t, "memory_pool_name-val", attrVal.Str())
-					} else {
-						assert.False(t, validatedMetrics["jvm.memory.pool.used"], "Found a duplicate in the metrics slice: jvm.memory.pool.used")
-						validatedMetrics["jvm.memory.pool.used"] = true
-						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-						assert.Equal(t, "The current memory pool memory usage", mi.Description())
-						assert.Equal(t, "By", mi.Unit())
-						dp := mi.Gauge().DataPoints().At(0)
-						assert.Equal(t, start, dp.StartTimestamp())
-						assert.Equal(t, ts, dp.Timestamp())
-						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-						switch aggMap["jvm.memory.pool.used"] {
-						case "sum":
-							assert.Equal(t, int64(4), dp.IntValue())
-						case "avg":
-							assert.Equal(t, int64(2), dp.IntValue())
-						case "min":
-							assert.Equal(t, int64(1), dp.IntValue())
-						case "max":
-							assert.Equal(t, int64(3), dp.IntValue())
-						}
-						_, ok := dp.Attributes().Get("name")
-						assert.False(t, ok)
-					}
+					assert.False(t, validatedMetrics["jvm.memory.pool.used"], "Found a duplicate in the metrics slice: jvm.memory.pool.used")
+					validatedMetrics["jvm.memory.pool.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "The current memory pool memory usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					memoryPoolNameAttrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.Equal(t, "memory_pool_name-val", memoryPoolNameAttrVal.Str())
 				case "jvm.threads.count":
 					assert.False(t, validatedMetrics["jvm.threads.count"], "Found a duplicate in the metrics slice: jvm.threads.count")
 					validatedMetrics["jvm.threads.count"] = true

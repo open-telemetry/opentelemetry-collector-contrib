@@ -7,7 +7,6 @@ package payload // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"encoding/json"
 	"errors"
-	"runtime"
 
 	"github.com/DataDog/datadog-agent/pkg/serializer/marshaler"
 )
@@ -39,7 +38,6 @@ type OtelCollector struct {
 	CollectorResourceAttributes map[string]string  `json:"collector_resource_attributes"`
 	CollectorDeploymentType     string             `json:"collector_deployment_type"`     // deployment type: gateway, daemonset, or unknown
 	CollectorInstallationMethod string             `json:"collector_installation_method"` // installation method: kubernetes, bare-metal, docker, ecs-fargate, eks-fargate, or ""
-	OS                          string             `json:"os"`                            // runtime operating system (runtime.GOOS)
 	TTL                         int64              `json:"ttl"`
 }
 
@@ -110,7 +108,6 @@ func PrepareOtelCollectorMetadata(
 		FullConfiguration:           fullConfig,
 		CollectorDeploymentType:     deploymentType,
 		CollectorInstallationMethod: installationMethod,
-		OS:                          runtime.GOOS,
 		TTL:                         ttl,
 	}
 }

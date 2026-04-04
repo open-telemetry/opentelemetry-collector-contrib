@@ -1,6 +1,6 @@
 self-hosted-runner:
   labels:
-    - oracle-bare-metal-64cpu-512gb-x86-64
+    - oracle-bare-metal-64cpu-1024gb-x86-64-ubuntu-24
 
 config-variables: null
 

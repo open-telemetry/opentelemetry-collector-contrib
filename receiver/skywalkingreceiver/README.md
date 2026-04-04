@@ -53,6 +53,26 @@ service:
       receivers: [skywalking]
     metrics:
       receivers: [skywalking]
-      
+
 ```
 
+## Semantic Convention Migration
+
+A feature gate `translator.skywalking.useStableSemconv` controls the migration
+from legacy to stable semantic conventions (v1.38.0).
+
+To opt-in to the new semantic conventions, enable the gate:
+`--feature-gates translator.skywalking.useStableSemconv`
+
+When enabled, the following output attribute names will change:
+- `http.url` is now `url.full`
+- `http.status_code` is now `http.response.status_code`
+- `db.system` is now `db.system.name`
+- `db.name` is now `db.namespace`
+- `net.peer.name` is now `server.address`
+
+This affects the Skywalking receiver and Skywalking encoding extension.
+
+See migration guides:
+- https://opentelemetry.io/docs/specs/semconv/non-normative/http-migration/
+- https://opentelemetry.io/docs/specs/semconv/non-normative/db-migration/

@@ -197,6 +197,10 @@ component_management:
     name: exporter_googlemanagedprometheus
     paths:
     - exporter/googlemanagedprometheusexporter/**
+  - component_id: exporter_googlesecops
+    name: exporter_googlesecops
+    paths:
+    - exporter/googlesecopsexporter/**
   - component_id: exporter_honeycombmarker
     name: exporter_honeycombmarker
     paths:
@@ -445,10 +449,6 @@ component_management:
     name: processor_cumulativetodelta
     paths:
     - processor/cumulativetodeltaprocessor/**
-  - component_id: processor_datadogsemantics
-    name: processor_datadogsemantics
-    paths:
-    - processor/datadogsemanticsprocessor/**
   - component_id: processor_deltatocumulative
     name: processor_deltatocumulative
     paths:
@@ -609,6 +609,10 @@ component_management:
     name: receiver_azureeventhub
     paths:
     - receiver/azureeventhubreceiver/**
+  - component_id: receiver_azurefunctions
+    name: receiver_azurefunctions
+    paths:
+    - receiver/azurefunctionsreceiver/**
   - component_id: receiver_azuremonitor
     name: receiver_azuremonitor
     paths:

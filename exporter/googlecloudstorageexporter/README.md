@@ -44,7 +44,7 @@ Here is an example configuration for this exporter:
 
 ```yaml
 exporters:
-  googlecloudstorage:
+  google_cloud_storage:
     encoding: text_encoding
     bucket:
       name: bucket-test
@@ -65,7 +65,7 @@ extensions:
 
 ```yaml
 exporters:
-  googlecloudstorage:
+  google_cloud_storage:
     bucket:
       name: compressed-logs-bucket
       project_id: my-project
@@ -82,7 +82,7 @@ When the service account lacks project-level bucket creation permissions but has
 
 ```yaml
 exporters:
-  googlecloudstorage:
+  google_cloud_storage:
     bucket:
       name: existing-bucket
       project_id: my-project
