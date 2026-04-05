@@ -220,7 +220,7 @@ func (p *deltaToCumulativeProcessor) Start(ctx context.Context, host component.H
 		}
 	}
 
-	go func() { //nolint:gosec // G118: background goroutine intentionally uses context.Background for periodic flush
+	go func() {
 		defer close(p.bgDone)
 		tick := time.NewTicker(time.Minute)
 		defer tick.Stop()
