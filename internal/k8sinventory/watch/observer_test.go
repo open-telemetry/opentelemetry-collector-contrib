@@ -932,7 +932,6 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 	assert.Equal(t, "latestResourceVersion/pods.other", key2)
 }
 
-
 func TestGetResourceVersion(t *testing.T) {
 	// Tests are grouped by which source of resourceVersion is active.
 	// Note: config resource_version and persist_resource_version are mutually
