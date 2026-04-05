@@ -16,6 +16,13 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.pod.name
+            - k8s.pod.qos_class
+          idKeys:
+            - k8s.pod.uid
+          type: k8s.pod
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -63,6 +70,15 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: test-pod-1-uid
+      entityRefs:
+        - descriptionKeys:
+            - k8s.container.name
+            - container.image.name
+            - container.image.tag
+            - k8s.container.status.last_terminated_reason
+          idKeys:
+            - container.id
+          type: k8s.container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
