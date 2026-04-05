@@ -28,7 +28,9 @@ The Following settings are optional:
 
 - `transport` (default = `udp`): Protocol used by the StatsD server. Currently supported transports can be found in [this file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/statsdreceiver/internal/transport/transport.go).
 
-- `socket_permissions` (default = `0622`): When transport is set to `unixgram`, can be used to customize permissions of the binded socket. 
+- `socket_permissions` (default = `0622`): When transport is set to `unixgram`, can be used to customize permissions of the binded socket.
+
+- `socket_buffer_size` (default = `0`): Sets `SO_RCVBUF` on the listening socket for `unixgram` transport. When `0`, the OS default is used. Increase this for high-throughput workloads to prevent dropped datagrams. The value is capped by the OS maximum (Linux: `net.core.rmem_max`, macOS: `kern.ipc.maxsockbuf`).
 
 - `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 

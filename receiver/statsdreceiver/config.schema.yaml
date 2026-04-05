@@ -15,6 +15,9 @@ properties:
     type: boolean
   is_monotonic_counter:
     type: boolean
+  socket_buffer_size:
+    description: Sets SO_RCVBUF on the listening socket (bytes). Only used with unixgram transport. 0 = OS default.
+    type: integer
   socket_permissions:
     description: Will only be used when transport set to 'unixgram'.
     x-customType: os.file_mode
