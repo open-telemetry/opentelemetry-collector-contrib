@@ -22,6 +22,15 @@ import (
 )
 
 const (
+	// defaultAPIQPS is the default number of queries per second to the Kubernetes API.
+	// client-go's built-in default is 5, which is too conservative for a receiver
+	// that may watch or poll many resources simultaneously.
+	defaultAPIQPS float32 = 200
+	// defaultAPIBurst is the default burst limit for requests to the Kubernetes API.
+	defaultAPIBurst int = 300
+)
+
+const (
 	defaultPullInterval    time.Duration     = time.Hour
 	defaultMode            k8sinventory.Mode = k8sinventory.PullMode
 	defaultResourceVersion                   = "1"
@@ -64,6 +73,14 @@ type Config struct {
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
+	// APIQPS is the maximum number of queries per second to the Kubernetes API.
+	// Defaults to 200. Increase this if you see client-side throttling warnings.
+	APIQPS float32 `mapstructure:"api_qps"`
+
+	// APIBurst is the maximum burst of requests to the Kubernetes API.
+	// Defaults to 300.
+	APIBurst int `mapstructure:"api_burst"`
+
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
 	makeDynamicClient   func() (dynamic.Interface, error)
@@ -74,6 +91,20 @@ func (c *Config) Validate() error {
 	case PropagateError, IgnoreError, SilentError:
 	default:
 		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
+	}
+
+	if c.APIQPS < 0 {
+		return errors.New("api_qps must be greater than 0")
+	}
+	if c.APIQPS == 0 {
+		c.APIQPS = defaultAPIQPS
+	}
+
+	if c.APIBurst < 0 {
+		return errors.New("api_burst must be greater than 0")
+	}
+	if c.APIBurst == 0 {
+		c.APIBurst = defaultAPIBurst
 	}
 
 	for _, object := range c.Objects {
@@ -119,7 +150,15 @@ func (c *Config) getDynamicClient() (dynamic.Interface, error) {
 		return c.makeDynamicClient()
 	}
 
-	return k8sconfig.MakeDynamicClient(c.APIConfig)
+	restConfig, err := k8sconfig.CreateRestConfig(c.APIConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	restConfig.QPS = c.APIQPS
+	restConfig.Burst = c.APIBurst
+
+	return dynamic.NewForConfig(restConfig)
 }
 
 func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, error) {

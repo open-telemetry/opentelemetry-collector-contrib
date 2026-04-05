@@ -349,3 +349,88 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigValidationAPIRateLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc          string
+		cfg           *Config
+		expectedErr   string
+		expectedQPS   float32
+		expectedBurst int
+	}{
+		{
+			desc: "negative api_qps is invalid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				APIQPS:    -1,
+				APIBurst:  defaultAPIBurst,
+				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
+			},
+			expectedErr: "api_qps must be greater than 0",
+		},
+		{
+			desc: "negative api_burst is invalid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				APIQPS:    defaultAPIQPS,
+				APIBurst:  -1,
+				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
+			},
+			expectedErr: "api_burst must be greater than 0",
+		},
+		{
+			desc: "zero api_qps applies default",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				APIQPS:    0,
+				APIBurst:  defaultAPIBurst,
+				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
+			},
+			expectedQPS:   defaultAPIQPS,
+			expectedBurst: defaultAPIBurst,
+		},
+		{
+			desc: "zero api_burst applies default",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				APIQPS:    defaultAPIQPS,
+				APIBurst:  0,
+				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
+			},
+			expectedQPS:   defaultAPIQPS,
+			expectedBurst: defaultAPIBurst,
+		},
+		{
+			desc: "custom api_qps and api_burst are valid",
+			cfg: &Config{
+				ErrorMode: PropagateError,
+				APIQPS:    500,
+				APIBurst:  1000,
+				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
+			},
+			expectedQPS:   500,
+			expectedBurst: 1000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedQPS, tt.cfg.APIQPS)
+			assert.Equal(t, tt.expectedBurst, tt.cfg.APIBurst)
+		})
+	}
+}
+
+func TestCreateDefaultConfigAPIRateLimit(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	assert.Equal(t, defaultAPIQPS, cfg.APIQPS)
+	assert.Equal(t, defaultAPIBurst, cfg.APIBurst)
+}

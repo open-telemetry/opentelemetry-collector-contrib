@@ -28,6 +28,8 @@ func TestDefaultConfig(t *testing.T) {
 		},
 		ErrorMode:           PropagateError,
 		IncludeInitialState: false,
+		APIQPS:              defaultAPIQPS,
+		APIBurst:            defaultAPIBurst,
 	}, rCfg)
 }
 

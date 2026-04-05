@@ -31,6 +31,8 @@ func createDefaultConfig() component.Config {
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 		ErrorMode: PropagateError,
+		APIQPS:    defaultAPIQPS,
+		APIBurst:  defaultAPIBurst,
 	}
 }
 
