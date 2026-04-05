@@ -225,5 +225,6 @@ jobs:
             --body-file /tmp/issue-body.md \
             -l 'needs triage' \
             -l 'flaky tests'
+            -l 'ci-cd'
         env:
           GH_TOKEN: ${{ github.token }}
