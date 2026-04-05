@@ -143,17 +143,22 @@ jobs:
       - name: Check for existing issue
         id: check
         run: |
-          count=$(gh issue list -R ${{ github.repository }} \
+          issue_number=$(gh issue list -R ${{ github.repository }} \
             --search "load-tests workflow failed" \
             --state open \
             --label "flaky tests" \
             --json number \
-            --jq 'length')
-          echo "exists=$( [ "$count" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+            --jq '.[0].number // empty')
+          if [ -n "$issue_number" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "number=$issue_number" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Collect failure details and file issue
-        if: steps.check.outputs.exists == 'false'
+      - name: Collect failure details
+        id: details
         run: |
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           short_sha=$(echo "${{ github.sha }}" | cut -c1-7)
@@ -219,12 +224,24 @@ jobs:
             echo "**Note**: Information about any subsequent build failures that happen while"
             echo "this issue is open, will be added as comments with more information to this issue."
           } > /tmp/issue-body.md
-
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Create issue
+        if: steps.check.outputs.exists == 'false'
+        run: |
           gh issue create -R "${{ github.repository }}" \
             -t 'load-tests workflow failed' \
             --body-file /tmp/issue-body.md \
             -l 'needs triage' \
             -l 'flaky tests' \
             -l 'ci-cd'
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Comment on existing issue
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          gh issue comment "${{ steps.check.outputs.number }}" \
+            -R "${{ github.repository }}" \
+            --body-file /tmp/issue-body.md
         env:
           GH_TOKEN: ${{ github.token }}
