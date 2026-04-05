@@ -89,8 +89,7 @@ func TestTransactionAppendNoTarget(t *testing.T) {
 func testTransactionAppendNoTarget(t *testing.T) {
 	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
 	tr := newTransaction(scrapeCtx, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := &appenderV2Wrapper{tr}
-	_, err := w.Append(0, badLabels, 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
+	_, err := tr.Append(0, badLabels, 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.Error(t, err)
 }
 
@@ -104,10 +103,9 @@ func testTransactionAppendNoMetricName(t *testing.T) {
 		model.JobLabel:      "test2",
 	})
 	tr := newTransaction(scrapeCtx, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := &appenderV2Wrapper{tr}
-	_, err := w.Append(0, jobNotFoundLb, 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
+	_, err := tr.Append(0, jobNotFoundLb, 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.ErrorIs(t, err, errMetricNameNotFound)
-	assert.ErrorIs(t, w.Commit(), errNoDataToBuild)
+	assert.ErrorIs(t, tr.Commit(), errNoDataToBuild)
 }
 
 func TestTransactionAppendEmptyMetricName(t *testing.T) {
@@ -116,8 +114,7 @@ func TestTransactionAppendEmptyMetricName(t *testing.T) {
 
 func testTransactionAppendEmptyMetricName(t *testing.T) {
 	tr := newTransaction(scrapeCtx, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := &appenderV2Wrapper{tr}
-	_, err := w.Append(0, labels.FromMap(map[string]string{
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test2",
 		model.MetricNameLabel: "",
@@ -132,14 +129,14 @@ func TestTransactionAppendResource(t *testing.T) {
 func testTransactionAppendResource(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := &appenderV2Wrapper{tr}
-	_, err := w.Append(0, labels.FromMap(map[string]string{
+	w := tr
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
 	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
-	_, err = w.Append(0, labels.FromMap(map[string]string{
+	_, err = tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: startTimeMetricName,
@@ -160,14 +157,14 @@ func TestTransactionAppendMultipleResources(t *testing.T) {
 func testTransactionAppendMultipleResources(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := &appenderV2Wrapper{tr}
-	_, err := w.Append(0, labels.FromMap(map[string]string{
+	w := tr
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test-1",
 		model.MetricNameLabel: "counter_test",
 	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
-	_, err = w.Append(0, labels.FromMap(map[string]string{
+	_, err = tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test-2",
 		model.MetricNameLabel: startTimeMetricName,
@@ -208,8 +205,8 @@ func TestReceiverVersionAndNameAreAttached(t *testing.T) {
 func testReceiverVersionAndNameAreAttached(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := &appenderV2Wrapper{tr}
-	_, err := w.Append(0, labels.FromMap(map[string]string{
+	w := tr
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
@@ -246,8 +243,7 @@ func testTransactionAppendDuplicateLabels(t *testing.T) {
 		"z", "9",
 	)
 
-	w := &appenderV2Wrapper{tr}
-	_, err := w.Append(0, dupLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
+	_, err := tr.Append(0, dupLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
@@ -269,7 +265,7 @@ func testTransactionAppendHistogramNoLe(t *testing.T) {
 		false,
 		true,
 	)
-	w := &appenderV2Wrapper{tr}
+	w := tr
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -277,7 +273,7 @@ func testTransactionAppendHistogramNoLe(t *testing.T) {
 		model.MetricNameLabel, "hist_test_bucket",
 	)
 
-	_, err := w.Append(0, goodLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
+	_, err := tr.Append(0, goodLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
@@ -304,7 +300,7 @@ func testTransactionAppendSummaryNoQuantile(t *testing.T) {
 		false,
 		true,
 	)
-	w := &appenderV2Wrapper{tr}
+	w := tr
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -312,7 +308,7 @@ func testTransactionAppendSummaryNoQuantile(t *testing.T) {
 		model.MetricNameLabel, "summary_test",
 	)
 
-	_, err := w.Append(0, goodLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
+	_, err := tr.Append(0, goodLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
@@ -339,10 +335,10 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 		false,
 		true,
 	)
-	w := &appenderV2Wrapper{tr}
+	w := tr
 
 	// a valid counter
-	_, err := w.Append(0, labels.FromMap(map[string]string{
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
@@ -356,7 +352,7 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 		model.MetricNameLabel, "summary_test",
 	)
 
-	_, err = w.Append(0, summarylabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
+	_, err = tr.Append(0, summarylabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, observedLogs.Len())
@@ -396,9 +392,8 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 		testMetadataStore(testMetadata))
 
 	tr := newTransaction(ctx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := &appenderV2Wrapper{tr}
 
-	_, err := w.Append(0, labels.FromMap(map[string]string{
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.MetricNameLabel: "counter_test",
 	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
@@ -638,7 +633,6 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 
 func TestAppendHistogramReturnsStableSeriesRef(t *testing.T) {
 	tr := newTxn(t, false)
-	w := &appenderV2Wrapper{tr}
 	lsA := labels.FromStrings(
 		model.InstanceLabel, "localhost:1234",
 		model.JobLabel, "job-a",
@@ -652,11 +646,11 @@ func TestAppendHistogramReturnsStableSeriesRef(t *testing.T) {
 		"foo", "baz",
 	)
 
-	refA, err := w.Append(0, lsA, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
+	refA, err := tr.Append(0, lsA, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 	require.Equal(t, storage.SeriesRef(lsA.Hash()), refA)
 
-	refB, err := w.Append(0, lsB, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
+	refB, err := tr.Append(0, lsB, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 	require.Equal(t, storage.SeriesRef(lsB.Hash()), refB)
 	require.NotEqual(t, refA, refB)
@@ -678,7 +672,7 @@ func TestAppendHistogramStableSeriesRefEnablesSeriesDisappearanceTracking(t *tes
 
 	// Scrape #1: both series are present.
 	tr1 := newTxn(t, false)
-	w1 := &appenderV2Wrapper{tr1}
+	w1 := tr1
 	refA1, err := w1.Append(0, lsA, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 	refB1, err := w1.Append(0, lsB, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
@@ -686,7 +680,7 @@ func TestAppendHistogramStableSeriesRefEnablesSeriesDisappearanceTracking(t *tes
 
 	// Scrape #2: only series A is present.
 	tr2 := newTxn(t, false)
-	w2 := &appenderV2Wrapper{tr2}
+	w2 := tr2
 	refA2, err := w2.Append(0, lsA, 0, ts+interval, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 
@@ -1913,11 +1907,11 @@ func (tt buildTestData) run(t *testing.T) {
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-		w := &appenderV2Wrapper{tr}
+		w := tr
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st
-			_, err := w.Append(0, pt.lb, 0, pt.t, pt.v, pt.h, pt.fh, storage.AOptions{
+			_, err := tr.Append(0, pt.lb, 0, pt.t, pt.v, pt.h, pt.fh, storage.AOptions{
 				Exemplars: pt.exemplars,
 			})
 			assert.NoError(t, err)
@@ -2127,7 +2121,7 @@ func newTxn(t *testing.T, useMetadata bool) *transaction {
 // ---- AppenderV2 wrapper tests ----
 //
 // These tests validate the V2 append surface used by Prometheus:
-// appenderV2Wrapper.Append(...) -> transaction.AppendV2(...).
+// transaction.Append(...) -> transaction.AppendV2(...).
 //
 // Some tests in this file still call transaction methods directly because they
 // validate method-specific behavior that is not exposed as independent calls in
@@ -2204,12 +2198,11 @@ func TestTransactionAppenderV2WrapperAppend(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			txn := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-			w := &appenderV2Wrapper{txn}
-			ref, err := w.Append(0, tt.labels, tt.stMs, tt.atMs, tt.val, tt.h, tt.fh, tt.opts)
+			ref, err := txn.Append(0, tt.labels, tt.stMs, tt.atMs, tt.val, tt.h, tt.fh, tt.opts)
 			require.NoError(t, err)
 			assert.NotZero(t, ref)
 
-			require.NoError(t, w.Commit())
+			require.NoError(t, txn.Commit())
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
 			md := mds[0]

@@ -6,7 +6,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
-	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/consumer"
@@ -50,24 +49,5 @@ func NewAppendable(
 }
 
 func (o *appendable) AppenderV2(ctx context.Context) storage.AppenderV2 {
-	txn := newTransaction(ctx, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
-	return &appenderV2Wrapper{txn}
-}
-
-// appenderV2Wrapper adapts a transaction to storage.AppenderV2.
-// Commit and Rollback are promoted from the embedded *transaction.
-type appenderV2Wrapper struct {
-	*transaction
-}
-
-func (w *appenderV2Wrapper) Append(
-	ref storage.SeriesRef,
-	ls labels.Labels,
-	stMs, atMs int64,
-	val float64,
-	h *histogram.Histogram,
-	fh *histogram.FloatHistogram,
-	opts storage.AOptions,
-) (storage.SeriesRef, error) {
-	return w.AppendV2(ref, ls, stMs, atMs, val, h, fh, opts)
+	return newTransaction(ctx, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.useMetadata)
 }

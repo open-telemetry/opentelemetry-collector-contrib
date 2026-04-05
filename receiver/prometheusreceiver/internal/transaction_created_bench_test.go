@@ -25,16 +25,15 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 		for b.Loop() {
 			b.StopTimer()
 			tx := newBenchmarkTransactionForOMCounterBenchmarking(b)
-			w := &appenderV2Wrapper{tx}
 			b.StartTimer()
 
 			for j, ls := range labelSets {
 				value := float64(j)
-				_, err := w.Append(0, ls[0], 0, timestamp, value, nil, nil, storage.AOptions{})
+				_, err := tx.AppendV2(0, ls[0], 0, timestamp, value, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}
-				_, err = w.Append(0, ls[1], 0, timestamp, ctValue, nil, nil, storage.AOptions{})
+				_, err = tx.AppendV2(0, ls[1], 0, timestamp, ctValue, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -48,7 +47,6 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 		for b.Loop() {
 			b.StopTimer()
 			tx := newBenchmarkTransactionForOMCounterBenchmarking(b)
-			w := &appenderV2Wrapper{tx}
 			b.StartTimer()
 
 			for j, ls := range labelSets {
@@ -56,7 +54,7 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 				// In AppenderV2 the start timestamp is carried on the datapoint append
 				// call itself. This models the _created-derived start time without an
 				// additional synthetic append for the _created line.
-				_, err := w.Append(0, ls[0], int64(ctValue), timestamp, value, nil, nil, storage.AOptions{})
+				_, err := tx.Append(0, ls[0], int64(ctValue), timestamp, value, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}
