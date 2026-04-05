@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/k8sobjects
+note: Add configurable api_qps and api_burst settings to prevent client-side throttling when watching or polling many resources
+issues: [44484]
+subtext: ""
+change_logs: []
