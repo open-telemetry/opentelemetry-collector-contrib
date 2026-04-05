@@ -26,11 +26,6 @@ type appendable struct {
 	obsrecv  *receiverhelper.ObsReport
 }
 
-// Appendable is a wrapper interface that implements storage.AppendableV2.
-type Appendable interface {
-	storage.AppendableV2
-}
-
 // NewAppendable returns an appendable instance that emits metrics to the sink.
 func NewAppendable(
 	sink consumer.Metrics,
@@ -38,7 +33,7 @@ func NewAppendable(
 	useMetadata bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
-) (Appendable, error) {
+) (storage.AppendableV2, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
 	if err != nil {
 		return nil, err
