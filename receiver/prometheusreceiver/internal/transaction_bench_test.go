@@ -148,25 +148,24 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 		// Setup: Create transaction and append all data (not timed)
 		b.StopTimer()
 		tx := newBenchmarkTransaction(b)
-		w := tx
 
 		if withTargetInfo {
 			targetInfoLabels := createTargetInfoLabels()
-			_, _ = w.AppendV2(0, targetInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
+			_, _ = tx.AppendV2(0, targetInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
 		}
 
 		if withScopeInfo {
 			scopeInfoLabels := createScopeInfoLabels()
-			_, _ = w.AppendV2(0, scopeInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
+			_, _ = tx.AppendV2(0, scopeInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
 		}
 
 		if useNativeHistograms {
 			for j := range labelSets {
-				_, _ = w.AppendV2(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
+				_, _ = tx.AppendV2(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
 			}
 		} else {
 			for j, ls := range labelSets {
-				_, _ = w.AppendV2(0, ls, 0, timestamp, float64(j), nil, nil, storage.AOptions{})
+				_, _ = tx.AppendV2(0, ls, 0, timestamp, float64(j), nil, nil, storage.AOptions{})
 			}
 		}
 		b.StartTimer()
