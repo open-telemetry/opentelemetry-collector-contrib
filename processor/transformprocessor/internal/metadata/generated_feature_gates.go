@@ -6,15 +6,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ProcessorTransformConvertBetweenSumAndGaugeMetricContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.transform.ConvertBetweenSumAndGaugeMetricContext",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled will use metric context for conversion between sum and gauge"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20773"),
-	featuregate.WithRegisterFromVersion("v0.90.0"),
-	featuregate.WithRegisterToVersion("v0.114.0"),
-)
-
 var TransformFlattenLogsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"transform.flatten.logs",
 	featuregate.StageAlpha,
