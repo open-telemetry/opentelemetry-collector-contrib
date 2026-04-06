@@ -472,7 +472,6 @@ func TestFranzConsumerBrokerCacheEvictOnDisconnect(t *testing.T) {
 
 	c := &franzConsumer{
 		telemetryBuilder: tb,
-		brokerNodeOpts:   make(map[int32]metric.MeasurementOption),
 		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
 	}
 	meta := kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}
