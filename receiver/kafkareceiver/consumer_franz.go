@@ -31,6 +31,12 @@ type topicPartition struct {
 	partition int32
 }
 
+// brokerReadKey is the cache key for OnBrokerRead/OnBrokerWrite metric options.
+type brokerReadKey struct {
+	nodeID  int32
+	outcome string // "success" or "failure"
+}
+
 // franzConsumer implements a Kafka consumer using the franz-go client library.
 type franzConsumer struct {
 	config           *Config
@@ -49,6 +55,13 @@ type franzConsumer struct {
 	client      *kgo.Client
 	obsrecv     *receiverhelper.ObsReport
 	assignments map[topicPartition]*pc
+
+	// broker metric option caches — keyed by broker node ID.
+	// Entries are evicted in OnBrokerDisconnect; growth is bounded by cluster size.
+	brokerNodeMu   sync.RWMutex
+	brokerNodeOpts map[int32]metric.MeasurementOption
+	brokerReadMu   sync.RWMutex
+	brokerReadOpts map[brokerReadKey]metric.MeasurementOption
 
 	// ---- status reporting ----
 	host         component.Host
@@ -127,6 +140,8 @@ func newFranzKafkaConsumer(
 		consumerClosed:   make(chan struct{}),
 		closing:          make(chan struct{}),
 		assignments:      make(map[topicPartition]*pc),
+		brokerNodeOpts:   make(map[int32]metric.MeasurementOption),
+		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
 	}, nil
 }
 
@@ -563,37 +578,77 @@ func (c *franzConsumer) handleMessage(pc *pc, record *kgo.Record) error {
 // The methods below implement the relevant franz-go hook interfaces
 // record the metrics defined in the metadata telemetry.
 
+// brokerNodeOpt returns a cached metric.MeasurementOption for a broker node ID.
+// The cache is populated on first access and evicted on broker disconnect.
+func (c *franzConsumer) brokerNodeOpt(nodeID int32) metric.MeasurementOption {
+	c.brokerNodeMu.RLock()
+	opt, ok := c.brokerNodeOpts[nodeID]
+	c.brokerNodeMu.RUnlock()
+	if ok {
+		return opt
+	}
+	opt = metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(nodeID)),
+	))
+	c.brokerNodeMu.Lock()
+	c.brokerNodeOpts[nodeID] = opt
+	c.brokerNodeMu.Unlock()
+	return opt
+}
+
+// brokerReadOpt returns a cached metric.MeasurementOption for broker read/write hooks.
+func (c *franzConsumer) brokerReadOpt(nodeID int32, outcome string) metric.MeasurementOption {
+	key := brokerReadKey{nodeID: nodeID, outcome: outcome}
+	c.brokerReadMu.RLock()
+	opt, ok := c.brokerReadOpts[key]
+	c.brokerReadMu.RUnlock()
+	if ok {
+		return opt
+	}
+	opt = metric.WithAttributeSet(attribute.NewSet(
+		attribute.String("node_id", kgo.NodeName(nodeID)),
+		attribute.String("outcome", outcome),
+	))
+	c.brokerReadMu.Lock()
+	c.brokerReadOpts[key] = opt
+	c.brokerReadMu.Unlock()
+	return opt
+}
+
 func (c *franzConsumer) OnBrokerConnect(meta kgo.BrokerMetadata, _ time.Duration, _ net.Conn, err error) {
 	outcome := "success"
 	if err != nil {
 		outcome = "failure"
 	}
-	opt := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-		attribute.String("outcome", outcome),
-	))
 	c.telemetryBuilder.KafkaBrokerConnects.Add(
 		context.Background(),
 		1,
-		opt,
+		c.brokerReadOpt(meta.NodeID, outcome),
 	)
 }
 
 func (c *franzConsumer) OnBrokerDisconnect(meta kgo.BrokerMetadata, _ net.Conn) {
-	opt := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-	))
-	c.telemetryBuilder.KafkaBrokerClosed.Add(
-		context.Background(),
-		1,
-		opt,
-	)
+	// Atomically read and delete the node opt under write lock to prevent a
+	// re-insertion race (brokerNodeOpt could re-insert before delete executes).
+	c.brokerNodeMu.Lock()
+	opt := c.brokerNodeOpts[meta.NodeID]
+	delete(c.brokerNodeOpts, meta.NodeID)
+	c.brokerNodeMu.Unlock()
+	if opt == nil {
+		opt = metric.WithAttributeSet(attribute.NewSet(
+			attribute.String("node_id", kgo.NodeName(meta.NodeID)),
+		))
+	}
+	c.telemetryBuilder.KafkaBrokerClosed.Add(context.Background(), 1, opt)
+	// Evict read/write opts for this broker.
+	c.brokerReadMu.Lock()
+	delete(c.brokerReadOpts, brokerReadKey{nodeID: meta.NodeID, outcome: "success"})
+	delete(c.brokerReadOpts, brokerReadKey{nodeID: meta.NodeID, outcome: "failure"})
+	c.brokerReadMu.Unlock()
 }
 
 func (c *franzConsumer) OnBrokerThrottle(meta kgo.BrokerMetadata, throttleInterval time.Duration, _ bool) {
-	opt := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-	))
+	opt := c.brokerNodeOpt(meta.NodeID)
 	// KafkaBrokerThrottlingDuration is deprecated in favor of KafkaBrokerThrottlingLatency.
 	c.telemetryBuilder.KafkaBrokerThrottlingDuration.Record(
 		context.Background(),
@@ -612,10 +667,7 @@ func (c *franzConsumer) OnBrokerRead(meta kgo.BrokerMetadata, _ int16, _ int, re
 	if err != nil {
 		outcome = "failure"
 	}
-	opt := metric.WithAttributeSet(attribute.NewSet(
-		attribute.String("node_id", kgo.NodeName(meta.NodeID)),
-		attribute.String("outcome", outcome),
-	))
+	opt := c.brokerReadOpt(meta.NodeID, outcome)
 	// KafkaReceiverLatency is deprecated in favor of KafkaReceiverReadLatency.
 	c.telemetryBuilder.KafkaReceiverLatency.Record(
 		context.Background(),
