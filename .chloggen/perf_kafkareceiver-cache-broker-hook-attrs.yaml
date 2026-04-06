@@ -7,19 +7,18 @@ change_type: enhancement
 component: receiver/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Cache OTel metric attribute sets in broker hook callbacks to reduce per-message allocations
+note: Cache OTel metric attribute sets in broker hook callbacks to reduce per-read allocations
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [47395]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  `OnBrokerRead` and `OnFetchBatchRead` previously rebuilt attribute sets on every
-    call. The computed `MeasurementOption` is now cached per (nodeID, host, outcome)
-    and (nodeID, host, topic, partition, codec) key respectively, and evicted on
-    broker disconnect to reduce allocations.
+   `OnBrokerRead` and `OnBrokerConnect` previously rebuilt attribute sets on every
+    call. The computed `MeasurementOption` is now cached per (nodeID, outcome) key
+    and evicted on broker disconnect.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
