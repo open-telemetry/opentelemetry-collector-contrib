@@ -47,17 +47,49 @@ var allContainerStatusReasons = []metadata.AttributeK8sContainerStatusReason{
 // RecordSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
 func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1.Container, pod *corev1.Pod, ts pcommon.Timestamp) {
+	var cs *corev1.ContainerStatus
+	for i := range pod.Status.ContainerStatuses {
+		if pod.Status.ContainerStatuses[i].Name == c.Name {
+			cs = &pod.Status.ContainerStatuses[i]
+			break
+		}
+	}
+
+	var containerID string
+	if cs != nil {
+		containerID = cs.ContainerID
+	}
+	e := metadata.NewK8sContainerEntity(stripContainerID(containerID))
+	e.SetK8sContainerName(c.Name)
+	if cs != nil && cs.LastTerminationState.Terminated != nil {
+		e.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
+	}
+	image, err := docker.ParseImageName(cs.Image)
+	if err != nil {
+		docker.LogParseError(err, cs.Image, logger)
+	} else {
+		e.SetContainerImageName(image.Repository)
+		e.SetContainerImageTag(image.Tag)
+	}
+
+	e.SetK8sPodName(pod.Name)
+	e.SetK8sPodUID(string(pod.UID))
+	e.SetK8sNamespaceName(pod.Namespace)
+	e.SetK8sNodeName(pod.Spec.NodeName)
+
+	eb := mb.ForK8sContainer(e)
+
 	for k, r := range c.Resources.Requests {
 		//exhaustive:ignore
 		switch k {
 		case corev1.ResourceCPU:
-			mb.RecordK8sContainerCPURequestDataPoint(ts, float64(r.MilliValue())/1000.0) //nolint:staticcheck
+			eb.RecordK8sContainerCPURequestDataPoint(ts, float64(r.MilliValue())/1000.0)
 		case corev1.ResourceMemory:
-			mb.RecordK8sContainerMemoryRequestDataPoint(ts, r.Value()) //nolint:staticcheck
+			eb.RecordK8sContainerMemoryRequestDataPoint(ts, r.Value())
 		case corev1.ResourceStorage:
-			mb.RecordK8sContainerStorageRequestDataPoint(ts, r.Value()) //nolint:staticcheck
+			eb.RecordK8sContainerStorageRequestDataPoint(ts, r.Value())
 		case corev1.ResourceEphemeralStorage:
-			mb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, r.Value()) //nolint:staticcheck
+			eb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, r.Value())
 		default:
 			logger.Debug("unsupported request type", zap.Any("type", k))
 		}
@@ -66,46 +98,34 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 		//exhaustive:ignore
 		switch k {
 		case corev1.ResourceCPU:
-			mb.RecordK8sContainerCPULimitDataPoint(ts, float64(l.MilliValue())/1000.0) //nolint:staticcheck
+			eb.RecordK8sContainerCPULimitDataPoint(ts, float64(l.MilliValue())/1000.0)
 		case corev1.ResourceMemory:
-			mb.RecordK8sContainerMemoryLimitDataPoint(ts, l.Value()) //nolint:staticcheck
+			eb.RecordK8sContainerMemoryLimitDataPoint(ts, l.Value())
 		case corev1.ResourceStorage:
-			mb.RecordK8sContainerStorageLimitDataPoint(ts, l.Value()) //nolint:staticcheck
+			eb.RecordK8sContainerStorageLimitDataPoint(ts, l.Value())
 		case corev1.ResourceEphemeralStorage:
-			mb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, l.Value()) //nolint:staticcheck
+			eb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, l.Value())
 		default:
 			logger.Debug("unsupported request type", zap.Any("type", k))
 		}
 	}
 
-	rb := mb.NewResourceBuilder()
-	var containerID string
-	var imageStr string
-	for i := range pod.Status.ContainerStatuses {
-		cs := pod.Status.ContainerStatuses[i]
-		if cs.Name != c.Name {
-			continue
-		}
-		containerID = cs.ContainerID
-		imageStr = cs.Image
-		mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount)) //nolint:staticcheck
-		mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))     //nolint:staticcheck
-		if cs.LastTerminationState.Terminated != nil {
-			rb.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
-		}
+	if cs != nil {
+		eb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
+		eb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
 		switch {
 		case cs.State.Running != nil:
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 1, metadata.AttributeK8sContainerStatusStateRunning)    //nolint:staticcheck
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateWaiting)    //nolint:staticcheck
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateTerminated) //nolint:staticcheck
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 1, metadata.AttributeK8sContainerStatusStateRunning)
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateWaiting)
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateTerminated)
 		case cs.State.Terminated != nil:
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateRunning)    //nolint:staticcheck
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateWaiting)    //nolint:staticcheck
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 1, metadata.AttributeK8sContainerStatusStateTerminated) //nolint:staticcheck
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateRunning)
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateWaiting)
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 1, metadata.AttributeK8sContainerStatusStateTerminated)
 		case cs.State.Waiting != nil:
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateRunning)    //nolint:staticcheck
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 1, metadata.AttributeK8sContainerStatusStateWaiting)    //nolint:staticcheck
-			mb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateTerminated) //nolint:staticcheck
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateRunning)
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 1, metadata.AttributeK8sContainerStatusStateWaiting)
+			eb.RecordK8sContainerStatusStateDataPoint(ts, 0, metadata.AttributeK8sContainerStatusStateTerminated)
 		}
 
 		// Record k8s.container.status.reason metric: for each known reason emit 1 for the current one, 0 otherwise.
@@ -124,25 +144,11 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 			if reason != "" && reason == attrVal.String() {
 				val = 1
 			}
-			mb.RecordK8sContainerStatusReasonDataPoint(ts, val, attrVal) //nolint:staticcheck
+			eb.RecordK8sContainerStatusReasonDataPoint(ts, val, attrVal)
 		}
-		break
 	}
 
-	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetK8sPodName(pod.Name)
-	rb.SetK8sNodeName(pod.Spec.NodeName)
-	rb.SetK8sNamespaceName(pod.Namespace)
-	rb.SetContainerID(stripContainerID(containerID))
-	rb.SetK8sContainerName(c.Name)
-	image, err := docker.ParseImageName(imageStr)
-	if err != nil {
-		docker.LogParseError(err, imageStr, logger)
-	} else {
-		rb.SetContainerImageName(image.Repository)
-		rb.SetContainerImageTag(image.Tag)
-	}
-	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
+	eb.Emit()
 }
 
 func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger) *metadata.KubernetesMetadata {
