@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -21,6 +22,7 @@ type Event interface {
 	Status() componentstatus.Status
 	Err() error
 	Timestamp() time.Time
+	Attributes() pcommon.Map
 }
 
 // Scope refers to a part of an AggregateStatus. The zero-value, aka ScopeAll,
@@ -96,7 +98,7 @@ type Aggregator struct {
 func NewAggregator(errPriority ErrorPriority) *Aggregator {
 	return &Aggregator{
 		aggregateStatus: &AggregateStatus{
-			Event:              &componentstatus.Event{},
+			Event:              componentstatus.NewEvent(componentstatus.StatusNone),
 			ComponentStatusMap: make(map[string]*AggregateStatus),
 		},
 		subscriptions:   make(map[string]*list.List),

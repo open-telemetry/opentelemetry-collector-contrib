@@ -131,7 +131,7 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			testutil.SetFeatureGateForTest(t, removeServerResourceAttributeFeatureGate, test.removeServerResourceAttributeFeatureGate)
+			testutil.SetFeatureGateForTest(t, metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate, test.removeServerResourceAttributeFeatureGate)
 			cfg := createDefaultConfig().(*Config)
 			cfg.Username = "sa"
 			cfg.Password = "password"

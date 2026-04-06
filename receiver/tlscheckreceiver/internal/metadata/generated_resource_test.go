@@ -29,11 +29,10 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("tlscheck.target")
+			tlscheckTargetAttrVal, ok := res.Attributes().Get("tlscheck.target")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "tlscheck.target-val", val.Str())
+				assert.Equal(t, "tlscheck.target-val", tlscheckTargetAttrVal.Str())
 			}
 		})
 	}

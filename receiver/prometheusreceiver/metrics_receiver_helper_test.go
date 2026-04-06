@@ -151,13 +151,26 @@ func (s *signalingSink) Wait(t *testing.T, timeout time.Duration) {
 func countExpectedScrapes(targets []*testData) int {
 	count := 0
 	for _, target := range targets {
-		for _, p := range target.pages {
-			if p.code != 404 {
-				count++
-			}
-		}
+		count += getTargetExpectedScrapes(target)
 	}
 	return count
+}
+
+func getTargetExpectedScrapes(target *testData) int {
+	wantTotal := 0
+	for _, p := range target.pages {
+		if p.code != 404 {
+			wantTotal++
+		}
+	}
+	return wantTotal
+}
+
+func getTargetName(target *testData) string {
+	if target.relabeledJob != "" {
+		return target.relabeledJob
+	}
+	return target.name
 }
 
 // -------------------------
@@ -197,7 +210,6 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
 		job["scrape_interval"] = "100ms"
-		job["scrape_timeout"] = "50ms"
 		job["static_configs"] = []map[string]any{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}
@@ -843,26 +855,30 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	// Wait for consumer to receive all expected scrapes (deterministic, replaces polling).
 	cms.Wait(t, 30*time.Second)
 
-	// This begins the processing of the scrapes collected by the receiver
-	metrics := cms.AllMetrics()
-	// split and store results by target name
-	pResults := splitMetricsByTarget(metrics)
-	lres, lep := len(pResults), len(mp.endpoints)
-	// There may be an additional scrape entry between when the mock server provided
-	// all responses and when we capture the metrics.  It will be ignored later.
-	assert.GreaterOrEqualf(t, lres, lep, "want at least %d targets, but got %v\n", lep, lres)
+	// Wait for per-target scrape counts, capturing the snapshot used for validation.
+	var pResults map[string][]pmetric.ResourceMetrics
+	require.Eventually(t, func() bool {
+		metrics := cms.AllMetrics()
+		pResults = splitMetricsByTarget(metrics)
+		for _, target := range targets[:len(mp.endpoints)] {
+			scrapes := pResults[getTargetName(target)]
+
+			// There may be an additional scrape entry between when the mock server provided
+			// all responses and when we capture the metrics.  It will be ignored later.
+			if len(scrapes) < getTargetExpectedScrapes(target) {
+				return false
+			}
+		}
+		return true
+	}, 10*time.Second, 10*time.Millisecond, "failed to receive expected scrapes")
 
 	// loop to validate outputs for each targets
 	// Stop once we have evaluated all expected results, any others are superfluous.
-	for _, target := range targets[:lep] {
+	for _, target := range targets[:len(mp.endpoints)] {
 		t.Run(target.name, func(t *testing.T) {
-			name := target.name
-			if target.relabeledJob != "" {
-				name = target.relabeledJob
-			}
-			scrapes := pResults[name]
+			scrapes := pResults[getTargetName(target)]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name], target)
+				scrapes = getValidScrapes(t, scrapes, target)
 			}
 			target.validateFunc(t, target, scrapes)
 		})

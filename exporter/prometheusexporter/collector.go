@@ -276,6 +276,14 @@ func (c *collector) convertExponentialHistogram(metric pmetric.Metric, resourceA
 		return nil, err
 	}
 
+	exemplars := convertExemplars(dp.Exemplars())
+	if len(exemplars) > 0 {
+		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if c.sendTimestamps {
 		return prometheus.NewMetricWithTimestamp(dp.Timestamp().AsTime(), m), nil
 	}

@@ -405,6 +405,39 @@ func TestBearerTokenMultipleTokensInFile(t *testing.T) {
 	}
 }
 
+func TestAuthenticateErrorDoesNotExposeToken(t *testing.T) {
+	const validToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // #nosec
+	const invalidToken = "supersecretinvalidtoken123"            // #nosec
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = "Bearer"
+	cfg.BearerToken = validToken
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	ctx := t.Context()
+	assert.NoError(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	// Authenticate with an invalid token
+	_, err := bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + invalidToken}})
+	assert.Error(t, err)
+
+	// The error message must NOT contain the invalid token value
+	assert.NotContains(t, err.Error(), invalidToken,
+		"error message should not expose the bearer token value")
+
+	// The error message must NOT contain the valid/expected token either
+	assert.NotContains(t, err.Error(), validToken,
+		"error message should not expose the expected token value")
+
+	// Verify the error still communicates the authentication failure
+	assert.Contains(t, err.Error(), "does not match",
+		"error message should indicate authentication failure")
+
+	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
+
 func TestCustomHeaderRoundTrip(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Header = "X-Custom-Authorization"
