@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -376,6 +377,51 @@ func TestScrapeV2(t *testing.T) {
 	}
 }
 
+// TestScrapeV2Streaming verifies that with stream_stats enabled the scraper reads
+// stats from the persistent stream cache once the first frame has been delivered.
+func TestScrapeV2Streaming(t *testing.T) {
+	dockerAPIVersion := defaultDockerAPIVersion
+	containerID := "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326"
+	mockDockerEngine, err := dockerMockServer(&map[string]string{
+		"/v" + dockerAPIVersion + "/containers/json":                      filepath.Join(mockFolder, "single_container", "containers.json"),
+		"/v" + dockerAPIVersion + "/containers/" + containerID + "/json":  filepath.Join(mockFolder, "single_container", "container.json"),
+		"/v" + dockerAPIVersion + "/containers/" + containerID + "/stats": filepath.Join(mockFolder, "single_container", "stats.json"),
+	})
+	require.NoError(t, err)
+	defer mockDockerEngine.Close()
+
+	receiver := newMetricsReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		newTestConfigBuilder().
+			withDefaultLabels().
+			withMetrics(allMetricsEnabled).
+			withAPIVersion(dockerAPIVersion).
+			withStreamStats(true).
+			withEndpoint(mockDockerEngine.URL).build())
+
+	err = receiver.start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() { require.NoError(t, receiver.shutdown(t.Context())) }()
+
+	// Streaming goroutines deliver stats asynchronously; poll until the cache is populated.
+	var actualMetrics pmetric.Metrics
+	require.Eventually(t, func() bool {
+		var scrapeErr error
+		actualMetrics, scrapeErr = receiver.scrapeV2(t.Context())
+		return scrapeErr == nil && actualMetrics.ResourceMetrics().Len() > 0
+	}, 5*time.Second, 10*time.Millisecond, "timed out waiting for streaming container stats")
+
+	expectedMetrics, err := golden.ReadMetrics(filepath.Join(mockFolder, "single_container", "expected_metrics.yaml"))
+	require.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricValues("container.uptime"),
+	))
+}
+
 func TestRecordBaseMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsConfig := metadata.DefaultMetricsConfig()
@@ -467,6 +513,11 @@ func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsConfig) *testConfigB
 
 func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesConfig) *testConfigBuilder {
 	cb.config.ResourceAttributes = ras
+	return cb
+}
+
+func (cb *testConfigBuilder) withStreamStats(enabled bool) *testConfigBuilder {
+	cb.config.StreamStats = enabled
 	return cb
 }
 

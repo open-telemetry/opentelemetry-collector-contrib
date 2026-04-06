@@ -20,7 +20,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && github.event.pull_request.draft == false && toJSON(github.event.pull_request.assignees) == '[]' }}
     steps:
       - name: run
-        uses: kentaro-m/auto-assign-action@a6d59add3a817df08cafa9b166367768d2c337f8 # v2.0.1
+        uses: kentaro-m/auto-assign-action@0a2c53d3721e4c5cfcce6afd4014aecc337979f6 # v2.0.2
         with:
           configuration-path: ".github/auto_assign.yml"
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
