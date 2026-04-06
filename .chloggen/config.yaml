@@ -290,7 +290,7 @@ components:
     - receiver/mongodb
     - receiver/mongodb_atlas
     - receiver/mysql
-    - receiver/namedpipe
+    - receiver/named_pipe
     - receiver/netflow
     - receiver/nginx
     - receiver/nsxt
@@ -328,10 +328,10 @@ components:
     - receiver/stef
     - receiver/syslog
     - receiver/systemd
+    - receiver/tcp_log
     - receiver/tcpcheck
-    - receiver/tcplog
     - receiver/tlscheck
-    - receiver/udplog
+    - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
     - receiver/wavefront

@@ -1,0 +1,9 @@
+change_type: "enhancement"
+component: "pkg/ottl"
+note: "Add Coalesce converter that returns the first non-nil value from a list of arguments."
+issues: [46847]
+subtext: |
+  The Coalesce converter accepts a list of values and returns the first one that is not nil.
+  This simplifies common patterns where a canonical attribute must be resolved from multiple possible sources.
+  Example: `set(attributes["user"], Coalesce([attributes["user.id"], attributes["enduser.id"], "unknown"]))`
+change_logs: ["user"]
