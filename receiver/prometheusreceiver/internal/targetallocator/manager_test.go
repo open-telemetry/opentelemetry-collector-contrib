@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 func TestNewManager(t *testing.T) {
@@ -37,7 +37,7 @@ func TestNewManager(t *testing.T) {
 		},
 	}
 
-	manager := NewManager(receivertest.NewNopSettings(mdata.Type), cfg, promCfg)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, promCfg)
 
 	assert.NotNil(t, manager)
 	assert.Equal(t, cfg, manager.cfg)
@@ -68,7 +68,7 @@ func TestManagerShutdown(t *testing.T) {
 	// Create a logger with observer to capture logs
 	core, logs := observer.New(zapcore.InfoLevel)
 	logger := zap.New(core)
-	settings := receivertest.NewNopSettings(mdata.Type)
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 
 	manager := NewManager(settings, cfg, promCfg)
