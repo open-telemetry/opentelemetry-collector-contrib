@@ -2133,7 +2133,7 @@ func newTxn(t *testing.T, useMetadata bool) *transaction {
 	return newTransaction(ctx, sink, labels.EmptyLabels(), settings, newObs(t), false, useMetadata)
 }
 
-// ---- AppenderV2 wrapper tests ----
+// ---- Append tests ----
 //
 // These tests validate the V2 append surface used by Prometheus:
 // transaction.Append(...) -> transaction.AppendV2(...).
@@ -2142,7 +2142,7 @@ func newTxn(t *testing.T, useMetadata bool) *transaction {
 // validate method-specific behavior that is not exposed as independent calls in
 // the V2 interface (for example, direct AppendExemplar/STZero contract checks).
 
-func TestTransactionAppenderV2WrapperAppend(t *testing.T) {
+func TestTransactionAppend(t *testing.T) {
 	type testCase struct {
 		name               string
 		stMs               int64
