@@ -102,6 +102,7 @@ func (c *RecordPartitionerConfig) Validate() error {
 
 func (c *RecordPartitionerConfig) Unmarshal(conf *confmap.Conf) error {
 	// Use reflection to clear all fields
+	// This is done to ensure that default partioner is not retained when Unmarshaling. Doing so will ensure that only one partitioner is set at a time and the validation will work as expected.
 	v := reflect.ValueOf(c).Elem()
 
 	for i := 0; i < v.NumField(); i++ {
