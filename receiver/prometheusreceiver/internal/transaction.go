@@ -116,10 +116,9 @@ func (t *transaction) append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	return t.addSampleDatapoint(*rKey, scope, ls, metricName, atMs, val, 0)
 }
 
-// addSampleDatapoint adds a regular sample datapoint. It handles special metrics
-// (up, target_info, otel_scope_info) and staleness detection. When stMs > 0,
-// it also records a creation timestamp on the metric family.
-// It is shared by both V1 and V2 appender paths.
+// addSampleDatapoint processes one scraped sample and stores it in the
+// appropriate metric family for the resource/scope context. It is shared by
+// both V1 and V2 appender paths.
 func (t *transaction) addSampleDatapoint(rKey resourceKey, scope scopeID, ls labels.Labels, metricName string, atMs int64, val float64, stMs int64) (storage.SeriesRef, error) {
 	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
