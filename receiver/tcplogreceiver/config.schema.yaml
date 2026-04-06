@@ -1,4 +1,4 @@
-description: TCPLogConfig defines configuration for the tcp receiver
+description: TCPLogConfig defines configuration for the tcp_log receiver
 type: object
 allOf:
   - $ref: /pkg/stanza/operator/input/tcp.config
