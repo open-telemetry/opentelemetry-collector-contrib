@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -38,7 +37,7 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	dp.Attributes().PutStr("network.peer.address", networkPeerAddressAttributeValue)
 	dp.Attributes().PutInt("network.peer.port", networkPeerPortAttributeValue)
 	dp.Attributes().PutInt("sqlserver.blocking_session_id", sqlserverBlockingSessionIDAttributeValue)
-	dp.Attributes().PutStr("sqlserver.blocking_start_time", sqlserverBlockingStartTimeAttributeValue)
+	dp.Attributes().PutStr("sqlserver.blocking.start_time", sqlserverBlockingStartTimeAttributeValue)
 	dp.Attributes().PutStr("sqlserver.context_info", sqlserverContextInfoAttributeValue)
 	dp.Attributes().PutStr("sqlserver.command", sqlserverCommandAttributeValue)
 	dp.Attributes().PutDouble("sqlserver.cpu_time", sqlserverCPUTimeAttributeValue)
@@ -53,8 +52,8 @@ func (e *eventDbServerQuerySample) recordEvent(ctx context.Context, timestamp pc
 	dp.Attributes().PutStr("sqlserver.query_start", sqlserverQueryStartAttributeValue)
 	dp.Attributes().PutInt("sqlserver.reads", sqlserverReadsAttributeValue)
 	dp.Attributes().PutStr("sqlserver.request_status", sqlserverRequestStatusAttributeValue)
-	dp.Attributes().PutStr("sqlserver.resource_id", sqlserverResourceIDAttributeValue)
-	dp.Attributes().PutStr("sqlserver.resource_type", sqlserverResourceTypeAttributeValue)
+	dp.Attributes().PutStr("sqlserver.resource.id", sqlserverResourceIDAttributeValue)
+	dp.Attributes().PutStr("sqlserver.resource.type", sqlserverResourceTypeAttributeValue)
 	dp.Attributes().PutInt("sqlserver.row_count", sqlserverRowCountAttributeValue)
 	dp.Attributes().PutInt("sqlserver.session_id", sqlserverSessionIDAttributeValue)
 	dp.Attributes().PutStr("sqlserver.session_status", sqlserverSessionStatusAttributeValue)

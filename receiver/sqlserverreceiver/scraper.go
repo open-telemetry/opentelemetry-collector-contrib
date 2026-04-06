@@ -172,17 +172,17 @@ func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
 				}
 
 				blockingSessionIDAttr, hasBlockingSession := logRecord.Attributes().Get("sqlserver.blocking_session_id")
-				blockingStartTimeAttr, hasBlockingStartTime := logRecord.Attributes().Get("sqlserver.blocking_start_time")
+				blockingStartTimeAttr, hasBlockingStartTime := logRecord.Attributes().Get("sqlserver.blocking.start_time")
 				if !hasBlockingSession || !hasBlockingStartTime || blockingSessionIDAttr.Int() <= 0 || blockingStartTimeAttr.Str() == "" {
-					logRecord.Attributes().Remove("sqlserver.blocking_start_time")
+					logRecord.Attributes().Remove("sqlserver.blocking.start_time")
 				}
-				resourceTypeAttr, hasResourceType := logRecord.Attributes().Get("sqlserver.resource_type")
+				resourceTypeAttr, hasResourceType := logRecord.Attributes().Get("sqlserver.resource.type")
 				if !hasResourceType || resourceTypeAttr.Str() == "" {
-					logRecord.Attributes().Remove("sqlserver.resource_type")
+					logRecord.Attributes().Remove("sqlserver.resource.type")
 				}
-				resourceIDAttr, hasResourceID := logRecord.Attributes().Get("sqlserver.resource_id")
+				resourceIDAttr, hasResourceID := logRecord.Attributes().Get("sqlserver.resource.id")
 				if !hasResourceID || resourceIDAttr.Str() == "" {
-					logRecord.Attributes().Remove("sqlserver.resource_id")
+					logRecord.Attributes().Remove("sqlserver.resource.id")
 				}
 			}
 		}
@@ -1123,7 +1123,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	resourcesAdded := false
 	propagator := propagation.TraceContext{}
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	now := time.Now()
+	timestamp := pcommon.NewTimestampFromTime(now)
 	dbSystemNameVal := "microsoft.sql_server"
 
 	for _, row := range rows {
@@ -1176,7 +1177,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
 		blockingStartTimeVal := ""
 		if blockSessionIDVal > 0 && waitTimeMillisecondVal > 0 {
-			blockingStartTimeVal = time.Now().Add(-time.Duration(waitTimeMillisecondVal) * time.Millisecond).Format(time.RFC3339)
+			blockingStartTimeVal = now.Add(-time.Duration(waitTimeMillisecondVal) * time.Millisecond).Format(time.RFC3339)
 		}
 		waitTypeVal := row[waitType]
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
