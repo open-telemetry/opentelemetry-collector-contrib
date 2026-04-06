@@ -11,6 +11,8 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -123,6 +125,25 @@ func TestTranslateStats(t *testing.T) {
 
 		assert.Len(t, results, 1)
 		assert.True(t, proto.Equal(want, results[0].Stats[0]))
+	})
+
+	t.Run("valid_temporality", func(t *testing.T) {
+		st := NewStatsTranslator()
+		mx, err := st.TranslateStats(want, lang, tracerVersion)
+		assert.NoError(t, err)
+
+		require.Equal(t, 1, mx.ResourceMetrics().Len())
+		rm := mx.ResourceMetrics().At(0)
+		require.Equal(t, 1, rm.ScopeMetrics().Len())
+		sm := rm.ScopeMetrics().At(0)
+		require.Equal(t, 1, sm.Metrics().Len())
+		md := sm.Metrics().At(0)
+
+		assert.Equal(t, keyStatsPayload, md.Name())
+		assert.Equal(t, pmetric.MetricTypeSum, md.Type())
+		assert.Equal(t, pmetric.AggregationTemporalityDelta, md.Sum().AggregationTemporality(),
+			"AggregationTemporality must not be Unspecified; Delta is expected for client-computed stats")
+		assert.False(t, md.Sum().IsMonotonic())
 	})
 }
 
