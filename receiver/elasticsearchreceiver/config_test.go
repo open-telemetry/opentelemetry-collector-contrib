@@ -192,7 +192,12 @@ func TestLoadConfig(t *testing.T) {
 			if diff := cmp.Diff(
 				tt.expected,
 				cfg,
-				cmpopts.IgnoreUnexported(metadata.MetricConfig{}),
+				cmp.FilterPath(
+					func(fp cmp.Path) bool {
+						return fp.Last().String() == ".enabledSetByUser"
+					},
+					cmp.Ignore(),
+				),
 				cmpopts.IgnoreUnexported(configoptional.Optional[configauth.Config]{}),
 				cmpopts.IgnoreUnexported(configoptional.Optional[confighttp.CookiesConfig]{}),
 				cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {

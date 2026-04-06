@@ -133,7 +133,7 @@ func TestAccessValueTypeRoot_Setter(t *testing.T) {
 			name:     "invalid value",
 			setValue: "not_a_value_type",
 			wantErr:  true,
-			errMsg:   "expected a pprofile.ValueType value for path \"sample_type\", got string",
+			errMsg:   "path \"sample_type\" expects pprofile.ValueType but got string",
 		},
 	}
 
@@ -279,7 +279,7 @@ func TestAccessValueTypeType_Setter(t *testing.T) {
 			},
 			setValue: 123,
 			wantErr:  true,
-			errMsg:   "expected a string value for path \"type\", got int",
+			errMsg:   "path \"type\" expects string but got int",
 		},
 	}
 
@@ -432,7 +432,7 @@ func TestAccessValueTypeUnit_Setter(t *testing.T) {
 			},
 			setValue: 456,
 			wantErr:  true,
-			errMsg:   "expected a string value for path \"unit\", got int",
+			errMsg:   "path \"unit\" expects string but got int",
 		},
 	}
 
