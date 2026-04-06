@@ -23,11 +23,11 @@ import (
 
 const (
 	// defaultAPIQPS is the default number of queries per second to the Kubernetes API.
-	// client-go's built-in default is 5, which is too conservative for a receiver
-	// that may watch or poll many resources simultaneously.
-	defaultAPIQPS float32 = 200
+	// Matches client-go's built-in default.
+	defaultAPIQPS float32 = 5
 	// defaultAPIBurst is the default burst limit for requests to the Kubernetes API.
-	defaultAPIBurst int = 300
+	// Matches client-go's built-in default.
+	defaultAPIBurst int = 10
 )
 
 const (
@@ -74,11 +74,11 @@ type Config struct {
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
 	// APIQPS is the maximum number of queries per second to the Kubernetes API.
-	// Defaults to 200. Increase this if you see client-side throttling warnings.
+	// Defaults to 5 (client-go default). Increase this if you see client-side throttling warnings.
 	APIQPS float32 `mapstructure:"api_qps"`
 
 	// APIBurst is the maximum burst of requests to the Kubernetes API.
-	// Defaults to 300.
+	// Defaults to 10 (client-go default). Increase this if you see client-side throttling warnings.
 	APIBurst int `mapstructure:"api_burst"`
 
 	// For mocking purposes only.
