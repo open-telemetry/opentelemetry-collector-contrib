@@ -22,18 +22,6 @@ override the resource value in telemetry data with this information.
 > **Note**
 >
 > If a configured resource detector fails, the error will propagate and stop the collector from starting.
-> The `processor.resourcedetection.propagateerrors` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) is now stable and always enabled
-> (as of v0.146.0).
-
-## Feature gates
-
-See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
-
-Feature gates can be enabled using the `--feature-gates` flag:
-
-```shell
-"--feature-gates=<feature-gate>"
-```
 
 ## Supported detectors
 
