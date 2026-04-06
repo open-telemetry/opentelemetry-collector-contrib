@@ -30,6 +30,7 @@ type ListObjectsAPI interface {
 
 type SingleObjectAPI interface {
 	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	GetObjectTagging(ctx context.Context, params *s3.GetObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error)
 	PutObjectTagging(ctx context.Context, params *s3.PutObjectTaggingInput, optFns ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error)
 }
 
@@ -66,22 +67,27 @@ func (api *s3ListObjectsAPIImpl) NewListObjectsV2Paginator(params *s3.ListObject
 	return s3.NewListObjectsV2Paginator(api.client, params)
 }
 
-// retrieveS3Object retrieves S3 object content for a given bucket and key
-func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) ([]byte, error) {
+// retrieveS3Object retrieves S3 object content and tag count for a given bucket and key
+func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) ([]byte, int32, error) {
 	params := s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 	}
 	output, err := client.GetObject(ctx, &params)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer output.Body.Close()
 	contents, err := io.ReadAll(output.Body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return contents, nil
+
+	tagCount := int32(0)
+	if output.TagCount != nil {
+		tagCount = *output.TagCount
+	}
+	return contents, tagCount, nil
 }
 
 // tagS3Object tags an S3 object for a given bucket and key
@@ -100,4 +106,24 @@ func tagS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string
 	}
 	_, err := client.PutObjectTagging(ctx, &params)
 	return err
+}
+
+// hasIngestedTag checks if an S3 object has the ingested tag set
+func hasIngestedTag(ctx context.Context, client SingleObjectAPI, bucket, key string) (bool, error) {
+	params := s3.GetObjectTaggingInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}
+	output, err := client.GetObjectTagging(ctx, &params)
+	if err != nil {
+		return false, err
+	}
+
+	for _, tag := range output.TagSet {
+		if tag.Key != nil && *tag.Key == ingestedTag &&
+			tag.Value != nil && *tag.Value == ingestedStatus {
+			return true, nil
+		}
+	}
+	return false, nil
 }

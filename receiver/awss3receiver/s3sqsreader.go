@@ -58,15 +58,16 @@ type snsMessage struct {
 
 // s3SQSNotificationReader listens for SNS notifications about new S3 objects
 type s3SQSNotificationReader struct {
-	logger                  *zap.Logger
-	s3Client                SingleObjectAPI
-	sqsClient               sqsClient
-	queueURL                string
-	s3Bucket                string
-	s3Prefix                string
-	maxNumberOfMessages     int32
-	waitTimeSeconds         int32
-	tagObjectAfterIngestion bool
+	logger                     *zap.Logger
+	s3Client                   SingleObjectAPI
+	sqsClient                  sqsClient
+	queueURL                   string
+	s3Bucket                   string
+	s3Prefix                   string
+	maxNumberOfMessages        int32
+	waitTimeSeconds            int32
+	tagObjectAfterIngestion    bool
+	skipIngestingTaggedObjects bool
 }
 
 func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQSNotificationReader, error) {
@@ -96,15 +97,16 @@ func newS3SQSReader(ctx context.Context, logger *zap.Logger, cfg *Config) (*s3SQ
 	}
 
 	return &s3SQSNotificationReader{
-		logger:                  logger,
-		s3Client:                singleObjectClient,
-		sqsClient:               sqsAPIClient,
-		queueURL:                cfg.SQS.QueueURL,
-		s3Bucket:                cfg.S3Downloader.S3Bucket,
-		s3Prefix:                cfg.S3Downloader.S3Prefix,
-		maxNumberOfMessages:     maxMessages,
-		waitTimeSeconds:         waitTime,
-		tagObjectAfterIngestion: cfg.S3Downloader.TagObjectAfterIngestion,
+		logger:                     logger,
+		s3Client:                   singleObjectClient,
+		sqsClient:                  sqsAPIClient,
+		queueURL:                   cfg.SQS.QueueURL,
+		s3Bucket:                   cfg.S3Downloader.S3Bucket,
+		s3Prefix:                   cfg.S3Downloader.S3Prefix,
+		maxNumberOfMessages:        maxMessages,
+		waitTimeSeconds:            waitTime,
+		tagObjectAfterIngestion:    cfg.S3Downloader.TagObjectAfterIngestion,
+		skipIngestingTaggedObjects: cfg.S3Downloader.SkipIngestingTaggedObjects,
 	}, nil
 }
 
@@ -205,7 +207,8 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 						zap.String("key", decodedKey))
 
 					var content []byte
-					content, err = retrieveS3Object(ctx, r.s3Client, bucket, decodedKey)
+					var tagCount int32
+					content, tagCount, err = retrieveS3Object(ctx, r.s3Client, bucket, decodedKey)
 					if err != nil {
 						r.logger.Warn("Failed to get S3 object",
 							zap.String("bucket", bucket),
@@ -218,6 +221,24 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 							allRecordsSucceeded = false
 						}
 						continue
+					}
+
+					if r.skipIngestingTaggedObjects && tagCount > 0 {
+						var hasTag bool
+						hasTag, err = hasIngestedTag(ctx, r.s3Client, bucket, decodedKey)
+						if err != nil {
+							r.logger.Warn("Failed to check object tags",
+								zap.String("bucket", bucket),
+								zap.String("key", decodedKey),
+								zap.Error(err))
+							allRecordsSucceeded = false
+							continue
+						} else if hasTag {
+							r.logger.Info("Skipping already ingested object",
+								zap.String("bucket", bucket),
+								zap.String("key", decodedKey))
+							continue
+						}
 					}
 
 					err = callback(ctx, decodedKey, content)
