@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("ciscoos")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver"
+	Type           = component.MustNewType("cisco_os")
+	DeprecatedType = component.MustNewType("ciscoos")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ciscoosreceiver"
 )
 
 const (

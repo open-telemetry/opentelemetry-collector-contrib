@@ -61,6 +61,7 @@ type StatsDParser struct {
 	enableSimpleTags        bool
 	isMonotonicCounter      bool
 	enableIPOnlyAggregation bool
+	counterType             protocol.CounterType
 	timerEvents             ObserverCategory
 	histogramEvents         ObserverCategory
 	lastIntervalTime        time.Time
@@ -201,7 +202,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotonicCounter, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping, counterType protocol.CounterType) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -210,6 +211,7 @@ func (p *StatsDParser) Initialize(enableMetricType, enableSimpleTags, isMonotoni
 	p.enableSimpleTags = enableSimpleTags
 	p.isMonotonicCounter = isMonotonicCounter
 	p.enableIPOnlyAggregation = enableIPOnlyAggregation
+	p.counterType = counterType
 
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
@@ -345,6 +347,15 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		return err
 	}
 
+	// Discard NaN and infinite values for all metric types
+	if math.IsNaN(parsedMetric.asFloat) || math.IsInf(parsedMetric.asFloat, 0) {
+		reason := "NaN"
+		if math.IsInf(parsedMetric.asFloat, 0) {
+			reason = "infinite"
+		}
+		return fmt.Errorf("discarding metric %q: invalid %s value", parsedMetric.description.name, reason)
+	}
+
 	addrKey := newNetAddr(addr)
 	if p.enableIPOnlyAggregation {
 		addrKey = newIPOnlyNetAddr(addr)
@@ -373,10 +384,10 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	case CounterType:
 		_, ok := instrument.counters[parsedMetric.description]
 		if !ok {
-			instrument.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter)
+			instrument.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, p.counterType)
 		} else {
 			point := instrument.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
-			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
+			aggregateCounterValue(point, parsedMetric.counterValue(), p.counterType)
 		}
 
 	case TimingType, HistogramType, DistributionType:

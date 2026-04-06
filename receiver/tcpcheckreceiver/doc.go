@@ -3,4 +3,4 @@
 
 package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver"
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen

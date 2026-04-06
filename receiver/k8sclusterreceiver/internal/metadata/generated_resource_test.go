@@ -47,6 +47,11 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sServiceName("k8s.service.name-val")
+			rb.SetK8sServicePublishNotReadyAddresses(false)
+			rb.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
+			rb.SetK8sServiceType("k8s.service.type-val")
+			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
@@ -59,215 +64,239 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 30, res.Attributes().Len())
+				assert.Equal(t, 33, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 40, res.Attributes().Len())
+				assert.Equal(t, 45, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("container.id")
+			containerIDAttrVal, ok := res.Attributes().Get("container.id")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.id-val", val.Str())
+				assert.Equal(t, "container.id-val", containerIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.image.name")
+			containerImageNameAttrVal, ok := res.Attributes().Get("container.image.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.image.name-val", val.Str())
+				assert.Equal(t, "container.image.name-val", containerImageNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.image.tag")
+			containerImageTagAttrVal, ok := res.Attributes().Get("container.image.tag")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "container.image.tag-val", val.Str())
+				assert.Equal(t, "container.image.tag-val", containerImageTagAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.runtime")
+			containerRuntimeAttrVal, ok := res.Attributes().Get("container.runtime")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "container.runtime-val", val.Str())
+				assert.Equal(t, "container.runtime-val", containerRuntimeAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("container.runtime.version")
+			containerRuntimeVersionAttrVal, ok := res.Attributes().Get("container.runtime.version")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "container.runtime.version-val", val.Str())
+				assert.Equal(t, "container.runtime.version-val", containerRuntimeVersionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.container.name")
+			k8sContainerNameAttrVal, ok := res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.container.name-val", val.Str())
+				assert.Equal(t, "k8s.container.name-val", k8sContainerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.container.status.last_terminated_reason")
+			k8sContainerStatusLastTerminatedReasonAttrVal, ok := res.Attributes().Get("k8s.container.status.last_terminated_reason")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "k8s.container.status.last_terminated_reason-val", val.Str())
+				assert.Equal(t, "k8s.container.status.last_terminated_reason-val", k8sContainerStatusLastTerminatedReasonAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.cronjob.name")
+			k8sCronjobNameAttrVal, ok := res.Attributes().Get("k8s.cronjob.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.cronjob.name-val", val.Str())
+				assert.Equal(t, "k8s.cronjob.name-val", k8sCronjobNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.cronjob.uid")
+			k8sCronjobUIDAttrVal, ok := res.Attributes().Get("k8s.cronjob.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.cronjob.uid-val", val.Str())
+				assert.Equal(t, "k8s.cronjob.uid-val", k8sCronjobUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.daemonset.name")
+			k8sDaemonsetNameAttrVal, ok := res.Attributes().Get("k8s.daemonset.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.daemonset.name-val", val.Str())
+				assert.Equal(t, "k8s.daemonset.name-val", k8sDaemonsetNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.daemonset.uid")
+			k8sDaemonsetUIDAttrVal, ok := res.Attributes().Get("k8s.daemonset.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.daemonset.uid-val", val.Str())
+				assert.Equal(t, "k8s.daemonset.uid-val", k8sDaemonsetUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.deployment.name")
+			k8sDeploymentNameAttrVal, ok := res.Attributes().Get("k8s.deployment.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.deployment.name-val", val.Str())
+				assert.Equal(t, "k8s.deployment.name-val", k8sDeploymentNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.deployment.uid")
+			k8sDeploymentUIDAttrVal, ok := res.Attributes().Get("k8s.deployment.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.deployment.uid-val", val.Str())
+				assert.Equal(t, "k8s.deployment.uid-val", k8sDeploymentUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.hpa.name")
+			k8sHpaNameAttrVal, ok := res.Attributes().Get("k8s.hpa.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.hpa.name-val", val.Str())
+				assert.Equal(t, "k8s.hpa.name-val", k8sHpaNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.hpa.scaletargetref.apiversion")
+			k8sHpaScaletargetrefApiversionAttrVal, ok := res.Attributes().Get("k8s.hpa.scaletargetref.apiversion")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "k8s.hpa.scaletargetref.apiversion-val", val.Str())
+				assert.Equal(t, "k8s.hpa.scaletargetref.apiversion-val", k8sHpaScaletargetrefApiversionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.hpa.scaletargetref.kind")
+			k8sHpaScaletargetrefKindAttrVal, ok := res.Attributes().Get("k8s.hpa.scaletargetref.kind")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "k8s.hpa.scaletargetref.kind-val", val.Str())
+				assert.Equal(t, "k8s.hpa.scaletargetref.kind-val", k8sHpaScaletargetrefKindAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.hpa.scaletargetref.name")
+			k8sHpaScaletargetrefNameAttrVal, ok := res.Attributes().Get("k8s.hpa.scaletargetref.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "k8s.hpa.scaletargetref.name-val", val.Str())
+				assert.Equal(t, "k8s.hpa.scaletargetref.name-val", k8sHpaScaletargetrefNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.hpa.uid")
+			k8sHpaUIDAttrVal, ok := res.Attributes().Get("k8s.hpa.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.hpa.uid-val", val.Str())
+				assert.Equal(t, "k8s.hpa.uid-val", k8sHpaUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.job.name")
+			k8sJobNameAttrVal, ok := res.Attributes().Get("k8s.job.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.job.name-val", val.Str())
+				assert.Equal(t, "k8s.job.name-val", k8sJobNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.job.uid")
+			k8sJobUIDAttrVal, ok := res.Attributes().Get("k8s.job.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.job.uid-val", val.Str())
+				assert.Equal(t, "k8s.job.uid-val", k8sJobUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.kubelet.version")
+			k8sKubeletVersionAttrVal, ok := res.Attributes().Get("k8s.kubelet.version")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "k8s.kubelet.version-val", val.Str())
+				assert.Equal(t, "k8s.kubelet.version-val", k8sKubeletVersionAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.namespace.name")
+			k8sNamespaceNameAttrVal, ok := res.Attributes().Get("k8s.namespace.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.namespace.name-val", val.Str())
+				assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.namespace.uid")
+			k8sNamespaceUIDAttrVal, ok := res.Attributes().Get("k8s.namespace.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.namespace.uid-val", val.Str())
+				assert.Equal(t, "k8s.namespace.uid-val", k8sNamespaceUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.node.name")
+			k8sNodeNameAttrVal, ok := res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.node.name-val", val.Str())
+				assert.Equal(t, "k8s.node.name-val", k8sNodeNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.node.uid")
+			k8sNodeUIDAttrVal, ok := res.Attributes().Get("k8s.node.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.node.uid-val", val.Str())
+				assert.Equal(t, "k8s.node.uid-val", k8sNodeUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.pod.name")
+			k8sPodNameAttrVal, ok := res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.pod.name-val", val.Str())
+				assert.Equal(t, "k8s.pod.name-val", k8sPodNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.pod.qos_class")
+			k8sPodQosClassAttrVal, ok := res.Attributes().Get("k8s.pod.qos_class")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "k8s.pod.qos_class-val", val.Str())
+				assert.Equal(t, "k8s.pod.qos_class-val", k8sPodQosClassAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.pod.uid")
+			k8sPodUIDAttrVal, ok := res.Attributes().Get("k8s.pod.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.pod.uid-val", val.Str())
+				assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.replicaset.name")
+			k8sReplicasetNameAttrVal, ok := res.Attributes().Get("k8s.replicaset.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.replicaset.name-val", val.Str())
+				assert.Equal(t, "k8s.replicaset.name-val", k8sReplicasetNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.replicaset.uid")
+			k8sReplicasetUIDAttrVal, ok := res.Attributes().Get("k8s.replicaset.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.replicaset.uid-val", val.Str())
+				assert.Equal(t, "k8s.replicaset.uid-val", k8sReplicasetUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.replicationcontroller.name")
+			k8sReplicationcontrollerNameAttrVal, ok := res.Attributes().Get("k8s.replicationcontroller.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.replicationcontroller.name-val", val.Str())
+				assert.Equal(t, "k8s.replicationcontroller.name-val", k8sReplicationcontrollerNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.replicationcontroller.uid")
+			k8sReplicationcontrollerUIDAttrVal, ok := res.Attributes().Get("k8s.replicationcontroller.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.replicationcontroller.uid-val", val.Str())
+				assert.Equal(t, "k8s.replicationcontroller.uid-val", k8sReplicationcontrollerUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.resourcequota.name")
+			k8sResourcequotaNameAttrVal, ok := res.Attributes().Get("k8s.resourcequota.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.resourcequota.name-val", val.Str())
+				assert.Equal(t, "k8s.resourcequota.name-val", k8sResourcequotaNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.resourcequota.uid")
+			k8sResourcequotaUIDAttrVal, ok := res.Attributes().Get("k8s.resourcequota.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.resourcequota.uid-val", val.Str())
+				assert.Equal(t, "k8s.resourcequota.uid-val", k8sResourcequotaUIDAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.statefulset.name")
+			k8sServiceNameAttrVal, ok := res.Attributes().Get("k8s.service.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "k8s.statefulset.name-val", val.Str())
+				assert.Equal(t, "k8s.service.name-val", k8sServiceNameAttrVal.Str())
 			}
-			val, ok = res.Attributes().Get("k8s.statefulset.uid")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "k8s.statefulset.uid-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("openshift.clusterquota.name")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "openshift.clusterquota.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("openshift.clusterquota.uid")
-			assert.True(t, ok)
-			if ok {
-				assert.Equal(t, "openshift.clusterquota.uid-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("os.description")
+			k8sServicePublishNotReadyAddressesAttrVal, ok := res.Attributes().Get("k8s.service.publish_not_ready_addresses")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "os.description-val", val.Str())
+				assert.False(t, k8sServicePublishNotReadyAddressesAttrVal.Bool())
 			}
-			val, ok = res.Attributes().Get("os.type")
+			k8sServiceTrafficDistributionAttrVal, ok := res.Attributes().Get("k8s.service.traffic_distribution")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "os.type-val", val.Str())
+				assert.Equal(t, "k8s.service.traffic_distribution-val", k8sServiceTrafficDistributionAttrVal.Str())
+			}
+			k8sServiceTypeAttrVal, ok := res.Attributes().Get("k8s.service.type")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.service.type-val", k8sServiceTypeAttrVal.Str())
+			}
+			k8sServiceUIDAttrVal, ok := res.Attributes().Get("k8s.service.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.service.uid-val", k8sServiceUIDAttrVal.Str())
+			}
+			k8sStatefulsetNameAttrVal, ok := res.Attributes().Get("k8s.statefulset.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.statefulset.name-val", k8sStatefulsetNameAttrVal.Str())
+			}
+			k8sStatefulsetUIDAttrVal, ok := res.Attributes().Get("k8s.statefulset.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "k8s.statefulset.uid-val", k8sStatefulsetUIDAttrVal.Str())
+			}
+			openshiftClusterquotaNameAttrVal, ok := res.Attributes().Get("openshift.clusterquota.name")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "openshift.clusterquota.name-val", openshiftClusterquotaNameAttrVal.Str())
+			}
+			openshiftClusterquotaUIDAttrVal, ok := res.Attributes().Get("openshift.clusterquota.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.Equal(t, "openshift.clusterquota.uid-val", openshiftClusterquotaUIDAttrVal.Str())
+			}
+			osDescriptionAttrVal, ok := res.Attributes().Get("os.description")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "os.description-val", osDescriptionAttrVal.Str())
+			}
+			osTypeAttrVal, ok := res.Attributes().Get("os.type")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "os.type-val", osTypeAttrVal.Str())
 			}
 		})
 	}

@@ -1,0 +1,7 @@
+$defs:
+  config:
+    description: Config is the configuration of a file input operator
+    type: object
+    allOf:
+      - $ref: /pkg/stanza/operator/helper.input_config
+      - $ref: /pkg/stanza/fileconsumer.config

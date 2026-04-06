@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/consul/api"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
@@ -32,9 +32,8 @@ type Detector struct {
 	rb       *metadata.ResourceBuilder
 }
 
-// NewDetector creates a new system metadata detector
-func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
-	userCfg := dcfg.(Config)
+// buildConsulAPIConfig translates the detector Config into a hashicorp consul api.Config.
+func buildConsulAPIConfig(userCfg Config) *api.Config {
 	cfg := api.DefaultConfig()
 
 	if userCfg.Address != "" {
@@ -50,8 +49,15 @@ func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.D
 		cfg.Token = string(userCfg.Token)
 	}
 	if userCfg.TokenFile != "" {
-		cfg.Token = userCfg.TokenFile
+		cfg.TokenFile = userCfg.TokenFile
 	}
+
+	return cfg
+}
+
+func NewDetector(p processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	userCfg := dcfg.(Config)
+	cfg := buildConsulAPIConfig(userCfg)
 
 	client, err := api.NewClient(cfg)
 	if err != nil {

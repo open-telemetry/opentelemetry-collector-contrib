@@ -61,7 +61,7 @@ to include it in your build.
 If you want to publish your component for other people to try it out, you can do so for free using
 Github or other git forges. To do so, you need to [publish your component as a Go
 module](https://go.dev/doc/modules/publishing). You can publish multiple components from a single
-repository by including the path to the component in the tag: for example, the [`filelog`
+repository by including the path to the component in the tag: for example, the [`file_log`
 receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver#file-log-receiver)
 v0.139.0 version is [available as a Go
 module](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver@v0.139.0)
@@ -143,7 +143,7 @@ To donate your component to this repository, follow these steps:
 - Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
 - All components included in the distribution must be included in
-  [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
+  [`cmd/otelcontribcol/builder-config.yaml`](../cmd/otelcontribcol/builder-config.yaml)
   and in the respective testing harnesses. To align with the test goal of the
   project, components must be testable within the framework defined within the
   folder. If a component can not be properly tested within the existing
@@ -176,7 +176,7 @@ status:
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package fooreceiver bars.
 package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
@@ -198,6 +198,7 @@ When donating a component to the community, break it down into separate PRs as f
     * `make checkapi`
     * `make goporto`
     * `make crosslink`
+    * `make tidylist`
     * `make gotidy`
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
@@ -205,6 +206,8 @@ When donating a component to the community, break it down into separate PRs as f
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
     * `make gengithub`
+    * `make genlabels`
+    * `make gencodecov`
     * `make addlicense`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in

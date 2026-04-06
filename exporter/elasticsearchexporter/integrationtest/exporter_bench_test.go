@@ -163,7 +163,7 @@ func prepareBenchmark(
 
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
-	cfg.esCfg.Mapping.Mode = mappingMode
+	cfg.esCfg.Mapping.Mode = mappingMode //nolint:staticcheck
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.MetricsIndex = TestMetricsIndex

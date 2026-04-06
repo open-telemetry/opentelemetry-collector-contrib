@@ -29,6 +29,7 @@ type Config = struct {
 	Class         string
 	Mappings      Mappings
 	AllowedRefs   []string
+	Namespace     string
 }
 
 var (
@@ -77,6 +78,7 @@ func ReadConfig() (*Config, error) {
 		class         string
 		configPackage string
 		allowedRefs   = make([]string, 0)
+		namespace     string
 	)
 
 	switch {
@@ -103,10 +105,8 @@ func ReadConfig() (*Config, error) {
 			switch class {
 			case "receiver", "processor", "exporter", "connector", "extension":
 				mode = Component
-			case "", "pkg":
-				mode = Package
 			default:
-				return nil, fmt.Errorf("schema generation for class '%s' is not supported", md.Status.Class)
+				mode = Package
 			}
 		}
 	}
@@ -118,6 +118,7 @@ func ReadConfig() (*Config, error) {
 			*configType = override.ConfigName
 		}
 		allowedRefs = s.AllowedRefs
+		namespace = s.Namespace
 	}
 
 	configNameParts := strings.Split(*configType, ".")
@@ -136,5 +137,6 @@ func ReadConfig() (*Config, error) {
 		Mappings:      mappings,
 		Class:         class,
 		AllowedRefs:   allowedRefs,
+		Namespace:     namespace,
 	}, nil
 }

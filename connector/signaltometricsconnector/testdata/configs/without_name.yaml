@@ -1,4 +1,4 @@
-signaltometrics:
+signal_to_metrics:
   spans:
     - sum:
         value: "1"

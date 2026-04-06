@@ -153,10 +153,11 @@ func TestPayloadToLogRecord(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := &Config{
 				Logs: LogsConfig{
-					Endpoint:        "localhost:0",
-					TLS:             &configtls.ServerConfig{},
-					TimestampField:  "EdgeStartTimestamp",
-					TimestampFormat: tc.timestampFormat,
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: 1024,
+					TLS:                &configtls.ServerConfig{},
+					TimestampField:     "EdgeStartTimestamp",
+					TimestampFormat:    tc.timestampFormat,
 					Attributes: map[string]string{
 						"ClientIP": "http_request.client_ip",
 					},
@@ -368,7 +369,8 @@ func TestHandleRequest(t *testing.T) {
 					Attributes: map[string]string{
 						"ClientIP": "http_request.client_ip",
 					},
-					TLS: &configtls.ServerConfig{},
+					TLS:                &configtls.ServerConfig{},
+					MaxRequestBodySize: 1024,
 				},
 			},
 				consumer,
@@ -454,11 +456,12 @@ func TestEmptyAttributes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			recv := newReceiver(t, &Config{
 				Logs: LogsConfig{
-					Endpoint:       "localhost:0",
-					TLS:            &configtls.ServerConfig{},
-					TimestampField: "EdgeStartTimestamp",
-					Attributes:     tc.attributes,
-					Separator:      ".",
+					Endpoint:           "localhost:0",
+					TLS:                &configtls.ServerConfig{},
+					MaxRequestBodySize: 1024,
+					TimestampField:     "EdgeStartTimestamp",
+					Attributes:         tc.attributes,
+					Separator:          ".",
 				},
 			},
 				&consumertest.LogsSink{},
@@ -542,11 +545,12 @@ func TestAttributesWithSeparator(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			recv := newReceiver(t, &Config{
 				Logs: LogsConfig{
-					Endpoint:       "localhost:0",
-					TLS:            &configtls.ServerConfig{},
-					TimestampField: "EdgeStartTimestamp",
-					Attributes:     tc.attributes,
-					Separator:      tc.separator,
+					Endpoint:           "localhost:0",
+					TLS:                &configtls.ServerConfig{},
+					MaxRequestBodySize: 1024,
+					TimestampField:     "EdgeStartTimestamp",
+					Attributes:         tc.attributes,
+					Separator:          tc.separator,
 				},
 			},
 				&consumertest.LogsSink{},
@@ -621,11 +625,12 @@ func TestMultipleMapAttributes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			recv := newReceiver(t, &Config{
 				Logs: LogsConfig{
-					Endpoint:       "localhost:0",
-					TLS:            &configtls.ServerConfig{},
-					TimestampField: "EdgeStartTimestamp",
-					Attributes:     tc.attributes,
-					Separator:      ".",
+					Endpoint:           "localhost:0",
+					TLS:                &configtls.ServerConfig{},
+					MaxRequestBodySize: 1024,
+					TimestampField:     "EdgeStartTimestamp",
+					Attributes:         tc.attributes,
+					Separator:          ".",
 				},
 			},
 				&consumertest.LogsSink{},
@@ -653,11 +658,74 @@ func gzippedMessage(message string) string {
 	return b.String()
 }
 
+func TestMaxRequestBodySize(t *testing.T) {
+	tests := []struct {
+		name               string
+		maxRequestBodySize int64
+		bodySize           int
+		expectedStatus     int
+	}{
+		{
+			name:               "body_within_limit",
+			maxRequestBodySize: 1024,
+			bodySize:           512,
+			expectedStatus:     http.StatusOK,
+		},
+		{
+			name:               "body_exceeds_limit",
+			maxRequestBodySize: 100,
+			bodySize:           1024,
+			expectedStatus:     http.StatusUnprocessableEntity,
+		},
+		{
+			name:               "body_just_under_limit",
+			maxRequestBodySize: 512,
+			bodySize:           511,
+			expectedStatus:     http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a valid JSON log entry padded to the desired size
+			padding := strings.Repeat("a", tt.bodySize-100) // Leave room for JSON structure
+			logEntry := map[string]any{
+				"ClientIP":           "127.0.0.1",
+				"EdgeStartTimestamp": "2023-03-03T05:29:05Z",
+				"padding":            padding,
+			}
+			body, err := json.Marshal(logEntry)
+			require.NoError(t, err)
+
+			cfg := &Config{
+				Logs: LogsConfig{
+					Endpoint:           "localhost:0",
+					MaxRequestBodySize: tt.maxRequestBodySize,
+					TimestampField:     "EdgeStartTimestamp",
+					Secret:             "abc123",
+				},
+			}
+
+			r := newReceiver(t, cfg, consumertest.NewNop())
+
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
+			req.Header.Add(secretHeaderName, "abc123")
+
+			w := httptest.NewRecorder()
+			r.handleRequest(w, req)
+
+			require.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
+}
+
 func newReceiver(t *testing.T, cfg *Config, nextConsumer consumer.Logs) *logsReceiver {
 	// Default timestamp_format to rfc3339 for tests
 	if cfg.Logs.TimestampFormat == "" {
 		cfg.Logs.TimestampFormat = "rfc3339"
 	}
+	// Validate config to set defaults (including MaxRequestBodySize)
+	// require.NoError(t, cfg.Validate())
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.Logger = zaptest.NewLogger(t)
 	r, err := newLogsReceiver(set, cfg, nextConsumer)

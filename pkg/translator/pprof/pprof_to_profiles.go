@@ -4,17 +4,20 @@
 package pprof // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/google/pprof/profile"
+	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 var (
@@ -33,7 +36,7 @@ const (
 // attr is a helper struct to build pprofile.ProfilesDictionary.attribute_table.
 type attr struct {
 	keyStrIdx  int32
-	value      any
+	valueHash  uint64
 	unitStrIdx int32
 }
 
@@ -89,13 +92,15 @@ type lookupTables struct {
 	lastStringTableIdx int32
 
 	attributeTable        map[attr]int32
+	attributeHashToValue  map[uint64]any
 	lastAttributeTableIdx int32
 
 	stackTable        map[stackKey]stack
 	lastStackTableIdx int32
 }
 
-func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
+// ConvertPprofToProfiles converts a pprof profile to OTLP profiles format.
+func ConvertPprofToProfiles(src *profile.Profile) (*pprofile.Profiles, error) {
 	if err := src.CheckValid(); err != nil {
 		return nil, fmt.Errorf("%w: %w", err, errPprofInvalid)
 	}
@@ -124,7 +129,20 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 	sp.SetSchemaUrl(semconv.SchemaURL)
 
 	// Use a dedicated pprofile.Profile for each sample type.
-	for stIdx, st := range src.SampleType {
+	// By convention, pprof uses the last sample type as default, while OTel Profiles
+	// uses the first profile as default. Therefore, swap first and last.
+	for stIdx := range src.SampleType {
+		// Swap first and last: last pprof sample type becomes first OTel profile
+		var mappedIdx int
+		switch stIdx {
+		case 0:
+			mappedIdx = len(src.SampleType) - 1
+		case len(src.SampleType) - 1:
+			mappedIdx = 0
+		default:
+			mappedIdx = stIdx
+		}
+		st := src.SampleType[mappedIdx]
 		p := sp.Profiles().AppendEmpty()
 
 		// pprof.Profile.sample_type
@@ -140,7 +158,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 			s.SetStackIndex(stackIdx)
 
 			// pprof.Sample.value
-			s.Values().Append(sample.Value[stIdx])
+			s.Values().Append(sample.Value[mappedIdx])
 
 			// pprof.Sample.label - this field is split into string and numeric labels.
 			for lk, lv := range sample.Label {
@@ -191,11 +209,11 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// is no 1 to 1 mapping here.
 
 		// pprof.Profile.drop_frames
-		dropFramesIdx := lts.getIdxForAttribute("pprof.profile.drop_frames", src.DropFrames)
+		dropFramesIdx := lts.getIdxForAttribute(string(semconv.PprofProfileDropFramesKey), src.DropFrames)
 		p.AttributeIndices().Append(dropFramesIdx)
 
 		// pprof.Profile.keep_frames
-		keepFramesIdx := lts.getIdxForAttribute("pprof.profile.keep_frames", src.KeepFrames)
+		keepFramesIdx := lts.getIdxForAttribute(string(semconv.PprofProfileKeepFramesKey), src.KeepFrames)
 		p.AttributeIndices().Append(keepFramesIdx)
 
 		// pprof.Profile.time_nanos
@@ -223,7 +241,7 @@ func convertPprofToPprofile(src *profile.Profile) (*pprofile.Profiles, error) {
 		// As OTel pprofile uses a single Sample Type, it is implicit its default type.
 
 		// pprof.Profile.doc_url
-		docURLIdx := lts.getIdxForAttribute("pprof.profile.doc_url", src.DocURL)
+		docURLIdx := lts.getIdxForAttribute(string(semconv.PprofProfileDocURLKey), src.DocURL)
 		p.AttributeIndices().Append(docURLIdx)
 	}
 
@@ -261,6 +279,50 @@ func (lts *lookupTables) getIdxForString(s string) int32 {
 	return lts.lastStringTableIdx
 }
 
+// getValueHash returns a unique hash for the given value.
+func getValueHash(v any) uint64 {
+	switch val := v.(type) {
+	case string:
+		return xxh3.HashString(val)
+	case int64:
+		var b [8]byte
+		binary.LittleEndian.PutUint64(b[:], uint64(val))
+		return xxh3.Hash(b[:])
+	case float64:
+		var b [8]byte
+		binary.LittleEndian.PutUint64(b[:], math.Float64bits(val))
+		return xxh3.Hash(b[:])
+	case bool:
+		if val {
+			return 1
+		}
+		return 0
+	case []int64:
+		// Cast the slice to a byte slice for zero-allocation hashing if possible,
+		// but for safety/simplicity, we process the slice:
+		h := xxh3.New()
+		var b [8]byte
+		for _, x := range val {
+			binary.LittleEndian.PutUint64(b[:], uint64(x))
+			_, _ = h.Write(b[:])
+		}
+		return h.Sum64()
+	case []float64:
+		h := xxh3.New()
+		var b [8]byte
+		for _, x := range val {
+			binary.LittleEndian.PutUint64(b[:], math.Float64bits(x))
+			_, _ = h.Write(b[:])
+		}
+		return h.Sum64()
+	case []byte:
+		return xxh3.Hash(val)
+	default:
+		// Fallback for unexpected types (nil, etc.)
+		return 0
+	}
+}
+
 // getIdxForAttribute returns the corresponding index for the attribute.
 // If the attribute does not yet exist in the cache, it will be added.
 func (lts *lookupTables) getIdxForAttribute(key string, value any) int32 {
@@ -271,31 +333,25 @@ func (lts *lookupTables) getIdxForAttribute(key string, value any) int32 {
 // If the attribute does not yet exist in the cache, it will be added.
 func (lts *lookupTables) getIdxForAttributeWithUnit(key, unit string, value any) int32 {
 	keyStrIdx := lts.getIdxForString(key)
-
+	valueHash := getValueHash(value)
 	unitStrIdx := noAttrUnit
 	if unit != "" {
 		unitStrIdx = lts.getIdxForString(unit)
 	}
 
-	for attr, idx := range lts.attributeTable {
-		if attr.keyStrIdx != keyStrIdx {
-			continue
-		}
-		if attr.unitStrIdx != unitStrIdx {
-			continue
-		}
-		if !isEqualValue(attr.value, value) {
-			continue
-		}
-		return idx
+	attrKey := attr{
+		keyStrIdx:  keyStrIdx,
+		valueHash:  valueHash,
+		unitStrIdx: unitStrIdx,
+	}
+
+	if id, exists := lts.attributeTable[attrKey]; exists {
+		return id
 	}
 
 	lts.lastAttributeTableIdx++
-	lts.attributeTable[attr{
-		keyStrIdx:  keyStrIdx,
-		value:      value,
-		unitStrIdx: unitStrIdx,
-	}] = lts.lastAttributeTableIdx
+	lts.attributeTable[attrKey] = lts.lastAttributeTableIdx
+	lts.attributeHashToValue[valueHash] = value
 	return lts.lastAttributeTableIdx
 }
 
@@ -330,26 +386,23 @@ func (lts *lookupTables) getIdxForMMAttributes(m *profile.Mapping) []int32 {
 	ids = append(ids, buildIDIdx)
 
 	// pprof.Mapping.has_*
-	// The current Go release of SemConv does not yet include the changes from
-	// https://github.com/open-telemetry/semantic-conventions/pull/2522
-	// Therefore hardcode the values in the meantime.
 	if m.HasFunctions {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_functions", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasFunctionsKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasFilenames {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_filenames", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasFilenamesKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasLineNumbers {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_line_numbers", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasLineNumbersKey), true)
 		ids = append(ids, idx)
 	}
 
 	if m.HasInlineFrames {
-		idx := lts.getIdxForAttribute("pprof.mapping.has_inline_frames", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofMappingHasInlineFramesKey), true)
 		ids = append(ids, idx)
 	}
 
@@ -382,7 +435,7 @@ func (lts *lookupTables) getIdxForLocation(l *profile.Location) int32 {
 	var attrIdxs []int32
 	// pprof.Location.is_folded
 	if l.IsFolded {
-		idx := lts.getIdxForAttribute("pprof.location.is_folded", true)
+		idx := lts.getIdxForAttribute(string(semconv.PprofLocationIsFoldedKey), true)
 		attrIdxs = append(attrIdxs, idx)
 	}
 
@@ -414,19 +467,16 @@ func (lts *lookupTables) getIdxForLocation(l *profile.Location) int32 {
 	return lts.lastLocationTableIdx
 }
 
-func isEqualValue(a, b any) bool {
-	return reflect.DeepEqual(a, b)
-}
-
 // initLookupTables returns a supporting elements to construct pprofile.ProfilesDictionary.
 func initLookupTables() lookupTables {
 	lts := lookupTables{
-		mappingTable:   make(map[mm]int32),
-		locationTable:  make(map[loc]int32),
-		functionTable:  make(map[fn]int32),
-		stringTable:    make(map[string]int32),
-		attributeTable: make(map[attr]int32),
-		stackTable:     make(map[stackKey]stack),
+		mappingTable:         make(map[mm]int32),
+		locationTable:        make(map[loc]int32),
+		functionTable:        make(map[fn]int32),
+		stringTable:          make(map[string]int32),
+		attributeTable:       make(map[attr]int32),
+		attributeHashToValue: make(map[uint64]any),
+		stackTable:           make(map[stackKey]stack),
 	}
 
 	// mapping_table[0] must always be zero value (Mapping{}) and present.
@@ -519,8 +569,26 @@ func (lts *lookupTables) dumpLookupTables(dic pprofile.ProfilesDictionary) error
 	}
 	for a, id := range lts.attributeTable {
 		dic.AttributeTable().At(int(id)).SetKeyStrindex(a.keyStrIdx)
-		if err := dic.AttributeTable().At(int(id)).Value().FromRaw(a.value); err != nil {
-			return err
+		attrValue := lts.attributeHashToValue[a.valueHash]
+		if attrValue == nil {
+			if id == 0 {
+				continue
+			}
+			return fmt.Errorf("invalid attribute %#v", a)
+		}
+		if reflect.TypeOf(attrValue).Kind() == reflect.Slice {
+			slice := dic.AttributeTable().At(int(id)).Value().SetEmptySlice()
+			rv := reflect.ValueOf(attrValue)
+			for i := 0; i < rv.Len(); i++ {
+				value := slice.AppendEmpty()
+				if err := value.FromRaw(rv.Index(i).Interface()); err != nil {
+					return err
+				}
+			}
+		} else {
+			if err := dic.AttributeTable().At(int(id)).Value().FromRaw(attrValue); err != nil {
+				return err
+			}
 		}
 		if a.unitStrIdx != noAttrUnit {
 			dic.AttributeTable().At(int(id)).SetUnitStrindex(a.unitStrIdx)

@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: cloud.platform
+          value:
+            stringValue: vultr.cloud_compute
         - key: cloud.provider
           value:
             stringValue: vultr

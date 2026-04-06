@@ -91,7 +91,9 @@ Operators that support batching:
 
 - `add`
 - `assign_keys`
+- `container`
 - `copy`
+- `filter`
 - `flatten`
 - `json_array_parser`
 - `json_parser`
@@ -102,6 +104,7 @@ Operators that support batching:
 - `regex_replace`
 - `remove`
 - `retain`
+- `router`
 - `scope_name`
 - `severity`
 - `syslog`
@@ -112,10 +115,7 @@ Operators that support batching:
 
 Operators that do not support batching:
 
-- `container`
 - `csv_parser`
-- `filter`
-- `router`
 
 ### FAQ
 

@@ -1,0 +1,35 @@
+$defs:
+  auth_config:
+    description: AuthConfig represents authentication configuration
+    type: object
+    properties:
+      key_file:
+        type: string
+      password:
+        $ref: go.opentelemetry.io/collector/config/configopaque.string
+      username:
+        type: string
+  device_config:
+    description: DeviceConfig represents configuration for a single Cisco device using semantic conventions
+    type: object
+    properties:
+      auth:
+        $ref: auth_config
+      device:
+        $ref: device_info
+  device_info:
+    description: DeviceInfo follows semantic conventions for device identification
+    type: object
+    properties:
+      host:
+        $ref: host_info
+  host_info:
+    description: HostInfo contains host-specific information
+    type: object
+    properties:
+      ip:
+        type: string
+      name:
+        type: string
+      port:
+        type: integer

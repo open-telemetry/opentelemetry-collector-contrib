@@ -1,0 +1,4 @@
+type: object
+allOf:
+  - description: Config defines configuration for the Datadog connector.
+    $ref: /pkg/datadog/config.connector_component_config

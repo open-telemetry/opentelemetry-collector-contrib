@@ -33,7 +33,7 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		xreceiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability),
-		xreceiver.WithDeprecatedTypeAlias(component.MustNewType("mongodbatlas")),
+		xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 

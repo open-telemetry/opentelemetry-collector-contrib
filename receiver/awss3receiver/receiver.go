@@ -12,6 +12,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -120,17 +121,39 @@ func (r *awss3Receiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (r *awss3Receiver) receiveBytes(ctx context.Context, key string, data []byte) error {
+func (r *awss3Receiver) receiveBytes(ctx context.Context, key string, data []byte) (err error) {
 	if data == nil {
 		return nil
 	}
 	if strings.HasSuffix(key, ".gz") {
-		reader, err := gzip.NewReader(bytes.NewReader(data))
+		var reader *gzip.Reader
+		reader, err = gzip.NewReader(bytes.NewReader(data))
 		if err != nil {
 			return err
 		}
+		defer func() {
+			if closeErr := reader.Close(); closeErr != nil && err == nil {
+				err = closeErr
+			}
+		}()
 		key = strings.TrimSuffix(key, ".gz")
 		data, err = io.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+	} else if strings.HasSuffix(key, ".zst") {
+		var reader *zstd.Decoder
+		reader, err = zstd.NewReader(bytes.NewReader(data))
+		if err != nil {
+			return err
+		}
+		decompressedReader := reader.IOReadCloser()
+		defer func() {
+			if closeErr := decompressedReader.Close(); closeErr != nil && err == nil {
+				err = closeErr
+			}
+		}()
+		data, err = io.ReadAll(decompressedReader)
 		if err != nil {
 			return err
 		}

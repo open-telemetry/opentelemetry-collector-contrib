@@ -9,7 +9,7 @@ This extension unmarshalls metrics encoded in formats produced by [Amazon CloudW
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fawscloudwatchmetricstreamsencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fawscloudwatchmetricstreamsencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fawscloudwatchmetricstreamsencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fawscloudwatchmetricstreamsencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -31,3 +31,35 @@ extensions:
   awscloudwatchmetricstreams_encoding:
     format: json
 ```
+
+## Streaming Support
+
+The table below summarizes offset tracking details for each format,
+
+| CloudWatch Metrics format | Offset Tracking |
+|---------------------------|-----------------|
+| Opentelemetry             | Bytes processed |
+| JSON                      | Bytes processed |
+
+## Supported Statistics (JSON format)
+
+When using the JSON format, the extension extracts the following statistics from CloudWatch Metric Streams and converts them to OpenTelemetry Summary metrics:
+
+**Always extracted:**
+- `min` - Minimum value (converted to quantile 0)
+- `max` - Maximum value (converted to quantile 1)
+- `sum` - Sum of values
+- `count` - Sample count
+
+**Percentiles (extracted as quantile values):**
+- `p50`, `p90`, `p95`, `p99`, `p99.9`, etc. - Percentile values are converted to quantiles by dividing by 100 (e.g., `p99` becomes quantile `0.99`)
+
+**Not supported (silently ignored):**
+
+The following [additional statistics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-statistics.html) that can be configured in CloudWatch Metric Streams are not extracted, as they do not map well to OpenTelemetry Summary quantiles:
+
+- Trimmed Mean (`TM(X%:Y%)`, `tm99`, `IQM`)
+- Winsorized Mean (`WM(X%:Y%)`, `wm98`)
+- Trimmed Count (`TC(X%:Y%)`, `tc90`)
+- Trimmed Sum (`TS(X%:Y%)`, `ts90`)
+- Percentile Rank (`PR(:X)`, `PR(X:Y)`)

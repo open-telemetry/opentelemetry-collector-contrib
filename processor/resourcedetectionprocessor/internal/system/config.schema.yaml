@@ -1,0 +1,10 @@
+description: Config defines user-specified configurations unique to the system detector
+type: object
+properties:
+  hostname_sources:
+    description: 'The HostnameSources is a priority list of sources from which hostname will be fetched. In case of the error in fetching hostname from source, the next source from the list will be considered.(**default**: `["dns", "os"]`)'
+    type: array
+    items:
+      type: string
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config

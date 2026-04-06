@@ -334,7 +334,7 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start health check server: %w", err)
 	}
 
-	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.telemetrySettings.Logger)
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath(), s.config.Agent.InstanceID, s.telemetrySettings.Logger)
 	if err != nil {
 		return err
 	}
@@ -375,17 +375,13 @@ func (s *Supervisor) Start(ctx context.Context) error {
 		return err
 	}
 
-	s.agentWG.Add(1)
-	go func() {
-		defer s.agentWG.Done()
+	s.agentWG.Go(func() {
 		s.runAgentProcess()
-	}()
+	})
 
-	s.customMessageWG.Add(1)
-	go func() {
-		defer s.customMessageWG.Done()
+	s.customMessageWG.Go(func() {
 		s.forwardCustomMessagesToServerLoop()
-	}()
+	})
 
 	return nil
 }
@@ -778,14 +774,12 @@ func (s *Supervisor) startHealthCheckServer() error {
 		return fmt.Errorf("failed to listen on port %d: %w", healthCheckServerPort, err)
 	}
 
-	s.healthCheckServerWG.Add(1)
-	go func() {
-		defer s.healthCheckServerWG.Done()
+	s.healthCheckServerWG.Go(func() {
 		s.telemetrySettings.Logger.Debug("Starting health check server", zap.Int64("port", healthCheckServerPort))
 		if err := s.healthCheckServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			s.telemetrySettings.Logger.Error("Health check server failed", zap.Error(err))
 		}
-	}()
+	})
 
 	return nil
 }
@@ -1455,7 +1449,6 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	}
 
 	// Check if supervisor's merged config is changed.
-
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
 		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
@@ -1463,9 +1456,29 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 
 	configChanged = false
 
-	oldConfigState := s.cfgState.Swap(newConfigState)
-	if oldConfigState == nil || !oldConfigState.(*configState).equal(newConfigState) {
+	oldConfigStateInterface := s.cfgState.Load()
+	var oldConfigState *configState
+	if oldConfigStateInterface != nil {
+		oldConfigState = oldConfigStateInterface.(*configState)
+	}
+
+	if oldConfigState == nil || !oldConfigState.equal(newConfigState) {
 		s.telemetrySettings.Logger.Debug("Merged config changed.")
+
+		// Validate BEFORE storing to prevent race condition where other goroutines read invalid config
+		if s.config.Agent.ValidateConfig && !newConfigState.configMapIsEmpty {
+			if err := s.validateConfig(newConfigState.mergedConfig); err != nil {
+				s.telemetrySettings.Logger.Warn(
+					"New configuration failed validation, keeping previous config. "+
+						"Note: Validation may fail for valid configs if resources (e.g., ports) are temporarily unavailable.",
+					zap.Error(err),
+				)
+				return false, fmt.Errorf("configuration validation failed: %w", err)
+			}
+		}
+
+		// Only store after successful validation (or if validation is disabled/skipped)
+		s.cfgState.Store(newConfigState)
 		configChanged = true
 	}
 
@@ -1746,6 +1759,46 @@ func (s *Supervisor) writeAgentConfig() error {
 	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
 		return err
 	}
+	return nil
+}
+
+// validateConfig validates a configuration string without storing it in cfgState.
+// This prevents race conditions where other goroutines might read invalid config during validation.
+// Returns an error if validation fails.
+func (s *Supervisor) validateConfig(configContent string) error {
+	if s.commander == nil {
+		s.telemetrySettings.Logger.Debug("Skipping config validation: commander not initialized")
+		return nil
+	}
+
+	// Write config to a temporary file for validation
+	tempFile, err := os.CreateTemp(s.config.Storage.Directory, "validate-config-*.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to create temp config file for validation: %w", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	if _, err := tempFile.WriteString(configContent); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("failed to write temp config file for validation: %w", err)
+	}
+
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp config file: %w", err)
+	}
+
+	parentCtx := s.runCtx
+	if parentCtx == nil {
+		parentCtx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
+	defer cancel()
+
+	if err := s.commander.ValidateConfig(ctx, tempFile.Name()); err != nil {
+		return fmt.Errorf("configuration validation failed: %w", err)
+	}
+
+	s.telemetrySettings.Logger.Debug("Configuration validation succeeded")
 	return nil
 }
 

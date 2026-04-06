@@ -278,7 +278,9 @@ The following settings are required:
   - http protocol `http://addr1:port,addr2:port` or https `https://addr1:port,addr2:port`
   - clickhouse protocol `clickhouse://addr1:port,addr2:port` or TLS `clickhouse://addr1:port,addr2:port?secure=true`
 
-Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`. For a full list of options see the [ClickHouse driver documentation](https://github.com/ClickHouse/clickhouse-go/blob/b2f9409ba1c7bb239a4f6553a6da347f3f5f1330/clickhouse_options.go#L174)
+  When multiple endpoints are provided, the driver handles load balancing and automatic failover. By default, it uses `in_order` strategy (tries endpoints in the order specified). Alternatively, use `connection_open_strategy=round_robin` (distributes connections evenly) or `connection_open_strategy=random` (randomly selects endpoints) in `connection_params`. See [connection_open_strategy documentation](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#readme-connection-strategy).
+
+Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`. For a full list of options see the [ClickHouse driver documentation](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#readme-connection-settings-reference)
 
 Connection options:
 
@@ -286,7 +288,7 @@ Connection options:
 - `password` (default = ): The authentication password.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = default): The database name. Overrides the database defined in `endpoint` when this setting is not equal to `default`.
-- `connection_params` (default = {}). Params is the extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map.
+- `connection_params` (default = {}). Extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map. Parameters can be either driver parameters (e.g., `connection_open_strategy`, `max_open_conns`) that control client-side behavior, or ClickHouse session settings (e.g., `max_execution_time`) that are passed to the server. See the [driver parameters list](https://pkg.go.dev/github.com/ClickHouse/clickhouse-go/v2#Options) for recognized driver options; all others are treated as session settings.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
@@ -470,10 +472,22 @@ service:
 
 ## Experimental JSON support
 
-A feature gate is available for testing the experimental JSON pipeline.
-Enable the `clickhouse.json` feature gate by following the [feature gate documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md).
-You may also need to add `enable_json_type=1` to your `endpoint` query string parameters.
-DDL has been updated, but feel free to tune the schema as needed. DDL can be found in the `internal/sqltemplates` package.
+JSON column types can be enabled per-exporter using the `json` config option:
+
+```yaml
+exporters:
+  clickhouse:
+    endpoint: clickhouse://localhost:9000?enable_json_type=1
+    json: true
+```
+
+Previously, the `clickhouse.json` feature gate was used to enable JSON for all
+ClickHouse exporter instances. This feature gate is now deprecated. Use the `json`
+config option instead, which allows per-pipeline control.
+
+You may also need to add `enable_json_type=1` to your endpoint or `connection_params`.
+DDL has been updated, but feel free to tune the schema as needed.
+DDL can be found in the `internal/sqltemplates` package.
 All `Map` columns have been replaced with `JSON`.
 ClickHouse v25+ is recommended for reliable JSON support.
 

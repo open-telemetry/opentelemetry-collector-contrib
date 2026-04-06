@@ -1,0 +1,27 @@
+$defs:
+  dimension:
+    description: Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
+    type: object
+    properties:
+      default:
+        x-pointer: true
+        type: string
+      name:
+        type: string
+description: Config defines the configuration options for exceptionsconnector
+type: object
+properties:
+  db_system:
+    description: 'Filter specific db systems, default "h2", "mongodb", "mssql", "mysql", "oracle", "progress", "postgresql", "mariadb", ref: https://opentelemetry.io/docs/specs/semconv/attributes-registry/db/'
+    type: array
+    items:
+      type: string
+  dimensions:
+    description: 'Dimensions defines the list of additional dimensions on top of the provided: - service.name - span.name - span.kind - status.code The dimensions will be fetched from the span''s attributes. Examples of some conventionally used attributes: https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.'
+    type: array
+    items:
+      $ref: dimension
+  threshold:
+    description: Threshold of slow sql. default 500ms.
+    type: string
+    format: duration
