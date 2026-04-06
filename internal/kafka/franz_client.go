@@ -373,7 +373,13 @@ func compressionCodec(compression string) kgo.CompressionCodec {
 }
 
 func NewSaramaCompatPartitioner() kgo.Partitioner {
-	return kgo.StickyKeyPartitioner(kgo.SaramaCompatHasher(saramaHashFn))
+	return kgo.StickyKeyPartitioner(NewSaramaCompatHasher())
+}
+
+// NewSaramaCompatHasher returns a PartitionerHasher that replicates the default
+// Sarama partitioning behavior: FNV-1a hashing with Sarama's int32 sign convention.
+func NewSaramaCompatHasher() kgo.PartitionerHasher {
+	return kgo.SaramaCompatHasher(saramaHashFn)
 }
 
 func saramaHashFn(b []byte) uint32 {

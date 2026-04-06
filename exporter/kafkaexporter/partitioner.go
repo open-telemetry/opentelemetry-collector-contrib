@@ -39,28 +39,59 @@ type RecordPartitionerExtension interface {
 	GetPartitioner() kgo.Partitioner
 }
 
+// func buildPartitionerOpt(cfg RecordPartitionerConfig, host component.Host) (kgo.Opt, error) {
+// 	switch cfg.Type {
+// 	case RecordPartitionerTypeSaramaCompatible:
+// 		return kgo.RecordPartitioner(kafka.NewSaramaCompatPartitioner()), nil
+// 	case RecordPartitionerTypeRoundRobin:
+// 		return kgo.RecordPartitioner(kgo.RoundRobinPartitioner()), nil
+// 	case RecordPartitionerTypeLeastBackup:
+// 		return kgo.RecordPartitioner(kgo.LeastBackupPartitioner()), nil
+// 	case RecordPartitionerTypeCustom:
+// 		if cfg.Extension == nil {
+// 			return nil, errRecordPartitionerExtRequired
+// 		}
+// 		ext, ok := host.GetExtensions()[*cfg.Extension]
+// 		if !ok {
+// 			return nil, fmt.Errorf("partitioner extension %q not found", cfg.Extension)
+// 		}
+// 		partExt, ok := ext.(RecordPartitionerExtension)
+// 		if !ok {
+// 			return nil, fmt.Errorf("extension %q does not implement RecordPartitionerExtension", cfg.Extension)
+// 		}
+// 		return kgo.RecordPartitioner(partExt.GetPartitioner()), nil
+// 	default:
+// 		return nil, fmt.Errorf("unknown partitioner type %q", cfg.Type)
+// 	}
+// }
+
 func buildPartitionerOpt(cfg RecordPartitionerConfig, host component.Host) (kgo.Opt, error) {
-	switch cfg.Type {
-	case RecordPartitionerTypeSaramaCompatible:
-		return kgo.RecordPartitioner(kafka.NewSaramaCompatPartitioner()), nil
-	case RecordPartitionerTypeRoundRobin:
-		return kgo.RecordPartitioner(kgo.RoundRobinPartitioner()), nil
-	case RecordPartitionerTypeLeastBackup:
-		return kgo.RecordPartitioner(kgo.LeastBackupPartitioner()), nil
-	case RecordPartitionerTypeCustom:
-		if cfg.Extension == nil {
-			return nil, errRecordPartitionerExtRequired
+	if cfg.StickyKey != nil {
+		switch cfg.StickyKey.Hasher {
+		case HasherSaramaCompat:
+			return kgo.RecordPartitioner(kgo.StickyKeyPartitioner(kafka.NewSaramaCompatHasher())), nil
+		case HasherMurmur2:
+			return kgo.RecordPartitioner(kgo.StickyKeyPartitioner(nil)), nil
+		default:
+			return nil, fmt.Errorf("unknown sticky key hasher type %q", cfg.StickyKey.Hasher)
 		}
+	}
+	if cfg.RoundRobin != nil {
+		return kgo.RecordPartitioner(kgo.RoundRobinPartitioner()), nil
+	}
+	if cfg.LeastBackup != nil {
+		return kgo.RecordPartitioner(kgo.LeastBackupPartitioner()), nil
+	}
+	if cfg.Extension != nil {
 		ext, ok := host.GetExtensions()[*cfg.Extension]
 		if !ok {
-			return nil, fmt.Errorf("partitioner extension %q not found", cfg.Extension)
+			return nil, fmt.Errorf("partitioner extension %q not found", *cfg.Extension)
 		}
 		partExt, ok := ext.(RecordPartitionerExtension)
 		if !ok {
-			return nil, fmt.Errorf("extension %q does not implement RecordPartitionerExtension", cfg.Extension)
+			return nil, fmt.Errorf("extension %q does not implement RecordPartitionerExtension", *cfg.Extension)
 		}
 		return kgo.RecordPartitioner(partExt.GetPartitioner()), nil
-	default:
-		return nil, fmt.Errorf("unknown partitioner type %q", cfg.Type)
 	}
+	return nil, fmt.Errorf("no partitioner type configured")
 }

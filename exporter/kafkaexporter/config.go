@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
@@ -20,8 +22,7 @@ import (
 var _ component.Config = (*Config)(nil)
 
 var (
-	errRecordPartitionerUnknownType = errors.New("unknown partitioner type")
-	errRecordPartitionerExtRequired = errors.New("partitioner.extension must be set when type is \"extension\"")
+	errRecordPartitionerMultipleSet = errors.New("at most one record_partitioner strategy may be configured")
 )
 
 var errLogsPartitionExclusive = errors.New(
@@ -34,33 +35,87 @@ var (
 	errIncludeMetadataKeysNotPartitioned  = errors.New("sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values")
 )
 
+const (
+	HasherSaramaCompat = "sarama_compat"
+	HasherMurmur2      = "murmur2"
+)
+
 // RecordPartitionerConfig configures the strategy used to assign Kafka records to partitions.
+// At most one field should be set.
 type RecordPartitionerConfig struct {
-	// Type is the partitioning strategy. Valid values are:
-	//   - "" or "sarama_compatible" (default): sticky key partitioner with Sarama-compatible FNV-1a hashing
-	//   - "sticky": franz-go StickyKeyPartitioner with murmur2 hashing
-	//   - "round_robin": round-robin across all available partitions
-	//   - "least_backup": routes to the partition with fewest in-flight records
-	//   - "extension": delegates to an extension implementing RecordPartitionerExtension
-	Type string `mapstructure:"type"`
+	// StickyKey uses StickyKeyPartitioner.
+	// When a record key is set, the partition is derived from the key hash.
+	StickyKey *StickyKeyPartitionerConfig `mapstructure:"sticky_key"`
+
+	// RoundRobin distributes records evenly across all available partitions in round-robin order.
+	RoundRobin *struct{} `mapstructure:"round_robin"`
+
+	// LeastBackup routes each record to the partition with the fewest buffered records.
+	LeastBackup *struct{} `mapstructure:"least_backup"`
 
 	// Extension is the component ID of an extension implementing RecordPartitionerExtension.
-	// Required when Type is "extension"; must be empty for all other types.
-	Extension *component.ID `mapstructure:"extension,omitempty"`
+	// Setting this field delegates partition assignment to that extension.
+	Extension *component.ID `mapstructure:"extension"`
+}
+
+// StickyKeyPartitionerConfig configures the StickyKeyPartitioner.
+type StickyKeyPartitionerConfig struct {
+	// Hasher is the hash algorithm used for key-based partition assignment.
+	// Valid values: "sarama_compat" (default).
+	//   - "sarama_compat": Sarama-compatible FNV-1a hashing (SaramaCompatHasher).
+	//   - "murmur2": Murmur2 hashing.
+	Hasher string `mapstructure:"hasher"`
+}
+
+func (c *StickyKeyPartitionerConfig) Validate() error {
+	switch c.Hasher {
+	case "", HasherSaramaCompat, HasherMurmur2:
+		return nil
+	default:
+		return fmt.Errorf("sticky_key: unknown hasher %q, valid values are %q, %q",
+			c.Hasher, HasherSaramaCompat, HasherMurmur2)
+	}
 }
 
 func (c *RecordPartitionerConfig) Validate() error {
-	switch c.Type {
-	case RecordPartitionerTypeSaramaCompatible,
-		RecordPartitionerTypeRoundRobin,
-		RecordPartitionerTypeLeastBackup:
-	case RecordPartitionerTypeCustom:
-		if c.Extension == nil {
-			return errRecordPartitionerExtRequired
+	// verify that at most one partitioner type is set by counting the number of non-nil pointer fields in this struct.
+	v := reflect.ValueOf(c).Elem()
+	set := 0
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		// Count non-nil pointer fields
+		if field.Kind() == reflect.Ptr && !field.IsNil() {
+			set++
 		}
-	default:
-		return fmt.Errorf("%w: %q", errRecordPartitionerUnknownType, c.Type)
 	}
+
+	if set > 1 {
+		return errRecordPartitionerMultipleSet
+	}
+
+	if c.StickyKey != nil {
+		return c.StickyKey.Validate()
+	}
+
+	return nil
+}
+
+func (c *RecordPartitionerConfig) Unmarshal(conf *confmap.Conf) error {
+	// Use reflection to clear all fields
+	v := reflect.ValueOf(c).Elem()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		// Clear the field by setting it to its zero value
+		if field.CanSet() {
+			field.Set(reflect.Zero(field.Type()))
+		}
+	}
+
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+
 	return nil
 }
 

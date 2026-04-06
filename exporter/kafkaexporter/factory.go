@@ -76,7 +76,9 @@ func createDefaultConfig() component.Config {
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
 		PartitionLogsByTraceID:               defaultPartitionLogsByTraceIDEnabled,
 		RecordPartitioner: RecordPartitionerConfig{
-			Type: RecordPartitionerTypeSaramaCompatible,
+			StickyKey: &StickyKeyPartitionerConfig{
+				Hasher: HasherSaramaCompat,
+			},
 		},
 	}
 }

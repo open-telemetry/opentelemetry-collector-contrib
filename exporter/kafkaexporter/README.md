@@ -52,13 +52,14 @@ The following settings can be optionally configured:
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `partition_logs_by_trace_id` (default = false): configures the exporter to partition log messages by trace ID, if the log record has one associated. Note: `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id` are mutually exclusive, and enabling both will lead to an error.
-- `record_partitioner`: configures the Kafka-level record partitioner. When unset, the default sarama-compatible sticky key partitioner is used.
-  - `type`: The partitioner strategy. Valid values are:
-    - `sarama_compatible` (default): Sticky key partitioner using Sarama-compatible FNV-1a hashing.
-    - `round_robin`: Distributes records evenly across all partitions.
-    - `least_backup`: Sends records to the partition with the fewest in-flight messages.
-    - `custom`: Delegates partitioning to a custom extension.
-  - `extension`: The ID of a cusom partitioner extension to be used.
+- `record_partitioner`: Configures the Kafka record partitioning strategy. **At most one** option may be set. If multiple partitioners are configured, an error will be returned. If none is configured, the default is `sticky_key` with a Sarama-compatible hasher (preserving previous behavior).
+  - `sticky_key`: Uses a sticky-key partitioner.
+    - `hasher`: The hash algorithm used for key-based partition assignment.
+      - `sarama_compat` (default): Uses Sarama-compatible FNV-1a hashing.
+      - `murmur2`: Uses Murmur2 hashing
+  - `round_robin`: Distributes records evenly across all available partitions in round-robin order.
+  - `least_backup`: Routes each record to the partition with the fewest buffered (in-flight) records.
+  - `extension`: The component ID of a custom partitioner extension. When set, partitioning is delegated to the specified extension.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
@@ -173,7 +174,7 @@ The destination topic can be defined in a few different ways and takes priority 
 Kafka topics are partitioned, meaning a topic is spread over a number of “buckets” located on different Kafka brokers.
 The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
 
-Available strategies for partitioning are `sarama_compatible`, `round_robin`, `least_backup` and `custom`
+Available strategies for partitioning are `sticky_key`, `sticky`,  `round_robin`, `least_backup` and `extension`
 
 ### Using custom partitioner
 
@@ -185,7 +186,6 @@ exporters:
     brokers:
       - localhost:9092
     record_partitioner:
-      type: custom
       extension: my_custom_partitioner
   
 extensions:

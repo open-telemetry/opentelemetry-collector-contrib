@@ -45,6 +45,7 @@ func (h *mockHostWithExtensions) GetExtensions() map[component.ID]component.Comp
 
 func TestRecordPartitionerConfig_Validate(t *testing.T) {
 	extID := component.MustNewID("my_partitioner")
+	unknownExtID := component.MustNewID("unknown")
 
 	tests := []struct {
 		name    string
@@ -52,30 +53,26 @@ func TestRecordPartitionerConfig_Validate(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "sarama_compatible",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeSaramaCompatible},
+			name: "sarama_compat",
+			cfg: RecordPartitionerConfig{StickyKey: &StickyKeyPartitionerConfig{
+				Hasher: "sarama_compat",
+			}},
 		},
 		{
 			name: "round_robin",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeRoundRobin},
+			cfg:  RecordPartitionerConfig{RoundRobin: &struct{}{}},
 		},
 		{
 			name: "least_backup",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeLeastBackup},
+			cfg:  RecordPartitionerConfig{LeastBackup: &struct{}{}},
 		},
 		{
 			name: "extension with ID",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
+			cfg:  RecordPartitionerConfig{Extension: &extID},
 		},
 		{
-			name:    "extension without ID",
-			cfg:     RecordPartitionerConfig{Type: RecordPartitionerTypeCustom},
-			wantErr: errRecordPartitionerExtRequired.Error(),
-		},
-		{
-			name:    "unknown type",
-			cfg:     RecordPartitionerConfig{Type: "bogus"},
-			wantErr: errRecordPartitionerUnknownType.Error(),
+			name: "unknown extension",
+			cfg:  RecordPartitionerConfig{Extension: &unknownExtID},
 		},
 	}
 
@@ -112,34 +109,36 @@ func TestBuildPartitionerOpt(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "sarama_compatible",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeSaramaCompatible},
+			name: "sarama_compat",
+			cfg: RecordPartitionerConfig{StickyKey: &StickyKeyPartitionerConfig{
+				Hasher: HasherSaramaCompat,
+			}},
 			host: componenttest.NewNopHost(),
 		},
 		{
 			name: "round_robin",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeRoundRobin},
+			cfg:  RecordPartitionerConfig{RoundRobin: &struct{}{}},
 			host: componenttest.NewNopHost(),
 		},
 		{
 			name: "least_backup",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeLeastBackup},
+			cfg:  RecordPartitionerConfig{LeastBackup: &struct{}{}},
 			host: componenttest.NewNopHost(),
 		},
 		{
 			name: "extension",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
+			cfg:  RecordPartitionerConfig{Extension: &extID},
 			host: hostWithExt,
 		},
 		{
 			name:    "extension not found",
-			cfg:     RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &compID},
+			cfg:     RecordPartitionerConfig{Extension: &compID},
 			host:    componenttest.NewNopHost(),
 			wantErr: `partitioner extension "missing" not found`,
 		},
 		{
 			name: "extension does not implement RecordPartitionerExtension",
-			cfg:  RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
+			cfg:  RecordPartitionerConfig{Extension: &extID},
 			host: &mockHostWithExtensions{
 				Host: componenttest.NewNopHost(),
 				extensions: map[component.ID]component.Component{
@@ -236,7 +235,7 @@ func TestRecordPartitioner_RoundRobin(t *testing.T) {
 	const topic = "rr-topic"
 
 	client, brokers := newPartitioningProducer(t,
-		RecordPartitionerConfig{Type: RecordPartitionerTypeRoundRobin},
+		RecordPartitionerConfig{RoundRobin: &struct{}{}},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
 
@@ -257,7 +256,9 @@ func TestRecordPartitioner_SaramaCompatible_SameKeyConsistency(t *testing.T) {
 
 	client, brokers := newPartitioningProducer(t,
 		RecordPartitionerConfig{
-			Type: RecordPartitionerTypeSaramaCompatible,
+			StickyKey: &StickyKeyPartitionerConfig{
+				Hasher: HasherSaramaCompat,
+			},
 		},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
@@ -280,7 +281,9 @@ func TestRecordPartitioner_SaramaCompatible_DifferentKeys(t *testing.T) {
 	const topic = "sarama-diff-keys-topic"
 
 	client, brokers := newPartitioningProducer(t,
-		RecordPartitionerConfig{Type: RecordPartitionerTypeSaramaCompatible},
+		RecordPartitionerConfig{StickyKey: &StickyKeyPartitionerConfig{
+			Hasher: HasherSaramaCompat,
+		}},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
 
@@ -298,7 +301,7 @@ func TestRecordPartitioner_LeastBackup(t *testing.T) {
 	const topic = "lb-topic"
 
 	client, brokers := newPartitioningProducer(t,
-		RecordPartitionerConfig{Type: RecordPartitionerTypeLeastBackup},
+		RecordPartitionerConfig{LeastBackup: &struct{}{}},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
 
@@ -326,7 +329,7 @@ func TestRecordPartitioner_Extension_CustomRouting(t *testing.T) {
 	}
 
 	client, brokers := newPartitioningProducer(t,
-		RecordPartitionerConfig{Type: RecordPartitionerTypeCustom, Extension: &extID},
+		RecordPartitionerConfig{Extension: &extID},
 		host, numPartitions, topic,
 	)
 

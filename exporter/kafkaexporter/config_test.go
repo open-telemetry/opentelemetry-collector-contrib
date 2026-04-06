@@ -82,7 +82,9 @@ func TestLoadConfig(t *testing.T) {
 				PartitionLogsByResourceAttributes:    true,
 				PartitionLogsByTraceID:               false,
 				RecordPartitioner: RecordPartitionerConfig{
-					Type: "sarama_compatible",
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
 				},
 			},
 		},
@@ -99,7 +101,7 @@ func TestLoadConfig(t *testing.T) {
 				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
 				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
 				RecordPartitioner: RecordPartitionerConfig{
-					Type: RecordPartitionerTypeRoundRobin,
+					RoundRobin: &struct{}{},
 				},
 			},
 		},
@@ -116,7 +118,45 @@ func TestLoadConfig(t *testing.T) {
 				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
 				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
 				RecordPartitioner: RecordPartitionerConfig{
-					Type: RecordPartitionerTypeLeastBackup,
+					LeastBackup: &struct{}{},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sticky_key_partitioner"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sticky_key_partitioner_murmur2"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "murmur2",
+					},
 				},
 			},
 		},
@@ -149,7 +189,9 @@ func TestLoadConfig(t *testing.T) {
 					"metadata_key",
 				},
 				RecordPartitioner: RecordPartitionerConfig{
-					Type: "sarama_compatible",
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
 				},
 			},
 		},
@@ -178,7 +220,9 @@ func TestLoadConfig(t *testing.T) {
 					Encoding: "per_signal_encoding",
 				},
 				RecordPartitioner: RecordPartitionerConfig{
-					Type: "sarama_compatible",
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
 				},
 			},
 		},
@@ -224,7 +268,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 				IncludeMetadataKeys: []string{"metadata_key"},
 				RecordPartitioner: RecordPartitionerConfig{
-					Type: "sarama_compatible",
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
 				},
 			},
 		},
@@ -273,13 +319,13 @@ func TestLoadConfigFailed(t *testing.T) {
 			configFile:    "config-batch-partition-validation-failed.yaml",
 		},
 		{
-			id:            component.NewIDWithName(metadata.Type, "invalid_partitioner"),
-			errorContains: errRecordPartitionerUnknownType.Error(),
+			id:            component.NewIDWithName(metadata.Type, "multiple_partitioner"),
+			errorContains: errRecordPartitionerMultipleSet.Error(),
 			configFile:    "config-partitioning-failed.yaml",
 		},
 		{
-			id:            component.NewIDWithName(metadata.Type, "extension_not_set"),
-			errorContains: errRecordPartitionerExtRequired.Error(),
+			id:            component.NewIDWithName(metadata.Type, "invalid_sticky_key_hasher"),
+			errorContains: `sticky_key: unknown hasher "invalid_hasher", valid values are "sarama_compat", "murmur2"`,
 			configFile:    "config-partitioning-failed.yaml",
 		},
 	}
