@@ -224,10 +224,10 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
         - tlscheck
-        - udplog
+        - udp_log
         - vcenter
         - wavefront
         - webhookevent

@@ -1,4 +1,4 @@
-tcplog:
+tcp_log:
   listen_address: "127.0.0.1:29018"
   retry_on_failure:
     enabled: false
