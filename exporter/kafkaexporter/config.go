@@ -69,7 +69,7 @@ type StickyKeyPartitionerConfig struct {
 
 func (c *StickyKeyPartitionerConfig) Validate() error {
 	switch c.Hasher {
-	case "", HasherSaramaCompat, HasherMurmur2:
+	case HasherSaramaCompat, HasherMurmur2:
 		return nil
 	default:
 		return fmt.Errorf("sticky_key: unknown hasher %q, valid values are %q, %q",
