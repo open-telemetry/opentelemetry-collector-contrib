@@ -209,6 +209,10 @@ type PodContainer struct {
 	Name string `mapstructure:"container_name"`
 	// Image of the container
 	Image string `mapstructure:"container_image"`
+	// ImageName is the parsed repository/name portion of Image.
+	ImageName string `mapstructure:"container_image_name"`
+	// ImageTag is the parsed tag portion of Image.
+	ImageTag string `mapstructure:"container_image_tag"`
 	// ContainerID is the id of the container exposing the Endpoint
 	ContainerID string `mapstructure:"container_id"`
 	// Pod is the k8s pod in which the container is running
@@ -217,10 +221,12 @@ type PodContainer struct {
 
 func (p *PodContainer) Env() EndpointEnv {
 	return map[string]any{
-		"container_name":  p.Name,
-		"container_id":    p.ContainerID,
-		"container_image": p.Image,
-		"pod":             p.Pod.Env(),
+		"container_name":       p.Name,
+		"container_id":         p.ContainerID,
+		"container_image":      p.Image,
+		"container_image_name": p.ImageName,
+		"container_image_tag":  p.ImageTag,
+		"pod":                  p.Pod.Env(),
 	}
 }
 
@@ -244,17 +250,23 @@ type Port struct {
 	ContainerID string
 	// ContainerImage is the image of the container.
 	ContainerImage string
+	// ContainerImageName is the parsed repository/name portion of ContainerImage.
+	ContainerImageName string
+	// ContainerImageTag is the parsed tag portion of ContainerImage.
+	ContainerImageTag string
 }
 
 func (p *Port) Env() EndpointEnv {
 	return map[string]any{
-		"name":            p.Name,
-		"port":            p.Port,
-		"pod":             p.Pod.Env(),
-		"transport":       p.Transport,
-		"container_name":  p.ContainerName,
-		"container_id":    p.ContainerID,
-		"container_image": p.ContainerImage,
+		"name":                 p.Name,
+		"port":                 p.Port,
+		"pod":                  p.Pod.Env(),
+		"transport":            p.Transport,
+		"container_name":       p.ContainerName,
+		"container_id":         p.ContainerID,
+		"container_image":      p.ContainerImage,
+		"container_image_name": p.ContainerImageName,
+		"container_image_tag":  p.ContainerImageTag,
 	}
 }
 

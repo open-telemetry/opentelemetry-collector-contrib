@@ -89,7 +89,8 @@ func TestNewEnhancingConsumer(t *testing.T) {
 					"k8s.namespace.name":   "default",
 					"k8s.container.name":   "container-1",
 					"container.id":         "container-id-1",
-					"container.image.name": "redis:latest",
+					"container.image.name": "redis",
+					"container.image.tags": "latest",
 				},
 			},
 		},
@@ -381,4 +382,26 @@ func TestEnhancingConsumerConsumeProfiles(t *testing.T) {
 		}
 		require.EqualError(t, ec.ConsumeProfiles(t.Context(), pprofile.NewProfiles()), "no profile consumer available")
 	})
+}
+
+func TestEnhancingConsumerContainerImageTagsAsSlice(t *testing.T) {
+	sink := &consumertest.MetricsSink{}
+	ec := &enhancingConsumer{
+		metrics: sink,
+		attrs: map[string]string{
+			"container.image.tags": "latest",
+		},
+	}
+
+	md := pmetric.NewMetrics()
+	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("some.metric")
+
+	require.NoError(t, ec.ConsumeMetrics(t.Context(), md))
+	all := sink.AllMetrics()
+	require.Len(t, all, 1)
+
+	attrVal, ok := all[0].ResourceMetrics().At(0).Resource().Attributes().Get("container.image.tags")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeSlice, attrVal.Type())
+	require.Equal(t, []any{"latest"}, attrVal.Slice().AsRaw())
 }

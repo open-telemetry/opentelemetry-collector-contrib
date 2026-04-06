@@ -67,11 +67,13 @@ func TestEndpointEnv(t *testing.T) {
 						Namespace: "pod-namespace",
 						UID:       "pod-uid",
 					},
-					Port:           2379,
-					Transport:      ProtocolTCP,
-					ContainerName:  "test-container",
-					ContainerID:    "container-id-123456",
-					ContainerImage: "test-app:v1.0.0",
+					Port:               2379,
+					Transport:          ProtocolTCP,
+					ContainerName:      "test-container",
+					ContainerID:        "container-id-123456",
+					ContainerImage:     "test-app:v1.0.0",
+					ContainerImageName: "test-app",
+					ContainerImageTag:  "v1.0.0",
 				},
 			},
 			want: EndpointEnv{
@@ -91,11 +93,13 @@ func TestEndpointEnv(t *testing.T) {
 					"uid":       "pod-uid",
 					"namespace": "pod-namespace",
 				},
-				"transport":       ProtocolTCP,
-				"host":            "192.68.73.2",
-				"container_name":  "test-container",
-				"container_id":    "container-id-123456",
-				"container_image": "test-app:v1.0.0",
+				"transport":            ProtocolTCP,
+				"host":                 "192.68.73.2",
+				"container_name":       "test-container",
+				"container_id":         "container-id-123456",
+				"container_image":      "test-app:v1.0.0",
+				"container_image_name": "test-app",
+				"container_image_tag":  "v1.0.0",
 			},
 		},
 		{
@@ -263,11 +267,13 @@ func TestEndpointEnv(t *testing.T) {
 						Namespace: "pod-namespace",
 						UID:       "pod-uid",
 					},
-					Port:           2379,
-					Transport:      ProtocolTCP,
-					ContainerName:  "test-container",
-					ContainerID:    "container-id-123456",
-					ContainerImage: "test-app:v1.0.0",
+					Port:               2379,
+					Transport:          ProtocolTCP,
+					ContainerName:      "test-container",
+					ContainerID:        "container-id-123456",
+					ContainerImage:     "test-app:v1.0.0",
+					ContainerImageName: "test-app",
+					ContainerImageTag:  "v1.0.0",
 				},
 			},
 			want: EndpointEnv{
@@ -287,11 +293,13 @@ func TestEndpointEnv(t *testing.T) {
 					"uid":       "pod-uid",
 					"namespace": "pod-namespace",
 				},
-				"transport":       ProtocolTCP,
-				"host":            "192.68.73.2",
-				"container_name":  "test-container",
-				"container_id":    "container-id-123456",
-				"container_image": "test-app:v1.0.0",
+				"transport":            ProtocolTCP,
+				"host":                 "192.68.73.2",
+				"container_name":       "test-container",
+				"container_id":         "container-id-123456",
+				"container_image":      "test-app:v1.0.0",
+				"container_image_name": "test-app",
+				"container_image_tag":  "v1.0.0",
 			},
 		},
 		{
@@ -316,4 +324,22 @@ func TestEndpointEnv(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestEndpointEnvUsesExplicitImageFields(t *testing.T) {
+	endpoint := Endpoint{
+		ID:     EndpointID("port_id"),
+		Target: "192.68.73.2",
+		Details: &Port{
+			Name:               "port_name",
+			ContainerImage:     "ignored-for-env:9.9.9",
+			ContainerImageName: "explicit-name",
+			ContainerImageTag:  "explicit-tag",
+		},
+	}
+
+	got, err := endpoint.Env()
+	require.NoError(t, err)
+	assert.Equal(t, "explicit-name", got["container_image_name"])
+	assert.Equal(t, "explicit-tag", got["container_image_tag"])
 }

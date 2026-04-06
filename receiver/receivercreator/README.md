@@ -117,7 +117,8 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 | k8s.pod.uid        | \`pod.uid\`       |
 | k8s.namespace.name | \`pod.namespace\` |
 | k8s.container.name   | \`container_name\`  |
-| container.image.name | \`container_image\` |
+| container.image.name | \`container_image_name\` |
+| container.image.tags | \`container_image_tag\` |
 | container.id         | \`container_id\`    |
 
 `type == "pod.container"`
@@ -129,7 +130,8 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 | k8s.namespace.name   | \`pod.namespace\`   |
 | container.name       | \`name\`            |
 | k8s.container.name   | \`container_name\`  |
-| container.image.name | \`container_image\` |
+| container.image.name | \`container_image_name\` |
+| container.image.tags | \`container_image_tag\` |
 | container.id         | \`container_id\`    |
 
 `type == "container"`
@@ -138,6 +140,7 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 |----------------------|-------------------|
 | container.name       | \`name\`          |
 | container.image.name | \`image\`         |
+| container.image.tags | \`tag\`           |
 
 `type == "hostport"`
 
@@ -212,6 +215,11 @@ targeting it will have different variables available.
 | pod.uid         | unique id of the pod                    | String                        |
 | pod.labels      | map of labels of the owning pod         | Map with String key and value |
 | pod.annotations | map of annotations of the owning pod    | Map with String key and value |
+| container_name  | container name                          | String                        |
+| container_id    | container id                            | String                        |
+| container_image | container image (legacy combined value) | String                        |
+| container_image_name | container image repository/name     | String                        |
+| container_image_tag  | container image tag                 | String                        |
 
 ### Pod Container
 
@@ -221,7 +229,9 @@ targeting it will have different variables available.
 | id              | ID of source endpoint                | String                        |
 | container_name  | container name                       | String                        |
 | container_id    | container id                         | String                        |
-| container_image | container image                      | String                        |
+| container_image | container image (legacy combined value) | String                    |
+| container_image_name | container image repository/name   | String                        |
+| container_image_tag  | container image tag               | String                        |
 | pod.name        | name of the owning pod               | String                        |
 | pod.namespace   | namespace of the pod                 | String                        |
 | pod.uid         | unique id of the pod                 | String                        |
@@ -252,9 +262,12 @@ targeting it will have different variables available.
 | alternate_port | Exposed port accessed through redirection, such as a mapped port  | Integer                       |
 | command        | The command used to invoke the process of the container           | String                        |
 | container_id   | ID of the container                                               | String                        |
+| tag            | Container image tag                                               | String                        |
 | host           | Hostname or IP of the underlying host the container is running on | String                        |
 | transport      | Transport protocol used by the endpoint (TCP or UDP)              | String                        |
 | labels         | User-specified metadata labels on the container                   | Map with String key and value |
+
+Note: `container_image` remains available for backwards compatibility. New configs should prefer `container_image_name` and `container_image_tag`.
 
 ### Kubernetes Service
 

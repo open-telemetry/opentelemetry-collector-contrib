@@ -54,7 +54,8 @@ func createDefaultConfig() component.Config {
 				string(conventions.K8SNamespaceNameKey):   "`pod.namespace`",
 				string(conventions.K8SContainerNameKey):   "`container_name`",
 				string(conventions.ContainerIDKey):        "`container_id`",
-				string(conventions.ContainerImageNameKey): "`container_image`",
+				string(conventions.ContainerImageNameKey): "`container_image_name`",
+				string(conventions.ContainerImageTagsKey): "`container_image_tag`",
 			},
 			observer.PodContainerType: map[string]string{
 				string(conventions.K8SPodNameKey):         "`pod.name`",
@@ -62,11 +63,13 @@ func createDefaultConfig() component.Config {
 				string(conventions.K8SNamespaceNameKey):   "`pod.namespace`",
 				string(conventions.K8SContainerNameKey):   "`container_name`",
 				string(conventions.ContainerIDKey):        "`container_id`",
-				string(conventions.ContainerImageNameKey): "`container_image`",
+				string(conventions.ContainerImageNameKey): "`container_image_name`",
+				string(conventions.ContainerImageTagsKey): "`container_image_tag`",
 			},
 			observer.ContainerType: map[string]string{
 				string(conventions.ContainerNameKey):      "`name`",
 				string(conventions.ContainerImageNameKey): "`image`",
+				string(conventions.ContainerImageTagsKey): "`tag`",
 			},
 			observer.K8sNodeType: map[string]string{
 				string(conventions.K8SNodeNameKey): "`name`",

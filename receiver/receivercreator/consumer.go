@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -140,6 +141,10 @@ func (ec *enhancingConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Pr
 func (ec *enhancingConsumer) putAttrs(attrs pcommon.Map) {
 	for attr, val := range ec.attrs {
 		if _, found := attrs.Get(attr); !found {
+			if attr == string(conventions.ContainerImageTagsKey) {
+				attrs.PutEmptySlice(attr).AppendEmpty().SetStr(val)
+				continue
+			}
 			attrs.PutStr(attr, val)
 		}
 	}

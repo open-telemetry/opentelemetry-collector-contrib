@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	dockerref "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
 // convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
@@ -62,6 +63,7 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 				"%s/%s", podID, container.Name,
 			),
 		)
+		imageName, imageTag := parseContainerImageNameAndTag(container.Image)
 		endpoints = append(endpoints, observer.Endpoint{
 			ID:     endpointID,
 			Target: podIP,
@@ -69,6 +71,8 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 				Name:        container.Name,
 				ContainerID: rc.ID,
 				Image:       container.Image,
+				ImageName:   imageName,
+				ImageTag:    imageTag,
 				Pod:         podDetails,
 			},
 		})
@@ -84,13 +88,15 @@ func convertPodToEndpoints(idNamespace string, pod *v1.Pod) []observer.Endpoint 
 				ID:     endpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
 				Details: &observer.Port{
-					Pod:            podDetails,
-					Name:           port.Name,
-					Port:           uint16(port.ContainerPort),
-					Transport:      getTransport(port.Protocol),
-					ContainerName:  container.Name,
-					ContainerID:    rc.ID,
-					ContainerImage: container.Image,
+					Pod:                podDetails,
+					Name:               port.Name,
+					Port:               uint16(port.ContainerPort),
+					Transport:          getTransport(port.Protocol),
+					ContainerName:      container.Name,
+					ContainerID:        rc.ID,
+					ContainerImage:     container.Image,
+					ContainerImageName: imageName,
+					ContainerImageTag:  imageTag,
 				},
 			})
 		}
@@ -124,4 +130,13 @@ func containerIDWithRuntime(c *v1.ContainerStatus) runningContainer {
 type runningContainer struct {
 	ID      string
 	Runtime string
+}
+
+func parseContainerImageNameAndTag(image string) (string, string) {
+	imageRef, err := dockerref.ParseImageName(image)
+	if err != nil {
+		return image, ""
+	}
+
+	return imageRef.Repository, imageRef.Tag
 }
