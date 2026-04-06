@@ -11,14 +11,14 @@ dist:
   output_path: ./cmd/oteltestbedcol
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.149.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.149.1-0.20260402195938-76ede073ee8e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.149.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.149.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.149.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.149.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.149.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.149.1-0.20260402195938-76ede073ee8e
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.149.1-0.20260402195938-76ede073ee8e
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.149.1-0.20260402195938-76ede073ee8e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.149.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.149.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.149.0
@@ -29,8 +29,8 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.149.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.149.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.149.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.149.1-0.20260402195938-76ede073ee8e
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.149.1-0.20260402195938-76ede073ee8e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.149.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.149.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.149.0
@@ -38,7 +38,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.149.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.149.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.149.1-0.20260402195938-76ede073ee8e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.149.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.149.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.149.0
@@ -54,11 +54,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.149.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.55.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.55.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.55.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.55.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.55.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.55.1-0.20260402195938-76ede073ee8e
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.55.1-0.20260402195938-76ede073ee8e
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.55.1-0.20260402195938-76ede073ee8e
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.55.1-0.20260402195938-76ede073ee8e
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.55.1-0.20260402195938-76ede073ee8e
 
 # When using `make genoteltestbedcol`, the `replaces` content is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
