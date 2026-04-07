@@ -7,8 +7,6 @@ package rabbitmqexporter
 
 import (
 	"fmt"
-	"math/rand/v2"
-	"strconv"
 	"testing"
 	"time"
 
@@ -43,8 +41,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 
 	for _, c := range testCase {
 		t.Run(c.name, func(t *testing.T) {
-			port := randPort()
-			container := startRabbitMQContainer(t, c.image, port)
+			container := startRabbitMQContainer(t, c.image)
 			defer func() {
 				err := container.Terminate(t.Context())
 				require.NoError(t, err)
@@ -53,7 +50,9 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			// Connect to rabbitmq then create a queue and queue consumer
 			host, err := container.Host(t.Context())
 			require.NoError(t, err)
-			endpoint := fmt.Sprintf("amqp://%s:%s", host, port)
+			mappedPort, err := container.MappedPort(t.Context(), "5672")
+			require.NoError(t, err)
+			endpoint := fmt.Sprintf("amqp://%s:%s", host, mappedPort.Port())
 			connection, channel, consumer := setupQueueConsumer(t, logsRoutingKey, endpoint)
 
 			// Create and start rabbitmqexporter
@@ -113,13 +112,13 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 	}
 }
 
-func startRabbitMQContainer(t *testing.T, image, port string) testcontainers.Container {
+func startRabbitMQContainer(t *testing.T, image string) testcontainers.Container {
 	container, err := testcontainers.GenericContainer(
 		t.Context(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image:        image,
-				ExposedPorts: []string{fmt.Sprintf("%s:5672", port)},
+				ExposedPorts: []string{"5672/tcp"},
 				WaitingFor: &wait.MultiStrategy{
 					Strategies: []wait.Strategy{
 						wait.ForListeningPort("5672").WithStartupTimeout(1 * time.Minute),
@@ -163,8 +162,4 @@ func setupQueueConsumer(t *testing.T, queueName, endpoint string) (*amqp.Connect
 	require.NoError(t, err)
 
 	return connection, channel, consumer
-}
-
-func randPort() string {
-	return strconv.Itoa(rand.IntN(999) + 9000)
 }

@@ -126,7 +126,7 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 						FileMode:          0o600,
 					},
 				},
-				ExposedPorts: []string{jmxPort + ":" + jmxPort},
+				ExposedPorts: []string{jmxPort + "/tcp"},
 				WaitingFor:   wait.ForListeningPort(jmxPort),
 			}),
 		scraperinttest.AllowHardcodedHostPort(),
