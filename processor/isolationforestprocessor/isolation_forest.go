@@ -20,6 +20,7 @@ type onlineIsolationForest struct {
 	maxDepth          int     // Maximum depth for trees
 	windowSize        int     // Size of sliding window for recent data
 	contaminationRate float64 // Expected fraction of anomalies (0.0-1.0)
+	minNodeSamples    int     // Samples a leaf must accumulate before splitting
 
 	// Trees and their associated data
 	trees      []*onlineIsolationTree // Collection of online isolation trees
@@ -125,12 +126,15 @@ type onlineForestStatistics struct {
 }
 
 // newOnlineIsolationForest creates a new online isolation forest with the specified parameters.
-func newOnlineIsolationForest(numTrees, windowSize, maxDepth int, contaminationRate float64) *onlineIsolationForest {
+func newOnlineIsolationForest(numTrees, windowSize, maxDepth int, contaminationRate float64, minNodeSamples int) *onlineIsolationForest {
 	if maxDepth <= 0 {
 		maxDepth = int(math.Ceil(math.Log2(float64(windowSize))))
 	}
 	if contaminationRate <= 0 || contaminationRate >= 1 {
 		contaminationRate = 0.1 // sensible default
+	}
+	if minNodeSamples <= 0 {
+		minNodeSamples = 10 // sensible default
 	}
 	seed := uint64(time.Now().UnixNano())
 	forest := &onlineIsolationForest{
@@ -138,6 +142,7 @@ func newOnlineIsolationForest(numTrees, windowSize, maxDepth int, contaminationR
 		maxDepth:          maxDepth,
 		windowSize:        windowSize,
 		contaminationRate: contaminationRate,
+		minNodeSamples:    minNodeSamples,
 		trees:             make([]*onlineIsolationTree, numTrees),
 		dataWindow:        make([][]float64, windowSize),
 		scoreHistory:      make([]float64, 0, windowSize),
@@ -156,8 +161,8 @@ func newOnlineIsolationForest(numTrees, windowSize, maxDepth int, contaminationR
 }
 
 // newOnlineIsolationForestWithAdaptive creates a forest with adaptive window sizing
-func newOnlineIsolationForestWithAdaptive(numTrees, windowSize, maxDepth int, adaptiveConfig *AdaptiveWindowConfig, contaminationRate float64) *onlineIsolationForest {
-	forest := newOnlineIsolationForest(numTrees, windowSize, maxDepth, contaminationRate)
+func newOnlineIsolationForestWithAdaptive(numTrees, windowSize, maxDepth int, adaptiveConfig *AdaptiveWindowConfig, contaminationRate float64, minNodeSamples int) *onlineIsolationForest {
+	forest := newOnlineIsolationForest(numTrees, windowSize, maxDepth, contaminationRate, minNodeSamples)
 
 	if adaptiveConfig != nil && adaptiveConfig.Enabled {
 		forest.adaptiveConfig = adaptiveConfig
@@ -417,7 +422,7 @@ func (oif *onlineIsolationForest) updateNodePath(node *onlineTreeNode, sample []
 
 	// If this leaf has accumulated enough samples, split it now.
 	// This check MUST come before the isLeaf early-return so nodes can grow.
-	if node.isLeaf && node.sampleCount > 10 {
+	if node.isLeaf && node.sampleCount > oif.minNodeSamples {
 		oif.splitNode(node, sample, depth, maxDepth)
 		return
 	}

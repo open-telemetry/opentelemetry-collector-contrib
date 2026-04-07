@@ -23,6 +23,7 @@ type Config struct {
 	TrainingWindow          string            `mapstructure:"training_window"`
 	UpdateFrequency         string            `mapstructure:"update_frequency"`
 	MinSamples              int               `mapstructure:"min_samples"`
+	MinNodeSamples          int               `mapstructure:"min_node_samples"`
 	ScoreAttribute          string            `mapstructure:"score_attribute"`
 	ClassificationAttribute string            `mapstructure:"classification_attribute"`
 	Features                FeatureConfig     `mapstructure:"features"`
@@ -81,6 +82,7 @@ func createDefaultConfig() component.Config {
 		TrainingWindow:    "24h",
 		UpdateFrequency:   "1h",
 		MinSamples:        1000,
+		MinNodeSamples:    10,
 
 		ScoreAttribute:          "anomaly.isolation_score",
 		ClassificationAttribute: "anomaly.is_anomaly",
@@ -123,6 +125,10 @@ func (cfg *Config) Validate() error {
 	if cfg.ContaminationRate < 0.0 || cfg.ContaminationRate > 1.0 {
 		return errors.New("contamination_rate must be between 0.0 and 1.0")
 	}
+	if cfg.MinNodeSamples <= 0 {
+		return errors.New("min_node_samples must be positive")
+	}
+
 	if cfg.Mode != "enrich" && cfg.Mode != "filter" && cfg.Mode != "both" {
 		return errors.New("mode must be 'enrich', 'filter', or 'both'")
 	}
