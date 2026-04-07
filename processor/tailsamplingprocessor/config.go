@@ -340,6 +340,7 @@ type Config struct {
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
 	// TailStorageID specifies an optional tail storage extension to use for buffering spans.
 	// If not set, in-memory tail storage is used.
+	// It is behind feature gate `processor.tailsamplingprocessor.tailstorageextension`.
 	TailStorageID *component.ID `mapstructure:"tail_storage"`
 	// Options allows for additional configuration of the tail-based sampling processor in code.
 	Options []Option `mapstructure:"-"`
