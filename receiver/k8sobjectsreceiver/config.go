@@ -41,28 +41,28 @@ const (
 )
 
 type K8sObjectsConfig struct {
-	Name                   string               `mapstructure:"name"`
-	Group                  string               `mapstructure:"group"`
-	Namespaces             []string             `mapstructure:"namespaces"`
-	ExcludeNamespaces      []filter.Config      `mapstructure:"exclude_namespaces"`
-	Mode                   k8sinventory.Mode    `mapstructure:"mode"`
-	LabelSelector          string               `mapstructure:"label_selector"`
-	FieldSelector          string               `mapstructure:"field_selector"`
-	Interval               time.Duration        `mapstructure:"interval"`
-	ResourceVersion        string               `mapstructure:"resource_version"`
-	PersistResourceVersion bool                 `mapstructure:"persist_resource_version"`
-	ExcludeWatchType       []apiWatch.EventType `mapstructure:"exclude_watch_type"`
-	exclude                map[apiWatch.EventType]bool
-	gvr                    *schema.GroupVersionResource
+	Name              string               `mapstructure:"name"`
+	Group             string               `mapstructure:"group"`
+	Namespaces        []string             `mapstructure:"namespaces"`
+	ExcludeNamespaces []filter.Config      `mapstructure:"exclude_namespaces"`
+	Mode              k8sinventory.Mode    `mapstructure:"mode"`
+	LabelSelector     string               `mapstructure:"label_selector"`
+	FieldSelector     string               `mapstructure:"field_selector"`
+	Interval          time.Duration        `mapstructure:"interval"`
+	ResourceVersion   string               `mapstructure:"resource_version"`
+	ExcludeWatchType  []apiWatch.EventType `mapstructure:"exclude_watch_type"`
+	exclude           map[apiWatch.EventType]bool
+	gvr               *schema.GroupVersionResource
 }
 
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
-	Storage             *component.ID       `mapstructure:"storage"`
-	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
-	IncludeInitialState bool                `mapstructure:"include_initial_state"`
+	Objects                []*K8sObjectsConfig `mapstructure:"objects"`
+	Storage                *component.ID       `mapstructure:"storage"`
+	ErrorMode              ErrorMode           `mapstructure:"error_mode"`
+	IncludeInitialState    bool                `mapstructure:"include_initial_state"`
+	PersistResourceVersion bool                `mapstructure:"persist_resource_version"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
@@ -97,16 +97,12 @@ func (c *Config) Validate() error {
 			return errors.New("the Exclude config can only be used with watch mode")
 		}
 
+		if c.PersistResourceVersion && object.ResourceVersion != "" {
+			return errors.New("resource_version cannot be set on an object when persist_resource_version is enabled")
+		}
+
 		if object.Mode == k8sinventory.PullMode && c.IncludeInitialState {
 			return errors.New("include_initial_state can only be used with watch mode")
-		}
-
-		if object.PersistResourceVersion && object.Mode != k8sinventory.WatchMode {
-			return errors.New("persist_resource_version can only be used with watch mode")
-		}
-
-		if object.PersistResourceVersion && object.ResourceVersion != "" {
-			return errors.New("resource_version cannot be set when persist_resource_version is enabled")
 		}
 
 		if len(object.ExcludeNamespaces) != 0 && len(object.Namespaces) != 0 {
@@ -173,15 +169,14 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 
 func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	copied := &K8sObjectsConfig{
-		Name:                   k.Name,
-		Group:                  k.Group,
-		Mode:                   k.Mode,
-		LabelSelector:          k.LabelSelector,
-		FieldSelector:          k.FieldSelector,
-		Interval:               k.Interval,
-		ResourceVersion:        k.ResourceVersion,
-		PersistResourceVersion: k.PersistResourceVersion,
-		ExcludeNamespaces:      k.ExcludeNamespaces,
+		Name:              k.Name,
+		Group:             k.Group,
+		Mode:              k.Mode,
+		LabelSelector:     k.LabelSelector,
+		FieldSelector:     k.FieldSelector,
+		Interval:          k.Interval,
+		ResourceVersion:   k.ResourceVersion,
+		ExcludeNamespaces: k.ExcludeNamespaces,
 	}
 
 	copied.Namespaces = make([]string, len(k.Namespaces))

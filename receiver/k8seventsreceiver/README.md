@@ -41,10 +41,8 @@ Examples:
 ```yaml
   k8s_events:
     auth_type: kubeConfig
-    storage: file_storage
     k8s_leader_elector: k8s_leader_elector
     namespaces: [default, my_namespace]
-    persist_resource_version: true
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
@@ -72,17 +70,9 @@ metadata:
     app: otelcontribcol
 data:
   config.yaml: |
-    extensions:
-      file_storage:
-        directory: /var/lib/otelcol/storage
-
     receivers:
       k8s_events:
-        auth_type: serviceAccount
-        storage: file_storage
         namespaces: [default, my_namespace]
-        persist_resource_version: true
-
     exporters:
       otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
@@ -90,7 +80,6 @@ data:
           insecure: true
 
     service:
-      extensions: [file_storage]
       pipelines:
         logs:
           receivers: [k8s_events]
@@ -237,16 +226,11 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/config
-        - name: storage
-          mountPath: /var/lib/otelcol/storage
         imagePullPolicy: IfNotPresent
       volumes:
         - name: config
           configMap:
             name: otelcontribcol
-        - name: storage
-          persistentVolumeClaim:
-            claimName: otelcol-storage
 EOF
 ```
 

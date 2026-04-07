@@ -124,7 +124,7 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 						ResourceVersion: object.ResourceVersion,
 					},
 					IncludeInitialState:    kr.config.IncludeInitialState,
-					PersistResourceVersion: object.PersistResourceVersion,
+					PersistResourceVersion: kr.config.PersistResourceVersion,
 					Exclude:                object.exclude,
 				},
 				kr.setting.Logger,
@@ -152,18 +152,10 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 	}
 	kr.client = client
 
-	// Initialize storage client only if at least one object has persistence enabled
-	needsStorage := false
-	for _, obj := range kr.objects {
-		if obj.PersistResourceVersion {
-			needsStorage = true
-			break
-		}
-	}
-
-	if needsStorage {
+	// Initialize storage client if persistence is enabled at the top level
+	if kr.config.PersistResourceVersion {
 		if kr.config.Storage == nil {
-			kr.setting.Logger.Warn("persist_resource_version is enabled for one or more objects but no storage extension configured, persistence will not work")
+			kr.setting.Logger.Warn("persist_resource_version is enabled but no storage extension configured, persistence will not work")
 		} else {
 			storageClient, storageErr := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
 			if storageErr != nil {

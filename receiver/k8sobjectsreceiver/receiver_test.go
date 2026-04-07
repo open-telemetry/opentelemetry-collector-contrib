@@ -624,11 +624,11 @@ func TestReceiverStorageInitialization(t *testing.T) {
 			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 			rCfg.makeDiscoveryClient = getMockDiscoveryClient
 			rCfg.Storage = tt.storageID
+			rCfg.PersistResourceVersion = tt.persistResourceVersion
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
-					Name:                   "pods",
-					Mode:                   k8sinventory.WatchMode,
-					PersistResourceVersion: tt.persistResourceVersion,
+					Name: "pods",
+					Mode: k8sinventory.WatchMode,
 				},
 			}
 
@@ -670,21 +670,19 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.PersistResourceVersion = true
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name:                   "pods",
-			Mode:                   k8sinventory.WatchMode,
-			PersistResourceVersion: true, // Enabled
+			Name: "pods",
+			Mode: k8sinventory.WatchMode,
 		},
 		{
-			Name:                   "events",
-			Mode:                   k8sinventory.WatchMode,
-			PersistResourceVersion: false, // Disabled
+			Name: "events",
+			Mode: k8sinventory.WatchMode,
 		},
 		{
 			Name: "myresources",
 			Mode: k8sinventory.WatchMode,
-			// Not set - defaults to false
 		},
 	}
 
@@ -702,7 +700,7 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 
 	kr := r.(*k8sobjectsreceiver)
 
-	// Storage client should be initialized because at least one object has persistence enabled
+	// Storage client should be initialized because top-level persistence is enabled
 	assert.NotNil(t, kr.storageClient)
 
 	err = r.Shutdown(t.Context())
@@ -715,16 +713,15 @@ func TestReceiverNoObjectsWithPersistence(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
+	rCfg.PersistResourceVersion = false
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name:                   "pods",
-			Mode:                   k8sinventory.WatchMode,
-			PersistResourceVersion: false, // All disabled
+			Name: "pods",
+			Mode: k8sinventory.WatchMode,
 		},
 		{
-			Name:                   "events",
-			Mode:                   k8sinventory.WatchMode,
-			PersistResourceVersion: false,
+			Name: "events",
+			Mode: k8sinventory.WatchMode,
 		},
 	}
 
@@ -742,7 +739,7 @@ func TestReceiverNoObjectsWithPersistence(t *testing.T) {
 
 	kr := r.(*k8sobjectsreceiver)
 
-	// Storage client should NOT be initialized because no object has persistence enabled
+	// Storage client should NOT be initialized because top-level persistence is disabled
 	assert.Nil(t, kr.storageClient)
 
 	err = r.Shutdown(t.Context())

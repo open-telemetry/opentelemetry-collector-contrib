@@ -27,6 +27,7 @@ The following is example configuration
   k8sobjects:
     auth_type: serviceAccount
     storage: file_storage
+    persist_resource_version: true
     k8s_leader_elector: k8s_leader_elector
     objects:
       - name: pods
@@ -40,7 +41,6 @@ The following is example configuration
         mode: watch
         group: events.k8s.io
         namespaces: [default]
-        persist_resource_version: true
 ```
 
 Brief description of configuration properties:
@@ -72,7 +72,7 @@ this case, it will select `v1` by default.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
 - `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. Required when `persist_resource_version` is enabled. The attached storage should be a persistent volume, which is accessible by all the nodes in the given cluster. If local volume is used, persistence will break when the pod is moved to another node.
-- `persist_resource_version` (default: `false`): when set to `true` (watch-mode only), the receiver persists the resourceVersion after processing each event. On restart, the receiver resumes watching from the persisted resourceVersion, preventing duplicate events. Requires a `storage` extension to be configured.
+- `persist_resource_version` (default: `false`): top-level flag. When set to `true`, the receiver persists the resourceVersion after processing each event for all watch-mode objects. On restart, each watch-mode object resumes from its persisted resourceVersion, preventing duplicate events. Pull-mode objects are unaffected. Requires a `storage` extension to be configured.
 
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
@@ -124,12 +124,12 @@ data:
       k8sobjects:
         auth_type: serviceAccount
         storage: file_storage
+        persist_resource_version: true
         objects:
           - name: pods
             mode: pull
           - name: events
             mode: watch
-            persist_resource_version: true
 
     exporters:
       otlp_grpc:

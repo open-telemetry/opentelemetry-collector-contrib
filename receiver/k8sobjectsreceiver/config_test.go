@@ -211,49 +211,61 @@ func TestConfigValidationPersistResourceVersion(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			desc: "persist_resource_version with watch mode and no resource_version is valid",
+			desc: "persist_resource_version true with watch objects is valid",
 			cfg: &Config{
-				ErrorMode: PropagateError,
+				ErrorMode:              PropagateError,
+				PersistResourceVersion: true,
 				Objects: []*K8sObjectsConfig{
 					{
-						Name:                   "pods",
-						Mode:                   k8sinventory.WatchMode,
-						PersistResourceVersion: true,
+						Name: "pods",
+						Mode: k8sinventory.WatchMode,
 					},
 				},
 			},
 		},
 		{
-			desc: "persist_resource_version with pull mode is invalid",
+			desc: "persist_resource_version true with pull objects is valid (pull objects are simply ignored for persistence)",
 			cfg: &Config{
-				ErrorMode: PropagateError,
+				ErrorMode:              PropagateError,
+				PersistResourceVersion: true,
 				Objects: []*K8sObjectsConfig{
 					{
-						Name:                   "pods",
-						Mode:                   k8sinventory.PullMode,
-						PersistResourceVersion: true,
+						Name: "pods",
+						Mode: k8sinventory.PullMode,
 					},
 				},
 			},
-			expectedErr: "persist_resource_version can only be used with watch mode",
 		},
 		{
-			desc: "persist_resource_version with resource_version set is invalid",
+			desc: "persist_resource_version false is valid",
 			cfg: &Config{
-				ErrorMode: PropagateError,
+				ErrorMode:              PropagateError,
+				PersistResourceVersion: false,
 				Objects: []*K8sObjectsConfig{
 					{
-						Name:                   "pods",
-						Mode:                   k8sinventory.WatchMode,
-						PersistResourceVersion: true,
-						ResourceVersion:        "100",
+						Name: "pods",
+						Mode: k8sinventory.WatchMode,
 					},
 				},
 			},
-			expectedErr: "resource_version cannot be set when persist_resource_version is enabled",
 		},
 		{
-			desc: "resource_version set without persist_resource_version is valid",
+			desc: "storage defined without persist_resource_version and resource_version set per object is valid",
+			cfg: &Config{
+				ErrorMode:              PropagateError,
+				Storage:                func() *component.ID { id := component.NewID(component.MustNewType("file_storage")); return &id }(),
+				PersistResourceVersion: false,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:            "pods",
+						Mode:            k8sinventory.WatchMode,
+						ResourceVersion: "100",
+					},
+				},
+			},
+		},
+		{
+			desc: "resource_version set on object with persist_resource_version false is valid",
 			cfg: &Config{
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
@@ -264,6 +276,21 @@ func TestConfigValidationPersistResourceVersion(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			desc: "resource_version set on object with persist_resource_version true is invalid",
+			cfg: &Config{
+				ErrorMode:              PropagateError,
+				PersistResourceVersion: true,
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:            "pods",
+						Mode:            k8sinventory.WatchMode,
+						ResourceVersion: "100",
+					},
+				},
+			},
+			expectedErr: "resource_version cannot be set on an object when persist_resource_version is enabled",
 		},
 	}
 
