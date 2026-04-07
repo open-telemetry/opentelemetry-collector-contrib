@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
@@ -37,7 +38,7 @@ type mockHost struct {
 	component.Host
 }
 
-func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+func (*mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
@@ -305,13 +306,16 @@ func TestLogToCWLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resourceAttrs := attrsValue(tt.resource.Attributes())
-			got, err := logToCWLog(resourceAttrs, tt.scope, tt.log, tt.config)
+			got, err := logToCWLog(resourceAttrs, tt.scope, tt.log, tt.config, zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("logToCWLog() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			if tt.wantErr {
+				return
+			}
 			// Do not test generated time since it is time.Now()
-			assert.Equal(t, tt.want.InputLogEvent, got.InputLogEvent)
+			assert.Equal(t, *tt.want.InputLogEvent, *got.InputLogEvent)
 			assert.Equal(t, tt.want.LogStreamName, got.LogStreamName)
 			assert.Equal(t, tt.want.LogGroupName, got.LogGroupName)
 		})
@@ -324,8 +328,8 @@ func BenchmarkLogToCWLog(b *testing.B) {
 	resource := testResource()
 	log := testLogRecord()
 	scope := testScope()
-	for i := 0; i < b.N; i++ {
-		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{})
+	for b.Loop() {
+		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{}, zap.NewNop())
 		if err != nil {
 			b.Errorf("logToCWLog() failed %v", err)
 			return

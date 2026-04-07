@@ -22,8 +22,21 @@ NOTE: OpenTelemetry Logging support is experimental, hence this exporter is subj
 
 The following settings are required:
 
-- `log_group_name`: The group name of the CloudWatch Logs. If it does not exist it will be created automatically.
-- `log_stream_name`: The stream name of the CloudWatch Logs. If it does not exist it will be created automatically.
+
+- `log_group_name`: The group name of the CloudWatch Logs. If it does not exist it will be created automatically. It supports several placeholder names. One valid example is `/aws/metrics/{ClusterName}`. It will search for ClusterName (or aws.ecs.cluster.name) resource attribute in the metrics data and replace with the actual cluster name. If none of them are found in the resource attribute map, {ClusterName} will be replaced by undefined. Similar way, for the {TaskId}, it searches for TaskId (or aws.ecs.task.id) key in the resource attribute map. For {NodeName}, it searches for NodeName (or k8s.node.name)
+  - List of valid placeholders:
+    - `{ClusterName}`: `aws.ecs.cluster.name`
+    - `{TaskId}`:               `aws.ecs.task.id`
+    - `{NodeName}`:             `k8s.node.name`
+    - `{PodName}`:              `pod`
+    - `{ServiceName}`:          `service.name`
+    - `{ContainerInstanceId}`:  `aws.ecs.container.instance.id`
+    - `{TaskDefinitionFamily}`: `aws.ecs.task.family`
+    - `{InstanceId}`:           `service.instance.id`
+    - `{FaasName}`:             `faas.name`
+    - `{FaasVersion}`:          `faas.version`
+- `log_stream_name`: The stream name of the CloudWatch Logs. If it does not exist it will be created automatically. It supports the same placeholders as `log_group_name`
+
 
 The following settings can be optionally configured:
 

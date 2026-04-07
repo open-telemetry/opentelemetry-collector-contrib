@@ -237,6 +237,22 @@ func TestValidateTags(t *testing.T) {
 	}
 }
 
+func TestValidateWithEnvVarSyntax(t *testing.T) {
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
+	cfg := &Config{
+		BackOffConfig: defaultBackOffConfig,
+		LogGroupName:  "${ENV_LOG_GROUP}",
+		LogStreamName: "${ENV_LOG_STREAM}",
+		QueueSettings: exporterhelper.QueueBatchConfig{
+			Enabled:      true,
+			NumConsumers: 1,
+			QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+		},
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+	}
+	assert.NoError(t, xconfmap.Validate(cfg))
+}
+
 func TestRawLogEmfOnlyCombination(t *testing.T) {
 	tests := []struct {
 		RawLog    bool
