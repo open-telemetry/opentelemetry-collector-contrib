@@ -36,6 +36,8 @@ func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 	return 0
 }
 
+func (*mockAccumulator) cleanupExpired() {}
+
 func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
 	rAttrs := make([]pcommon.Map, len(a.metrics))
 	scopeNames := make([]string, len(a.metrics))
