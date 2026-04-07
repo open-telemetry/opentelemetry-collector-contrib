@@ -34,6 +34,9 @@ type WindowsLogConfig struct {
 	// ResolveSIDs contains configuration for SID-to-username resolution
 	ResolveSIDs ResolveSIDsConfig `mapstructure:"resolve_sids"`
 
+	// DiscoverDomainControllers controls whether to attempt auto-discovery of domain controllers for joined machines with remote credentials
+	DiscoverDomainControllers bool `mapstructure:"discover_domain_controllers,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
