@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: deprecation
+
+component: receiver/tcp_log
+
+note: Rename `tcplog` receiver to `tcp_log` with deprecated alias `tcplog`
+
+issues: [45339]
+
+subtext:
+
+change_logs: [user]
