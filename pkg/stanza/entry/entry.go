@@ -5,6 +5,7 @@ package entry // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -25,11 +26,23 @@ type Entry struct {
 	ScopeName         string         `json:"scope_name"              yaml:"scope_name"`
 }
 
+var entriesPool = sync.Pool{
+	New: func() any {
+		return &Entry{
+			ObservedTimestamp: timeNow(),
+		}
+	},
+}
+
 // New will create a new log entry with current timestamp and an empty body.
 func New() *Entry {
-	return &Entry{
-		ObservedTimestamp: timeNow(),
-	}
+	return entriesPool.Get().(*Entry)
+}
+
+// Put releases the entry back to the pool
+func Put(e *Entry) {
+	*e = Entry{}
+	entriesPool.Put(e)
 }
 
 // AddAttribute will add a key/value pair to the entry's attributes.
