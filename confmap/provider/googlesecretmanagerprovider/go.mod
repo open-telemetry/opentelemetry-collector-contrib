@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	cloud.google.com/go/secretmanager v1.17.0
-	github.com/googleapis/gax-go/v2 v2.20.0
+	github.com/googleapis/gax-go/v2 v2.21.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/confmap v1.55.1-0.20260402195938-76ede073ee8e
 	go.uber.org/goleak v1.3.0
