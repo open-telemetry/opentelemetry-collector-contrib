@@ -23,6 +23,7 @@ var _ component.Config = (*Config)(nil)
 
 var (
 	errRecordPartitionerMultipleSet = errors.New("at most one record_partitioner strategy may be configured")
+	errRecordPartitionerMissing     = errors.New("no partitioner type configured")
 )
 
 var errLogsPartitionExclusive = errors.New(
@@ -98,7 +99,9 @@ func (c *RecordPartitionerConfig) Validate() error {
 	if set > 1 {
 		return errRecordPartitionerMultipleSet
 	}
-
+	if set == 0 {
+		return errRecordPartitionerMissing
+	}
 	if c.StickyKey != nil {
 		return c.StickyKey.Validate()
 	}
@@ -108,7 +111,8 @@ func (c *RecordPartitionerConfig) Validate() error {
 
 func (c *RecordPartitionerConfig) Unmarshal(conf *confmap.Conf) error {
 	// Use reflection to clear all fields
-	// This is done to ensure that default partioner is not retained when Unmarshaling. Doing so will ensure that only one partitioner is set at a time and the validation will work as expected.
+	// This is done to ensure that default partioner is not retained when Unmarshaling.
+	// Doing so will ensure that only one partitioner is set at a time and the validation will work as expected.
 	v := reflect.ValueOf(c).Elem()
 
 	for i := 0; i < v.NumField(); i++ {

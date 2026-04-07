@@ -48,5 +48,7 @@ func buildPartitionerOpt(cfg RecordPartitionerConfig, host component.Host) (kgo.
 		}
 		return kgo.RecordPartitioner(partExt.GetPartitioner()), nil
 	}
-	return nil, fmt.Errorf("no partitioner type configured")
+	// in practice, this shouldn't happen.
+	// The config validation should catch the case where no partitioner is set.
+	return nil, errRecordPartitionerMissing
 }
