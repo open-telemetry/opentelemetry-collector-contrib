@@ -30,8 +30,6 @@ $defs:
         type: array
         items:
           type: string
-      persist_resource_version:
-        type: boolean
       resource_version:
         type: string
 type: object
@@ -49,6 +47,8 @@ properties:
     items:
       x-pointer: true
       $ref: k_8_s_objects_config
+  persist_resource_version:
+    type: boolean
   storage:
     x-pointer: true
     type: string
