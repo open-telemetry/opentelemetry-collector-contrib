@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -49,7 +50,6 @@ type WatchClient struct {
 	daemonsetInformer      cache.SharedInformer
 	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
-	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
 	deleteQueue            []deleteRequest
 	stopCh                 chan struct{}
@@ -95,17 +95,18 @@ type WatchClient struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-// Extract replicaset name from the pod name. Pod name is created using
-// format: [deployment-name]-[Random-String-For-ReplicaSet]
-var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
-
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
+// time-hash-int is the unix timestamp in minutes of the job creation time
+// 8 digits will last until 2160, we are safe for a while
+var cronJobRegex = regexp.MustCompile(`^(.*)-(\d{8})$`)
 
-// Extract Deployment name from the ReplicaSet name. Deployment name is created using
-// format: [deployment-name]-[hash]
-var deploymentHashSuffixPattern = regexp.MustCompile(`^[a-z0-9]{10}$`)
+// cronJobSuffixTimeSkewMinutes is the maximum allowed difference
+// in minutes between pod creationg time and the timestamp suffix
+// in the job name (created by cronjob)
+// If the suffix falls outside of the range, it assumed that it's not a cronjob
+// (i.e. the suffix it humand generated, like a date 20260407)
+const cronJobSuffixTimeSkewMinutes int64 = 59
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
@@ -139,7 +140,6 @@ func New(
 		Filters:                filters,
 		Associations:           associations,
 		Exclude:                exclude,
-		replicasetRegex:        rRegex,
 		cronJobRegex:           cronJobRegex,
 		stopCh:                 make(chan struct{}),
 		telemetryBuilder:       telemetryBuilder,
@@ -252,8 +252,9 @@ func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	// The replicaset informer is needed to get the deployment UID.
-	// It is also needed to get the deployment name if the feature gate is not enabled.
+	// The replicaset informer is needed for deployment UID. For deployment name, the standard path uses it to read
+	// owner metadata; the deprecated extract.deployment_name_from_replicaset option skips it when deployment UID
+	// is not extracted (legacy compatibility).
 	if c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
@@ -921,10 +922,16 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
 					if c.Rules.DeploymentNameFromReplicaSet {
-						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name)
-					} else if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-						deploymentName = replicaset.Deployment.Name
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels["pod-template-hash"])
+					} else {
+						if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+							deploymentName = replicaset.Deployment.Name
+						} else {
+							// Will be blank if not a ReplicaSet managed by a Deployment
+							deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels["pod-template-hash"])
+						}
 					}
+
 					if deploymentName != "" {
 						if c.Rules.DeploymentName {
 							tags[string(conventions.K8SDeploymentNameKey)] = deploymentName
@@ -974,15 +981,20 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
-					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-					if len(parts) == 2 {
-						name := parts[1]
+					var cronjobName string
+					if job, ok := c.GetJob(string(ref.UID)); ok {
+						cronjobName = job.CronJob.Name
+					} else {
+						cronjobName = c.extractCronJobNameFromJobOwner(ref, pod)
+					}
+
+					if cronjobName != "" {
 						if c.Rules.CronJobName {
-							tags[string(conventions.K8SCronJobNameKey)] = name
+							tags[string(conventions.K8SCronJobNameKey)] = cronjobName
 						}
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
-							tags[string(conventions.ServiceNameKey)] = name
+							tags[string(conventions.ServiceNameKey)] = cronjobName
 						}
 					}
 				}
@@ -1055,9 +1067,10 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	// there's room to optimize this further, it's kept this way for simplicity
 	transformedPod := api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      pod.GetName(),
-			Namespace: pod.GetNamespace(),
-			UID:       pod.GetUID(),
+			Name:              pod.GetName(),
+			Namespace:         pod.GetNamespace(),
+			UID:               pod.GetUID(),
+			CreationTimestamp: pod.GetCreationTimestamp(), // Used to identify cron-job
 		},
 		Status: api_v1.PodStatus{
 			PodIP:     pod.Status.PodIP,
@@ -1975,25 +1988,41 @@ func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	return strings.Join(resNames, ".")
 }
 
+// extractCronJobNameFromJobOwner returns the CronJob name for a Job owner reference using
+// an heuristic that checks if the job name suffix is a valid timestamp closely matching the pod creation time.
+// If it matches, then the suffix is assumed to be the job creation time, and the prefix is then the CronJob name.
+func (c *WatchClient) extractCronJobNameFromJobOwner(ref meta_v1.OwnerReference, pod *api_v1.Pod) string {
+	// Regex checks specifically for 8 digits at the end (Kubernetes CronJob job suffix is a
+	// time value in minutes).
+	parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+	if len(parts) != 3 {
+		return ""
+	}
+	suffixMinutes, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		c.logger.Debug("failed to parse cronjob timestamp", zap.Error(err))
+		// assume not a cronjob
+		return ""
+	}
+	podMinutes := pod.GetCreationTimestamp().Unix() / 60
+	diff := podMinutes - suffixMinutes
+	if diff < 0 {
+		diff = -diff
+	}
+	if diff > cronJobSuffixTimeSkewMinutes {
+		// assume not a cronjob
+		return ""
+	}
+
+	return parts[1]
+}
+
 // extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
-// by trimming the pod template hash suffix. ReplicaSets created by Deployments follow the pattern:
-// <deployment-name>-<pod-template-hash> where pod-template-hash is a 10-character alphanumeric string.
-func extractDeploymentNameFromReplicaSet(replicasetName string) string {
-	if replicasetName == "" {
+func extractDeploymentNameFromReplicaSet(replicasetName string, podTemplateHash string) string {
+	// TemplateHash Empty means it's not a ReplicaSet managed by a Deployment
+	if replicasetName == "" || podTemplateHash == "" || !strings.HasSuffix(replicasetName, "-"+podTemplateHash) {
 		return ""
 	}
-
-	parts := strings.Split(replicasetName, "-")
-	if len(parts) < 2 {
-		return ""
-	}
-
-	// Check if the last part is a valid 10-character alphanumeric hash using the pre-compiled regex.
-	lastPart := parts[len(parts)-1]
-	if deploymentHashSuffixPattern.MatchString(lastPart) {
-		// Return everything except the last part (the hash), joined back by hyphens.
-		return strings.Join(parts[:len(parts)-1], "-")
-	}
-
-	return ""
+	// Remove the pod template hash suffix and the hyphen
+	return replicasetName[:len(replicasetName)-len(podTemplateHash)-1]
 }
