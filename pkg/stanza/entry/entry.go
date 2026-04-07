@@ -28,15 +28,15 @@ type Entry struct {
 
 var entriesPool = sync.Pool{
 	New: func() any {
-		return &Entry{
-			ObservedTimestamp: timeNow(),
-		}
+		return &Entry{}
 	},
 }
 
 // New will create a new log entry with current timestamp and an empty body.
 func New() *Entry {
-	return entriesPool.Get().(*Entry)
+	e := entriesPool.Get().(*Entry)
+	e.ObservedTimestamp = timeNow()
+	return e
 }
 
 // Put releases the entry back to the pool
@@ -177,17 +177,18 @@ func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]strin
 
 // Copy will return a deep copy of the entry.
 func (entry *Entry) Copy() *Entry {
-	return &Entry{
-		ObservedTimestamp: entry.ObservedTimestamp,
-		Timestamp:         entry.Timestamp,
-		Severity:          entry.Severity,
-		SeverityText:      entry.SeverityText,
-		Attributes:        copyInterfaceMap(entry.Attributes),
-		Resource:          copyInterfaceMap(entry.Resource),
-		Body:              copyValue(entry.Body),
-		TraceID:           copyByteArray(entry.TraceID),
-		SpanID:            copyByteArray(entry.SpanID),
-		TraceFlags:        copyByteArray(entry.TraceFlags),
-		ScopeName:         entry.ScopeName,
-	}
+	e := New()
+	e.ObservedTimestamp = entry.ObservedTimestamp
+	e.Timestamp = entry.Timestamp
+	e.Severity = entry.Severity
+	e.SeverityText = entry.SeverityText
+	e.Attributes = copyInterfaceMap(entry.Attributes)
+	e.Resource = copyInterfaceMap(entry.Resource)
+	e.Body = copyValue(entry.Body)
+	e.TraceID = copyByteArray(entry.TraceID)
+	e.SpanID = copyByteArray(entry.SpanID)
+	e.TraceFlags = copyByteArray(entry.TraceFlags)
+	e.ScopeName = entry.ScopeName
+
+	return e
 }
