@@ -379,7 +379,14 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			}, NodeInfo{}, func(*metadata.ResourceBuilder, string, string, string) error {
 				return nil
 			})
-			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+			rac := metadata.DefaultResourceAttributesConfig()
+			rac.AwsVolumeID.Enabled = true
+			rac.FsType.Enabled = true
+			rac.GcePdName.Enabled = true
+			rac.GlusterfsEndpointsName.Enabled = true
+			rac.GlusterfsPath.Enabled = true
+			rac.Partition.Enabled = true
+			rb := metadata.NewResourceBuilder(rac)
 			err := md.setExtraResources(rb, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
 			require.NoError(t, err)
 
