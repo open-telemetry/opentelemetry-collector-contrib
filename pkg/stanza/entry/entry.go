@@ -35,13 +35,14 @@ var entriesPool = sync.Pool{
 // New will create a new log entry with current timestamp and an empty body.
 func New() *Entry {
 	e := entriesPool.Get().(*Entry)
+	*e = *zeroE
 	e.ObservedTimestamp = timeNow()
 	return e
 }
 
+var zeroE = &Entry{}
 // Put releases the entry back to the pool
 func Put(e *Entry) {
-	*e = Entry{}
 	entriesPool.Put(e)
 }
 
