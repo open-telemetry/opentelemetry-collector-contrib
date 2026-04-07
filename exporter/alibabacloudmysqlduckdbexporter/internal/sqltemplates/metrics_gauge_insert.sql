@@ -1,0 +1,19 @@
+INSERT INTO `%s`.`%s` (
+    resource_attributes,
+    resource_schema_url,
+    scope_name,
+    scope_version,
+    scope_attributes,
+    scope_dropped_attr_count,
+    scope_schema_url,
+    service_name,
+    metric_name,
+    metric_description,
+    metric_unit,
+    attributes,
+    start_time_unix,
+    time_unix,
+    value,
+    flags,
+    exemplars
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

@@ -1,0 +1,23 @@
+alibabacloudmysqlduckdb:
+  endpoint: root:password@tcp(localhost:3306)/otel
+  database: otel
+  logs_table_name: otel_logs
+  traces_table_name: otel_traces
+  metrics_table_name: otel_metrics
+  create_schema: true
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 30s
+    max_elapsed_time: 300s
+  sending_queue:
+    enabled: true
+    num_consumers: 10
+    queue_size: 1000
+alibabacloudmysqlduckdb/customtables:
+  endpoint: root:password@tcp(rm-xxx.mysql.rds.aliyuncs.com:3306)/mydb?tls=true
+  database: mydb
+  logs_table_name: custom_logs
+  traces_table_name: custom_traces
+  metrics_table_name: custom_metrics
+  create_schema: false

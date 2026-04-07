@@ -1,0 +1,15 @@
+type: alibabacloudmysqlduckdb
+display_name: Alibaba Cloud MySQL DuckDB Exporter
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, logs, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [wangype]
+
+tests:
+  config:
+    endpoint: root:@tcp(localhost:3306)/otel
+  skip_lifecycle: true

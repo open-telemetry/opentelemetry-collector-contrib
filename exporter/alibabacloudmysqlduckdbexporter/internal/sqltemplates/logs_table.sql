@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `%s`.`%s` (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    timestamp DATETIME(6) NOT NULL,
+    trace_id VARCHAR(32) NOT NULL DEFAULT '',
+    span_id VARCHAR(16) NOT NULL DEFAULT '',
+    trace_flags TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    severity_text VARCHAR(32) NOT NULL DEFAULT '',
+    severity_number TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    service_name VARCHAR(256) NOT NULL DEFAULT '',
+    body TEXT,
+    resource_schema_url VARCHAR(512) NOT NULL DEFAULT '',
+    resource_attributes JSON,
+    scope_schema_url VARCHAR(512) NOT NULL DEFAULT '',
+    scope_name VARCHAR(256) NOT NULL DEFAULT '',
+    scope_version VARCHAR(64) NOT NULL DEFAULT '',
+    scope_attributes JSON,
+    log_attributes JSON,
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_service_name (service_name),
+    INDEX idx_trace_id (trace_id),
+    INDEX idx_severity (severity_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
