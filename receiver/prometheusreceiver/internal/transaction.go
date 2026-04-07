@@ -103,7 +103,7 @@ func newTransaction(
 }
 
 // Append returns a stable series reference to enable Prometheus staleness tracking.
-func (t *transaction) append(_ storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
+func (t *transaction) append(ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
 
@@ -245,39 +245,39 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 	return curMf
 }
 
-//nolint:unparam // return signature kept for consistency with other appender methods
-func (t *transaction) appendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
+func (t *transaction) appendExemplar(l labels.Labels, e exemplar.Exemplar) error {
 	select {
 	case <-t.ctx.Done():
-		return 0, errTransactionAborted
+		return errTransactionAborted
 	default:
 	}
 
 	rKey, err := t.initTransaction(l)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	l = l.WithoutEmpty()
 
 	if dupLabel, hasDup := l.HasDuplicateLabelNames(); hasDup {
-		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
+		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
 	}
 
 	mn := l.Get(model.MetricNameLabel)
 	if mn == "" {
-		return 0, errMetricNameNotFound
+		return errMetricNameNotFound
 	}
 
 	scope, attrs := getScopeID(l)
 	t.addScopeAttributesFromLabels(*rKey, scope, attrs)
 	mf := t.getOrCreateMetricFamily(*rKey, scope, mn)
-	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
+	seriesRef := t.getSeriesRef(l, mf.mtype)
+	mf.addExemplar(seriesRef, e)
 
-	return 0, nil
+	return nil
 }
 
-func (t *transaction) appendHistogram(_ storage.SeriesRef, ls labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) appendHistogram(ls labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	var schema int32
 	if h != nil {
 		schema = h.Schema
@@ -332,13 +332,13 @@ func (t *transaction) addHistogramDatapoint(rKey resourceKey, scope scopeID, ls 
 	return storage.SeriesRef(ls.Hash()), nil
 }
 
-func (t *transaction) appendSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
+func (t *transaction) appendSTZeroSample(ls labels.Labels, atMs, stMs int64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
 	return t.setStartTimestamp(ls, atMs, stMs)
 }
 
-func (t *transaction) appendHistogramSTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, stMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) appendHistogramSTZeroSample(ls labels.Labels, atMs, stMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	var schema int32
 	if h != nil {
 		schema = h.Schema
@@ -692,7 +692,7 @@ func (t *transaction) AppendV2(_ storage.SeriesRef, ls labels.Labels, stMs, atMs
 
 	// Append the exemplars, continuing on error to try all exemplars.
 	for _, exemplar := range opts.Exemplars {
-		if _, err := t.appendExemplar(sRef, originalLS, exemplar); err != nil {
+		if err := t.appendExemplar(originalLS, exemplar); err != nil {
 			continue
 		}
 	}
