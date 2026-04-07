@@ -56,6 +56,9 @@ type RecordPartitionerConfig struct {
 	// Extension is the component ID of an extension implementing RecordPartitionerExtension.
 	// Setting this field delegates partition assignment to that extension.
 	Extension *component.ID `mapstructure:"extension"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // StickyKeyPartitionerConfig configures the StickyKeyPartitioner.
@@ -65,6 +68,9 @@ type StickyKeyPartitionerConfig struct {
 	//   - "sarama_compat": Sarama-compatible FNV-1a hashing (SaramaCompatHasher).
 	//   - "murmur2": Murmur2 hashing.
 	Hasher string `mapstructure:"hasher"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *StickyKeyPartitionerConfig) Validate() error {
