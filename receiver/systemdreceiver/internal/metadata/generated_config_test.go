@@ -26,9 +26,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdServiceCPUTime:  MetricConfig{Enabled: true},
-					SystemdServiceRestarts: MetricConfig{Enabled: true},
-					SystemdUnitState:       MetricConfig{Enabled: true},
+					SystemdServiceCPUTime: SystemdServiceCPUTimeMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
+					},
+					SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
+						Enabled: true,
+					},
+					SystemdUnitState: SystemdUnitStateMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdUnitStateMetricAttributeKey{SystemdUnitStateMetricAttributeKeySystemdUnitActiveState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: true},
@@ -39,9 +49,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdServiceCPUTime:  MetricConfig{Enabled: false},
-					SystemdServiceRestarts: MetricConfig{Enabled: false},
-					SystemdUnitState:       MetricConfig{Enabled: false},
+					SystemdServiceCPUTime: SystemdServiceCPUTimeMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdServiceCPUTimeMetricAttributeKey{SystemdServiceCPUTimeMetricAttributeKeyCPUMode},
+					},
+					SystemdServiceRestarts: SystemdServiceRestartsMetricConfig{
+						Enabled: false,
+					},
+					SystemdUnitState: SystemdUnitStateMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []SystemdUnitStateMetricAttributeKey{SystemdUnitStateMetricAttributeKeySystemdUnitActiveState},
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					SystemdUnitName: ResourceAttributeConfig{Enabled: false},
@@ -52,7 +72,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(SystemdServiceCPUTimeMetricConfig{}, SystemdServiceRestartsMetricConfig{}, SystemdUnitStateMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

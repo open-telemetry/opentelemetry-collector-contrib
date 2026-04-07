@@ -29,11 +29,10 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-
-			val, ok := res.Attributes().Get("riak.node.name")
+			riakNodeNameAttrVal, ok := res.Attributes().Get("riak.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.Equal(t, "riak.node.name-val", val.Str())
+				assert.Equal(t, "riak.node.name-val", riakNodeNameAttrVal.Str())
 			}
 		})
 	}

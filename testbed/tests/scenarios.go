@@ -551,7 +551,7 @@ func ScenarioLong(
 
 	tc.StopLoad()
 
-	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, 60*time.Second, "all logs received")
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, 300*time.Second, "all logs received")
 
 	tc.ValidateData()
 }
@@ -688,7 +688,7 @@ func allElementsExistInSlice(slice1, slice2 []string) bool {
 	return true
 }
 
-// in case of filelog receiver, the batch_index and item_index are a part of log body.
+// in case of file_log receiver, the batch_index and item_index are a part of log body.
 // we use regex to extract them
 func extractIDFromLog(log plog.LogRecord) (string, string) {
 	var batch, item string

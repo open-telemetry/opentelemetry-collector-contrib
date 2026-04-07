@@ -59,6 +59,7 @@ func TestReadConfig_RespectsRootTypeFlag(t *testing.T) {
 func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 	projectDir := t.TempDir()
 	settings := Settings{
+		Namespace: "github.com/open-telemetry/opentelemetry-collector-contrib",
 		Mappings: Mappings{
 			"pkg": PackagesMapping{
 				"Thing": {
@@ -83,6 +84,7 @@ func TestReadConfig_ReadsSettingsFile(t *testing.T) {
 
 	expectedOutput := filepath.Join(projectDir, "workdir")
 	require.Equal(t, evalPath(t, expectedOutput), evalPath(t, cfg.OutputFolder))
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib", cfg.Namespace)
 	require.Equal(t, Mappings{
 		"pkg": PackagesMapping{
 			"Thing": {SchemaType: SchemaTypeString, Format: "uuid"},

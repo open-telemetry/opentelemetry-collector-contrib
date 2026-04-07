@@ -11,7 +11,7 @@ The Kubernetes Attributes Processor allows adding k8s metadata to resource attri
 | Distributions | [contrib], [k8s] |
 | Warnings      | [Memory consumption, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
-| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8s_attributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8s_attributes&displayType=list) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark), [@odubajDT](https://www.github.com/odubajDT) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
@@ -1114,4 +1114,17 @@ The breaking changes between the 2 schemas are the following:
 - `k8s.namespace.annotations.<key>` -> `k8s.namespace.annotation.<key>`
 
 All attributes emitted through the `processor.k8sattributes.EmitV1K8sConventions` feature gate
-are currently in `alpha` stability and are actively moving towards `stable` stability.
+are currently in `beta` stability and are actively moving towards `stable` stability.
+
+## Available Benchmarks
+
+The component is tested as part of the project's load tests, with the results being publicly
+available at the benchmarks 
+[page](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests).
+In that page, users can find details such as 
+[memory](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#metrick8sattributesprocessor-5k-workload-cluster-ram-mib)
+and [CPU](https://open-telemetry.github.io/opentelemetry-collector-contrib/benchmarks/loadtests/#metrick8sattributesprocessor-5k-workload-cluster-cpu-percentage)
+performance when the component is used in K8s Clusters (tests use [KWOK](https://kwok.sigs.k8s.io/))
+with a range number of workloads.
+Refer to the [test](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/be97561f515e7ecad2db9ed2acc7818f66e864c9/testbed/tests/k8sattributes_processor_test.go#L394-L398)
+for more information about the setup.

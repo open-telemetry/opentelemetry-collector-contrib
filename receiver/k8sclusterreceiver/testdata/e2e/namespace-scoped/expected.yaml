@@ -10,6 +10,12 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: my-namespace
+      entityRefs:
+        - descriptionKeys:
+            - k8s.cronjob.name
+          idKeys:
+            - k8s.cronjob.uid
+          type: k8s.cronjob
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -35,6 +41,12 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: my-namespace
+      entityRefs:
+        - descriptionKeys:
+            - k8s.deployment.name
+          idKeys:
+            - k8s.deployment.uid
+          type: k8s.deployment
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -68,6 +80,12 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: my-namespace
+      entityRefs:
+        - descriptionKeys:
+            - k8s.hpa.name
+          idKeys:
+            - k8s.hpa.uid
+          type: k8s.hpa
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -117,6 +135,12 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: my-namespace
+      entityRefs:
+        - descriptionKeys:
+            - k8s.job.name
+          idKeys:
+            - k8s.job.uid
+          type: k8s.job
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -174,6 +198,12 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: my-namespace
+      entityRefs:
+        - descriptionKeys:
+            - k8s.job.name
+          idKeys:
+            - k8s.job.uid
+          type: k8s.job
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -231,6 +261,12 @@ resourceMetrics:
         - key: k8s.replicaset.uid
           value:
             stringValue: 27e40405-9394-4ed8-96d3-d4ae2cc315f6
+      entityRefs:
+        - descriptionKeys:
+            - k8s.replicaset.name
+          idKeys:
+            - k8s.replicaset.uid
+          type: k8s.replicaset
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -264,6 +300,12 @@ resourceMetrics:
         - key: k8s.statefulset.uid
           value:
             stringValue: c6944d62-dfe9-436a-be8e-8105b5232599
+      entityRefs:
+        - descriptionKeys:
+            - k8s.statefulset.name
+          idKeys:
+            - k8s.statefulset.uid
+          type: k8s.statefulset
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -316,6 +358,12 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 3c623bc0-2acc-46be-818e-581fb0fddcb4
+      entityRefs:
+        - descriptionKeys:
+            - k8s.pod.name
+          idKeys:
+            - k8s.pod.uid
+          type: k8s.pod
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -343,6 +391,12 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: b7cec813-0873-4c72-9e25-94f5a275c726
+      entityRefs:
+        - descriptionKeys:
+            - k8s.pod.name
+          idKeys:
+            - k8s.pod.uid
+          type: k8s.pod
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -370,6 +424,12 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: a786bfad-1bc0-474e-b466-93bbbe685d6a
+      entityRefs:
+        - descriptionKeys:
+            - k8s.pod.name
+          idKeys:
+            - k8s.pod.uid
+          type: k8s.pod
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -397,6 +457,12 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 1ad7584b-a845-4a30-ace3-79c7b5e69372
+      entityRefs:
+        - descriptionKeys:
+            - k8s.pod.name
+          idKeys:
+            - k8s.pod.uid
+          type: k8s.pod
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -648,6 +714,14 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 1ad7584b-a845-4a30-ace3-79c7b5e69372
+      entityRefs:
+        - descriptionKeys:
+            - k8s.container.name
+            - container.image.name
+            - container.image.tag
+          idKeys:
+            - container.id
+          type: k8s.container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -695,6 +769,14 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: b7cec813-0873-4c72-9e25-94f5a275c726
+      entityRefs:
+        - descriptionKeys:
+            - k8s.container.name
+            - container.image.name
+            - container.image.tag
+          idKeys:
+            - container.id
+          type: k8s.container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -742,6 +824,14 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: a786bfad-1bc0-474e-b466-93bbbe685d6a
+      entityRefs:
+        - descriptionKeys:
+            - k8s.container.name
+            - container.image.name
+            - container.image.tag
+          idKeys:
+            - container.id
+          type: k8s.container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -789,6 +879,14 @@ resourceMetrics:
         - key: k8s.pod.uid
           value:
             stringValue: 3c623bc0-2acc-46be-818e-581fb0fddcb4
+      entityRefs:
+        - descriptionKeys:
+            - k8s.container.name
+            - container.image.name
+            - container.image.tag
+          idKeys:
+            - container.id
+          type: k8s.container
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:

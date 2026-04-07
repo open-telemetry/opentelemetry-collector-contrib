@@ -3,17 +3,1440 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// RedisClientsBlockedMetricConfig provides config for the redis.clients.blocked metric.
+type RedisClientsBlockedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *RedisClientsBlockedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClientsConnectedMetricConfig provides config for the redis.clients.connected metric.
+type RedisClientsConnectedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClientsConnectedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClientsMaxInputBufferMetricConfig provides config for the redis.clients.max_input_buffer metric.
+type RedisClientsMaxInputBufferMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClientsMaxInputBufferMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClientsMaxOutputBufferMetricConfig provides config for the redis.clients.max_output_buffer metric.
+type RedisClientsMaxOutputBufferMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClientsMaxOutputBufferMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterClusterEnabledMetricConfig provides config for the redis.cluster.cluster_enabled metric.
+type RedisClusterClusterEnabledMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterClusterEnabledMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterKnownNodesMetricConfig provides config for the redis.cluster.known_nodes metric.
+type RedisClusterKnownNodesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterKnownNodesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterLinksBufferLimitExceededCountMetricConfig provides config for the redis.cluster.links_buffer_limit_exceeded.count metric.
+type RedisClusterLinksBufferLimitExceededCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterLinksBufferLimitExceededCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterNodeCountMetricConfig provides config for the redis.cluster.node.count metric.
+type RedisClusterNodeCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterNodeCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterNodeUptimeMetricConfig provides config for the redis.cluster.node.uptime metric.
+type RedisClusterNodeUptimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterNodeUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterSlotsAssignedMetricConfig provides config for the redis.cluster.slots_assigned metric.
+type RedisClusterSlotsAssignedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterSlotsAssignedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterSlotsFailMetricConfig provides config for the redis.cluster.slots_fail metric.
+type RedisClusterSlotsFailMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterSlotsFailMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterSlotsOkMetricConfig provides config for the redis.cluster.slots_ok metric.
+type RedisClusterSlotsOkMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterSlotsOkMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterSlotsPfailMetricConfig provides config for the redis.cluster.slots_pfail metric.
+type RedisClusterSlotsPfailMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterSlotsPfailMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterStateMetricAttributeKey specifies the key of an attribute for the redis.cluster.state metric.
+type RedisClusterStateMetricAttributeKey string
+
+const (
+	RedisClusterStateMetricAttributeKeyClusterState RedisClusterStateMetricAttributeKey = "cluster_state"
+)
+
+// RedisClusterStateMetricConfig provides config for the redis.cluster.state metric.
+type RedisClusterStateMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisClusterStateMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisClusterStateMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisClusterStateMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisClusterStateMetricAttributeKeyClusterState:
+		default:
+			return fmt.Errorf("metric redis.cluster.state doesn't have an attribute %v, valid attributes: [cluster_state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisClusterStatsMessagesReceivedMetricConfig provides config for the redis.cluster.stats_messages_received metric.
+type RedisClusterStatsMessagesReceivedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterStatsMessagesReceivedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterStatsMessagesSentMetricConfig provides config for the redis.cluster.stats_messages_sent metric.
+type RedisClusterStatsMessagesSentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterStatsMessagesSentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisClusterUptimeMetricConfig provides config for the redis.cluster.uptime metric.
+type RedisClusterUptimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisClusterUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisCmdCallsMetricAttributeKey specifies the key of an attribute for the redis.cmd.calls metric.
+type RedisCmdCallsMetricAttributeKey string
+
+const (
+	RedisCmdCallsMetricAttributeKeyCmd RedisCmdCallsMetricAttributeKey = "cmd"
+)
+
+// RedisCmdCallsMetricConfig provides config for the redis.cmd.calls metric.
+type RedisCmdCallsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisCmdCallsMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisCmdCallsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisCmdCallsMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisCmdCallsMetricAttributeKeyCmd:
+		default:
+			return fmt.Errorf("metric redis.cmd.calls doesn't have an attribute %v, valid attributes: [cmd]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisCmdLatencyMetricAttributeKey specifies the key of an attribute for the redis.cmd.latency metric.
+type RedisCmdLatencyMetricAttributeKey string
+
+const (
+	RedisCmdLatencyMetricAttributeKeyCmd        RedisCmdLatencyMetricAttributeKey = "cmd"
+	RedisCmdLatencyMetricAttributeKeyPercentile RedisCmdLatencyMetricAttributeKey = "percentile"
+)
+
+// RedisCmdLatencyMetricConfig provides config for the redis.cmd.latency metric.
+type RedisCmdLatencyMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisCmdLatencyMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisCmdLatencyMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisCmdLatencyMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisCmdLatencyMetricAttributeKeyCmd, RedisCmdLatencyMetricAttributeKeyPercentile:
+		default:
+			return fmt.Errorf("metric redis.cmd.latency doesn't have an attribute %v, valid attributes: [cmd, percentile]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisCmdUsecMetricAttributeKey specifies the key of an attribute for the redis.cmd.usec metric.
+type RedisCmdUsecMetricAttributeKey string
+
+const (
+	RedisCmdUsecMetricAttributeKeyCmd RedisCmdUsecMetricAttributeKey = "cmd"
+)
+
+// RedisCmdUsecMetricConfig provides config for the redis.cmd.usec metric.
+type RedisCmdUsecMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisCmdUsecMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisCmdUsecMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisCmdUsecMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisCmdUsecMetricAttributeKeyCmd:
+		default:
+			return fmt.Errorf("metric redis.cmd.usec doesn't have an attribute %v, valid attributes: [cmd]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisCommandsMetricConfig provides config for the redis.commands metric.
+type RedisCommandsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisCommandsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisCommandsProcessedMetricConfig provides config for the redis.commands.processed metric.
+type RedisCommandsProcessedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisCommandsProcessedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisConnectionsReceivedMetricConfig provides config for the redis.connections.received metric.
+type RedisConnectionsReceivedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisConnectionsReceivedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisConnectionsRejectedMetricConfig provides config for the redis.connections.rejected metric.
+type RedisConnectionsRejectedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisConnectionsRejectedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisCPUTimeMetricAttributeKey specifies the key of an attribute for the redis.cpu.time metric.
+type RedisCPUTimeMetricAttributeKey string
+
+const (
+	RedisCPUTimeMetricAttributeKeyState RedisCPUTimeMetricAttributeKey = "state"
+)
+
+// RedisCPUTimeMetricConfig provides config for the redis.cpu.time metric.
+type RedisCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                           `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisCPUTimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisCPUTimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisCPUTimeMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric redis.cpu.time doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisDbAvgTTLMetricAttributeKey specifies the key of an attribute for the redis.db.avg_ttl metric.
+type RedisDbAvgTTLMetricAttributeKey string
+
+const (
+	RedisDbAvgTTLMetricAttributeKeyDb RedisDbAvgTTLMetricAttributeKey = "db"
+)
+
+// RedisDbAvgTTLMetricConfig provides config for the redis.db.avg_ttl metric.
+type RedisDbAvgTTLMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisDbAvgTTLMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisDbAvgTTLMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisDbAvgTTLMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisDbAvgTTLMetricAttributeKeyDb:
+		default:
+			return fmt.Errorf("metric redis.db.avg_ttl doesn't have an attribute %v, valid attributes: [db]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisDbExpiresMetricAttributeKey specifies the key of an attribute for the redis.db.expires metric.
+type RedisDbExpiresMetricAttributeKey string
+
+const (
+	RedisDbExpiresMetricAttributeKeyDb RedisDbExpiresMetricAttributeKey = "db"
+)
+
+// RedisDbExpiresMetricConfig provides config for the redis.db.expires metric.
+type RedisDbExpiresMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisDbExpiresMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisDbExpiresMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisDbExpiresMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisDbExpiresMetricAttributeKeyDb:
+		default:
+			return fmt.Errorf("metric redis.db.expires doesn't have an attribute %v, valid attributes: [db]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisDbKeysMetricAttributeKey specifies the key of an attribute for the redis.db.keys metric.
+type RedisDbKeysMetricAttributeKey string
+
+const (
+	RedisDbKeysMetricAttributeKeyDb RedisDbKeysMetricAttributeKey = "db"
+)
+
+// RedisDbKeysMetricConfig provides config for the redis.db.keys metric.
+type RedisDbKeysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                          `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisDbKeysMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisDbKeysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisDbKeysMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisDbKeysMetricAttributeKeyDb:
+		default:
+			return fmt.Errorf("metric redis.db.keys doesn't have an attribute %v, valid attributes: [db]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisKeysEvictedMetricConfig provides config for the redis.keys.evicted metric.
+type RedisKeysEvictedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisKeysEvictedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisKeysExpiredMetricConfig provides config for the redis.keys.expired metric.
+type RedisKeysExpiredMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisKeysExpiredMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisKeyspaceHitsMetricConfig provides config for the redis.keyspace.hits metric.
+type RedisKeyspaceHitsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisKeyspaceHitsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisKeyspaceMissesMetricConfig provides config for the redis.keyspace.misses metric.
+type RedisKeyspaceMissesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisKeyspaceMissesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisLatestForkMetricConfig provides config for the redis.latest_fork metric.
+type RedisLatestForkMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisLatestForkMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMaxmemoryMetricConfig provides config for the redis.maxmemory metric.
+type RedisMaxmemoryMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMaxmemoryMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMemoryFragmentationRatioMetricConfig provides config for the redis.memory.fragmentation_ratio metric.
+type RedisMemoryFragmentationRatioMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMemoryFragmentationRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMemoryLuaMetricConfig provides config for the redis.memory.lua metric.
+type RedisMemoryLuaMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMemoryLuaMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMemoryPeakMetricConfig provides config for the redis.memory.peak metric.
+type RedisMemoryPeakMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMemoryPeakMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMemoryRssMetricConfig provides config for the redis.memory.rss metric.
+type RedisMemoryRssMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMemoryRssMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMemoryUsedMetricConfig provides config for the redis.memory.used metric.
+type RedisMemoryUsedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMemoryUsedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMemoryUsedMemoryOverheadMetricConfig provides config for the redis.memory.used_memory_overhead metric.
+type RedisMemoryUsedMemoryOverheadMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMemoryUsedMemoryOverheadMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisMemoryUsedMemoryStartupMetricConfig provides config for the redis.memory.used_memory_startup metric.
+type RedisMemoryUsedMemoryStartupMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisMemoryUsedMemoryStartupMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisModeMetricAttributeKey specifies the key of an attribute for the redis.mode metric.
+type RedisModeMetricAttributeKey string
+
+const (
+	RedisModeMetricAttributeKeyMode RedisModeMetricAttributeKey = "mode"
+)
+
+// RedisModeMetricConfig provides config for the redis.mode metric.
+type RedisModeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisModeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisModeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisModeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisModeMetricAttributeKeyMode:
+		default:
+			return fmt.Errorf("metric redis.mode doesn't have an attribute %v, valid attributes: [mode]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisNetInputMetricConfig provides config for the redis.net.input metric.
+type RedisNetInputMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisNetInputMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisNetOutputMetricConfig provides config for the redis.net.output metric.
+type RedisNetOutputMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisNetOutputMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisRdbChangesSinceLastSaveMetricConfig provides config for the redis.rdb.changes_since_last_save metric.
+type RedisRdbChangesSinceLastSaveMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisRdbChangesSinceLastSaveMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisReplicationBacklogFirstByteOffsetMetricConfig provides config for the redis.replication.backlog_first_byte_offset metric.
+type RedisReplicationBacklogFirstByteOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisReplicationBacklogFirstByteOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisReplicationOffsetMetricConfig provides config for the redis.replication.offset metric.
+type RedisReplicationOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisReplicationOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisReplicationReplicaOffsetMetricConfig provides config for the redis.replication.replica_offset metric.
+type RedisReplicationReplicaOffsetMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisReplicationReplicaOffsetMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisRoleMetricAttributeKey specifies the key of an attribute for the redis.role metric.
+type RedisRoleMetricAttributeKey string
+
+const (
+	RedisRoleMetricAttributeKeyRole RedisRoleMetricAttributeKey = "role"
+)
+
+// RedisRoleMetricConfig provides config for the redis.role metric.
+type RedisRoleMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []RedisRoleMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *RedisRoleMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *RedisRoleMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case RedisRoleMetricAttributeKeyRole:
+		default:
+			return fmt.Errorf("metric redis.role doesn't have an attribute %v, valid attributes: [role]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// RedisSentinelMastersMetricConfig provides config for the redis.sentinel.masters metric.
+type RedisSentinelMastersMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisSentinelMastersMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisSentinelRunningScriptsMetricConfig provides config for the redis.sentinel.running_scripts metric.
+type RedisSentinelRunningScriptsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisSentinelRunningScriptsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisSentinelScriptsQueueLengthMetricConfig provides config for the redis.sentinel.scripts_queue_length metric.
+type RedisSentinelScriptsQueueLengthMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisSentinelScriptsQueueLengthMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisSentinelSimulateFailureFlagsMetricConfig provides config for the redis.sentinel.simulate_failure_flags metric.
+type RedisSentinelSimulateFailureFlagsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisSentinelSimulateFailureFlagsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisSentinelTiltSinceSecondsMetricConfig provides config for the redis.sentinel.tilt_since_seconds metric.
+type RedisSentinelTiltSinceSecondsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisSentinelTiltSinceSecondsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisSentinelTotalTiltMetricConfig provides config for the redis.sentinel.total_tilt metric.
+type RedisSentinelTotalTiltMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisSentinelTotalTiltMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisSlavesConnectedMetricConfig provides config for the redis.slaves.connected metric.
+type RedisSlavesConnectedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisSlavesConnectedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisTrackingTotalKeysMetricConfig provides config for the redis.tracking_total_keys metric.
+type RedisTrackingTotalKeysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisTrackingTotalKeysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// RedisUptimeMetricConfig provides config for the redis.uptime metric.
+type RedisUptimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *RedisUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,240 +1452,260 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for redis metrics.
 type MetricsConfig struct {
-	RedisClientsBlocked                       MetricConfig `mapstructure:"redis.clients.blocked"`
-	RedisClientsConnected                     MetricConfig `mapstructure:"redis.clients.connected"`
-	RedisClientsMaxInputBuffer                MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
-	RedisClientsMaxOutputBuffer               MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
-	RedisClusterClusterEnabled                MetricConfig `mapstructure:"redis.cluster.cluster_enabled"`
-	RedisClusterKnownNodes                    MetricConfig `mapstructure:"redis.cluster.known_nodes"`
-	RedisClusterLinksBufferLimitExceededCount MetricConfig `mapstructure:"redis.cluster.links_buffer_limit_exceeded.count"`
-	RedisClusterNodeCount                     MetricConfig `mapstructure:"redis.cluster.node.count"`
-	RedisClusterNodeUptime                    MetricConfig `mapstructure:"redis.cluster.node.uptime"`
-	RedisClusterSlotsAssigned                 MetricConfig `mapstructure:"redis.cluster.slots_assigned"`
-	RedisClusterSlotsFail                     MetricConfig `mapstructure:"redis.cluster.slots_fail"`
-	RedisClusterSlotsOk                       MetricConfig `mapstructure:"redis.cluster.slots_ok"`
-	RedisClusterSlotsPfail                    MetricConfig `mapstructure:"redis.cluster.slots_pfail"`
-	RedisClusterState                         MetricConfig `mapstructure:"redis.cluster.state"`
-	RedisClusterStatsMessagesReceived         MetricConfig `mapstructure:"redis.cluster.stats_messages_received"`
-	RedisClusterStatsMessagesSent             MetricConfig `mapstructure:"redis.cluster.stats_messages_sent"`
-	RedisClusterUptime                        MetricConfig `mapstructure:"redis.cluster.uptime"`
-	RedisCmdCalls                             MetricConfig `mapstructure:"redis.cmd.calls"`
-	RedisCmdLatency                           MetricConfig `mapstructure:"redis.cmd.latency"`
-	RedisCmdUsec                              MetricConfig `mapstructure:"redis.cmd.usec"`
-	RedisCommands                             MetricConfig `mapstructure:"redis.commands"`
-	RedisCommandsProcessed                    MetricConfig `mapstructure:"redis.commands.processed"`
-	RedisConnectionsReceived                  MetricConfig `mapstructure:"redis.connections.received"`
-	RedisConnectionsRejected                  MetricConfig `mapstructure:"redis.connections.rejected"`
-	RedisCPUTime                              MetricConfig `mapstructure:"redis.cpu.time"`
-	RedisDbAvgTTL                             MetricConfig `mapstructure:"redis.db.avg_ttl"`
-	RedisDbExpires                            MetricConfig `mapstructure:"redis.db.expires"`
-	RedisDbKeys                               MetricConfig `mapstructure:"redis.db.keys"`
-	RedisKeysEvicted                          MetricConfig `mapstructure:"redis.keys.evicted"`
-	RedisKeysExpired                          MetricConfig `mapstructure:"redis.keys.expired"`
-	RedisKeyspaceHits                         MetricConfig `mapstructure:"redis.keyspace.hits"`
-	RedisKeyspaceMisses                       MetricConfig `mapstructure:"redis.keyspace.misses"`
-	RedisLatestFork                           MetricConfig `mapstructure:"redis.latest_fork"`
-	RedisMaxmemory                            MetricConfig `mapstructure:"redis.maxmemory"`
-	RedisMemoryFragmentationRatio             MetricConfig `mapstructure:"redis.memory.fragmentation_ratio"`
-	RedisMemoryLua                            MetricConfig `mapstructure:"redis.memory.lua"`
-	RedisMemoryPeak                           MetricConfig `mapstructure:"redis.memory.peak"`
-	RedisMemoryRss                            MetricConfig `mapstructure:"redis.memory.rss"`
-	RedisMemoryUsed                           MetricConfig `mapstructure:"redis.memory.used"`
-	RedisMemoryUsedMemoryOverhead             MetricConfig `mapstructure:"redis.memory.used_memory_overhead"`
-	RedisMemoryUsedMemoryStartup              MetricConfig `mapstructure:"redis.memory.used_memory_startup"`
-	RedisMode                                 MetricConfig `mapstructure:"redis.mode"`
-	RedisNetInput                             MetricConfig `mapstructure:"redis.net.input"`
-	RedisNetOutput                            MetricConfig `mapstructure:"redis.net.output"`
-	RedisRdbChangesSinceLastSave              MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
-	RedisReplicationBacklogFirstByteOffset    MetricConfig `mapstructure:"redis.replication.backlog_first_byte_offset"`
-	RedisReplicationOffset                    MetricConfig `mapstructure:"redis.replication.offset"`
-	RedisReplicationReplicaOffset             MetricConfig `mapstructure:"redis.replication.replica_offset"`
-	RedisRole                                 MetricConfig `mapstructure:"redis.role"`
-	RedisSentinelMasters                      MetricConfig `mapstructure:"redis.sentinel.masters"`
-	RedisSentinelRunningScripts               MetricConfig `mapstructure:"redis.sentinel.running_scripts"`
-	RedisSentinelScriptsQueueLength           MetricConfig `mapstructure:"redis.sentinel.scripts_queue_length"`
-	RedisSentinelSimulateFailureFlags         MetricConfig `mapstructure:"redis.sentinel.simulate_failure_flags"`
-	RedisSentinelTiltSinceSeconds             MetricConfig `mapstructure:"redis.sentinel.tilt_since_seconds"`
-	RedisSentinelTotalTilt                    MetricConfig `mapstructure:"redis.sentinel.total_tilt"`
-	RedisSlavesConnected                      MetricConfig `mapstructure:"redis.slaves.connected"`
-	RedisTrackingTotalKeys                    MetricConfig `mapstructure:"redis.tracking_total_keys"`
-	RedisUptime                               MetricConfig `mapstructure:"redis.uptime"`
+	RedisClientsBlocked                       RedisClientsBlockedMetricConfig                       `mapstructure:"redis.clients.blocked"`
+	RedisClientsConnected                     RedisClientsConnectedMetricConfig                     `mapstructure:"redis.clients.connected"`
+	RedisClientsMaxInputBuffer                RedisClientsMaxInputBufferMetricConfig                `mapstructure:"redis.clients.max_input_buffer"`
+	RedisClientsMaxOutputBuffer               RedisClientsMaxOutputBufferMetricConfig               `mapstructure:"redis.clients.max_output_buffer"`
+	RedisClusterClusterEnabled                RedisClusterClusterEnabledMetricConfig                `mapstructure:"redis.cluster.cluster_enabled"`
+	RedisClusterKnownNodes                    RedisClusterKnownNodesMetricConfig                    `mapstructure:"redis.cluster.known_nodes"`
+	RedisClusterLinksBufferLimitExceededCount RedisClusterLinksBufferLimitExceededCountMetricConfig `mapstructure:"redis.cluster.links_buffer_limit_exceeded.count"`
+	RedisClusterNodeCount                     RedisClusterNodeCountMetricConfig                     `mapstructure:"redis.cluster.node.count"`
+	RedisClusterNodeUptime                    RedisClusterNodeUptimeMetricConfig                    `mapstructure:"redis.cluster.node.uptime"`
+	RedisClusterSlotsAssigned                 RedisClusterSlotsAssignedMetricConfig                 `mapstructure:"redis.cluster.slots_assigned"`
+	RedisClusterSlotsFail                     RedisClusterSlotsFailMetricConfig                     `mapstructure:"redis.cluster.slots_fail"`
+	RedisClusterSlotsOk                       RedisClusterSlotsOkMetricConfig                       `mapstructure:"redis.cluster.slots_ok"`
+	RedisClusterSlotsPfail                    RedisClusterSlotsPfailMetricConfig                    `mapstructure:"redis.cluster.slots_pfail"`
+	RedisClusterState                         RedisClusterStateMetricConfig                         `mapstructure:"redis.cluster.state"`
+	RedisClusterStatsMessagesReceived         RedisClusterStatsMessagesReceivedMetricConfig         `mapstructure:"redis.cluster.stats_messages_received"`
+	RedisClusterStatsMessagesSent             RedisClusterStatsMessagesSentMetricConfig             `mapstructure:"redis.cluster.stats_messages_sent"`
+	RedisClusterUptime                        RedisClusterUptimeMetricConfig                        `mapstructure:"redis.cluster.uptime"`
+	RedisCmdCalls                             RedisCmdCallsMetricConfig                             `mapstructure:"redis.cmd.calls"`
+	RedisCmdLatency                           RedisCmdLatencyMetricConfig                           `mapstructure:"redis.cmd.latency"`
+	RedisCmdUsec                              RedisCmdUsecMetricConfig                              `mapstructure:"redis.cmd.usec"`
+	RedisCommands                             RedisCommandsMetricConfig                             `mapstructure:"redis.commands"`
+	RedisCommandsProcessed                    RedisCommandsProcessedMetricConfig                    `mapstructure:"redis.commands.processed"`
+	RedisConnectionsReceived                  RedisConnectionsReceivedMetricConfig                  `mapstructure:"redis.connections.received"`
+	RedisConnectionsRejected                  RedisConnectionsRejectedMetricConfig                  `mapstructure:"redis.connections.rejected"`
+	RedisCPUTime                              RedisCPUTimeMetricConfig                              `mapstructure:"redis.cpu.time"`
+	RedisDbAvgTTL                             RedisDbAvgTTLMetricConfig                             `mapstructure:"redis.db.avg_ttl"`
+	RedisDbExpires                            RedisDbExpiresMetricConfig                            `mapstructure:"redis.db.expires"`
+	RedisDbKeys                               RedisDbKeysMetricConfig                               `mapstructure:"redis.db.keys"`
+	RedisKeysEvicted                          RedisKeysEvictedMetricConfig                          `mapstructure:"redis.keys.evicted"`
+	RedisKeysExpired                          RedisKeysExpiredMetricConfig                          `mapstructure:"redis.keys.expired"`
+	RedisKeyspaceHits                         RedisKeyspaceHitsMetricConfig                         `mapstructure:"redis.keyspace.hits"`
+	RedisKeyspaceMisses                       RedisKeyspaceMissesMetricConfig                       `mapstructure:"redis.keyspace.misses"`
+	RedisLatestFork                           RedisLatestForkMetricConfig                           `mapstructure:"redis.latest_fork"`
+	RedisMaxmemory                            RedisMaxmemoryMetricConfig                            `mapstructure:"redis.maxmemory"`
+	RedisMemoryFragmentationRatio             RedisMemoryFragmentationRatioMetricConfig             `mapstructure:"redis.memory.fragmentation_ratio"`
+	RedisMemoryLua                            RedisMemoryLuaMetricConfig                            `mapstructure:"redis.memory.lua"`
+	RedisMemoryPeak                           RedisMemoryPeakMetricConfig                           `mapstructure:"redis.memory.peak"`
+	RedisMemoryRss                            RedisMemoryRssMetricConfig                            `mapstructure:"redis.memory.rss"`
+	RedisMemoryUsed                           RedisMemoryUsedMetricConfig                           `mapstructure:"redis.memory.used"`
+	RedisMemoryUsedMemoryOverhead             RedisMemoryUsedMemoryOverheadMetricConfig             `mapstructure:"redis.memory.used_memory_overhead"`
+	RedisMemoryUsedMemoryStartup              RedisMemoryUsedMemoryStartupMetricConfig              `mapstructure:"redis.memory.used_memory_startup"`
+	RedisMode                                 RedisModeMetricConfig                                 `mapstructure:"redis.mode"`
+	RedisNetInput                             RedisNetInputMetricConfig                             `mapstructure:"redis.net.input"`
+	RedisNetOutput                            RedisNetOutputMetricConfig                            `mapstructure:"redis.net.output"`
+	RedisRdbChangesSinceLastSave              RedisRdbChangesSinceLastSaveMetricConfig              `mapstructure:"redis.rdb.changes_since_last_save"`
+	RedisReplicationBacklogFirstByteOffset    RedisReplicationBacklogFirstByteOffsetMetricConfig    `mapstructure:"redis.replication.backlog_first_byte_offset"`
+	RedisReplicationOffset                    RedisReplicationOffsetMetricConfig                    `mapstructure:"redis.replication.offset"`
+	RedisReplicationReplicaOffset             RedisReplicationReplicaOffsetMetricConfig             `mapstructure:"redis.replication.replica_offset"`
+	RedisRole                                 RedisRoleMetricConfig                                 `mapstructure:"redis.role"`
+	RedisSentinelMasters                      RedisSentinelMastersMetricConfig                      `mapstructure:"redis.sentinel.masters"`
+	RedisSentinelRunningScripts               RedisSentinelRunningScriptsMetricConfig               `mapstructure:"redis.sentinel.running_scripts"`
+	RedisSentinelScriptsQueueLength           RedisSentinelScriptsQueueLengthMetricConfig           `mapstructure:"redis.sentinel.scripts_queue_length"`
+	RedisSentinelSimulateFailureFlags         RedisSentinelSimulateFailureFlagsMetricConfig         `mapstructure:"redis.sentinel.simulate_failure_flags"`
+	RedisSentinelTiltSinceSeconds             RedisSentinelTiltSinceSecondsMetricConfig             `mapstructure:"redis.sentinel.tilt_since_seconds"`
+	RedisSentinelTotalTilt                    RedisSentinelTotalTiltMetricConfig                    `mapstructure:"redis.sentinel.total_tilt"`
+	RedisSlavesConnected                      RedisSlavesConnectedMetricConfig                      `mapstructure:"redis.slaves.connected"`
+	RedisTrackingTotalKeys                    RedisTrackingTotalKeysMetricConfig                    `mapstructure:"redis.tracking_total_keys"`
+	RedisUptime                               RedisUptimeMetricConfig                               `mapstructure:"redis.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		RedisClientsBlocked: MetricConfig{
+		RedisClientsBlocked: RedisClientsBlockedMetricConfig{
 			Enabled: true,
 		},
-		RedisClientsConnected: MetricConfig{
+		RedisClientsConnected: RedisClientsConnectedMetricConfig{
 			Enabled: true,
 		},
-		RedisClientsMaxInputBuffer: MetricConfig{
+		RedisClientsMaxInputBuffer: RedisClientsMaxInputBufferMetricConfig{
 			Enabled: true,
 		},
-		RedisClientsMaxOutputBuffer: MetricConfig{
+		RedisClientsMaxOutputBuffer: RedisClientsMaxOutputBufferMetricConfig{
 			Enabled: true,
 		},
-		RedisClusterClusterEnabled: MetricConfig{
+		RedisClusterClusterEnabled: RedisClusterClusterEnabledMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterKnownNodes: MetricConfig{
+		RedisClusterKnownNodes: RedisClusterKnownNodesMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterLinksBufferLimitExceededCount: MetricConfig{
+		RedisClusterLinksBufferLimitExceededCount: RedisClusterLinksBufferLimitExceededCountMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterNodeCount: MetricConfig{
+		RedisClusterNodeCount: RedisClusterNodeCountMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterNodeUptime: MetricConfig{
+		RedisClusterNodeUptime: RedisClusterNodeUptimeMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterSlotsAssigned: MetricConfig{
+		RedisClusterSlotsAssigned: RedisClusterSlotsAssignedMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterSlotsFail: MetricConfig{
+		RedisClusterSlotsFail: RedisClusterSlotsFailMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterSlotsOk: MetricConfig{
+		RedisClusterSlotsOk: RedisClusterSlotsOkMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterSlotsPfail: MetricConfig{
+		RedisClusterSlotsPfail: RedisClusterSlotsPfailMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterState: MetricConfig{
+		RedisClusterState: RedisClusterStateMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RedisClusterStateMetricAttributeKey{RedisClusterStateMetricAttributeKeyClusterState},
+		},
+		RedisClusterStatsMessagesReceived: RedisClusterStatsMessagesReceivedMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterStatsMessagesReceived: MetricConfig{
+		RedisClusterStatsMessagesSent: RedisClusterStatsMessagesSentMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterStatsMessagesSent: MetricConfig{
+		RedisClusterUptime: RedisClusterUptimeMetricConfig{
 			Enabled: false,
 		},
-		RedisClusterUptime: MetricConfig{
-			Enabled: false,
+		RedisCmdCalls: RedisCmdCallsMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RedisCmdCallsMetricAttributeKey{RedisCmdCallsMetricAttributeKeyCmd},
 		},
-		RedisCmdCalls: MetricConfig{
-			Enabled: false,
+		RedisCmdLatency: RedisCmdLatencyMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RedisCmdLatencyMetricAttributeKey{RedisCmdLatencyMetricAttributeKeyCmd, RedisCmdLatencyMetricAttributeKeyPercentile},
 		},
-		RedisCmdLatency: MetricConfig{
-			Enabled: false,
+		RedisCmdUsec: RedisCmdUsecMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RedisCmdUsecMetricAttributeKey{RedisCmdUsecMetricAttributeKeyCmd},
 		},
-		RedisCmdUsec: MetricConfig{
-			Enabled: false,
-		},
-		RedisCommands: MetricConfig{
+		RedisCommands: RedisCommandsMetricConfig{
 			Enabled: true,
 		},
-		RedisCommandsProcessed: MetricConfig{
+		RedisCommandsProcessed: RedisCommandsProcessedMetricConfig{
 			Enabled: true,
 		},
-		RedisConnectionsReceived: MetricConfig{
+		RedisConnectionsReceived: RedisConnectionsReceivedMetricConfig{
 			Enabled: true,
 		},
-		RedisConnectionsRejected: MetricConfig{
+		RedisConnectionsRejected: RedisConnectionsRejectedMetricConfig{
 			Enabled: true,
 		},
-		RedisCPUTime: MetricConfig{
+		RedisCPUTime: RedisCPUTimeMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RedisCPUTimeMetricAttributeKey{RedisCPUTimeMetricAttributeKeyState},
+		},
+		RedisDbAvgTTL: RedisDbAvgTTLMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RedisDbAvgTTLMetricAttributeKey{RedisDbAvgTTLMetricAttributeKeyDb},
+		},
+		RedisDbExpires: RedisDbExpiresMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RedisDbExpiresMetricAttributeKey{RedisDbExpiresMetricAttributeKeyDb},
+		},
+		RedisDbKeys: RedisDbKeysMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RedisDbKeysMetricAttributeKey{RedisDbKeysMetricAttributeKeyDb},
+		},
+		RedisKeysEvicted: RedisKeysEvictedMetricConfig{
 			Enabled: true,
 		},
-		RedisDbAvgTTL: MetricConfig{
+		RedisKeysExpired: RedisKeysExpiredMetricConfig{
 			Enabled: true,
 		},
-		RedisDbExpires: MetricConfig{
+		RedisKeyspaceHits: RedisKeyspaceHitsMetricConfig{
 			Enabled: true,
 		},
-		RedisDbKeys: MetricConfig{
+		RedisKeyspaceMisses: RedisKeyspaceMissesMetricConfig{
 			Enabled: true,
 		},
-		RedisKeysEvicted: MetricConfig{
+		RedisLatestFork: RedisLatestForkMetricConfig{
 			Enabled: true,
 		},
-		RedisKeysExpired: MetricConfig{
-			Enabled: true,
-		},
-		RedisKeyspaceHits: MetricConfig{
-			Enabled: true,
-		},
-		RedisKeyspaceMisses: MetricConfig{
-			Enabled: true,
-		},
-		RedisLatestFork: MetricConfig{
-			Enabled: true,
-		},
-		RedisMaxmemory: MetricConfig{
+		RedisMaxmemory: RedisMaxmemoryMetricConfig{
 			Enabled: false,
 		},
-		RedisMemoryFragmentationRatio: MetricConfig{
+		RedisMemoryFragmentationRatio: RedisMemoryFragmentationRatioMetricConfig{
 			Enabled: true,
 		},
-		RedisMemoryLua: MetricConfig{
+		RedisMemoryLua: RedisMemoryLuaMetricConfig{
 			Enabled: true,
 		},
-		RedisMemoryPeak: MetricConfig{
+		RedisMemoryPeak: RedisMemoryPeakMetricConfig{
 			Enabled: true,
 		},
-		RedisMemoryRss: MetricConfig{
+		RedisMemoryRss: RedisMemoryRssMetricConfig{
 			Enabled: true,
 		},
-		RedisMemoryUsed: MetricConfig{
+		RedisMemoryUsed: RedisMemoryUsedMetricConfig{
 			Enabled: true,
 		},
-		RedisMemoryUsedMemoryOverhead: MetricConfig{
+		RedisMemoryUsedMemoryOverhead: RedisMemoryUsedMemoryOverheadMetricConfig{
 			Enabled: false,
 		},
-		RedisMemoryUsedMemoryStartup: MetricConfig{
+		RedisMemoryUsedMemoryStartup: RedisMemoryUsedMemoryStartupMetricConfig{
 			Enabled: false,
 		},
-		RedisMode: MetricConfig{
-			Enabled: false,
+		RedisMode: RedisModeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []RedisModeMetricAttributeKey{RedisModeMetricAttributeKeyMode},
 		},
-		RedisNetInput: MetricConfig{
+		RedisNetInput: RedisNetInputMetricConfig{
 			Enabled: true,
 		},
-		RedisNetOutput: MetricConfig{
+		RedisNetOutput: RedisNetOutputMetricConfig{
 			Enabled: true,
 		},
-		RedisRdbChangesSinceLastSave: MetricConfig{
+		RedisRdbChangesSinceLastSave: RedisRdbChangesSinceLastSaveMetricConfig{
 			Enabled: true,
 		},
-		RedisReplicationBacklogFirstByteOffset: MetricConfig{
+		RedisReplicationBacklogFirstByteOffset: RedisReplicationBacklogFirstByteOffsetMetricConfig{
 			Enabled: true,
 		},
-		RedisReplicationOffset: MetricConfig{
+		RedisReplicationOffset: RedisReplicationOffsetMetricConfig{
 			Enabled: true,
 		},
-		RedisReplicationReplicaOffset: MetricConfig{
+		RedisReplicationReplicaOffset: RedisReplicationReplicaOffsetMetricConfig{
 			Enabled: false,
 		},
-		RedisRole: MetricConfig{
+		RedisRole: RedisRoleMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []RedisRoleMetricAttributeKey{RedisRoleMetricAttributeKeyRole},
+		},
+		RedisSentinelMasters: RedisSentinelMastersMetricConfig{
 			Enabled: false,
 		},
-		RedisSentinelMasters: MetricConfig{
+		RedisSentinelRunningScripts: RedisSentinelRunningScriptsMetricConfig{
 			Enabled: false,
 		},
-		RedisSentinelRunningScripts: MetricConfig{
+		RedisSentinelScriptsQueueLength: RedisSentinelScriptsQueueLengthMetricConfig{
 			Enabled: false,
 		},
-		RedisSentinelScriptsQueueLength: MetricConfig{
+		RedisSentinelSimulateFailureFlags: RedisSentinelSimulateFailureFlagsMetricConfig{
 			Enabled: false,
 		},
-		RedisSentinelSimulateFailureFlags: MetricConfig{
+		RedisSentinelTiltSinceSeconds: RedisSentinelTiltSinceSecondsMetricConfig{
 			Enabled: false,
 		},
-		RedisSentinelTiltSinceSeconds: MetricConfig{
+		RedisSentinelTotalTilt: RedisSentinelTotalTiltMetricConfig{
 			Enabled: false,
 		},
-		RedisSentinelTotalTilt: MetricConfig{
-			Enabled: false,
-		},
-		RedisSlavesConnected: MetricConfig{
+		RedisSlavesConnected: RedisSlavesConnectedMetricConfig{
 			Enabled: true,
 		},
-		RedisTrackingTotalKeys: MetricConfig{
+		RedisTrackingTotalKeys: RedisTrackingTotalKeysMetricConfig{
 			Enabled: false,
 		},
-		RedisUptime: MetricConfig{
+		RedisUptime: RedisUptimeMetricConfig{
 			Enabled: true,
 		},
 	}

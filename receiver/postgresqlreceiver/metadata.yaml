@@ -1,4 +1,8 @@
+display_name: PostgreSQL Receiver
 type: postgresql
+
+description: |
+  This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/13/monitoring-stats.html).
 
 status:
   class: receiver
@@ -10,6 +14,27 @@ status:
     active: [antonblock, ishleenk17, Caleb-Hurshman]
     seeking_new: true
     emeritus: [djaglowski]
+
+reaggregation_enabled: true
+
+feature_gates:
+  - id: postgresqlreceiver.preciselagmetrics
+    description: Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`.
+    stage: beta
+    from_version: "v0.89.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
+
+  - id: receiver.postgresql.connectionPool
+    description: Use of connection pooling
+    stage: beta
+    from_version: "v0.96.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
+
+  - id: receiver.postgresql.separateSchemaAttr
+    description: Moves Schema Names into dedicated Attribute
+    stage: alpha
+    from_version: "v0.122.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
 
 resource_attributes:
   postgresql.database.name:
@@ -43,6 +68,7 @@ attributes:
       - checkpoints
       - bgwriter
     name_override: source
+    requirement_level: recommended
   bg_checkpoint_type:
     description: The type of checkpoint state.
     type: string
@@ -50,6 +76,7 @@ attributes:
       - requested
       - scheduled
     name_override: type
+    requirement_level: recommended
   bg_duration_type:
     description: The type of time spent during the checkpoint.
     type: string
@@ -57,6 +84,7 @@ attributes:
       - sync
       - write
     name_override: type
+    requirement_level: recommended
   db.namespace:
     description: The namespace or schema of the database where the query is executed.
     type: string
@@ -70,12 +98,15 @@ attributes:
   function:
     description: The name of the function.
     type: string
+    requirement_level: recommended
   lock_type:
     description: Type of the lockable object.
     type: string
+    requirement_level: recommended
   mode:
     description: Name of the lock mode held or desired by the process.
     type: string
+    requirement_level: recommended
   network.peer.address:
     description: IP address of the client connected to this backend.
     type: string
@@ -86,6 +117,7 @@ attributes:
     description: The database operation.
     type: string
     enum: [ins, upd, del, hot_upd]
+    requirement_level: recommended
   postgresql.application_name:
     description: Name of the application that is connected to this backend.
     type: string
@@ -153,9 +185,11 @@ attributes:
   relation:
     description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
     type: string
+    requirement_level: recommended
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string
+    requirement_level: recommended
   source:
     description: The block read source type.
     type: string
@@ -168,10 +202,12 @@ attributes:
       - toast_hit
       - tidx_read
       - tidx_hit
+    requirement_level: recommended
   state:
     description: The tuple (row) state.
     type: string
     enum: [dead, live]
+    requirement_level: recommended
   user.name:
     description: Name of the user logged into this backend.
     type: string
@@ -180,9 +216,10 @@ attributes:
     description: The operation which is responsible for the lag.
     type: string
     enum: [flush, replay, write]
+    requirement_level: recommended
 events:
   db.server.query_sample:
-    enabled: true
+    enabled: false
     description: query sample
     attributes:
       - db.system.name
@@ -201,7 +238,7 @@ events:
       - postgresql.query_id
       - postgresql.total_exec_time
   db.server.top_query:
-    enabled: true
+    enabled: false
     description: top query
     attributes:
       - db.system.name

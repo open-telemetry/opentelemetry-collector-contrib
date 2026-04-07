@@ -118,11 +118,11 @@ func BenchmarkRemoteWrite(b *testing.B) {
 
 					b.ResetTimer()
 
-					var counter int64
+					var counter atomic.Int64
 					b.SetParallelism(conc)
 					b.RunParallel(func(pb *testing.PB) {
 						for pb.Next() {
-							atomic.AddInt64(&counter, 1)
+							counter.Add(1)
 							r := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(payload))
 							r.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", remoteapi.WriteV2MessageType))
 							w := httptest.NewRecorder()

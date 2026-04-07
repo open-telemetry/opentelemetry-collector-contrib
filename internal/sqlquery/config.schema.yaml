@@ -60,6 +60,9 @@ $defs:
         type: string
       monotonic:
         type: boolean
+      row_condition:
+        x-pointer: true
+        $ref: row_condition
       start_ts_column:
         type: string
       static_attributes:
@@ -94,6 +97,14 @@ $defs:
       tracking_column:
         type: string
       tracking_start_value:
+        type: string
+  row_condition:
+    description: RowCondition filters query result rows for a metric. Only rows where the specified column equals the specified value are used to produce the metric. This is useful when a single query returns a pivot-style result set (e.g. pgbouncer's SHOW LISTS) where each row represents a different metric and must be selected individually.
+    type: object
+    properties:
+      column:
+        type: string
+      value:
         type: string
   telemetry_config:
     type: object

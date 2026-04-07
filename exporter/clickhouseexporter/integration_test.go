@@ -224,6 +224,8 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 	t.Run("TestLogsJSONExporterSchemaFeatures", testProtocolsMapBody(testLogsJSONExporterSchemaFeatures))
 	t.Run("TestTracesJSONExporter", testProtocols(testTracesJSONExporter, false))
 	t.Run("TestTracesJSONExporterSchemaFeatures", testProtocols(testTracesJSONExporterSchemaFeatures, false))
+	t.Run("TestLogsCombinedExporter", testProtocolsMapBody(testLogsCombinedExporter))
+	t.Run("TestTracesCombinedExporter", testProtocols(testTracesCombinedExporter, false))
 
 	t.Run("TestCertAuth", testProtocols(func(t *testing.T, dsn string) {
 		applyTLS := func(config *Config) {

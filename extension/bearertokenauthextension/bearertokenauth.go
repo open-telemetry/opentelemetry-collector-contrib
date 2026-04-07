@@ -223,10 +223,14 @@ func (b *bearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTrippe
 
 // Authenticate checks whether the given context contains valid auth data. Validates tokens from clients trying to access the service (incoming requests)
 func (b *bearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	auth, ok := headers[strings.ToLower(b.header)]
+	// Use canonical header key to match how Go's HTTP server stores headers
+	auth, ok := headers[http.CanonicalHeaderKey(b.header)]
+
+	// Also check lower-case header key to support gRPC metadata format
 	if !ok {
-		auth, ok = headers[b.header]
+		auth, ok = headers[strings.ToLower(b.header)]
 	}
+
 	if !ok || len(auth) == 0 {
 		return ctx, fmt.Errorf("missing or empty authorization header: %s", b.header)
 	}
@@ -237,7 +241,7 @@ func (b *bearerTokenAuth) Authenticate(ctx context.Context, headers map[string][
 			return ctx, nil // Authentication successful, token is valid
 		}
 	}
-	return ctx, fmt.Errorf("scheme or token does not match: %s", token) // Token is invalid
+	return ctx, errors.New("provided authorization does not match expected scheme or token") // Token is invalid
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
