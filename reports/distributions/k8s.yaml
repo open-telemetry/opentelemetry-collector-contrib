@@ -49,7 +49,7 @@ components:
         - tail_sampling
         - transform
     receiver:
-        - filelog
+        - file_log
         - fluentforward
         - hostmetrics
         - httpcheck
