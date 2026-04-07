@@ -189,14 +189,20 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 // ConsumeTraces is required by the processor.Traces interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	for _, rss := range td.ResourceSpans().All() {
-		// First group all spans by trace.
+		//First, we group the spans by trace.
 		idToSpansAndScope := groupSpansByTraceKey(rss)
 
-		// Then, create a new ptrace.ResourceSpans for each trace copying all
-		// data. Paying this cost upfront allows the inner loop of the TSP to
-		// be more efficient on its single goroutine.
 		batch := []traceBatch{}
 		for traceID, spans := range idToSpansAndScope {
+			
+			// --- OKAMOTO CIRCUIT BREAKER START (Vortex Circuit Breaker) ---
+
+            // If the limit is set and the trail is very large, we ignore it (Early Drop)
+			if tsp.cfg.MaxSpansPerTrace > 0 && int64(len(spans)) > tsp.cfg.MaxSpansPerTrace {
+				continue
+			}
+			// --- END OF CIRCUIT BREAKER ---
+
 			newRSS, rootSpan := newResourceSpanFromSpanAndScopes(rss, spans)
 			batch = append(batch, traceBatch{
 				id:        traceID,
@@ -205,12 +211,14 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 				spanCount: int64(len(spans)),
 			})
 		}
+
 		if len(batch) > 0 {
 			tsp.workChan <- batch
 		}
 	}
 	return nil
 }
+
 
 func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
 	policies, err := tsp.loadSamplingPolicies(tsp.host, cfgs)
