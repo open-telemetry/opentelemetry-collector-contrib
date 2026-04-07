@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/trigger"
 )
 
 type fakeUnmarshaler struct {
@@ -96,7 +96,7 @@ func TestLogsConsumer_ConsumeEvents(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			consumer := NewLogsConsumer(tt.unmarshaler, sink)
 
-			req := common.ParsedRequest{
+			req := trigger.ParsedRequest{
 				Content:  tt.content,
 				Metadata: tt.metadata,
 			}

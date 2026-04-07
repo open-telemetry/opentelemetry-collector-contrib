@@ -10,16 +10,16 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/transport"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azurefunctionsreceiver/internal/trigger"
 )
 
 // Protocol parses the Azure Functions invoke HTTP body into a ParsedRequest and
 // writes success or failure responses. Different triggers may share the same
 // protocol (e.g. invoke envelope + transport decode) or use a different one.
 type Protocol interface {
-	ParseRequest(methodName string, body []byte) (common.ParsedRequest, error)
+	ParseRequest(methodName string, body []byte) (trigger.ParsedRequest, error)
 	Success(w http.ResponseWriter)
 	Failure(w http.ResponseWriter, err error, body []byte)
 }
@@ -29,10 +29,10 @@ type Protocol interface {
 type profile struct {
 	method   string
 	protocol Protocol
-	consumer common.Consumer
+	consumer trigger.Consumer
 }
 
-func newProfile(method string, protocol Protocol, consumer common.Consumer) profile {
+func newProfile(method string, protocol Protocol, consumer trigger.Consumer) profile {
 	return profile{
 		method:   method,
 		protocol: protocol,
@@ -66,24 +66,24 @@ func newInvokeProtocol(decoder *transport.BinaryDecoder, logger *zap.Logger, ext
 }
 
 // ParseRequest implements Protocol.
-func (p *invokeProtocol) ParseRequest(methodName string, body []byte) (common.ParsedRequest, error) {
+func (p *invokeProtocol) ParseRequest(methodName string, body []byte) (trigger.ParsedRequest, error) {
 	invokeReq, err := protocol.ParseInvokeRequest(body)
 	if err != nil {
-		return common.ParsedRequest{}, err
+		return trigger.ParsedRequest{}, err
 	}
 	data, ok := invokeReq.Data[methodName]
 	if !ok {
-		return common.ParsedRequest{}, fmt.Errorf("missing data for binding %q", methodName)
+		return trigger.ParsedRequest{}, fmt.Errorf("missing data for binding %q", methodName)
 	}
 	content, err := p.decoder.Decode(data)
 	if err != nil {
-		return common.ParsedRequest{}, fmt.Errorf("decode payload: %w", err)
+		return trigger.ParsedRequest{}, fmt.Errorf("decode payload: %w", err)
 	}
 	var metadata map[string]string
 	if p.extractor != nil && len(invokeReq.Metadata) > 0 {
 		metadata = p.extractor(invokeReq.Metadata)
 	}
-	return common.ParsedRequest{Content: content, Metadata: metadata}, nil
+	return trigger.ParsedRequest{Content: content, Metadata: metadata}, nil
 }
 
 // Success implements Protocol.
