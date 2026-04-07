@@ -1,0 +1,23 @@
+change_type: bug_fix
+
+component: pkg/fileconsumer
+
+note: "Require `ordering_criteria.top_n` to be set explicitly when `ordering_criteria.sort_by` is configured, and treat `top_n: 0` as \"match all files\"."
+
+issues: [47444]
+
+subtext: |
+  The previous default silently set `top_n` to 1 when `ordering_criteria.sort_by`
+  was configured without `top_n`, causing severe log duplication with multiple
+  actively-written files: only the single highest-priority file was returned per
+  poll, so other matching files cycled in and out of the tracker and were
+  re-read from offset 0 on rediscovery.
+
+  - Configuring `ordering_criteria.sort_by` without `top_n` now returns a
+    validation error at startup, forcing the choice to be explicit.
+  - `top_n: 0` now means "match all files" instead of silently defaulting to 1.
+
+  Existing configurations that set `sort_by` without `top_n` must be updated
+  to include an explicit `top_n` value.
+
+change_logs: [user]

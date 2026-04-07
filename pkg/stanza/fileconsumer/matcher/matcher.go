@@ -23,10 +23,6 @@ const (
 	sortTypeMtime        = "mtime"
 )
 
-const (
-	defaultOrderingCriteriaTopN = 1
-)
-
 type Criteria struct {
 	Include []string `mapstructure:"include,omitempty"`
 	Exclude []string `mapstructure:"exclude,omitempty"`
@@ -38,8 +34,12 @@ type Criteria struct {
 }
 
 type OrderingCriteria struct {
-	Regex   string `mapstructure:"regex,omitempty"`
-	TopN    int    `mapstructure:"top_n,omitempty"`
+	Regex string `mapstructure:"regex,omitempty"`
+	// TopN uses a pointer so the matcher can distinguish between "unset" and
+	// "explicitly zero". When sort_by is configured, top_n must be set
+	// explicitly: zero means "match all files" and a positive value caps the
+	// match count.
+	TopN    *int   `mapstructure:"top_n,omitempty"`
 	SortBy  []Sort `mapstructure:"sort_by,omitempty"`
 	GroupBy string `mapstructure:"group_by,omitempty"`
 }
@@ -87,12 +87,8 @@ func New(c Criteria) (*Matcher, error) {
 		return m, nil
 	}
 
-	if c.OrderingCriteria.TopN < 0 {
-		return nil, errors.New("'top_n' must be a positive integer")
-	}
-
-	if c.OrderingCriteria.TopN == 0 {
-		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
+	if err := validateTopN(&c.OrderingCriteria); err != nil {
+		return nil, err
 	}
 
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
@@ -139,9 +135,24 @@ func New(c Criteria) (*Matcher, error) {
 		}
 	}
 
-	m.filterOpts = append(m.filterOpts, filter.TopNOption(c.OrderingCriteria.TopN))
+	if c.OrderingCriteria.TopN != nil && *c.OrderingCriteria.TopN > 0 {
+		m.filterOpts = append(m.filterOpts, filter.TopNOption(*c.OrderingCriteria.TopN))
+	}
 
 	return m, nil
+}
+
+// validateTopN requires that c.TopN be set when sort_by is configured. Zero
+// means "match all files"; a positive value caps the match count. Negative
+// values are rejected. Callers must only invoke this when len(c.SortBy) > 0.
+func validateTopN(c *OrderingCriteria) error {
+	if c.TopN == nil {
+		return errors.New("'top_n' must be set explicitly when 'ordering_criteria.sort_by' is configured (use 0 to match all files)")
+	}
+	if *c.TopN < 0 {
+		return errors.New("'top_n' must not be negative")
+	}
+	return nil
 }
 
 // orderingCriteriaNeedsRegex returns true if any of the sort options require a regex to be set.
