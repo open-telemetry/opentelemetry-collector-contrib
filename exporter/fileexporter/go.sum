@@ -1,5 +1,3 @@
-github.com/DeRuina/timberjack v1.4.0 h1:Ipw9KjS/6K6A9D1xdhWebYJFqdQez5gXwfzmeKOroqE=
-github.com/DeRuina/timberjack v1.4.0/go.mod h1:RLoeQrwrCGIEF8gO5nV5b/gMD0QIy7bzQhBUgpp1EqE=
 github.com/DeRuina/timberjack v1.4.1 h1:JftM5HN/ITKehAXjtdbGqN5XZIS1biHm7VSjU0Qbtqg=
 github.com/DeRuina/timberjack v1.4.1/go.mod h1:RLoeQrwrCGIEF8gO5nV5b/gMD0QIy7bzQhBUgpp1EqE=
 github.com/cenkalti/backoff/v5 v5.0.3 h1:ZN+IMa753KfX5hd8vVaMixjnqRZ3y8CuJKRKj1xcsSM=
