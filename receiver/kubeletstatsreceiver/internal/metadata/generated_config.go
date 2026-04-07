@@ -316,22 +316,22 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		AwsVolumeID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		FsType: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		GcePdName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		GlusterfsEndpointsName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		GlusterfsPath: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
@@ -358,7 +358,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		Partition: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

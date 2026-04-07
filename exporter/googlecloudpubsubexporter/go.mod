@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.25.0
 
 require (
-	cloud.google.com/go/pubsub/v2 v2.5.0
+	cloud.google.com/go/pubsub/v2 v2.5.1
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.20.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.149.0
