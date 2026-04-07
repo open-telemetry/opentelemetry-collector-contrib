@@ -39,7 +39,7 @@ type Config struct {
 	// Valid values are `ignore` and `propagate`.
 	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
-	// The default value is `propagate`.
+	// The current default value is `propagate`, which will change to `ignore` when the `processor.transform.defaultErrorModeIgnore` feature gate is stable.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`
