@@ -597,8 +597,10 @@ func TestMultiFileSort(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
+	topN := 1
 	cfg.OrderingCriteria = matcher.OrderingCriteria{
 		Regex: `.*(?P<value>\d)`,
+		TopN:  &topN,
 		SortBy: []matcher.Sort{
 			{
 				SortType: "numeric",
@@ -630,8 +632,10 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
+	topN := 1
 	cfg.OrderingCriteria = matcher.OrderingCriteria{
 		Regex: `.(?P<value>\d{10})\.log`,
+		TopN:  &topN,
 		SortBy: []matcher.Sort{
 			{
 				SortType: "timestamp",
@@ -1729,4 +1733,116 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 		sink2.ExpectToken(t, []byte(line))
 	}
 	sink2.ExpectNoCalls(t)
+}
+
+// TestTopNZeroNoDuplication verifies end-to-end that when top_n is explicitly
+// set to 0, ordering_criteria.sort_by=mtime tracks all matching files without
+// duplication. Before this fix, the zero value silently meant "default to 1",
+// which caused massive duplication with multiple actively-written files (the
+// 3-generation knownFiles window could not sustain all files, readers were
+// discarded, and files were re-read from offset 0 when rediscovered).
+// Regression test for #47444.
+func TestTopNZeroNoDuplication(t *testing.T) {
+	// NOT parallel — modifies the global mtime sort feature gate
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogMtimeSortTypeFeatureGate.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.Include = []string{filepath.Join(tempDir, "*.log")}
+	cfg.PollInterval = 50 * time.Millisecond
+	cfg.StartAt = "beginning"
+	topN := 0
+	cfg.OrderingCriteria = matcher.OrderingCriteria{
+		SortBy: []matcher.Sort{
+			{SortType: "mtime"},
+		},
+		TopN: &topN, // Explicit 0 means "match all files"
+	}
+
+	sink := emittest.NewSink(emittest.WithCallBuffer(100000), emittest.WithTimeout(500*time.Millisecond))
+	operator := testManagerWithSink(t, cfg, sink)
+
+	// Create 10 files — more than the 3-generation knownFiles window can sustain
+	// with top_n=1. Each file gets a unique initial line, and we use os.Chtimes
+	// to set deterministically-staggered mtimes instead of relying on filesystem
+	// time resolution and time.Sleep between operations.
+	const numFiles = 10
+	const rounds = 20
+	baseTime := time.Now()
+	files := make([]*os.File, numFiles)
+	for i := range files {
+		name := filepath.Join(tempDir, fmt.Sprintf("host%02d.log", i))
+		f, err := os.Create(name)
+		require.NoError(t, err)
+		_, err = fmt.Fprintf(f, "init-host%02d\n", i)
+		require.NoError(t, err)
+		require.NoError(t, f.Close())
+		mtime := baseTime.Add(time.Duration(i) * time.Second)
+		require.NoError(t, os.Chtimes(name, mtime, mtime))
+		files[i], err = os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0o600)
+		require.NoError(t, err)
+	}
+	t.Cleanup(func() {
+		for _, f := range files {
+			f.Close()
+		}
+	})
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	t.Cleanup(func() { require.NoError(t, operator.Stop()) })
+
+	// Write unique lines to each file in round-robin. After each write we chtimes
+	// to a strictly-later mtime than any previous file's mtime, so different
+	// files "win" the mtime competition on different polls without relying on
+	// time.Sleep between writes.
+	for round := 1; round <= rounds; round++ {
+		for i, f := range files {
+			msg := fmt.Sprintf("host%02d-round%02d", i, round)
+			_, err := fmt.Fprintf(f, "%s\n", msg)
+			require.NoError(t, err)
+			require.NoError(t, f.Sync())
+			mtime := baseTime.Add(time.Duration(numFiles+(round-1)*numFiles+i) * time.Second)
+			require.NoError(t, os.Chtimes(f.Name(), mtime, mtime))
+		}
+	}
+
+	// Wait until all unique tokens (init + each round per file) have been
+	// emitted. EventuallyWithT replaces a fixed sleep so the test adapts to
+	// the host's processing speed instead of relying on a brittle wall-clock
+	// guess.
+	const expectedUniqueTokens = numFiles * (1 + rounds)
+	tokenCounts := make(map[string]int)
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
+		for {
+			token := sink.NextTokenWithin(0)
+			if token == nil {
+				break
+			}
+			tokenCounts[string(token)]++
+		}
+		assert.GreaterOrEqualf(c, len(tokenCounts), expectedUniqueTokens,
+			"expected %d unique tokens, have %d", expectedUniqueTokens, len(tokenCounts))
+	}, 30*time.Second, 100*time.Millisecond)
+
+	// Drain a tail window so any duplicate emissions arriving after the last
+	// unique token still get counted.
+	for {
+		token := sink.NextTokenWithin(500 * time.Millisecond)
+		if token == nil {
+			break
+		}
+		tokenCounts[string(token)]++
+	}
+
+	var duplicates []string
+	for token, count := range tokenCounts {
+		if count > 1 {
+			duplicates = append(duplicates, fmt.Sprintf("%s (x%d)", token, count))
+		}
+	}
+
+	assert.Empty(t, duplicates, "Expected no duplicates with top_n=0 (unlimited)")
 }

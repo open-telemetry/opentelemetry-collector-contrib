@@ -1,0 +1,9 @@
+change_type: breaking
+
+component: pkg/fileconsumer
+
+note: "`matcher.OrderingCriteria.TopN` is now a `*int` instead of `int`, so the matcher can distinguish an unset value from an explicit zero."
+
+issues: [47444]
+
+change_logs: [api]
