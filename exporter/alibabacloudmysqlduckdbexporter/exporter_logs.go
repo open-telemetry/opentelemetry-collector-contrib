@@ -66,6 +66,12 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 		}
 	}
 
+	if e.cfg.TTL > 0 {
+		if err := internal.CreateTTLEvent(ctx, e.db, e.cfg.Database, e.cfg.LogsTableName, "timestamp", e.cfg.TTL); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

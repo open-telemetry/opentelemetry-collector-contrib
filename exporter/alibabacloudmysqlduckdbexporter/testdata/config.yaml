@@ -5,6 +5,7 @@ alibabacloudmysqlduckdb:
   traces_table_name: otel_traces
   metrics_table_name: otel_metrics
   create_schema: true
+  ttl: 72h
   retry_on_failure:
     enabled: true
     initial_interval: 5s

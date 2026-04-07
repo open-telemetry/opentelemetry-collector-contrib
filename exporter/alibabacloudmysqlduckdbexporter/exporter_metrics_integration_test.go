@@ -163,6 +163,23 @@ func TestMetricsExporterIntegration(t *testing.T) {
 		assert.Equal(t, 0.5, quantiles[0].Quantile)
 		assert.Equal(t, 50.0, quantiles[0].Value)
 	})
+
+	// Verify TTL events were created for all 4 metrics tables
+	ttlEvents := []string{
+		"ttl_otel_metrics_gauge",
+		"ttl_otel_metrics_sum",
+		"ttl_otel_metrics_histogram",
+		"ttl_otel_metrics_summary",
+	}
+	for _, eventName := range ttlEvents {
+		var eventCount int
+		err := db.QueryRow(
+			"SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA = ? AND EVENT_NAME = ?",
+			cfg.Database, eventName,
+		).Scan(&eventCount)
+		require.NoError(t, err)
+		assert.Equal(t, 1, eventCount, "TTL event %s should exist", eventName)
+	}
 }
 
 func simpleGaugeMetrics(count int) pmetric.Metrics {

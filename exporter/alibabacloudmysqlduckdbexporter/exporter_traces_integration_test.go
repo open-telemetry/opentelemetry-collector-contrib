@@ -101,6 +101,15 @@ func TestTracesExporterIntegration(t *testing.T) {
 	require.NoError(t, json.Unmarshal(linksRaw, &links))
 	assert.Len(t, links, 1)
 	assert.Equal(t, "trace state", links[0].TraceState)
+
+	// Verify TTL event was created
+	var eventCount int
+	err = db.QueryRow(
+		"SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA = ? AND EVENT_NAME = ?",
+		cfg.Database, "ttl_otel_traces",
+	).Scan(&eventCount)
+	require.NoError(t, err)
+	assert.Equal(t, 1, eventCount, "TTL event ttl_otel_traces should exist")
 }
 
 func simpleTraces(count int) ptrace.Traces {

@@ -6,6 +6,7 @@ package alibabacloudmysqlduckdbexporter // import "github.com/open-telemetry/ope
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -33,6 +34,11 @@ type Config struct {
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// CreateSchema if set to true will run the DDL for creating the database and tables. Default is true.
 	CreateSchema bool `mapstructure:"create_schema"`
+	// TTL is the data time-to-live. 0 means no TTL (default).
+	// When set, the exporter creates MySQL EVENTs to periodically delete expired data.
+	// Requires EVENT privilege and event_scheduler=ON on the MySQL server.
+	// Example: 72h, 168h (7 days), 720h (30 days).
+	TTL time.Duration `mapstructure:"ttl"`
 }
 
 const (
@@ -54,6 +60,7 @@ func createDefaultConfig() component.Config {
 		TracesTableName: defaultTracesTableName,
 		MetricsTableName: defaultMetricsTableName,
 		CreateSchema:    true,
+		TTL:             0,
 	}
 }
 

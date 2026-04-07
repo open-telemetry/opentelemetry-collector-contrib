@@ -41,6 +41,7 @@ Connection options:
 
 - `database` (default = `otel`): The database name. The exporter will create this database automatically if `create_schema` is enabled.
 - `create_schema` (default = `true`): When set to true, the exporter will run DDL to create the database and tables on startup. (See [Schema Management](#schema-management))
+- `ttl` (default = `0`, disabled): The data time-to-live. When set (e.g. `72h`, `168h`, `720h`), the exporter creates MySQL [scheduled EVENTs](https://dev.mysql.com/doc/refman/8.0/en/create-event.html) that periodically delete expired data. See [TTL / Data Retention](#ttl--data-retention) for details and prerequisites.
 
 Table names:
 
@@ -69,7 +70,7 @@ The exporter auto-creates the following tables when `create_schema` is `true`. A
 
 | Column | Type | Description |
 |--------|------|-------------|
-| timestamp | DATETIME(6) | Log timestamp |
+| timestamp | DATETIME(6) | Log timestamp (microsecond precision) |
 | trace_id | VARCHAR(32) | Associated trace ID |
 | span_id | VARCHAR(16) | Associated span ID |
 | trace_flags | TINYINT UNSIGNED | Trace flags |
@@ -289,10 +290,50 @@ The default DDL used by the exporter can be found in `internal/sqltemplates/`.
 Be sure to customize the indexes, partitioning, and other MySQL optimizations to fit your deployment.
 Column names and types must match the exporter's `INSERT` statements to preserve compatibility.
 
+## TTL / Data Retention
+
+The exporter supports automatic data expiration via the `ttl` config option. When `ttl` is set to a non-zero duration, the exporter creates MySQL [scheduled EVENTs](https://dev.mysql.com/doc/refman/8.0/en/create-event.html) that run every hour to delete rows older than the specified TTL.
+
+Example: `ttl: 72h` creates events that delete data older than 3 days.
+
+### Prerequisites
+
+1. **Enable `event_scheduler`** on the MySQL server. For Alibaba Cloud RDS, set the parameter `event_scheduler = ON` in the RDS parameter group.
+
+2. **Grant EVENT privilege** to the database user:
+   ```sql
+   GRANT EVENT ON `otel`.* TO 'your_user'@'%';
+   ```
+
+### How it works
+
+On startup, the exporter creates one `CREATE EVENT IF NOT EXISTS` per table:
+
+```sql
+CREATE EVENT IF NOT EXISTS `otel`.`ttl_otel_logs`
+ON SCHEDULE EVERY 1 HOUR
+DO
+  DELETE FROM `otel`.`otel_logs`
+  WHERE timestamp < DATE_SUB(NOW(), INTERVAL 259200 SECOND)
+  LIMIT 100000;
+```
+
+Each execution deletes up to 100,000 rows to avoid long-running transactions. If the table has a large backlog of expired data, it will be cleaned up incrementally over multiple runs.
+
+To inspect the created events:
+```sql
+SHOW EVENTS IN otel;
+```
+
+To manually disable TTL cleanup:
+```sql
+DROP EVENT IF EXISTS `otel`.`ttl_otel_logs`;
+```
+
 ## Example Config
 
 This example shows how to configure the exporter to send data to an Alibaba Cloud RDS MySQL DuckDB instance.
-The exporter will create the database and tables if they don't exist.
+The exporter will create the database and tables if they don't exist. Data older than 72 hours is automatically cleaned up.
 
 ```yaml
 receivers:
@@ -311,6 +352,7 @@ exporters:
     endpoint: root:password@tcp(rm-xxx.mysql.rds.aliyuncs.com:3306)/otel
     database: otel
     create_schema: true
+    ttl: 72h
     logs_table_name: otel_logs
     traces_table_name: otel_traces
     metrics_table_name: otel_metrics

@@ -90,6 +90,15 @@ func TestLogsExporterIntegration(t *testing.T) {
 	var logAttrs map[string]string
 	require.NoError(t, json.Unmarshal(logAttrRaw, &logAttrs))
 	assert.Equal(t, "default", logAttrs["service.namespace"])
+
+	// Verify TTL event was created
+	var eventCount int
+	err = db.QueryRow(
+		"SELECT COUNT(*) FROM information_schema.EVENTS WHERE EVENT_SCHEMA = ? AND EVENT_NAME = ?",
+		cfg.Database, "ttl_otel_logs",
+	).Scan(&eventCount)
+	require.NoError(t, err)
+	assert.Equal(t, 1, eventCount, "TTL event ttl_otel_logs should exist")
 }
 
 func simpleLogs(count int) plog.Logs {

@@ -68,6 +68,12 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 		}
 	}
 
+	if e.cfg.TTL > 0 {
+		if err := internal.CreateTTLEvent(ctx, e.db, e.cfg.Database, e.cfg.TracesTableName, "timestamp", e.cfg.TTL); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

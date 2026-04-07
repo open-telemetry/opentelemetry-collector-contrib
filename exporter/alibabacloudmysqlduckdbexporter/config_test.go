@@ -6,6 +6,7 @@ package alibabacloudmysqlduckdbexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "otel_traces", c.TracesTableName)
 	assert.Equal(t, "otel_metrics", c.MetricsTableName)
 	assert.True(t, c.CreateSchema)
+	assert.Equal(t, 72*time.Hour, c.TTL)
 }
 
 func TestValidateConfig(t *testing.T) {

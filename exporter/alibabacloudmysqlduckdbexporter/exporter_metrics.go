@@ -94,6 +94,20 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 		}
 	}
 
+	if e.cfg.TTL > 0 {
+		metricsTables := []string{
+			e.cfg.gaugeTableName(),
+			e.cfg.sumTableName(),
+			e.cfg.histogramTableName(),
+			e.cfg.summaryTableName(),
+		}
+		for _, tableName := range metricsTables {
+			if err := internal.CreateTTLEvent(ctx, e.db, e.cfg.Database, tableName, "time_unix", e.cfg.TTL); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 

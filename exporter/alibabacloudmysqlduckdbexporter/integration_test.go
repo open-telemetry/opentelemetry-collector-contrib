@@ -40,6 +40,7 @@ func newTestConfig(dsn string) *Config {
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
 		CreateSchema:     true,
+		TTL:              72 * time.Hour,
 	}
 }
 
