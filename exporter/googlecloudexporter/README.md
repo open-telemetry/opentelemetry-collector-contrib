@@ -321,7 +321,7 @@ It also parses out the `timestamp` and inserts a non-default `log_name` attribut
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /var/log/apache.log ]
     start_at: beginning
     operators:
@@ -361,7 +361,7 @@ processors:
 
 service:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       processors: [memory_limiter, resourcedetection, attributes]
       exporters: [googlecloud]
 

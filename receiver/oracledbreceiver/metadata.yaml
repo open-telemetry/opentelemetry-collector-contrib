@@ -69,6 +69,9 @@ attributes:
   oracledb.cluster_wait_time:
     description: Total time (in seconds) that a query waited due to Oracle Real Application Clusters (RAC) coordination (reporting delta).
     type: double
+  oracledb.command_type:
+    description: Command type of the query.
+    type: int
   oracledb.concurrency_wait_time:
     description: Total time (in seconds) a query spent waiting on concurrency-related events (reporting delta).
     type: double
@@ -119,7 +122,7 @@ attributes:
     description: Binary hash value calculated on the query execution plan and used to identify similar query execution plans, reported in the HEX format.
     type: string
   oracledb.procedure_execution_count:
-    description: The number of times the stored procedure has been executed, derived from the maximum statement execution count across all statements in the procedure (reporting delta).
+    description: The number of times the stored procedure has been executed, derived from the minimum statement execution count across all statements in the procedure (reporting delta). Please note, this is best effort and may not be accurate in some scenarios. Use with caution.
     type: int
   oracledb.procedure_id:
     description: The identifier of the stored procedure or function being executed by the query.
@@ -230,6 +233,7 @@ events:
       - oracledb.application_wait_time
       - oracledb.buffer_gets
       - oracledb.cluster_wait_time
+      - oracledb.command_type
       - oracledb.concurrency_wait_time
       - oracledb.cpu_time
       - oracledb.direct_reads
