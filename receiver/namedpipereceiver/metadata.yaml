@@ -1,5 +1,6 @@
 display_name: Named Pipe Receiver
-type: namedpipe
+type: named_pipe
+deprecated_type: namedpipe
 
 description: |
   This receiver supports opening a Unix Named Pipe (aka FIFO), and reading logs from it.

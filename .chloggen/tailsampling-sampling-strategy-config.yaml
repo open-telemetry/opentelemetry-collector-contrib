@@ -1,5 +1,0 @@
-change_type: enhancement
-component: processor/tail_sampling
-note: Add `sampling_strategy` config with `trace-complete` and `span-ingest` modes for tail sampling decision timing and evaluation behavior.
-issues: [46600]
-change_logs: [user]

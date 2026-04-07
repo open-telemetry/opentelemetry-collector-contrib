@@ -21,11 +21,11 @@ const (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, ns *corev1.Namespace, ts pcommon.Timestamp) {
-	mb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase])) //nolint:staticcheck
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sNamespaceUID(string(ns.UID))
-	rb.SetK8sNamespaceName(ns.Name)
-	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
+	e := metadata.NewK8sNamespaceEntity(string(ns.UID))
+	e.SetK8sNamespaceName(ns.Name)
+	eb := mb.ForK8sNamespace(e)
+	eb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
+	eb.Emit()
 }
 
 var namespacePhaseValues = map[corev1.NamespacePhase]int32{

@@ -34,7 +34,13 @@ func (dp ExponentialHistogram) Value() (pcommon.Value, error) {
 		return vm, nil
 	}
 
-	counts, values := exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
+	var counts []int64
+	var values []float64
+	if dp.HasMappingHint(elasticsearch.HintHistogramRaw) {
+		counts, values = exphistogram.ToRaw(dp.ExponentialHistogramDataPoint)
+	} else {
+		counts, values = exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
+	}
 
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
