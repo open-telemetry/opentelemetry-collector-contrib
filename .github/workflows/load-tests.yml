@@ -123,3 +123,125 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: "docs/benchmarks/loadtests"
           auto-push: true
+
+  notify-failure:
+    runs-on: ubuntu-24.04
+    needs: [loadtest]
+    if: >-
+      failure() &&
+      github.event_name != 'pull_request' &&
+      github.repository_owner == 'open-telemetry'
+    permissions:
+      issues: write
+    steps:
+      - name: Download test result archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: test-result-archive-*
+          path: /tmp/test-results/
+        continue-on-error: true
+      - name: Check for existing issue
+        id: check
+        run: |
+          issue_number=$(gh issue list -R ${{ github.repository }} \
+            --search "load-tests workflow failed" \
+            --state open \
+            --label "flaky tests" \
+            --json number \
+            --jq '.[0].number // empty')
+          if [ -n "$issue_number" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "number=$issue_number" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Collect failure details
+        id: details
+        run: |
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          short_sha=$(echo "${{ github.sha }}" | cut -c1-7)
+          commit_url="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+
+          # Extract PR number from merge commit message (contains "(#NNNNN)")
+          commit_msg=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}" --jq '.commit.message' 2>/dev/null || true)
+          pr_number=$(echo "$commit_msg" | head -1 | grep -oP '\(#\K\d+' | head -1 || true)
+
+          # Get failed job names (excluding notify-failure itself)
+          failed_jobs=$(gh run view "${{ github.run_id }}" -R "${{ github.repository }}" \
+            --json jobs \
+            -q '[.jobs[] | select(.conclusion == "failure" and (.name | startswith("notify-failure") | not)) | .name] | map("- " + .) | join("\n")')
+
+          # Extract performance table and test failures from archived test results
+          performance_table=""
+          failure_msgs=""
+          for tarfile in /tmp/test-results/*/*.tar; do
+            tar -xf "$tarfile" testbed/tests/results/TESTRESULTS.md 2>/dev/null || true
+            tar -xf "$tarfile" testbed/tests/results/testoutput.log 2>/dev/null || true
+          done
+          if [ -f testbed/tests/results/TESTRESULTS.md ]; then
+            performance_table=$(cat testbed/tests/results/TESTRESULTS.md)
+          fi
+          if [ -f testbed/tests/results/testoutput.log ]; then
+            failure_msgs=$(grep -E '(--- FAIL|^FAIL)' testbed/tests/results/testoutput.log | head -20)
+          fi
+
+          # Build issue body to a file to avoid shell escaping issues
+          {
+            echo "Auto-generated report for load-tests workflow."
+            echo ""
+            echo "Link to failed build: ${run_url}"
+            echo "Commit: [${short_sha}](${commit_url})"
+            if [ -n "$pr_number" ]; then
+              echo "PR: [#${pr_number}](${{ github.server_url }}/${{ github.repository }}/pull/${pr_number})"
+            fi
+            echo ""
+            echo "### Component(s)"
+            echo ""
+            echo "testbed"
+            echo ""
+            echo "### Failed jobs"
+            echo ""
+            echo "$failed_jobs"
+            if [ -n "$performance_table" ]; then
+              echo ""
+              echo "### Performance results"
+              echo ""
+              echo '```'
+              echo "$performance_table"
+              echo '```'
+            fi
+            if [ -n "$failure_msgs" ]; then
+              echo ""
+              echo "#### Test failures"
+              echo ""
+              echo '```'
+              echo "$failure_msgs"
+              echo '```'
+            fi
+            echo ""
+            echo "**Note**: Information about any subsequent build failures that happen while"
+            echo "this issue is open, will be added as comments with more information to this issue."
+          } > /tmp/issue-body.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Create issue
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          gh issue create -R "${{ github.repository }}" \
+            -t 'load-tests workflow failed' \
+            --body-file /tmp/issue-body.md \
+            -l 'needs triage' \
+            -l 'flaky tests' \
+            -l 'ci-cd'
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Comment on existing issue
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          gh issue comment "${{ steps.check.outputs.number }}" \
+            -R "${{ github.repository }}" \
+            --body-file /tmp/issue-body.md
+        env:
+          GH_TOKEN: ${{ github.token }}

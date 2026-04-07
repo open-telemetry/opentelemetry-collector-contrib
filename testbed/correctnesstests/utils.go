@@ -55,19 +55,20 @@ func CreateConfigYaml(
 
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
-	processorsSections := ""
-	processorsList := ""
+	var processorsSectionsBuilder, processorsListBuilder strings.Builder
 	if len(processors) > 0 {
 		first := true
 		for i := range processors {
-			processorsSections += processors[i].Body + "\n"
+			processorsSectionsBuilder.WriteString(processors[i].Body + "\n")
 			if !first {
-				processorsList += ","
+				processorsListBuilder.WriteString(",")
 			}
-			processorsList += processors[i].Name
+			processorsListBuilder.WriteString(processors[i].Name)
 			first = false
 		}
 	}
+	processorsSections := processorsSectionsBuilder.String()
+	processorsList := processorsListBuilder.String()
 
 	var pipeline1 string
 	switch sender.(type) {

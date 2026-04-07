@@ -372,6 +372,9 @@ func (s *processScraper) scrapeAndAppendPagingMetric(ctx context.Context, now pc
 	if err != nil {
 		return err
 	}
+	if pageFaultsStat == nil {
+		return nil
+	}
 
 	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributePagingFaultTypeMajor)
 	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributePagingFaultTypeMinor)

@@ -197,6 +197,10 @@ component_management:
     name: exporter_googlemanagedprometheus
     paths:
     - exporter/googlemanagedprometheusexporter/**
+  - component_id: exporter_googlesecops
+    name: exporter_googlesecops
+    paths:
+    - exporter/googlesecopsexporter/**
   - component_id: exporter_honeycombmarker
     name: exporter_honeycombmarker
     paths:
