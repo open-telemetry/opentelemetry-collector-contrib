@@ -135,6 +135,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid mode",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
@@ -148,6 +149,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "exclude watch type with pull mode",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
@@ -164,6 +166,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "default mode is set",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
@@ -175,6 +178,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "default interval for pull mode",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
@@ -270,6 +274,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 		{
 			desc: "include_initial_state true with watch mode is valid",
 			cfg: &Config{
+				APIConfig:           k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode:           PropagateError,
 				IncludeInitialState: true,
 				Objects: []*K8sObjectsConfig{
@@ -283,6 +288,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 		{
 			desc: "include_initial_state false with watch mode is valid",
 			cfg: &Config{
+				APIConfig:           k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode:           PropagateError,
 				IncludeInitialState: false,
 				Objects: []*K8sObjectsConfig{
@@ -296,6 +302,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 		{
 			desc: "include_initial_state true with pull mode is invalid",
 			cfg: &Config{
+				APIConfig:           k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode:           PropagateError,
 				IncludeInitialState: true,
 				Objects: []*K8sObjectsConfig{
@@ -310,6 +317,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 		{
 			desc: "include_initial_state nil with watch mode is valid (defaults to false)",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
@@ -322,6 +330,7 @@ func TestConfigValidationIncludeInitialState(t *testing.T) {
 		{
 			desc: "namespaces and exclude_namespaces both set is invalid",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
@@ -363,51 +372,26 @@ func TestConfigValidationAPIRateLimit(t *testing.T) {
 		{
 			desc: "negative api_qps is invalid",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: -1, KubeAPIBurst: 10},
 				ErrorMode: PropagateError,
-				APIQPS:    -1,
-				APIBurst:  defaultAPIBurst,
 				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
 			},
-			expectedErr: "api_qps must be greater than 0",
+			expectedErr: "kube_api_qps must be greater than 0",
 		},
 		{
 			desc: "negative api_burst is invalid",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: -1},
 				ErrorMode: PropagateError,
-				APIQPS:    defaultAPIQPS,
-				APIBurst:  -1,
 				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
 			},
-			expectedErr: "api_burst must be greater than 0",
-		},
-		{
-			desc: "zero api_qps applies default",
-			cfg: &Config{
-				ErrorMode: PropagateError,
-				APIQPS:    0,
-				APIBurst:  defaultAPIBurst,
-				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
-			},
-			expectedQPS:   defaultAPIQPS,
-			expectedBurst: defaultAPIBurst,
-		},
-		{
-			desc: "zero api_burst applies default",
-			cfg: &Config{
-				ErrorMode: PropagateError,
-				APIQPS:    defaultAPIQPS,
-				APIBurst:  0,
-				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
-			},
-			expectedQPS:   defaultAPIQPS,
-			expectedBurst: defaultAPIBurst,
+			expectedErr: "kube_api_burst must be greater than 0",
 		},
 		{
 			desc: "custom api_qps and api_burst are valid",
 			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 500, KubeAPIBurst: 1000},
 				ErrorMode: PropagateError,
-				APIQPS:    500,
-				APIBurst:  1000,
 				Objects:   []*K8sObjectsConfig{{Name: "pods", Mode: k8sinventory.WatchMode}},
 			},
 			expectedQPS:   500,
@@ -423,14 +407,14 @@ func TestConfigValidationAPIRateLimit(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedQPS, tt.cfg.APIQPS)
-			assert.Equal(t, tt.expectedBurst, tt.cfg.APIBurst)
+			assert.Equal(t, tt.expectedQPS, tt.cfg.KubeAPIQPS)
+			assert.Equal(t, tt.expectedBurst, tt.cfg.KubeAPIBurst)
 		})
 	}
 }
 
 func TestCreateDefaultConfigAPIRateLimit(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, defaultAPIQPS, cfg.APIQPS)
-	assert.Equal(t, defaultAPIBurst, cfg.APIBurst)
+	assert.Equal(t, k8sconfig.DefaultKubeAPIQPS, cfg.KubeAPIQPS)
+	assert.Equal(t, k8sconfig.DefaultKubeAPIBurst, cfg.KubeAPIBurst)
 }

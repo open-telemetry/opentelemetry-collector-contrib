@@ -37,7 +37,9 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Namespaces: []string{"default", "my_namespace"},
 				APIConfig: k8sconfig.APIConfig{
-					AuthType: k8sconfig.AuthTypeServiceAccount,
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 				},
 			},
 		},
