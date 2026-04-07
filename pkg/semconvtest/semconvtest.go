@@ -6,17 +6,13 @@ package semconvtest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
-	"github.com/fsnotify/fsnotify"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,7 +28,6 @@ import (
 const (
 	DefaultWeaverOTLPListenerPort = "4317/tcp"
 	DefaultWeaverStopPort         = "4320/tcp"
-	containerOutputDir            = "/output"
 )
 
 var ErrOptionValidation = errors.New("weaver options failed validation")
@@ -42,7 +37,6 @@ type WeaverContext struct {
 	weaverContainer *testcontainers.DockerContainer
 	opts            *WeaverOptions
 	clients         *pdataClientContext
-	outputDir       string
 	stopEndpoint    string
 }
 
@@ -103,7 +97,6 @@ func NewWeaverContext(ctx context.Context, opts *WeaverOptions) (*WeaverContext,
 		weaverContainer: weaverC,
 		opts:            opts,
 		clients:         clients,
-		outputDir:       opts.OutputDir,
 		stopEndpoint:    fmt.Sprintf("http://%s:%s/stop", host, mappedStopPort.Port()),
 	}, nil
 }
@@ -135,12 +128,12 @@ func (wc *WeaverContext) ContainerLogs() ([]string, error) {
 	return logs, nil
 }
 
-// Stop sends a POST request to Weaver's /stop endpoint to stop the listener
-// and trigger writing of the output file.
-func (wc *WeaverContext) Stop() error {
+// Stop sends a POST request to Weaver's /stop endpoint to stop the listener.
+// With --output=http, Weaver returns the live-check report in the response body.
+func (wc *WeaverContext) Stop() ([]byte, error) {
 	req, err := http.NewRequestWithContext(wc.ctx, http.MethodPost, wc.stopEndpoint, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("failed to create stop request: %w", err)
+		return nil, fmt.Errorf("failed to create stop request: %w", err)
 	}
 
 	client := &http.Client{
@@ -148,70 +141,20 @@ func (wc *WeaverContext) Stop() error {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to call stop endpoint: %w", err)
+		return nil, fmt.Errorf("failed to call stop endpoint: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("stop endpoint returned status %d", resp.StatusCode)
+		return nil, fmt.Errorf("stop endpoint returned status %d", resp.StatusCode)
 	}
 
-	return nil
-}
-
-// WaitForOutput watches the output directory for the live_check.json file
-// to be created and returns its path. This should be called after Stop().
-func (wc *WeaverContext) WaitForOutput(ctx context.Context) (string, error) {
-	if wc.outputDir == "" {
-		return "", errors.New("outputDir not configured")
-	}
-
-	outputFile := filepath.Join(wc.outputDir, "live_check.json")
-
-	// Check if file already exists with valid JSON before watching
-	if data, err := os.ReadFile(outputFile); err == nil && json.Valid(data) {
-		return outputFile, nil
-	}
-
-	watcher, err := fsnotify.NewWatcher()
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to create watcher: %w", err)
-	}
-	defer watcher.Close()
-
-	err = watcher.Add(wc.outputDir)
-	if err != nil {
-		return "", fmt.Errorf("failed to watch directory: %w", err)
+		return nil, fmt.Errorf("failed to read stop response: %w", err)
 	}
 
-	fileCreated := false
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return "", errors.New("watcher closed")
-			}
-			if event.Name == outputFile {
-				if event.Op.Has(fsnotify.Create) {
-					fileCreated = true
-				}
-				// After file is created, wait for Write events and validate JSON is complete
-				if fileCreated && event.Op.Has(fsnotify.Write) {
-					if data, err := os.ReadFile(outputFile); err == nil && json.Valid(data) {
-						return outputFile, nil
-					}
-					// Keep waiting for more Write events if JSON is not yet valid
-				}
-			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return "", errors.New("watcher closed")
-			}
-			return "", fmt.Errorf("watcher error: %w", err)
-		case <-ctx.Done():
-			return "", fmt.Errorf("timeout waiting for output file: %w", ctx.Err())
-		}
-	}
+	return body, nil
 }
 
 func (wc *WeaverContext) TestLogs(logs plog.Logs) error {
@@ -236,9 +179,8 @@ func (wc *WeaverContext) TestTraces(traces ptrace.Traces) error {
 }
 
 type WeaverOptions struct {
-	Version   string
-	Registry  string
-	OutputDir string
+	Version  string
+	Registry string
 }
 
 func NewDefaultWeaverOptions() *WeaverOptions {
@@ -279,13 +221,6 @@ func (opts *WeaverOptions) testContainerOptions() []testcontainers.ContainerCust
 		testcontainers.WithWaitStrategy(wait.ForListeningPort(nat.Port(DefaultWeaverOTLPListenerPort))),
 	)
 
-	// If OutputDir is set, bind mount it into the container.
-	if opts.OutputDir != "" {
-		containerOpts = append(containerOpts, testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
-			hc.Binds = append(hc.Binds, fmt.Sprintf("%s:%s", opts.OutputDir, containerOutputDir))
-		}))
-	}
-
 	return containerOpts
 }
 
@@ -297,10 +232,7 @@ func (opts *WeaverOptions) cmdArgs() []string {
 	if opts.Registry != "" {
 		args = append(args, "--registry", opts.Registry)
 	}
-
-	if opts.OutputDir != "" {
-		args = append(args, "--output", containerOutputDir)
-	}
+	args = append(args, "--output", "http")
 	args = append(args, "--format", "json")
 	return args
 }

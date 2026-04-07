@@ -6,11 +6,8 @@
 package semconvtest_test
 
 import (
-	"context"
 	"encoding/json"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -56,11 +53,7 @@ func findViolationByID(violations []semconvtest.PolicyFinding, id string) *semco
 }
 
 func TestWeaverLogs(t *testing.T) {
-	outputDir := t.TempDir()
-
-	opts := &semconvtest.WeaverOptions{
-		OutputDir: outputDir,
-	}
+	opts := &semconvtest.WeaverOptions{}
 
 	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
@@ -76,15 +69,7 @@ func TestWeaverLogs(t *testing.T) {
 	err = weaver.TestLogs(logs)
 	require.NoError(t, err)
 
-	err = weaver.Stop()
-	require.NoError(t, err)
-
-	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
-	defer waitCancel()
-	outputFile, err := weaver.WaitForOutput(waitCtx)
-	require.NoError(t, err)
-
-	content, err := os.ReadFile(outputFile)
+	content, err := weaver.Stop()
 	require.NoError(t, err)
 
 	report, err := semconvtest.ParseLiveCheckReport(content)
@@ -104,11 +89,7 @@ func TestWeaverLogs(t *testing.T) {
 }
 
 func TestWeaverMetrics(t *testing.T) {
-	outputDir := t.TempDir()
-
-	opts := &semconvtest.WeaverOptions{
-		OutputDir: outputDir,
-	}
+	opts := &semconvtest.WeaverOptions{}
 
 	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
@@ -129,15 +110,7 @@ func TestWeaverMetrics(t *testing.T) {
 	err = weaver.TestMetrics(metrics)
 	require.NoError(t, err)
 
-	err = weaver.Stop()
-	require.NoError(t, err)
-
-	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
-	defer waitCancel()
-	outputFile, err := weaver.WaitForOutput(waitCtx)
-	require.NoError(t, err)
-
-	content, err := os.ReadFile(outputFile)
+	content, err := weaver.Stop()
 	require.NoError(t, err)
 
 	report, err := semconvtest.ParseLiveCheckReport(content)
@@ -165,11 +138,7 @@ func TestWeaverMetrics(t *testing.T) {
 }
 
 func TestWeaverTraces(t *testing.T) {
-	outputDir := t.TempDir()
-
-	opts := &semconvtest.WeaverOptions{
-		OutputDir: outputDir,
-	}
+	opts := &semconvtest.WeaverOptions{}
 
 	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
@@ -187,15 +156,7 @@ func TestWeaverTraces(t *testing.T) {
 	err = weaver.TestTraces(traces)
 	require.NoError(t, err)
 
-	err = weaver.Stop()
-	require.NoError(t, err)
-
-	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
-	defer waitCancel()
-	outputFile, err := weaver.WaitForOutput(waitCtx)
-	require.NoError(t, err)
-
-	content, err := os.ReadFile(outputFile)
+	content, err := weaver.Stop()
 	require.NoError(t, err)
 
 	report, err := semconvtest.ParseLiveCheckReport(content)
@@ -223,11 +184,7 @@ func TestWeaverTraces(t *testing.T) {
 // It creates a sample receiver that emits valid HTTP semconv metrics and asserts
 // that Weaver reports no violations.
 func TestWeaverHTTPServerMetrics(t *testing.T) {
-	outputDir := t.TempDir()
-
-	opts := &semconvtest.WeaverOptions{
-		OutputDir: outputDir,
-	}
+	opts := &semconvtest.WeaverOptions{}
 
 	weaver, err := semconvtest.NewWeaverContext(t.Context(), opts)
 	require.NoError(t, err)
@@ -249,15 +206,7 @@ func TestWeaverHTTPServerMetrics(t *testing.T) {
 	err = weaver.TestMetrics(metrics)
 	require.NoError(t, err)
 
-	err = weaver.Stop()
-	require.NoError(t, err)
-
-	waitCtx, waitCancel := context.WithTimeout(t.Context(), 30*time.Second)
-	defer waitCancel()
-	outputFile, err := weaver.WaitForOutput(waitCtx)
-	require.NoError(t, err)
-
-	content, err := os.ReadFile(outputFile)
+	content, err := weaver.Stop()
 	require.NoError(t, err)
 
 	report, err := semconvtest.ParseLiveCheckReport(content)
