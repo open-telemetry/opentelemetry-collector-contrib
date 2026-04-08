@@ -14,15 +14,6 @@ var HostmetricsProcessBootTimeCacheFeatureGate = featuregate.GlobalRegistry().Mu
 	featuregate.WithRegisterFromVersion("v0.98.0"),
 )
 
-var HostmetricsProcessOnWindowsUseNewGetProcessesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"hostmetrics.process.onWindowsUseNewGetProcesses",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("If disabled, the scraper will use the legacy implementation to retrieve process handles."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38589"),
-	featuregate.WithRegisterFromVersion("v0.123.0"),
-	featuregate.WithRegisterToVersion("v0.127.0"),
-)
-
 var ReceiverHostmetricsreceiverUseLinuxMemAvailableFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.hostmetricsreceiver.UseLinuxMemAvailable",
 	featuregate.StageBeta,
