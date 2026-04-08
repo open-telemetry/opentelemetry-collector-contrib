@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: []
+    active: [MikeGoldsmith, atoulme, martinjt]
 
 tests:
   config:
