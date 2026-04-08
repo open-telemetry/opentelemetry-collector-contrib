@@ -17,6 +17,48 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
+func TestConfigValidationAPIRateLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			desc: "negative qps is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: -1, KubeAPIBurst: 10},
+			},
+			expectedErr: "kube_api_qps must be greater than 0",
+		},
+		{
+			desc: "negative burst is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: -1},
+			},
+			expectedErr: "kube_api_burst must be greater than 0",
+		},
+		{
+			desc: "custom qps and burst are valid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 100, KubeAPIBurst: 200},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
