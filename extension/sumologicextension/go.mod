@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/shirou/gopsutil/v4 v4.26.2
+	github.com/shirou/gopsutil/v4 v4.26.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.55.1-0.20260402195938-76ede073ee8e
 	go.opentelemetry.io/collector/component/componenttest v0.149.1-0.20260402195938-76ede073ee8e
