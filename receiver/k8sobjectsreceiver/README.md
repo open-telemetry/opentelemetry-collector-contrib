@@ -223,6 +223,17 @@ Note: This receiver must be deployed as one replica, otherwise it'll be producin
 
 ```bash
 <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: otelcontribcol-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -257,7 +268,8 @@ spec:
           configMap:
             name: otelcontribcol
         - name: storage
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: otelcontribcol-storage
 EOF
 ```
 
