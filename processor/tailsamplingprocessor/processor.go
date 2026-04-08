@@ -193,16 +193,21 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 		idToSpansAndScope := groupSpansByTraceKey(rss)
 
 		batch := []traceBatch{}
-		for traceID, spans := range idToSpansAndScope {
+for traceID, spans := range idToSpansAndScope {
+// Drop trace if it exceeds span count or byte size limits to prevent OOM and backend stress.
+if (tsp.cfg.MaximumSpansPerTrace > 0 && int64(len(spans)) > tsp.cfg.MaximumSpansPerTrace) ||
 
-			// --- OKAMOTO CIRCUIT BREAKER START (Vortex Circuit Breaker) ---
+(tsp.cfg.MaximumTraceSizeBytes > 0 && calculateTraceSize(spans) > tsp.cfg.MaximumTraceSizeBytes) {
 
-			// If the limit is set and the trail is very large, we ignore it (Early Drop)
-			if tsp.cfg.MaxSpansPerTrace > 0 && int64(len(spans)) > tsp.cfg.MaxSpansPerTrace {
-				continue
-			}
-			// --- END OF CIRCUIT BREAKER ---
 
+tsp.idToEntry.Delete(traceID)
+
+continue
+
+}
+
+// ... remaining logic for copying ResourceSpans
+}					
 			newRSS, rootSpan := newResourceSpanFromSpanAndScopes(rss, spans)
 			batch = append(batch, traceBatch{
 				id:        traceID,

@@ -350,9 +350,9 @@ type Config struct {
 	// MaximumTraceSizeBytes is the largest size of a trace a decision will be made for.
 	// If the trace size exceeds this it will be dropped before the decision period to keep memory more predictable.
 	// A 0 value disables dropping large traces early.
-	// MaxSpansPerTrace is the maximum number of spans a trace can have before being dropped early to avoid OOM.
+	// MaximumSpansPerTrace is the maximum number of spans a trace can have before being dropped
+	// early to avoid OOM or downstream backend (e.g. Elasticsearch) indexing limits.
 	// A 0 value disables dropping large traces based on span count.
-	MaxSpansPerTrace      int64  `mapstructure:"max_spans_per_trace"`
 	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
 }
 
