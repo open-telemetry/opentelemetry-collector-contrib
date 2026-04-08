@@ -5,6 +5,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 
@@ -100,6 +101,12 @@ func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
 func createTransport(cfg *Config) *http.Transport {
 	// Clone the default transport to preserve reasonable defaults
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+
+	// Apply dialer timeout if configured (backwards compat with confignet.TCPAddrConfig).
+	if cfg.DialerConfig.Timeout > 0 {
+		d := &net.Dialer{Timeout: cfg.DialerConfig.Timeout}
+		transport.DialContext = d.DialContext
+	}
 
 	// Apply connection pooling settings from config
 	if cfg.MaxIdleConns > 0 {

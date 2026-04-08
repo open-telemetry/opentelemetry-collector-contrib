@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"k8s.io/client-go/kubernetes"
@@ -30,6 +31,10 @@ type Config struct {
 	// in this field (e.g., https://hostname:10250). The scheme must be https.
 	// If the scheme is omitted, https will be used.
 	Endpoint string `mapstructure:"endpoint"`
+
+	// DialerConfig contains options for connecting to an address.
+	// Retained for backwards compatibility with confignet.TCPAddrConfig.
+	DialerConfig confignet.DialerConfig `mapstructure:"dialer,omitempty"`
 
 	// HTTP connection pooling settings to reduce TLS handshake overhead.
 	// These settings can significantly improve performance when scraping metrics at high frequency.
