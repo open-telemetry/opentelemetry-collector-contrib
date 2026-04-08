@@ -677,14 +677,27 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 	}
 }
 
+var jsonBufferPool = sync.Pool{
+	New: func() any {
+		return new(bytes.Buffer)
+	},
+}
+
 // marshalEvent marshals an event to JSON
 func marshalEvent(event *translator.Event, sizeLimit uint) ([]byte, error) {
-	b, err := json.Marshal(event)
-	if err != nil {
+	buf := jsonBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer jsonBufferPool.Put(buf)
+
+	enc := json.NewEncoder(buf)
+	if err := enc.Encode(event); err != nil {
 		return nil, err
 	}
-	if uint(len(b)) > sizeLimit {
-		return nil, fmt.Errorf("event size %d exceeds limit %d", len(b), sizeLimit)
+	if uint(buf.Len()) > sizeLimit {
+		return nil, fmt.Errorf("event size %d exceeds limit %d", buf.Len(), sizeLimit)
 	}
+
+	b := make([]byte, buf.Len())
+	copy(b, buf.Bytes())
 	return b, nil
 }
