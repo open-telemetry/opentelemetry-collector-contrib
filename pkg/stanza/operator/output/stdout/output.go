@@ -40,7 +40,6 @@ func (o *Output) Process(_ context.Context, e *entry.Entry) error {
 		o.Logger().Error("Failed to process entry", zap.Error(err))
 		return err
 	}
-
 	o.mux.Unlock()
 	return nil
 }

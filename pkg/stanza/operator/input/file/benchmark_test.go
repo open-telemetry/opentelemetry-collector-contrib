@@ -32,7 +32,6 @@ func BenchmarkReadExistingLogs(b *testing.B) {
 func benchmarkReadExistingLogs(b *testing.B, lines int) {
 	b.ReportAllocs()
 	logFilePath := generateLogFile(b, lines)
-	b.ReportAllocs()
 
 	config := NewConfig()
 	config.Include = []string{
