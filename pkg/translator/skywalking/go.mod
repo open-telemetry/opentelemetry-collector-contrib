@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/featuregate v1.55.1-0.20260402195938-76ede073ee8e
 	go.opentelemetry.io/collector/pdata v1.55.1-0.20260402195938-76ede073ee8e
-	go.opentelemetry.io/otel v1.42.0
+	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/goleak v1.3.0
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
