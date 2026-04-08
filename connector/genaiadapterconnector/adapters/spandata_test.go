@@ -136,6 +136,18 @@ var langchainChainOutputArrayFormatSpan = map[string]any{
 	"output.mime_type":        "application/json",
 }
 
+var langchainChainOutputWrappedFormatSpan = map[string]any{
+	"openinference.span.kind": "CHAIN",
+	"output.value":            `{"messages": [{"type": "ai", "data": {"content": "The weather in Seattle is 72F and sunny.", "additional_kwargs": {"usage": {"prompt_tokens": 403, "completion_tokens": 15, "total_tokens": 418}, "stop_reason": "end_turn", "model_id": "anthropic.claude-3-haiku-20240307-v1:0"}, "type": "ai", "tool_calls": []}}]}`,
+	"output.mime_type":        "application/json",
+}
+
+var langchainChainOutputWrappedToolCallSpan = map[string]any{
+	"openinference.span.kind": "CHAIN",
+	"output.value":            `{"messages": [{"type": "ai", "data": {"content": "", "additional_kwargs": {"usage": {"prompt_tokens": 332, "completion_tokens": 53, "total_tokens": 385}, "stop_reason": "tool_use", "model_id": "anthropic.claude-3-haiku-20240307-v1:0"}, "type": "ai", "tool_calls": [{"name": "get_weather", "args": {"city": "Seattle"}, "id": "toolu_bdrk_01GdVCiXNUBY9jGNhN45bFrU"}]}}]}`,
+	"output.mime_type":        "application/json",
+}
+
 var langchainPromptSpan = map[string]any{
 	"openinference.span.kind":       "PROMPT",
 	"input.value":                   `{"input_language": "English", "output_language": "French", "input": "Hello"}`,

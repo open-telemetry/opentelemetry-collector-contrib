@@ -192,6 +192,41 @@ func TestLangchain_ChainToolsNode(t *testing.T) {
 	assert.False(t, hasAttr(attrs, "output.value"))
 }
 
+func TestLangchain_ChainOutputWrappedFormat(t *testing.T) {
+	span := newSpan(langchainChainOutputWrappedFormatSpan)
+	TransformOpenInferenceSpan(span)
+	attrs := span.Attributes()
+
+	assert.Equal(t, int64(403), getAttr[int64](attrs, string(semconv.GenAIUsageInputTokensKey)))
+	assert.Equal(t, int64(15), getAttr[int64](attrs, string(semconv.GenAIUsageOutputTokensKey)))
+	assert.Equal(t, "anthropic.claude-3-haiku-20240307-v1:0", getAttr[string](attrs, string(semconv.GenAIRequestModelKey)))
+	assert.Equal(t, "end_turn", getAttr[string](attrs, string(semconv.GenAIResponseFinishReasonsKey)))
+
+	var outputMsgs []map[string]any
+	err := json.Unmarshal([]byte(getAttr[string](attrs, string(semconv.GenAIOutputMessagesKey))), &outputMsgs)
+	require.NoError(t, err)
+	require.Len(t, outputMsgs, 1)
+	assert.Equal(t, "assistant", outputMsgs[0]["role"])
+	assert.Equal(t, "The weather in Seattle is 72F and sunny.", getTextContent(t, outputMsgs[0]))
+}
+
+func TestLangchain_ChainOutputWrappedToolCall(t *testing.T) {
+	span := newSpan(langchainChainOutputWrappedToolCallSpan)
+	TransformOpenInferenceSpan(span)
+	attrs := span.Attributes()
+
+	assert.Equal(t, "tool_use", getAttr[string](attrs, string(semconv.GenAIResponseFinishReasonsKey)))
+
+	var outputMsgs []map[string]any
+	err := json.Unmarshal([]byte(getAttr[string](attrs, string(semconv.GenAIOutputMessagesKey))), &outputMsgs)
+	require.NoError(t, err)
+	require.Len(t, outputMsgs, 1)
+
+	toolCalls := getToolCallParts(t, outputMsgs[0])
+	require.Len(t, toolCalls, 1)
+	assert.Equal(t, "get_weather", toolCalls[0]["name"])
+}
+
 func TestLangchain_ChainOutputArrayFormat(t *testing.T) {
 	span := newSpan(langchainChainOutputArrayFormatSpan)
 	TransformOpenInferenceSpan(span)

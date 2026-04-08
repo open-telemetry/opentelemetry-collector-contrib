@@ -346,7 +346,13 @@ func parseChainOutput(value string, attrs pcommon.Map) {
 			// always exactly a list of one, see:
 			// https://github.com/langchain-ai/langgraph/blob/8fbdb144876ec9ca75943c7addb452a2bb634304/libs/prebuilt/langgraph/prebuilt/chat_agent_executor.py#L661-L662
 			if msg, ok := messages[0].(map[string]any); ok {
-				if addlKwargs, ok := msg["additional_kwargs"].(map[string]any); ok {
+				addlKwargs, ok := msg["additional_kwargs"].(map[string]any)
+				if !ok {
+					if data, ok2 := msg["data"].(map[string]any); ok2 {
+						addlKwargs, ok = data["additional_kwargs"].(map[string]any)
+					}
+				}
+				if ok {
 					if usage, ok := addlKwargs["usage"].(map[string]any); ok {
 						if v, ok := common.ParseInt(usage["prompt_tokens"]); ok {
 							setIfAbsent(attrs, string(semconv.GenAIUsageInputTokensKey), pcommon.NewValueInt(v))
@@ -366,13 +372,18 @@ func parseChainOutput(value string, attrs pcommon.Map) {
 					}
 				}
 
+				msgBody := msg
+				if data, ok := msg["data"].(map[string]any); ok {
+					msgBody = data
+				}
+
 				if msgType, ok := msg["type"].(string); ok && msgType == "ai" {
 					otelMsg := map[string]any{"role": "assistant"}
 					var parts []map[string]any
-					if content, ok := msg["content"].(string); ok && content != "" {
+					if content, ok := msgBody["content"].(string); ok && content != "" {
 						parts = append(parts, map[string]any{"type": "text", "content": content})
 					}
-					if toolCalls, ok := msg["tool_calls"].([]any); ok {
+					if toolCalls, ok := msgBody["tool_calls"].([]any); ok {
 						for _, tc := range toolCalls {
 							if tcMap, ok := tc.(map[string]any); ok {
 								part := map[string]any{"type": "tool_call"}
@@ -404,7 +415,7 @@ func parseChainOutput(value string, attrs pcommon.Map) {
 						setIfAbsent(attrs, string(semconv.GenAIOutputMessagesKey), pcommon.NewValueStr(string(data)))
 					}
 				} else if msgType == "tool" {
-					if content, ok := msg["content"].(string); ok {
+					if content, ok := msgBody["content"].(string); ok {
 						setIfAbsent(attrs, string(semconv.GenAIToolCallResultKey), pcommon.NewValueStr(content))
 					}
 				}
@@ -421,6 +432,10 @@ func parseChainOutput(value string, attrs pcommon.Map) {
 	if err := json.Unmarshal([]byte(value), &messages); err == nil && len(messages) > 0 {
 		var converted []map[string]any
 		for _, msg := range messages {
+			msgBody := msg
+			if data, ok := msg["data"].(map[string]any); ok {
+				msgBody = data
+			}
 			otelMsg := make(map[string]any)
 			if msgType, ok := msg["type"].(string); ok {
 				if role, ok := roleMap[msgType]; ok {
@@ -430,10 +445,10 @@ func parseChainOutput(value string, attrs pcommon.Map) {
 				}
 			}
 			var parts []map[string]any
-			if content, ok := msg["content"].(string); ok && content != "" {
+			if content, ok := msgBody["content"].(string); ok && content != "" {
 				parts = append(parts, map[string]any{"type": "text", "content": content})
 			}
-			if toolCalls, ok := msg["tool_calls"].([]any); ok {
+			if toolCalls, ok := msgBody["tool_calls"].([]any); ok {
 				for _, tc := range toolCalls {
 					if tcMap, ok := tc.(map[string]any); ok {
 						part := map[string]any{"type": "tool_call"}
