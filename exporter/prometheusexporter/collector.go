@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
@@ -120,7 +121,7 @@ func getTranslationConfiguration(config *Config) (bool, bool) {
 	}
 
 	// If feature gate is enabled, ignore AddMetricSuffixes (for deprecation)
-	if disableAddMetricSuffixesFeatureGate.IsEnabled() {
+	if metadata.ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate.IsEnabled() {
 		// Default to UnderscoreEscapingWithSuffixes behavior when AddMetricSuffixes is deprecated
 		return true, false
 	}
