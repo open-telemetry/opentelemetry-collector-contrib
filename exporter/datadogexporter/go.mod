@@ -280,7 +280,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.55.1-0.20260408002112-999af6320692 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.149.1-0.20260408002112-999af6320692 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.149.1-0.20260408002112-999af6320692 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
