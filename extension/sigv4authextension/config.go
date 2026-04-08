@@ -28,6 +28,7 @@ type AssumeRole struct {
 	WebIdentityTokenFile string `mapstructure:"web_identity_token_file,omitempty"`
 	ExternalID           string `mapstructure:"external_id,omitempty"`
 	ExpiryWindow 		 time.Duration `mapstructure:"expiry_window"`
+	SessionDuration  time.Duration `mapstructure:"session_duration"`
 }
 
 // compile time check that the Config struct satisfies the component.Config interface

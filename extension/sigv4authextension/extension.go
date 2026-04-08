@@ -129,5 +129,8 @@ func assumeRoleOptions(cfg *Config) func(*stscreds.AssumeRoleOptions) {
 		if cfg.AssumeRole.ExternalID != "" {
 			o.ExternalID = &cfg.AssumeRole.ExternalID
 		}
+		if cfg.AssumeRole.SessionDuration > 0 {
+			o.Duration = cfg.AssumeRole.SessionDuration
+		}
 	}
 }
