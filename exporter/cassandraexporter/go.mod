@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassan
 go 1.25.0
 
 require (
-	github.com/apache/cassandra-gocql-driver/v2 v2.0.0
+	github.com/apache/cassandra-gocql-driver/v2 v2.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.149.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.55.1-0.20260402195938-76ede073ee8e
