@@ -76,6 +76,7 @@ connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
 connector/metricsaslogsconnector
+connector/ocsfconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector

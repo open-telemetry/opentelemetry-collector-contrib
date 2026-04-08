@@ -34,6 +34,7 @@ body:
       - connector/failover
       - connector/grafanacloud
       - connector/metricsaslogs
+      - connector/ocsf
       - connector/otlpjson
       - connector/roundrobin
       - connector/routing

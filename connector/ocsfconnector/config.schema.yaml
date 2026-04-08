@@ -1,0 +1,30 @@
+$defs:
+  mapping:
+    type: object
+    properties:
+      activity_id:
+        type: integer
+      activity_name:
+        type: string
+      category_name:
+        type: string
+      category_uid:
+        type: integer
+      class_name:
+        type: string
+      class_uid:
+        type: integer
+      detection:
+        type: string
+      message:
+        type: string
+      severity:
+        type: string
+      severity_id:
+        type: integer
+type: object
+properties:
+  mappings:
+    type: array
+    items:
+      $ref: mapping

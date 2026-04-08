@@ -1,0 +1,13 @@
+type: ocsf
+display_name: OCSF Connector
+
+description: |
+  The OCSF connector interprets logs as OCSF events.
+
+status:
+  class: connector
+  stability:
+    development: [logs_to_logs]
+  distributions: []
+  codeowners:
+    active: [atoulme]
