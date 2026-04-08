@@ -43,7 +43,7 @@ Each statement can access and transform telemetry using functions, and allows th
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements: []
+  <trace|metric|log|profile>_statements: []
 ```
 
 The Transform Processor's primary configuration section is broken down by signal (traces, metrics, logs, and profiles)
@@ -88,7 +88,7 @@ Format:
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements:
+  <trace|metric|log|profile>_statements:
     - string
     - string
     - string
