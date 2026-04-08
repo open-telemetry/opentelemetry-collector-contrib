@@ -95,6 +95,9 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			// Restart container to simulate network issue recovery
 			err = container.Start(t.Context())
 			require.NoError(t, err)
+			mappedPort, err = container.MappedPort(t.Context(), "5672")
+			require.NoError(t, err)
+			endpoint = fmt.Sprintf("amqp://%s:%s", host, mappedPort.Port())
 			connection, channel, consumer = setupQueueConsumer(t, logsRoutingKey, endpoint)
 			defer func() {
 				channel.Close()
