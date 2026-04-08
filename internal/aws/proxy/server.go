@@ -76,7 +76,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	region := awsCfg.Region
 	serviceName := cfg.ServiceName
 
-	// Reverse proxy handler using Rewrite (Director is deprecated and insecure)
+	// Reverse proxy handler
 	handler := &httputil.ReverseProxy{
 		Transport: transport,
 
@@ -91,7 +91,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			r.Out.Host = awsURL.Host
 
 			// Consume body and calculate payload hash for signing
-			body, payloadHash, err := consumeBody(r.Out.Body)
+			body, payloadHash, err := consumeBody(r.In.Body)
 			if err != nil {
 				logger.Error("Unable to consume request body", zap.Error(err))
 				return

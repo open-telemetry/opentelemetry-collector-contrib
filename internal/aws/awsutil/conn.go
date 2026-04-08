@@ -10,7 +10,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -55,34 +54,6 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 		Timeout:   time.Second * time.Duration(requestTimeout),
 	}
 	return http, err
-}
-
-// getProxyAddress returns the proxy address from the provided value or HTTPS_PROXY environment variable.
-func getProxyAddress(proxyAddress string) string {
-	var finalProxyAddress string
-	switch {
-	case proxyAddress != "":
-		finalProxyAddress = proxyAddress
-
-	case proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "":
-		finalProxyAddress = os.Getenv("HTTPS_PROXY")
-	default:
-		finalProxyAddress = ""
-	}
-	return finalProxyAddress
-}
-
-// getProxyURL parses and returns the proxy URL from the provided address.
-func getProxyURL(finalProxyAddress string) (*url.URL, error) {
-	var proxyURL *url.URL
-	var err error
-	if finalProxyAddress != "" {
-		proxyURL, err = url.Parse(finalProxyAddress)
-	} else {
-		proxyURL = nil
-		err = nil
-	}
-	return proxyURL, err
 }
 
 // GetProxyFunc returns a proxy function for use in http.Transport.

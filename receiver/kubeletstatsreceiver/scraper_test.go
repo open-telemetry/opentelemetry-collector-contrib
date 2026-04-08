@@ -743,6 +743,14 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			mbc := metadata.DefaultMetricsBuilderConfig()
+			mbc.ResourceAttributes.AwsVolumeID.Enabled = true
+			mbc.ResourceAttributes.FsType.Enabled = true
+			mbc.ResourceAttributes.GcePdName.Enabled = true
+			mbc.ResourceAttributes.GlusterfsEndpointsName.Enabled = true
+			mbc.ResourceAttributes.GlusterfsPath.Enabled = true
+			mbc.ResourceAttributes.Partition.Enabled = true
+
 			r, err := newKubeletScraper(
 				&fakeRestClient{},
 				receivertest.NewNopSettings(metadata.Type),
@@ -753,7 +761,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					},
 					k8sAPIClient: test.k8sAPIClient,
 				},
-				metadata.DefaultMetricsBuilderConfig(),
+				mbc,
 				"worker-42",
 			)
 			require.NoError(t, err)
