@@ -4,7 +4,7 @@ component: extension/datadog
 
 note: Add `gateway_service` and `gateway_destination` config fields to support gateway topology view in Fleet Automation.
 
-issues: [OTAGENT-956]
+issues: [47471]
 
 subtext: |
   Gateway collectors set `gateway_service` to the k8s Service fronting them.
