@@ -374,7 +374,8 @@ func (o *opampAgent) createAgentDescription() error {
 	if err != nil {
 		return err
 	}
-	description := getOSDescription(o.logger)
+
+	description, osVersion := o.createOSAttributes()
 
 	ident := []*protobufs.KeyValue{
 		stringKeyValue(string(conventions.ServiceInstanceIDKey), o.instanceID.String()),
@@ -389,6 +390,10 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[string(conventions.HostArchKey)] = runtime.GOARCH
 	nonIdentifyingAttributeMap[string(conventions.HostNameKey)] = hostname
 	nonIdentifyingAttributeMap[string(conventions.OSDescriptionKey)] = description
+
+	if osVersion != "" {
+		nonIdentifyingAttributeMap[string(conventions.OSVersionKey)] = osVersion
+	}
 
 	maps.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
@@ -498,22 +503,27 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	}
 }
 
-func getOSDescription(logger *zap.Logger) string {
+// createOSAttributes calls host.Info() once and returns the OS description and
+// version strings. On failure, description falls back to runtime.GOOS and
+// version is empty.
+func (o *opampAgent) createOSAttributes() (description, version string) {
 	info, err := host.Info()
 	if err != nil {
-		logger.Error("failed getting host info", zap.Error(err))
-		return runtime.GOOS
+		o.logger.Error("failed getting host info", zap.Error(err))
+		return runtime.GOOS, ""
 	}
+	version = info.PlatformVersion
 	switch runtime.GOOS {
 	case "darwin":
-		return "macOS " + info.PlatformVersion
+		description = "macOS " + info.PlatformVersion
 	case "linux":
-		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+		description = cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
 	case "windows":
-		return info.Platform + " " + info.PlatformVersion
+		description = info.Platform + " " + info.PlatformVersion
 	default:
-		return runtime.GOOS
+		description = runtime.GOOS
 	}
+	return description, version
 }
 
 func (o *opampAgent) initHealthReporting() {
