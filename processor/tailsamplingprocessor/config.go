@@ -352,7 +352,7 @@ type Config struct {
 	// A 0 value disables dropping large traces early.
 	// MaxSpansPerTrace is the maximum number of spans a trace can have before being dropped early to avoid OOM.
 	// A 0 value disables dropping large traces based on span count.
-	MaxSpansPerTrace int64 `mapstructure:"max_spans_per_trace"`
+	MaxSpansPerTrace      int64  `mapstructure:"max_spans_per_trace"`
 	MaximumTraceSizeBytes uint64 `mapstructure:"maximum_trace_size_bytes"`
 }
 

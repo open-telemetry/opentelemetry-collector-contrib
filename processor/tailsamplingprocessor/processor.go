@@ -194,10 +194,10 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 
 		batch := []traceBatch{}
 		for traceID, spans := range idToSpansAndScope {
-			
+
 			// --- OKAMOTO CIRCUIT BREAKER START (Vortex Circuit Breaker) ---
 
-            // If the limit is set and the trail is very large, we ignore it (Early Drop)
+			// If the limit is set and the trail is very large, we ignore it (Early Drop)
 			if tsp.cfg.MaxSpansPerTrace > 0 && int64(len(spans)) > tsp.cfg.MaxSpansPerTrace {
 				continue
 			}
@@ -218,7 +218,6 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 	}
 	return nil
 }
-
 
 func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
 	policies, err := tsp.loadSamplingPolicies(tsp.host, cfgs)
