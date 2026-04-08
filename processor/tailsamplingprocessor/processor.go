@@ -189,39 +189,36 @@ func (tsp *tailSamplingSpanProcessor) Start(_ context.Context, host component.Ho
 // ConsumeTraces is required by the processor.Traces interface.
 func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	for _, rss := range td.ResourceSpans().All() {
-		//First, we group the spans by trace.
+		// First, we group the spans by trace.
 		idToSpansAndScope := groupSpansByTraceKey(rss)
 
 		batch := []traceBatch{}
-for traceID, spans := range idToSpansAndScope {
-// Drop trace if it exceeds span count or byte size limits to prevent OOM and backend stress.
-if (tsp.cfg.MaximumSpansPerTrace > 0 && int64(len(spans)) > tsp.cfg.MaximumSpansPerTrace) ||
+		for traceID, spans := range idToSpansAndScope {
+			// Drop trace if it exceeds span count or byte size limits to prevent OOM and backend stress.
+			if (tsp.cfg.MaximumSpansPerTrace > 0 && int64(len(spans)) > tsp.cfg.MaximumSpansPerTrace) ||
 
-(tsp.cfg.MaximumTraceSizeBytes > 0 && calculateTraceSize(spans) > tsp.cfg.MaximumTraceSizeBytes) {
+				(tsp.cfg.MaximumTraceSizeBytes > 0 && calculateTraceSize(spans) > tsp.cfg.MaximumTraceSizeBytes) {
 
+				tsp.idToEntry.Delete(traceID)
 
-tsp.idToEntry.Delete(traceID)
+				continue
 
-continue
+			}
 
-}
-
-// ... remaining logic for copying ResourceSpans
-}					
-			newRSS, rootSpan := newResourceSpanFromSpanAndScopes(rss, spans)
-			batch = append(batch, traceBatch{
-				id:        traceID,
-				rootSpan:  rootSpan,
-				rss:       newRSS,
-				spanCount: int64(len(spans)),
-			})
+			// ... remaining logic for copying ResourceSpans
 		}
-
-		if len(batch) > 0 {
-			tsp.workChan <- batch
-		}
+		newRSS, rootSpan := newResourceSpanFromSpanAndScopes(rss, spans)
+		batch = append(batch, traceBatch{
+			id:        traceID,
+			rootSpan:  rootSpan,
+			rss:       newRSS,
+			spanCount: int64(len(spans)),
+		})
 	}
-	
+
+	if len(batch) > 0 {
+		tsp.workChan <- batch
+	}
 }
 
 func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
