@@ -120,17 +120,17 @@ For more information about the triager role, see the [community repository](http
 - [Alolita Sharma](https://github.com/alolita), Triager
 - [Anthony Mirabella](https://github.com/Aneurysm9), Approver
 - [Bryan Aguilar](https://github.com/bryan-aguilar), Approver
-- [Daniel Jaglowski](https://github.com/djaglowski), Maintainers
+- [Daniel Jaglowski](https://github.com/djaglowski), Maintainer
 - [Florian Bacher](https://github.com/bacherfl), Triager
 - [Gabriel Aszalos](https://github.com/gbbr), Triager
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Triager
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Maintainers
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Maintainer
 - [Matt Wear](https://github.com/mwear), Approver
 - [Przemek Maciolek](https://github.com/pmm-sumo), Approver
 - [Punya Biswal](https://github.com/punya), Triager
 - [Ruslan Kovalov](https://github.com/kovrus), Approver
 - [Steve Flanders](https://github.com/flands), Triager
-- [Tigran Najaryan](https://github.com/tigrannajaryan), Maintainers
+- [Tigran Najaryan](https://github.com/tigrannajaryan), Maintainer
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 
