@@ -191,7 +191,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 	for _, rss := range td.ResourceSpans().All() {
 		// First, we group the spans by trace.
 		idToSpansAndScope := groupSpansByTraceKey(rss)
-
+// Then, create a new ptrace.ResourceSpans for each trace copying all
 		batch := []traceBatch{}
 		for traceID, spans := range idToSpansAndScope {
 			// Drop trace if it exceeds span count or byte size limits to prevent OOM and backend stress.
