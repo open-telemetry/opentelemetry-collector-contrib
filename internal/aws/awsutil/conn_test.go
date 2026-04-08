@@ -215,7 +215,7 @@ func TestGetProxyAddress(t *testing.T) {
 				t.Setenv("HTTPS_PROXY", "")
 			}
 
-			result := GetProxyAddress(tc.proxyAddress)
+			result := getProxyAddress(tc.proxyAddress)
 			assert.Equal(t, tc.expected, result)
 		})
 	}
@@ -281,7 +281,7 @@ func TestGetProxyURL(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			url, err := GetProxyURL(tc.proxyAddr)
+			url, err := getProxyURL(tc.proxyAddr)
 
 			if tc.expectError {
 				assert.Error(t, err)

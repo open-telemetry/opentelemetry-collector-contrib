@@ -445,14 +445,14 @@ func TestSignedRequestHasAuthorizationHeader(t *testing.T) {
 	httpSrv := srv.(*http.Server)
 	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
 
-	// Save original director and wrap it
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
+	// Save original rewrite and wrap it
+	originalRewrite := proxy.Rewrite
+	proxy.Rewrite = func(r *httputil.ProxyRequest) {
+		originalRewrite(r)
 		// Redirect to mock backend
-		req.URL.Scheme = "http"
-		req.URL.Host = backend.Listener.Addr().String()
-		req.Host = backend.Listener.Addr().String()
+		r.Out.URL.Scheme = "http"
+		r.Out.URL.Host = backend.Listener.Addr().String()
+		r.Out.Host = backend.Listener.Addr().String()
 	}
 
 	handler := httpSrv.Handler.ServeHTTP
@@ -507,12 +507,12 @@ func TestSignedRequestHasRequiredHeaders(t *testing.T) {
 	httpSrv := srv.(*http.Server)
 	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
 
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-		req.URL.Scheme = "http"
-		req.URL.Host = backend.Listener.Addr().String()
-		req.Host = backend.Listener.Addr().String()
+	originalRewrite := proxy.Rewrite
+	proxy.Rewrite = func(r *httputil.ProxyRequest) {
+		originalRewrite(r)
+		r.Out.URL.Scheme = "http"
+		r.Out.URL.Host = backend.Listener.Addr().String()
+		r.Out.Host = backend.Listener.Addr().String()
 	}
 
 	handler := httpSrv.Handler.ServeHTTP
@@ -562,12 +562,12 @@ func TestConnectionHeaderRemovedBeforeSigning(t *testing.T) {
 	httpSrv := srv.(*http.Server)
 	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
 
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-		req.URL.Scheme = "http"
-		req.URL.Host = backend.Listener.Addr().String()
-		req.Host = backend.Listener.Addr().String()
+	originalRewrite := proxy.Rewrite
+	proxy.Rewrite = func(r *httputil.ProxyRequest) {
+		originalRewrite(r)
+		r.Out.URL.Scheme = "http"
+		r.Out.URL.Host = backend.Listener.Addr().String()
+		r.Out.Host = backend.Listener.Addr().String()
 	}
 
 	handler := httpSrv.Handler.ServeHTTP

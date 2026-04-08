@@ -57,8 +57,8 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 	return http, err
 }
 
-// GetProxyAddress returns the proxy address from the provided value or HTTPS_PROXY environment variable.
-func GetProxyAddress(proxyAddress string) string {
+// getProxyAddress returns the proxy address from the provided value or HTTPS_PROXY environment variable.
+func getProxyAddress(proxyAddress string) string {
 	var finalProxyAddress string
 	switch {
 	case proxyAddress != "":
@@ -72,8 +72,8 @@ func GetProxyAddress(proxyAddress string) string {
 	return finalProxyAddress
 }
 
-// GetProxyURL parses and returns the proxy URL from the provided address.
-func GetProxyURL(finalProxyAddress string) (*url.URL, error) {
+// getProxyURL parses and returns the proxy URL from the provided address.
+func getProxyURL(finalProxyAddress string) (*url.URL, error) {
 	var proxyURL *url.URL
 	var err error
 	if finalProxyAddress != "" {

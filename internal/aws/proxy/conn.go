@@ -128,7 +128,7 @@ func getRegionFromMetadata(ctx context.Context, logger *zap.Logger) (string, err
 	logger.Debug("Unable to fetch region from EC2 metadata", zap.Error(ec2Err))
 
 	// Return combined error
-	return "", fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: ECS: %w; EC2: %w", err, ec2Err)
+	return "", fmt.Errorf("could not fetch region from ecs metadata or ec2 metadata: ECS: %w; EC2: %w", err, ec2Err)
 }
 
 // getRegionFromEC2Metadata fetches region from EC2 Instance Metadata Service.

@@ -23,10 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
-const (
-	connHeader = "Connection"
-)
-
 // Server represents HTTP server.
 type Server interface {
 	ListenAndServe() error
@@ -80,48 +76,41 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	region := awsCfg.Region
 	serviceName := cfg.ServiceName
 
-	// Reverse proxy handler
+	// Reverse proxy handler using Rewrite (Director is deprecated and insecure)
 	handler := &httputil.ReverseProxy{
 		Transport: transport,
 
-		// Handler for modifying and forwarding requests
-		Director: func(req *http.Request) {
-			if req != nil && req.URL != nil {
-				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(req.URL)))
+		Rewrite: func(r *httputil.ProxyRequest) {
+			if r.In.URL != nil {
+				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(r.In.URL)))
 			}
 
-			// Remove connection header before signing request, otherwise the
-			// reverse-proxy will remove the header before forwarding to X-Ray
-			// resulting in a signed header being missing from the request.
-			req.Header.Del(connHeader)
-
-			// Set req url to xray endpoint
-			req.URL.Scheme = awsURL.Scheme
-			req.URL.Host = awsURL.Host
-			req.Host = awsURL.Host
+			// Set outbound request URL to the AWS endpoint
+			r.Out.URL.Scheme = awsURL.Scheme
+			r.Out.URL.Host = awsURL.Host
+			r.Out.Host = awsURL.Host
 
 			// Consume body and calculate payload hash for signing
-			body, payloadHash, err := consumeBody(req.Body)
+			body, payloadHash, err := consumeBody(r.Out.Body)
 			if err != nil {
 				logger.Error("Unable to consume request body", zap.Error(err))
-				// Forward unsigned request
 				return
 			}
 
 			// Restore body for the request
 			if body != nil {
-				req.Body = io.NopCloser(bytes.NewReader(body))
+				r.Out.Body = io.NopCloser(bytes.NewReader(body))
 			}
 
 			// Retrieve credentials for signing
-			creds, err := credentials.Retrieve(req.Context())
+			creds, err := credentials.Retrieve(r.Out.Context())
 			if err != nil {
 				logger.Error("Unable to retrieve credentials", zap.Error(err))
 				return
 			}
 
 			// Sign request using v4 signer
-			err = signer.SignHTTP(req.Context(), creds, req, payloadHash, serviceName, region, time.Now())
+			err = signer.SignHTTP(r.Out.Context(), creds, r.Out, payloadHash, serviceName, region, time.Now())
 			if err != nil {
 				logger.Error("Unable to sign request", zap.Error(err))
 			}
