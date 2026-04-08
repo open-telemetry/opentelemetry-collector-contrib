@@ -30,7 +30,7 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 	}
 
 	host := unknownHostName
-	fields := map[string]any{}
+	fields := make(map[string]any, lr.Attributes().Len()+res.Attributes().Len()+2)
 	if spanID := lr.SpanID(); !spanID.IsEmpty() {
 		fields[spanIDFieldKey] = hex.EncodeToString(spanID[:])
 	}
