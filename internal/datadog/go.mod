@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.14
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.21
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.296.2
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.297.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.149.0
@@ -30,7 +30,7 @@ require (
 	go.opentelemetry.io/collector/exporter v1.55.1-0.20260402195938-76ede073ee8e
 	go.opentelemetry.io/collector/exporter/exportertest v0.149.1-0.20260402195938-76ede073ee8e
 	go.opentelemetry.io/collector/pdata v1.55.1-0.20260402195938-76ede073ee8e
-	go.opentelemetry.io/otel v1.42.0
+	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	k8s.io/apimachinery v0.35.3
@@ -173,10 +173,10 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.149.1-0.20260402195938-76ede073ee8e // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.149.1-0.20260402195938-76ede073ee8e // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
-	go.opentelemetry.io/otel/metric v1.42.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
-	go.opentelemetry.io/otel/trace v1.42.0 // indirect
+	go.opentelemetry.io/otel/metric v1.43.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
+	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
