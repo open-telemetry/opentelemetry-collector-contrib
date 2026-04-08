@@ -221,7 +221,7 @@ continue
 			tsp.workChan <- batch
 		}
 	}
-	return nil
+	
 }
 
 func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
