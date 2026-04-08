@@ -98,6 +98,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("host.name", hostname),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(attrOtelColDeploymentMode, deploymentModeAgent),
 				},
 			},
 		},
@@ -122,6 +123,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("k8s.pod.name", "my-very-cool-pod"),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(attrOtelColDeploymentMode, deploymentModeAgent),
 				},
 			},
 		},
@@ -143,6 +145,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("host.name", "override-host"),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(attrOtelColDeploymentMode, deploymentModeAgent),
 				},
 			},
 		},
@@ -163,6 +166,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("host.name", hostname),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue(attrOtelColDeploymentMode, deploymentModeAgent),
 				},
 			},
 		},
@@ -189,6 +193,38 @@ func TestCreateAgentDescription(t *testing.T) {
 			assert.NoError(t, o.Shutdown(t.Context()))
 		})
 	}
+}
+
+func TestDetectDeploymentMode(t *testing.T) {
+	t.Run("defaults to agent", func(t *testing.T) {
+		os.Unsetenv(envOtelCollectorMode)
+		assert.Equal(t, deploymentModeAgent, detectDeploymentMode(""))
+	})
+
+	t.Run("reads OTEL_COLLECTOR_MODE env", func(t *testing.T) {
+		t.Setenv(envOtelCollectorMode, "gateway")
+		assert.Equal(t, deploymentModeGateway, detectDeploymentMode(""))
+	})
+
+	t.Run("normalizes unknown value to agent", func(t *testing.T) {
+		t.Setenv(envOtelCollectorMode, "cluster")
+		assert.Equal(t, deploymentModeAgent, detectDeploymentMode(""))
+	})
+
+	t.Run("config fallback when env not set", func(t *testing.T) {
+		os.Unsetenv(envOtelCollectorMode)
+		assert.Equal(t, deploymentModeGateway, detectDeploymentMode("gateway"))
+	})
+
+	t.Run("env takes precedence over config", func(t *testing.T) {
+		t.Setenv(envOtelCollectorMode, "agent")
+		assert.Equal(t, deploymentModeAgent, detectDeploymentMode("gateway"))
+	})
+
+	t.Run("case insensitive normalization", func(t *testing.T) {
+		t.Setenv(envOtelCollectorMode, "GATEWAY")
+		assert.Equal(t, deploymentModeGateway, detectDeploymentMode(""))
+	})
 }
 
 func TestUpdateAgentIdentity(t *testing.T) {

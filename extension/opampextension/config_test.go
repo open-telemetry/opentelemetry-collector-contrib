@@ -371,6 +371,32 @@ func TestConfig_Validate(t *testing.T) {
 	}
 }
 
+func TestConfig_Validate_DeploymentMode(t *testing.T) {
+	validServer := &OpAMPServer{
+		WS: &commonFields{Endpoint: "wss://127.0.0.1:4320/v1/opamp"},
+	}
+	for _, mode := range []string{"agent", "gateway", ""} {
+		t.Run("valid: "+mode, func(t *testing.T) {
+			cfg := &Config{
+				Server:           validServer,
+				AgentDescription: AgentDescription{DeploymentMode: mode},
+			}
+			assert.NoError(t, cfg.Validate())
+		})
+	}
+	for _, mode := range []string{"cluster", "GATEWAY", "Agent", "unknown"} {
+		t.Run("invalid: "+mode, func(t *testing.T) {
+			cfg := &Config{
+				Server:           validServer,
+				AgentDescription: AgentDescription{DeploymentMode: mode},
+			}
+			err := cfg.Validate()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "deployment_mode")
+		})
+	}
+}
+
 func TestCapabilities_toAgentCapabilities(t *testing.T) {
 	type fields struct {
 		ReportsEffectiveConfig     bool

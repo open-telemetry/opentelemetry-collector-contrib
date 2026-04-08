@@ -50,12 +50,23 @@ type Config struct {
 }
 
 type AgentDescription struct {
+	// IdentifyingAttributes are a map of key-value pairs merged into the identifying
+	// attributes reported to the OpAMP server. Values specified here override the
+	// automatically determined defaults (service.name, service.version, service.instance.id).
+	// Any keys provided here are also excluded from non-identifying attributes when
+	// include_resource_attributes is true.
+	IdentifyingAttributes map[string]string `mapstructure:"identifying_attributes"`
 	// NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide
 	// extra information about the agent to the OpAMP server.
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
 	// IncludeResourceAttributes determines whether the agent should copy its resource attributes
 	// to the non identifying attributes. (default: false)
 	IncludeResourceAttributes bool `mapstructure:"include_resource_attributes"`
+	// DeploymentMode is the collector's deployment mode reported to the OpAMP server as
+	// the non-identifying attribute "otelcol.deployment.mode". Accepted values are
+	// "agent" (default) and "gateway". The OTEL_COLLECTOR_MODE environment variable
+	// takes precedence over this value when set.
+	DeploymentMode string `mapstructure:"deployment_mode"`
 }
 
 type Capabilities struct {
@@ -231,6 +242,12 @@ func (cfg *Config) Validate() error {
 		if err != nil {
 			return errors.New("opamp instance_uid is invalid")
 		}
+	}
+
+	if mode := cfg.AgentDescription.DeploymentMode; mode != "" &&
+		mode != deploymentModeAgent && mode != deploymentModeGateway {
+		return fmt.Errorf("agent_description.deployment_mode must be %q or %q, got %q",
+			deploymentModeAgent, deploymentModeGateway, mode)
 	}
 
 	return nil

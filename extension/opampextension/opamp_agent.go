@@ -95,13 +95,13 @@ var (
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
 
-	// identifyingAttributes is the list of semantic convention keys that are used
-	// for the agent description's identifying attributes.
-	identifyingAttributes = map[string]struct{}{
-		string(conventions.ServiceNameKey):       {},
-		string(conventions.ServiceVersionKey):    {},
-		string(conventions.ServiceInstanceIDKey): {},
-	}
+)
+
+const (
+	attrOtelColDeploymentMode = "otelcol.deployment.mode"
+	deploymentModeAgent       = "agent"
+	deploymentModeGateway     = "gateway"
+	envOtelCollectorMode      = "OTEL_COLLECTOR_MODE"
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
@@ -376,10 +376,28 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 	description := getOSDescription(o.logger)
 
-	ident := []*protobufs.KeyValue{
-		stringKeyValue(string(conventions.ServiceInstanceIDKey), o.instanceID.String()),
-		stringKeyValue(string(conventions.ServiceNameKey), o.agentType),
-		stringKeyValue(string(conventions.ServiceVersionKey), o.agentVersion),
+	// Build identifying attributes as a map first so user overrides can win.
+	identMap := map[string]string{
+		string(conventions.ServiceInstanceIDKey): o.instanceID.String(),
+		string(conventions.ServiceNameKey):       o.agentType,
+		string(conventions.ServiceVersionKey):    o.agentVersion,
+	}
+	maps.Copy(identMap, o.cfg.AgentDescription.IdentifyingAttributes)
+
+	// allIdentifyingKeys is derived directly from identMap, which already contains
+	// the merged set of default and user-supplied identifying keys. Used to exclude
+	// these keys from non-identifying attrs when include_resource_attributes is true.
+	allIdentifyingKeys := make(map[string]struct{}, len(identMap))
+	for k := range identMap {
+		allIdentifyingKeys[k] = struct{}{}
+	}
+
+	// Sort identifying attributes for stable ordering.
+	identKeys := expmaps.Keys(identMap)
+	sort.Strings(identKeys)
+	ident := make([]*protobufs.KeyValue, 0, len(identMap))
+	for _, k := range identKeys {
+		ident = append(ident, stringKeyValue(k, identMap[k]))
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
@@ -389,12 +407,13 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[string(conventions.HostArchKey)] = runtime.GOARCH
 	nonIdentifyingAttributeMap[string(conventions.HostNameKey)] = hostname
 	nonIdentifyingAttributeMap[string(conventions.OSDescriptionKey)] = description
+	nonIdentifyingAttributeMap[attrOtelColDeploymentMode] = detectDeploymentMode(o.cfg.AgentDescription.DeploymentMode)
 
 	maps.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
 		for k, v := range o.resourceAttrs {
 			// skip the attributes that are being used in the identifying attributes.
-			if _, ok := identifyingAttributes[k]; ok {
+			if _, ok := allIdentifyingKeys[k]; ok {
 				continue
 			}
 			nonIdentifyingAttributeMap[k] = v
@@ -513,6 +532,29 @@ func getOSDescription(logger *zap.Logger) string {
 		return info.Platform + " " + info.PlatformVersion
 	default:
 		return runtime.GOOS
+	}
+}
+
+// detectDeploymentMode returns the collector's deployment mode for the OpAMP agent
+// description. Detection priority: OTEL_COLLECTOR_MODE env var → configMode → "agent".
+func detectDeploymentMode(configMode string) string {
+	if mode, ok := os.LookupEnv(envOtelCollectorMode); ok && mode != "" {
+		return normalizeDeploymentMode(mode)
+	}
+	if configMode != "" {
+		return normalizeDeploymentMode(configMode)
+	}
+	return deploymentModeAgent
+}
+
+// normalizeDeploymentMode normalizes an arbitrary deployment mode string to a
+// known value. Unknown values are mapped to "agent".
+func normalizeDeploymentMode(mode string) string {
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case deploymentModeGateway:
+		return deploymentModeGateway
+	default:
+		return deploymentModeAgent
 	}
 }
 
