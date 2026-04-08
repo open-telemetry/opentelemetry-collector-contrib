@@ -189,7 +189,7 @@ components:
         - mongodb
         - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
@@ -225,10 +225,10 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
         - tlscheck
-        - udplog
+        - udp_log
         - vcenter
         - wavefront
         - webhookevent

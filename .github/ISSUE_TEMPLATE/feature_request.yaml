@@ -61,6 +61,7 @@ body:
       - exporter/googlecloudpubsub
       - exporter/googlecloudstorage
       - exporter/googlemanagedprometheus
+      - exporter/googlesecops
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/kafka

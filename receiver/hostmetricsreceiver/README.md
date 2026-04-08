@@ -43,6 +43,7 @@ hostmetrics:
     <scraper2>:
     ...
 ```
+**Note:** While scrapers may support multiple operating systems, individual metrics within a scraper may have different OS support. Refer to each scraper's documentation for metric-level OS compatibility.
 
 The available scrapers are:
 
