@@ -27,14 +27,12 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		LogClusterDepth:     4,
-		SimThreshold:        0.4,
-		MaxChildren:         100,
-		MaxClusters:         0,
-		TemplateAttribute:   "log.record.template",
-		WarmupMode:          warmupModePassthrough,
-		WarmupMinClusters:   10,
-		WarmupBufferMaxLogs: 10000,
+		TreeDepth:         4,
+		MergeThreshold:    0.4,
+		MaxNodeChildren:   100,
+		MaxClusters:       0,
+		TemplateAttribute: "log.record.template",
+		WarmupMinClusters: 0,
 	}
 }
 

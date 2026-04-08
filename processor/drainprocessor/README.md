@@ -17,7 +17,7 @@ This processor **annotates**; it does not filter. Use the [filter processor](../
 
 Drain builds a parse tree from the token structure of log lines. Lines with similar structure are grouped into a **cluster**, and a **template** is derived by replacing variable tokens with `<*>` wildcards. As more logs arrive the templates become more accurate and stable.
 
-Templates are derived from the token structure of each log line and become more stable as more logs are observed. Use the template **string** for filtering rules; it converges to the same value across instances given the same configuration and log patterns (see [Deployment considerations](#deployment-considerations)).
+Use the template **string** for filtering rules; it converges to the same value across instances given the same configuration and log patterns (see [Deployment considerations](#deployment-considerations)).
 
 ## Configuration
 
@@ -25,9 +25,9 @@ Templates are derived from the token structure of each log line and become more 
 processors:
   drain:
     # Drain parse tree parameters
-    log_cluster_depth: 4       # default: 4 (minimum: 3)
-    sim_threshold: 0.4         # default: 0.4, range [0.0, 1.0]
-    max_children: 100          # default: 100
+    tree_depth: 4              # default: 4 (minimum: 3; `depth` in the Drain paper)
+    merge_threshold: 0.4       # default: 0.4, range [0.0, 1.0] (`st` in the Drain paper)
+    max_node_children: 100     # default: 100 (`maxChild` in the Drain paper)
     max_clusters: 0            # default: 0 (unlimited, LRU eviction when > 0)
     extra_delimiters: []       # default: [] (extra token delimiters beyond whitespace)
 
@@ -41,28 +41,24 @@ processors:
     seed_templates: []
     seed_logs: []
 
-    # Warmup mode
-    warmup_mode: passthrough   # default: "passthrough" | "buffer"
-    warmup_min_clusters: 10    # default: 10 (only used when warmup_mode: buffer)
-    warmup_buffer_max_logs: 10000  # default: 10000 (only used when warmup_mode: buffer)
+    # Warmup suppression (optional)
+    warmup_min_clusters: 0     # default: 0 (disabled; annotates from the first record)
 ```
 
 ### Parameters
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `log_cluster_depth` | int | `4` | Max depth of the Drain parse tree. Higher values produce more specific templates. Minimum: 3. |
-| `sim_threshold` | float | `0.4` | Similarity threshold in [0.0, 1.0]. Lines below this threshold create a new cluster rather than merging with an existing one. |
-| `max_children` | int | `100` | Maximum children per parse tree node. |
+| `tree_depth` | int | `4` | Max depth of the Drain parse tree (`depth` in the Drain paper). Higher values produce more specific templates. Minimum: 3. |
+| `merge_threshold` | float | `0.4` | Minimum fraction of tokens that must match an existing cluster template for a log line to be merged into it rather than forming a new cluster (`st` in the Drain paper). Range: [0.0, 1.0]. |
+| `max_node_children` | int | `100` | Maximum children per internal parse tree node (`maxChild` in the Drain paper). Bounds memory on high-cardinality token positions. |
 | `max_clusters` | int | `0` | Maximum clusters tracked. When exceeded, the least-recently-used cluster is evicted. `0` means unlimited. |
 | `extra_delimiters` | []string | `[]` | Additional token delimiters beyond whitespace (e.g. `[",", ":"]`). |
 | `body_field` | string | `""` | If set, and the log body is a structured map, the value of this top-level key is used as the text to template instead of the full body. |
 | `template_attribute` | string | `"log.record.template"` | Attribute key written with the derived template string. |
 | `seed_templates` | []string | `[]` | Template strings to pre-load at startup (see [Seeding](#seeding)). |
 | `seed_logs` | []string | `[]` | Raw example log lines to train on at startup (see [Seeding](#seeding)). |
-| `warmup_mode` | string | `"passthrough"` | Controls behavior during the warmup period. `"passthrough"` (default) or `"buffer"` (see [Warmup mode](#warmup-mode)). |
-| `warmup_min_clusters` | int | `10` | Minimum distinct clusters before warmup ends. Only used when `warmup_mode: buffer`. |
-| `warmup_buffer_max_logs` | int | `10000` | Maximum records to buffer before flushing regardless of cluster count. Only used when `warmup_mode: buffer`. Must be > 0. |
+| `warmup_min_clusters` | int | `0` | Number of distinct clusters that must be observed before annotation is enabled. `0` disables warmup suppression (see [Warmup suppression](#warmup-suppression)). |
 
 ## Seeding
 
@@ -106,34 +102,21 @@ The main caveat is the **early training phase**. Before an instance has seen eno
 
 **Mitigations:**
 - Use `seed_templates` or `seed_logs` to pre-load known patterns at startup. With a comprehensive seed set, instances start in an already-converged state and live training only fills in the gaps.
-- Use `buffer` warmup mode if downstream consumers require stable templates from the first record they receive.
+- Use `warmup_min_clusters` to suppress annotation until the tree has stabilised, avoiding unstable templates reaching downstream processors.
 
-### Warmup modes
+### Warmup suppression
 
-The `warmup_mode` setting controls what happens before the parse tree has stabilized — i.e. before it has observed enough distinct log forms to produce reliable, abstracted templates.
+When `warmup_min_clusters` is set to a value greater than zero, the processor trains on every record from the start but does not write `log.record.template` until that many distinct clusters have been observed. Records pass through immediately — there is no buffering or added latency — they simply arrive at the next processor unannotated during the warmup window.
 
-| Mode | Behavior | Trade-off |
-|------|----------|-----------|
-| `passthrough` (default) | Annotates every record immediately. Early records may receive less-abstracted templates (e.g. a raw line rather than a wildcarded form) that change as more data arrives. | No latency or memory overhead. Downstream consumers must tolerate template churn at startup. |
-| `buffer` | Holds records in memory until `warmup_min_clusters` distinct templates have been observed, or `warmup_buffer_max_logs` is reached. Flushes all buffered records at once, fully annotated. | Templates are stable from the first record downstream sees. Adds startup latency and memory pressure proportional to buffer size. |
-
-Choose `passthrough` when:
-- Downstream consumers are tolerant of occasional template changes (e.g. they use templates for volume aggregation where a brief inconsistency is acceptable).
-- You are using `seed_templates` or `seed_logs` to pre-stabilize the tree.
-
-Choose `buffer` when:
-- A downstream `filter` processor must reliably match templates from the very first record — emitting an unstabilised template could cause records to pass through a filter they should have been dropped by.
-- You have strict ordering or completeness requirements and cannot tolerate records being annotated with different templates for the same log pattern.
+The `otelcol_processor_drain_log_records_unannotated` counter fires for each unannotated record, so the warmup window is observable via internal telemetry.
 
 ```yaml
 processors:
   drain:
-    warmup_mode: buffer
     warmup_min_clusters: 20
-    warmup_buffer_max_logs: 5000
 ```
 
-> **Memory note**: in buffer mode, all records are held in memory until flush. Size the buffer with `warmup_buffer_max_logs` according to your available memory and expected log volume during startup.
+Once the threshold is reached, all subsequent records are annotated normally. Records that passed through during warmup are not re-annotated.
 
 ## Metrics
 
@@ -143,7 +126,7 @@ The processor emits the following internal telemetry metrics:
 |--------|------|-------------|
 | `otelcol_processor_drain_clusters_active` | gauge | Current number of active clusters in the Drain parse tree. Useful for tracking tree growth and stability over time. |
 | `otelcol_processor_drain_log_records_annotated` | counter | Number of log records successfully annotated with a template. |
-| `otelcol_processor_drain_log_records_unannotated` | counter | Number of log records not annotated — empty body, Train error, or no cluster returned by Drain. |
+| `otelcol_processor_drain_log_records_unannotated` | counter | Number of log records not annotated — empty body, Train error, no cluster returned by Drain, or warmup suppression active. |
 
 ## Output attributes
 
@@ -164,16 +147,14 @@ The following pipeline annotates logs with Drain templates and then drops known 
 ```yaml
 processors:
   drain:
-    log_cluster_depth: 4
-    sim_threshold: 0.4
+    tree_depth: 4
+    merge_threshold: 0.4
     max_clusters: 500
     seed_templates:
       - "user <*> logged in from <*>"
       - "connected to <*>"
       - "heartbeat ping <*>"
-    warmup_mode: buffer
     warmup_min_clusters: 20
-    warmup_buffer_max_logs: 5000
 
   filter/drop_noisy:
     error_mode: ignore
@@ -218,6 +199,6 @@ Given a log body `{"level": "info", "message": "user alice logged in from 10.0.0
 
 ## Future extensions
 
-- **Snapshot persistence**: save and restore the Drain tree state across restarts, eliminating the need for seeding. This requires serialization support and is tracked as a future improvement.
+- **Snapshot persistence**: save and restore the Drain tree state across restarts, eliminating the need for seeding and `warmup_min_clusters` for most deployments. The internal drain package already exposes JSON snapshot hooks; the remaining work is plumbing them into the collector lifecycle and shared storage.
 - **OTTL body extraction**: support full OTTL path expressions for `body_field` instead of a single top-level key name.
 - **Multi-instance synchronization**: optional shared snapshot file or gossip-based tree merging for consistent templates across horizontally scaled deployments.

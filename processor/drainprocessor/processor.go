@@ -22,20 +22,16 @@ type drainProcessor struct {
 	logger    *zap.Logger
 	telemetry *metadata.TelemetryBuilder
 
-	mu    sync.Mutex
-	drain *internaldrain.Drain
-
-	// warmup state — only used when WarmupMode is "buffer"
-	warmedUp      bool
-	buffer        []plog.Logs
-	bufferedCount int
+	mu       sync.Mutex
+	drain    *internaldrain.Drain
+	warmedUp bool // true when WarmupMinClusters == 0 or cluster count has reached the threshold
 }
 
 func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, error) {
 	d, err := internaldrain.New(internaldrain.Config{
-		Depth:           cfg.LogClusterDepth,
-		SimThreshold:    cfg.SimThreshold,
-		MaxChildren:     cfg.MaxChildren,
+		Depth:           cfg.TreeDepth,
+		SimThreshold:    cfg.MergeThreshold,
+		MaxChildren:     cfg.MaxNodeChildren,
 		MaxClusters:     cfg.MaxClusters,
 		ExtraDelimiters: cfg.ExtraDelimiters,
 	})
@@ -53,6 +49,7 @@ func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, er
 		logger:    set.Logger,
 		telemetry: tel,
 		drain:     d,
+		warmedUp:  cfg.WarmupMinClusters == 0,
 	}
 	p.seed()
 	return p, nil
@@ -82,104 +79,6 @@ func (p *drainProcessor) seed() {
 
 // processLogs is the ConsumeLogs handler passed to processorhelper.NewLogs.
 func (p *drainProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	var out plog.Logs
-	if p.config.WarmupMode == warmupModePassthrough {
-		out = p.annotateAll(ctx, ld)
-	} else {
-		out = p.processBuffered(ctx, ld)
-	}
-	p.mu.Lock()
-	count := p.drain.ClusterCount()
-	p.mu.Unlock()
-	p.telemetry.ProcessorDrainClustersActive.Record(ctx, int64(count))
-	return out, nil
-}
-
-// processBuffered implements the "buffer" warmup mode. During warmup, batches
-// are trained (tree updated) but held in memory without annotation. Once the
-// flush condition is met, all buffered batches are merged, annotated with the
-// now-stable templates, and returned as a single combined batch.
-func (p *drainProcessor) processBuffered(ctx context.Context, ld plog.Logs) plog.Logs {
-	// Fast-path: warmup already complete.
-	p.mu.Lock()
-	if p.warmedUp {
-		p.mu.Unlock()
-		return p.annotateAll(ctx, ld)
-	}
-	p.mu.Unlock()
-
-	// Train all records in this batch to update the tree and grow cluster count.
-	// (attributes are not set yet — we wait for the tree to stabilize)
-	p.trainBatch(ld)
-
-	// Update buffer state under lock, then decide whether to flush.
-	p.mu.Lock()
-
-	// Re-check warmedUp: another goroutine may have flushed between the
-	// fast-path check above and this lock acquisition. If so, annotateAll
-	// calls Train again on these records (they were already trained in
-	// trainBatch above). Training the same line twice is harmless — it
-	// reinforces the existing cluster without creating a duplicate.
-	if p.warmedUp {
-		p.mu.Unlock()
-		return p.annotateAll(ctx, ld)
-	}
-
-	p.buffer = append(p.buffer, ld)
-	p.bufferedCount += ld.LogRecordCount()
-
-	shouldFlush := p.drain.ClusterCount() >= p.config.WarmupMinClusters ||
-		p.bufferedCount >= p.config.WarmupBufferMaxLogs
-
-	if !shouldFlush {
-		p.mu.Unlock()
-		return plog.NewLogs()
-	}
-
-	// Warmup complete — take ownership of the buffer and flip the flag.
-	toFlush := p.buffer
-	p.buffer = nil
-	p.bufferedCount = 0
-	p.warmedUp = true
-	p.mu.Unlock()
-
-	// Merge all buffered batches into one, annotating as we go.
-	// Re-annotating (rather than reusing the training pass) ensures records
-	// get the final abstracted templates from the fully-warmed tree.
-	merged := plog.NewLogs()
-	for _, batch := range toFlush {
-		p.annotateAll(ctx, batch) // annotate in-place
-		batch.ResourceLogs().MoveAndAppendTo(merged.ResourceLogs())
-	}
-	return merged
-}
-
-// trainBatch calls Train on every record in ld without setting any attributes.
-// Used during buffer warmup to grow the Drain tree without committing templates.
-func (p *drainProcessor) trainBatch(ld plog.Logs) {
-	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		sls := rls.At(i).ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).LogRecords()
-			for k := 0; k < lrs.Len(); k++ {
-				text := extractBody(lrs.At(k), p.config.BodyField)
-				if text == "" {
-					continue
-				}
-				p.mu.Lock()
-				_, err := p.drain.Train(text)
-				p.mu.Unlock()
-				if err != nil {
-					p.logger.Warn("drain Train failed during warmup buffering, skipping", zap.Error(err))
-				}
-			}
-		}
-	}
-}
-
-// annotateAll annotates every record in ld in-place and returns ld.
-func (p *drainProcessor) annotateAll(ctx context.Context, ld plog.Logs) plog.Logs {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		sls := rls.At(i).ScopeLogs()
@@ -190,7 +89,13 @@ func (p *drainProcessor) annotateAll(ctx context.Context, ld plog.Logs) plog.Log
 			}
 		}
 	}
-	return ld
+
+	p.mu.Lock()
+	count := p.drain.ClusterCount()
+	p.mu.Unlock()
+	p.telemetry.ProcessorDrainClustersActive.Record(ctx, int64(count))
+
+	return ld, nil
 }
 
 func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
@@ -202,6 +107,10 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 
 	p.mu.Lock()
 	tmpl, err := p.drain.Train(text)
+	if !p.warmedUp && p.drain.ClusterCount() >= p.config.WarmupMinClusters {
+		p.warmedUp = true
+	}
+	warmedUp := p.warmedUp
 	p.mu.Unlock()
 
 	if err != nil {
@@ -209,8 +118,7 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 		p.telemetry.ProcessorDrainLogRecordsUnannotated.Add(ctx, 1)
 		return
 	}
-	if tmpl == "" {
-		// go-drain3 returned no cluster; skip annotation.
+	if tmpl == "" || !warmedUp {
 		p.telemetry.ProcessorDrainLogRecordsUnannotated.Add(ctx, 1)
 		return
 	}

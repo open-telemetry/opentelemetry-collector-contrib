@@ -25,12 +25,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	dc := cfg.(*Config)
-	assert.Equal(t, 4, dc.LogClusterDepth)
-	assert.InDelta(t, 0.4, dc.SimThreshold, 1e-9)
-	assert.Equal(t, 100, dc.MaxChildren)
+	assert.Equal(t, 4, dc.TreeDepth)
+	assert.InDelta(t, 0.4, dc.MergeThreshold, 1e-9)
+	assert.Equal(t, 100, dc.MaxNodeChildren)
 	assert.Equal(t, 0, dc.MaxClusters)
 	assert.Equal(t, "log.record.template", dc.TemplateAttribute)
-	assert.Equal(t, warmupModePassthrough, dc.WarmupMode)
+	assert.Equal(t, 0, dc.WarmupMinClusters)
 }
 
 func TestCreateLogsProcessor(t *testing.T) {

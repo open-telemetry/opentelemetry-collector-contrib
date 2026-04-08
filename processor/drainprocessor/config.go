@@ -4,23 +4,24 @@
 package drainprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor"
 
 import (
-	"errors"
 	"fmt"
 )
 
 // Config defines configuration for the drain processor.
 type Config struct {
-	// LogClusterDepth is the max depth of the Drain parse tree.
-	// Higher values produce more specific templates. Default: 4. Minimum: 3.
-	LogClusterDepth int `mapstructure:"log_cluster_depth"`
+	// TreeDepth is the max depth of the Drain parse tree (called `depth` in the
+	// Drain paper). Higher values produce more specific templates. Default: 4. Minimum: 3.
+	TreeDepth int `mapstructure:"tree_depth"`
 
-	// SimThreshold is the similarity threshold (0.0–1.0) below which a new
-	// cluster is created rather than merged with an existing one. Default: 0.4.
-	SimThreshold float64 `mapstructure:"sim_threshold"`
+	// MergeThreshold is the minimum token-match ratio (0.0–1.0) required to merge
+	// a log line into an existing cluster rather than creating a new one (called
+	// `st` in the Drain paper). Default: 0.4.
+	MergeThreshold float64 `mapstructure:"merge_threshold"`
 
-	// MaxChildren is the maximum number of children per parse tree node.
-	// Default: 100.
-	MaxChildren int `mapstructure:"max_children"`
+	// MaxNodeChildren is the maximum number of children per internal parse tree node
+	// (called `maxChild` in the Drain paper). Bounds memory on high-cardinality
+	// token positions. Default: 100.
+	MaxNodeChildren int `mapstructure:"max_node_children"`
 
 	// MaxClusters is the maximum number of clusters tracked. When the limit is
 	// reached, the least recently used cluster is evicted. 0 means unlimited.
@@ -52,43 +53,24 @@ type Config struct {
 	// Drain derives templates from these lines itself.
 	SeedLogs []string `mapstructure:"seed_logs"`
 
-	// WarmupMode controls processor behavior during the initial period before
-	// the Drain tree has stabilized. Valid values: "passthrough" (default),
-	// "buffer".
-	WarmupMode string `mapstructure:"warmup_mode"`
-
-	// WarmupMinClusters is the number of distinct clusters that must be
-	// observed before warmup ends. Only used when WarmupMode is "buffer".
-	// Default: 10.
+	// WarmupMinClusters is the number of distinct clusters that must be observed
+	// before annotation is enabled. During warmup, records pass through immediately
+	// but the template attribute is not written — the tree trains on them without
+	// emitting unstabilised templates. 0 (default) disables warmup suppression and
+	// annotates from the first record.
 	WarmupMinClusters int `mapstructure:"warmup_min_clusters"`
-
-	// WarmupBufferMaxLogs is the maximum number of log records to buffer
-	// during warmup before flushing regardless of cluster count. Only used
-	// when WarmupMode is "buffer". Must be > 0. Default: 10000.
-	WarmupBufferMaxLogs int `mapstructure:"warmup_buffer_max_logs"`
 }
-
-const (
-	warmupModePassthrough = "passthrough"
-	warmupModeBuffer      = "buffer"
-)
 
 // Validate checks the Config for invalid values.
 func (cfg *Config) Validate() error {
-	if cfg.LogClusterDepth < 3 {
-		return fmt.Errorf("log_cluster_depth must be >= 3, got %d", cfg.LogClusterDepth)
+	if cfg.TreeDepth < 3 {
+		return fmt.Errorf("tree_depth must be >= 3, got %d", cfg.TreeDepth)
 	}
-	if cfg.SimThreshold < 0.0 || cfg.SimThreshold > 1.0 {
-		return fmt.Errorf("sim_threshold must be in [0.0, 1.0], got %f", cfg.SimThreshold)
+	if cfg.MergeThreshold < 0.0 || cfg.MergeThreshold > 1.0 {
+		return fmt.Errorf("merge_threshold must be in [0.0, 1.0], got %f", cfg.MergeThreshold)
 	}
-	if cfg.WarmupMode != warmupModePassthrough && cfg.WarmupMode != warmupModeBuffer {
-		return fmt.Errorf("warmup_mode must be %q or %q, got %q", warmupModePassthrough, warmupModeBuffer, cfg.WarmupMode)
-	}
-	if cfg.WarmupMode == warmupModeBuffer && cfg.WarmupMinClusters <= 0 {
-		return errors.New("warmup_min_clusters must be > 0 when warmup_mode is \"buffer\"")
-	}
-	if cfg.WarmupMode == warmupModeBuffer && cfg.WarmupBufferMaxLogs <= 0 {
-		return errors.New("warmup_buffer_max_logs must be > 0 when warmup_mode is \"buffer\"")
+	if cfg.WarmupMinClusters < 0 {
+		return fmt.Errorf("warmup_min_clusters must be >= 0, got %d", cfg.WarmupMinClusters)
 	}
 	return nil
 }

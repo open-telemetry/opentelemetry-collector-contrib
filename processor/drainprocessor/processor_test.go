@@ -215,110 +215,37 @@ func TestEmptySeedEntriesSkipped(t *testing.T) {
 	assert.NotEmpty(t, templateAttr(t, out))
 }
 
-// --- buffer warmup tests ---
-
-func bufferCfg() *Config {
+// TestWarmupMinClustersSuppress verifies that when warmup_min_clusters is set,
+// records pass through immediately but are not annotated until the cluster
+// threshold is reached.
+func TestWarmupMinClustersSuppress(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.WarmupMode = warmupModeBuffer
 	cfg.WarmupMinClusters = 2
-	cfg.WarmupBufferMaxLogs = 100
-	return cfg
+	p := newTestProcessor(t, cfg)
+
+	// First record: one cluster, below threshold — should pass through unannotated.
+	out1, err := p.processLogs(t.Context(), makeLogRecord("connected to host 10.0.0.1 on port 443"))
+	require.NoError(t, err)
+	assert.Equal(t, 1, out1.LogRecordCount(), "record should pass through immediately, not buffered")
+	_, ok := getFirstRecord(out1).Attributes().Get("log.record.template")
+	assert.False(t, ok, "record should not be annotated during warmup")
+
+	// Second record: distinct pattern, reaches threshold — should be annotated.
+	out2, err := p.processLogs(t.Context(), makeLogRecord("disk write error on device sda"))
+	require.NoError(t, err)
+	assert.Equal(t, 1, out2.LogRecordCount(), "record should pass through immediately")
+	_, ok = getFirstRecord(out2).Attributes().Get("log.record.template")
+	assert.True(t, ok, "record should be annotated once threshold is reached")
 }
 
-// TestBufferWarmupHoldsRecords verifies that records are not forwarded while
-// cluster count is below WarmupMinClusters.
-func TestBufferWarmupHoldsRecords(t *testing.T) {
-	p := newTestProcessor(t, bufferCfg())
+// TestWarmupMinClustersZeroDisabled verifies that warmup_min_clusters=0
+// annotates from the first record (default behaviour).
+func TestWarmupMinClustersZeroDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.WarmupMinClusters = 0
+	p := newTestProcessor(t, cfg)
 
 	out, err := p.processLogs(t.Context(), makeLogRecord("connected to host 10.0.0.1 on port 443"))
 	require.NoError(t, err)
-	assert.Equal(t, 0, out.LogRecordCount(), "records should be held in buffer during warmup")
-}
-
-// TestBufferWarmupFlushOnMinClusters verifies that once WarmupMinClusters
-// distinct templates have been observed the buffer is flushed with all records
-// annotated.
-func TestBufferWarmupFlushOnMinClusters(t *testing.T) {
-	p := newTestProcessor(t, bufferCfg())
-
-	batches := []string{
-		"connected to host 10.0.0.1 on port 443", // cluster 1
-		"disk write error on device sda",         // cluster 2 — triggers flush
-	}
-
-	var allOut []plog.Logs
-	for _, line := range batches {
-		out, err := p.processLogs(t.Context(), makeLogRecord(line))
-		require.NoError(t, err)
-		allOut = append(allOut, out)
-	}
-
-	assert.Equal(t, 0, allOut[0].LogRecordCount(), "first batch should be held")
-	assert.Equal(t, 2, allOut[1].LogRecordCount(), "flushed output should contain all buffered records")
-
-	for i := 0; i < allOut[1].ResourceLogs().Len(); i++ {
-		lr := allOut[1].ResourceLogs().At(i).ScopeLogs().At(0).LogRecords().At(0)
-		_, ok := lr.Attributes().Get("log.record.template")
-		assert.True(t, ok, "record %d should have template attribute after flush", i)
-	}
-}
-
-// TestBufferWarmupFlushOnCap verifies that the buffer is flushed when
-// WarmupBufferMaxLogs is reached even if WarmupMinClusters has not been met.
-func TestBufferWarmupFlushOnCap(t *testing.T) {
-	cfg := bufferCfg()
-	cfg.WarmupMinClusters = 1000 // unreachably high
-	cfg.WarmupBufferMaxLogs = 2
-	p := newTestProcessor(t, cfg)
-
-	out1, err := p.processLogs(t.Context(), makeLogRecord("connected to host 10.0.0.1 on port 443"))
-	require.NoError(t, err)
-	assert.Equal(t, 0, out1.LogRecordCount(), "first record should be buffered")
-
-	out2, err := p.processLogs(t.Context(), makeLogRecord("disk write error on device sda"))
-	require.NoError(t, err)
-	assert.Equal(t, 2, out2.LogRecordCount(), "buffer cap reached: both records should be flushed")
-}
-
-// TestBufferWarmupPostFlushPassthrough verifies that records processed after
-// warmup ends are passed through immediately without buffering.
-func TestBufferWarmupPostFlushPassthrough(t *testing.T) {
-	p := newTestProcessor(t, bufferCfg())
-
-	// Trigger warmup flush (two distinct clusters).
-	_, err := p.processLogs(t.Context(), makeLogRecord("connected to host 10.0.0.1 on port 443"))
-	require.NoError(t, err)
-	_, err = p.processLogs(t.Context(), makeLogRecord("disk write error on device sda"))
-	require.NoError(t, err)
-
-	out, err := p.processLogs(t.Context(), makeLogRecord("user alice logged in"))
-	require.NoError(t, err)
-	assert.Equal(t, 1, out.LogRecordCount(), "post-warmup records should pass through immediately")
-	_, ok := getFirstRecord(out).Attributes().Get("log.record.template")
-	assert.True(t, ok, "post-warmup records should be annotated")
-}
-
-// TestBufferWarmupRecordOrder verifies that flushed records maintain their
-// original arrival order.
-func TestBufferWarmupRecordOrder(t *testing.T) {
-	p := newTestProcessor(t, bufferCfg())
-
-	lines := []string{
-		"connected to host 10.0.0.1 on port 443",
-		"disk write error on device sda",
-	}
-
-	var lastOut plog.Logs
-	for _, line := range lines {
-		out, err := p.processLogs(t.Context(), makeLogRecord(line))
-		require.NoError(t, err)
-		lastOut = out
-	}
-
-	require.Equal(t, 2, lastOut.LogRecordCount())
-
-	r0 := lastOut.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	r1 := lastOut.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0)
-	assert.Equal(t, "connected to host 10.0.0.1 on port 443", r0.Body().Str())
-	assert.Equal(t, "disk write error on device sda", r1.Body().Str())
+	assert.NotEmpty(t, templateAttr(t, out), "should annotate from first record when warmup disabled")
 }
