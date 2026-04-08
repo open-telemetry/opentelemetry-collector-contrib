@@ -206,9 +206,30 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 						zap.String("bucket", bucket),
 						zap.String("key", decodedKey))
 
+					if r.skipIngestingTaggedObjects {
+						var hasTag bool
+						hasTag, err = hasIngestedTag(ctx, r.s3Client, bucket, decodedKey)
+						if err != nil {
+							r.logger.Warn("Failed to check object tags",
+								zap.String("bucket", bucket),
+								zap.String("key", decodedKey),
+								zap.Error(err))
+							var noSuchKey *types.NoSuchKey
+							if !errors.As(err, &noSuchKey) {
+								// Swallow no such key errors as nothing more can be done
+								allRecordsSucceeded = false
+							}
+							continue
+						} else if hasTag {
+							r.logger.Info("Skipping already ingested object",
+								zap.String("bucket", bucket),
+								zap.String("key", decodedKey))
+							continue
+						}
+					}
+
 					var content []byte
-					var tagCount int32
-					content, tagCount, err = retrieveS3Object(ctx, r.s3Client, bucket, decodedKey)
+					content, err = retrieveS3Object(ctx, r.s3Client, bucket, decodedKey)
 					if err != nil {
 						r.logger.Warn("Failed to get S3 object",
 							zap.String("bucket", bucket),
@@ -221,24 +242,6 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 							allRecordsSucceeded = false
 						}
 						continue
-					}
-
-					if r.skipIngestingTaggedObjects && tagCount > 0 {
-						var hasTag bool
-						hasTag, err = hasIngestedTag(ctx, r.s3Client, bucket, decodedKey)
-						if err != nil {
-							r.logger.Warn("Failed to check object tags",
-								zap.String("bucket", bucket),
-								zap.String("key", decodedKey),
-								zap.Error(err))
-							allRecordsSucceeded = false
-							continue
-						} else if hasTag {
-							r.logger.Info("Skipping already ingested object",
-								zap.String("bucket", bucket),
-								zap.String("key", decodedKey))
-							continue
-						}
 					}
 
 					err = callback(ctx, decodedKey, content)

@@ -67,27 +67,22 @@ func (api *s3ListObjectsAPIImpl) NewListObjectsV2Paginator(params *s3.ListObject
 	return s3.NewListObjectsV2Paginator(api.client, params)
 }
 
-// retrieveS3Object retrieves S3 object content and tag count for a given bucket and key
-func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) ([]byte, int32, error) {
+// retrieveS3Object retrieves S3 object content for a given bucket and key
+func retrieveS3Object(ctx context.Context, client SingleObjectAPI, bucket, key string) ([]byte, error) {
 	params := s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 	}
 	output, err := client.GetObject(ctx, &params)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	defer output.Body.Close()
 	contents, err := io.ReadAll(output.Body)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-
-	tagCount := int32(0)
-	if output.TagCount != nil {
-		tagCount = *output.TagCount
-	}
-	return contents, tagCount, nil
+	return contents, nil
 }
 
 // tagS3Object tags an S3 object for a given bucket and key

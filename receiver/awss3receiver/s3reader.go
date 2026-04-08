@@ -148,12 +148,7 @@ func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t t
 			s3Reader.logger.Info("No telemetry found for time", zap.String("prefix", prefix), zap.Time("time", t))
 		} else {
 			for _, obj := range page.Contents {
-				data, tagCount, err := retrieveS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
-				if err != nil {
-					return err
-				}
-
-				if s3Reader.skipIngestingTaggedObjects && tagCount > 0 {
+				if s3Reader.skipIngestingTaggedObjects {
 					var hasTag bool
 					hasTag, err = hasIngestedTag(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
 					if err != nil {
@@ -166,6 +161,11 @@ func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t t
 							zap.String("key", *obj.Key))
 						continue
 					}
+				}
+
+				data, err := retrieveS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
+				if err != nil {
+					return err
 				}
 
 				s3Reader.logger.Debug("Retrieved telemetry", zap.String("key", *obj.Key))
