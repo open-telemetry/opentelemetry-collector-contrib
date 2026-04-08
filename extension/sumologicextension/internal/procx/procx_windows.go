@@ -81,19 +81,13 @@ func (procx *Procx) FilteredProcessList() ([]string, error) {
 
 		// handling Java background processes
 		javaProcessName, ok := procx.getJavaProcessName(processName, v)
-		if !ok {
-			continue
-		}
-		if a, i := GetSumoTag(javaProcessName); i {
+		if a, i := GetSumoTag(javaProcessName); i && ok {
 			pl = append(pl, a.String())
 		}
 
 		// handling erlang processes
 		erlProcessName, ok := procx.getErlangProcessName(processName, v)
-		if !ok {
-			continue
-		}
-		if a, i := GetSumoTag(erlProcessName); i {
+		if a, i := GetSumoTag(erlProcessName); i && ok {
 			pl = append(pl, a.String())
 		}
 	}
@@ -140,7 +134,7 @@ func (procx *Procx) getJavaProcessName(processName string, process Process) (str
 	case strings.Contains(cmdline, ActiveMQJavaProcessIdentifier.String()):
 		return ActiveMQJavaProcessIdentifier.String(), true
 	}
-	return cmdline, true
+	return "", false
 }
 
 func (procx *Procx) getErlangProcessName(processName string, process Process) (string, bool) {
@@ -160,5 +154,5 @@ func (procx *Procx) getErlangProcessName(processName string, process Process) (s
 	if strings.Contains(cmdline, RabbitmqServerProcessIdentifier.String()) {
 		return RabbitmqServerProcessIdentifier.String(), true
 	}
-	return cmdline, true
+	return "", false
 }

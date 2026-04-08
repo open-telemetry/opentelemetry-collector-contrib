@@ -65,6 +65,42 @@ func TestFilteredProcessList(t *testing.T) {
 			want: []string{"apache", "mysql"},
 		},
 		{
+			name: "list java processes",
+			getProcesses: func() ([]Process, error) {
+				ret := []Process{
+					&fakeProcessWrapper{
+						pid: 8080,
+						name: func() (string, error) {
+							return "java.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "org.apache.cassandra.service.CassandraDaemon", nil
+						},
+					},
+					&fakeProcessWrapper{
+						pid: 8081,
+						name: func() (string, error) {
+							return "java.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "com.sun.management.jmxremote", nil
+						},
+					},
+					&fakeProcessWrapper{
+						pid: 8082,
+						name: func() (string, error) {
+							return "java.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "activemq.jar", nil
+						},
+					},
+				}
+				return ret, nil
+			},
+			want: []string{"cassandra", "jmx", "activemq"},
+		},
+		{
 			name: "list process with partial error",
 			getProcesses: func() ([]Process, error) {
 				ret := []Process{
@@ -90,6 +126,105 @@ func TestFilteredProcessList(t *testing.T) {
 				return ret, nil
 			},
 			want: []string{"mysql"},
+		},
+		{
+			name: "empty should be treated nil",
+			getProcesses: func() ([]Process, error) {
+				ret := []Process{
+					&fakeProcessWrapper{
+						pid: 8081,
+						name: func() (string, error) {
+							return "", nil
+						},
+						cmdLine: func() (string, error) {
+							return "activemq.jar", nil
+						},
+					},
+				}
+				return ret, nil
+			},
+			want: nil,
+		},
+		{
+			name: "fail to match java cmdline",
+			getProcesses: func() ([]Process, error) {
+				ret := []Process{
+					&fakeProcessWrapper{
+						pid: 8080,
+						name: func() (string, error) {
+							return "apache.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "", nil
+						},
+					},
+					&fakeProcessWrapper{
+						pid: 8081,
+						name: func() (string, error) {
+							return "", nil
+						},
+						cmdLine: func() (string, error) {
+							return "activemq.jar", nil
+						},
+					},
+				}
+				return ret, nil
+			},
+			want: []string{"apache"},
+		},
+		{
+			name: "match java and erl process",
+			getProcesses: func() ([]Process, error) {
+				ret := []Process{
+					&fakeProcessWrapper{
+						pid: 8080,
+						name: func() (string, error) {
+							return "java.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "org.apache.cassandra.service.CassandraDaemon", nil
+						},
+					},
+					&fakeProcessWrapper{
+						pid: 8081,
+						name: func() (string, error) {
+							return "erl.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "rabbit", nil
+						},
+					},
+				}
+				return ret, nil
+			},
+			want: []string{"cassandra", "rabbitmq"},
+		},
+		{
+			name: "match only erl process",
+			getProcesses: func() ([]Process, error) {
+				ret := []Process{
+					&fakeProcessWrapper{
+						pid: 8081,
+						name: func() (string, error) {
+							return "mysqld.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "", nil
+						},
+					},
+					&fakeProcessWrapper{
+						pid: 8081,
+						name: func() (string, error) {
+							return "erl.exe", nil
+						},
+						cmdLine: func() (string, error) {
+							return "rabbit", nil
+						},
+					},
+				}
+				return ret, nil
+			},
+			want: []string{"mysql", "rabbitmq"},
 		},
 	}
 	for _, tt := range tests {

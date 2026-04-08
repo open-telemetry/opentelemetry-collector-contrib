@@ -38,10 +38,10 @@ const (
 	DockerDesktopJavaProcessIdentifier  ProcessIdentifier = "com.docker.backend"
 	SqlservrProcessIdentifier           ProcessIdentifier = "sqlservr"
 	// Java Process Identifiers
-	JavaProcessIdentifier         ProcessIdentifier = "java"
-	CasandraJavaProcessIdentifier ProcessIdentifier = "org.apache.cassandra.service.CassandraDaemon"
-	JmxJavaProcessIdentifier      ProcessIdentifier = "com.sun.management.jmxremote"
-	ActiveMQJavaProcessIdentifier ProcessIdentifier = "activemq.jar"
+	JavaProcessIdentifier          ProcessIdentifier = "java"
+	CassandraJavaProcessIdentifier ProcessIdentifier = "org.apache.cassandra.service.CassandraDaemon"
+	JmxJavaProcessIdentifier       ProcessIdentifier = "com.sun.management.jmxremote"
+	ActiveMQJavaProcessIdentifier  ProcessIdentifier = "activemq.jar"
 )
 
 var sumoAppProcesses = map[ProcessIdentifier]SumoTag{
@@ -70,9 +70,9 @@ var sumoAppProcesses = map[ProcessIdentifier]SumoTag{
 	DockerDesktopJavaProcessIdentifier:  DockerCETag, // docker daemon runs on a VM in Docker Desktop, process doesn't show on mac
 	SqlservrProcessIdentifier:           MssqlTag,    // linux SQL Server process
 	// Java Process Tags
-	CasandraJavaProcessIdentifier: CassandraTag,
-	JmxJavaProcessIdentifier:      JmxTag,
-	ActiveMQJavaProcessIdentifier: ActiveMQTag,
+	CassandraJavaProcessIdentifier: CassandraTag,
+	JmxJavaProcessIdentifier:       JmxTag,
+	ActiveMQJavaProcessIdentifier:  ActiveMQTag,
 }
 
 func GetSumoTag(processName string) (SumoTag, bool) {
@@ -100,10 +100,7 @@ func (procx *Procx) FilteredProcessList() ([]string, error) {
 
 		// handling Java background processes
 		javaProcessName, ok := procx.getJavaProcessName(processName, v)
-		if !ok {
-			continue
-		}
-		if a, i := GetSumoTag(javaProcessName); i {
+		if a, i := GetSumoTag(javaProcessName); i && ok {
 			pl = append(pl, a.String())
 		}
 	}
@@ -141,12 +138,12 @@ func (procx *Procx) getJavaProcessName(processName string, process Process) (str
 	}
 
 	switch {
-	case strings.Contains(cmdline, CasandraJavaProcessIdentifier.String()):
-		return CasandraJavaProcessIdentifier.String(), true
+	case strings.Contains(cmdline, CassandraJavaProcessIdentifier.String()):
+		return CassandraJavaProcessIdentifier.String(), true
 	case strings.Contains(cmdline, JmxJavaProcessIdentifier.String()):
 		return JmxJavaProcessIdentifier.String(), true
 	case strings.Contains(cmdline, ActiveMQJavaProcessIdentifier.String()):
 		return ActiveMQJavaProcessIdentifier.String(), true
 	}
-	return cmdline, true
+	return "", false
 }
