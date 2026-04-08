@@ -100,7 +100,7 @@ func (w *jsonWriter) float64Val(val float64) {
 		// Insert ".0" before exponent.
 		// Copy tail for reuse below. Any write to buf would overwrite the
 		// remaining b content, leading to a corruption in the tail part.
-		// tail length is based on IEEE 754 max exponent of 308 padded
+		// tail length is based on IEEE 754 max exponent of +308 or min exponent of -324, padded
 		// for alignment.
 		var tail [8]byte
 		n := copy(tail[:], b[expIdx:])
