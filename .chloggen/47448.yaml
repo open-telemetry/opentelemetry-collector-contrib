@@ -1,0 +1,4 @@
+change_type: enhancement
+component: tailsamplingprocessor
+note: Add MaxSpansPerTrace circuit breaker to prevent OOM.
+issues: [47448]
