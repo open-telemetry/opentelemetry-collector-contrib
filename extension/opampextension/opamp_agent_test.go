@@ -163,6 +163,74 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("host.name", hostname),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue("service.namespace", "from-resource"),
+				},
+			},
+		},
+		{
+			name: "IdentifyingAttributes adds new key",
+			cfg: func(c *Config) {
+				c.AgentDescription.IdentifyingAttributes = map[string]string{
+					"service.namespace": "my-ns",
+				}
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.namespace", "my-ns"),
+					stringKeyValue("service.version", serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
+				},
+			},
+		},
+		{
+			name: "IdentifyingAttributes overrides existing key",
+			cfg: func(c *Config) {
+				c.AgentDescription.IdentifyingAttributes = map[string]string{
+					"service.name": "my-custom-collector",
+				}
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", "my-custom-collector"),
+					stringKeyValue("service.version", serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
+				},
+			},
+		},
+		{
+			name: "IdentifyingAttributes keys excluded from non-identifying when IncludeResourceAttributes is set",
+			cfg: func(c *Config) {
+				c.AgentDescription.IdentifyingAttributes = map[string]string{
+					"service.namespace": "my-ns",
+				}
+				c.AgentDescription.IncludeResourceAttributes = true
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue("service.instance.id", serviceInstanceUUID),
+					stringKeyValue("service.name", serviceName),
+					stringKeyValue("service.namespace", "my-ns"),
+					stringKeyValue("service.version", serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(extraResourceAttrKey, extraResourceAttrValue),
+					stringKeyValue("host.arch", runtime.GOARCH),
+					stringKeyValue("host.name", hostname),
+					stringKeyValue("os.description", description),
+					stringKeyValue("os.type", runtime.GOOS),
 				},
 			},
 		},
@@ -178,6 +246,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			set.Resource.Attributes().PutStr("service.version", serviceVersion)
 			set.Resource.Attributes().PutStr("service.instance.id", serviceInstanceUUID)
 			set.Resource.Attributes().PutStr(extraResourceAttrKey, extraResourceAttrValue)
+			set.Resource.Attributes().PutStr("service.namespace", "from-resource")
 
 			o, err := newOpampAgent(cfg, set)
 			require.NoError(t, err)

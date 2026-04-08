@@ -50,6 +50,12 @@ type Config struct {
 }
 
 type AgentDescription struct {
+	// IdentifyingAttributes are a map of key-value pairs merged into the identifying
+	// attributes reported to the OpAMP server. Values specified here override the
+	// automatically determined defaults (service.name, service.version, service.instance.id).
+	// Any keys provided here are also excluded from non-identifying attributes when
+	// include_resource_attributes is true.
+	IdentifyingAttributes map[string]string `mapstructure:"identifying_attributes"`
 	// NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide
 	// extra information about the agent to the OpAMP server.
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`

@@ -94,14 +94,6 @@ var (
 	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
-
-	// identifyingAttributes is the list of semantic convention keys that are used
-	// for the agent description's identifying attributes.
-	identifyingAttributes = map[string]struct{}{
-		string(conventions.ServiceNameKey):       {},
-		string(conventions.ServiceVersionKey):    {},
-		string(conventions.ServiceInstanceIDKey): {},
-	}
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
@@ -376,10 +368,20 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 	description := getOSDescription(o.logger)
 
-	ident := []*protobufs.KeyValue{
-		stringKeyValue(string(conventions.ServiceInstanceIDKey), o.instanceID.String()),
-		stringKeyValue(string(conventions.ServiceNameKey), o.agentType),
-		stringKeyValue(string(conventions.ServiceVersionKey), o.agentVersion),
+	// Build identifying attributes as a map first so user overrides can win.
+	identMap := map[string]string{
+		string(conventions.ServiceInstanceIDKey): o.instanceID.String(),
+		string(conventions.ServiceNameKey):       o.agentType,
+		string(conventions.ServiceVersionKey):    o.agentVersion,
+	}
+	maps.Copy(identMap, o.cfg.AgentDescription.IdentifyingAttributes)
+
+	// Sort identifying attributes for stable ordering.
+	identKeys := expmaps.Keys(identMap)
+	sort.Strings(identKeys)
+	ident := make([]*protobufs.KeyValue, 0, len(identMap))
+	for _, k := range identKeys {
+		ident = append(ident, stringKeyValue(k, identMap[k]))
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
@@ -394,7 +396,7 @@ func (o *opampAgent) createAgentDescription() error {
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
 		for k, v := range o.resourceAttrs {
 			// skip the attributes that are being used in the identifying attributes.
-			if _, ok := identifyingAttributes[k]; ok {
+			if _, ok := identMap[k]; ok {
 				continue
 			}
 			nonIdentifyingAttributeMap[k] = v
