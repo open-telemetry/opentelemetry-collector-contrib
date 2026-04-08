@@ -157,6 +157,7 @@ func (kr *k8seventsReceiver) startWatchers() {
 			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
 		},
 		kr.settings.Logger,
+		nil, // k8seventsreceiver does not use resource version persistence
 		func(event *apiWatch.Event) {
 			// The k8sinventory watch observer uses dynamic client which returns unstructured objects
 			// We need to convert them to corev1.Event

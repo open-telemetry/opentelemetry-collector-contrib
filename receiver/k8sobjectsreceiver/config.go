@@ -58,11 +58,10 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects                []*K8sObjectsConfig `mapstructure:"objects"`
-	Storage                *component.ID       `mapstructure:"storage"`
-	ErrorMode              ErrorMode           `mapstructure:"error_mode"`
-	IncludeInitialState    bool                `mapstructure:"include_initial_state"`
-	PersistResourceVersion bool                `mapstructure:"persist_resource_version"`
+	Objects             []*K8sObjectsConfig `mapstructure:"objects"`
+	Storage             *component.ID       `mapstructure:"storage"`
+	ErrorMode           ErrorMode           `mapstructure:"error_mode"`
+	IncludeInitialState bool                `mapstructure:"include_initial_state"`
 
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
@@ -97,8 +96,8 @@ func (c *Config) Validate() error {
 			return errors.New("the Exclude config can only be used with watch mode")
 		}
 
-		if c.PersistResourceVersion && object.ResourceVersion != "" {
-			return errors.New("resource_version cannot be set on an object when persist_resource_version is enabled")
+		if c.Storage != nil && object.ResourceVersion != "" {
+			return errors.New("resource_version cannot be set on an object when storage is configured for persistence")
 		}
 
 		if object.Mode == k8sinventory.PullMode && c.IncludeInitialState {

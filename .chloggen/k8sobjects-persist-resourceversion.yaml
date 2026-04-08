@@ -2,7 +2,7 @@ change_type: enhancement
 
 component: receiver/k8sobjects
 
-note: Add `persist_resource_version` option to watch-mode objects to resume watches from the last seen resourceVersion across restarts, preventing event duplication.
+note: When `storage` is configured, watch-mode objects automatically resume from the last seen resourceVersion across restarts, preventing event duplication.
 
 issues: [46543]
 

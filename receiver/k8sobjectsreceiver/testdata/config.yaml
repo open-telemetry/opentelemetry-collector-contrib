@@ -69,14 +69,3 @@ k8sobjects/exclude_namespaces:
       mode: watch
       exclude_namespaces:
         - regexp: default_ignore
-k8sobjects/watch_with_persisted_resource_version:
-  include_initial_state: false
-  storage: file_storage
-  persist_resource_version: true
-  objects:
-    - name: events
-      mode: watch
-      group: events.k8s.io
-      namespaces: [default]
-    - name: pods
-      mode: watch

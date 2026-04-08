@@ -416,8 +416,7 @@ func TestInitialStateListRVPersistedAsCheckpoint(t *testing.T) {
 			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
 			Namespaces: []string{"default"},
 		},
-		IncludeInitialState:    true,
-		PersistResourceVersion: true,
+		IncludeInitialState: true,
 	}
 
 	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)
@@ -464,7 +463,6 @@ func TestSendInitialStateUnparsableRVEmitsEvent(t *testing.T) {
 			Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
 			Namespaces: []string{"default"},
 		},
-		PersistResourceVersion: true,
 	}
 
 	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)
@@ -653,7 +651,6 @@ func TestObserverWithPersistence(t *testing.T) {
 			},
 			Namespaces: []string{"default"},
 		},
-		PersistResourceVersion: true,
 	}
 
 	receivedEventsChan := make(chan *apiWatch.Event, 10)
@@ -696,9 +693,8 @@ func TestObserverWithPersistence(t *testing.T) {
 	assert.Equal(t, "100", rv)
 }
 
-func TestObserverWithoutPersistence(t *testing.T) {
+func TestObserverWithoutStorage(t *testing.T) {
 	mockClient := newMockDynamicClient()
-	storageClient := storagetest.NewInMemoryClient(component.KindReceiver, component.MustNewID("test"), "test")
 
 	cfg := Config{
 		Config: k8sinventory.Config{
@@ -709,17 +705,17 @@ func TestObserverWithoutPersistence(t *testing.T) {
 			},
 			Namespaces: []string{"default"},
 		},
-		PersistResourceVersion: false, // Disabled
 	}
 
 	receivedEventsChan := make(chan *apiWatch.Event, 10)
 
-	obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, func(event *apiWatch.Event) {
+	// No storage client passed — checkpointer should not be initialized
+	obs, err := New(mockClient, cfg, zap.NewNop(), nil, func(event *apiWatch.Event) {
 		receivedEventsChan <- event
 	})
 
 	require.NoError(t, err)
-	assert.Nil(t, obs.checkpointer) // Should not be initialized
+	assert.Nil(t, obs.checkpointer)
 
 	wg := sync.WaitGroup{}
 
@@ -727,26 +723,16 @@ func TestObserverWithoutPersistence(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 100)
 
-	// Create a pod
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{"env": "test"}, "100"),
 	)
 
-	// Wait for event
 	select {
 	case <-receivedEventsChan:
 		// success
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout waiting for event")
 	}
-
-	time.Sleep(time.Millisecond * 100)
-
-	// Verify resourceVersion was NOT persisted
-	checkpointer := newCheckpointer(storageClient, zap.NewNop())
-	rv, err := checkpointer.GetCheckpoint(t.Context(), "default", "pods")
-	require.NoError(t, err)
-	assert.Empty(t, rv) // Should be empty
 
 	close(stopChan)
 	wg.Wait()
@@ -764,7 +750,6 @@ func TestObserverPersistenceNilStorage(t *testing.T) {
 			},
 			Namespaces: []string{"default"},
 		},
-		PersistResourceVersion: true,
 	}
 
 	receivedEventsChan := make(chan *apiWatch.Event, 10)
@@ -813,7 +798,6 @@ func TestObserverPersistenceClusterWideWatch(t *testing.T) {
 			},
 			Namespaces: []string{}, // Empty - cluster-wide watch
 		},
-		PersistResourceVersion: true,
 	}
 
 	receivedEventsChan := make(chan *apiWatch.Event, 10)
@@ -875,7 +859,6 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 			},
 			Namespaces: []string{"default", "other"},
 		},
-		PersistResourceVersion: true,
 	}
 
 	receivedEventsChan := make(chan *apiWatch.Event, 10)
@@ -934,7 +917,7 @@ func TestObserverPersistenceMultipleNamespaces(t *testing.T) {
 
 func TestGetResourceVersion(t *testing.T) {
 	// Tests are grouped by which source of resourceVersion is active.
-	// Note: config resource_version and persist_resource_version are mutually
+	// Note: config resource_version and storage-based persistence are mutually
 	// exclusive at the receiver config level, so no test combines both.
 
 	t.Run("with persistence", func(t *testing.T) {
@@ -982,7 +965,6 @@ func TestGetResourceVersion(t *testing.T) {
 						Gvr:        schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"},
 						Namespaces: []string{"default"},
 					},
-					PersistResourceVersion: true,
 				}
 
 				obs, err := New(mockClient, cfg, zap.NewNop(), storageClient, nil)

@@ -33,9 +33,8 @@ const (
 
 type Config struct {
 	k8sinventory.Config
-	IncludeInitialState    bool
-	PersistResourceVersion bool
-	Exclude                map[apiWatch.EventType]bool
+	IncludeInitialState bool
+	Exclude             map[apiWatch.EventType]bool
 }
 
 type Observer struct {
@@ -56,8 +55,8 @@ func New(client dynamic.Interface, config Config, logger *zap.Logger, storageCli
 		handleWatchEventFunc: handleWatchEventFunc,
 	}
 
-	// Initialize checkpointer if storage is available and persistence is enabled
-	if storageClient != nil && config.PersistResourceVersion {
+	// Initialize checkpointer if a storage client is provided
+	if storageClient != nil {
 		o.checkpointer = newCheckpointer(storageClient, logger)
 	}
 

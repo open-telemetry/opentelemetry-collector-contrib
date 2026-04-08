@@ -581,39 +581,19 @@ func TestNamespaceDenyListWatchObject(t *testing.T) {
 
 func TestReceiverStorageInitialization(t *testing.T) {
 	tests := []struct {
-		name                   string
-		persistResourceVersion bool
-		storageID              *component.ID
-		expectStorageClient    bool
-		expectWarning          bool
+		name                string
+		storageID           *component.ID
+		expectStorageClient bool
 	}{
 		{
-			name:                   "persistence enabled with storage",
-			persistResourceVersion: true,
-			storageID:              ptr(storagetest.NewStorageID("file_storage")),
-			expectStorageClient:    true,
-			expectWarning:          false,
+			name:                "storage configured",
+			storageID:           ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient: true,
 		},
 		{
-			name:                   "persistence disabled",
-			persistResourceVersion: false,
-			storageID:              ptr(storagetest.NewStorageID("file_storage")),
-			expectStorageClient:    false,
-			expectWarning:          false,
-		},
-		{
-			name:                   "persistence enabled without storage",
-			persistResourceVersion: true,
-			storageID:              nil,
-			expectStorageClient:    false,
-			expectWarning:          true,
-		},
-		{
-			name:                   "persistence disabled without storage",
-			persistResourceVersion: false,
-			storageID:              nil,
-			expectStorageClient:    false,
-			expectWarning:          false,
+			name:                "no storage configured",
+			storageID:           nil,
+			expectStorageClient: false,
 		},
 	}
 
@@ -624,7 +604,6 @@ func TestReceiverStorageInitialization(t *testing.T) {
 			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 			rCfg.makeDiscoveryClient = getMockDiscoveryClient
 			rCfg.Storage = tt.storageID
-			rCfg.PersistResourceVersion = tt.persistResourceVersion
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
 					Name: "pods",
@@ -670,7 +649,6 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
-	rCfg.PersistResourceVersion = true
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
@@ -700,20 +678,19 @@ func TestReceiverMultipleObjectsPersistence(t *testing.T) {
 
 	kr := r.(*k8sobjectsreceiver)
 
-	// Storage client should be initialized because top-level persistence is enabled
+	// Storage client should be initialized because storage is configured
 	assert.NotNil(t, kr.storageClient)
 
 	err = r.Shutdown(t.Context())
 	require.NoError(t, err)
 }
 
-func TestReceiverNoObjectsWithPersistence(t *testing.T) {
+func TestReceiverStorageClientInitializedWhenConfigured(t *testing.T) {
 	mockClient := newMockDynamicClient()
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 	rCfg.Storage = ptr(storagetest.NewStorageID("file_storage"))
-	rCfg.PersistResourceVersion = false
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
 			Name: "pods",
@@ -739,8 +716,8 @@ func TestReceiverNoObjectsWithPersistence(t *testing.T) {
 
 	kr := r.(*k8sobjectsreceiver)
 
-	// Storage client should NOT be initialized because top-level persistence is disabled
-	assert.Nil(t, kr.storageClient)
+	// Storage client should be initialized whenever storage is configured
+	assert.NotNil(t, kr.storageClient)
 
 	err = r.Shutdown(t.Context())
 	require.NoError(t, err)

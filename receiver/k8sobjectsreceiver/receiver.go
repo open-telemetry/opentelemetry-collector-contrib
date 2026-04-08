@@ -123,9 +123,8 @@ func getObserverFunc(kr *k8sobjectsreceiver) func(ctx context.Context, object *K
 						FieldSelector:   object.FieldSelector,
 						ResourceVersion: object.ResourceVersion,
 					},
-					IncludeInitialState:    kr.config.IncludeInitialState,
-					PersistResourceVersion: kr.config.PersistResourceVersion,
-					Exclude:                object.exclude,
+					IncludeInitialState: kr.config.IncludeInitialState,
+					Exclude:             object.exclude,
 				},
 				kr.setting.Logger,
 				kr.storageClient,
@@ -152,17 +151,13 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 	}
 	kr.client = client
 
-	// Initialize storage client if persistence is enabled at the top level
-	if kr.config.PersistResourceVersion {
-		if kr.config.Storage == nil {
-			kr.setting.Logger.Warn("persist_resource_version is enabled but no storage extension configured, persistence will not work")
-		} else {
-			storageClient, storageErr := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
-			if storageErr != nil {
-				return fmt.Errorf("failed to get storage client: %w", storageErr)
-			}
-			kr.storageClient = storageClient
+	// Initialize storage client for resource version persistence if storage is configured
+	if kr.config.Storage != nil {
+		storageClient, storageErr := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
+		if storageErr != nil {
+			return fmt.Errorf("failed to get storage client: %w", storageErr)
 		}
+		kr.storageClient = storageClient
 	}
 
 	// Validate objects against K8s API
