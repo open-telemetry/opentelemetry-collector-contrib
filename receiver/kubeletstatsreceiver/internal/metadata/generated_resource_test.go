@@ -34,7 +34,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 15, res.Attributes().Len())
 			case "none_set":
@@ -44,7 +44,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 			awsVolumeIDAttrVal, ok := res.Attributes().Get("aws.volume.id")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "aws.volume.id-val", awsVolumeIDAttrVal.Str())
 			}
@@ -54,22 +54,22 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "container.id-val", containerIDAttrVal.Str())
 			}
 			fsTypeAttrVal, ok := res.Attributes().Get("fs.type")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "fs.type-val", fsTypeAttrVal.Str())
 			}
 			gcePdNameAttrVal, ok := res.Attributes().Get("gce.pd.name")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "gce.pd.name-val", gcePdNameAttrVal.Str())
 			}
 			glusterfsEndpointsNameAttrVal, ok := res.Attributes().Get("glusterfs.endpoints.name")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "glusterfs.endpoints.name-val", glusterfsEndpointsNameAttrVal.Str())
 			}
 			glusterfsPathAttrVal, ok := res.Attributes().Get("glusterfs.path")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "glusterfs.path-val", glusterfsPathAttrVal.Str())
 			}
@@ -114,7 +114,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "k8s.volume.type-val", k8sVolumeTypeAttrVal.Str())
 			}
 			partitionAttrVal, ok := res.Attributes().Get("partition")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "partition-val", partitionAttrVal.Str())
 			}
