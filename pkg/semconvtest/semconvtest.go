@@ -232,8 +232,7 @@ func (opts *WeaverOptions) cmdArgs() []string {
 	if opts.Registry != "" {
 		args = append(args, "--registry", opts.Registry)
 	}
-	args = append(args, "--output", "http")
-	args = append(args, "--format", "json")
+	args = append(args, "--output", "http", "--format", "json")
 	return args
 }
 
