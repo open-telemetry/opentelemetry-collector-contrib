@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Resume paused partitions on reassignment after rebalance
+note: Resume paused partitions after backoff delay and on reassignment after rebalance
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47118]
@@ -16,9 +16,13 @@ issues: [47118]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  PauseFetchPartitions state in franz-go persists across rebalances by design.
-  The receiver never called ResumeFetchPartitions, so paused partitions that were
-  revoked and re-assigned to the same consumer would never be fetched again.
+  When message_marking.after=true and message_marking.on_error=false, non-permanent
+  processing errors (e.g. from memorylimiter) caused PauseFetchPartitions to be called
+  but ResumeFetchPartitions was never called, leaving partitions paused forever.
+  Partitions are now automatically resumed after the configured error_backoff.initial_interval
+  delay when error_backoff is enabled. Additionally, partitions paused across rebalances
+  are resumed via ResumeFetchPartitions in the assigned callback, since franz-go persists
+  the pause state by design.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

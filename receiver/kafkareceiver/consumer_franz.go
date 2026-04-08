@@ -321,9 +321,10 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 						zap.Error(err),
 						zap.Int64("offset", msg.Offset),
 					)
-					// Pause consumption for partitions that have fatal errors,
-					// which isn't ideal since there needs to be some sort of manual
-					// intervention to unlock the partition.
+					// Pause consumption for partitions that have fatal errors.
+					// handleMessage only returns an error when After=true and
+					// the message should not be marked, so checking !shouldMark
+					// here is consistent with that contract.
 					isPermanent := consumererror.IsPermanent(err)
 					shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
 
@@ -334,25 +335,36 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 				}
 				lastProcessed = msg // Store so we can commit later.
 			}
-			// Pause topic/partition processing locally, any rebalances that move
-			// away the process the partition regularly, which will re-process
-			// the message.
+			// Pause topic/partition processing locally, then optionally
+			// resume after a backoff delay. Without backoff configured, the
+			// partition stays paused until a rebalance triggers assigned(),
+			// which calls ResumeFetchPartitions.
 			if fatalOffset > -1 {
-				c.client.PauseFetchPartitions(map[string][]int32{
-					p.Topic: {p.Partition},
-				})
-				// We don't return false since we want to avoid shutting down
-				// the consumer loop and consumption due to message poisoning.
-				// If we did, we would cause an eventual systematic failure if
-				// there are more topic / partitions in this consumer group when
-				// the partition is rebalanced to another consumer in the group.
-				//
-				// Ideally, we would attempt to re-process permanent errors
-				// for up to N times and then pause processing, or even better,
-				// produce the message to a dead letter topic.
-				pc.logger.Error("unable to process message: pausing consumption of this topic / partition on this consumer instance due to message_marking configuration",
-					zap.Int64("offset", fatalOffset),
-				)
+				tp := map[string][]int32{p.Topic: {p.Partition}}
+				c.client.PauseFetchPartitions(tp)
+
+				if c.config.ErrorBackOff.Enabled {
+					resumeDelay := c.config.ErrorBackOff.InitialInterval
+					pc.logger.Info("pausing partition due to processing error, will resume after delay",
+						zap.Int64("offset", fatalOffset),
+						zap.Duration("delay", resumeDelay),
+					)
+					select {
+					case <-pc.ctx.Done():
+						return
+					case <-c.closing:
+						return
+					case <-time.After(resumeDelay):
+					}
+					c.client.ResumeFetchPartitions(tp)
+					pc.logger.Info("resumed partition after delay",
+						zap.Int64("offset", fatalOffset),
+					)
+				} else {
+					pc.logger.Error("pausing partition due to processing error (no backoff configured), partition will remain paused until rebalance",
+						zap.Int64("offset", fatalOffset),
+					)
+				}
 			}
 			if lastProcessed == nil {
 				return // No metrics nor marks to update.
