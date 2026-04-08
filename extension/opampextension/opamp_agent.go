@@ -389,6 +389,9 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[string(conventions.HostArchKey)] = runtime.GOARCH
 	nonIdentifyingAttributeMap[string(conventions.HostNameKey)] = hostname
 	nonIdentifyingAttributeMap[string(conventions.OSDescriptionKey)] = description
+	if exePath := getExecutablePath(o.logger); exePath != "" {
+		nonIdentifyingAttributeMap[string(conventions.ProcessExecutablePathKey)] = exePath
+	}
 
 	maps.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
@@ -514,6 +517,17 @@ func getOSDescription(logger *zap.Logger) string {
 	default:
 		return runtime.GOOS
 	}
+}
+
+// getExecutablePath returns the full path to the running collector binary.
+// Returns an empty string if the path cannot be determined.
+func getExecutablePath(logger *zap.Logger) string {
+	path, err := os.Executable()
+	if err != nil {
+		logger.Error("failed getting executable path", zap.Error(err))
+		return ""
+	}
+	return path
 }
 
 func (o *opampAgent) initHealthReporting() {

@@ -71,6 +71,8 @@ func TestCreateAgentDescription(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	description := getOSDescription(zap.NewNop())
+	exePath, err := os.Executable()
+	require.NoError(t, err)
 
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
@@ -98,6 +100,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("host.name", hostname),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue("process.executable.path", exePath),
 				},
 			},
 		},
@@ -122,6 +125,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("k8s.pod.name", "my-very-cool-pod"),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue("process.executable.path", exePath),
 				},
 			},
 		},
@@ -143,6 +147,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("host.name", "override-host"),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue("process.executable.path", exePath),
 				},
 			},
 		},
@@ -163,6 +168,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("host.name", hostname),
 					stringKeyValue("os.description", description),
 					stringKeyValue("os.type", runtime.GOOS),
+					stringKeyValue("process.executable.path", exePath),
 				},
 			},
 		},
