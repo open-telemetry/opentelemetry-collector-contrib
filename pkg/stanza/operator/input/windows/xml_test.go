@@ -577,8 +577,10 @@ func TestUnmarshalSystemEventWithRenderingInfo(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "xmlRenderingInfoSystem.xml"))
 	require.NoError(t, err)
 
-	event, err := unmarshalEventXML(data)
+	parsedEvent, err := unmarshalEventXML(data)
 	require.NoError(t, err)
+
+	event := parsedEvent.toEventXML()
 
 	require.NotNil(t, event.RenderingInfo)
 	require.Equal(t, "en-US", event.RenderingInfo.Culture)
@@ -612,8 +614,10 @@ func TestUnmarshalSecurityEventWithRenderingInfo(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "xmlRenderingInfoSecurity.xml"))
 	require.NoError(t, err)
 
-	event, err := unmarshalEventXML(data)
+	parsedEvent, err := unmarshalEventXML(data)
 	require.NoError(t, err)
+
+	event := parsedEvent.toEventXML()
 
 	require.NotNil(t, event.RenderingInfo)
 	require.Equal(t, "en-US", event.RenderingInfo.Culture)
@@ -637,6 +641,44 @@ func TestUnmarshalSecurityEventWithRenderingInfo(t *testing.T) {
 	require.Equal(t, "en-US", ri["culture"])
 	require.Equal(t, "Security", ri["channel"])
 	require.Equal(t, "Microsoft Windows security auditing.", ri["provider"])
+}
+
+func TestUnmarshalRawEventXML(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalRawEventXML(data)
+	require.NoError(t, err)
+
+	// rawParsedEvent carries only the four fields needed by sendEvent in raw mode.
+	// The absence of EventXML fields (EventID, Provider, Computer, etc.) is
+	// enforced by the type itself — rawParsedEvent has no such fields.
+	require.Equal(t, string(data), event.getOriginal())
+	require.Equal(t, "2022-04-22T10:20:52.3778625Z", event.getSystemTime())
+	require.Equal(t, "4", event.getLevel())
+	require.Empty(t, event.getRenderedLevel())
+}
+
+func TestUnmarshalRawEventXMLWithRenderingInfo(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlRenderingInfoSystem.xml"))
+	require.NoError(t, err)
+
+	event, err := unmarshalRawEventXML(data)
+	require.NoError(t, err)
+
+	require.Equal(t, string(data), event.getOriginal())
+	require.NotEmpty(t, event.getSystemTime())
+	require.Equal(t, "Information", event.getRenderedLevel())
+	require.Panics(t, func() {
+		_ = event.toEventXML()
+	})
+	// All other RenderingInfo fields (Message, Culture, Keywords, etc.) are
+	// not present on rawParsedEvent — the type enforces they were never parsed.
+}
+
+func TestUnmarshalRawEventXMLInvalid(t *testing.T) {
+	_, err := unmarshalRawEventXML([]byte("Test \n Invalid \t Unmarshal"))
+	require.Error(t, err)
 }
 
 func TestInvalidUnmarshal(t *testing.T) {
@@ -723,8 +765,9 @@ func TestUnmarshalWithIllegalXMLChars(t *testing.T) {
     </EventData>
 </Event>`
 
-	event, err := unmarshalEventXML([]byte(xmlTemplate))
+	parsedEvent, err := unmarshalEventXML([]byte(xmlTemplate))
 	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
 	require.Equal(t, "Microsoft-Windows-Sysmon/Operational", event.Channel)
 	require.Equal(t, uint64(12345), event.RecordID)
 	// The illegal character should have been stripped from the event data value
@@ -1051,8 +1094,9 @@ func TestUnmarshalWithProcessingErrorData(t *testing.T) {
 	</ProcessingErrorData>
 </Event>`
 
-	event, err := unmarshalEventXML([]byte(xmlStr))
+	parsedEvent, err := unmarshalEventXML([]byte(xmlStr))
 	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
 	require.NotNil(t, event.ProcessingErrorData)
 	require.Equal(t, uint32(15005), event.ProcessingErrorData.ErrorCode)
 	require.Equal(t, "SubjectUserSid", event.ProcessingErrorData.DataItemName)
@@ -1109,8 +1153,9 @@ func TestUnmarshalWithDebugData(t *testing.T) {
 	</DebugData>
 </Event>`
 
-	event, err := unmarshalEventXML([]byte(xmlStr))
+	parsedEvent, err := unmarshalEventXML([]byte(xmlStr))
 	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
 	require.NotNil(t, event.DebugData)
 	require.Equal(t, uint32(42), event.DebugData.SequenceNumber)
 	require.Equal(t, "TRACE_LEVEL_INFORMATION", event.DebugData.FlagName)
@@ -1145,8 +1190,9 @@ func TestUnmarshalWithBinaryEventData(t *testing.T) {
 	<BinaryEventData>AABBCCDD</BinaryEventData>
 </Event>`
 
-	event, err := unmarshalEventXML([]byte(xmlStr))
+	parsedEvent, err := unmarshalEventXML([]byte(xmlStr))
 	require.NoError(t, err)
+	event := parsedEvent.toEventXML()
 	require.Equal(t, "AABBCCDD", event.BinaryEventData)
 }
 
@@ -1397,7 +1443,7 @@ func TestUnmarshalAndFormatAnonymousEventData(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	mapBody := formattedBody(event, EventDataFormatMap)
+	mapBody := formattedBody(event.toEventXML(), EventDataFormatMap)
 	mapEventData := mapBody["event_data"].(map[string]any)
 	require.Equal(t, "1st_value", mapEventData["param1"])
 	require.Equal(t, "2nd_value", mapEventData["param2"])
@@ -1405,7 +1451,7 @@ func TestUnmarshalAndFormatAnonymousEventData(t *testing.T) {
 	_, hasDataKey := mapEventData["data"]
 	require.False(t, hasDataKey, "map format should not have a 'data' key")
 
-	arrayBody := formattedBody(event, EventDataFormatArray)
+	arrayBody := formattedBody(event.toEventXML(), EventDataFormatArray)
 	arrayEventData := arrayBody["event_data"].(map[string]any)
 	require.Equal(t, []any{
 		map[string]any{"": "1st_value"},
@@ -1421,12 +1467,12 @@ func TestUnmarshalAndFormatNamedEventData(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	mapBody := formattedBody(event, EventDataFormatMap)
+	mapBody := formattedBody(event.toEventXML(), EventDataFormatMap)
 	mapEventData := mapBody["event_data"].(map[string]any)
 	require.Equal(t, "2022-04-28T19:48:52Z", mapEventData["Time"])
 	require.Equal(t, "RulesEngine", mapEventData["Source"])
 
-	arrayBody := formattedBody(event, EventDataFormatArray)
+	arrayBody := formattedBody(event.toEventXML(), EventDataFormatArray)
 	arrayEventData := arrayBody["event_data"].(map[string]any)
 	require.Equal(t, []any{
 		map[string]any{"Time": "2022-04-28T19:48:52Z"},

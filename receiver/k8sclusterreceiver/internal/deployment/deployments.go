@@ -28,13 +28,13 @@ func Transform(deployment *appsv1.Deployment) *appsv1.Deployment {
 }
 
 func RecordMetrics(mb *metadata.MetricsBuilder, dep *appsv1.Deployment, ts pcommon.Timestamp) {
-	mb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))             //nolint:staticcheck
-	mb.RecordK8sDeploymentAvailableDataPoint(ts, int64(dep.Status.AvailableReplicas)) //nolint:staticcheck
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sDeploymentName(dep.Name)
-	rb.SetK8sDeploymentUID(string(dep.UID))
-	rb.SetK8sNamespaceName(dep.Namespace)
-	mb.EmitForResource(metadata.WithResource(rb.Emit())) //nolint:staticcheck
+	e := metadata.NewK8sDeploymentEntity(string(dep.UID))
+	e.SetK8sDeploymentName(dep.Name)
+	e.SetK8sNamespaceName(dep.Namespace)
+	eb := mb.ForK8sDeployment(e)
+	eb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))
+	eb.RecordK8sDeploymentAvailableDataPoint(ts, int64(dep.Status.AvailableReplicas))
+	eb.Emit()
 }
 
 func GetMetadata(dep *appsv1.Deployment) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

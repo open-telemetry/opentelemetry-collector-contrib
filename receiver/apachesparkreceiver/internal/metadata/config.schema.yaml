@@ -18,6 +18,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "location"
+                - "state"
+            default:
+              - "location"
+              - "state"
       spark.driver.code_generator.compilation.average_time:
         description: "SparkDriverCodeGeneratorCompilationAverageTimeMetricConfig provides config for the spark.driver.code_generator.compilation.average_time metric."
         type: object
@@ -95,6 +113,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       spark.driver.dag_scheduler.stage.failed:
         description: "SparkDriverDagSchedulerStageFailedMetricConfig provides config for the spark.driver.dag_scheduler.stage.failed metric."
         type: object
@@ -109,6 +143,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "gc_type"
+            default:
+              - "gc_type"
       spark.driver.executor.gc.time:
         description: "SparkDriverExecutorGcTimeMetricConfig provides config for the spark.driver.executor.gc.time metric."
         type: object
@@ -116,6 +166,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "gc_type"
+            default:
+              - "gc_type"
       spark.driver.executor.memory.execution:
         description: "SparkDriverExecutorMemoryExecutionMetricConfig provides config for the spark.driver.executor.memory.execution metric."
         type: object
@@ -123,6 +189,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "location"
+            default:
+              - "location"
       spark.driver.executor.memory.jvm:
         description: "SparkDriverExecutorMemoryJvmMetricConfig provides config for the spark.driver.executor.memory.jvm metric."
         type: object
@@ -130,6 +212,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "location"
+            default:
+              - "location"
       spark.driver.executor.memory.pool:
         description: "SparkDriverExecutorMemoryPoolMetricConfig provides config for the spark.driver.executor.memory.pool metric."
         type: object
@@ -137,6 +235,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       spark.driver.executor.memory.storage:
         description: "SparkDriverExecutorMemoryStorageMetricConfig provides config for the spark.driver.executor.memory.storage metric."
         type: object
@@ -144,6 +258,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "location"
+            default:
+              - "location"
       spark.driver.hive_external_catalog.file_cache_hits:
         description: "SparkDriverHiveExternalCatalogFileCacheHitsMetricConfig provides config for the spark.driver.hive_external_catalog.file_cache_hits metric."
         type: object
@@ -249,6 +379,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       spark.executor.storage_memory.usage:
         description: "SparkExecutorStorageMemoryUsageMetricConfig provides config for the spark.executor.storage_memory.usage metric."
         type: object
@@ -256,6 +402,24 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "location"
+                - "state"
+            default:
+              - "location"
+              - "state"
       spark.executor.task.active:
         description: "SparkExecutorTaskActiveMetricConfig provides config for the spark.executor.task.active metric."
         type: object
@@ -277,6 +441,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "result"
+            default:
+              - "result"
       spark.executor.time:
         description: "SparkExecutorTimeMetricConfig provides config for the spark.executor.time metric."
         type: object
@@ -298,6 +478,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "result"
+            default:
+              - "result"
       spark.job.task.active:
         description: "SparkJobTaskActiveMetricConfig provides config for the spark.job.task.active metric."
         type: object
@@ -312,6 +508,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "result"
+            default:
+              - "result"
       spark.stage.disk.spilled:
         description: "SparkStageDiskSpilledMetricConfig provides config for the spark.stage.disk.spilled metric."
         type: object
@@ -340,6 +552,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       spark.stage.io.size:
         description: "SparkStageIoSizeMetricConfig provides config for the spark.stage.io.size metric."
         type: object
@@ -347,6 +575,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       spark.stage.jvm_gc_time:
         description: "SparkStageJvmGcTimeMetricConfig provides config for the spark.stage.jvm_gc_time metric."
         type: object
@@ -375,6 +619,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "source"
+            default:
+              - "source"
       spark.stage.shuffle.fetch_wait_time:
         description: "SparkStageShuffleFetchWaitTimeMetricConfig provides config for the spark.stage.shuffle.fetch_wait_time metric."
         type: object
@@ -396,6 +656,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "source"
+            default:
+              - "source"
       spark.stage.shuffle.io.records:
         description: "SparkStageShuffleIoRecordsMetricConfig provides config for the spark.stage.shuffle.io.records metric."
         type: object
@@ -403,6 +679,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       spark.stage.shuffle.io.write.size:
         description: "SparkStageShuffleIoWriteSizeMetricConfig provides config for the spark.stage.shuffle.io.write.size metric."
         type: object
@@ -424,6 +716,28 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "active"
+                - "complete"
+                - "pending"
+                - "failed"
+            default:
+              - "active"
+              - "complete"
+              - "pending"
+              - "failed"
       spark.stage.task.active:
         description: "SparkStageTaskActiveMetricConfig provides config for the spark.stage.task.active metric."
         type: object
@@ -438,6 +752,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "result"
+            default:
+              - "result"
       spark.stage.task.result_size:
         description: "SparkStageTaskResultSizeMetricConfig provides config for the spark.stage.task.result_size metric."
         type: object
