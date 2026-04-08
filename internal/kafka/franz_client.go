@@ -62,7 +62,7 @@ func NewFranzSyncProducer(
 	}
 	// Prepend a default sarama-compatible partitioner so that callers can override
 	// it by appending their own kgo.RecordPartitioner option in opts.
-	opts = append([]kgo.Opt{kgo.RecordPartitioner(NewSaramaCompatPartitioner())}, opts...)
+	opts = append([]kgo.Opt{kgo.RecordPartitioner(newSaramaCompatPartitioner())}, opts...)
 	opts, err := commonOpts(ctx, host, clientCfg, logger, append(
 		opts,
 		kgo.ProduceRequestTimeout(timeout),
@@ -372,7 +372,7 @@ func compressionCodec(compression string) kgo.CompressionCodec {
 	}
 }
 
-func NewSaramaCompatPartitioner() kgo.Partitioner {
+func newSaramaCompatPartitioner() kgo.Partitioner {
 	return kgo.StickyKeyPartitioner(NewSaramaCompatHasher())
 }
 

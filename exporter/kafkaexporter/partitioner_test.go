@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -80,10 +79,10 @@ func TestRecordPartitionerConfig_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.cfg.Validate()
 			if tt.wantErr == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.wantErr)
+				require.ErrorContains(t, err, tt.wantErr)
 			}
 		})
 	}
@@ -154,10 +153,10 @@ func TestBuildPartitionerOpt(t *testing.T) {
 			opt, err := buildPartitionerOpt(tt.cfg, tt.host)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
-				assert.NotNil(t, opt)
+				require.NotNil(t, opt)
 			} else {
 				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.wantErr)
+				require.ErrorContains(t, err, tt.wantErr)
 			}
 		})
 	}
@@ -245,7 +244,7 @@ func TestRecordPartitioner_RoundRobin(t *testing.T) {
 
 	require.Len(t, records, numPartitions)
 	partitions := partitionSet(records)
-	assert.Len(t, partitions, numPartitions,
+	require.Len(t, partitions, numPartitions,
 		"round-robin should spread %d records across all %d partitions", numPartitions, numPartitions)
 }
 
@@ -272,7 +271,34 @@ func TestRecordPartitioner_SaramaCompatible_SameKeyConsistency(t *testing.T) {
 
 	require.Len(t, records, numRecords)
 	partitions := partitionSet(records)
-	assert.Len(t, partitions, 1,
+	require.Len(t, partitions, 1,
+		"all records with the same key should land on the same partition")
+}
+
+func TestRecordPartitioner_SaramaCompatible_Murmur2(t *testing.T) {
+	const numPartitions = 4
+	const topic = "sarama-key-topic"
+	const numRecords = 6
+
+	client, brokers := newPartitioningProducer(t,
+		RecordPartitionerConfig{
+			StickyKey: &StickyKeyPartitionerConfig{
+				Hasher: HasherMurmur2,
+			},
+		},
+		componenttest.NewNopHost(), numPartitions, topic,
+	)
+
+	key := []byte("stable-key")
+	keys := make([][]byte, numRecords)
+	for i := range keys {
+		keys[i] = key
+	}
+	records := produceAndFetch(t, client, brokers, topic, keys)
+
+	require.Len(t, records, numRecords)
+	partitions := partitionSet(records)
+	require.Len(t, partitions, 1,
 		"all records with the same key should land on the same partition")
 }
 
@@ -292,7 +318,7 @@ func TestRecordPartitioner_SaramaCompatible_DifferentKeys(t *testing.T) {
 	records := produceAndFetch(t, client, brokers, topic, keys)
 
 	require.Len(t, records, 2)
-	assert.NotEqual(t, records[0].Partition, records[1].Partition,
+	require.NotEqual(t, records[0].Partition, records[1].Partition,
 		"distinct keys should land on distinct partitions")
 }
 
@@ -300,14 +326,28 @@ func TestRecordPartitioner_LeastBackup(t *testing.T) {
 	const numPartitions = 3
 	const topic = "lb-topic"
 
+	// LeastBackup picks the partition with the smallest producer buffer.
+	// If multiple partitions are tied, franz-go randomly chooses one of them.
+	//
+	// When linger=0 and we send one record at a time (ProduceSync),
+	// each send completes before the next partition is picked. That keeps
+	// all buffers roughly equal, so each record is effectively sent to a
+	// random partition.
+	//
+	// due to this randomness, a small number of messages might still all land on the same partition.
+	// that's why we use large number of records.
+	const numRecords = 50
+
 	client, brokers := newPartitioningProducer(t,
 		RecordPartitionerConfig{LeastBackup: &struct{}{}},
 		componenttest.NewNopHost(), numPartitions, topic,
 	)
 
-	nils := make([][]byte, numPartitions)
-	records := produceAndFetch(t, client, brokers, topic, nils)
-	assert.Len(t, records, numPartitions, "all records should be produced successfully")
+	records := produceAndFetch(t, client, brokers, topic, make([][]byte, numRecords))
+	require.Len(t, records, numRecords)
+
+	partitions := partitionSet(records)
+	require.Len(t, partitions, numPartitions)
 }
 
 func TestRecordPartitioner_Extension_CustomRouting(t *testing.T) {
@@ -339,7 +379,7 @@ func TestRecordPartitioner_Extension_CustomRouting(t *testing.T) {
 
 	require.Len(t, records, numRecords)
 	for _, r := range records {
-		assert.Equal(t, int32(0), r.Partition,
+		require.Equal(t, int32(0), r.Partition,
 			"extension partitioner (always-zero) should route all records to partition 0")
 	}
 }

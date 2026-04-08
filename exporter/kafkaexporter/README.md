@@ -171,10 +171,9 @@ The destination topic can be defined in a few different ways and takes priority 
 
 ## Partitioning Kafka Records
 
-Kafka topics are partitioned, meaning a topic is spread over a number of “buckets” located on different Kafka brokers.
 The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
 
-Available strategies for partitioning are `sticky_key`, `sticky`,  `round_robin`, `least_backup` and `extension`
+Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
 
 ### Using custom partitioner
 

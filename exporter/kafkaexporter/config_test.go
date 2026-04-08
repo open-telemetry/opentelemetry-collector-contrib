@@ -81,11 +81,11 @@ func TestLoadConfig(t *testing.T) {
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
 				PartitionLogsByTraceID:               false,
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "sarama_compat",
 					},
-				},
+				}),
 			},
 		},
 		{
@@ -100,9 +100,9 @@ func TestLoadConfig(t *testing.T) {
 				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
 				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
 				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					RoundRobin: &struct{}{},
-				},
+				}),
 			},
 		},
 		{
@@ -117,9 +117,9 @@ func TestLoadConfig(t *testing.T) {
 				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
 				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
 				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					LeastBackup: &struct{}{},
-				},
+				}),
 			},
 		},
 		{
@@ -134,11 +134,11 @@ func TestLoadConfig(t *testing.T) {
 				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
 				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
 				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "sarama_compat",
 					},
-				},
+				}),
 			},
 		},
 		{
@@ -153,11 +153,11 @@ func TestLoadConfig(t *testing.T) {
 				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
 				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
 				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "murmur2",
 					},
-				},
+				}),
 			},
 		},
 		{
@@ -188,11 +188,11 @@ func TestLoadConfig(t *testing.T) {
 				IncludeMetadataKeys: []string{
 					"metadata_key",
 				},
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "sarama_compat",
 					},
-				},
+				}),
 			},
 		},
 		{
@@ -219,11 +219,11 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "otlp_profiles",
 					Encoding: "per_signal_encoding",
 				},
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "sarama_compat",
 					},
-				},
+				}),
 			},
 		},
 		{
@@ -267,11 +267,11 @@ func TestLoadConfig(t *testing.T) {
 					Encoding:             "otlp_proto",
 				},
 				IncludeMetadataKeys: []string{"metadata_key"},
-				RecordPartitioner: RecordPartitionerConfig{
+				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "sarama_compat",
 					},
-				},
+				}),
 			},
 		},
 	}

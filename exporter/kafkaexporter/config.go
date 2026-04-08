@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
@@ -85,17 +84,19 @@ func (c *StickyKeyPartitionerConfig) Validate() error {
 }
 
 func (c *RecordPartitionerConfig) Validate() error {
-	// verify that at most one partitioner type is set by counting the number of non-nil pointer fields in this struct.
-	v := reflect.ValueOf(c).Elem()
 	set := 0
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		// Count non-nil pointer fields
-		if field.Kind() == reflect.Ptr && !field.IsNil() {
-			set++
-		}
+	if c.StickyKey != nil {
+		set++
 	}
-
+	if c.RoundRobin != nil {
+		set++
+	}
+	if c.LeastBackup != nil {
+		set++
+	}
+	if c.Extension != nil {
+		set++
+	}
 	if set > 1 {
 		return errRecordPartitionerMultipleSet
 	}
@@ -110,24 +111,12 @@ func (c *RecordPartitionerConfig) Validate() error {
 }
 
 func (c *RecordPartitionerConfig) Unmarshal(conf *confmap.Conf) error {
-	// Use reflection to clear all fields
-	// This is done to ensure that default partioner is not retained when Unmarshaling.
-	// Doing so will ensure that only one partitioner is set at a time and the validation will work as expected.
-	v := reflect.ValueOf(c).Elem()
-
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		// Clear the field by setting it to its zero value
-		if field.CanSet() {
-			field.Set(reflect.Zero(field.Type()))
-		}
+	if len(conf.ToStringMap()) == 0 {
+		// no partitioner configured, will use default.
+		return nil
 	}
-
-	if err := conf.Unmarshal(c); err != nil {
-		return err
-	}
-
-	return nil
+	*c = RecordPartitionerConfig{}
+	return conf.Unmarshal(c)
 }
 
 // Config defines configuration for Kafka exporter.
