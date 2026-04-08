@@ -236,6 +236,7 @@ func findHostMappedPort(c *ctypes.InspectResponse, exposedPort network.Port) (ui
 }
 
 // Valid proto for docker containers should be tcp, udp, sctp
+// https://pkg.go.dev/github.com/moby/moby/api/types/network@v1.54.1#IPProtocol
 func portProtoToTransport(proto string) observer.Transport {
 	switch proto {
 	case "tcp":

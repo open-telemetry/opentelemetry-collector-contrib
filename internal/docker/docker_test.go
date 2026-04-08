@@ -371,7 +371,8 @@ func portableEndpoint(addr string) string {
 }
 
 func TestAPIVersionNegotiation(t *testing.T) {
-	// Start an HTTP server that responds to /_ping with API-Version header.
+	// moby/moby/client removed NegotiateAPIVersionPing, so version negotiation
+	// can only happen via a real Ping call. We need a test server for that.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("API-Version", "1.45")
 		w.WriteHeader(http.StatusOK)
