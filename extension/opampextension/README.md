@@ -51,6 +51,18 @@ The following settings are optional for both transports:
 - `agent_description`: Setting that modifies the agent description reported to the OpAMP server.
   - `include_resource_attributes`: Copy the Collector's resource attributes into the set of non-identifying attributes in the agent description.
   - `non_identifying_attributes`: A map of key value pairs that will be added to the [non-identifying attributes](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionnon_identifying_attributes) reported to the OpAMP server. If an attribute collides with the default non-identifying attributes that are automatically added, the ones specified here take precedence.
+
+When running inside Kubernetes (when `KUBERNETES_SERVICE_HOST` is set), the extension also adds these non-identifying attributes from Downward API environment variables:
+
+| Attribute | Description |
+| --------- | ----------- |
+| `k8s.node.name` | Kubernetes node name. Auto-detected from the `K8S_NODE_NAME` env var when running in Kubernetes (identified by the presence of `KUBERNETES_SERVICE_HOST`). |
+| `k8s.pod.name` | Kubernetes pod name. Auto-detected from the `K8S_POD_NAME` env var. |
+| `k8s.namespace.name` | Kubernetes namespace. Auto-detected from the `K8S_NAMESPACE` env var. |
+| `k8s.pod.uid` | Kubernetes pod UID. Auto-detected from the `K8S_POD_UID` env var. |
+| `k8s.cluster.name` | Kubernetes cluster name. Auto-detected from the `OTEL_K8S_CLUSTER_NAME` env var. |
+| `k8s.daemonset.name` | Kubernetes DaemonSet name. Auto-detected from the `K8S_DAEMONSET_NAME` env var. |
+| `k8s.deployment.name` | Kubernetes Deployment name. Auto-detected from the `K8S_DEPLOYMENT_NAME` env var. |
 - `ppid`: An optional process ID to monitor. When this process is no longer running, the extension will emit a fatal error, causing the collector to exit. This is meant to be set by the Supervisor or some other parent process, and should not be configured manually.
 - `ppid_poll_interval`: The poll interval between check for whether `ppid` is still alive or not. Defaults to 5 seconds.
 

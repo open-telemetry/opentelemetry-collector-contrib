@@ -102,6 +102,21 @@ var (
 		string(conventions.ServiceVersionKey):    {},
 		string(conventions.ServiceInstanceIDKey): {},
 	}
+
+	// k8sEnvMapping maps Kubernetes Downward API environment variable names to
+	// their corresponding OTel semantic convention attribute keys.
+	k8sEnvMapping = []struct {
+		envVar  string
+		attrKey string
+	}{
+		{"K8S_NODE_NAME", "k8s.node.name"},
+		{"K8S_POD_NAME", "k8s.pod.name"},
+		{"K8S_NAMESPACE", "k8s.namespace.name"},
+		{"K8S_POD_UID", "k8s.pod.uid"},
+		{"OTEL_K8S_CLUSTER_NAME", "k8s.cluster.name"},
+		{"K8S_DAEMONSET_NAME", "k8s.daemonset.name"},
+		{"K8S_DEPLOYMENT_NAME", "k8s.deployment.name"},
+	}
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
@@ -390,6 +405,11 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[string(conventions.HostNameKey)] = hostname
 	nonIdentifyingAttributeMap[string(conventions.OSDescriptionKey)] = description
 
+	// Auto-detect Kubernetes attributes when running inside a K8s cluster.
+	if k8sAttrs := detectK8sAttributes(); len(k8sAttrs) > 0 {
+		maps.Copy(nonIdentifyingAttributeMap, k8sAttrs)
+	}
+
 	maps.Copy(nonIdentifyingAttributeMap, o.cfg.AgentDescription.NonIdentifyingAttributes)
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
 		for k, v := range o.resourceAttrs {
@@ -514,6 +534,23 @@ func getOSDescription(logger *zap.Logger) string {
 	default:
 		return runtime.GOOS
 	}
+}
+
+// detectK8sAttributes returns Kubernetes-specific non-identifying attributes by reading
+// Downward API environment variables. Returns nil if not running inside Kubernetes
+// (detected by the absence of the KUBERNETES_SERVICE_HOST environment variable).
+func detectK8sAttributes() map[string]string {
+	if _, ok := os.LookupEnv("KUBERNETES_SERVICE_HOST"); !ok {
+		return nil
+	}
+
+	attrs := make(map[string]string)
+	for _, m := range k8sEnvMapping {
+		if val, ok := os.LookupEnv(m.envVar); ok && val != "" {
+			attrs[m.attrKey] = val
+		}
+	}
+	return attrs
 }
 
 func (o *opampAgent) initHealthReporting() {

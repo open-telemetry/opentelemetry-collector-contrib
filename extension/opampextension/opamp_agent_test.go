@@ -191,6 +191,47 @@ func TestCreateAgentDescription(t *testing.T) {
 	}
 }
 
+func TestDetectK8sAttributes(t *testing.T) {
+	t.Run("not in K8s", func(t *testing.T) {
+		t.Setenv("KUBERNETES_SERVICE_HOST", "")
+		os.Unsetenv("KUBERNETES_SERVICE_HOST")
+		result := detectK8sAttributes()
+		assert.Nil(t, result)
+	})
+
+	t.Run("in K8s with all env vars", func(t *testing.T) {
+		t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+		t.Setenv("K8S_NODE_NAME", "my-node")
+		t.Setenv("K8S_POD_NAME", "my-pod")
+		t.Setenv("K8S_NAMESPACE", "my-namespace")
+		t.Setenv("K8S_POD_UID", "abc-123")
+		t.Setenv("OTEL_K8S_CLUSTER_NAME", "my-cluster")
+		t.Setenv("K8S_DAEMONSET_NAME", "my-daemonset")
+		t.Setenv("K8S_DEPLOYMENT_NAME", "my-deployment")
+
+		result := detectK8sAttributes()
+		require.NotNil(t, result)
+		assert.Equal(t, "my-node", result["k8s.node.name"])
+		assert.Equal(t, "my-pod", result["k8s.pod.name"])
+		assert.Equal(t, "my-namespace", result["k8s.namespace.name"])
+		assert.Equal(t, "abc-123", result["k8s.pod.uid"])
+		assert.Equal(t, "my-cluster", result["k8s.cluster.name"])
+		assert.Equal(t, "my-daemonset", result["k8s.daemonset.name"])
+		assert.Equal(t, "my-deployment", result["k8s.deployment.name"])
+	})
+
+	t.Run("in K8s with partial env vars", func(t *testing.T) {
+		t.Setenv("KUBERNETES_SERVICE_HOST", "10.96.0.1")
+		t.Setenv("K8S_NODE_NAME", "my-node")
+
+		result := detectK8sAttributes()
+		require.NotNil(t, result)
+		assert.Equal(t, "my-node", result["k8s.node.name"])
+		assert.NotContains(t, result, "k8s.pod.name")
+		assert.NotContains(t, result, "k8s.namespace.name")
+	})
+}
+
 func TestUpdateAgentIdentity(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
