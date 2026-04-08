@@ -112,18 +112,38 @@ func TestHandleHTTPRequestField(t *testing.T) {
 			expectsErr: "failed to parse request url",
 		},
 		{
-			name: "invalid protocol",
+			name: "ALPN protocol h2",
+			request: &httpRequest{
+				Protocol: "h2",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "ALPN protocol h3",
+			request: &httpRequest{
+				Protocol: "h3",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "3",
+			},
+		},
+		{
+			name: "invalid protocol no slash",
 			request: &httpRequest{
 				Protocol: "invalid",
 			},
 			expectsErr: `expected exactly one "/"`,
 		},
 		{
-			name: "invalid protocol 2",
+			name: "invalid protocol empty version",
 			request: &httpRequest{
-				Protocol: "invalid/",
+				Protocol: "HTTP/",
 			},
-			expectsErr: "name or version is missing",
+			expectsErr: "known ALPN identifier",
 		},
 		{
 			name: "latency without suffix",

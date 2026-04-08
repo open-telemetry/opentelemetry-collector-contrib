@@ -67,6 +67,19 @@ const (
 	gcpAppHubWorkloadCriticalityTypeField = "workload.criticality_type"
 )
 
+type protocolID struct {
+	name    string
+	version string
+}
+
+// alpnProtocols maps ALPN protocol identifiers (RFC 7301) to their
+// corresponding protocol name and version. GCP load balancers may use
+// these identifiers instead of the "name/version" format.
+var alpnProtocols = map[string]protocolID{
+	"h2": {name: "http", version: "2"},
+	"h3": {name: "http", version: "3"},
+}
+
 // getEncodingFormat maps GCP log types to encoding format values
 func getEncodingFormat(logType string) string {
 	switch logType {
@@ -231,7 +244,10 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 		shared.PutStr(string(conventions.URLDomainKey), u.Host, attributes)
 	}
 
-	if req.Protocol != "" {
+	if alpn, ok := alpnProtocols[req.Protocol]; ok {
+		attributes.PutStr(string(conventions.NetworkProtocolNameKey), alpn.name)
+		attributes.PutStr(string(conventions.NetworkProtocolVersionKey), alpn.version)
+	} else if req.Protocol != "" {
 		if strings.Count(req.Protocol, "/") != 1 {
 			return fmt.Errorf(
 				`invalid protocol %q: expected exactly one "/" (format "<name>/<version>", e.g. "HTTP/1.1")`,
@@ -241,7 +257,7 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 		name, version, found := strings.Cut(req.Protocol, "/")
 		if !found || name == "" || version == "" {
 			return fmt.Errorf(
-				`invalid protocol %q: name or version is missing (expected format "<name>/<version>", e.g. "HTTP/1.1")`,
+				`invalid protocol %q: expected format "<name>/<version>" (e.g. "HTTP/1.1") or a known ALPN identifier (e.g. "h2")`,
 				req.Protocol,
 			)
 		}
