@@ -21,7 +21,7 @@ require (
 
 require (
 	github.com/google/uuid v1.6.0 // indirect
-	google.golang.org/grpc v1.79.3 // indirect
+	google.golang.org/grpc v1.80.0 // indirect
 )
 
 require (

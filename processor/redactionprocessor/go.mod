@@ -58,8 +58,8 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.55.1-0.20260408002112-999af6320692 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.149.1-0.20260408002112-999af6320692 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.42.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.42.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
