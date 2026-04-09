@@ -80,24 +80,20 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, logs, receivedLogs)
 
-			// Stop the container before exporting the next logs to simulate a network issue
+			// Pause the container before exporting the next logs to simulate a network issue
 			err = channel.Close()
 			require.NoError(t, err)
 			err = connection.Close()
 			require.NoError(t, err)
-			stopTimeout := time.Second * 5
-			err = container.Stop(t.Context(), &stopTimeout)
+			err = container.Pause(t.Context())
 			require.NoError(t, err)
 			logs = testdata.GenerateLogsOneLogRecord()
 			err = exporter.ConsumeLogs(t.Context(), logs)
 			require.Error(t, err)
 
-			// Restart container to simulate network issue recovery
-			err = container.Start(t.Context())
+			// Unpause container to simulate network issue recovery
+			err = container.Unpause(t.Context())
 			require.NoError(t, err)
-			mappedPort, err = container.MappedPort(t.Context(), "5672")
-			require.NoError(t, err)
-			endpoint = fmt.Sprintf("amqp://%s:%s", host, mappedPort.Port())
 			connection, channel, consumer = setupQueueConsumer(t, logsRoutingKey, endpoint)
 			defer func() {
 				channel.Close()
