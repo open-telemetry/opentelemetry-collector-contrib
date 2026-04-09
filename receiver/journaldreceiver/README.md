@@ -67,8 +67,8 @@ When `convert_to_semantic_conventions` is set to `true`, well-known journald fie
 - `MESSAGE` → The log body (string)
 - `PRIORITY` → Sets the log severity level and severity text:
   - `0` (emerg) → `FATAL` / `emerg`
-  - `1` (alert) → `FATAL2` / `alert`
-  - `2` (crit) → `FATAL3` / `crit`
+  - `1` (alert) → `ERROR3` / `alert`
+  - `2` (crit) → `ERROR2` / `crit`
   - `3` (err) → `ERROR` / `err`
   - `4` (warning) → `WARN` / `warning`
   - `5` (notice) → `INFO2` / `notice`
