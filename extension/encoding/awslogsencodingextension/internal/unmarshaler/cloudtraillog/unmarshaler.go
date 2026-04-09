@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -506,14 +507,14 @@ func (u *CloudTrailLogUnmarshaler) setLogAttributes(attrs pcommon.Map, record *C
 		attrs.PutStr(string(conventions.RPCMethodKey), record.EventName)
 	}
 
-	attrs.PutStr(string(conventions.RPCSystemKey), record.EventType)
+	attrs.PutStr(string(conventions138.RPCSystemKey), record.EventType)
 
 	if record.APIVersion != "" {
 		attrs.PutStr("aws.cloudtrail.api_version", record.APIVersion)
 	}
 
 	if record.EventSource != "" {
-		attrs.PutStr(string(conventions.RPCServiceKey), record.EventSource)
+		attrs.PutStr(string(conventions138.RPCServiceKey), record.EventSource)
 	}
 
 	if record.RequestID != "" {
