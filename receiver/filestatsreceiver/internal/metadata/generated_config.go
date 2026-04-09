@@ -3,17 +3,127 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// FileAtimeMetricConfig provides config for the file.atime metric.
+type FileAtimeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *FileAtimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FileCountMetricConfig provides config for the file.count metric.
+type FileCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FileCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FileCtimeMetricAttributeKey specifies the key of an attribute for the file.ctime metric.
+type FileCtimeMetricAttributeKey string
+
+const (
+	FileCtimeMetricAttributeKeyFilePermissions FileCtimeMetricAttributeKey = "file.permissions"
+)
+
+// FileCtimeMetricConfig provides config for the file.ctime metric.
+type FileCtimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []FileCtimeMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *FileCtimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *FileCtimeMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case FileCtimeMetricAttributeKeyFilePermissions:
+		default:
+			return fmt.Errorf("metric file.ctime doesn't have an attribute %v, valid attributes: [file.permissions]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// FileMtimeMetricConfig provides config for the file.mtime metric.
+type FileMtimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FileMtimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// FileSizeMetricConfig provides config for the file.size metric.
+type FileSizeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *FileSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -29,28 +139,30 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for filestats metrics.
 type MetricsConfig struct {
-	FileAtime MetricConfig `mapstructure:"file.atime"`
-	FileCount MetricConfig `mapstructure:"file.count"`
-	FileCtime MetricConfig `mapstructure:"file.ctime"`
-	FileMtime MetricConfig `mapstructure:"file.mtime"`
-	FileSize  MetricConfig `mapstructure:"file.size"`
+	FileAtime FileAtimeMetricConfig `mapstructure:"file.atime"`
+	FileCount FileCountMetricConfig `mapstructure:"file.count"`
+	FileCtime FileCtimeMetricConfig `mapstructure:"file.ctime"`
+	FileMtime FileMtimeMetricConfig `mapstructure:"file.mtime"`
+	FileSize  FileSizeMetricConfig  `mapstructure:"file.size"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		FileAtime: MetricConfig{
+		FileAtime: FileAtimeMetricConfig{
 			Enabled: false,
 		},
-		FileCount: MetricConfig{
+		FileCount: FileCountMetricConfig{
 			Enabled: false,
 		},
-		FileCtime: MetricConfig{
-			Enabled: false,
+		FileCtime: FileCtimeMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []FileCtimeMetricAttributeKey{FileCtimeMetricAttributeKeyFilePermissions},
 		},
-		FileMtime: MetricConfig{
+		FileMtime: FileMtimeMetricConfig{
 			Enabled: true,
 		},
-		FileSize: MetricConfig{
+		FileSize: FileSizeMetricConfig{
 			Enabled: true,
 		},
 	}
