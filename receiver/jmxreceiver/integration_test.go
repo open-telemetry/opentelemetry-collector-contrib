@@ -103,6 +103,7 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
+				Name:  version,
 				Image: "tomcat:11-jdk25",
 				Env: map[string]string{
 					"CATALINA_OPTS": "-Dcom.sun.management.jmxremote " +
@@ -140,7 +141,7 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = 3 * time.Second
 				rCfg.JARPath = jar
-				rCfg.Endpoint = fmt.Sprintf("%v:%s", ci.Host(t), ci.MappedPort(t, jmxPort))
+				rCfg.Endpoint = fmt.Sprintf("%v:%s", ci.Host(t), ci.MappedPortForNamedContainer(t, version, jmxPort))
 				if jmxConfig != "" {
 					rCfg.JmxConfigs = jmxConfig
 				} else {
