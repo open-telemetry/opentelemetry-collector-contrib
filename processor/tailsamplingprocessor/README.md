@@ -655,7 +655,9 @@ When this feature gate is set, this will add additional attributes on each sampl
 
 ### Tail storage extension
 
-To configure `tail_storage` on the tailsampling processor, you must enable the `processor.tailsamplingprocessor.tailstorageextension` feature gate.
+To configure `tail_storage` on the tailsampling processor, you must enable the `processor.tailsamplingprocessor.tailstorageextension` feature gate. 
+When a storage extension implements the experimental `TailStorage` extension, it
+will be used instead of the default in-memory approach.
 
 Tail storage extension support is under active development. This feature gate is used to guard users from potential breaking changes and unstable behavior while the interface and implementation mature.
 
