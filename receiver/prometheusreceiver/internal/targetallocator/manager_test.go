@@ -79,7 +79,7 @@ func TestManagerShutdown(t *testing.T) {
 	// Initialize Prometheus managers using the same pattern as manager_test.go
 	promLogger := promslog.NewNopLogger()
 	reg := prometheus.NewRegistry()
-	sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
+	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(reg)
 	require.NoError(t, err)
 	discoveryManager := discovery.NewManager(ctx, promLogger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
