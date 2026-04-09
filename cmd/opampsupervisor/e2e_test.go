@@ -314,8 +314,8 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 				if ok {
 					// The effective config may be structurally different compared to what was sent,
 					// and will also have some data redacted,
-					// so just check that it includes the filelog receiver
-					return strings.Contains(cfg, "filelog")
+					// so just check that it includes the file_log receiver
+					return strings.Contains(cfg, "file_log")
 				}
 
 				return false
@@ -660,7 +660,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 		}, 3*time.Second, 100*time.Millisecond)
 	}
 
-	// check that collector uses filelog receiver and file exporter from config passed via config_files param
+	// check that collector uses file_log receiver and file exporter from config passed via config_files param
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
 	require.NoError(t, err)
@@ -1692,7 +1692,7 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 					return false
 				}
 
-				return strings.Contains(loadedConfig, "filelog")
+				return strings.Contains(loadedConfig, "file_log")
 			}, 10*time.Second, 500*time.Millisecond, "Collector was not started with the last received remote config")
 		})
 	}
@@ -2179,8 +2179,8 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 				if ok {
 					// The effective config may be structurally different compared to what was sent,
 					// and will also have some data redacted,
-					// so just check that it includes the filelog receiver
-					return strings.Contains(cfg, "filelog")
+					// so just check that it includes the file_log receiver
+					return strings.Contains(cfg, "file_log")
 				}
 
 				return false
@@ -2306,8 +2306,8 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
 			// and will also have some data redacted,
-			// so just check that it includes the filelog receiver
-			return strings.Contains(cfg, "filelog")
+			// so just check that it includes the file_log receiver
+			return strings.Contains(cfg, "file_log")
 		}
 
 		return false
@@ -2594,4 +2594,103 @@ func isHeartbeatMessage(message *protobufs.AgentToServer) bool {
 	empty = empty && message.Flags == 0
 
 	return empty
+}
+
+func TestSupervisorValidatesConfigBeforeApplying(t *testing.T) {
+	modes := getTestModes()
+
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			var remoteConfigStatus atomic.Value
+			var agentConfig atomic.Value
+			server := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						if message.RemoteConfigStatus != nil {
+							remoteConfigStatus.Store(message.RemoteConfigStatus)
+						}
+						if message.EffectiveConfig != nil {
+							config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+							if config != nil {
+								agentConfig.Store(string(config.Body))
+							}
+						}
+
+						return &protobufs.ServerToAgent{}
+					},
+				})
+
+			extraConfigData := map[string]string{
+				"url":             server.addr,
+				"validate_config": "true",
+			}
+			if mode.UseHUPConfigReload {
+				extraConfigData["use_hup_config_reload"] = "true"
+			}
+
+			s, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			if mode.UseHUPConfigReload {
+				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
+			}
+			require.True(t, supervisorCfg.Agent.ValidateConfig, "ValidateConfig should be enabled for this test")
+
+			require.Nil(t, s.Start(t.Context()))
+			defer s.Shutdown()
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+
+			// First, send a valid config
+			goodCfg, goodHash, _, _ := createSimplePipelineCollectorConf(t)
+
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: goodCfg.Bytes()},
+						},
+					},
+					ConfigHash: goodHash,
+				},
+			})
+
+			require.Eventually(t, func() bool {
+				cfg, ok := agentConfig.Load().(string)
+				return ok && cfg != ""
+			}, 5*time.Second, 500*time.Millisecond, "Collector was not started with valid config")
+
+			// Now send an invalid config that should fail validation
+			invalidCfg, err := os.ReadFile(path.Join("testdata", "collector", "invalid_component_config.yaml"))
+			require.NoError(t, err)
+
+			h := sha256.Sum256(invalidCfg)
+			invalidHash := h[:]
+
+			server.sendToSupervisor(&protobufs.ServerToAgent{
+				RemoteConfig: &protobufs.AgentRemoteConfig{
+					Config: &protobufs.AgentConfigMap{
+						ConfigMap: map[string]*protobufs.AgentConfigFile{
+							"": {Body: invalidCfg},
+						},
+					},
+					ConfigHash: invalidHash,
+				},
+			})
+
+			// The config should be rejected with a FAILED status
+			require.Eventually(t, func() bool {
+				status := remoteConfigStatus.Load()
+				if status != nil {
+					remoteStatus := status.(*protobufs.RemoteConfigStatus)
+					return remoteStatus.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
+				}
+				return false
+			}, 5*time.Second, 250*time.Millisecond, "Invalid config was not rejected")
+
+			// Verify that the collector is still running with the old (valid) config
+			currentCfg := agentConfig.Load().(string)
+			require.NotContains(t, currentCfg, "nonexistent_exporter", "Config should not have been updated to invalid config")
+		})
+	}
 }

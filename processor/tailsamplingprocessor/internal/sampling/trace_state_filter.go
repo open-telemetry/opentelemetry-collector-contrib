@@ -59,3 +59,7 @@ func (tsf *traceStateFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trac
 		return false
 	}), nil
 }
+
+func (*traceStateFilter) IsStateful() bool {
+	return false
+}
