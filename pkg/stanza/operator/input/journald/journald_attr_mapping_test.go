@@ -249,15 +249,16 @@ func TestMapJournalEntryAttributes_UnmappedFieldsGoToAttributes(t *testing.T) {
 	mapJournalEntryAttributes(e, body)
 
 	require.NotNil(t, e.Attributes)
-	assert.Equal(t, "abc123", e.Attributes["_BOOT_ID"])
-	assert.Equal(t, "journal", e.Attributes["_TRANSPORT"])
-	assert.Equal(t, "1000", e.Attributes["_UID"])
-	assert.Equal(t, "1000", e.Attributes["_GID"])
-	assert.Equal(t, "myapp.service", e.Attributes["_SYSTEMD_UNIT"])
-	assert.Equal(t, "cursor-value", e.Attributes["__CURSOR"])
-	assert.Equal(t, "123456789", e.Attributes["__MONOTONIC_TIMESTAMP"])
-	assert.Equal(t, "myapp.mount", e.Attributes["USER_UNIT"])
-	assert.Equal(t, "7ad2d189f7e94e70a38c781354912448", e.Attributes["MESSAGE_ID"])
+	// Unmapped fields are prefixed with "journald."
+	assert.Equal(t, "abc123", e.Attributes["journald._BOOT_ID"])
+	assert.Equal(t, "journal", e.Attributes["journald._TRANSPORT"])
+	assert.Equal(t, "1000", e.Attributes["journald._UID"])
+	assert.Equal(t, "1000", e.Attributes["journald._GID"])
+	assert.Equal(t, "myapp.service", e.Attributes["journald._SYSTEMD_UNIT"])
+	assert.Equal(t, "cursor-value", e.Attributes["journald.__CURSOR"])
+	assert.Equal(t, "123456789", e.Attributes["journald.__MONOTONIC_TIMESTAMP"])
+	assert.Equal(t, "myapp.mount", e.Attributes["journald.USER_UNIT"])
+	assert.Equal(t, "7ad2d189f7e94e70a38c781354912448", e.Attributes["journald.MESSAGE_ID"])
 }
 
 func TestMapJournalEntryAttributes_KnownFieldsNotInAttributes(t *testing.T) {
@@ -332,10 +333,10 @@ func TestMapJournalEntryAttributes_FullEntry(t *testing.T) {
 	assert.Equal(t, "/sbin/init", e.Resource["process.executable.path"])
 	assert.Equal(t, "/sbin/init splash", e.Resource["process.command_line"])
 
-	// Unmapped fields land in attributes with original names
-	assert.Equal(t, "kernel", e.Attributes["_TRANSPORT"])
-	assert.Equal(t, "deadbeef", e.Attributes["_BOOT_ID"])
-	assert.Equal(t, "s=abc;i=1", e.Attributes["__CURSOR"])
+	// Unmapped fields land in attributes with "journald." prefix
+	assert.Equal(t, "kernel", e.Attributes["journald._TRANSPORT"])
+	assert.Equal(t, "deadbeef", e.Attributes["journald._BOOT_ID"])
+	assert.Equal(t, "s=abc;i=1", e.Attributes["journald.__CURSOR"])
 
 	// Consumed fields must not appear
 	assert.NotContains(t, e.Attributes, "MESSAGE")
