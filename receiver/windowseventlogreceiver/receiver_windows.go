@@ -7,6 +7,8 @@ package windowseventlogreceiver // import "github.com/open-telemetry/opentelemet
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -15,9 +17,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/discovery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/sidcache"
 )
+
+// getDomainControllersRemoteConfig is the function used to discover domain controllers.
+// It is a variable to allow mocking in tests.
+var getDomainControllersRemoteConfig = discovery.GetJoinedDomainControllersRemoteConfig
 
 // newFactoryAdapter creates a factory for windowseventlog receiver
 func newFactoryAdapter() receiver.Factory {
@@ -59,9 +67,66 @@ func createLogsReceiver(
 	// Wrap the consumer with SID enrichment
 	enrichedConsumer := newSIDEnrichingConsumer(nextConsumer, cache, set.Logger)
 
-	// Create the underlying Stanza receiver with the enriched consumer
 	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability)
+
+	if metadata.DomainControllersAutodiscoveryFeatureGate.IsEnabled() && receiverCfg.DiscoverDomainControllers {
+		remoteConfigs, err := getDomainControllersRemoteConfig(set.Logger, receiverCfg.InputConfig.Remote.Username, receiverCfg.InputConfig.Remote.Password)
+		if err != nil {
+			return nil, fmt.Errorf("domain controller discovery failed: %w", err)
+		}
+
+		receivers := make([]receiver.Logs, 0, len(remoteConfigs))
+		for _, rc := range remoteConfigs {
+			dcCfg := *receiverCfg
+			dcCfg.InputConfig.Remote = windows.RemoteConfig{
+				Server:   rc.Server,
+				Username: rc.Username,
+				Password: rc.Password,
+				Domain:   rc.Domain,
+			}
+			r, err := stanzaFactory.CreateLogs(ctx, set, &dcCfg, enrichedConsumer)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create receiver for domain controller %q: %w", rc.Server, err)
+			}
+			receivers = append(receivers, r)
+		}
+		return &multiLogsReceiver{receivers: receivers}, nil
+	}
+
+	// Create the underlying Stanza receiver with the enriched consumer
 	return stanzaFactory.CreateLogs(ctx, set, cfg, enrichedConsumer)
+}
+
+type multiLogsReceiver struct {
+	receivers []receiver.Logs
+}
+
+func (m *multiLogsReceiver) Start(ctx context.Context, host component.Host) error {
+	started := make([]receiver.Logs, 0, len(m.receivers))
+	for _, r := range m.receivers {
+		if err := r.Start(ctx, host); err != nil {
+			// Shut down already-started receivers before returning the error.
+			var shutdownErrs []error
+			for _, s := range started {
+				if shutdownErr := s.Shutdown(ctx); shutdownErr != nil {
+					shutdownErrs = append(shutdownErrs, shutdownErr)
+				}
+			}
+			return errors.Join(append([]error{err}, shutdownErrs...)...)
+		}
+		started = append(started, r)
+	}
+	return nil
+}
+
+func (m *multiLogsReceiver) Shutdown(ctx context.Context) error {
+	var errs []error
+	for _, r := range m.receivers {
+		if err := r.Shutdown(ctx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // receiverType implements adapter.LogReceiverType

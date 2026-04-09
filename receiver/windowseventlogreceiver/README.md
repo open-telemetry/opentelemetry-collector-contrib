@@ -48,6 +48,8 @@ This receiver tails and parses logs from windows event log API using the
 | `resolve_sids.enabled`              | `false`      | If `true`, automatically resolves SIDs to user and group names in Windows event logs.                                                                                                                                          |
 | `resolve_sids.cache_size`           | `10000`      | Maximum number of SID-to-name mappings to cache in memory. Older entries are evicted using LRU policy.                                                                                                                         |
 | `resolve_sids.cache_ttl`            | `15m`        | Time-to-live for cached SID mappings. After this duration, SIDs will be re-resolved from the Windows LSA API.                                                                                                                  |
+| `discover_domain_controllers`       | `false`      | Automatically discover and collect  events from Active Directory domain controllers.                                                                                                                                           |
+
 
 ### Feature Gates
 
