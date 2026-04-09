@@ -24,7 +24,7 @@ subtext: |
     `SYSLOG_FACILITY` → `syslog.facility.code`,
     `SYSLOG_IDENTIFIER` → `syslog.msg.id`,
     `SYSLOG_PID` → `syslog.pid`
-  - All remaining journald fields are kept as log attributes with their original names.
+  - All remaining journald fields are kept as log attributes with their original names, prefixed with `journald.` to avoid conflicts with the mapped semantic convention attributes.
 
   The default is `false` to preserve backward compatibility.
 
