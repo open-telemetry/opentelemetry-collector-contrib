@@ -87,3 +87,105 @@ spec:
             - --batch=false
             - --allow-export-failures
             - --otlp-attributes=service.name="manual-logs-deployment"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemetrygen-manual-traces-statefulset
+  namespace: k8sattributes-shared-manual
+spec:
+  clusterIP: None
+  ports:
+    - name: otlp
+      port: 4317
+      targetPort: 4317
+  selector:
+    app: telemetrygen-manual-traces-statefulset
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: telemetrygen-manual-traces-statefulset
+  namespace: k8sattributes-shared-manual
+spec:
+  serviceName: telemetrygen-manual-traces-statefulset
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemetrygen-manual-traces-statefulset
+  template:
+    metadata:
+      labels:
+        app: telemetrygen-manual-traces-statefulset
+    spec:
+      containers:
+        - name: telemetrygen
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /telemetrygen
+            - traces
+            - --otlp-insecure
+            - --otlp-endpoint=otelcol-shared-watch-manual.k8sattributes-shared-manual:4317
+            - --duration=600s
+            - --rate=1
+            - --batch=false
+            - --allow-export-failures
+            - --otlp-attributes=service.name="manual-traces-statefulset"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: telemetrygen-manual-traces-daemonset
+  namespace: k8sattributes-shared-manual
+spec:
+  selector:
+    matchLabels:
+      app: telemetrygen-manual-traces-daemonset
+  template:
+    metadata:
+      labels:
+        app: telemetrygen-manual-traces-daemonset
+    spec:
+      containers:
+        - name: telemetrygen
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /telemetrygen
+            - traces
+            - --otlp-insecure
+            - --otlp-endpoint=otelcol-shared-watch-manual.k8sattributes-shared-manual:4317
+            - --duration=600s
+            - --rate=1
+            - --batch=false
+            - --allow-export-failures
+            - --otlp-attributes=service.name="manual-traces-daemonset"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: telemetrygen-manual-traces-job
+  namespace: k8sattributes-shared-manual
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: telemetrygen-manual-traces-job
+    spec:
+      containers:
+        - name: telemetrygen
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /telemetrygen
+            - traces
+            - --otlp-insecure
+            - --otlp-endpoint=otelcol-shared-watch-manual.k8sattributes-shared-manual:4317
+            - --duration=600s
+            - --rate=1
+            - --batch=false
+            - --allow-export-failures
+            - --otlp-attributes=service.name="manual-traces-job"
+      restartPolicy: OnFailure

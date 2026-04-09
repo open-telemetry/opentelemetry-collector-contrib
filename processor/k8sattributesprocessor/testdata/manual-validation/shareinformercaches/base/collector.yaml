@@ -6,11 +6,15 @@ metadata:
 data:
   relay: |
     exporters:
-      debug:
+      debug/basic:
+        verbosity: basic
+      debug/validation:
         verbosity: normal
     extensions:
       health_check:
         endpoint: 0.0.0.0:13133
+      pprof:
+        endpoint: 0.0.0.0:1777
     processors:
       k8sattributes:
         extract:
@@ -20,6 +24,9 @@ data:
             - k8s.namespace.name
             - k8s.node.name
             - k8s.deployment.name
+            - k8s.statefulset.name
+            - k8s.daemonset.name
+            - k8s.job.name
         pod_association:
           - sources:
               - from: connection
@@ -31,19 +38,44 @@ data:
     service:
       extensions:
         - health_check
+        - pprof
       pipelines:
         traces:
           receivers: [otlp]
           processors: [k8sattributes]
-          exporters: [debug]
+          exporters: [debug/validation]
+        traces/2:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug/basic]
+        traces/3:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug/basic]
         metrics:
           receivers: [otlp]
           processors: [k8sattributes]
-          exporters: [debug]
+          exporters: [debug/validation]
+        metrics/2:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug/basic]
+        metrics/3:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug/basic]
         logs:
           receivers: [otlp]
           processors: [k8sattributes]
-          exporters: [debug]
+          exporters: [debug/validation]
+        logs/2:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug/basic]
+        logs/3:
+          receivers: [otlp]
+          processors: [k8sattributes]
+          exporters: [debug/basic]
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -125,6 +157,9 @@ spec:
             - name: otlp
               containerPort: 4317
               protocol: TCP
+            - name: pprof
+              containerPort: 1777
+              protocol: TCP
           env:
             - name: MY_POD_IP
               valueFrom:
@@ -143,8 +178,8 @@ spec:
             initialDelaySeconds: 3
           resources:
             limits:
-              cpu: 128m
-              memory: 256Mi
+              cpu: 250m
+              memory: 512Mi
           volumeMounts:
             - mountPath: /conf
               name: opentelemetry-collector-configmap
