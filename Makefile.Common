@@ -292,8 +292,8 @@ govulncheck:
 	echo "Vulnerabilities need attention: $$UNIGNORED"; \
 	echo ""; \
 	echo "Vulnerability Summary:"; \
-	echo "ID    SUMMARY"; \
-	$(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | [.finding.osv, $$osv_data[.finding.osv].summary]] | unique_by(.[0]) | .[] | @tsv' govulncheck-output.json; \
+	echo "ID/LINK    SUMMARY"; \
+	$(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | ["https://pkg.go.dev/vuln/" + .finding.osv, $$osv_data[.finding.osv].summary]] | unique_by(.[0]) | .[] | @tsv' govulncheck-output.json; \
 	rm -f govulncheck-output.json; \
 	exit 1
 
