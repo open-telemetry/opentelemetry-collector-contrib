@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("tcplog")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
+	Type           = component.MustNewType("tcp_log")
+	DeprecatedType = component.MustNewType("tcplog")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 )
 
 const (

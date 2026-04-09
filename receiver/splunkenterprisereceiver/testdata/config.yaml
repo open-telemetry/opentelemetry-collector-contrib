@@ -22,3 +22,36 @@ splunkenterprise:
       enabled: true
     splunk.indexer.throughput:
       enabled: false
+  # Custom SPL searches (optional)
+  searches:
+    # Regular search
+    - spl: "index=_internal sourcetype=splunkd | stats count by host"
+      target: search_head
+      metrics:
+        - metric_name: splunk.custom.event.count
+          value_column: count
+          attribute_columns:
+            - host
+          value_type: int
+          unit: "{count}"
+          description: "Custom event count by host"
+    # Custom time range
+    - spl: "index=_audit | stats count by action"
+      target: search_head
+      earliest: "-42m"
+      latest: "now"
+      metrics:
+        - metric_name: splunk.custom.audit.count
+          value_column: count
+          attribute_columns:
+            - action
+          value_type: int
+    # Generating command 
+    - spl: "| tstats count where index=_* by index"
+      target: indexer
+      metrics:
+        - metric_name: splunk.custom.index.count
+          value_column: count
+          attribute_columns:
+            - index
+          value_type: int
