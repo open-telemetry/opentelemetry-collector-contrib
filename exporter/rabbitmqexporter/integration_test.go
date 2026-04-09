@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moby/moby/client"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -85,14 +86,20 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			require.NoError(t, err)
 			err = connection.Close()
 			require.NoError(t, err)
-			err = container.Pause(t.Context())
+
+			// Use Docker client to pause the container
+			dockerClient, err := client.New(client.FromEnv)
+			require.NoError(t, err)
+			defer dockerClient.Close()
+
+			_, err = dockerClient.ContainerPause(t.Context(), container.GetContainerID(), client.ContainerPauseOptions{})
 			require.NoError(t, err)
 			logs = testdata.GenerateLogsOneLogRecord()
 			err = exporter.ConsumeLogs(t.Context(), logs)
 			require.Error(t, err)
 
 			// Unpause container to simulate network issue recovery
-			err = container.Unpause(t.Context())
+			_, err = dockerClient.ContainerUnpause(t.Context(), container.GetContainerID(), client.ContainerUnpauseOptions{})
 			require.NoError(t, err)
 			connection, channel, consumer = setupQueueConsumer(t, logsRoutingKey, endpoint)
 			defer func() {
