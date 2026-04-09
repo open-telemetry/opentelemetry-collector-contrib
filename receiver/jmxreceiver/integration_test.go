@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	ctypes "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -126,8 +128,15 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 						FileMode:          0o600,
 					},
 				},
-				ExposedPorts: []string{jmxPort + ":" + jmxPort},
+				ExposedPorts: []string{jmxPort + "/tcp"},
 				WaitingFor:   wait.ForListeningPort(jmxPort),
+				HostConfigModifier: func(config *ctypes.HostConfig) {
+					ports := network.PortMap{}
+					ports[network.MustParsePort(jmxPort)] = []network.PortBinding{
+						{HostPort: jmxPort},
+					}
+					config.PortBindings = ports
+				},
 			}),
 		scraperinttest.AllowHardcodedHostPort(),
 		scraperinttest.WithCustomConfig(
@@ -135,7 +144,7 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = 3 * time.Second
 				rCfg.JARPath = jar
-				rCfg.Endpoint = fmt.Sprintf("%v:%s", ci.Host(t), ci.MappedPort(t, jmxPort))
+				rCfg.Endpoint = fmt.Sprintf("%v:%s", ci.Host(t), jmxPort)
 				if jmxConfig != "" {
 					rCfg.JmxConfigs = jmxConfig
 				} else {

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -109,7 +110,8 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	tcDockerClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 
-	require.NoError(t, tcDockerClient.ContainerRename(t.Context(), container.GetContainerID(), "nginx-updated"))
+	_, err = tcDockerClient.ContainerRename(t.Context(), container.GetContainerID(), client.ContainerRenameOptions{NewName: "nginx-updated"})
+	require.NoError(t, err)
 
 	require.Eventually(t, func() bool { return mn.ChangeCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 	require.Equal(t, 1, mn.AddCount())
