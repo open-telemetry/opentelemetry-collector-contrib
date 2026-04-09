@@ -205,9 +205,6 @@ linters:
         path: processor/filterprocessor/
       - linters:
           - forbidigo
-        path: processor/metricsgenerationprocessor/
-      - linters:
-          - forbidigo
         path: processor/tailsamplingprocessor/
       - linters:
           - forbidigo
