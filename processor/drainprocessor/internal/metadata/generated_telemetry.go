@@ -23,12 +23,11 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                               metric.Meter
-	mu                                  sync.Mutex
-	registrations                       []metric.Registration
-	ProcessorDrainClustersActive        metric.Int64Gauge
-	ProcessorDrainLogRecordsAnnotated   metric.Int64Counter
-	ProcessorDrainLogRecordsUnannotated metric.Int64Counter
+	meter                             metric.Meter
+	mu                                sync.Mutex
+	registrations                     []metric.Registration
+	ProcessorDrainClustersActive      metric.Int64Gauge
+	ProcessorDrainLogRecordsAnnotated metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -69,12 +68,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorDrainLogRecordsAnnotated, err = builder.meter.Int64Counter(
 		"otelcol_processor_drain_log_records_annotated",
 		metric.WithDescription("Number of log records successfully annotated with a template. [Development]"),
-		metric.WithUnit("{records}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorDrainLogRecordsUnannotated, err = builder.meter.Int64Counter(
-		"otelcol_processor_drain_log_records_unannotated",
-		metric.WithDescription("Number of log records not annotated (empty body, Train error, or no cluster returned by Drain). [Development]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)

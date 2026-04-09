@@ -5,7 +5,7 @@ status:
   class: processor
   stability:
     development: [logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [MikeGoldsmith, atoulme, martinjt]
 
@@ -24,14 +24,6 @@ telemetry:
     processor_drain_log_records_annotated:
       enabled: true
       description: Number of log records successfully annotated with a template.
-      unit: "{records}"
-      sum:
-        value_type: int
-        monotonic: true
-      stability: development
-    processor_drain_log_records_unannotated:
-      enabled: true
-      description: Number of log records not annotated (empty body, Train error, or no cluster returned by Drain).
       unit: "{records}"
       sum:
         value_type: int

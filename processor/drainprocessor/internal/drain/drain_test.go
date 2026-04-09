@@ -19,8 +19,8 @@ func defaultCfg() Config {
 	}
 }
 
-func TestNew(t *testing.T) {
-	d, err := New(defaultCfg())
+func TestNewDrain(t *testing.T) {
+	d, err := NewDrain(defaultCfg())
 	require.NoError(t, err)
 	require.NotNil(t, d)
 }
@@ -31,7 +31,7 @@ func TestNew(t *testing.T) {
 // The first three tokens must be identical for go-drain3's prefix tree to route
 // all lines to the same leaf node where similarity scoring can merge them.
 func TestTrainSimilarLinesShareTemplate(t *testing.T) {
-	d, err := New(defaultCfg())
+	d, err := NewDrain(defaultCfg())
 	require.NoError(t, err)
 
 	// "connected to host <IP> on port <PORT>" — first 3 tokens identical
@@ -58,7 +58,7 @@ func TestTrainSimilarLinesShareTemplate(t *testing.T) {
 // TestTrainDistinctLinesGetDifferentClusters confirms that structurally
 // unrelated lines produce separate clusters.
 func TestTrainDistinctLinesGetDifferentClusters(t *testing.T) {
-	d, err := New(defaultCfg())
+	d, err := NewDrain(defaultCfg())
 	require.NoError(t, err)
 
 	tmpl1, err1 := d.Train("connected to host 10.0.0.1 on port 443")
@@ -73,7 +73,7 @@ func TestTrainDistinctLinesGetDifferentClusters(t *testing.T) {
 // once its template has been abstracted (i.e. after multiple similar lines have
 // been trained).
 func TestMatchAfterTemplateAbstracts(t *testing.T) {
-	d, err := New(defaultCfg())
+	d, err := NewDrain(defaultCfg())
 	require.NoError(t, err)
 
 	// Build the cluster with enough examples to abstract the template.
@@ -98,7 +98,7 @@ func TestMatchAfterTemplateAbstracts(t *testing.T) {
 // TestMatchDoesNotCreateClusters confirms that Match on an empty tree always
 // returns ok=false.
 func TestMatchDoesNotCreateClusters(t *testing.T) {
-	d, err := New(defaultCfg())
+	d, err := NewDrain(defaultCfg())
 	require.NoError(t, err)
 
 	_, ok := d.Match("some log line with no prior training")
@@ -107,7 +107,7 @@ func TestMatchDoesNotCreateClusters(t *testing.T) {
 
 // TestSnapshotRoundtrip verifies that tree state can be serialized and restored.
 func TestSnapshotRoundtrip(t *testing.T) {
-	d, err := New(defaultCfg())
+	d, err := NewDrain(defaultCfg())
 	require.NoError(t, err)
 
 	var trainTmpl string
@@ -125,7 +125,7 @@ func TestSnapshotRoundtrip(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, snap)
 
-	d2, err := New(defaultCfg())
+	d2, err := NewDrain(defaultCfg())
 	require.NoError(t, err)
 	require.NoError(t, d2.Load(snap))
 
@@ -137,7 +137,7 @@ func TestSnapshotRoundtrip(t *testing.T) {
 func TestUnlimitedMaxClusters(t *testing.T) {
 	cfg := defaultCfg()
 	cfg.MaxClusters = 0
-	d, err := New(cfg)
+	d, err := NewDrain(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, d)
 }

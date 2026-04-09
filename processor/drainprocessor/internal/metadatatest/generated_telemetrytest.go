@@ -50,19 +50,3 @@ func AssertEqualProcessorDrainLogRecordsAnnotated(t *testing.T, tt *componenttes
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
-
-func AssertEqualProcessorDrainLogRecordsUnannotated(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_drain_log_records_unannotated",
-		Description: "Number of log records not annotated (empty body, Train error, or no cluster returned by Drain). [Development]",
-		Unit:        "{records}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_drain_log_records_unannotated")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}

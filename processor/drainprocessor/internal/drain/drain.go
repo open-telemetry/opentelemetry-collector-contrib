@@ -36,8 +36,8 @@ type Drain struct {
 	inner *drain3.Drain
 }
 
-// New constructs a Drain instance from the provided Config.
-func New(cfg Config) (*Drain, error) {
+// NewDrain constructs a Drain instance from the provided Config.
+func NewDrain(cfg Config) (*Drain, error) {
 	maxClusters := cfg.MaxClusters
 	if maxClusters <= 0 {
 		// go-drain3 uses an LRU which requires a positive size; use MaxInt32 as

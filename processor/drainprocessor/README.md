@@ -108,7 +108,7 @@ The main caveat is the **early training phase**. Before an instance has seen eno
 
 When `warmup_min_clusters` is set to a value greater than zero, the processor trains on every record from the start but does not write `log.record.template` until that many distinct clusters have been observed. Records pass through immediately — there is no buffering or added latency — they simply arrive at the next processor unannotated during the warmup window.
 
-The `otelcol_processor_drain_log_records_unannotated` counter fires for each unannotated record, so the warmup window is observable via internal telemetry.
+The warmup window is observable via `otelcol_processor_incoming_items - otelcol_processor_drain_log_records_annotated` — the difference represents records that passed through without a template attribute.
 
 ```yaml
 processors:
@@ -126,7 +126,6 @@ The processor emits the following internal telemetry metrics:
 |--------|------|-------------|
 | `otelcol_processor_drain_clusters_active` | gauge | Current number of active clusters in the Drain parse tree. Useful for tracking tree growth and stability over time. |
 | `otelcol_processor_drain_log_records_annotated` | counter | Number of log records successfully annotated with a template. |
-| `otelcol_processor_drain_log_records_unannotated` | counter | Number of log records not annotated — empty body, Train error, no cluster returned by Drain, or warmup suppression active. |
 
 ## Output attributes
 

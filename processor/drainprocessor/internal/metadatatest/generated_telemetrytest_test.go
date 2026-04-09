@@ -21,14 +21,10 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ProcessorDrainClustersActive.Record(context.Background(), 1)
 	tb.ProcessorDrainLogRecordsAnnotated.Add(context.Background(), 1)
-	tb.ProcessorDrainLogRecordsUnannotated.Add(context.Background(), 1)
 	AssertEqualProcessorDrainClustersActive(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorDrainLogRecordsAnnotated(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 1}},
-		metricdatatest.IgnoreTimestamp())
-	AssertEqualProcessorDrainLogRecordsUnannotated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

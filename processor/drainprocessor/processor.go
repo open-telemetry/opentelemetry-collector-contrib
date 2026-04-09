@@ -28,7 +28,7 @@ type drainProcessor struct {
 }
 
 func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, error) {
-	d, err := internaldrain.New(internaldrain.Config{
+	d, err := internaldrain.NewDrain(internaldrain.Config{
 		Depth:           cfg.TreeDepth,
 		SimThreshold:    cfg.MergeThreshold,
 		MaxChildren:     cfg.MaxNodeChildren,
@@ -101,7 +101,6 @@ func (p *drainProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 	text := extractBody(lr, p.config.BodyField)
 	if text == "" {
-		p.telemetry.ProcessorDrainLogRecordsUnannotated.Add(ctx, 1)
 		return
 	}
 
@@ -115,11 +114,9 @@ func (p *drainProcessor) annotate(ctx context.Context, lr plog.LogRecord) {
 
 	if err != nil {
 		p.logger.Warn("drain Train failed, skipping annotation", zap.Error(err))
-		p.telemetry.ProcessorDrainLogRecordsUnannotated.Add(ctx, 1)
 		return
 	}
 	if tmpl == "" || !warmedUp {
-		p.telemetry.ProcessorDrainLogRecordsUnannotated.Add(ctx, 1)
 		return
 	}
 

@@ -21,11 +21,3 @@ Number of log records successfully annotated with a template.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {records} | Sum | Int | true | Development |
-
-### otelcol_processor_drain_log_records_unannotated
-
-Number of log records not annotated (empty body, Train error, or no cluster returned by Drain).
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {records} | Sum | Int | true | Development |
