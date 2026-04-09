@@ -89,6 +89,10 @@ type Config struct {
 	Mapping        MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 
+	// SuppressConflictErrors configures whether 409 Conflict responses are logged as errors.
+	// If set to true, document level version conflict exceptions (409) will not be logged.
+	SuppressConflictErrors bool `mapstructure:"suppress_conflict_errors"`
+
 	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
