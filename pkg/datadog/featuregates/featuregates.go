@@ -24,14 +24,14 @@ var OperationAndResourceNameV2FeatureGate = featuregate.GlobalRegistry().MustReg
 // MetricRemappingDisabledFeatureGate is a feature gate that controls the client-side mapping from OpenTelemetry semantic conventions to Datadog semantic conventions
 var MetricRemappingDisabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricremappingdisabled",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use. [DEPRECATED] Use 'exporter.datadogexporter.DisableAllMetricRemapping' instead."),
 	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
 )
 
 var DisableMetricRemappingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAllMetricRemapping",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled the Datadog Exporter stops mapping OpenTelemetry semantic conventions to Datadog semantic conventions for all locally mapped conventions including system and runtime metrics."),
 	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
 )
