@@ -70,6 +70,10 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
+	if err := c.APIConfig.Validate(); err != nil {
+		return err
+	}
+
 	switch c.ErrorMode {
 	case PropagateError, IgnoreError, SilentError:
 	default:

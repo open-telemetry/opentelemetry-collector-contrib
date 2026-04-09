@@ -1,0 +1,8 @@
+change_type: enhancement
+component: receiver/k8sobjects
+note: Add `kube_api_qps` and `kube_api_burst` config options to control Kubernetes API request rate limits and prevent client-side throttling when watching or polling many resources
+issues: [44484]
+subtext: |
+  The same fields are also available in `receiver/k8sevents` via the shared `internal/k8sconfig` package.
+  Default values match the client-go defaults: `kube_api_qps=5`, `kube_api_burst=10`.
+change_logs: []

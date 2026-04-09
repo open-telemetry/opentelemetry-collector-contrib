@@ -28,7 +28,9 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{
-			AuthType: k8sconfig.AuthTypeServiceAccount,
+			AuthType:     k8sconfig.AuthTypeServiceAccount,
+			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
 		ErrorMode: PropagateError,
 	}
