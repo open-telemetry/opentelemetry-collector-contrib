@@ -1,0 +1,15 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: dedup me
+            spanId: ""
+            timeUnixNano: "1728069707000000000"
+            traceId: ""
+          - body:
+              stringValue: dedup me
+            spanId: ""
+            timeUnixNano: "1728069712000000000"
+            traceId: ""
+        scope: {}

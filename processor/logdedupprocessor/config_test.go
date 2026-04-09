@@ -15,6 +15,7 @@ func TestCreateDefaultProcessorConfig(t *testing.T) {
 	require.Equal(t, defaultInterval, cfg.Interval)
 	require.Equal(t, defaultLogCountAttribute, cfg.LogCountAttribute)
 	require.Equal(t, defaultTimezone, cfg.Timezone)
+	require.Equal(t, defaultTimestampMode, cfg.TimestampMode)
 	require.Equal(t, []string{}, cfg.ExcludeFields)
 }
 
@@ -115,11 +116,42 @@ func TestValidateConfig(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
+			desc: "invalid timestamp_mode",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				TimestampMode:     "invalid",
+			},
+			expectedErr: errInvalidTimestampMode,
+		},
+		{
+			desc: "valid timestamp_mode observed",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				TimestampMode:     TimestampModeObserved,
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid timestamp_mode preserved",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				TimestampMode:     TimestampModePreserved,
+			},
+			expectedErr: nil,
+		},
+		{
 			desc: "valid config",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
+				TimestampMode:     defaultTimestampMode,
 				Conditions:        []string{},
 				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
 			},

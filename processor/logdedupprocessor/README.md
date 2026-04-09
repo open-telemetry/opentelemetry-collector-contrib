@@ -27,8 +27,17 @@ emitting a single log with the count of logs that were deduplicated.
     - `log_count`: The count of logs that were deduplicated over the interval. The name of the attribute is configurable via the `log_count_attribute` parameter.
     - `first_observed_timestamp`: The timestamp of the first log that was observed during the aggregation interval.
     - `last_observed_timestamp`: The timestamp of the last log that was observed during the aggregation interval.
+    - `first_event_timestamp`: The timestamp of the first log received during the aggregation interval.
+    - `last_event_timestamp`: The timestamp of the last log received during the aggregation interval.
 
-**Note**: The `ObservedTimestamp` and `Timestamp` of the emitted log will be the time that the aggregated log was emitted and will not be the same as the `ObservedTimestamp` and `Timestamp` of the original logs.
+**Note**: The `Timestamp` of the emitted log depends on the configured `timestamp_mode`:
+
+| `timestamp_mode` | `Timestamp` of the emitted log |
+| --- | --- |
+| `observed` (default) | Set to when the aggregated log was emitted. |
+| `preserved` | Preserved from the first log received in the aggregation window. |
+
+Using `preserved` is recommended when accurate time-based analysis and alerting are required, as it maintains the original event timestamp rather than the aggregation time. It also improves interoperability with downstream systems that rely on correct temporal ordering. See [Tradeoffs and Considerations](https://opentelemetry.io/blog/2026/log-deduplication-processor/#tradeoffs-and-considerations) for guidance on when to avoid deduplication entirely, such as for compliance-critical or audit logs.
 
 ## Configuration
 | Field               | Type     | Default     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -38,6 +47,7 @@ emitting a single log with the count of logs that were deduplicated.
 | log_count_attribute | string   | `log_count` | The name of the count attribute of deduplicated logs that will be added to the emitted aggregated log.                                                                                                                                                                                                                                                                                                                                                  |
 | include_fields                | []string | `[]`        | Fields to include in duplication matching. Fields can be from the log `body` or `attributes`.  Nested fields must be `.` delimited. If a field contains a `.` it can be escaped by using a `\`.  This option is **mutually exclusive** with `exclude_fields`. See [example config](#example-config-with-deduplication-key).
 | timezone            | string   | `UTC`       | The timezone of the `first_observed_timestamp` and `last_observed_timestamp` timestamps on the emitted aggregated log. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`.                                                                                                                               |
+| timestamp_mode      | string   | `observed`  | Controls how the `Timestamp` field of the emitted log is set. `observed`: set to when the aggregated log was emitted. `preserved`: preserved from the first log received in the aggregation window. In all modes, `first_event_timestamp` and `last_event_timestamp` attributes capture the original event timestamps. |
 | exclude_fields      | []string | `[]`        | Fields to exclude from duplication matching. Fields can be excluded from the log `body` or `attributes`. These fields will not be present in the emitted aggregated log. Nested fields must be `.` delimited. This option is `mutually exclusive` with `include_fields`. If a field contains a `.` it can be escaped by using a `\` see [example config](#example-config-with-excluded-fields).<br><br>**Note**: The entire `body` cannot be excluded. If the body is a map then fields within it can be excluded. |
 
 [OTTL]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.109.0/pkg/ottl#readme
