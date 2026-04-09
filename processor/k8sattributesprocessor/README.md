@@ -69,7 +69,7 @@ The following attributes are added by default:
   - k8s.pod.name
   - k8s.pod.uid
   - k8s.pod.start_time
-  - k8s.deployment.name (by default uses a ReplicaSet naming heuristic; ReplicaSet informer watching is used when `k8s.deployment.uid` is enabled or `deployment_name_from_replicaset` is `false`)
+  - k8s.deployment.name (by default uses a ReplicaSet naming heuristic; ReplicaSet informer watching is used when `k8s.deployment.uid` and/or deployment's labels/annotataions is enabled or `deployment_name_from_replicaset` is `false`)
   - k8s.node.name
 
 These attributes are also available for the use within association rules by default.

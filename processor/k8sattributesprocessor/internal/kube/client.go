@@ -1988,7 +1988,7 @@ func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 }
 
 // extractCronJobNameFromJobOwner returns the CronJob name for a Job owner reference using
-// an heuristic that checks if the job name suffix is a valid timestamp closely matching the pod creation time.
+// a heuristic that checks if the job name suffix is a valid timestamp closely matching the pod creation time.
 // If it matches, then the suffix is assumed to be the job creation time, and the prefix is then the CronJob name.
 func (c *WatchClient) extractCronJobNameFromJobOwner(ref meta_v1.OwnerReference, pod *api_v1.Pod) string {
 	// Regex checks specifically for 8 digits at the end (Kubernetes CronJob job suffix is a
