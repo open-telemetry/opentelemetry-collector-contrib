@@ -17,8 +17,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/dns"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/noop"
-	yamlsource "github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/yaml"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/internal/source/yaml"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor/lookupsource"
 )
 
@@ -57,7 +58,8 @@ type lookupProcessorFactory struct {
 func defaultSources() map[string]lookupsource.SourceFactory {
 	return map[string]lookupsource.SourceFactory{
 		"noop": noop.NewFactory(),
-		"yaml": yamlsource.NewFactory(),
+		"yaml": yaml.NewFactory(),
+		"dns":  dns.NewFactory(),
 	}
 }
 
