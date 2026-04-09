@@ -32,6 +32,7 @@ linters:
     - errcheck
     - errorlint
     - exhaustive
+    - forbidigo
     - gocritic
     - gosec
     - govet
@@ -240,6 +241,14 @@ linters:
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
           files:
             - "!**/*_test.go"
+
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^featuregate\.Registry\.(MustRegister|Register)$
+          msg: >-
+            Define feature gates in metadata.yaml instead of registering them manually.
+            See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116.
 
     exhaustive:
       # Presence of "default" case in switch statements satisfies exhaustiveness,
