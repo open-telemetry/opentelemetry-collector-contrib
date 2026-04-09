@@ -99,7 +99,7 @@ Code, thread, and syslog information becomes log attributes:
 
 #### Remaining Fields
 
-All other journald fields are preserved as log attributes with their original field names.
+All other journald fields are preserved as log attributes with their original field names, prefixed with `journald.` (e.g. `journald._BOOT_ID`).
 
 ### Operators
 
