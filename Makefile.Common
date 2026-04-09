@@ -24,7 +24,10 @@ GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
 
 # Ignored vulnerabilities with justification:
-IGNORED_VULNS = 
+IGNORED_VULNS =
+
+# Ignore all golang-related vulnerabilities (stdlib, golang.org/x/*, google.golang.org/*, etc.)
+IGNORE_GOLANG_VULNS ?=
 
 # On Windows arm64 neither `-race` nor cgo are not supported (cgo is not supported due to the GH runner installed gcc not having arm64 libs)
 ifeq ($(GOOS)-$(GOARCH),windows-arm64)
@@ -267,11 +270,15 @@ endif
 lint: checklicense misspell
 	$(LINT) run
 
+# jq filter: Build OSV lookup map {id: {withdrawn, summary, pkg}}
+_GOVUL_MAP = reduce (.[] | select(.osv)) as $$osv ({}; . + {($$osv.osv.id): {summary: $$osv.osv.summary, withdrawn: $$osv.osv.withdrawn, pkg: ($$osv.osv.affected[0].package.name // "")}}) as $$osv_data
+# jq filter: Check if vulnerability should be skipped (withdrawn or golang+IGNORE_GOLANG_VULNS)
+_GOVUL_SKIP = ($$osv_data[.finding.osv].withdrawn | . != null and . != "") or ("$(IGNORE_GOLANG_VULNS)" == "1" and ($$osv_data[.finding.osv].pkg | test("^(stdlib|golang\\.org|google\\.golang\\.org)")))
 .PHONY: govulncheck
 govulncheck:
 	@set -e; \
 	$(GOVULNCHECK) -format json ./... > govulncheck-output.json; \
-	FOUND="$$( $(GOJQ) -r 'select(.finding!=null)|.finding.osv' govulncheck-output.json | sort -u )"; \
+	FOUND="$$( $(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | .finding.osv] | unique | .[]' govulncheck-output.json | sort -u )"; \
 	[ -z "$$FOUND" ] && echo "No vulnerabilities found" && rm -f govulncheck-output.json && exit 0; \
 	echo "Found: $$FOUND"; \
 	\
@@ -286,7 +293,7 @@ govulncheck:
 	echo ""; \
 	echo "Vulnerability Summary:"; \
 	echo "ID    SUMMARY"; \
-	$(GOJQ) -r 'select(.finding!=null)|[.finding.osv,.finding.summary]|@tsv' govulncheck-output.json; \
+	$(GOJQ) -r -s '$(_GOVUL_MAP) | [.[] | select(.finding != null and ($(_GOVUL_SKIP) | not)) | [.finding.osv, $$osv_data[.finding.osv].summary]] | unique_by(.[0]) | .[] | @tsv' govulncheck-output.json; \
 	rm -f govulncheck-output.json; \
 	exit 1
 
