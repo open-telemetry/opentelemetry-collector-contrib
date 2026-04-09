@@ -217,6 +217,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor

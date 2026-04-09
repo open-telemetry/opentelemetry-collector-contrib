@@ -1,0 +1,10 @@
+display_name: Span Pruning Processor
+type: spanpruning
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: []
+  codeowners:
+    active: [portertech]

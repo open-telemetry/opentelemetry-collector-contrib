@@ -541,6 +541,10 @@ component_management:
     name: processor_span
     paths:
     - processor/spanprocessor/**
+  - component_id: processor_spanpruning
+    name: processor_spanpruning
+    paths:
+    - processor/spanpruningprocessor/**
   - component_id: processor_sumologic
     name: processor_sumologic
     paths:
