@@ -18,7 +18,7 @@ require (
 	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/snowflakedb/gosnowflake/v2 v2.0.0
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.41.1-0.20260403163240-359d0dec648b
+	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component v1.55.1-0.20260408002112-999af6320692
 	go.opentelemetry.io/collector/component/componenttest v0.149.1-0.20260408002112-999af6320692
@@ -114,7 +114,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.3 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect

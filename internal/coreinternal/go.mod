@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.149.0
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.41.1-0.20260403163240-359d0dec648b
+	github.com/testcontainers/testcontainers-go v0.42.0
 	go.opentelemetry.io/collector/client v1.55.1-0.20260408002112-999af6320692
 	go.opentelemetry.io/collector/component v1.55.1-0.20260408002112-999af6320692
 	go.opentelemetry.io/collector/component/componenttest v0.149.1-0.20260408002112-999af6320692
@@ -51,7 +51,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect

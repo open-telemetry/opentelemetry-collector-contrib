@@ -3,12 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxrec
 go 1.25.0
 
 require (
+	github.com/moby/moby/api v1.54.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.149.0
 	github.com/shirou/gopsutil/v4 v4.26.3
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.41.1-0.20260403163240-359d0dec648b
+	github.com/testcontainers/testcontainers-go v0.42.0
 	go.opentelemetry.io/collector/component v1.55.1-0.20260408002112-999af6320692
 	go.opentelemetry.io/collector/component/componenttest v0.149.1-0.20260408002112-999af6320692
 	go.opentelemetry.io/collector/config/confignet v1.55.1-0.20260408002112-999af6320692
@@ -68,7 +69,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/api v1.54.1 // indirect
 	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
