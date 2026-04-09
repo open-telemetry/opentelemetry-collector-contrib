@@ -25,6 +25,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "file.permissions"
+            default:
+              - "file.permissions"
       file.mtime:
         description: "FileMtimeMetricConfig provides config for the file.mtime metric."
         type: object
