@@ -270,7 +270,7 @@ components:
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
-    - receiver/httpcheck
+    - receiver/http_check
     - receiver/huaweicloudcesreceiver
     - receiver/icmpcheckreceiver
     - receiver/iis
