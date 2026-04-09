@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.149.0
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/otlptranslator v1.0.0
-	github.com/prometheus/prometheus v0.311.2-0.20260409132811-d3478dc7fe12
+	github.com/prometheus/prometheus v0.311.2-0.20260409145810-72293ff1d2e0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.55.1-0.20260408002112-999af6320692
 	go.opentelemetry.io/otel v1.43.0

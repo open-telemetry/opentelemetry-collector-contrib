@@ -19,7 +19,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/exporter-toolkit v0.16.0
-	github.com/prometheus/prometheus v0.311.2-0.20260409132811-d3478dc7fe12
+	github.com/prometheus/prometheus v0.311.2-0.20260409145810-72293ff1d2e0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.55.1-0.20260408002112-999af6320692
 	go.opentelemetry.io/collector/component/componentstatus v0.149.1-0.20260408002112-999af6320692
@@ -203,6 +203,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
+	github.com/moby/moby/api v1.54.0 // indirect
+	github.com/moby/moby/client v0.3.0 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
