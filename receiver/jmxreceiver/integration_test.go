@@ -127,7 +127,12 @@ func integrationTest(version, jar, jmxConfig string) func(*testing.T) {
 					},
 				},
 				ExposedPorts: []string{jmxPort + "/tcp"},
-				WaitingFor:   wait.ForListeningPort(jmxPort),
+				WaitingFor: &wait.MultiStrategy{
+					Strategies: []wait.Strategy{
+						wait.ForListeningPort(jmxPort),
+						wait.ForLog("Server startup"),
+					},
+				},
 			}),
 		scraperinttest.AllowHardcodedHostPort(),
 		scraperinttest.WithCustomConfig(
