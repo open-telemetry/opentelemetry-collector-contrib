@@ -45,3 +45,14 @@ kafka/per_signal_encoding:
     encoding: per_signal_encoding
   profiles:
     encoding: per_signal_encoding
+kafka/multiple_partitioner:
+  record_partitioner:
+    round_robin: {}
+    least_backup: {}
+kafka/extension_not_set:
+  record_partitioner:
+    extension: ""
+kafka/invalid_sticky_key_hasher:
+  record_partitioner:
+    sticky_key:
+      hasher: invalid_hasher

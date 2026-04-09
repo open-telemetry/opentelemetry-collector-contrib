@@ -47,6 +47,28 @@ kafka/per_signal_encoding:
     encoding: per_signal_encoding
   profiles:
     encoding: per_signal_encoding
+kafka/round_robin_partitioner:
+  brokers:
+    - "localhost:9092"
+  record_partitioner:
+    round_robin: {}
+kafka/least_backup_partitioner:
+  brokers:
+    - "localhost:9092"
+  record_partitioner:
+    least_backup: {}
+kafka/sticky_key_partitioner:
+  brokers:
+    - "localhost:9092"
+  record_partitioner:
+    sticky_key:
+      hasher: sarama_compat
+kafka/sticky_key_partitioner_murmur2:
+  brokers:
+    - "localhost:9092"
+  record_partitioner:
+    sticky_key:
+      hasher: murmur2
 kafka/metadata_batch_valid:
   include_metadata_keys:
     - metadata_key
