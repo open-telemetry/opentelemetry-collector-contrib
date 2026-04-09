@@ -6,6 +6,7 @@ package opampextension
 import (
 	"context"
 	"errors"
+	"maps"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -18,8 +19,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/client/types"
-	"github.com/shirou/gopsutil/v4/host"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/shirou/gopsutil/v4/host"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -115,9 +116,7 @@ func TestCreateAgentDescription(t *testing.T) {
 		if osVersion != "" {
 			base["os.version"] = osVersion
 		}
-		for k, v := range kvs {
-			base[k] = v
-		}
+		maps.Copy(base, kvs)
 		keys := make([]string, 0, len(base))
 		for k := range base {
 			keys = append(keys, k)
