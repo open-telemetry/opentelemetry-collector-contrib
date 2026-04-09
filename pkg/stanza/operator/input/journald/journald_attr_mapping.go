@@ -90,7 +90,7 @@ func convertFieldValue(otelKey string, v any) any {
 //   - Sets entry.Body to the MESSAGE field value
 //   - Sets entry.Severity and entry.SeverityText from the PRIORITY field
 //   - Maps well-known fields to their OTel semantic convention attribute/resource names
-//   - Puts remaining fields in entry.Attributes with their original journald field names
+//   - Puts remaining fields in entry.Attributes with "journald." prefix on their field names
 func mapJournalEntryAttributes(e *entry.Entry, body map[string]any) {
 	for k, v := range body {
 		switch k {
@@ -120,7 +120,7 @@ func mapJournalEntryAttributes(e *entry.Entry, body map[string]any) {
 				if e.Attributes == nil {
 					e.Attributes = make(map[string]any)
 				}
-				e.Attributes[k] = v
+				e.Attributes["journald."+k] = v
 			}
 		}
 	}
