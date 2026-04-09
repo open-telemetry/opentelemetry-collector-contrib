@@ -52,6 +52,14 @@ The following settings can be optionally configured:
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `partition_logs_by_trace_id` (default = false): configures the exporter to partition log messages by trace ID, if the log record has one associated. Note: `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id` are mutually exclusive, and enabling both will lead to an error.
+- `record_partitioner`: Configures the Kafka record partitioning strategy. **At most one** option may be set. If multiple partitioners are configured, an error will be returned. If none is configured, the default is `sticky_key` with a Sarama-compatible hasher (preserving previous behavior).
+  - `sticky_key`: Uses a sticky-key partitioner.
+    - `hasher`: The hash algorithm used for key-based partition assignment.
+      - `sarama_compat` (default): Uses Sarama-compatible FNV-1a hashing.
+      - `murmur2`: Uses Murmur2 hashing
+  - `round_robin`: Distributes records evenly across all available partitions in round-robin order.
+  - `least_backup`: Routes each record to the partition with the fewest buffered (in-flight) records.
+  - `extension`: The component ID of a custom partitioner extension. When set, partitioning is delegated to the specified extension.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
@@ -160,3 +168,35 @@ The destination topic can be defined in a few different ways and takes priority 
 2. Otherwise, if `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
 3. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
 4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic.
+
+## Partitioning Kafka Records
+
+The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
+
+Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
+
+### Using custom partitioner
+
+The Kafka exporter allows you to define a custom partitioning strategy via an extension. A sample config for custom partitioner would look like:
+
+```yaml
+exporters:
+  kafka:
+    brokers:
+      - localhost:9092
+    record_partitioner:
+      extension: my_custom_partitioner
+  
+extensions:
+  my_custom_partitioner:
+    # your extension-specific configuration here
+
+# rest of the pipeline config
+```
+
+Use custom partitioner if:
+- Built-in strategies (round_robin, least_backup, etc.) don’t fit your needs
+- You require domain-specific routing logic
+
+> [!NOTE]
+> The custom partitioner extension must implement the RecordPartitionerExtension interface (see [partitioner.go](./partitioner.go)).
