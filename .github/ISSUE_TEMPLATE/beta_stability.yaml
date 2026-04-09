@@ -232,6 +232,7 @@ body:
       - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
+      - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
