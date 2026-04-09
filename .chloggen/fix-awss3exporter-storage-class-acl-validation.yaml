@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: exporter/awss3
+note: Use AWS SDK S3 types for StorageClass and ACL validation instead of hardcoded lists
+issues: [46825]
+subtext: |
+  The hardcoded list of valid S3 storage classes was missing GLACIER_IR, REDUCED_REDUNDANCY, and EXPRESS_ONEZONE.
+  Replaced both StorageClass and ACL hardcoded validation maps with values from the AWS SDK s3types package
+  to prevent this from going out of date again in the future.
+change_logs: [user]
