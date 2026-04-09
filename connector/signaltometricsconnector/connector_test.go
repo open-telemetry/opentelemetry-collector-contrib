@@ -201,17 +201,20 @@ type benchCase struct {
 
 func BenchmarkConnectorWithTraces(b *testing.B) {
 	benchCases := []benchCase{
-		{name: "no_match", attrKey: "nonexistent.attribute"},
-		{name: "all_match", attrKey: ""},
-		{name: "partial_match", attrKey: "http.response.status_code"},
+		{name: "no_match", attrKey: "nonexistent.attribute", includeResourceAttributes: defaultResAttrs()},
+		{name: "all_match", attrKey: "", includeResourceAttributes: defaultResAttrs()},
+		{name: "partial_match", attrKey: "http.response.status_code", includeResourceAttributes: defaultResAttrs()},
 		{
-			name: "keys_expression",
-			includeResourceAttributes: []config.Attribute{
-				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
-			},
+			name:                      "keys_expression",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 			clientMetadata: map[string][]string{
 				"x-dynamic-resource-attributes": {"resource.foo"},
 			},
+		},
+		{
+			name:                      "partial_match_noop_keys_expression",
+			attrKey:                   "http.response.status_code",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 		},
 	}
 	for _, bc := range benchCases {
@@ -244,17 +247,20 @@ func BenchmarkConnectorWithTraces(b *testing.B) {
 
 func BenchmarkConnectorWithMetrics(b *testing.B) {
 	benchCases := []benchCase{
-		{name: "no_match", attrKey: "nonexistent.attribute"},
-		{name: "all_match", attrKey: ""},
-		{name: "partial_match", attrKey: "datapoint.foo"},
+		{name: "no_match", attrKey: "nonexistent.attribute", includeResourceAttributes: defaultResAttrs()},
+		{name: "all_match", attrKey: "", includeResourceAttributes: defaultResAttrs()},
+		{name: "partial_match", attrKey: "datapoint.foo", includeResourceAttributes: defaultResAttrs()},
 		{
-			name: "keys_expression",
-			includeResourceAttributes: []config.Attribute{
-				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
-			},
+			name:                      "keys_expression",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 			clientMetadata: map[string][]string{
 				"x-dynamic-resource-attributes": {"resource.foo"},
 			},
+		},
+		{
+			name:                      "partial_match_noop_keys_expression",
+			attrKey:                   "datapoint.foo",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 		},
 	}
 	for _, bc := range benchCases {
@@ -287,17 +293,20 @@ func BenchmarkConnectorWithMetrics(b *testing.B) {
 
 func BenchmarkConnectorWithLogs(b *testing.B) {
 	benchCases := []benchCase{
-		{name: "no_match", attrKey: "nonexistent.attribute"},
-		{name: "all_match", attrKey: ""},
-		{name: "partial_match", attrKey: "log.foo"},
+		{name: "no_match", attrKey: "nonexistent.attribute", includeResourceAttributes: defaultResAttrs()},
+		{name: "all_match", attrKey: "", includeResourceAttributes: defaultResAttrs()},
+		{name: "partial_match", attrKey: "log.foo", includeResourceAttributes: defaultResAttrs()},
 		{
-			name: "keys_expression",
-			includeResourceAttributes: []config.Attribute{
-				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
-			},
+			name:                      "keys_expression",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 			clientMetadata: map[string][]string{
 				"x-dynamic-resource-attributes": {"resource.foo"},
 			},
+		},
+		{
+			name:                      "partial_match_noop_keys_expression",
+			attrKey:                   "log.foo",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 		},
 	}
 	for _, bc := range benchCases {
@@ -331,17 +340,20 @@ func BenchmarkConnectorWithLogs(b *testing.B) {
 func BenchmarkConnectorWithProfiles(b *testing.B) {
 	// Profile attributes: profile.foo (on some), profile.bar (on some).
 	benchCases := []benchCase{
-		{name: "no_match", attrKey: "nonexistent.attribute"},
-		{name: "all_match", attrKey: ""},
-		{name: "partial_match", attrKey: "profile.foo"},
+		{name: "no_match", attrKey: "nonexistent.attribute", includeResourceAttributes: defaultResAttrs()},
+		{name: "all_match", attrKey: "", includeResourceAttributes: defaultResAttrs()},
+		{name: "partial_match", attrKey: "profile.foo", includeResourceAttributes: defaultResAttrs()},
 		{
-			name: "keys_expression",
-			includeResourceAttributes: []config.Attribute{
-				{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`},
-			},
+			name:                      "keys_expression",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 			clientMetadata: map[string][]string{
 				"x-dynamic-resource-attributes": {"resource.foo"},
 			},
+		},
+		{
+			name:                      "partial_match_noop_keys_expression",
+			attrKey:                   "profile.foo",
+			includeResourceAttributes: defaultResAttrs(config.Attribute{KeysExpression: `otelcol.client.metadata["x-dynamic-resource-attributes"]`}),
 		},
 	}
 	for _, bc := range benchCases {
@@ -372,6 +384,13 @@ func BenchmarkConnectorWithProfiles(b *testing.B) {
 	}
 }
 
+func defaultResAttrs(extra ...config.Attribute) []config.Attribute {
+	return append([]config.Attribute{
+		{Key: "resource.foo"},
+		{Key: "404.attribute", DefaultValue: "test_404_attribute"},
+	}, extra...)
+}
+
 func benchMetricInfo(b *testing.B, bc benchCase) []config.MetricInfo {
 	b.Helper()
 	var attrs []config.Attribute
@@ -379,12 +398,6 @@ func benchMetricInfo(b *testing.B, bc benchCase) []config.MetricInfo {
 		attrs = []config.Attribute{{Key: bc.attrKey}}
 	}
 	resAttrs := bc.includeResourceAttributes
-	if resAttrs == nil {
-		resAttrs = []config.Attribute{
-			{Key: "resource.foo"},
-			{Key: "404.attribute", DefaultValue: "test_404_attribute"},
-		}
-	}
 	return []config.MetricInfo{
 		{
 			Name:                      "test.histogram",
