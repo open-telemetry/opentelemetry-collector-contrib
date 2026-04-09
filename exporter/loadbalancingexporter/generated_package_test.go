@@ -3,11 +3,10 @@
 package loadbalancingexporter
 
 import (
-	"testing"
-
 	"go.uber.org/goleak"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"), goleak.IgnoreTopFunction("syscall.Syscall6"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"), goleak.IgnoreTopFunction("syscall.SyscallN"), goleak.IgnoreTopFunction("syscall.Syscall6"))
 }
