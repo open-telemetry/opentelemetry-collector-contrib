@@ -110,6 +110,7 @@ func TestMetricsExporterStart(t *testing.T) {
 			"ok",
 			func() *metricExporterImp {
 				p, _ := newMetricsExporter(ts, serviceBasedRoutingConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,

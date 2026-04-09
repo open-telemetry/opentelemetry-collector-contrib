@@ -66,6 +66,7 @@ func TestTracesExporterStart(t *testing.T) {
 			"ok",
 			func() *traceExporterImp {
 				p, _ := newTracesExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,
