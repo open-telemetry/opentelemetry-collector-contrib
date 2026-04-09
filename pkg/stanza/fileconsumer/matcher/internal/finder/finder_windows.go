@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 func getDefaultDoublestarOptions() []doublestar.GlobOption {
@@ -18,7 +20,7 @@ func getDefaultDoublestarOptions() []doublestar.GlobOption {
 	// This is currently guarded by a featuregate, which will eventually become
 	// the default.
 	options := []doublestar.GlobOption{}
-	if WindowsCaseInsensitiveFeatureGate.IsEnabled() {
+	if metadata.FilelogWindowsCaseInsensitiveFeatureGate.IsEnabled() {
 		options = append(options, doublestar.WithCaseInsensitive())
 	}
 	return options
@@ -28,7 +30,7 @@ func pathExcluded(excludes []string, path string) bool {
 	// To allow case-insensitive matching, the path and exclude
 	// are unified to lowercase before matching.
 
-	if WindowsCaseInsensitiveFeatureGate.IsEnabled() {
+	if metadata.FilelogWindowsCaseInsensitiveFeatureGate.IsEnabled() {
 		lowerPath := strings.ToLower(path)
 		for _, exclude := range excludes {
 			lowerExclude := strings.ToLower(exclude)

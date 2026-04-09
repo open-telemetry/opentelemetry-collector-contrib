@@ -32,6 +32,20 @@ type conversionEntry struct {
 	skipIfExists     bool
 }
 
+// collectECSFields extracts all target ECS field paths from conversion maps
+// and returns them as a set (map) for efficient lookups.
+func collectECSFields(maps ...map[string]conversionEntry) map[string]struct{} {
+	fields := make(map[string]struct{})
+	for _, m := range maps {
+		for _, entry := range m {
+			if entry.to != "" && !entry.skip {
+				fields[entry.to] = struct{}{}
+			}
+		}
+	}
+	return fields
+}
+
 // resourceAttrsConversionMap contains conversions for resource-level attributes
 // from their Semantic Conventions (SemConv) names to equivalent Elastic Common
 // Schema (ECS) names.
@@ -43,8 +57,8 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventionsv126.DeploymentEnvironmentKey): {to: "service.environment"},
 	string(conventions.DeploymentEnvironmentNameKey): {to: "service.environment"},
 	string(conventions.TelemetrySDKNameKey):          {skip: true},
-	string(conventions.TelemetrySDKLanguageKey):      {skip: true},
-	string(conventions.TelemetrySDKVersionKey):       {skip: true},
+	string(conventions.TelemetrySDKLanguageKey):      {to: "service.language.name"},
+	string(conventions.TelemetrySDKVersionKey):       {to: "service.language.version"},
 	string(conventions.TelemetryDistroNameKey):       {skip: true},
 	string(conventions.TelemetryDistroVersionKey):    {skip: true},
 	string(conventions.CloudPlatformKey):             {to: "cloud.service.name"},
@@ -78,6 +92,39 @@ var resourceAttrsConversionMap = map[string]conversionEntry{
 	string(conventions.FaaSInstanceKey):              {to: "faas.id"},
 	string(conventions.FaaSTriggerKey):               {to: "faas.trigger.type"},
 }
+
+var (
+	scopeAttrsConversionMap = map[string]conversionEntry{}
+
+	logRecordAttrsConversionMap = map[string]conversionEntry{
+		"event.name":                                {to: "event.action"},
+		string(conventions.ExceptionMessageKey):     {to: "error.message"},
+		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
+		string(conventions.ExceptionTypeKey):        {to: "error.type"},
+		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
+	spanAttrsConversionMap = map[string]conversionEntry{
+		string(conventionsv126.DBSystemKey):         {to: "span.db.type"},
+		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
+		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
+		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+	}
+
+	// Precomputed protected fields for performance
+	logProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		scopeAttrsConversionMap,
+		logRecordAttrsConversionMap,
+	)
+	spanProtectedFields = collectECSFields(
+		resourceAttrsConversionMap,
+		scopeAttrsConversionMap,
+		spanAttrsConversionMap,
+	)
+	metricsProtectedFields = collectECSFields(resourceAttrsConversionMap)
+)
 
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
@@ -186,7 +233,7 @@ func (e legacyModeEncoder) encodeLog(ec encodingContext, record plog.LogRecord, 
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, record.Attributes(), idx)
 
-	return document.Serialize(buf, false)
+	return document.Serialize(buf, false, nil)
 }
 
 func (ecsModeEncoder) encodeLog(
@@ -199,29 +246,13 @@ func (ecsModeEncoder) encodeLog(
 
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
 	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]conversionEntry{
-		"event.name":                                {to: "event.action"},
-		string(conventions.ExceptionMessageKey):     {to: "error.message"},
-		string(conventions.ExceptionStacktraceKey):  {to: "error.stacktrace"},
-		string(conventions.ExceptionTypeKey):        {to: "error.type"},
-		string(conventionsv126.ExceptionEscapedKey): {to: "event.error.exception.handled"},
-		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
-	}
-	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	encodeAttributesECSMode(&document, record.Attributes(), logRecordAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
-	encodeLogAgentNameECSMode(&document, ec.resource)
-	encodeLogAgentVersionECSMode(&document, ec.resource)
-	encodeHostOsTypeECSMode(&document, ec.resource)
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
@@ -235,7 +266,7 @@ func (ecsModeEncoder) encodeLog(
 		document.AddAttribute("message", record.Body())
 	}
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, logProtectedFields)
 }
 
 func (ecsModeEncoder) encodeSpan(
@@ -248,34 +279,10 @@ func (ecsModeEncoder) encodeSpan(
 
 	// First, try to map resource-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
-
 	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]conversionEntry{
-		// None at the moment
-	}
 	encodeAttributesECSMode(&document, ec.scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
-
-	// determine the correct message queue name based on the trace type (Elastic span or transaction)
-	messageQueueName := "span.message.queue.name"
-	processor, _ := span.Attributes().Get("processor.event")
-	if processor.Str() == "transaction" {
-		messageQueueName = "transaction.message.queue.name"
-	}
-
-	spanAttrsConversionMap := map[string]conversionEntry{
-		string(conventions.MessagingDestinationNameKey): {to: messageQueueName},
-		string(conventions.MessagingOperationNameKey):   {to: "span.action"},
-		string(conventionsv126.DBSystemKey):             {to: "span.db.type"},
-		string(conventions.DBNamespaceKey):              {to: "span.db.instance"},
-		string(conventions.DBQueryTextKey):              {to: "span.db.statement"},
-		string(conventions.HTTPResponseBodySizeKey):     {to: "http.response.encoded_body_size"},
-	}
-
-	// Handle special cases.
+	// Finally, try to map span-level attributes to ECS fields.
 	encodeAttributesECSMode(&document, span.Attributes(), spanAttrsConversionMap)
-	encodeHostOsTypeECSMode(&document, ec.resource)
 	addDataStreamAttributes(&document, "", idx)
 
 	document.AddTimestamp("@timestamp", span.StartTimestamp())
@@ -293,7 +300,7 @@ func (ecsModeEncoder) encodeSpan(
 		document.AddString("span.kind", spanKind)
 	}
 
-	return document.Serialize(buf, true)
+	return document.Serialize(buf, true, spanProtectedFields)
 }
 
 // spanKindToECSStr converts an OTel SpanKind to its ECS equivalent string representation defined here:
@@ -453,7 +460,7 @@ func (e nonOTelSpanEncoder) encodeSpan(
 	document.AddAttributes("Scope", scopeToAttributes(ec.scope))
 	encodeAttributes(e.attributesPrefix, &document, span.Attributes(), idx)
 	document.AddEvents(e.eventsPrefix, span.Events())
-	return document.Serialize(buf, e.dedot)
+	return document.Serialize(buf, e.dedot, nil)
 }
 
 type ecsDataPointsEncoder struct{}
@@ -467,10 +474,12 @@ func (ecsDataPointsEncoder) encodeMetrics(
 ) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
+
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
 	addDataStreamAttributes(&document, "", idx)
+	var docCount uint64
 
 	for _, dp := range dataPoints {
 		value, err := dp.Value()
@@ -478,9 +487,22 @@ func (ecsDataPointsEncoder) encodeMetrics(
 			*validationErrors = append(*validationErrors, err)
 			continue
 		}
-		document.AddAttribute(dp.Metric().Name(), value)
+		metric := dp.Metric()
+		metricName := metric.Name()
+		document.AddAttribute(metricName, value)
+		if name := dp.DynamicTemplate(metric, datapoints.DynamicTemplateModeECS); name != "" {
+			document.AddDynamicTemplate(metricName, name)
+		}
+
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
+			docCount = dp.DocCount()
+		}
 	}
-	err := document.Serialize(buf, true)
+
+	if docCount != 0 {
+		document.AddUInt("_doc_count", docCount)
+	}
+	err := document.Serialize(buf, true, metricsProtectedFields)
 
 	return document.DynamicTemplates(), err
 }
@@ -571,85 +593,6 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
 	}
-}
-
-func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	// Parse out telemetry SDK name, language, and distro name from resource
-	// attributes, setting defaults as needed.
-	telemetrySdkName := "otlp"
-	var telemetrySdkLanguage, telemetryDistroName string
-
-	attrs := resource.Attributes()
-	if v, exists := attrs.Get(string(conventions.TelemetrySDKNameKey)); exists {
-		telemetrySdkName = v.Str()
-	}
-	if v, exists := attrs.Get(string(conventions.TelemetrySDKLanguageKey)); exists {
-		telemetrySdkLanguage = v.Str()
-	}
-	if v, exists := attrs.Get(string(conventions.TelemetryDistroNameKey)); exists {
-		telemetryDistroName = v.Str()
-		if telemetrySdkLanguage == "" {
-			telemetrySdkLanguage = "unknown"
-		}
-	}
-
-	// Construct agent name from telemetry SDK name, language, and distro name.
-	agentName := telemetrySdkName
-	if telemetryDistroName != "" {
-		agentName = fmt.Sprintf("%s/%s/%s", agentName, telemetrySdkLanguage, telemetryDistroName)
-	} else if telemetrySdkLanguage != "" {
-		agentName = fmt.Sprintf("%s/%s", agentName, telemetrySdkLanguage)
-	}
-
-	// Set agent name in document.
-	document.AddString("agent.name", agentName)
-}
-
-func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	attrs := resource.Attributes()
-
-	if telemetryDistroVersion, exists := attrs.Get(string(conventions.TelemetryDistroVersionKey)); exists {
-		document.AddString("agent.version", telemetryDistroVersion.Str())
-		return
-	}
-
-	if telemetrySdkVersion, exists := attrs.Get(string(conventions.TelemetrySDKVersionKey)); exists {
-		document.AddString("agent.version", telemetrySdkVersion.Str())
-		return
-	}
-}
-
-func encodeHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
-	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
-	//
-	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
-	// If the OS you’re dealing with is not in the list, the field should not be populated."
-
-	var ecsHostOsType string
-	if semConvOsType, exists := resource.Attributes().Get(string(conventions.OSTypeKey)); exists {
-		switch semConvOsType.Str() {
-		case "windows", "linux":
-			ecsHostOsType = semConvOsType.Str()
-		case "darwin":
-			ecsHostOsType = "macos"
-		case "aix", "hpux", "solaris":
-			ecsHostOsType = "unix"
-		}
-	}
-
-	if semConvOsName, exists := resource.Attributes().Get(string(conventions.OSNameKey)); exists {
-		switch semConvOsName.Str() {
-		case "Android":
-			ecsHostOsType = "android"
-		case "iOS":
-			ecsHostOsType = "ios"
-		}
-	}
-
-	if ecsHostOsType == "" {
-		return
-	}
-	document.AddString("host.os.type", ecsHostOsType)
 }
 
 func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {

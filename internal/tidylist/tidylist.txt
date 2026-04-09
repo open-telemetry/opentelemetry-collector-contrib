@@ -7,6 +7,7 @@ internal/coreinternal
 pkg/ottl
 connector/routingconnector
 internal/pdatautil
+pkg/sampling
 connector/spanmetricsconnector
 internal/grpcutil
 internal/sharedcomponent
@@ -78,7 +79,6 @@ connector/metricsaslogsconnector
 connector/otlpjsonconnector
 connector/roundrobinconnector
 connector/servicegraphconnector
-pkg/sampling
 connector/signaltometricsconnector
 connector/slowsqlconnector
 connector/sumconnector
@@ -117,6 +117,7 @@ exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
 exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
+exporter/googlesecopsexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
 pkg/kafka/configkafka
@@ -132,7 +133,6 @@ exporter/opensearchexporter
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
-exporter/sapmexporter
 exporter/sematextexporter
 exporter/sentryexporter
 extension/sumologicextension
@@ -143,11 +143,13 @@ extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
 extension/azureauthextension
+extension/internal/credentialsfile
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/datadogextension
 extension/encoding/avrologencodingextension
+pkg/xstreamencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
 extension/encoding/azureencodingextension
@@ -204,6 +206,7 @@ internal/k8sleaderelectortest
 internal/kubelet
 internal/sqlquery
 internal/tools
+pkg/expohisto
 pkg/translator/azure
 pkg/translator/azurelogs
 pkg/translator/loki
@@ -211,7 +214,6 @@ pkg/translator/pprof
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
-processor/datadogsemanticsprocessor
 processor/deltatorateprocessor
 processor/dnslookupprocessor
 processor/filterprocessor
@@ -231,6 +233,7 @@ processor/remotetapprocessor
 processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
+processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
@@ -246,8 +249,8 @@ receiver/awss3receiver
 receiver/awsxrayreceiver
 receiver/azureblobreceiver
 receiver/azureeventhubreceiver
+receiver/azurefunctionsreceiver
 receiver/azuremonitorreceiver
-receiver/bigipreceiver
 receiver/chronyreceiver
 receiver/ciscoosreceiver
 receiver/cloudflarereceiver
@@ -277,7 +280,6 @@ receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
-receiver/k8slogreceiver
 receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver
@@ -327,6 +329,7 @@ receiver/tcplogreceiver
 receiver/tlscheckreceiver
 receiver/udplogreceiver
 receiver/vcenterreceiver
+receiver/vcrreceiver
 receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver

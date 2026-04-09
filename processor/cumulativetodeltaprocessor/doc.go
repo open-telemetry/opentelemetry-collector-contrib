@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // package cumulativetodeltaprocessor implements a processor which
 // converts cumulative sum metrics to cumulative delta.

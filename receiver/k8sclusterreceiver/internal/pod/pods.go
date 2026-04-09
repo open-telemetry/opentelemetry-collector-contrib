@@ -74,15 +74,15 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 }
 
 func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
-	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
-	mb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sNamespaceName(pod.Namespace)
-	rb.SetK8sNodeName(pod.Spec.NodeName)
-	rb.SetK8sPodName(pod.Name)
-	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	e := metadata.NewK8sPodEntity(string(pod.UID))
+	e.SetK8sPodName(pod.Name)
+	e.SetK8sPodQosClass(string(pod.Status.QOSClass))
+	e.SetK8sNamespaceName(pod.Namespace)
+	e.SetK8sNodeName(pod.Spec.NodeName)
+	eb := mb.ForK8sPod(e)
+	eb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
+	eb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
+	eb.Emit()
 
 	for i := range pod.Spec.Containers {
 		c := pod.Spec.Containers[i]
@@ -166,8 +166,8 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta = maps.MergeStringMaps(meta, collectPodReplicaSetProperties(pod, store, logger))
 	}
 
-	meta[constants.K8sKeyNamespaceName] = pod.Namespace
-	meta[constants.K8sKeyPodName] = pod.Name
+	meta[string(conventions.K8SNamespaceNameKey)] = pod.Namespace
+	meta[string(conventions.K8SPodNameKey)] = pod.Name
 
 	podID := experimentalmetricmetadata.ResourceID(pod.UID)
 	return metadata.MergeKubernetesMetadataMaps(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{

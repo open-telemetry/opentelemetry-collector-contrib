@@ -1,10 +1,11 @@
+display_name: AWS Lambda Receiver
 type: awslambda
 
 status:
   class: receiver
   stability:
-    development: [logs, metrics]
-  distributions: []
+    alpha: [logs, metrics]
+  distributions: [contrib]
   codeowners:
     active: [MichaelKatsoulis, Kavindu-Dodan, axw, pjanotti]
 

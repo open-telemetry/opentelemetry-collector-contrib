@@ -1,0 +1,10 @@
+description: Config defines configuration for the receiver.
+type: object
+properties:
+  encoding:
+    description: Endpoint identifies the expected encoding of messages received from Pub/Sub.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
+allOf:
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config

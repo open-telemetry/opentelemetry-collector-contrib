@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -124,19 +126,18 @@ func lookupSearchJobReturn(r *http.Request) []byte {
 	case "/services/search/v2/jobs/3/results":
 		return []byte(`<?xml version="1.0" encoding="UTF-8"?><response><sid>some-id</sid><result><field k="host"><value><text>some-host</text></value></field><field k="run_time_avg"><value><text>200.40</text></value></field></result></response>`)
 	case "/services/search/v2/jobs/4/results": // this is the case in which we test pagination
-		if vals.Get("offset") < vals.Get("count") {
-			return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='0'><field k='By'><value><text>101</text></value></field><field k='indexname'><value><text>some_val2</text></value></field></result></results>`)
+		if vals.Get("offset") == "0" {
+			return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='0'><field k='indexname'><value><text>some_val1</text></value></field><field k='By'><value><text>104</text></value></field></result><result offset='1'><field k='indexname'><value><text>some_val5</text></value></field><field k='By'><value><text>105</text></value></field></result></results>`)
 		}
-		return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='101'><field k='By'><value><text>100</text></value></field><field k='indexname'><value><text>some_val2</text></value></field></result></results>`)
+		return []byte(`<?xml version='1.0' encoding='UTF-8'?><results preview='0'><meta><fieldOrder><field summary.count="101" summary.dc="1" summary.numcount="0">By</field><field summary.count="101" summary.dc="1" summary.numcount="0">indexname</field></fieldOrder></meta><result offset='101'><field k='indexname'><value><text>some_val2</text></value></field><field k='By'><value><text>93</text></value></field></result></results>`)
 	default:
 		return []byte(`error`)
 	}
 }
 
 // mock server create
-func createMockServer(t *testing.T) *httptest.Server {
+func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Log(r.URL.String())
 		url := r.URL.String()
 		switch {
 		case strings.EqualFold(url, "/services/server/introspection/indexer?output_mode=json"):
@@ -167,24 +168,25 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 	} else {
 		endpoint = ts.URL
 	}
-	metricsettings := metadata.MetricsBuilderConfig{}
+	metricsCfg := metadata.DefaultMetricsBuilderConfig()
 	// in the future add more metrics
-	metricsettings.Metrics.SplunkIndexerThroughput.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
-	metricsettings.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
-	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
-	metricsettings.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
-	metricsettings.Metrics.SplunkIndexerCPUTime.Enabled = true
-	metricsettings.Metrics.SplunkIoAvgIops.Enabled = true
-	metricsettings.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
-	metricsettings.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
-	metricsettings.Metrics.SplunkLicenseIndexUsage.Enabled = true
+	metricsCfg.Metrics.SplunkHealth.Enabled = false
+	metricsCfg.Metrics.SplunkIndexerThroughput.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedRawSize.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled = true
+	metricsCfg.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
+	metricsCfg.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerRollingrestartStatus.Enabled = true
+	metricsCfg.Metrics.SplunkIndexerCPUTime.Enabled = true
+	metricsCfg.Metrics.SplunkIoAvgIops.Enabled = true
+	metricsCfg.Metrics.SplunkSchedulerAvgRunTime.Enabled = true
+	metricsCfg.Metrics.SplunkServerSearchartifactsAdhoc.Enabled = true
+	metricsCfg.Metrics.SplunkLicenseIndexUsage.Enabled = true
 	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: endpoint,
@@ -203,13 +205,13 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
 		},
-		MetricsBuilderConfig: metricsettings,
+		MetricsBuilderConfig: metricsCfg,
 		VersionInfo:          false,
 	}
 }
 
 func TestScraper(t *testing.T) {
-	ts := createMockServer(t)
+	ts := createMockServer()
 	defer ts.Close()
 
 	cfg := createConfig(ts, false)
@@ -238,7 +240,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScrapeError(t *testing.T) {
-	ts := createMockServer(t)
+	ts := createMockServer()
 	defer ts.Close()
 
 	cfg := createConfig(ts, true)
@@ -258,4 +260,377 @@ func TestScrapeError(t *testing.T) {
 	_, err = scraper.scrape(t.Context())
 	require.Error(t, err, "scrape failed")
 	require.True(t, scrapererror.IsPartialScrapeError(err), "scrape error is PartialScrapeError")
+}
+
+func TestScrapeCustomSearchesUnconfiguredEndpoint(t *testing.T) {
+	ts := createMockServer()
+	defer ts.Close()
+
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
+		},
+	}
+
+	// Only the indexer endpoint is configured; search_head and cluster_master are not.
+	cfg := &Config{
+		IdxEndpoint: confighttp.ClientConfig{
+			Endpoint: ts.URL,
+			Auth:     configoptional.Some(configauth.Config{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")}),
+		},
+		ControllerConfig: scraperhelper.ControllerConfig{
+			CollectionInterval: 10 * time.Second,
+			Timeout:            11 * time.Second,
+		},
+		Searches: []SearchConfig{
+			{
+				SPL:    "index=_internal | stats count",
+				Target: TargetSearchHead,
+				Metrics: []MetricConfig{
+					{MetricName: "test.metric", ValueColumn: "count", ValueType: MetricValueTypeInt},
+				},
+			},
+		},
+	}
+
+	s := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	client, err := newSplunkEntClient(t.Context(), cfg, host, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	s.splunkClient = client
+
+	errs := make(chan error, len(cfg.Searches))
+	s.scrapeCustomSearches(t.Context(), pcommon.NewTimestampFromTime(time.Now()), nil, errs)
+	close(errs)
+
+	var collected []error
+	for e := range errs {
+		collected = append(collected, e)
+	}
+	require.Len(t, collected, 1)
+	require.ErrorContains(t, collected[0], "\"search_head\" is not configured")
+}
+
+func TestIsTstatsCommand(t *testing.T) {
+	tests := []struct {
+		spl  string
+		want bool
+	}{
+		{"| tstats count where index=_internal", true},
+		{"| TSTATS count where index=_internal", true},
+		{"| stats count", false},
+		{"| search index=_internal", false},
+		{"| rest index=_internal", false},
+		{"| makeresults index=_internal", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.spl, func(t *testing.T) {
+			require.Equal(t, tt.want, isTstatsCommand(tt.spl))
+		})
+	}
+}
+
+func TestParseFieldsToRows(t *testing.T) {
+	tests := []struct {
+		name   string
+		fields []*field
+		want   []map[string]string
+	}{
+		{
+			name:   "nil input",
+			fields: nil,
+			want:   nil,
+		},
+		{
+			name:   "empty slice",
+			fields: []*field{},
+			want:   nil,
+		},
+		{
+			name: "single row multiple fields",
+			fields: []*field{
+				{FieldName: "host", Value: "srv1"},
+				{FieldName: "count", Value: "42"},
+			},
+			want: []map[string]string{{"host": "srv1", "count": "42"}},
+		},
+		{
+			name: "two rows detected by field name repetition",
+			fields: []*field{
+				{FieldName: "host", Value: "srv1"},
+				{FieldName: "count", Value: "10"},
+				{FieldName: "host", Value: "srv2"},
+				{FieldName: "count", Value: "420"},
+			},
+			want: []map[string]string{
+				{"host": "srv1", "count": "10"},
+				{"host": "srv2", "count": "420"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, parseFields(tt.fields))
+		})
+	}
+}
+
+func newTestScopeMetrics() pmetric.ScopeMetrics {
+	return pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+}
+
+func TestAppendSearchMetrics(t *testing.T) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	search := SearchConfig{
+		Metrics: []MetricConfig{
+			{
+				MetricName:       "my.int.metric",
+				ValueColumn:      "count",
+				ValueType:        MetricValueTypeInt,
+				AttributeColumns: []string{"host"},
+				StaticAttributes: map[string]string{"env": "test"},
+			},
+			{
+				MetricName:  "my.double.metric",
+				ValueColumn: "rate",
+				ValueType:   MetricValueTypeDouble,
+			},
+		},
+	}
+
+	t.Run("valid int and double values produce data points", func(t *testing.T) {
+		fields := []*field{
+			{FieldName: "host", Value: "srv1"},
+			{FieldName: "count", Value: "96"},
+			{FieldName: "rate", Value: "4.20"},
+		}
+		sm := newTestScopeMetrics()
+		appendSearchMetrics(now, sm, search, fields)
+
+		metrics := sm.Metrics()
+		intDPs := metrics.At(0).Gauge().DataPoints()
+		require.Equal(t, 1, intDPs.Len())
+		require.Equal(t, int64(96), intDPs.At(0).IntValue())
+		attrVal, ok := intDPs.At(0).Attributes().Get("host")
+		require.True(t, ok)
+		require.Equal(t, "srv1", attrVal.Str())
+		envVal, ok := intDPs.At(0).Attributes().Get("env")
+		require.True(t, ok)
+		require.Equal(t, "test", envVal.Str())
+
+		doubleDPs := metrics.At(1).Gauge().DataPoints()
+		require.Equal(t, 1, doubleDPs.Len())
+		require.InDelta(t, 4.20, doubleDPs.At(0).DoubleValue(), 0.001)
+	})
+
+	t.Run("float string coerced to int", func(t *testing.T) {
+		fields := []*field{
+			{FieldName: "count", Value: "7.9"},
+		}
+		sm := newTestScopeMetrics()
+		appendSearchMetrics(now, sm, SearchConfig{
+			Metrics: []MetricConfig{{MetricName: "m", ValueColumn: "count", ValueType: MetricValueTypeInt}},
+		}, fields)
+
+		dps := sm.Metrics().At(0).Gauge().DataPoints()
+		require.Equal(t, 1, dps.Len())
+		require.Equal(t, int64(7), dps.At(0).IntValue())
+	})
+
+	t.Run("unparseable value produces no data point", func(t *testing.T) {
+		fields := []*field{
+			{FieldName: "count", Value: "ayyy its batmanta time"},
+		}
+		sm := newTestScopeMetrics()
+		appendSearchMetrics(now, sm, SearchConfig{
+			Metrics: []MetricConfig{{MetricName: "m", ValueColumn: "count", ValueType: MetricValueTypeInt}},
+		}, fields)
+
+		dps := sm.Metrics().At(0).Gauge().DataPoints()
+		require.Equal(t, 0, dps.Len())
+	})
+
+	t.Run("missing value column produces no data point", func(t *testing.T) {
+		fields := []*field{
+			{FieldName: "host", Value: "srv1"},
+		}
+		sm := newTestScopeMetrics()
+		appendSearchMetrics(now, sm, SearchConfig{
+			Metrics: []MetricConfig{{MetricName: "m", ValueColumn: "count", ValueType: MetricValueTypeInt}},
+		}, fields)
+
+		dps := sm.Metrics().At(0).Gauge().DataPoints()
+		require.Equal(t, 0, dps.Len())
+	})
+}
+
+func TestFormatSPLForSearch(t *testing.T) {
+	tests := []struct {
+		name               string
+		spl                string
+		earliest           string
+		latest             string
+		collectionInterval time.Duration
+		expected           string
+	}{
+		{
+			name:               "tstats adds collection interval time range before by",
+			spl:                "| tstats count where index=_* by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-2m latest=now by index",
+		},
+		{
+			name:               "tstats with config earliest and latest",
+			spl:                "| tstats count where index=_introspection by splunk_server",
+			earliest:           "-10m",
+			latest:             "now",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_introspection earliest=-10m latest=now by splunk_server",
+		},
+		{
+			name:               "tstats already has earliest adds latest",
+			spl:                "| tstats count where index=_* earliest=-30m by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-30m latest=now by index",
+		},
+		{
+			name:               "tstats already has latest adds earliest",
+			spl:                "| tstats count where index=_* latest=-10m by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* latest=-10m earliest=-2m by index",
+		},
+		{
+			name:               "tstats already has both time modifiers unchanged",
+			spl:                "| tstats count where index=_* earliest=-30m latest=-10m by index",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-30m latest=-10m by index",
+		},
+		{
+			name:               "tstats without by clause appends time range",
+			spl:                "| tstats count where index=_*",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| tstats count where index=_* earliest=-2m latest=now",
+		},
+		{
+			name:               "search adds collection interval time range",
+			spl:                "index=_internal | stats count by host",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search earliest=-2m latest=now index=_internal | stats count by host",
+		},
+		{
+			name:               "search config time range",
+			spl:                "index=_internal | stats count",
+			earliest:           "-1h",
+			latest:             "-5m",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search earliest=-1h latest=-5m index=_internal | stats count",
+		},
+		{
+			name:               "spl has earliest, inject latest from default",
+			spl:                "index=_internal earliest=-30m | stats count",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search latest=now index=_internal earliest=-30m | stats count",
+		},
+		{
+			name:               "both earliest and latest",
+			spl:                "index=_internal earliest=-30m latest=-10m | stats count",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search index=_internal earliest=-30m latest=-10m | stats count",
+		},
+		{
+			name:               "has search command needs time range after",
+			spl:                "search index=_internal | stats count",
+			collectionInterval: 5 * time.Minute,
+			expected:           "search=search earliest=-5m latest=now index=_internal | stats count",
+		},
+		{
+			name:               "already fully formatted",
+			spl:                "search=search index=_internal",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=search earliest=-2m latest=now index=_internal",
+		},
+		{
+			name:               "rest command",
+			spl:                "| rest /services/server/info",
+			collectionInterval: 2 * time.Minute,
+			expected:           "search=| rest /services/server/info",
+		},
+		{
+			name:               "urlencoding needed",
+			spl:                `index=_internal | eval x=(a + b) | eval y="100%" | eval z="a:b" | eval q="a^b" | eval r="a\b" | eval s="val" | eval t="a?b"`,
+			collectionInterval: 2 * time.Minute,
+			expected:           `search=search earliest=-2m latest=now index=_internal | eval x=(a + b) | eval y="100%" | eval z="a:b" | eval q="a^b" | eval r="a\b" | eval s="val" | eval t="a?b"`,
+		},
+		{
+			name:               "collection interval in hours",
+			spl:                "index=_internal | stats count",
+			collectionInterval: 1 * time.Hour,
+			expected:           "search=search earliest=-1h latest=now index=_internal | stats count",
+		},
+		{
+			name:               "collection interval in seconds",
+			spl:                "index=_internal | stats count",
+			collectionInterval: 30 * time.Second,
+			expected:           "search=search earliest=-30s latest=now index=_internal | stats count",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := &splunkScraper{
+				conf: &Config{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: test.collectionInterval,
+					},
+				},
+			}
+			srch := SearchConfig{
+				SPL:      test.spl,
+				Earliest: test.earliest,
+				Latest:   test.latest,
+			}
+			result := s.formatSPLForSearch(srch)
+			decoded, err := url.QueryUnescape(result)
+			require.NoError(t, err)
+			require.Equal(t, test.expected, decoded)
+		})
+	}
+}
+
+func TestFormatSPLURLEncoding(t *testing.T) {
+	s := &splunkScraper{
+		conf: &Config{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 2 * time.Minute,
+			},
+		},
+	}
+
+	result := s.formatSPLForSearch(SearchConfig{
+		SPL: `index=_internal | eval x=(a + b) | eval y="100%" | eval z="a:b" | eval q="a^b" | eval r="a\b" | eval s="val" | eval t="a?b"`,
+	})
+
+	for _, encoded := range []string{"%2B", "%3F", "%28", "%29", "%5E", "%5C", "%22", "%3A", "%25"} {
+		require.Contains(t, result, encoded, "SPL must be URL-encoded before being sent to Splunk, missing %s", encoded)
+	}
+}
+
+func TestFormatDurationForSplunk(t *testing.T) {
+	tests := []struct {
+		duration time.Duration
+		expected string
+	}{
+		{2 * time.Minute, "2m"},
+		{30 * time.Second, "30s"},
+		{1 * time.Hour, "1h"},
+		{90 * time.Minute, "1h30m"},
+		{2*time.Minute + 30*time.Second, "2m30s"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expected, func(t *testing.T) {
+			result := formatDurationForSplunk(test.duration)
+			require.Equal(t, test.expected, result)
+		})
+	}
 }

@@ -6,10 +6,10 @@ resourceLogs:
             stringValue: aws
         - key: cloud.region
           value:
-            stringValue: us-east-1
+            stringValue: us-west-2
         - key: cloud.account.id
           value:
-            stringValue: "123456789012"
+            stringValue: "111122223333"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -124,19 +124,6 @@ resourceLogs:
                                     values:
                                       - kvlistValue:
                                           values:
-                                            - key: instanceId
-                                              value:
-                                                stringValue: i-EXAMPLEaff4840c22
-                                            - key: currentState
-                                              value:
-                                                kvlistValue:
-                                                  values:
-                                                    - key: name
-                                                      value:
-                                                        stringValue: pending
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 0
                                             - key: previousState
                                               value:
                                                 kvlistValue:
@@ -147,6 +134,19 @@ resourceLogs:
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
+                                            - key: instanceId
+                                              value:
+                                                stringValue: i-EXAMPLEaff4840c22
+                                            - key: currentState
+                                              value:
+                                                kvlistValue:
+                                                  values:
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 0
+                                                    - key: name
+                                                      value:
+                                                        stringValue: pending
                                       - kvlistValue:
                                           values:
                                             - key: instanceId
@@ -166,12 +166,12 @@ resourceLogs:
                                               value:
                                                 kvlistValue:
                                                   values:
-                                                    - key: code
-                                                      value:
-                                                        doubleValue: 80
                                                     - key: name
                                                       value:
                                                         stringValue: stopped
+                                                    - key: code
+                                                      value:
+                                                        doubleValue: 80
             body: {}
             timeUnixNano: "1689801448000000000"
           - attributes:
@@ -359,9 +359,6 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
-                      - key: topicArn
-                        value:
-                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
                       - key: message
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
@@ -374,6 +371,9 @@ resourceLogs:
                       - key: messageAttributes
                         value:
                           stringValue: HIDDEN_DUE_TO_SECURITY_REASONS
+                      - key: topicArn
+                        value:
+                          stringValue: arn:aws:sns:us-east-1:123456789012:ExampleSNSTopic
               - key: aws.response.elements
                 value:
                   kvlistValue:
@@ -418,6 +418,15 @@ resourceLogs:
                 value:
                   kvlistValue:
                     values:
+                      - key: eventSource
+                        value:
+                          stringValue: ssm.amazonaws.com
+                      - key: eventName
+                        value:
+                          stringValue: UpdateInstanceInformation
+                      - key: insightType
+                        value:
+                          stringValue: ApiCallRateInsight
                       - key: insightContext
                         value:
                           kvlistValue:
@@ -443,15 +452,6 @@ resourceLogs:
                       - key: state
                         value:
                           stringValue: Start
-                      - key: eventSource
-                        value:
-                          stringValue: ssm.amazonaws.com
-                      - key: eventName
-                        value:
-                          stringValue: UpdateInstanceInformation
-                      - key: insightType
-                        value:
-                          stringValue: ApiCallRateInsight
             body: {}
             timeUnixNano: "1672627860000000000"
           - attributes:

@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"fmt"
@@ -22,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
@@ -1072,7 +1074,7 @@ func TestDeleteAfterRead(t *testing.T) {
 		require.NoError(t, temp.Close())
 	}
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), true))
 
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
@@ -1207,9 +1209,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	shortFileLine := "short file line"
 	longFileLines := 100000
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), true))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogAllowFileDeletionFeatureGate.ID(), false))
 	}()
 
 	tempDir := t.TempDir()
@@ -1241,11 +1243,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		operator.poll(ctx)
-	}()
+	})
 
 	for !shortOne || !longOne {
 		if token := sink.NextToken(t); string(token) == shortFileLine {
@@ -1669,4 +1669,64 @@ func TestArchive(t *testing.T) {
 	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
 
 	sink.ExpectCalls(t, log3, log4)
+}
+
+func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
+	t.Parallel()
+
+	line := string(bytes.Repeat([]byte("a"), 1024)) // identical 1024B lines
+
+	tempDir := t.TempDir()
+
+	// Create the log file first so we can scope the include to its exact path.
+	log := filetest.OpenTemp(t, tempDir)
+
+	cfg := NewConfig()
+	cfg.Include = append(cfg.Include, log.Name())
+	cfg.StartAt = "beginning"
+	cfg.FingerprintSize = 1000 // identical prefix across rotations
+	cfg.OnTruncate = OnTruncateReadWholeFile
+
+	// Manager #1 (manual polling, no background goroutine)
+	op1, sink1 := testManager(t, cfg)
+	op1.persister = testutil.NewUnscopedMockPersister()
+
+	// Write 20 lines
+	for range 20 {
+		filetest.WriteString(t, log, line+"\n")
+	}
+
+	// First poll: read the existing 20 lines
+	op1.poll(t.Context())
+	for range 20 {
+		sink1.ExpectToken(t, []byte(line))
+	}
+
+	// Grab metadata before truncation -- this captures the stale offset
+	// from reading the original 20 lines.
+	metadata := op1.tracker.GetMetadata()
+	require.NotEmpty(t, metadata)
+
+	// Simulate truncation while op1 is "down" (no more polls)
+	require.NoError(t, log.Truncate(0))
+	_, err := log.Seek(0, 0)
+	require.NoError(t, err)
+	for range 10 {
+		filetest.WriteString(t, log, line+"\n")
+	}
+
+	// Manager #2 (manual polling) resumes from persisted metadata
+	op2, sink2 := testManager(t, cfg)
+	op2.persister = testutil.NewUnscopedMockPersister()
+
+	// Load stale metadata so op2 sees the old (large) offset
+	op2.tracker.LoadMetadata(metadata)
+
+	// On poll, stored offset > current file size is detected.
+	// With read_whole_file, offset resets to 0, so all 10 lines are read.
+	op2.poll(t.Context())
+	for range 10 {
+		sink2.ExpectToken(t, []byte(line))
+	}
+	sink2.ExpectNoCalls(t)
 }

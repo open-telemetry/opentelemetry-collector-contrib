@@ -73,10 +73,114 @@ all_set:
       enabled: true
     oracledb.sessions.usage:
       enabled: true
+      attributes: ["session_type","session_status"]
     oracledb.tablespace_size.limit:
       enabled: true
+      attributes: ["tablespace_name"]
     oracledb.tablespace_size.usage:
       enabled: true
+      attributes: ["tablespace_name"]
+    oracledb.transactions.limit:
+      enabled: true
+    oracledb.transactions.usage:
+      enabled: true
+    oracledb.user_commits:
+      enabled: true
+    oracledb.user_rollbacks:
+      enabled: true
+  events:
+    db.server.query_sample:
+      enabled: true
+    db.server.top_query:
+      enabled: true
+  resource_attributes:
+    host.name:
+      enabled: true
+    oracledb.instance.name:
+      enabled: true
+    service.instance.id:
+      enabled: true
+reaggregate_set:
+  metrics:
+    oracledb.consistent_gets:
+      enabled: true
+    oracledb.cpu_time:
+      enabled: true
+    oracledb.db_block_gets:
+      enabled: true
+    oracledb.ddl_statements_parallelized:
+      enabled: true
+    oracledb.dml_locks.limit:
+      enabled: true
+    oracledb.dml_locks.usage:
+      enabled: true
+    oracledb.dml_statements_parallelized:
+      enabled: true
+    oracledb.enqueue_deadlocks:
+      enabled: true
+    oracledb.enqueue_locks.limit:
+      enabled: true
+    oracledb.enqueue_locks.usage:
+      enabled: true
+    oracledb.enqueue_resources.limit:
+      enabled: true
+    oracledb.enqueue_resources.usage:
+      enabled: true
+    oracledb.exchange_deadlocks:
+      enabled: true
+    oracledb.executions:
+      enabled: true
+    oracledb.hard_parses:
+      enabled: true
+    oracledb.logical_reads:
+      enabled: true
+    oracledb.logons:
+      enabled: true
+    oracledb.parallel_operations_downgraded_1_to_25_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_25_to_50_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_50_to_75_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_75_to_99_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_to_serial:
+      enabled: true
+    oracledb.parallel_operations_not_downgraded:
+      enabled: true
+    oracledb.parse_calls:
+      enabled: true
+    oracledb.pga_memory:
+      enabled: true
+    oracledb.physical_read_io_requests:
+      enabled: true
+    oracledb.physical_reads:
+      enabled: true
+    oracledb.physical_reads_direct:
+      enabled: true
+    oracledb.physical_write_io_requests:
+      enabled: true
+    oracledb.physical_writes:
+      enabled: true
+    oracledb.physical_writes_direct:
+      enabled: true
+    oracledb.processes.limit:
+      enabled: true
+    oracledb.processes.usage:
+      enabled: true
+    oracledb.queries_parallelized:
+      enabled: true
+    oracledb.sessions.limit:
+      enabled: true
+    oracledb.sessions.usage:
+      enabled: true
+      attributes: []
+    oracledb.tablespace_size.limit:
+      enabled: true
+      attributes: []
+    oracledb.tablespace_size.usage:
+      enabled: true
+      attributes: []
     oracledb.transactions.limit:
       enabled: true
     oracledb.transactions.usage:
@@ -171,10 +275,13 @@ none_set:
       enabled: false
     oracledb.sessions.usage:
       enabled: false
+      attributes: ["session_type","session_status"]
     oracledb.tablespace_size.limit:
       enabled: false
+      attributes: ["tablespace_name"]
     oracledb.tablespace_size.usage:
       enabled: false
+      attributes: ["tablespace_name"]
     oracledb.transactions.limit:
       enabled: false
     oracledb.transactions.usage:

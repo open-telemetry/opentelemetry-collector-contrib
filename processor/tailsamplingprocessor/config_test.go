@@ -35,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
+			SamplingStrategy:        samplingStrategyTraceComplete,
 			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},
 			PolicyCfgs: []PolicyCfg{
 				{
@@ -144,6 +145,21 @@ func TestLoadConfig(t *testing.T) {
 									Type:               StringAttribute,
 									StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 								},
+							},
+						},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "not-policy-1",
+						Type: Not,
+					},
+					NotCfg: NotCfg{
+						SubPolicy: NotSubPolicyCfg{
+							sharedPolicyCfg: sharedPolicyCfg{
+								Name:       "test-not-policy-1",
+								Type:       Latency,
+								LatencyCfg: LatencyCfg{ThresholdMs: 1000},
 							},
 						},
 					},

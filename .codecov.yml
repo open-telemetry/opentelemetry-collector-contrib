@@ -197,6 +197,10 @@ component_management:
     name: exporter_googlemanagedprometheus
     paths:
     - exporter/googlemanagedprometheusexporter/**
+  - component_id: exporter_googlesecops
+    name: exporter_googlesecops
+    paths:
+    - exporter/googlesecopsexporter/**
   - component_id: exporter_honeycombmarker
     name: exporter_honeycombmarker
     paths:
@@ -249,10 +253,6 @@ component_management:
     name: exporter_rabbitmq
     paths:
     - exporter/rabbitmqexporter/**
-  - component_id: exporter_sapm
-    name: exporter_sapm
-    paths:
-    - exporter/sapmexporter/**
   - component_id: exporter_sematext
     name: exporter_sematext
     paths:
@@ -345,6 +345,10 @@ component_management:
     name: extension_httpforwarder
     paths:
     - extension/httpforwarderextension/**
+  - component_id: extension_internal_credentialsfile
+    name: extension_internal_credentialsfile
+    paths:
+    - extension/internal/credentialsfile/**
   - component_id: extension_jaegerremotesampling
     name: extension_jaegerremotesampling
     paths:
@@ -445,10 +449,6 @@ component_management:
     name: processor_cumulativetodelta
     paths:
     - processor/cumulativetodeltaprocessor/**
-  - component_id: processor_datadogsemantics
-    name: processor_datadogsemantics
-    paths:
-    - processor/datadogsemanticsprocessor/**
   - component_id: processor_deltatocumulative
     name: processor_deltatocumulative
     paths:
@@ -541,6 +541,10 @@ component_management:
     name: processor_span
     paths:
     - processor/spanprocessor/**
+  - component_id: processor_spanpruning
+    name: processor_spanpruning
+    paths:
+    - processor/spanpruningprocessor/**
   - component_id: processor_sumologic
     name: processor_sumologic
     paths:
@@ -609,14 +613,14 @@ component_management:
     name: receiver_azureeventhub
     paths:
     - receiver/azureeventhubreceiver/**
+  - component_id: receiver_azurefunctions
+    name: receiver_azurefunctions
+    paths:
+    - receiver/azurefunctionsreceiver/**
   - component_id: receiver_azuremonitor
     name: receiver_azuremonitor
     paths:
     - receiver/azuremonitorreceiver/**
-  - component_id: receiver_bigip
-    name: receiver_bigip
-    paths:
-    - receiver/bigipreceiver/**
   - component_id: receiver_carbon
     name: receiver_carbon
     paths:
@@ -757,10 +761,6 @@ component_management:
     name: receiver_k8sevents
     paths:
     - receiver/k8seventsreceiver/**
-  - component_id: receiver_k8slog
-    name: receiver_k8slog
-    paths:
-    - receiver/k8slogreceiver/**
   - component_id: receiver_k8sobjects
     name: receiver_k8sobjects
     paths:
@@ -977,6 +977,10 @@ component_management:
     name: receiver_vcenter
     paths:
     - receiver/vcenterreceiver/**
+  - component_id: receiver_vcr
+    name: receiver_vcr
+    paths:
+    - receiver/vcrreceiver/**
   - component_id: receiver_wavefront
     name: receiver_wavefront
     paths:

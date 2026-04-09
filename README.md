@@ -90,7 +90,7 @@ For more information about the maintainer role, see the [community repository](h
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Matt Wear](https://github.com/mwear), Lightstep
+- [Joshua MacDonald](https://github.com/jmacd), Microsoft
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
@@ -104,7 +104,6 @@ For more information about the approver role, see the [community repository](htt
 - [Bogdan Stancu](https://github.com/bogdan-st), Adobe
 - [Constança Manteigas](https://github.com/constanca-m), Elastic
 - [Douglas Camata](https://github.com/douglascamata), Coralogix
-- [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
@@ -116,30 +115,22 @@ For more information about the approver role, see the [community repository](htt
 
 For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).
 
-### Emeritus Maintainers
+### Emeritus
 
-- [Daniel Jaglowski](https://github.com/djaglowski)
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
-- [Tigran Najaryan](https://github.com/tigrannajaryan)
-
-For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
-
-### Emeritus Approvers
-
-- [Anthony Mirabella](https://github.com/Aneurysm9)
-- [Bryan Aguilar](https://github.com/bryan-aguilar)
-- [Przemek Maciolek](https://github.com/pmm-sumo)
-- [Ruslan Kovalov](https://github.com/kovrus)
-
-For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
-
-### Emeritus Triagers
-
-- [Alolita Sharma](https://github.com/alolita)
-- [Gabriel Aszalos](https://github.com/gbbr)
-- [Goutham Veeramachaneni](https://github.com/gouthamve)
-- [Punya Biswal](https://github.com/punya)
-- [Steve Flanders](https://github.com/flands)
+- [Alolita Sharma](https://github.com/alolita), Triager
+- [Anthony Mirabella](https://github.com/Aneurysm9), Approver
+- [Bryan Aguilar](https://github.com/bryan-aguilar), Approver
+- [Daniel Jaglowski](https://github.com/djaglowski), Maintainer
+- [Florian Bacher](https://github.com/bacherfl), Triager
+- [Gabriel Aszalos](https://github.com/gbbr), Triager
+- [Goutham Veeramachaneni](https://github.com/gouthamve), Triager
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Maintainer
+- [Matt Wear](https://github.com/mwear), Approver
+- [Przemek Maciolek](https://github.com/pmm-sumo), Approver
+- [Punya Biswal](https://github.com/punya), Triager
+- [Ruslan Kovalov](https://github.com/kovrus), Approver
+- [Steve Flanders](https://github.com/flands), Triager
+- [Tigran Najaryan](https://github.com/tigrannajaryan), Maintainer
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 
@@ -166,4 +157,7 @@ is a maintainer they are responsible for merging the PR as well.
 The facilitator is not required to perform a thorough review, but they are encouraged to
 enforce Collector best practices and consistency across the codebase and component
 behavior. The facilitators will typically rely on codeowner's detailed review of the code
-when making the final approval decision. 
+when making the final approval decision.
+
+Marking the PR with the `ready to merge` label should only happen (by triagers/approvers/maintainers)
+once there is at least one approval from an approver, as per the description above. 

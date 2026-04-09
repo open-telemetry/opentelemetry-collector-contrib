@@ -8,16 +8,19 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs/internal/metadata"
 )
 
 var testBuildInfo = component.BuildInfo{
@@ -88,6 +91,48 @@ func TestSetIf(t *testing.T) {
 	actual, found = m["key"]
 	assert.True(t, found)
 	assert.Equal(t, "ok", actual)
+}
+
+func TestParseUnixTimestamp(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          string
+		expectedResult string
+		expectedError  string
+	}{
+		{
+			name:           "valid timestamp",
+			input:          "1744711621",
+			expectedResult: "2025-04-15T10:07:01Z",
+		},
+		{
+			name:           "another valid timestamp",
+			input:          "1744717084",
+			expectedResult: "2025-04-15T11:38:04Z",
+		},
+		{
+			name:          "invalid timestamp",
+			input:         "invalid",
+			expectedError: "invalid syntax",
+		},
+		{
+			name:          "empty string",
+			input:         "",
+			expectedError: "invalid syntax",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := parseUnixTimestamp(tt.input)
+			if tt.expectedError != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+				return
+			}
+			assert.Equal(t, tt.expectedResult, result.Format(time.RFC3339))
+		})
+	}
 }
 
 func TestExtractRawAttributes(t *testing.T) {
@@ -561,6 +606,146 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLogs_Administrative(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/administrative"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_Alert(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/alert"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+		"valid_2": {
+			logFilename:      "valid_2.json",
+			expectedFilename: "valid_2_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_Autoscale(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/autoscale"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_Policy(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/policy"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
 func TestUnmarshalLogs_Recommendation(t *testing.T) {
 	t.Parallel()
 
@@ -589,6 +774,169 @@ func TestUnmarshalLogs_Recommendation(t *testing.T) {
 			require.NoError(t, err)
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_Security(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/security"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_ServiceHealth(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/servicehealth"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_ResourceHealth(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/resourcehealth"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestUnmarshalLogs_GateValidationError(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
+	}()
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	data, err := os.ReadFile("testdata/cornercases/minimum.json")
+	require.NoError(t, err)
+
+	_, err = u.UnmarshalLogs(data)
+	require.ErrorContains(t, err, "pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
+}
+
+func TestUnmarshalLogs_StableGates(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.ID(), false))
+	}()
+
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+	}{
+		"app_logs": {
+			logFilename:      "testdata/appservicelog/appservice_applogs.json",
+			expectedFilename: "testdata/appservicelog/appservice_applogs_stable_expected.yaml",
+		},
+		"minimum": {
+			logFilename:      "testdata/cornercases/minimum.json",
+			expectedFilename: "testdata/cornercases/minimum_stable_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(test.logFilename)
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+			require.NoError(t, err)
+
+			// golden.WriteLogs(t, test.expectedFilename, logs)
+			expectedLogs, err := golden.ReadLogs(test.expectedFilename)
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder(), plogtest.IgnoreObservedTimestamp()))
 		})

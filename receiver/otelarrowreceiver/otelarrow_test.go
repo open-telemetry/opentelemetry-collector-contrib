@@ -93,7 +93,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:   false,
-			expectedCode: codes.Unknown,
+			expectedCode: codes.Unavailable,
 		},
 		{
 			okToIngest:   true,
@@ -143,7 +143,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
 			Description: "Number of spans successfully pushed into the pipeline. [Alpha]",
-			Unit:        "{spans}",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -164,7 +164,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
 			Description: "Number of spans that could not be pushed into the pipeline. [Alpha]",
-			Unit:        "{spans}",
+			Unit:        "{span}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -408,22 +408,20 @@ func TestOTelArrowShutdown(t *testing.T) {
 			}()
 
 			var recvWG sync.WaitGroup
-			recvWG.Add(1)
 
 			// Receive batch responses. See the comment on
 			// https://pkg.go.dev/google.golang.org/grpc#ClientConn.NewStream
 			// to explain why this must be done.  We do not use the
 			// return value, this just avoids leaking the stream context,
 			// which can otherwise hang this test.
-			go func() {
-				defer recvWG.Done()
+			recvWG.Go(func() {
 				for {
 					if _, recvErr := stream.Recv(); recvErr == nil {
 						continue
 					}
 					break
 				}
-			}()
+			})
 
 			// Wait until the receiver outputs anything to the sink.
 			assert.Eventually(t, func() bool {

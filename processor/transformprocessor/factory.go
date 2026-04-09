@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
@@ -33,13 +34,23 @@ import (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
+const defaultErrorModeIgnoreGateID = "processor.transform.defaultErrorModeIgnore"
+
+var defaultErrorModeIgnoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	defaultErrorModeIgnoreGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Changes the default error_mode of the transform processor from propagate to ignore"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47231"),
+	featuregate.WithRegisterFromVersion("v0.150.0"),
+)
+
 type transformProcessorFactory struct {
 	dataPointFunctions                  map[string]ottl.Factory[*ottldatapoint.TransformContext]
 	logFunctions                        map[string]ottl.Factory[*ottllog.TransformContext]
 	metricFunctions                     map[string]ottl.Factory[*ottlmetric.TransformContext]
 	spanEventFunctions                  map[string]ottl.Factory[*ottlspanevent.TransformContext]
 	spanFunctions                       map[string]ottl.Factory[*ottlspan.TransformContext]
-	profileFunctions                    map[string]ottl.Factory[ottlprofile.TransformContext]
+	profileFunctions                    map[string]ottl.Factory[*ottlprofile.TransformContext]
 	defaultDataPointFunctionsOverridden bool
 	defaultLogFunctionsOverridden       bool
 	defaultMetricFunctionsOverridden    bool
@@ -156,12 +167,21 @@ func WithSpanFunctionsNew(spanFunctions []ottl.Factory[*ottlspan.TransformContex
 	}
 }
 
-// WithProfileFunctions will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
-// Subsequent uses of WithProfileFunctions will merge the provided profileFunctions with the previously registered functions.
+// Deprecated: [v0.145.0] use WithProfileFunctionsNew.
 func WithProfileFunctions(profileFunctions []ottl.Factory[ottlprofile.TransformContext]) FactoryOption {
+	newProfileFunctions := make([]ottl.Factory[*ottlprofile.TransformContext], 0, len(profileFunctions))
+	for _, profileFunction := range profileFunctions {
+		newProfileFunctions = append(newProfileFunctions, ottl.NewFactory[*ottlprofile.TransformContext](profileFunction.Name(), profileFunction.CreateDefaultArguments(), fromNonPointerFunction(profileFunction.CreateFunction)))
+	}
+	return WithProfileFunctionsNew(newProfileFunctions)
+}
+
+// WithProfileFunctionsNew will override the default OTTL profile context functions with the provided profileFunctions in the resulting processor.
+// Subsequent uses of WithProfileFunctionsNew will merge the provided profileFunctions with the previously registered functions.
+func WithProfileFunctionsNew(profileFunctions []ottl.Factory[*ottlprofile.TransformContext]) FactoryOption {
 	return func(factory *transformProcessorFactory) {
 		if !factory.defaultProfileFunctionsOverridden {
-			factory.profileFunctions = map[string]ottl.Factory[ottlprofile.TransformContext]{}
+			factory.profileFunctions = map[string]ottl.Factory[*ottlprofile.TransformContext]{}
 			factory.defaultProfileFunctionsOverridden = true
 		}
 		factory.profileFunctions = mergeFunctionsToMap(factory.profileFunctions, profileFunctions)
@@ -197,8 +217,12 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 }
 
 func (f *transformProcessorFactory) createDefaultConfig() component.Config {
+	defaultErrorMode := ottl.PropagateError
+	if defaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		defaultErrorMode = ottl.IgnoreError
+	}
 	return &Config{
-		ErrorMode:          ottl.PropagateError,
+		ErrorMode:          defaultErrorMode,
 		TraceStatements:    []common.ContextStatements{},
 		MetricStatements:   []common.ContextStatements{},
 		LogStatements:      []common.ContextStatements{},

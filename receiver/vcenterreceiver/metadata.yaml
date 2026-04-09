@@ -1,4 +1,8 @@
+display_name: vCenter Receiver
 type: vcenter
+reaggregation_enabled: true
+
+description: This receiver fetches metrics from a vCenter or ESXi host running VMware vSphere APIs.
 
 status:
   class: receiver
@@ -67,6 +71,7 @@ attributes:
       - total
       - used
     description: The type of CPU reservation for the host.
+    requirement_level: recommended
   cpu_state:
     description: CPU time spent in idle, ready or idle state.
     type: string
@@ -74,6 +79,7 @@ attributes:
       - "idle"
       - "ready"
       - "wait"
+    requirement_level: recommended
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -81,18 +87,21 @@ attributes:
     enum:
       - read
       - write
+    requirement_level: recommended
   disk_state:
     description: The state of storage and whether it is already allocated or free.
     type: string
     enum:
       - available
       - used
+    requirement_level: recommended
   disk_type:
     description: The type of storage device that is being recorded.
     type: string
     enum:
       - virtual
       - physical
+    requirement_level: recommended
   entity_status:
     name_override: status
     description: The current status of the managed entity.
@@ -102,10 +111,12 @@ attributes:
       - "yellow"
       - "green"
       - "gray"
+    requirement_level: recommended
   host_effective:
     type: bool
     name_override: effective
     description: Whether the host is effective in the vCenter cluster.
+    requirement_level: recommended
   host_power_state:
     name_override: power_state
     description: The current power state of the host.
@@ -115,6 +126,7 @@ attributes:
       - "off"
       - "standby"
       - "unknown"
+    requirement_level: recommended
   memory_granted_type:
     name_override: type
     description: The type of memory granted.
@@ -122,6 +134,7 @@ attributes:
     enum:
       - private
       - shared
+    requirement_level: recommended
   memory_usage_type:
     name_override: type
     description: The type of memory usage.
@@ -130,10 +143,12 @@ attributes:
       - guest
       - host
       - overhead
+    requirement_level: recommended
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
     type: string
+    requirement_level: recommended
   throughput_direction:
     name_override: direction
     description: The direction of network throughput.
@@ -141,6 +156,7 @@ attributes:
     enum:
       - transmitted
       - received
+    requirement_level: recommended
   vm_count_power_state:
     name_override: power_state
     description: The current power state of the virtual machine.
@@ -150,6 +166,7 @@ attributes:
       - "off"
       - "suspended"
       - "unknown"
+    requirement_level: recommended
   vsan_latency_type:
     name_override: type
     description: The type of vSAN latency.
@@ -157,6 +174,7 @@ attributes:
     enum:
       - read
       - write
+    requirement_level: recommended
   vsan_operation_type:
     name_override: type
     description: The type of vSAN operation.
@@ -165,7 +183,7 @@ attributes:
       - read
       - write
       - unmap
-
+    requirement_level: recommended
   vsan_throughput_direction:
     name_override: direction
     description: The type of vSAN throughput.
@@ -173,13 +191,13 @@ attributes:
     enum:
       - read
       - write
+    requirement_level: recommended
 
 metrics:
   vcenter.cluster.cpu.effective:
     enabled: true
     description: The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -189,8 +207,7 @@ metrics:
   vcenter.cluster.cpu.limit:
     enabled: true
     description: The amount of CPU available to the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -200,8 +217,7 @@ metrics:
   vcenter.cluster.host.count:
     enabled: true
     description: The number of hosts in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{hosts}"
     sum:
       monotonic: false
@@ -211,8 +227,7 @@ metrics:
   vcenter.cluster.memory.effective:
     enabled: true
     description: The effective available memory of the cluster.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -223,8 +238,7 @@ metrics:
   vcenter.cluster.memory.limit:
     enabled: true
     description: The available memory of the cluster.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -234,8 +248,7 @@ metrics:
   vcenter.cluster.vm.count:
     enabled: true
     description: The number of virtual machines in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{virtual_machines}"
     sum:
       monotonic: false
@@ -245,8 +258,7 @@ metrics:
   vcenter.cluster.vm_template.count:
     enabled: true
     description: The number of virtual machine templates in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{virtual_machine_templates}"
     sum:
       monotonic: false
@@ -256,8 +268,7 @@ metrics:
   vcenter.cluster.vsan.congestions:
     enabled: true
     description: The congestions of IOs generated by all vSAN clients in the cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{congestions/s}"
     gauge:
       value_type: double
@@ -265,8 +276,7 @@ metrics:
   vcenter.cluster.vsan.latency.avg:
     enabled: true
     description: The overall cluster latency while accessing vSAN storage.
-    stability:
-      level: development
+    stability: development
     unit: "us"
     gauge:
       value_type: int
@@ -274,8 +284,7 @@ metrics:
   vcenter.cluster.vsan.operations:
     enabled: true
     description: The vSAN IOPs of a cluster.
-    stability:
-      level: development
+    stability: development
     unit: "{operations/s}"
     gauge:
       value_type: int
@@ -283,8 +292,7 @@ metrics:
   vcenter.cluster.vsan.throughput:
     enabled: true
     description: The vSAN throughput of a cluster.
-    stability:
-      level: development
+    stability: development
     unit: "By/s"
     gauge:
       value_type: double
@@ -292,8 +300,7 @@ metrics:
   vcenter.datacenter.cluster.count:
     enabled: true
     description: The number of clusters in the datacenter.
-    stability:
-      level: development
+    stability: development
     unit: "{clusters}"
     sum:
       monotonic: false
@@ -303,8 +310,7 @@ metrics:
   vcenter.datacenter.cpu.limit:
     enabled: true
     description: The total amount of CPU available to the datacenter.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -314,8 +320,7 @@ metrics:
   vcenter.datacenter.datastore.count:
     enabled: true
     description: The number of datastores in the datacenter.
-    stability:
-      level: development
+    stability: development
     unit: "{datastores}"
     sum:
       monotonic: false
@@ -325,8 +330,7 @@ metrics:
   vcenter.datacenter.disk.space:
     enabled: true
     description: The amount of available and used disk space in the datacenter.
-    stability:
-      level: development
+    stability: development
     unit: "By"
     sum:
       monotonic: false
@@ -336,8 +340,7 @@ metrics:
   vcenter.datacenter.host.count:
     enabled: true
     description: The number of hosts in the datacenter.
-    stability:
-      level: development
+    stability: development
     unit: "{hosts}"
     sum:
       monotonic: false
@@ -347,8 +350,7 @@ metrics:
   vcenter.datacenter.memory.limit:
     enabled: true
     description: The total amount of memory available to the datacenter.
-    stability:
-      level: development
+    stability: development
     unit: "By"
     sum:
       monotonic: false
@@ -358,8 +360,7 @@ metrics:
   vcenter.datacenter.vm.count:
     enabled: true
     description: The number of VM's in the datacenter.
-    stability:
-      level: development
+    stability: development
     unit: "{virtual_machines}"
     sum:
       monotonic: false
@@ -369,8 +370,7 @@ metrics:
   vcenter.datastore.disk.usage:
     enabled: true
     description: The amount of space in the datastore.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -380,8 +380,7 @@ metrics:
   vcenter.datastore.disk.utilization:
     enabled: true
     description: The utilization of the datastore.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -389,8 +388,7 @@ metrics:
   vcenter.host.cpu.capacity:
     enabled: true
     description: Total CPU capacity of the host system.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -400,8 +398,7 @@ metrics:
   vcenter.host.cpu.reserved:
     enabled: true
     description: The CPU of the host reserved for use by virtual machines.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -411,8 +408,7 @@ metrics:
   vcenter.host.cpu.usage:
     enabled: true
     description: The amount of CPU used by the host.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -422,8 +418,7 @@ metrics:
   vcenter.host.cpu.utilization:
     enabled: true
     description: The CPU utilization of the host system.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -431,8 +426,7 @@ metrics:
   vcenter.host.disk.latency.avg:
     enabled: true
     description: The latency of operations to the host system's disk.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: int
@@ -441,8 +435,7 @@ metrics:
   vcenter.host.disk.latency.max:
     enabled: true
     description: Highest latency value across all disks used by the host.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: int
@@ -451,8 +444,7 @@ metrics:
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
-    stability:
-      level: development
+    stability: development
     unit: "{KiBy/s}"
     sum:
       monotonic: false
@@ -463,8 +455,7 @@ metrics:
   vcenter.host.memory.capacity:
     enabled: false
     description: Total memory  capacity of the host system.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -474,8 +465,7 @@ metrics:
   vcenter.host.memory.usage:
     enabled: true
     description: The amount of memory the host system is using.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -485,8 +475,7 @@ metrics:
   vcenter.host.memory.utilization:
     enabled: true
     description: The percentage of the host system's memory capacity that is being utilized.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -494,8 +483,7 @@ metrics:
   vcenter.host.network.packet.drop.rate:
     enabled: true
     description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
-    stability:
-      level: development
+    stability: development
     unit: "{packets/s}"
     gauge:
       value_type: double
@@ -504,8 +492,7 @@ metrics:
   vcenter.host.network.packet.error.rate:
     enabled: true
     description: The rate of packet errors transmitted or received on the host network.
-    stability:
-      level: development
+    stability: development
     unit: "{errors/s}"
     gauge:
       value_type: double
@@ -514,8 +501,7 @@ metrics:
   vcenter.host.network.packet.rate:
     enabled: true
     description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
-    stability:
-      level: development
+    stability: development
     unit: "{packets/s}"
     gauge:
       value_type: double
@@ -524,8 +510,7 @@ metrics:
   vcenter.host.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network by the host.
-    stability:
-      level: development
+    stability: development
     unit: "{KiBy/s}"
     sum:
       monotonic: false
@@ -536,8 +521,7 @@ metrics:
   vcenter.host.network.usage:
     enabled: true
     description: The sum of the data transmitted and received for all the NIC instances of the host.
-    stability:
-      level: development
+    stability: development
     unit: "{KiBy/s}"
     sum:
       monotonic: false
@@ -547,8 +531,7 @@ metrics:
   vcenter.host.vsan.cache.hit_rate:
     enabled: true
     description: The host's read IOs which could be satisfied by the local client cache.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: int
@@ -557,8 +540,7 @@ metrics:
   vcenter.host.vsan.congestions:
     enabled: true
     description: The congestions of IOs generated by all vSAN clients in the host.
-    stability:
-      level: development
+    stability: development
     unit: "{congestions/s}"
     gauge:
       value_type: double
@@ -567,8 +549,7 @@ metrics:
   vcenter.host.vsan.latency.avg:
     enabled: true
     description: The host latency while accessing vSAN storage.
-    stability:
-      level: development
+    stability: development
     unit: "us"
     gauge:
       value_type: int
@@ -577,8 +558,7 @@ metrics:
   vcenter.host.vsan.operations:
     enabled: true
     description: The vSAN IOPs of a host.
-    stability:
-      level: development
+    stability: development
     unit: "{operations/s}"
     gauge:
       value_type: int
@@ -587,8 +567,7 @@ metrics:
   vcenter.host.vsan.throughput:
     enabled: true
     description: The vSAN throughput of a host.
-    stability:
-      level: development
+    stability: development
     unit: "By/s"
     gauge:
       value_type: double
@@ -597,8 +576,7 @@ metrics:
   vcenter.resource_pool.cpu.shares:
     enabled: true
     description: The amount of shares of CPU in the resource pool.
-    stability:
-      level: development
+    stability: development
     unit: "{shares}"
     sum:
       monotonic: false
@@ -608,8 +586,7 @@ metrics:
   vcenter.resource_pool.cpu.usage:
     enabled: true
     description: The usage of the CPU used by the resource pool.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -619,8 +596,7 @@ metrics:
   vcenter.resource_pool.memory.ballooned:
     enabled: true
     description: The amount of memory in a resource pool that is ballooned due to virtualization.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -630,8 +606,7 @@ metrics:
   vcenter.resource_pool.memory.granted:
     enabled: true
     description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -641,8 +616,7 @@ metrics:
   vcenter.resource_pool.memory.shares:
     enabled: true
     description: The amount of shares of memory in the resource pool.
-    stability:
-      level: development
+    stability: development
     unit: "{shares}"
     sum:
       monotonic: false
@@ -652,8 +626,7 @@ metrics:
   vcenter.resource_pool.memory.swapped:
     enabled: true
     description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -663,8 +636,7 @@ metrics:
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -674,8 +646,7 @@ metrics:
   vcenter.vm.cpu.readiness:
     enabled: true
     description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: int
@@ -683,8 +654,7 @@ metrics:
   vcenter.vm.cpu.time:
     enabled: false
     description: CPU time spent in idle, ready or wait state.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -693,8 +663,7 @@ metrics:
   vcenter.vm.cpu.usage:
     enabled: true
     description: The amount of CPU used by the VM.
-    stability:
-      level: development
+    stability: development
     unit: "MHz"
     sum:
       monotonic: false
@@ -704,8 +673,7 @@ metrics:
   vcenter.vm.cpu.utilization:
     enabled: true
     description: The CPU utilization of the VM.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -713,8 +681,7 @@ metrics:
   vcenter.vm.disk.latency.avg:
     enabled: true
     description: The latency of operations to the virtual machine's disk.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: int
@@ -723,8 +690,7 @@ metrics:
   vcenter.vm.disk.latency.max:
     enabled: true
     description: The highest reported total latency (device and kernel times) over an interval of 20 seconds.
-    stability:
-      level: development
+    stability: development
     unit: ms
     gauge:
       value_type: int
@@ -732,8 +698,7 @@ metrics:
   vcenter.vm.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the virtual disk each second.
-    stability:
-      level: development
+    stability: development
     unit: "{KiBy/s}"
     gauge:
       value_type: int
@@ -742,8 +707,7 @@ metrics:
   vcenter.vm.disk.usage:
     enabled: true
     description: The amount of storage space used by the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: By
     sum:
       monotonic: false
@@ -753,8 +717,7 @@ metrics:
   vcenter.vm.disk.utilization:
     enabled: true
     description: The utilization of storage on the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -762,8 +725,7 @@ metrics:
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -773,8 +735,7 @@ metrics:
   vcenter.vm.memory.granted:
     enabled: false
     description: The amount of memory that is granted to a VM.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -784,8 +745,7 @@ metrics:
   vcenter.vm.memory.swapped:
     enabled: true
     description: The portion of memory that is granted to this VM from the host's swap space.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -795,8 +755,7 @@ metrics:
   vcenter.vm.memory.swapped_ssd:
     enabled: true
     description: The amount of memory swapped to fast disk device such as SSD.
-    stability:
-      level: development
+    stability: development
     unit: KiBy
     sum:
       monotonic: false
@@ -806,8 +765,7 @@ metrics:
   vcenter.vm.memory.usage:
     enabled: true
     description: The amount of memory that is used by the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: MiBy
     sum:
       monotonic: false
@@ -817,8 +775,7 @@ metrics:
   vcenter.vm.memory.utilization:
     enabled: true
     description: The memory utilization of the VM.
-    stability:
-      level: development
+    stability: development
     unit: "%"
     gauge:
       value_type: double
@@ -826,8 +783,7 @@ metrics:
   vcenter.vm.network.broadcast.packet.rate:
     enabled: false
     description: The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "{packets/s}"
     gauge:
       value_type: double
@@ -836,8 +792,7 @@ metrics:
   vcenter.vm.network.multicast.packet.rate:
     enabled: false
     description: The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "{packets/s}"
     gauge:
       value_type: double
@@ -846,8 +801,7 @@ metrics:
   vcenter.vm.network.packet.drop.rate:
     enabled: true
     description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "{packets/s}"
     gauge:
       value_type: double
@@ -856,8 +810,7 @@ metrics:
   vcenter.vm.network.packet.rate:
     enabled: true
     description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "{packets/s}"
     gauge:
       value_type: double
@@ -866,8 +819,7 @@ metrics:
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network of the virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "By/s"
     sum:
       monotonic: false
@@ -878,8 +830,7 @@ metrics:
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
-    stability:
-      level: development
+    stability: development
     unit: "{KiBy/s}"
     sum:
       monotonic: false
@@ -890,8 +841,7 @@ metrics:
   vcenter.vm.vsan.latency.avg:
     enabled: true
     description: The virtual machine latency while accessing vSAN storage.
-    stability:
-      level: development
+    stability: development
     unit: "us"
     gauge:
       value_type: int
@@ -899,8 +849,7 @@ metrics:
   vcenter.vm.vsan.operations:
     enabled: true
     description: The vSAN IOPs of a virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "{operations/s}"
     gauge:
       value_type: int
@@ -908,8 +857,7 @@ metrics:
   vcenter.vm.vsan.throughput:
     enabled: true
     description: The vSAN throughput of a virtual machine.
-    stability:
-      level: development
+    stability: development
     unit: "By/s"
     gauge:
       value_type: double

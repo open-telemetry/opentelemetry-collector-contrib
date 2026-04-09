@@ -1,4 +1,5 @@
 type: slowsql
+display_name: Slow SQL Connector
 
 status:
   class: connector

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"runtime"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/client"
@@ -64,6 +65,8 @@ type Capabilities struct {
 	ReportsHealth bool `mapstructure:"reports_health"`
 	// ReportsAvailableComponents enables the OpAMP ReportsAvailableComponents Capability (default: true)
 	ReportsAvailableComponents bool `mapstructure:"reports_available_components"`
+	// AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)
+	AcceptsRestartCommand bool `mapstructure:"accepts_restart_command"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -76,9 +79,11 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 	if caps.ReportsHealth {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
 	}
-
 	if caps.ReportsAvailableComponents {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
+	}
+	if caps.AcceptsRestartCommand {
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
 	}
 
 	return agentCapabilities
@@ -203,6 +208,10 @@ func (s OpAMPServer) GetPollingInterval() time.Duration {
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
 	switch {
+	case cfg.Capabilities.AcceptsRestartCommand && !RemoteRestartsFeatureGate.IsEnabled():
+		return errors.New("extension.opampextension.RemoteRestarts feature gate must be enabled to use the accepts_restart_command capability")
+	case cfg.Capabilities.AcceptsRestartCommand && RemoteRestartsFeatureGate.IsEnabled() && runtime.GOOS == "windows":
+		return errors.New("remote restart functionality is not available on the windows operating system")
 	case cfg.Server.WS == nil && cfg.Server.HTTP == nil:
 		return errors.New("opamp server must have at least ws or http set")
 	case cfg.Server.WS != nil && cfg.Server.HTTP != nil:

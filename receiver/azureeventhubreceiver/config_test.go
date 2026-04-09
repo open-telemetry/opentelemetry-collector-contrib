@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
@@ -28,7 +27,6 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		id                  component.ID
 		expected            component.Config
-		featureGateEnabled  bool
 		expectedErrContains string
 	}{
 		{
@@ -38,8 +36,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:                 component.NewIDWithName(metadata.Type, "auth"),
-			featureGateEnabled: true,
+			id: component.NewIDWithName(metadata.Type, "auth"),
 			expected: &Config{
 				EventHub: EventHubConfig{
 					Name:      "hubName",
@@ -57,20 +54,15 @@ func TestLoadConfig(t *testing.T) {
 			expectedErrContains: "failed parsing connection string",
 		},
 		{
-			id:                  component.NewIDWithName(metadata.Type, "invalid_connection_string_with_gate"),
-			featureGateEnabled:  true,
-			expectedErrContains: "failed parsing connection string",
-		},
-		{
 			id:                  component.NewIDWithName(metadata.Type, "invalid_format"),
 			expectedErrContains: "invalid format",
 		},
 		{
-			id:                  component.NewIDWithName(metadata.Type, "offset_with_partition"),
+			id:                  component.NewIDWithName(metadata.Type, "offset_without_partition"),
 			expectedErrContains: "cannot use 'offset' without 'partition'",
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "offset_without_partition"),
+			id: component.NewIDWithName(metadata.Type, "offset_with_partition"),
 			expected: &Config{
 				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
 				Partition:  "foo",
@@ -78,29 +70,61 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:                  component.NewIDWithName(metadata.Type, "feature_gate_exclusive_config"),
-			expectedErrContains: "poll_rate and max_poll_events can only be used with receiver.azureeventhubreceiver.UseAzeventhubs enabled",
-		},
-		{
 			id:                  component.NewIDWithName(metadata.Type, "auth_missing_event_hub_name"),
-			featureGateEnabled:  true,
 			expectedErrContains: "event_hub.name is required when using auth",
 		},
 		{
 			id:                  component.NewIDWithName(metadata.Type, "auth_missing_namespace"),
-			featureGateEnabled:  true,
 			expectedErrContains: "event_hub.namespace is required when using auth",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "blob_checkpoint_store"),
+			expected: &Config{
+				Connection: "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName",
+				BlobCheckpointStore: &BlobCheckpointStoreConfig{
+					Connection:    "DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net",
+					ContainerName: "eventhub-checkpoints",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "blob_checkpoint_store_auth"),
+			expected: &Config{
+				EventHub: EventHubConfig{
+					Name:      "hubName",
+					Namespace: "namespace.servicebus.windows.net",
+				},
+				Auth: &authID,
+				BlobCheckpointStore: &BlobCheckpointStoreConfig{
+					StorageAccountURL: "https://myaccount.blob.core.windows.net",
+					ContainerName:     "eventhub-checkpoints",
+				},
+			},
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_missing_container"),
+			expectedErrContains: "blob_checkpoint_store.container_name is required",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_missing_connection"),
+			expectedErrContains: "blob_checkpoint_store.connection is required when not using auth",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_auth_missing_url"),
+			expectedErrContains: "blob_checkpoint_store.storage_account_url is required when using auth",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_with_partition"),
+			expectedErrContains: "blob_checkpoint_store is mutually exclusive with partition and offset",
+		},
+		{
+			id:                  component.NewIDWithName(metadata.Type, "blob_checkpoint_store_with_storage"),
+			expectedErrContains: "blob_checkpoint_store is mutually exclusive with storage",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
-			prev := azEventHubFeatureGate.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, tt.featureGateEnabled))
-			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(azEventHubFeatureGateName, prev))
-			}()
-
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 

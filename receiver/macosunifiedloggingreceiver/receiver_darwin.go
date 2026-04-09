@@ -132,11 +132,7 @@ func (r *unifiedLoggingReceiver) readFromLive(ctx context.Context) {
 				currentInterval = minInterval
 			} else {
 				nextInterval := currentInterval * 2
-				if nextInterval > maxInterval {
-					currentInterval = maxInterval
-				} else {
-					currentInterval = nextInterval
-				}
+				currentInterval = min(nextInterval, maxInterval)
 			}
 		}
 	}

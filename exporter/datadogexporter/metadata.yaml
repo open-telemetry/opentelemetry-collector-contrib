@@ -1,13 +1,15 @@
 type: datadog
+display_name: Datadog Exporter
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
   distributions: [contrib]
+  unsupported_platforms: [aix]
   codeowners:
-    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96, jade-guiton-dd, IbraheemA]
-    emeritus: [gbbr, jackgopack4]
+    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, jade-guiton-dd, IbraheemA]
+    emeritus: [gbbr, jackgopack4, ankitpatel96]
 
 tests:
   config:

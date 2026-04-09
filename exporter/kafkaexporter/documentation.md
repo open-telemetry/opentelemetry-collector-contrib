@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_kafka_broker_closed
 
-The total number of connections closed. [Development]
+The total number of connections closed.
 
 Only produced when franz-go is enabled.
 
@@ -18,14 +18,14 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
 
 ### otelcol_kafka_broker_connects
 
-The total number of connections opened. [Development]
+The total number of connections opened.
 
 Only produced when franz-go is enabled.
 
@@ -35,15 +35,15 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_broker_throttling_duration
 
-The throttling duration in ms imposed by the broker when exporting messages. [Deprecated]
+The throttling duration in ms imposed by the broker when exporting messages.
 
 Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_throttling_latency.
 
@@ -53,14 +53,14 @@ Only produced when franz-go is enabled. Deprecated in favor of kafka_broker_thro
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
 
 ### otelcol_kafka_broker_throttling_latency
 
-The throttling latency in seconds imposed by the broker when exporting records. [Development]
+The throttling latency in seconds imposed by the broker when exporting records.
 
 Only produced when franz-go is enabled.
 
@@ -70,14 +70,14 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
 
 ### otelcol_kafka_exporter_bytes
 
-The size in bytes of exported records seen by the broker. [Development]
+The size in bytes of exported records seen by the broker.
 
 Only produced when franz-go is enabled.
 
@@ -87,17 +87,17 @@ Only produced when franz-go is enabled.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_exporter_bytes_uncompressed
 
-The uncompressed size in bytes of exported messages seen by the client. [Development]
+The uncompressed size in bytes of exported messages seen by the client.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -105,17 +105,17 @@ The uncompressed size in bytes of exported messages seen by the client. [Develop
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_exporter_latency
 
-The time it took in ms to export a batch of messages. [Deprecated]
+The time it took in ms to export a batch of messages.
 
 Deprecated in favor of kafka_exporter_write_latency.
 
@@ -125,17 +125,17 @@ Deprecated in favor of kafka_exporter_write_latency.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_exporter_messages
 
-The number of exported messages. [Deprecated]
+The number of exported messages.
 
 Deprecated in favor of kafka_exporter_records.
 
@@ -145,17 +145,17 @@ Deprecated in favor of kafka_exporter_records.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_exporter_records
 
-The number of exported records. [Development]
+The number of exported records.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -163,17 +163,17 @@ The number of exported records. [Development]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |
 
 ### otelcol_kafka_exporter_write_latency
 
-The time it took in seconds to export a batch of records. [Development]
+The time it took in seconds to export a batch of records.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -181,10 +181,10 @@ The time it took in seconds to export a batch of records. [Development]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| node_id | The Kafka node ID. | Any Int |
-| server.address | The Kafka node address. | Any Str |
-| topic | The Kafka topic. | Any Str |
-| partition | The Kafka topic partition. | Any Int |
-| outcome | The operation outcome. | Str: ``success``, ``failure`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| node_id | The Kafka node ID. | Any Int | - |
+| server.address | The Kafka node address. | Any Str | - |
+| topic | The Kafka topic. | Any Str | - |
+| partition | The Kafka topic partition. | Any Int | - |
+| outcome | The operation outcome. | Str: ``success``, ``failure`` | - |

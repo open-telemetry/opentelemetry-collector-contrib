@@ -1,5 +1,5 @@
 receivers:
-  filelog:
+  file_log:
     include: [/var/log/busybox/simple.log]
     storage: file_storage/filelogreceiver
 
@@ -13,12 +13,12 @@ service:
   extensions: [file_storage/filelogreceiver, file_storage/otlpoutput]
   pipelines:
     logs:
-      receivers: [filelog]
-      exporters: [otlp/custom]
+      receivers: [file_log]
+      exporters: [otlp_grpc/custom]
       processors: []
 
 exporters:
-  otlp/custom:
+  otlp_grpc/custom:
     endpoint: http://0.0.0.0:4242
     sending_queue:
       storage: file_storage/otlpoutput

@@ -1,4 +1,5 @@
 type: otlpjson
+display_name: OTLP JSON Connector
 
 status:
   class: connector

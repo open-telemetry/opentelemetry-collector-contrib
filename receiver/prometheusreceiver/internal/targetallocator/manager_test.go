@@ -14,6 +14,7 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/util/teststorage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -83,22 +84,20 @@ func TestManagerShutdown(t *testing.T) {
 	discoveryManager := discovery.NewManager(ctx, promLogger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, nil, reg)
+	store := teststorage.New(t)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, promLogger, nil, store, nil, reg)
 	require.NoError(t, err)
 	defer scrapeManager.Stop()
 
 	err = manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager)
 	require.NoError(t, err)
 
-	// Shutdown the manager
+	// Shutdown the manager. This blocks until the goroutine exits,
+	// which logs "Stopping target allocator" before returning.
 	manager.Shutdown()
 
-	// Wait for the shutdown to complete with a timeout
-	require.Eventually(t, func() bool {
-		// Check if the log message "Stopping target allocator" was logged
-		logEntries := logs.FilterMessage("Stopping target allocator")
-		return logEntries.Len() > 0
-	}, 5*time.Second, 50*time.Millisecond, "expected shutdown log message")
+	logEntries := logs.FilterMessage("Stopping target allocator")
+	require.Positive(t, logEntries.Len(), "expected shutdown log message")
 }
 
 func TestInstantiateShard(t *testing.T) {

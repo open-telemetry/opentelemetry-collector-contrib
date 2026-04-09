@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -487,11 +490,11 @@ func testAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	assert.Equal(t, errNoJobInstance, err)
 }
 
-func TestAppendCTZeroSampleNoLabels(t *testing.T) {
+func TestAppendSTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(), 0, 100)
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(), 0, 100)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -499,15 +502,15 @@ func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
-func TestAppendCTZeroSampleDuplicateLabels(t *testing.T) {
+func TestAppendSTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -521,7 +524,7 @@ func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
@@ -531,11 +534,11 @@ func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid sample: non-unique label names")
 }
 
-func TestAppendCTZeroSampleEmptyMetricName(t *testing.T) {
+func TestAppendSTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -547,7 +550,7 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -555,13 +558,13 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 	assert.ErrorContains(t, err, "metricName not found")
 }
 
-func TestAppendCTZeroSample(t *testing.T) {
+func TestAppendSTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -595,7 +598,7 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
@@ -622,6 +625,71 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 		pcommon.NewTimestampFromTime(time.UnixMilli(ctMs)),
 		mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).StartTimestamp(),
 	)
+}
+
+func TestAppendHistogramReturnsStableSeriesRef(t *testing.T) {
+	tr := newTxn(t, false)
+	lsA := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "bar",
+	)
+	lsB := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "baz",
+	)
+
+	refA, err := tr.AppendHistogram(0, lsA, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+	require.Equal(t, storage.SeriesRef(lsA.Hash()), refA)
+
+	refB, err := tr.AppendHistogram(0, lsB, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+	require.Equal(t, storage.SeriesRef(lsB.Hash()), refB)
+	require.NotEqual(t, refA, refB)
+}
+
+func TestAppendHistogramStableSeriesRefEnablesSeriesDisappearanceTracking(t *testing.T) {
+	lsA := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "bar",
+	)
+	lsB := labels.FromStrings(
+		model.InstanceLabel, "localhost:1234",
+		model.JobLabel, "job-a",
+		model.MetricNameLabel, "native_hist_test",
+		"foo", "baz",
+	)
+
+	// Scrape #1: both series are present.
+	tr1 := newTxn(t, false)
+	refA1, err := tr1.AppendHistogram(0, lsA, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+	refB1, err := tr1.AppendHistogram(0, lsB, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+
+	// Scrape #2: only series A is present.
+	tr2 := newTxn(t, false)
+	refA2, err := tr2.AppendHistogram(0, lsA, ts+interval, tsdbutil.GenerateTestHistogram(1), nil)
+	require.NoError(t, err)
+
+	prev := map[storage.SeriesRef]struct{}{refA1: {}, refB1: {}}
+	cur := map[storage.SeriesRef]struct{}{refA2: {}}
+
+	var missing []storage.SeriesRef
+	for ref := range prev {
+		if _, ok := cur[ref]; !ok {
+			missing = append(missing, ref)
+		}
+	}
+
+	require.Len(t, missing, 1)
+	require.Equal(t, refB1, missing[0])
 }
 
 func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
@@ -1978,7 +2046,7 @@ func TestGetOrCreateMetricFamily_DistinctFamiliesForNativeVsClassic(t *testing.T
 }
 
 func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
-	// Build two label sets that differ only in labels likely excluded by getSortedNotUsefulLabels (e.g., _otel_* scope labels)
+	// Build two label sets that differ only in scope labels, which are excluded from series identity.
 	lsA := labels.FromStrings(
 		string(model.MetricNameLabel), "metric_x",
 		"env", "prod",
@@ -1992,10 +2060,23 @@ func TestGetSeriesRef_IgnoresNotUsefulLabels(t *testing.T) {
 	)
 
 	var buf []byte
-	hashA, buf := getSeriesRef(buf, lsA, pmetric.MetricTypeSum)
-	hashB, _ := getSeriesRef(buf, lsB, pmetric.MetricTypeSum)
+	hashA, buf := getSeriesRefWithoutScopeLabels(buf, lsA, pmetric.MetricTypeSum)
+	hashB, _ := getSeriesRefWithoutScopeLabels(buf, lsB, pmetric.MetricTypeSum)
 
 	require.Equal(t, hashA, hashB, "series ref should be equal when differing only by excluded labels")
+}
+
+func TestGetScopeID_EmptyScopeAttributesUseZeroHash(t *testing.T) {
+	scope, attrs := getScopeID(labels.FromStrings(
+		string(model.MetricNameLabel), "metric_x",
+		prometheus.ScopeNameLabelKey, "scope.with.info",
+		prometheus.ScopeVersionLabelKey, "v1.0.0",
+	))
+
+	require.Equal(t, "scope.with.info", scope.name)
+	require.Equal(t, "v1.0.0", scope.version)
+	require.Zero(t, scope.attrsHash)
+	require.Zero(t, attrs.Len())
 }
 
 func TestAddTargetInfo_DoesNotCopyJobInstanceOrMetricName(t *testing.T) {

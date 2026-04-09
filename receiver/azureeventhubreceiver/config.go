@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/v2"
 	"go.opentelemetry.io/collector/component"
 )
@@ -21,9 +20,8 @@ const (
 )
 
 var (
-	validFormats           = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
-	errMissingConnection   = errors.New("missing connection")
-	errFeatureGateRequired = fmt.Errorf("poll_rate and max_poll_events can only be used with %s enabled", azEventHubFeatureGateName)
+	validFormats         = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
+	errMissingConnection = errors.New("missing connection")
 )
 
 type Config struct {
@@ -39,9 +37,27 @@ type Config struct {
 	TimeFormats              TimeFormat     `mapstructure:"time_formats"`
 	MetricAggregation        string         `mapstructure:"metric_aggregation"`
 
+	// BlobCheckpointStore enables distributed consumption using Azure Blob Storage
+	// for checkpoint coordination. When configured, the receiver uses the Azure SDK
+	// Processor for dynamic partition assignment across multiple collector instances.
+	BlobCheckpointStore *BlobCheckpointStoreConfig `mapstructure:"blob_checkpoint_store"`
+
 	// azeventhub lib specific
 	PollRate      int `mapstructure:"poll_rate"`
 	MaxPollEvents int `mapstructure:"max_poll_events"`
+}
+
+// BlobCheckpointStoreConfig defines the configuration for Azure Blob Storage
+// based checkpoint coordination used in distributed consumption mode.
+type BlobCheckpointStoreConfig struct {
+	// Connection is the connection string for Azure Blob Storage.
+	// Required when the parent config does not use auth.
+	Connection string `mapstructure:"connection"`
+	// StorageAccountURL is the blob service URL (e.g., https://myaccount.blob.core.windows.net).
+	// Required when the parent config uses auth.
+	StorageAccountURL string `mapstructure:"storage_account_url"`
+	// ContainerName is the blob container used for checkpoint data. Required.
+	ContainerName string `mapstructure:"container_name"`
 }
 
 // EventHubConfig defines the configuration for an Azure Event Hub when
@@ -61,15 +77,7 @@ type TimeFormat struct {
 
 // Validate config
 func (config *Config) Validate() error {
-	if !azEventHubFeatureGate.IsEnabled() &&
-		(config.PollRate != 0 || config.MaxPollEvents != 0) {
-		return errFeatureGateRequired
-	}
-
 	if config.Auth != nil {
-		if !azEventHubFeatureGate.IsEnabled() {
-			return fmt.Errorf("auth can only be used with %s enabled", azEventHubFeatureGateName)
-		}
 		if config.EventHub.Name == "" {
 			return errors.New("event_hub.name is required when using auth")
 		}
@@ -80,15 +88,8 @@ func (config *Config) Validate() error {
 		if config.Connection == "" {
 			return errMissingConnection
 		}
-
-		if azEventHubFeatureGate.IsEnabled() {
-			if _, err := azeventhubs.ParseConnectionString(config.Connection); err != nil {
-				return err
-			}
-		} else {
-			if _, err := conn.ParsedConnectionFromStr(config.Connection); err != nil {
-				return err
-			}
+		if _, err := azeventhubs.ParseConnectionString(config.Connection); err != nil {
+			return err
 		}
 	}
 
@@ -101,5 +102,24 @@ func (config *Config) Validate() error {
 	if config.Partition == "" && config.Offset != "" {
 		return errors.New("cannot use 'offset' without 'partition'")
 	}
+
+	if config.BlobCheckpointStore != nil {
+		if config.BlobCheckpointStore.ContainerName == "" {
+			return errors.New("blob_checkpoint_store.container_name is required")
+		}
+		if config.Auth == nil && config.BlobCheckpointStore.Connection == "" {
+			return errors.New("blob_checkpoint_store.connection is required when not using auth")
+		}
+		if config.Auth != nil && config.BlobCheckpointStore.StorageAccountURL == "" {
+			return errors.New("blob_checkpoint_store.storage_account_url is required when using auth")
+		}
+		if config.Partition != "" || config.Offset != "" {
+			return errors.New("blob_checkpoint_store is mutually exclusive with partition and offset")
+		}
+		if config.StorageID != nil {
+			return errors.New("blob_checkpoint_store is mutually exclusive with storage")
+		}
+	}
+
 	return nil
 }

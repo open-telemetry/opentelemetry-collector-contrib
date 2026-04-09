@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configopaque"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/db"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/url"
 )
@@ -18,10 +20,12 @@ var _ encoding.TextUnmarshaler = (*HashFunction)(nil)
 type HashFunction string
 
 const (
-	None HashFunction = ""
-	SHA1 HashFunction = "sha1"
-	SHA3 HashFunction = "sha3"
-	MD5  HashFunction = "md5"
+	None       HashFunction = ""
+	SHA1       HashFunction = "sha1"
+	SHA3       HashFunction = "sha3"
+	MD5        HashFunction = "md5"
+	HMACSHA256 HashFunction = "hmac-sha256"
+	HMACSHA512 HashFunction = "hmac-sha512"
 )
 
 type Config struct {
@@ -43,6 +47,11 @@ type Config struct {
 	// masking them with a fixed string. By default, no hash function is used
 	// and masking with a fixed string is performed.
 	HashFunction HashFunction `mapstructure:"hash_function"`
+
+	// HMACKey is the secret key used for HMAC hashing when HashFunction is set to hmac-sha256 or hmac-sha512.
+	// This should be loaded from a secure source like environment variables.
+	// Minimum length: 32 bytes for HMAC-SHA256, 64 bytes for HMAC-SHA512.
+	HMACKey configopaque.String `mapstructure:"hmac_key"`
 
 	// IgnoredKeys is a list of span attribute keys that are not redacted.
 	// Span attributes in this list are allowed to pass through the filter
@@ -101,9 +110,38 @@ func (u *HashFunction) UnmarshalText(text []byte) error {
 	case strings.ToLower(SHA3.String()):
 		*u = SHA3
 		return nil
+	case strings.ToLower(HMACSHA256.String()):
+		*u = HMACSHA256
+		return nil
+	case strings.ToLower(HMACSHA512.String()):
+		*u = HMACSHA512
+		return nil
 	case strings.ToLower(None.String()):
 		*u = None
 		return nil
 	}
-	return fmt.Errorf("unknown HashFunction %s, allowed functions are %s, %s and %s", str, SHA1, SHA3, MD5)
+	return fmt.Errorf("unknown HashFunction %s, allowed functions are %s, %s, %s, %s and %s", str, SHA1, SHA3, MD5, HMACSHA256, HMACSHA512)
+}
+
+// Validate validates the configuration
+func (cfg *Config) Validate() error {
+	// Validate HMAC key requirements
+	if cfg.HashFunction == HMACSHA256 || cfg.HashFunction == HMACSHA512 {
+		key := string(cfg.HMACKey)
+		if key == "" {
+			return fmt.Errorf("hmac_key must not be empty when hash_function is %q", cfg.HashFunction)
+		}
+
+		// Enforce minimum key lengths for security
+		minLength := 32
+		if cfg.HashFunction == HMACSHA512 {
+			minLength = 64
+		}
+
+		if len(key) < minLength {
+			return fmt.Errorf("hmac_key must be at least %d bytes long for %q, got %d bytes", minLength, cfg.HashFunction, len(key))
+		}
+	}
+
+	return nil
 }

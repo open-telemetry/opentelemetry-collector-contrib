@@ -66,7 +66,8 @@ func createDefaultConfig() component.Config {
 	netAddr.Transport = confignet.TransportTypeTCP
 	netAddr.Endpoint = defaultEndpoint
 	return &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
 				NetAddr:      netAddr,
@@ -147,7 +148,7 @@ func createAddScraperOpts(
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, githubScraper))
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddMetricsScraper(metadata.Type, githubScraper))
 	}
 
 	return scraperControllerOptions, nil
