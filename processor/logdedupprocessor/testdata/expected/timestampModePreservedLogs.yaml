@@ -1,0 +1,26 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: log_count
+                value:
+                  intValue: "2"
+              - key: first_observed_timestamp
+                value:
+                  stringValue: "2024-10-04T19:21:48Z"
+              - key: last_observed_timestamp
+                value:
+                  stringValue: "2024-10-04T19:21:53Z"
+              - key: first_event_timestamp
+                value:
+                  stringValue: "2024-10-04T19:21:47Z"
+              - key: last_event_timestamp
+                value:
+                  stringValue: "2024-10-04T19:21:52Z"
+            body:
+              stringValue: dedup me
+            spanId: ""
+            timeUnixNano: "1728069707000000000"
+            traceId: ""
+        scope: {}
