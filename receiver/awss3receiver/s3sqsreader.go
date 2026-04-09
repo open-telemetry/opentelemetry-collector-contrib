@@ -210,13 +210,17 @@ func (r *s3SQSNotificationReader) readAll(ctx context.Context, _ string, callbac
 						var hasTag bool
 						hasTag, err = hasIngestedTag(ctx, r.s3Client, bucket, decodedKey)
 						if err != nil {
-							r.logger.Warn("Failed to check object tags",
-								zap.String("bucket", bucket),
-								zap.String("key", decodedKey),
-								zap.Error(err))
 							var noSuchKey *types.NoSuchKey
-							if !errors.As(err, &noSuchKey) {
+							if errors.As(err, &noSuchKey) {
 								// Swallow no such key errors as nothing more can be done
+								r.logger.Warn("Object does not exist",
+									zap.String("bucket", bucket),
+									zap.String("key", decodedKey))
+							} else {
+								r.logger.Error("Failed to check object tags",
+									zap.String("bucket", bucket),
+									zap.String("key", decodedKey),
+									zap.Error(err))
 								allRecordsSucceeded = false
 							}
 							continue

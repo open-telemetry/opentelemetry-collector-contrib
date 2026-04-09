@@ -152,7 +152,7 @@ func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t t
 					var hasTag bool
 					hasTag, err = hasIngestedTag(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
 					if err != nil {
-						s3Reader.logger.Warn("Failed to check object tags",
+						s3Reader.logger.Error("Failed to check object tags",
 							zap.String("key", *obj.Key),
 							zap.Error(err))
 						return err
