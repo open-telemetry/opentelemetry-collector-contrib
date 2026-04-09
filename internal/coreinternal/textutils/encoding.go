@@ -59,7 +59,7 @@ func DecodeAsString(decoder *encoding.Decoder, buf []byte) (string, error) {
 }
 
 // UnsafeBytesAsString converts the byte array to string.
-// This function must be called iff the input buffer is not going to be re-used after.
+// This function must be called if the input buffer is not going to be re-used after.
 func UnsafeBytesAsString(buf []byte) string {
 	return unsafe.String(unsafe.SliceData(buf), len(buf))
 }
