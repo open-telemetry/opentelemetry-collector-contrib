@@ -16,8 +16,8 @@ import (
 // See: https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html
 var priorityToSeverity = map[string]entry.Severity{
 	"0": entry.Fatal,  // emerg
-	"1": entry.Fatal2, // alert
-	"2": entry.Fatal3, // crit
+	"1": entry.Error3, // alert
+	"2": entry.Error2, // crit
 	"3": entry.Error,  // err
 	"4": entry.Warn,   // warning
 	"5": entry.Info2,  // notice

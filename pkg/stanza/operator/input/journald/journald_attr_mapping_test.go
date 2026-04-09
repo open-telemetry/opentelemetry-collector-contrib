@@ -92,8 +92,8 @@ func TestPriorityToSeverityMapping(t *testing.T) {
 		expectedText     string
 	}{
 		{"0", entry.Fatal, "emerg"},
-		{"1", entry.Fatal2, "alert"},
-		{"2", entry.Fatal3, "crit"},
+		{"1", entry.Error3, "alert"},
+		{"2", entry.Error2, "crit"},
 		{"3", entry.Error, "err"},
 		{"4", entry.Warn, "warning"},
 		{"5", entry.Info2, "notice"},
@@ -141,8 +141,8 @@ func TestMapJournalEntryAttributes_AllPriorities(t *testing.T) {
 		text     string
 	}{
 		{"0", entry.Fatal, "emerg"},
-		{"1", entry.Fatal2, "alert"},
-		{"2", entry.Fatal3, "crit"},
+		{"1", entry.Error3, "alert"},
+		{"2", entry.Error2, "crit"},
 		{"3", entry.Error, "err"},
 		{"4", entry.Warn, "warning"},
 		{"5", entry.Info2, "notice"},
