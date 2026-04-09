@@ -99,10 +99,11 @@ type WatchClient struct {
 // format: [cronjob-name]-[time-hash-int]
 // time-hash-int is the unix timestamp in minutes of the job creation time
 // 8 digits will last until 2160, we are safe for a while
+// K8S code ref: https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/cronjob/utils.go#L246-L247
 var cronJobRegex = regexp.MustCompile(`^(.*)-(\d{8})$`)
 
 // cronJobSuffixTimeSkewMinutes is the maximum allowed difference
-// in minutes between pod creationg time and the timestamp suffix
+// in minutes between pod creation time and the timestamp suffix
 // in the job name (created by cronjob)
 // If the suffix falls outside of the range, it assumed that it's not a cronjob
 // (i.e. the suffix it humand generated, like a date 20260407)
@@ -211,7 +212,8 @@ func New(
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.kc)
 
-	if rules.DeploymentName || rules.DeploymentUID {
+	// If deployment labels or annotations are extracted, rs informer is needed to link pods to deployments.
+	if (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) || rules.DeploymentUID || c.extractDeploymentLabelsAnnotations() {
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
@@ -252,10 +254,7 @@ func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	// The replicaset informer is needed for deployment UID. For deployment name, the standard path uses it to read
-	// owner metadata; the deprecated extract.deployment_name_from_replicaset option skips it when deployment UID
-	// is not extracted (legacy compatibility).
-	if c.Rules.DeploymentUID || (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) {
+	if c.replicasetInformer != nil {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -921,15 +920,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
-					if c.Rules.DeploymentNameFromReplicaSet {
-						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels["pod-template-hash"])
+					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
+						deploymentName = replicaset.Deployment.Name
+						c.logger.Debug("Used ReplicaSet Informer to get deployment name", zap.String("replicaSetName", replicaset.Name), zap.String("deploymentName", replicaset.Deployment.Name))
 					} else {
-						if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
-							deploymentName = replicaset.Deployment.Name
-						} else {
-							// Will be blank if not a ReplicaSet managed by a Deployment
-							deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels["pod-template-hash"])
-						}
+						// Will be blank if not a ReplicaSet managed by a Deployment
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels["pod-template-hash"])
+						c.logger.Debug("used heuristics for deployment name", zap.String("replicaSetName", ref.Name), zap.String("deploymentName", deploymentName))
 					}
 
 					if deploymentName != "" {
@@ -984,8 +981,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					var cronjobName string
 					if job, ok := c.GetJob(string(ref.UID)); ok {
 						cronjobName = job.CronJob.Name
+						c.logger.Debug("used CronJob informer to get CronJob name", zap.String("cronjob", cronjobName))
 					} else {
 						cronjobName = c.extractCronJobNameFromJobOwner(ref, pod)
+						c.logger.Debug("used heuristics for cronjob name", zap.String("cronjob", cronjobName))
 					}
 
 					if cronjobName != "" {
@@ -1146,7 +1145,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		}
 	}
 
-	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion {
+	if len(rules.Labels) > 0 || rules.ServiceName || rules.ServiceVersion || rules.DeploymentName {
 		transformedPod.Labels = maps.Clone(pod.Labels)
 	}
 

@@ -23,7 +23,7 @@ $defs:
         items:
           $ref: field_extract_config
       deployment_name_from_replicaset:
-        description: DeploymentNameFromReplicaSet allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources.
+        description: 'DeploymentNameFromReplicaSet allows extracting deployment name from replicaset name by trimming pod template hash instead of watching for deployment resources. This will disable watching for replicaset resources. Defaults to true. Deprecated: Avoid modifying this setting and consider enabling attribute k8s.deployment.uid instead if heuristic extraction is not working as expected.'
         type: boolean
       labels:
         description: Labels allows extracting data from pod labels and record it as resource attributes. It is a list of FieldExtractConfig type. See FieldExtractConfig documentation for more details.

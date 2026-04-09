@@ -69,7 +69,7 @@ The following attributes are added by default:
   - k8s.pod.name
   - k8s.pod.uid
   - k8s.pod.start_time
-  - k8s.deployment.name (requires watching Deployment resources unless `deployment_name_from_replicaset` is enabled)
+  - k8s.deployment.name (by default uses a ReplicaSet naming heuristic; ReplicaSet informer watching is used when `k8s.deployment.uid` is enabled or `deployment_name_from_replicaset` is `false`)
   - k8s.node.name
 
 These attributes are also available for the use within association rules by default.
@@ -269,7 +269,7 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
-- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `deployments`. It also reduces memory consumption of the processor.
+- `deployment_name_from_replicaset` allows extracting deployment name from replicaset name by trimming pod template hash. This will disable watching for replicaset resources, which can be useful in environments with limited RBAC permissions as the processor will not need `get`, `watch`, and `list` permissions for `deployments`. It also reduces memory consumption of the processor. **defaults** to True. If `k8s.deployment.uid` is included in the `extract metadata` section, then the informer will be used instead and this setting is ignored.
 
   **Important:** When `deployment_name_from_replicaset: true` is set, you **must still include** `k8s.deployment.name` (or `service.name`) in the `extract.metadata` section for the deployment name to be extracted. The processor derives the deployment name from the ReplicaSet's naming convention without requiring direct access to Deployment resources, but the extraction rules must be enabled.
 
@@ -317,7 +317,7 @@ k8s_attributes:
     metadata:
       - k8s.pod.name
       - k8s.pod.uid
-      - k8s.deployment.name  # Requires watching Deployment resources. To avoid this, use deployment_name_from_replicaset instead.
+      - k8s.deployment.name  # Default: derived without ReplicaSet informer; see deployment_name_from_replicaset.
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
@@ -460,9 +460,7 @@ processors:
         - k8s.pod.name
         - k8s.pod.uid
         - k8s.deployment.name  # Required to enable deployment name extraction
-        # Note: deployment_name_from_replicaset extracts the name from the ReplicaSet
-        # without watching Deployment resources, but k8s.deployment.name must still be listed
-      # Use deployment name extraction without watching replicasets
+        # Default deployment_name_from_replicaset: true uses a heuristic (no ReplicaSet watch for names only).
       deployment_name_from_replicaset: true
 ```
 
@@ -497,7 +495,7 @@ processors:
 
 ## Cluster-scoped RBAC
 
-If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.name` (which is enabled by default) or `k8s.deployment.uid` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources (unless `deployment_name_from_replicaset` is enabled). When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources. When using `k8s.cronjob.uid` the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
+If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid`, or when using `k8s.deployment.name` with `deployment_name_from_replicaset: false`, the processor needs `get`, `watch` and `list` permissions for `replicasets` resources. With the default `deployment_name_from_replicaset: true` and only `k8s.deployment.name`, it does not need ReplicaSet permissions for that attribute. When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources. When using `k8s.cronjob.uid` the processor also needs `get`, `watch` and `list` permissions for `jobs` resources.
 
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
@@ -547,7 +545,7 @@ k8s_attributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets (if `deployment_name_from_replicaset` is not enabled) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and ReplicaSets (if ReplicaSet informers are enabled — for example `k8s.deployment.uid` or  `deployment_name_from_replicaset: false`) in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
 
@@ -782,11 +780,10 @@ k8s_attributes:
     # Default: false
     otel_annotations: true
     
-    # Extract deployment name from replicaset name (disables replicaset watching)
-    # Reduces memory usage and RBAC requirements
+    # ReplicaSet informer for deployment names. Default true: use heuristic / avoid RS watch for names only.
     # See [Configuring recommended resource attributes](#configuring-recommended-resource-attributes) section for more details
-    # Default: false
-    deployment_name_from_replicaset: false
+    # Default: true
+    deployment_name_from_replicaset: true
   
   # Filter configuration - restrict which pods to monitor
   filter:
@@ -875,7 +872,7 @@ k8s_attributes:
 | `annotations` | []FieldExtractConfig | `[]` | Pod/namespace/node annotations to extract |
 | `labels` | []FieldExtractConfig | `[]` | Pod/namespace/node labels to extract |
 | `otel_annotations` | bool | `false` | Extract OpenTelemetry resource attributes from pod annotations with prefix `resource.opentelemetry.io/` |
-| `deployment_name_from_replicaset` | bool | `false` | Extract deployment name from replicaset name (disables replicaset watching) |
+| `deployment_name_from_replicaset` | bool | `true` | When true (default), do not run a ReplicaSet informer for deployment names only; use naming heuristic. When false, always watch ReplicaSets for deployment names |
 
 **Default metadata fields:**
 - `k8s.namespace.name`
@@ -989,7 +986,7 @@ The processor maintains an in-memory cache of K8s metadata for all pods it monit
 **Optimization strategies:**
 1. **Use node filtering** in agent deployments: `filter.node_from_env_var: KUBE_NODE_NAME`
 2. **Limit metadata extraction**: Only extract fields you need
-3. **Use `deployment_name_from_replicaset: true`**: Reduces memory by not caching replicaset data
+3. **Keep the default `deployment_name_from_replicaset: true`**: Avoids ReplicaSet informer overhead for deployment names only
 4. **Filter by namespace**: Limits scope when monitoring specific applications
 5. **Avoid extracting workload metadata** unless necessary (deployment, statefulset, etc.)
 

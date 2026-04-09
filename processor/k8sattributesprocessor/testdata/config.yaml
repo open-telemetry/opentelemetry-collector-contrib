@@ -76,6 +76,7 @@ k8s_attributes/3:
   passthrough: false
   auth_type: "kubeConfig"
   extract:
+    deployment_name_from_replicaset: false
     annotations:
       - key_regex: opentel.* # extracts Keys & values of annotations matching regex `opentel.*`
         from: pod
