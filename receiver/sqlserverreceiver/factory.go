@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -23,6 +24,10 @@ import (
 )
 
 var errConfigNotSQLServer = errors.New("config was not a sqlserver receiver config")
+
+// sqlServerReceiverProgramName is the value sent as SQL Server client application name
+// (see sys.dm_exec_sessions.program_name) so query-sample collection can exclude this receiver's sessions.
+const sqlServerReceiverProgramName = "otel-collector"
 
 // newCache creates a new cache with the given size.
 // If the size is less or equal to 0, it will be set to 1.
@@ -107,6 +112,38 @@ func getDBConnectionString(config *Config) string {
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
 
+// withSQLServerApplicationName ensures the connection reports a stable program_name in sys.dm_exec_sessions.
+// If the string already sets app name / application name, it is returned unchanged.
+func withSQLServerApplicationName(connStr string) string {
+	connStr = strings.TrimSpace(connStr)
+	if connStr == "" {
+		return connStr
+	}
+	lower := strings.ToLower(connStr)
+	if strings.Contains(lower, "app name=") || strings.Contains(lower, "application name=") {
+		return connStr
+	}
+	if strings.HasPrefix(lower, "sqlserver://") {
+		if strings.Contains(connStr, "?") {
+			return connStr + "&app+name=" + sqlServerReceiverProgramName
+		}
+		return connStr + "?app+name=" + sqlServerReceiverProgramName
+	}
+	connStr = strings.TrimRight(connStr, "; \t")
+	return connStr + ";app name=" + sqlServerReceiverProgramName
+}
+
+func openReceiverSQLServerDB(cfg *Config) (*sql.DB, error) {
+	db, err := sql.Open("sqlserver", withSQLServerApplicationName(getDBConnectionString(cfg)))
+	if err != nil {
+		return nil, err
+	}
+	// Pin the pool so every query uses the same session; application name is per-connection (like Oracle MODULE).
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+	return db, nil
+}
+
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
 func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
 	if !cfg.isDirectDBConnectionEnabled {
@@ -123,7 +160,7 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
 	dbProviderFunc := func() (*sql.DB, error) {
-		return sql.Open("sqlserver", getDBConnectionString(cfg))
+		return openReceiverSQLServerDB(cfg)
 	}
 
 	var scrapers []*sqlServerScraperHelper
@@ -164,7 +201,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
 	dbProviderFunc := func() (*sql.DB, error) {
-		return sql.Open("sqlserver", getDBConnectionString(cfg))
+		return openReceiverSQLServerDB(cfg)
 	}
 
 	var scrapers []*sqlServerScraperHelper
