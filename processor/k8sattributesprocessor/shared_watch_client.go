@@ -209,7 +209,3 @@ func (c *sharedWatchClient) GetJob(jobUID string) (*kube.Job, bool) {
 	}
 	return client.GetJob(jobUID)
 }
-
-func (c *sharedWatchClient) unwrapClient() kube.Client {
-	return c.currentClient()
-}
