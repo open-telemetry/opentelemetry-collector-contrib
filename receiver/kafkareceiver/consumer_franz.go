@@ -310,6 +310,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 			defer wg.Done()
 			defer pc.done()
 			fatalOffset := int64(-1)
+			fatalIsPermanent := false
 			var lastProcessed *kgo.Record
 			for _, msg := range msgs {
 				if !c.config.MessageMarking.After {
@@ -330,20 +331,23 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 
 					if !shouldMark {
 						fatalOffset = msg.Offset
+						fatalIsPermanent = isPermanent
 						break // Stop processing messages.
 					}
 				}
 				lastProcessed = msg // Store so we can commit later.
 			}
 			// Pause topic/partition processing locally, then optionally
-			// resume after a backoff delay. Without backoff configured, the
-			// partition stays paused until a rebalance triggers assigned(),
-			// which calls ResumeFetchPartitions.
+			// resume after a backoff delay for non-permanent errors.
+			// Permanent errors and partitions without backoff configured
+			// stay paused until a rebalance triggers assigned(), which
+			// calls ResumeFetchPartitions.
 			if fatalOffset > -1 {
 				tp := map[string][]int32{p.Topic: {p.Partition}}
 				c.client.PauseFetchPartitions(tp)
 
-				if c.config.ErrorBackOff.Enabled {
+				switch {
+				case c.config.ErrorBackOff.Enabled && !fatalIsPermanent:
 					resumeDelay := c.config.ErrorBackOff.InitialInterval
 					pc.logger.Info("pausing partition due to processing error, will resume after delay",
 						zap.Int64("offset", fatalOffset),
@@ -360,7 +364,11 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 					pc.logger.Info("resumed partition after delay",
 						zap.Int64("offset", fatalOffset),
 					)
-				} else {
+				case fatalIsPermanent:
+					pc.logger.Error("pausing partition due to permanent processing error, partition will remain paused until rebalance",
+						zap.Int64("offset", fatalOffset),
+					)
+				default:
 					pc.logger.Error("pausing partition due to processing error (no backoff configured), partition will remain paused until rebalance",
 						zap.Int64("offset", fatalOffset),
 					)

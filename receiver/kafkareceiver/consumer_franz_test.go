@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -487,6 +488,82 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 		return consumeCount.Load() > 0
 	}, 5*time.Second, 50*time.Millisecond,
 		"expected partition to resume and process new records after backoff, but it stayed paused")
+}
+
+// TestNoResumePartitionsAfterPermanentError verifies that when a permanent
+// error occurs, the partition is paused but NOT automatically resumed even
+// with error_backoff enabled. This is consistent with handleMessage which
+// only retries non-permanent errors.
+func TestNoResumePartitionsAfterPermanentError(t *testing.T) {
+	topic := "otlp_spans"
+	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
+	cfg.GroupID = t.Name()
+	cfg.MessageMarking = MessageMarking{
+		After:            true,
+		OnError:          false,
+		OnPermanentError: false, // permanent errors are NOT marked -> triggers PauseFetchPartitions
+	}
+	cfg.ErrorBackOff = configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     10 * time.Millisecond,
+		MaxInterval:         50 * time.Millisecond,
+		MaxElapsedTime:      5 * time.Second,
+		RandomizationFactor: 0,
+		Multiplier:          1.5,
+	}
+
+	var (
+		consumeCount atomic.Int64
+		errored      = make(chan struct{}, 1)
+	)
+
+	settings, _, _ := mustNewSettings(t)
+	consumeFn := func(component.Host, *receiverhelper.ObsReport, *metadata.TelemetryBuilder) (consumeMessageFunc, error) {
+		return func(_ context.Context, _ *kgo.Record, _ attribute.Set) error {
+			consumeCount.Add(1)
+			select {
+			case errored <- struct{}{}:
+			default:
+			}
+			// Always return a permanent error. handleMessage won't retry it,
+			// and the outer layer should NOT resume the partition.
+			return consumererror.NewPermanent(errors.New("simulated permanent error"))
+		}, nil
+	}
+
+	c, err := newFranzKafkaConsumer(cfg, settings, []string{topic}, nil, consumeFn)
+	require.NoError(t, err)
+	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
+
+	// Produce a record to trigger the permanent error -> pause path.
+	traces := testdata.GenerateTraces(1)
+	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), &kgo.Record{
+		Topic: topic, Value: data,
+	}).FirstErr())
+
+	// Wait for the consume function to error.
+	select {
+	case <-errored:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for consume error")
+	}
+
+	// Allow generous time for any potential (incorrect) resume to happen.
+	time.Sleep(200 * time.Millisecond)
+
+	// Produce another record. If the partition were incorrectly resumed,
+	// this would be consumed. With the fix, it stays paused.
+	require.NoError(t, kafkaClient.ProduceSync(t.Context(), &kgo.Record{
+		Topic: topic, Value: data,
+	}).FirstErr())
+
+	// Wait and verify the second record is NOT consumed (partition stays paused).
+	time.Sleep(300 * time.Millisecond)
+	assert.Equal(t, int64(1), consumeCount.Load(),
+		"expected partition to remain paused after permanent error, but additional records were consumed")
 }
 
 func TestFranzConsumer_UseLeaderEpoch_Smoke(t *testing.T) {
