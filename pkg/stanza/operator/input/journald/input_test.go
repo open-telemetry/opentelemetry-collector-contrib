@@ -456,8 +456,8 @@ func TestInputJournaldOtelAttributes(t *testing.T) {
 		assert.Equal(t, "/lib/systemd/systemd --user", e.Resource["process.command_line"])
 
 		// Unmapped fields stay in attributes with original names
-		assert.Equal(t, "c4fa36de06824d21835c05ff80c54468", e.Attributes["_BOOT_ID"])
-		assert.Equal(t, "journal", e.Attributes["_TRANSPORT"])
+		assert.Equal(t, "c4fa36de06824d21835c05ff80c54468", e.Attributes["journald._BOOT_ID"])
+		assert.Equal(t, "journal", e.Attributes["journald._TRANSPORT"])
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
 	}
@@ -576,7 +576,7 @@ func TestInputJournaldOtelAttributes_ErrnoAndThreadID(t *testing.T) {
 
 	select {
 	case e := <-received:
-		assert.Equal(t, "5", e.Attributes["ERRNO"])
+		assert.Equal(t, "5", e.Attributes["journald.ERRNO"])
 		assert.Equal(t, int64(777), e.Attributes["thread.id"])
 		assert.Equal(t, entry.Error, e.Severity)
 	case <-time.After(time.Second):
