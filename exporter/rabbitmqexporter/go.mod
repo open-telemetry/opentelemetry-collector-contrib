@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbit
 go 1.25.0
 
 require (
+	github.com/moby/moby/client v0.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.149.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq v0.149.0
 	github.com/rabbitmq/amqp091-go v1.10.0
@@ -64,7 +65,6 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
 	github.com/moby/moby/api v1.54.1 // indirect
-	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
