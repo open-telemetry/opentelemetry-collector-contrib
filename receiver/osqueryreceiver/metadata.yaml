@@ -8,7 +8,7 @@ description: |
 status:
   class: receiver
   stability:
-    development: [logs]
+    alpha: [logs]
   codeowners:
     active: [smithclay]
     emeritus: [nslaughter]
