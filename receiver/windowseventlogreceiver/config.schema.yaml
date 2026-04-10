@@ -17,6 +17,9 @@ $defs:
 description: WindowsLogConfig defines configuration for the windowseventlog receiver
 type: object
 properties:
+  discover_domain_controllers:
+    description: DiscoverDomainControllers controls whether to attempt auto-discovery of domain controllers for joined machines with remote credentials
+    type: boolean
   resolve_sids:
     description: ResolveSIDs contains configuration for SID-to-username resolution
     $ref: resolve_si_ds_config
