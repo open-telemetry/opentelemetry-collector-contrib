@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	ctypes "github.com/docker/docker/api/types/container"
+	ctypes "github.com/moby/moby/api/types/container"
 	"github.com/stretchr/testify/assert"
 )
 
