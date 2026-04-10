@@ -33,11 +33,11 @@ resourceLogs:
           intValue: "80"
       - key: ip.protocol
         value:
-          stringValue: "6"
-      - key: network.packets
+          stringValue: tcp
+      - key: aws.vpc.flow.packets
         value:
           intValue: "100"
-      - key: network.io.bytes
+      - key: aws.vpc.flow.bytes
         value:
           intValue: "50000"
       - key: aws.vpc.flow.start

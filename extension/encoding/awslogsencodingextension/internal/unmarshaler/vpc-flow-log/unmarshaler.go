@@ -497,6 +497,12 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	case "interface-id":
 		// TODO Replace with conventions variable once it becomes available
 		record.Attributes().PutStr("network.interface.name", value)
+	case "tgw-id":
+		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-id", value)
+	case "transit-gateway-id":
+		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-id", value)
+	case "tgw-attachment-id":
+		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-attachment-id", value)
 	case "srcport":
 		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
 			return false, err
@@ -538,6 +544,22 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		}
 	case "bytes":
 		if err := addNumber(field, value, "aws.vpc.flow.bytes"); err != nil {
+			return false, err
+		}
+	case "packets-lost-no-route":
+		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-no-route"); err != nil {
+			return false, err
+		}
+	case "packets-lost-blackhole":
+		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-blackhole"); err != nil {
+			return false, err
+		}
+	case "packets-lost-mtu-exceeded":
+		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-mtu-exceeded"); err != nil {
+			return false, err
+		}
+	case "packets-loss-ttl":
+		if err := addNumber(field, value, "aws.vpc.flow.packets-loss-ttl"); err != nil {
 			return false, err
 		}
 	case "start":
