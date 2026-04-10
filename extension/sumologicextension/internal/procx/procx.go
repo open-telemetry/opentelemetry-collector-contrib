@@ -40,6 +40,9 @@ func NewProcx(logger *zap.Logger) *Procx {
 		getProcesses: func() ([]Process, error) {
 			ps, err := process.Processes()
 			ret := make([]Process, len(ps))
+			if err != nil {
+				return ret, err
+			}
 			for i := range ps {
 				psw := &processWrapper{
 					process: ps[i],
