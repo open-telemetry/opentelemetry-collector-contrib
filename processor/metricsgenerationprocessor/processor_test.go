@@ -293,7 +293,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 			ctx := t.Context()
 			require.NoError(t, mgp.Start(ctx, nil))
 
-			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
+			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics.Clone())
 			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
