@@ -94,7 +94,6 @@ var (
 	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
-
 )
 
 const (
