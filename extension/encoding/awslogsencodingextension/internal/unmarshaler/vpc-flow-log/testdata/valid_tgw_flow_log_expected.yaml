@@ -49,10 +49,15 @@ resourceLogs:
       - key: aws.vpc.flow.packets-lost-no-route
         value:
           intValue: "0"
+      body: {}
+      timeUnixNano: "1742570142000000000"
+      traceId: ""
+      spanId: ""
     scope:
       attributes:
       - key: encoding.format
         value:
           stringValue: aws.vpcflow
+      name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
 
 
