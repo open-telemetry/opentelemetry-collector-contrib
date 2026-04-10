@@ -29,7 +29,8 @@ import (
 
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	defaultTGWFormat              = []string{"version", "account-id", "transit-gateway-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -66,7 +67,7 @@ func NewVPCFlowLogUnmarshaler(
 	logger *zap.Logger,
 	vpcFlowStartISO8601FormatEnabled bool,
 ) (*VPCFlowLogUnmarshaler, error) {
-	cfg.parsedFormat = defaultFormat
+	cfg.parsedFormat = defaultVPCFormat
 	if cfg.Format != "" {
 		cfg.parsedFormat = strings.Fields(cfg.Format)
 		logger.Debug("Using custom format for VPC flow log unmarshaling", zap.Strings("fields", cfg.parsedFormat))
@@ -91,6 +92,32 @@ func NewVPCFlowLogUnmarshaler(
 		logger:                           logger,
 		vpcFlowStartISO8601FormatEnabled: vpcFlowStartISO8601FormatEnabled,
 	}, nil
+}
+
+// detectTGWFlow checks if the header line indicates a TGW flow log by examining the third field.
+// TGW flow logs have "transit-gateway-id" as the third field, while VPC flow logs have "interface-id".
+func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
+	if len(headerFields) > 2 && headerFields[2] == "transit-gateway-id" {
+		return true
+	}
+	return false
+}
+
+// getFormatForDetection returns the appropriate format based on auto-detection of TGW vs VPC flow logs.
+// If a custom format was specified, it returns that. Otherwise, auto-detects from the header.
+func (v *VPCFlowLogUnmarshaler) getFormatForDetection(headerFields []string) []string {
+	// If custom format was specified, use it
+	if v.cfg.Format != "" {
+		return v.cfg.parsedFormat
+	}
+
+	// Auto-detect based on the header
+	if v.detectTGWFlow(headerFields) {
+		v.logger.Debug("Detected TGW flow log format")
+		return defaultTGWFormat
+	}
+
+	return defaultVPCFormat
 }
 
 func (v *VPCFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
@@ -202,6 +229,12 @@ func (v *VPCFlowLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...enco
 	offset += int64(len(line))
 
 	fields := strings.Fields(line)
+	
+	// Log TGW detection for debugging
+	if v.detectTGWFlow(fields) {
+		v.logger.Debug("Detected TGW flow log format from S3 file header")
+	}
+	
 	batchHelper := xstreamencoding.NewBatchHelper(options...)
 
 	if batchHelper.Options().Offset > 0 {
@@ -277,7 +310,9 @@ func (v *VPCFlowLogUnmarshaler) fromCloudWatch(fields []string, reader *bufio.Re
 	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
 
 	for _, event := range cwLog.LogEvents {
-		err := v.addToLogs(resourceLogs, scopeLogs, fields, event.Message)
+		// Use strict parsing if a custom format was specified
+		strictParsing := v.cfg.Format != ""
+		err := v.addToLogsWithStrictParsing(resourceLogs, scopeLogs, fields, event.Message, strictParsing)
 		if err != nil {
 			return plog.Logs{}, 0, err
 		}
@@ -309,13 +344,26 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 	fields []string,
 	logLine string,
 ) error {
+	return v.addToLogsWithStrictParsing(resourceLogs, scopeLogs, fields, logLine, false)
+}
+
+// addToLogsWithStrictParsing is the internal implementation that allows controlling whether to error on missing fields.
+// When strictParsing is true, missing fields (except those explicitly marked as "-" in the data) will return an error.
+func (v *VPCFlowLogUnmarshaler) addToLogsWithStrictParsing(
+	resourceLogs plog.ResourceLogs,
+	scopeLogs plog.ScopeLogs,
+	fields []string,
+	logLine string,
+	strictParsing bool,
+) error {
 	record := scopeLogs.LogRecords().AppendEmpty()
 	addr := &address{}
 	for _, field := range fields {
-		// If logLine is empty, treat missing trailing fields as "not applicable" (similar to "-")
-		// This makes the unmarshaler robust to variations in log formats
 		var value string
 		if logLine == "" {
+			if strictParsing {
+				return fmt.Errorf("expected field %q but log line has no more fields", field)
+			}
 			value = "-"
 		} else {
 			value, logLine, _ = strings.Cut(logLine, " ")
