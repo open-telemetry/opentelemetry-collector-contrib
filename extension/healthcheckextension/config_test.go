@@ -122,10 +122,10 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 }
 
 func TestLoadConfigV2WithGate(t *testing.T) {
-	prev := useComponentStatusGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), true))
+	prev := metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), prev))
 	})
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

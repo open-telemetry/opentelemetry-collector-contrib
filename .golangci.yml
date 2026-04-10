@@ -181,9 +181,6 @@ linters:
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/healthcheckextension/
-      - linters:
-          - forbidigo
         path: extension/jaegerremotesampling/
       - linters:
           - forbidigo
