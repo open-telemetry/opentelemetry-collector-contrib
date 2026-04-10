@@ -181,9 +181,6 @@ linters:
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/healthcheckextension/
-      - linters:
-          - forbidigo
         path: extension/jaegerremotesampling/
       - linters:
           - forbidigo
@@ -205,9 +202,6 @@ linters:
         path: processor/filterprocessor/
       - linters:
           - forbidigo
-        path: processor/metricsgenerationprocessor/
-      - linters:
-          - forbidigo
         path: processor/tailsamplingprocessor/
       - linters:
           - forbidigo
@@ -215,9 +209,6 @@ linters:
       - linters:
           - forbidigo
         path: receiver/awscontainerinsightreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/cloudfoundryreceiver/
       - linters:
           - forbidigo
         path: receiver/datadogreceiver/
