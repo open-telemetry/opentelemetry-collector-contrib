@@ -16,6 +16,13 @@ status:
     emeritus: [agoallikmaa, pellared]
     seeking_new: true
 
+feature_gates:
+  - id: cloudfoundry.resourceAttributes.allow
+    description: >-
+      When enabled, envelope tags are copied to the metrics as resource attributes instead of datapoint attributes
+    stage: beta
+    from_version: "v0.117.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34824
 tests:
   config:
   skip_lifecycle: true
