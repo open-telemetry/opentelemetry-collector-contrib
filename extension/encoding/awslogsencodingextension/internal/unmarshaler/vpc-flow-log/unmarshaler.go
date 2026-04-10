@@ -94,10 +94,10 @@ func NewVPCFlowLogUnmarshaler(
 	}, nil
 }
 
-// detectTGWFlow checks if the header line indicates a TGW flow log by examining the third field.
-// TGW flow logs have "transit-gateway-id" as the third field, while VPC flow logs have "interface-id".
+// detectTGWFlow checks if the header line indicates a TGW flow log by examining the second field.
+// TGW flow logs have "TransitGateway" as the second field, while VPC flow logs have "account-id".
 func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
-	if len(headerFields) > 2 && headerFields[2] == "transit-gateway-id" {
+	if len(headerFields) > 1 && headerFields[1] == "TransitGateway" {
 		return true
 	}
 	return false
@@ -229,12 +229,12 @@ func (v *VPCFlowLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...enco
 	offset += int64(len(line))
 
 	fields := strings.Fields(line)
-	
+
 	// Log TGW detection for debugging
 	if v.detectTGWFlow(fields) {
 		v.logger.Debug("Detected TGW flow log format from S3 file header")
 	}
-	
+
 	batchHelper := xstreamencoding.NewBatchHelper(options...)
 
 	if batchHelper.Options().Offset > 0 {
