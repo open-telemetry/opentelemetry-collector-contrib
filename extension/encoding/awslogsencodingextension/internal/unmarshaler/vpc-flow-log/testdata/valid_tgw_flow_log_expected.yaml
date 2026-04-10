@@ -4,6 +4,9 @@ resourceLogs:
     - key: cloud.provider
       value:
         stringValue: aws
+    - key: cloud.account.id
+      value:
+        stringValue: "123456789012"
   scopeLogs:
   - logRecords:
     - attributes:
