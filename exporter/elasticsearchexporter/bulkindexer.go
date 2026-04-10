@@ -153,30 +153,32 @@ func newSyncBulkIndexer(
 		}
 	}
 	return &syncBulkIndexer{
-		config:                bulkIndexerConfig(client, config, false, logger),
-		maxFlushBytes:         maxFlushBytes,
-		flushTimeout:          config.Timeout,
-		retryConfig:           config.Retry,
-		metadataKeys:          config.MetadataKeys,
-		telemetryBuilder:      tb,
-		logger:                logger,
-		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
-		getErrorHintFunc:      getErrorHintFunc,
-		requireDataStream:     requireDataStream,
+		config:                 bulkIndexerConfig(client, config, false, logger),
+		maxFlushBytes:          maxFlushBytes,
+		flushTimeout:           config.Timeout,
+		retryConfig:            config.Retry,
+		metadataKeys:           config.MetadataKeys,
+		telemetryBuilder:       tb,
+		logger:                 logger,
+		failedDocsInputLogger:  newFailedDocsInputLogger(logger, config),
+		getErrorHintFunc:       getErrorHintFunc,
+		requireDataStream:      requireDataStream,
+		suppressConflictErrors: config.SuppressConflictErrors,
 	}
 }
 
 type syncBulkIndexer struct {
-	config                docappender.BulkIndexerConfig
-	maxFlushBytes         int64
-	flushTimeout          time.Duration
-	retryConfig           RetrySettings
-	metadataKeys          []string
-	telemetryBuilder      *metadata.TelemetryBuilder
-	logger                *zap.Logger
-	failedDocsInputLogger *zap.Logger
-	getErrorHintFunc      func(index, errorType string) string
-	requireDataStream     bool
+	config                 docappender.BulkIndexerConfig
+	maxFlushBytes          int64
+	flushTimeout           time.Duration
+	retryConfig            RetrySettings
+	metadataKeys           []string
+	telemetryBuilder       *metadata.TelemetryBuilder
+	logger                 *zap.Logger
+	failedDocsInputLogger  *zap.Logger
+	getErrorHintFunc       func(index, errorType string) string
+	requireDataStream      bool
+	suppressConflictErrors bool
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -253,6 +255,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			s.s.logger,
 			s.s.failedDocsInputLogger,
 			s.s.getErrorHintFunc,
+			s.s.suppressConflictErrors,
 		); err != nil {
 			return err
 		}
@@ -289,6 +292,7 @@ func flushBulkIndexer(
 	logger *zap.Logger,
 	failedDocsInputLogger *zap.Logger,
 	getErrorHintFunc func(index, errorType string) string,
+	suppressConflictErrors bool,
 ) error {
 	itemsCount := bi.Items()
 	if itemsCount == 0 {
@@ -390,13 +394,14 @@ func flushBulkIndexer(
 			)...)),
 		)
 
-		if resp.Error.Type == "version_conflict_engine_exception" &&
-			(strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
-				strings.HasPrefix(resp.Index, ".profiling-stacktraces-")) {
-			// For the Profiling indices .profiling-[stacktraces|stackframes]- the
-			// rejection of duplicates are expected from Elasticsearch. So we do not want
-			// to log these here.
-			continue
+		if resp.Error.Type == "version_conflict_engine_exception" {
+			if suppressConflictErrors ||
+				strings.HasPrefix(resp.Index, ".profiling-stackframes-") ||
+				strings.HasPrefix(resp.Index, ".profiling-stacktraces-") {
+				// Rejection of duplicates are either expected (Profiling indices)
+				// or globally suppressed by the user. Do not log them.
+				continue
+			}
 		}
 
 		// Log failed docs
