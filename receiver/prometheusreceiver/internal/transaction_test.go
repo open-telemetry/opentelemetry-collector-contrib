@@ -2136,7 +2136,7 @@ func newTxn(t *testing.T, useMetadata bool) *transaction {
 // ---- Append tests ----
 //
 // These tests validate the V2 append surface used by Prometheus:
-// transaction.Append(...) -> transaction.AppendV2(...).
+// transaction.Append(...).
 //
 // Some tests in this file still call transaction methods directly because they
 // validate method-specific behavior that is not exposed as independent calls in

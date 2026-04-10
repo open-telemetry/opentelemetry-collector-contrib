@@ -29,11 +29,11 @@ func BenchmarkAppendWithCreatedLine(b *testing.B) {
 
 			for j, ls := range labelSets {
 				value := float64(j)
-				_, err := tx.AppendV2(0, ls[0], 0, timestamp, value, nil, nil, storage.AOptions{})
+				_, err := tx.Append(0, ls[0], 0, timestamp, value, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}
-				_, err = tx.AppendV2(0, ls[1], 0, timestamp, ctValue, nil, nil, storage.AOptions{})
+				_, err = tx.Append(0, ls[1], 0, timestamp, ctValue, nil, nil, storage.AOptions{})
 				if err != nil {
 					b.Fatal(err)
 				}

@@ -654,12 +654,7 @@ func getSeriesRefWithoutScopeLabels(bytes []byte, ls labels.Labels, mtype pmetri
 }
 
 // Append implements storage.AppenderV2.
-func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, stMs, atMs int64, val float64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) (storage.SeriesRef, error) {
-	return t.AppendV2(ref, ls, stMs, atMs, val, h, fh, opts)
-}
-
-// AppendV2 implements storage.AppenderV2.
-func (t *transaction) AppendV2(_ storage.SeriesRef, ls labels.Labels, stMs, atMs int64, val float64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) (storage.SeriesRef, error) {
+func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, stMs, atMs int64, val float64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AppendV2Options) (storage.SeriesRef, error) {
 	originalLS := ls
 	isHistogram := h != nil || fh != nil
 

@@ -66,7 +66,7 @@ func benchmarkAppend(b *testing.B) {
 
 		for j, ls := range labelSets {
 			value := float64(j)
-			_, err := tx.AppendV2(0, ls, 0, timestamp, value, nil, nil, storage.AOptions{})
+			_, err := tx.Append(0, ls, 0, timestamp, value, nil, nil, storage.AOptions{})
 			assert.NoError(b, err)
 		}
 	}
@@ -92,7 +92,7 @@ func benchmarkAppendHistogram(b *testing.B) {
 		b.StartTimer()
 
 		for j := range labelSets {
-			_, err := tx.AppendV2(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
+			_, err := tx.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
 			assert.NoError(b, err)
 		}
 	}
@@ -151,21 +151,21 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 
 		if withTargetInfo {
 			targetInfoLabels := createTargetInfoLabels()
-			_, _ = tx.AppendV2(0, targetInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
+			_, _ = tx.Append(0, targetInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
 		}
 
 		if withScopeInfo {
 			scopeInfoLabels := createScopeInfoLabels()
-			_, _ = tx.AppendV2(0, scopeInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
+			_, _ = tx.Append(0, scopeInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
 		}
 
 		if useNativeHistograms {
 			for j := range labelSets {
-				_, _ = tx.AppendV2(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
+				_, _ = tx.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
 			}
 		} else {
 			for j, ls := range labelSets {
-				_, _ = tx.AppendV2(0, ls, 0, timestamp, float64(j), nil, nil, storage.AOptions{})
+				_, _ = tx.Append(0, ls, 0, timestamp, float64(j), nil, nil, storage.AOptions{})
 			}
 		}
 		b.StartTimer()
