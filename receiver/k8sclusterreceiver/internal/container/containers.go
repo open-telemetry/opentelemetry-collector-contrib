@@ -61,15 +61,17 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 	}
 	e := metadata.NewK8sContainerEntity(stripContainerID(containerID))
 	e.SetK8sContainerName(c.Name)
-	if cs != nil && cs.LastTerminationState.Terminated != nil {
-		e.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
-	}
-	image, err := docker.ParseImageName(cs.Image)
-	if err != nil {
-		docker.LogParseError(err, cs.Image, logger)
-	} else {
-		e.SetContainerImageName(image.Repository)
-		e.SetContainerImageTag(image.Tag)
+	if cs != nil {
+		if cs.LastTerminationState.Terminated != nil {
+			e.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
+		}
+		image, err := docker.ParseImageName(cs.Image)
+		if err != nil {
+			docker.LogParseError(err, cs.Image, logger)
+		} else {
+			e.SetContainerImageName(image.Repository)
+			e.SetContainerImageTag(image.Tag)
+		}
 	}
 
 	e.SetK8sPodName(pod.Name)
