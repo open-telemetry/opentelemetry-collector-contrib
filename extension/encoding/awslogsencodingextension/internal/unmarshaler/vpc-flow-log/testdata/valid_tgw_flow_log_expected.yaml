@@ -1,0 +1,56 @@
+resourceLogs:
+- resource:
+    attributes:
+    - key: cloud.provider
+      value:
+        stringValue: aws
+  scopeLogs:
+  - logRecords:
+    - attributes:
+      - key: aws.vpc.flow.log.version
+        value:
+          intValue: "2"
+      - key: network.interface.name
+        value:
+          stringValue: eni-0eb1e4178af74336c
+      - key: source.address
+        value:
+          stringValue: 10.1.1.100
+      - key: destination.address
+        value:
+          stringValue: 10.2.2.100
+      - key: source.port
+        value:
+          intValue: "443"
+      - key: destination.port
+        value:
+          intValue: "80"
+      - key: network.protocol.name
+        value:
+          stringValue: tcp
+      - key: aws.vpc.flow.packets
+        value:
+          intValue: "100"
+      - key: aws.vpc.flow.bytes
+        value:
+          intValue: "50000"
+      - key: aws.vpc.flow.start
+        value:
+          intValue: "1742570089"
+      - key: aws.vpc.flow.action
+        value:
+          stringValue: ACCEPT
+      - key: aws.vpc.flow.status
+        value:
+          stringValue: OK
+      body: {}
+      spanId: ""
+      timeUnixNano: "1742570142000000000"
+      traceId: ""
+    scope:
+      attributes:
+      - key: encoding.format
+        value:
+          stringValue: aws.vpcflow
+      name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+

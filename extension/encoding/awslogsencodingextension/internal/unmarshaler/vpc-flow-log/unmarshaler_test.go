@@ -106,6 +106,12 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			expectedErr:        "log line has more fields than the ones expected",
 			featureGateEnabled: false,
 		},
+		{
+			name:                 "Valid Transit Gateway (TGW) flow log",
+			logInputReader:       readAndCompressLogFile(t, dir, "valid_tgw_flow_log.log"),
+			logsExpectedFilename: "valid_tgw_flow_log_expected.yaml",
+			featureGateEnabled:   false,
+		},
 	}
 
 	for _, test := range tests {
