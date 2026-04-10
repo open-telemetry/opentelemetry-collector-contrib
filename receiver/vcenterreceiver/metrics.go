@@ -15,7 +15,7 @@ import (
 
 var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
 	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.104.0"),
 	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
 	featuregate.WithRegisterToVersion("v0.107.0"))
