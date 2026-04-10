@@ -27,7 +27,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for tlscheck metrics.
+// MetricsConfig provides config for tls_check metrics.
 type MetricsConfig struct {
 	TlscheckTimeLeft MetricConfig `mapstructure:"tlscheck.time_left"`
 }
@@ -66,7 +66,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for tlscheck resource attributes.
+// ResourceAttributesConfig provides config for tls_check resource attributes.
 type ResourceAttributesConfig struct {
 	TlscheckTarget ResourceAttributeConfig `mapstructure:"tlscheck.target"`
 }
@@ -79,7 +79,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for tlscheck metrics builder.
+// MetricsBuilderConfig is a configuration for tls_check metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

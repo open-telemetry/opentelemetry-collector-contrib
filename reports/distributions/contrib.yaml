@@ -226,7 +226,7 @@ components:
         - systemd
         - tcp_log
         - tcpcheck
-        - tlscheck
+        - tls_check
         - udp_log
         - vcenter
         - wavefront
