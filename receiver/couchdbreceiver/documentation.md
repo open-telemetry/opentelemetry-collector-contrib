@@ -38,9 +38,9 @@ The number of database operations.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| operation | The operation type. | Str: ``writes``, ``reads`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| operation | The operation type. | Str: ``writes``, ``reads`` | Recommended | - |
 
 ### couchdb.file_descriptor.open
 
@@ -68,9 +68,9 @@ The number of HTTP requests by method.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| http.method | An HTTP request method. | Str: ``COPY``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``POST``, ``PUT`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| http.method | An HTTP request method. | Str: ``COPY``, ``DELETE``, ``GET``, ``HEAD``, ``OPTIONS``, ``POST``, ``PUT`` | Recommended | - |
 
 ### couchdb.httpd.responses
 
@@ -82,9 +82,9 @@ The number of each HTTP status code.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| http.status_code | An HTTP status code. | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| http.status_code | An HTTP status code. | Any Str | Recommended | - |
 
 ### couchdb.httpd.views
 
@@ -96,12 +96,12 @@ The number of views read.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| view | The view type. | Str: ``temporary_view_reads``, ``view_reads`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| view | The view type. | Str: ``temporary_view_reads``, ``view_reads`` | Recommended | - |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| couchdb.node.name | The name of the node. | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| couchdb.node.name | The name of the node. | Any Str | true | - |

@@ -53,6 +53,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "database.status"
+            default:
+              - "database.status"
       sqlserver.database.execution.errors:
         description: "SqlserverDatabaseExecutionErrorsMetricConfig provides config for the sqlserver.database.execution.errors metric."
         type: object
@@ -74,6 +90,28 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "physical_filename"
+                - "logical_filename"
+                - "file_type"
+                - "direction"
+            default:
+              - "physical_filename"
+              - "logical_filename"
+              - "file_type"
+              - "direction"
       sqlserver.database.latency:
         description: "SqlserverDatabaseLatencyMetricConfig provides config for the sqlserver.database.latency metric."
         type: object
@@ -81,6 +119,28 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "physical_filename"
+                - "logical_filename"
+                - "file_type"
+                - "direction"
+            default:
+              - "physical_filename"
+              - "logical_filename"
+              - "file_type"
+              - "direction"
       sqlserver.database.operations:
         description: "SqlserverDatabaseOperationsMetricConfig provides config for the sqlserver.database.operations metric."
         type: object
@@ -88,6 +148,28 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "physical_filename"
+                - "logical_filename"
+                - "file_type"
+                - "direction"
+            default:
+              - "physical_filename"
+              - "logical_filename"
+              - "file_type"
+              - "direction"
       sqlserver.database.tempdb.space:
         description: "SqlserverDatabaseTempdbSpaceMetricConfig provides config for the sqlserver.database.tempdb.space metric."
         type: object
@@ -95,6 +177,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "tempdb.state"
+            default:
+              - "tempdb.state"
       sqlserver.database.tempdb.version_store.size:
         description: "SqlserverDatabaseTempdbVersionStoreSizeMetricConfig provides config for the sqlserver.database.tempdb.version_store.size metric."
         type: object
@@ -179,6 +277,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "wait.category"
+                - "wait.type"
+            default:
+              - "wait.category"
+              - "wait.type"
       sqlserver.page.buffer_cache.free_list.stalls.rate:
         description: "SqlserverPageBufferCacheFreeListStallsRateMetricConfig provides config for the sqlserver.page.buffer_cache.free_list.stalls.rate metric."
         type: object
@@ -214,6 +330,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "performance_counter.object_name"
+            default:
+              - "performance_counter.object_name"
       sqlserver.page.lookup.rate:
         description: "SqlserverPageLookupRateMetricConfig provides config for the sqlserver.page.lookup.rate metric."
         type: object
@@ -228,6 +360,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       sqlserver.page.split.rate:
         description: "SqlserverPageSplitRateMetricConfig provides config for the sqlserver.page.split.rate metric."
         type: object
@@ -249,6 +397,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "replica.direction"
+            default:
+              - "replica.direction"
       sqlserver.resource_pool.disk.operations:
         description: "SqlserverResourcePoolDiskOperationsMetricConfig provides config for the sqlserver.resource_pool.disk.operations metric."
         type: object
@@ -256,6 +420,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       sqlserver.resource_pool.disk.throttled.read.rate:
         description: "SqlserverResourcePoolDiskThrottledReadRateMetricConfig provides config for the sqlserver.resource_pool.disk.throttled.read.rate metric."
         type: object
@@ -277,6 +457,24 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "table.state"
+                - "table.status"
+            default:
+              - "table.state"
+              - "table.status"
       sqlserver.transaction.delay:
         description: "SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric."
         type: object
