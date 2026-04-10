@@ -1,2 +1,2 @@
-version TransitGateway interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
-2 tgw-12345678 eni-0eb1e4178af74336c 10.1.1.100 10.2.2.100 443 80 6 100 50000 1742570089 1742570142 ACCEPT OK
+version account-id tgw-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
+2 123456789012 tgw-12345678 10.1.1.100 10.2.2.100 443 80 6 100 50000 1742570089 1742570142 ACCEPT OK

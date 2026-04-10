@@ -94,10 +94,12 @@ func NewVPCFlowLogUnmarshaler(
 	}, nil
 }
 
-// detectTGWFlow checks if the header line indicates a TGW flow log by examining the second field.
-// TGW flow logs have "TransitGateway" as the second field, while VPC flow logs have "account-id".
+// detectTGWFlow checks if the header line indicates a TGW flow log by examining the third field.
+// In AWS TGW v2 format: version account-id tgw-id srcaddr dstaddr ...
+// In AWS VPC v2 format: version account-id interface-id srcaddr dstaddr ...
+// TGW flow logs have "tgw-id" as the third field header, VPC flow logs have "interface-id".
 func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
-	if len(headerFields) > 1 && headerFields[1] == "TransitGateway" {
+	if len(headerFields) > 2 && headerFields[2] == "tgw-id" {
 		return true
 	}
 	return false

@@ -10,9 +10,9 @@ resourceLogs:
       - key: aws.vpc.flow.log.version
         value:
           intValue: "2"
-      - key: network.interface.name
+      - key: aws.vpc.flow.transit-gateway-id
         value:
-          stringValue: eni-0eb1e4178af74336c
+          stringValue: tgw-12345678
       - key: source.address
         value:
           stringValue: 10.1.1.100
