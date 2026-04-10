@@ -21,12 +21,15 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
-	)
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		MinSpansToAggregate:        5,
+		MaxParentDepth:             1,
+		AggregationAttributePrefix: "aggregation.",
+	}
 }
 
 func createTracesProcessor(
@@ -35,12 +38,24 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
+	pCfg := cfg.(*Config)
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := newSpanPruningProcessor(set, pCfg, telemetryBuilder)
+	if err != nil {
+		return nil, err
+	}
+
 	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		newSpanPruningProcessor().processTraces,
+		p.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities),
-	)
+		processorhelper.WithShutdown(p.shutdown))
 }
