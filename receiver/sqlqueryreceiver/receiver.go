@@ -8,9 +8,12 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -62,7 +65,10 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			scope.SetName(metadata.ScopeName)
 			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.Logger, sqlCfg.Telemetry, pool.DB, clientProviderFunc, scope)
 
-			opt := scraperhelper.AddMetricsScraper(metadata.Type, mp)
+			wrapped := &statusReportingScraper{
+				delegate: mp,
+			}
+			opt := scraperhelper.AddMetricsScraper(metadata.Type, wrapped)
 			opts = append(opts, opt)
 		}
 
@@ -74,3 +80,29 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		)
 	}
 }
+
+type statusReportingScraper struct {
+	delegate *sqlquery.Scraper
+	host     component.Host
+}
+
+func (s *statusReportingScraper) Start(ctx context.Context, host component.Host) error {
+	s.host = host
+	return s.delegate.Start(ctx, host)
+}
+
+func (s *statusReportingScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	metrics, err := s.delegate.ScrapeMetrics(ctx)
+	if err != nil {
+		componentstatus.ReportStatus(s.host, componentstatus.NewRecoverableErrorEvent(err))
+	} else {
+		componentstatus.ReportStatus(s.host, componentstatus.NewEvent(componentstatus.StatusOK))
+	}
+	return metrics, err
+}
+
+func (s *statusReportingScraper) Shutdown(ctx context.Context) error {
+	return s.delegate.Shutdown(ctx)
+}
+
+var _ scraper.Metrics = (*statusReportingScraper)(nil)

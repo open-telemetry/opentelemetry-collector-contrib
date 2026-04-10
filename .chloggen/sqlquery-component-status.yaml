@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/sqlquery
+note: Report component status on database connection and query failures for health check v2 integration.
+issues: [43837]
+subtext:
+change_logs: [user]
