@@ -181,6 +181,7 @@ func (s *sqlServerScraperHelper) setupResourceBuilder(rb *metadata.ResourceBuild
 	rb.SetHostName(hostName)
 	rb.SetServiceInstanceID(s.serviceInstanceID)
 	rb.SetServiceName("microsoft.sql_server")
+	rb.SetServiceNamespace("")
 
 	if !metadata.ReceiverSqlserverRemoveServerResourceAttributeFeatureGate.IsEnabled() {
 		rb.SetServerAddress(serverAddress)

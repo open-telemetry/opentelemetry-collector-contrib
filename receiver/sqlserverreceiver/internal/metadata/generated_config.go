@@ -312,6 +312,7 @@ type ResourceAttributesConfig struct {
 	ServerPort            ResourceAttributeConfig `mapstructure:"server.port"`
 	ServiceInstanceID     ResourceAttributeConfig `mapstructure:"service.instance.id"`
 	ServiceName           ResourceAttributeConfig `mapstructure:"service.name"`
+	ServiceNamespace      ResourceAttributeConfig `mapstructure:"service.namespace"`
 	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
 	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
 	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
@@ -332,7 +333,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServiceName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
+		},
+		ServiceNamespace: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		SqlserverComputerName: ResourceAttributeConfig{
 			Enabled: false,

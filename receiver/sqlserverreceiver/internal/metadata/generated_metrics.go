@@ -3147,6 +3147,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.ServiceName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["service.name"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ServiceNamespace.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServiceNamespace.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["service.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.ServiceNamespace.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude)
 	}

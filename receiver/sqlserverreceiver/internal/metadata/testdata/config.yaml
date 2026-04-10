@@ -117,6 +117,8 @@ all_set:
       enabled: true
     service.name:
       enabled: true
+    service.namespace:
+      enabled: true
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
@@ -241,6 +243,8 @@ none_set:
       enabled: false
     service.name:
       enabled: false
+    service.namespace:
+      enabled: false
     sqlserver.computer.name:
       enabled: false
     sqlserver.database.name:
@@ -274,6 +278,12 @@ filter_set_include:
       events_include:
         - regexp: ".*"
     service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+      events_include:
+        - regexp: ".*"
+    service.namespace:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -329,6 +339,12 @@ filter_set_exclude:
         - strict: "service.name-val"
       events_exclude:
         - strict: "service.name-val"
+    service.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "service.namespace-val"
+      events_exclude:
+        - strict: "service.namespace-val"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:

@@ -18,6 +18,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetServerPort(11)
 			rb.SetServiceInstanceID("service.instance.id-val")
 			rb.SetServiceName("service.name-val")
+			rb.SetServiceNamespace("service.namespace-val")
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
@@ -27,9 +28,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 8, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -57,9 +58,14 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "service.instance.id-val", serviceInstanceIDAttrVal.Str())
 			}
 			serviceNameAttrVal, ok := res.Attributes().Get("service.name")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.Equal(t, "service.name-val", serviceNameAttrVal.Str())
+			}
+			serviceNamespaceAttrVal, ok := res.Attributes().Get("service.namespace")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "service.namespace-val", serviceNamespaceAttrVal.Str())
 			}
 			sqlserverComputerNameAttrVal, ok := res.Attributes().Get("sqlserver.computer.name")
 			assert.Equal(t, tt == "all_set", ok)

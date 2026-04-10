@@ -56,6 +56,13 @@ func (rb *ResourceBuilder) SetServiceName(val string) {
 	}
 }
 
+// SetServiceNamespace sets provided value as "service.namespace" attribute.
+func (rb *ResourceBuilder) SetServiceNamespace(val string) {
+	if rb.config.ServiceNamespace.Enabled {
+		rb.res.Attributes().PutStr("service.namespace", val)
+	}
+}
+
 // SetSqlserverComputerName sets provided value as "sqlserver.computer.name" attribute.
 func (rb *ResourceBuilder) SetSqlserverComputerName(val string) {
 	if rb.config.SqlserverComputerName.Enabled {

@@ -128,6 +128,7 @@ func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
@@ -158,6 +159,9 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
 			Metrics: metadata.DefaultMetricsConfig(),
 			ResourceAttributes: metadata.ResourceAttributesConfig{
+				ServiceName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
 				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},

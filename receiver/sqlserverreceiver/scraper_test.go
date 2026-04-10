@@ -94,6 +94,7 @@ func enableSQLServerResourceAttributesForTests(resourceAttributes *metadata.Reso
 	resourceAttributes.SqlserverInstanceName.Enabled = true
 	resourceAttributes.ServerAddress.Enabled = true
 	resourceAttributes.ServerPort.Enabled = true
+	resourceAttributes.ServiceName.Enabled = true
 }
 
 func TestEmptyScrape(t *testing.T) {
@@ -140,6 +141,8 @@ func TestSuccessfulScrape(t *testing.T) {
 			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
 			cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+			cfg.MetricsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
+			cfg.LogsBuilderConfig.ResourceAttributes.ServiceName.Enabled = true
 			assert.NoError(t, cfg.Validate())
 
 			configureAllScraperMetricsAndEvents(cfg, true)

@@ -36,8 +36,12 @@ resource_attributes:
     enabled: true
     type: string
   service.name:
-    description: "Logical name of the service. Defaults to the db.system.name value: microsoft.sql_server."
-    enabled: true
+    description: "Logical name of the service. When enabled, the receiver sets this to the db.system.name value for SQL Server: microsoft.sql_server."
+    enabled: false
+    type: string
+  service.namespace:
+    description: Logical namespace for the service (for example team or environment). When enabled, defaults to an empty string until set via configuration.
+    enabled: false
     type: string
   sqlserver.computer.name:
     description: The name of the SQL Server instance being monitored.
