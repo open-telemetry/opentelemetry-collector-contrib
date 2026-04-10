@@ -13,5 +13,12 @@ status:
     emeritus: [anuraaga, kentquirk]
     seeking_new: true
 
+feature_gates:
+  - id: "transform.flatten.logs"
+    description: Flatten log data prior to transformation so every record has a unique copy of the resource and scope. Regroups logs based on resource and scope after transformations.
+    stage: alpha
+    from_version: v0.103.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953
+
 tests:
   config:
