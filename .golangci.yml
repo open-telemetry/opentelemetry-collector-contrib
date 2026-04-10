@@ -217,9 +217,6 @@ linters:
         path: receiver/awscontainerinsightreceiver/
       - linters:
           - forbidigo
-        path: receiver/cloudfoundryreceiver/
-      - linters:
-          - forbidigo
         path: receiver/datadogreceiver/
       - linters:
           - forbidigo
