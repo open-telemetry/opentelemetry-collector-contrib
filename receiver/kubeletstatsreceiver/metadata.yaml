@@ -16,7 +16,7 @@ status:
 resource_attributes:
   aws.volume.id:
     description: "[DEPRECATED] The id of the AWS Volume"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
@@ -26,25 +26,25 @@ resource_attributes:
     type: string
   fs.type:
     description: "[DEPRECATED] The filesystem type of the Volume"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   gce.pd.name:
     description: "[DEPRECATED] The name of the persistent disk in GCE"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.endpoints.name:
     description: "[DEPRECATED] The endpoint name that details Glusterfs topology"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
   glusterfs.path:
     description: "[DEPRECATED] Glusterfs volume path"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"
@@ -83,7 +83,7 @@ resource_attributes:
     type: string
   partition:
     description: "[DEPRECATED] The partition in the Volume"
-    enabled: true
+    enabled: false
     type: string
     warnings:
       if_enabled: "This resource_attribute is deprecated and will be removed soon"

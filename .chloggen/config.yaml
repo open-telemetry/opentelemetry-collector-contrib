@@ -218,6 +218,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
+    - processor/spanpruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/tencentcvmdetector
@@ -269,7 +270,7 @@ components:
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
-    - receiver/httpcheck
+    - receiver/http_check
     - receiver/huaweicloudcesreceiver
     - receiver/icmpcheckreceiver
     - receiver/iis
@@ -330,7 +331,7 @@ components:
     - receiver/systemd
     - receiver/tcp_log
     - receiver/tcpcheck
-    - receiver/tlscheck
+    - receiver/tls_check
     - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
