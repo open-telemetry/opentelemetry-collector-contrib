@@ -9,9 +9,9 @@ require (
 	github.com/moby/moby/api v1.54.1
 	github.com/moby/moby/client v0.4.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/config/configoptional v1.55.1-0.20260408002112-999af6320692
-	go.opentelemetry.io/collector/config/configtls v1.55.1-0.20260408002112-999af6320692
-	go.opentelemetry.io/collector/confmap v1.55.1-0.20260408002112-999af6320692
+	go.opentelemetry.io/collector/config/configoptional v1.55.1-0.20260409104450-d686cf9058ce
+	go.opentelemetry.io/collector/config/configtls v1.55.1-0.20260409104450-d686cf9058ce
+	go.opentelemetry.io/collector/confmap v1.55.1-0.20260409104450-d686cf9058ce
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/sync v0.20.0
@@ -42,9 +42,9 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.55.1-0.20260408002112-999af6320692 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.149.1-0.20260408002112-999af6320692 // indirect
-	go.opentelemetry.io/collector/featuregate v1.55.1-0.20260408002112-999af6320692 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.55.1-0.20260409104450-d686cf9058ce // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.149.1-0.20260409104450-d686cf9058ce // indirect
+	go.opentelemetry.io/collector/featuregate v1.55.1-0.20260409104450-d686cf9058ce // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
