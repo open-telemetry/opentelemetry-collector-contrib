@@ -16,6 +16,9 @@ resourceLogs:
       - key: aws.vpc.flow.transit-gateway-id
         value:
           stringValue: tgw-12345678
+      - key: aws.vpc.flow.transit-gateway-attachment-id
+        value:
+          stringValue: tgw-attach-0a1b2c3d4e5f6g7h8
       - key: source.address
         value:
           stringValue: 10.1.1.100
@@ -28,32 +31,28 @@ resourceLogs:
       - key: destination.port
         value:
           intValue: "80"
-      - key: network.protocol.name
+      - key: ip.protocol
         value:
-          stringValue: tcp
-      - key: aws.vpc.flow.packets
+          stringValue: "6"
+      - key: network.packets
         value:
           intValue: "100"
-      - key: aws.vpc.flow.bytes
+      - key: network.io.bytes
         value:
           intValue: "50000"
       - key: aws.vpc.flow.start
         value:
           intValue: "1742570089"
-      - key: aws.vpc.flow.action
+      - key: aws.vpc.flow.end
         value:
-          stringValue: ACCEPT
-      - key: aws.vpc.flow.status
+          intValue: "1742570142"
+      - key: aws.vpc.flow.packets-lost-no-route
         value:
-          stringValue: OK
-      body: {}
-      spanId: ""
-      timeUnixNano: "1742570142000000000"
-      traceId: ""
+          intValue: "0"
     scope:
       attributes:
       - key: encoding.format
         value:
           stringValue: aws.vpcflow
-      name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
+
 

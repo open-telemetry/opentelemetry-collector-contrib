@@ -30,7 +30,7 @@ import (
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
-	defaultTGWFormat              = []string{"version", "account-id", "transit-gateway-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	defaultTGWFormat              = []string{"version", "tgw-id", "tgw-attachment-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "packets-lost-no-route", "account-id"}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -94,12 +94,12 @@ func NewVPCFlowLogUnmarshaler(
 	}, nil
 }
 
-// detectTGWFlow checks if the header line indicates a TGW flow log by examining the third field.
-// In AWS TGW v2 format: version account-id tgw-id srcaddr dstaddr ...
+// detectTGWFlow checks if the header line indicates a TGW flow log by examining the second field.
+// In AWS TGW v2 format: version tgw-id tgw-attachment-id srcaddr dstaddr ...
 // In AWS VPC v2 format: version account-id interface-id srcaddr dstaddr ...
-// TGW flow logs have "tgw-id" as the third field header, VPC flow logs have "interface-id".
+// TGW flow logs have "tgw-id" as the second field header, VPC flow logs have "account-id".
 func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
-	if len(headerFields) > 2 && headerFields[2] == "tgw-id" {
+	if len(headerFields) > 1 && headerFields[1] == "tgw-id" {
 		return true
 	}
 	return false
