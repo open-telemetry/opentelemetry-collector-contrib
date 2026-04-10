@@ -9,8 +9,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("envoyals")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver"
+	Type           = component.MustNewType("envoy_als")
+	DeprecatedType = component.MustNewType("envoyals")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver"
 )
 
 const (
