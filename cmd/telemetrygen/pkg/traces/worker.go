@@ -113,7 +113,7 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			conventions.NetworkPeerAddress(fakeIP),
-			conventions.PeerService("telemetrygen-server"),
+			conventions.ServicePeerName("telemetrygen-server"),
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
 			trace.WithTimestamp(spanStart),
@@ -148,7 +148,7 @@ func (w *worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 
 			_, child := tracer.Start(childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
 				conventions.NetworkPeerAddress(fakeIP),
-				conventions.PeerService("telemetrygen-client"),
+				conventions.ServicePeerName("telemetrygen-client"),
 			),
 				trace.WithSpanKind(trace.SpanKindServer),
 				trace.WithTimestamp(spanStart),
