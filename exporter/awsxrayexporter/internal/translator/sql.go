@@ -6,8 +6,9 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv112 "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
@@ -25,16 +26,63 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 
 	for key, value := range attributes {
 		switch key {
-		case string(conventionsv112.DBConnectionStringKey):
-			dbConnectionString = value.Str()
-		case string(conventionsv112.DBSystemKey):
-			dbSystem = value.Str()
-		case string(conventionsv112.DBNameKey):
-			dbInstance = value.Str()
-		case string(conventionsv112.DBStatementKey):
-			dbStatement = value.Str()
-		case string(conventionsv112.DBUserKey):
-			dbUser = value.Str()
+		// New v1.38.0 keys — gate-guarded by EmitV1DB:
+		case string(conventions.DBNamespaceKey):
+			if metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+				dbInstance = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		case string(conventions.DBSystemNameKey):
+			if metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+				dbSystem = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		case string(conventions.DBQueryTextKey):
+			if metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+				dbStatement = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		case string(conventions.UserNameKey):
+			if metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled() {
+				dbUser = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		// Old v1.12.0 keys — gate-guarded:
+		// TODO: Remove these cases when exporter.awsxray.DontEmitV0DBConventions is removed.
+		case "db.connection_string":
+			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+				dbConnectionString = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		case "db.name":
+			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+				dbInstance = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		case "db.statement":
+			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+				dbStatement = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		case "db.system":
+			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+				dbSystem = value.Str()
+			} else {
+				filtered[key] = value
+			}
+		case "db.user":
+			if !metadata.ExporterAwsxrayDontEmitV0DBConventionsFeatureGate.IsEnabled() {
+				dbUser = value.Str()
+			} else {
+				filtered[key] = value
+			}
 		default:
 			filtered[key] = value
 		}
@@ -68,18 +116,26 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 
 func isSQL(system string) bool {
 	switch system {
-	case "db2",
-		"derby",
+	// v1.12.0 values (default):
+	// TODO: Remove v1.12.0 system name values when exporter.awsxray.DontEmitV0DBConventions is removed.
+	case "db2", "mssql", "oracle":
+		return true
+	// Unchanged values (present in both v1.12.0 and v1.38.0):
+	case "derby",
 		"hive",
 		"mariadb",
-		"mssql",
 		"mysql",
-		"oracle",
+		"other_sql",
 		"postgresql",
 		"sqlite",
-		"teradata",
-		"other_sql":
+		"teradata":
 		return true
+	// v1.38.0 values (only when EmitV1DB is enabled):
+	// TODO: Remove this gate when exporter.awsxray.DontEmitV0DBConventions is removed.
+	case conventions.DBSystemNameIBMDB2.Value.AsString(),
+		conventions.DBSystemNameMicrosoftSQLServer.Value.AsString(),
+		conventions.DBSystemNameOracleDB.Value.AsString():
+		return metadata.ExporterAwsxrayEmitV1DBConventionsFeatureGate.IsEnabled()
 	default:
 	}
 	return false
