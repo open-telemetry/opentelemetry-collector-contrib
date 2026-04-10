@@ -171,31 +171,47 @@ func (r *azureAppServiceConsoleLog) PutProperties(attrs pcommon.Map, _ pcommon.V
 	return nil
 }
 
+// appServiceHTTPLogProperties represents the properties field of AppServiceHTTPLogs.
+// Azure can emit this field as either a JSON object or a stringified JSON string
+// (common when logs are routed via Azure Event Hub).
+type appServiceHTTPLogProperties struct {
+	ClientIP       string      `json:"CIp"`
+	Host           string      `json:"ComputerName"`
+	Cookie         string      `json:"Cookie"`
+	RequestBytes   json.Number `json:"CsBytes"` // int
+	HostHeader     string      `json:"CsHost"`
+	RequestMethod  string      `json:"CsMethod"`
+	URIQuery       string      `json:"CsUriQuery"`
+	RequestPath    string      `json:"CsUriStem"`
+	UserName       string      `json:"CsUsername"`
+	Referer        string      `json:"Referer"`
+	Result         string      `json:"Result"`
+	ResponseBytes  json.Number `json:"ScBytes"`  // int
+	HTTPStatusCode json.Number `json:"ScStatus"` // int
+	HTTPSubStatus  string      `json:"ScSubStatus"`
+	ServerPort     json.Number `json:"SPort"`     // int
+	TimeTaken      json.Number `json:"TimeTaken"` // int
+	UserAgent      string      `json:"UserAgent"`
+}
+
+func (p *appServiceHTTPLogProperties) UnmarshalJSON(data []byte) error {
+	// Define an alias type to avoid infinite recursion
+	type alias appServiceHTTPLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceHTTPLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appservicehttplogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServiceHTTPLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		ClientIP       string      `json:"CIp"`
-		Host           string      `json:"ComputerName"`
-		Cookie         string      `json:"Cookie"`
-		RequestBytes   json.Number `json:"CsBytes"` // int
-		HostHeader     string      `json:"CsHost"`
-		RequestMethod  string      `json:"CsMethod"`
-		URIQuery       string      `json:"CsUriQuery"`
-		RequestPath    string      `json:"CsUriStem"`
-		UserName       string      `json:"CsUsername"`
-		Referer        string      `json:"Referer"`
-		Result         string      `json:"Result"`
-		ResponseBytes  json.Number `json:"ScBytes"`  // int
-		HTTPStatusCode json.Number `json:"ScStatus"` // int
-		HTTPSubStatus  string      `json:"ScSubStatus"`
-		ServerPort     json.Number `json:"SPort"`     // int
-		TimeTaken      json.Number `json:"TimeTaken"` // int
-		UserAgent      string      `json:"UserAgent"`
-	} `json:"properties"`
+	Properties appServiceHTTPLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceHTTPLog) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
