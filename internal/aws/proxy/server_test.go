@@ -317,17 +317,16 @@ func TestInvalidRoutingRuleSkipsSigning(t *testing.T) {
 
 	mockTrans := &mockTransport{}
 	httpSrv := srv.(*http.Server)
-	proxy := httpSrv.Handler.(*proxyHandler).proxy
-	proxy.Transport = mockTrans
+	handler := httpSrv.Handler.(*proxyHandler)
+	handler.proxy.Transport = mockTrans
 
 	req := httptest.NewRequest(http.MethodPost, "http://localhost:2000/InvalidPath", strings.NewReader(`{}`))
 	rec := httptest.NewRecorder()
-	proxy.ServeHTTP(rec, req)
+	handler.ServeHTTP(rec, req)
 
-	assert.Len(t, mockTrans.capturedRequests, 1)
-	capturedReq := mockTrans.capturedRequests[0]
-	// Request should NOT have Authorization header (not signed)
-	assert.Empty(t, capturedReq.Header.Get("Authorization"), "invalid route should not be signed")
+	// proxyHandler should reject the request with 400 before it reaches the reverse proxy
+	assert.Equal(t, http.StatusBadRequest, rec.Code, "invalid route should be rejected")
+	assert.Empty(t, mockTrans.capturedRequests, "request should not reach the reverse proxy")
 }
 
 func TestBuildRoutingMapsMissingEndpoint(t *testing.T) {
