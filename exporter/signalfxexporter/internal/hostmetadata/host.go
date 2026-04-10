@@ -8,6 +8,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -64,7 +65,13 @@ func getCPU(ctx context.Context) (info *hostCPU, err error) {
 		return info, err
 	}
 
-	info.HostPhysicalCPUs = len(cpus)
+	// On Linux, cpu.InfoWithContext returns one record per logical CPU, so len(cpus)
+	// would equal the logical count. Use cpu.CountsWithContext(false) instead to get
+	// the true number of physical CPUs (sockets).
+	info.HostPhysicalCPUs, err = cpuCounts(ctx, false)
+	if err != nil {
+		return info, err
+	}
 
 	// get logical cpu stats
 	info.HostLogicalCPUs, err = cpuCounts(ctx, true)
@@ -72,9 +79,16 @@ func getCPU(ctx context.Context) (info *hostCPU, err error) {
 		return info, err
 	}
 
-	// total number of cpu cores
+	// Count physical CPU cores by tracking unique {PhysicalID, CoreID} pairs.
+	// On Linux, cpu.InfoWithContext returns one InfoStat per logical CPU with Cores=1,
+	// so summing Cores gives the logical count rather than the physical core count.
+	physicalCores := make(map[string]bool)
 	for i := range cpus {
-		info.HostCPUCores += int64(cpus[i].Cores)
+		k := fmt.Sprintf("%s,%s", cpus[i].PhysicalID, cpus[i].CoreID)
+		if !physicalCores[k] {
+			physicalCores[k] = true
+			info.HostCPUCores++
+		}
 		// TODO: This is not ideal... if there are different processors
 		// we will only report one of the models... This is unlikely to happen,
 		// but it could
