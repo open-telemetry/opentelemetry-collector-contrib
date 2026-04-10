@@ -132,6 +132,8 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 		e.configs.extension.InstallationMethod,
 		buildInfo,
 		int64(payloadTTL),
+		e.configs.extension.GatewayService,
+		e.configs.extension.GatewayDestination,
 	)
 
 	// Populate resource attributes collected from TelemetrySettings.Resource
