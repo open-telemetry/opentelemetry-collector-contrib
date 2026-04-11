@@ -803,7 +803,7 @@ func TestToTraces(t *testing.T) {
 			map[string]string{
 				"rpc.service":          "mydomain.MyDomainService",
 				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -820,8 +820,8 @@ func TestToTraces(t *testing.T) {
 			map[string]string{
 				"rpc.service":          "mydomain.MyDomainService",
 				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
-				"rpc.system":           "grpc",
+				"rpc.response.status_code": "0",
+				"rpc.system.name":      "grpc",
 			},
 		},
 		{
@@ -839,7 +839,7 @@ func TestToTraces(t *testing.T) {
 			map[string]string{
 				"rpc.service":          "mydomain.MyDomainService",
 				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "2",
+				"rpc.response.status_code": "2",
 			},
 		},
 		{
@@ -856,7 +856,7 @@ func TestToTraces(t *testing.T) {
 			"mydomain.MyDomainService",
 			map[string]string{
 				"rpc.service":          "mydomain.MyDomainService",
-				"rpc.grpc.status_code": "0",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -874,7 +874,7 @@ func TestToTraces(t *testing.T) {
 			map[string]string{
 				"rpc.service":          "mydomain.MyDomainService",
 				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -892,7 +892,7 @@ func TestToTraces(t *testing.T) {
 			map[string]string{
 				"rpc.service":          "mydomain.MyDomainService",
 				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -908,7 +908,7 @@ func TestToTraces(t *testing.T) {
 			},
 			"S3/headObject",
 			map[string]string{
-				"rpc.system":     "aws-api",
+				"rpc.system.name": "aws-api",
 				"rpc.service":    "S3",
 				"rpc.method":     "headObject",
 				"aws.s3.bucket":  "my-bucket",
