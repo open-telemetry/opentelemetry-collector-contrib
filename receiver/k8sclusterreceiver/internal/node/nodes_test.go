@@ -357,7 +357,7 @@ func TestNodeMetadata(t *testing.T) {
 			ResourceIDKey: "k8s.node.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID("test-node-uid"),
 			Metadata: map[string]string{
-				"env":                                "production",
+				"k8s.node.label.env":                 "production",
 				"k8s.node.name":                      "test-node",
 				"k8s.node.condition_ready":           "true",
 				"k8s.node.condition_memory_pressure": "false",

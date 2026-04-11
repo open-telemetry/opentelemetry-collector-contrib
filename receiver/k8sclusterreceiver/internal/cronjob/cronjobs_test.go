@@ -53,8 +53,8 @@ func TestCronJobMetadata(t *testing.T) {
 			ResourceID:    "test-cronjob-1-uid",
 			Metadata: map[string]string{
 				"cronjob.creation_timestamp": "0001-01-01T00:00:00Z",
-				"foo":                        "bar",
-				"foo1":                       "",
+				"k8s.cronjob.label.foo":      "bar",
+				"k8s.cronjob.label.foo1":     "",
 				"schedule":                   "schedule",
 				"concurrency_policy":         "concurrency_policy",
 				"k8s.workload.kind":          "CronJob",

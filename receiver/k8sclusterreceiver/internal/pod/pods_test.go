@@ -32,8 +32,8 @@ import (
 )
 
 var commonPodMetadata = map[string]string{
-	"foo":                    "bar",
-	"foo1":                   "",
+	"k8s.pod.label.foo":      "bar",
+	"k8s.pod.label.foo1":     "",
 	"pod.creation_timestamp": "0001-01-01T00:00:00Z",
 }
 
