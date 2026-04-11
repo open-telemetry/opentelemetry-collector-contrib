@@ -196,9 +196,6 @@ linters:
         path: pkg/translator/prometheus/
       - linters:
           - forbidigo
-        path: processor/filterprocessor/
-      - linters:
-          - forbidigo
         path: processor/tailsamplingprocessor/
       - linters:
           - forbidigo
