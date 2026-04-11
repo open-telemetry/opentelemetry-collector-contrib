@@ -185,7 +185,7 @@ Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/
 ### Bulk Indexer Options
 
 - `bulk_action` (optional): the [action](https://opensearch.org/docs/2.9/api-reference/document-apis/bulk/) for ingesting data. Only `create` and `index` are allowed here.
-- `pipeline` (optional): the ID of an [ingest pipeline](https://opensearch.org/docs/latest/ingest-pipelines/) to apply when indexing documents. When set, all documents sent via the bulk API will be processed by the specified pipeline before being indexed. The ingest pipeline must exist in the cluster and there must be a least one node with the `ingest` node role assigned.
+- `pipeline` (optional): the ID of an [ingest pipeline](https://opensearch.org/docs/latest/ingest-pipelines/) to apply when indexing documents. When set, all documents sent via the bulk API will be processed by the specified pipeline before being indexed. The ingest pipeline must exist in the cluster and there must be at least one node with the `ingest` node role assigned.
 
 ## Example
 
