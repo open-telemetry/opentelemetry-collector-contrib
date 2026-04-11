@@ -126,7 +126,10 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 
 // GetMetadata returns all metadata associated with the pod.
 func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
-	meta := maps.MergeStringMaps(map[string]string{}, pod.Labels)
+	meta := map[string]string{}
+	for k, v := range pod.Labels {
+		meta[fmt.Sprintf("k8s.pod.label.%s", k)] = v
+	}
 
 	meta[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 	phase := pod.Status.Phase

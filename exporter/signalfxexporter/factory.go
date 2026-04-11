@@ -84,6 +84,7 @@ func createDefaultConfig() component.Config {
 			MaxIdleConnsPerHost: defaultDimMaxIdleConnsPerHost,
 			IdleConnTimeout:     idleConnTimeout,
 			Timeout:             timeout,
+			StripK8sLabelPrefix: true,
 		},
 	}
 }
