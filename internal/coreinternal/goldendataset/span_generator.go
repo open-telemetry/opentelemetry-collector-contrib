@@ -19,7 +19,7 @@ import (
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventionsv126 "go.opentelemetry.io/otel/semconv/v1.26.0"
 	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/internal/metadata"
 )
@@ -35,6 +35,11 @@ var statusMsgMap = map[PICTInputStatus]string{
 	SpanStatusOk:    "Ok",
 	SpanStatusError: "Error",
 }
+
+const (
+	legacyRPCServiceKey  = "rpc.service"
+	legacyPeerServiceKey = "peer.service"
+)
 
 // appendSpans appends to the ptrace.SpanSlice objects the number of spans specified by the count input
 // parameter. The random parameter injects the random number generator to use in generating IDs and other random values.
@@ -353,7 +358,7 @@ func appendMessagingConsumerAttributes(attrMap pcommon.Map) {
 }
 
 func appendGRPCClientAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.RPCServiceKey), "PullRequestsService")
+	attrMap.PutStr(legacyRPCServiceKey, "PullRequestsService")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr("net.peer.ip", "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
 	}
@@ -365,7 +370,7 @@ func appendGRPCClientAttributes(attrMap pcommon.Map) {
 }
 
 func appendGRPCServerAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.RPCServiceKey), "PullRequestsService")
+	attrMap.PutStr(legacyRPCServiceKey, "PullRequestsService")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr("net.peer.ip", "192.168.1.70")
 	}
@@ -407,7 +412,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
 	attrMap.PutStr(string(conventions.HTTPRouteKey), "/blog/posts")
 	attrMap.PutStr(string(conventionsv120.HTTPClientIPKey), "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
-	attrMap.PutStr(string(conventions.PeerServiceKey), "IdentifyImageService")
+	attrMap.PutStr(legacyPeerServiceKey, "IdentifyImageService")
 	if !metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() {
 		attrMap.PutStr("net.peer.ip", "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc")
 	}
