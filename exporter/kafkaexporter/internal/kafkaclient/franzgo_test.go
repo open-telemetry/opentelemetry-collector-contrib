@@ -69,12 +69,13 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 
 func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 	recordHeaders := configopaque.MapList{
-		{Name: "custom-header-1", Value: configopaque.String("value-1")},
-		{Name: "custom-header-2", Value: configopaque.String("value-2")},
+		{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
+		{Name: "shared-key", Value: configopaque.String("static-value-override")},
 	}
 
 	md := client.NewMetadata(map[string][]string{
-		"dynamic-key": {"dynamic-value"},
+		"dynamic-key-ONLY": {"dynamic-value"},
+		"shared-key":       {"dynamic-value-wins"},
 	})
 	ctx := client.NewContext(t.Context(), client.Info{Metadata: md})
 
@@ -89,7 +90,7 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 	}
 
 	records := makeFranzMessages(msgs, recordHeaders)
-	setMessageHeaders(ctx, records, []string{"dynamic-key"})
+	setMessageHeaders(ctx, records, []string{"dynamic-key-ONLY", "shared-key"})
 
 	require.Len(t, records, 1, "expected exactly 1 record")
 	record := records[0]
@@ -97,14 +98,14 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 	assert.Equal(t, "test-topic", record.Topic)
 	assert.Equal(t, []byte("test-payload"), record.Value)
 
-	require.Len(t, record.Headers, 3, "expected exactly 3 headers (2 static, 1 dynamic)")
+	require.Len(t, record.Headers, 4, "expected exactly 4 headers on the record")
 
 	headerMap := make(map[string]string)
 	for _, h := range record.Headers {
 		headerMap[h.Key] = string(h.Value)
 	}
 
-	assert.Equal(t, "value-1", headerMap["custom-header-1"])
-	assert.Equal(t, "value-2", headerMap["custom-header-2"])
-	assert.Equal(t, "dynamic-value", headerMap["dynamic-key"])
+	assert.Equal(t, "static-value", headerMap["static-key-ONLY"], "static headers unique key failed")
+	assert.Equal(t, "dynamic-value", headerMap["dynamic-key-ONLY"], "dynamic headers unique key failed")
+	assert.Equal(t, "dynamic-value-wins", headerMap["shared-key"], "Precedence for common key failed")
 }
