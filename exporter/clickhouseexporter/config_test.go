@@ -771,6 +771,105 @@ func TestConfigDatabase(t *testing.T) {
 	}
 }
 
+func TestLoadConfigMaterializedColumns(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub("clickhouse/materialized-columns")
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	assert.NoError(t, xconfmap.Validate(cfg))
+
+	chCfg := cfg.(*Config)
+	require.Len(t, chCfg.MaterializedColumns, 2)
+	assert.Equal(t, "ResourceAttributes", chCfg.MaterializedColumns[0].Map)
+	assert.Equal(t, "service.id", chCfg.MaterializedColumns[0].Key)
+	assert.Equal(t, "ServiceId", chCfg.MaterializedColumns[0].Column)
+	assert.Equal(t, "SpanAttributes", chCfg.MaterializedColumns[1].Map)
+	assert.Equal(t, "http.method", chCfg.MaterializedColumns[1].Key)
+	assert.Equal(t, "HttpMethod", chCfg.MaterializedColumns[1].Column)
+}
+
+func TestValidateMaterializedColumns(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		columns []MaterializedColumn
+		wantErr bool
+	}{
+		{
+			name:    "empty is valid",
+			columns: nil,
+			wantErr: false,
+		},
+		{
+			name: "valid config",
+			columns: []MaterializedColumn{
+				{Map: "ResourceAttributes", Key: "service.name", Column: "mat_svc"},
+				{Map: "SpanAttributes", Key: "http.method", Column: "mat_method"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "empty map",
+			columns: []MaterializedColumn{
+				{Map: "", Key: "service.name", Column: "mat_svc"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid map",
+			columns: []MaterializedColumn{
+				{Map: "InvalidColumn", Key: "service.name", Column: "mat_svc"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty key",
+			columns: []MaterializedColumn{
+				{Map: "ResourceAttributes", Key: "", Column: "mat_svc"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty column",
+			columns: []MaterializedColumn{
+				{Map: "ResourceAttributes", Key: "service.name", Column: ""},
+			},
+			wantErr: true,
+		},
+		{
+			name: "duplicate column names",
+			columns: []MaterializedColumn{
+				{Map: "ResourceAttributes", Key: "service.name", Column: "mat_svc"},
+				{Map: "SpanAttributes", Key: "http.method", Column: "mat_svc"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = defaultEndpoint
+			cfg.MaterializedColumns = tt.columns
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 // TestBuildClickHouseOptions_WithCAFileOnly verifies that when only a CAFile is provided,
 // buildClickHouseOptions returns a clean TLS error instead of crashing.
 func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {

@@ -72,8 +72,32 @@ type Config struct {
 	// ClickHouse v25+ is recommended for reliable JSON support.
 	// You may also need to add `enable_json_type=1` to your endpoint or connection_params.
 	JSON bool `mapstructure:"json"`
+	// MaterializedColumns configures client-side extraction of attribute values into dedicated columns.
+	// Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value.
+	// Missing keys default to empty string. Only applies to logs and traces tables.
+	MaterializedColumns []MaterializedColumn `mapstructure:"materialized_columns"`
 	// MetricsTables defines the table names for metric types.
 	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
+}
+
+// MaterializedColumn defines a client-side extraction from a Map/JSON attribute column
+// into a dedicated String column. The exporter extracts the value at the given key from
+// the source map and sends it as a separate column value in the INSERT statement.
+type MaterializedColumn struct {
+	// Map is the source attribute column to extract from.
+	// Valid values: "ResourceAttributes", "ScopeAttributes", "SpanAttributes", "LogAttributes".
+	Map string `mapstructure:"map"`
+	// Key is the attribute key to extract (e.g. "service.name", "http.method").
+	Key string `mapstructure:"key"`
+	// Column is the target column name in the ClickHouse table (must be a String column).
+	Column string `mapstructure:"column"`
+}
+
+var validMaterializedColumnSources = map[string]bool{
+	"ResourceAttributes": true,
+	"ScopeAttributes":    true,
+	"SpanAttributes":     true,
+	"LogAttributes":      true,
 }
 
 type MetricTablesConfig struct {
@@ -147,6 +171,10 @@ func (cfg *Config) Validate() (err error) {
 	}
 
 	cfg.buildMetricTableNames()
+
+	if validateErr := cfg.validateMaterializedColumns(); validateErr != nil {
+		err = errors.Join(err, validateErr)
+	}
 
 	// Validate DSN with clickhouse driver.
 	// Last chance to catch invalid config.
@@ -267,6 +295,52 @@ func (cfg *Config) areMetricTableNamesSet() bool {
 		cfg.MetricsTables.Summary.Name != "" ||
 		cfg.MetricsTables.Histogram.Name != "" ||
 		cfg.MetricsTables.ExponentialHistogram.Name != ""
+}
+
+func (cfg *Config) validateMaterializedColumns() (err error) {
+	seenColumns := make(map[string]bool, len(cfg.MaterializedColumns))
+
+	for i, mc := range cfg.MaterializedColumns {
+		switch {
+		case mc.Map == "":
+			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: map must not be empty", i))
+		case !validMaterializedColumnSources[mc.Map]:
+			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: invalid map %q, must be one of ResourceAttributes, ScopeAttributes, SpanAttributes, LogAttributes", i, mc.Map))
+		}
+
+		if mc.Key == "" {
+			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: key must not be empty", i))
+		}
+
+		switch {
+		case mc.Column == "":
+			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: column must not be empty", i))
+		case seenColumns[mc.Column]:
+			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: duplicate column name %q", i, mc.Column))
+		default:
+			seenColumns[mc.Column] = true
+		}
+
+	}
+	return err
+}
+
+// materializedColumnDefs converts config MaterializedColumns to internal runtime definitions.
+func (cfg *Config) materializedColumnDefs() []internal.MaterializedColumnDef {
+	if len(cfg.MaterializedColumns) == 0 {
+		return nil
+	}
+
+	defs := make([]internal.MaterializedColumnDef, len(cfg.MaterializedColumns))
+	for i, mc := range cfg.MaterializedColumns {
+		defs[i] = internal.MaterializedColumnDef{
+			Map:    mc.Map,
+			Key:    mc.Key,
+			Column: mc.Column,
+		}
+	}
+
+	return defs
 }
 
 // tableEngineString generates the ENGINE string.

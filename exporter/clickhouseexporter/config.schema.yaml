@@ -54,6 +54,25 @@ properties:
   json:
     description: JSON enables the JSON column type for attributes in logs and traces tables. When false (default), Map columns are used. When true, JSON columns are used. ClickHouse v25+ is recommended for reliable JSON support. You may also need to add `enable_json_type=1` to your endpoint or connection_params.
     type: boolean
+  materialized_columns:
+    description: Materialized Columns configures client-side extraction of attribute values into dedicated columns. Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value. Missing keys default to empty string. Only applies to logs and traces tables.
+    type: array
+    items:
+      type: object
+      properties:
+        map:
+          description: The source attribute column to extract from. Valid values are ResourceAttributes, ScopeAttributes, SpanAttributes, LogAttributes.
+          type: string
+        key:
+          description: The attribute key to extract.
+          type: string
+        column:
+          description: The target column name in the ClickHouse table.
+          type: string
+      required:
+        - map
+        - key
+        - column
   logs_table_name:
     description: LogsTableName is the table name for logs. default is `otel_logs`.
     type: string
