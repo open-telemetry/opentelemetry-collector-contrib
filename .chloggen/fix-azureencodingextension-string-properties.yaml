@@ -7,7 +7,7 @@ change_type: bug_fix
 component: extension/azure_encoding
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix parsing of AppServiceHTTPLogs when properties field is a stringified JSON string instead of an object.
+note: Fix parsing of all App Service and Function App log categories when properties field is a stringified JSON string instead of an object.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47539]
@@ -17,7 +17,9 @@ issues: [47539]
 # Use pipe (|) for multiline entries.
 subtext: |
   Some Azure Event Hub sources emit the properties field as a JSON string rather than an object.
-  This caused AppServiceHTTPLogs to fall back to raw log storage, losing all semantic attributes.
+  This caused App Service log categories (AppLogs, AuditLogs, AuthenticationLogs, ConsoleLogs,
+  HTTPLogs, IPSecAuditLogs, PlatformLogs, FileAuditLogs) to fall back to raw log storage,
+  losing all semantic attributes.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
