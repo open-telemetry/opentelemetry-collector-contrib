@@ -86,6 +86,7 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:     30 * time.Second,
 					Timeout:             10 * time.Second,
 					DropTags:            false,
+					StripK8sLabelPrefix: true,
 				},
 				ExcludeMetrics:      nil,
 				IncludeMetrics:      nil,
@@ -165,6 +166,7 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:     2 * time.Hour,
 					Timeout:             20 * time.Second,
 					DropTags:            false,
+					StripK8sLabelPrefix: true,
 				},
 				DefaultProperties: map[string]string{
 					"foo":    "bar",
