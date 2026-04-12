@@ -186,9 +186,11 @@ func MakeServiceSegmentForLocalRootDependencySpan(span ptrace.Span, resource pco
 		return nil, err
 	}
 
-	// Set the name
+	// Set the name: prefer aws.local.service, fall back to resource service name (mirrors Server span behavior).
 	if myAwsLocalService, ok := span.Attributes().Get(awsLocalService); ok {
 		serviceSegment.Name = awsxray.String(myAwsLocalService.Str())
+	} else if resourceServiceName, ok := resource.Attributes().Get(string(conventionsv112.ServiceNameKey)); ok {
+		serviceSegment.Name = awsxray.String(resourceServiceName.Str())
 	}
 
 	// Remove the HTTP field
@@ -358,7 +360,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
 	// support x-ray specific service name attributes as segment name if it exists
-	if span.Kind() == ptrace.SpanKindServer || (span.Kind() == ptrace.SpanKindConsumer && isLocalRoot(span)) {
+	if span.Kind() == ptrace.SpanKindServer {
 		if localServiceName, ok := attributes.Get(awsLocalService); ok {
 			name = localServiceName.Str()
 		}
@@ -422,8 +424,8 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		}
 	}
 
-	if name == "" && (span.Kind() == ptrace.SpanKindServer || (span.Kind() == ptrace.SpanKindConsumer && isLocalRoot(span))) {
-		// For server spans and local root consumer spans, fall back to the resource service name.
+	if name == "" && span.Kind() == ptrace.SpanKindServer {
+		// Only for a server span, we can use the resource.
 		if service, ok := resource.Attributes().Get(string(conventionsv112.ServiceNameKey)); ok {
 			name = service.Str()
 		}
