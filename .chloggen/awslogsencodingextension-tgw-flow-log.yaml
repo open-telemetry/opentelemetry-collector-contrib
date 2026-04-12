@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/aws_logs_encoding
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Added support for AWS Transit Gateway flow log format"
+note: "Added auto-detection support for AWS Transit Gateway flow logs"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46229]
@@ -16,10 +16,10 @@ issues: [46229]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The extension now supports unmarshaling AWS Transit Gateway (TGW) flow logs via the new `tgwflow` format.
-  Plain-text log files (including gzip-compressed variants) are supported. Parquet format is recognized
-  but not yet implemented and will return an explicit error.
-  Configure via format: tgwflow with an optional tgwflow.file_format field (defaults to plain-text).
+  The VPC flow log unmarshaler now automatically detects and handles Transit Gateway (TGW) flow logs from S3.
+  Detection is based on the presence of the "resource-type" field in log file headers.
+  TGW-specific fields (tgw-src-vpc-id, tgw-dst-vpc-id, etc.) are now supported and mapped to appropriate attributes.
+  No configuration changes required - auto-detection works with default vpcflow format settings.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
