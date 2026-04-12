@@ -239,7 +239,7 @@ func TestWarmupMinClustersSuppress(t *testing.T) {
 }
 
 // TestWarmupMinClustersZeroDisabled verifies that warmup_min_clusters=0
-// annotates from the first record (default behaviour).
+// annotates from the first record (default behavior).
 func TestWarmupMinClustersZeroDisabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.WarmupMinClusters = 0
