@@ -22,7 +22,7 @@ feature_gates:
       When enabled, goldendataset no longer generates spans with deprecated
       semconv RPC attributes rpc.service and peer.service.
     from_version: v0.148.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
   - id: internal.coreinternal.goldendataset.EmitV1NetworkConventions
     stage: alpha
     description: >-
@@ -41,4 +41,4 @@ feature_gates:
       service.peer.name (semconv v1.40.0) alongside legacy rpc.service and
       peer.service to support migration.
     from_version: v0.148.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
