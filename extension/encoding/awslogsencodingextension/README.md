@@ -50,21 +50,13 @@ extensions:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
-      # Optional: format of the VPC flow log. Used when processing VPC flow logs arriving through CloudWatch Logs subscription filters. 
-      # Ignored when decoding VPC flow logs sent to S3, which include the format as a file header.
-      # Accepts a space delimited list of fields in the VPC flow log.
-      # When unset, built-in default is used matching fields of Version 2 VPC flow logs format.
-      # NOTE: When specifying a custom format, be aware that Transit Gateway (TGW) flow logs use different fields
-      # than plain VPC flow logs. For example, TGW logs use 'transit-gateway-id' instead of 'interface-id' as the third field.
+      # Optional: format of the VPC flow log.
+      # When unset, uses built-in defaults and auto-detects VPC vs Transit Gateway (TGW) flow logs.
+      # Accepts a space-delimited list of field names.
       format: version interface-id srcaddr dstaddr
 ```
 
-**Note on Transit Gateway (TGW) Flow Logs**: This extension supports [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html) in addition to VPC flow logs. When using the default configuration (no custom format specified), the extension automatically detects and handles both formats. However, if you specify a custom `format`, you must be aware that TGW flow logs have different default fields than VPC flow logs:
-
-- **VPC Flow Logs (default)**: `version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status`
-- **TGW Flow Logs (default)**: `version account-id transit-gateway-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status`
-
-If you process TGW flow logs with a custom format intended for VPC flow logs (or vice versa), field parsing may fail or produce unexpected results.
+**Note**: This extension also supports [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html). When using the default configuration (no custom `format` specified), the extension automatically detects and handles both VPC and TGW flow logs from S3.
 
 Example for S3 access logs:
 ```yaml

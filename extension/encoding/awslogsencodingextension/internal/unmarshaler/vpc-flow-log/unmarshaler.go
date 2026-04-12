@@ -30,7 +30,9 @@ import (
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
-	defaultTGWFormat              = []string{"version", "tgw-id", "tgw-attachment-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "packets-lost-no-route", "account-id"}
+	// defaultTGWFormat is for TGW flow logs delivered to S3 with a header
+	// Based on AWS TGW flow log format: https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html
+	defaultTGWFormat = []string{"version", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "tgw-pair-attachment-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status", "type", "tcp-flags", "flow-direction", "region", "resource-type"}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -94,13 +96,15 @@ func NewVPCFlowLogUnmarshaler(
 	}, nil
 }
 
-// detectTGWFlow checks if the header line indicates a TGW flow log by examining the second field.
-// In AWS TGW v2 format: version tgw-id tgw-attachment-id srcaddr dstaddr ...
-// In AWS VPC v2 format: version account-id interface-id srcaddr dstaddr ...
-// TGW flow logs have "tgw-id" as the second field header, VPC flow logs have "account-id".
+// detectTGWFlow checks if the header line indicates a TGW flow log by examining the header fields.
+// TGW flow logs are identified by the presence of the "resource-type" field in the header.
+// See: https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html
+// VPC flow logs do not have this field.
 func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
-	if len(headerFields) > 1 && headerFields[1] == "tgw-id" {
-		return true
+	for _, field := range headerFields {
+		if field == "resource-type" {
+			return true
+		}
 	}
 	return false
 }
@@ -503,6 +507,27 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-id", value)
 	case "tgw-attachment-id":
 		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-attachment-id", value)
+	case "tgw-src-vpc-id":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-src-vpc-id", value)
+	case "tgw-dst-vpc-id":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-vpc-id", value)
+	case "tgw-src-subnet-id":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-src-subnet-id", value)
+	case "tgw-dst-subnet-id":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-subnet-id", value)
+	case "tgw-src-eni":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-src-eni", value)
+	case "tgw-dst-eni":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-eni", value)
+	case "tgw-src-az-id":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-src-az-id", value)
+	case "tgw-dst-az-id":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-az-id", value)
+	case "tgw-pair-attachment-id":
+		record.Attributes().PutStr("aws.vpc.flow.tgw-pair-attachment-id", value)
+	case "resource-type":
+		// This field indicates the resource type (e.g., "TransitGateway")
+		// We don't store it as an attribute since the format is already identified via encoding.format
 	case "srcport":
 		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
 			return false, err

@@ -63,10 +63,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "text_vpc_flow_log"),
 			expected: &Config{
 				Format: constants.FormatVPCFlowLogV1,
-				VPCFlowLogConfig: vpcflowlog.Config{
+				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				VPCFlowLogConfigV1: vpcflowlog.Config{
+				VPCFlowLogConfig: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
 			},
