@@ -169,8 +169,6 @@ components:
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
-        - http_check
         - host_metrics
         - http_check
         - iis

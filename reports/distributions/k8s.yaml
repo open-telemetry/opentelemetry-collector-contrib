@@ -52,7 +52,7 @@ components:
         - file_log
         - fluentforward
         - host_metrics
-        - htpp_check
+        - http_check
         - jaeger
         - journald
         - k8s_cluster
