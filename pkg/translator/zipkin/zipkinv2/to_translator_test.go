@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
@@ -47,7 +46,7 @@ func TestZTagsToInternalAttrsRemoteServiceNameMigration(t *testing.T) {
 			assert.NoError(t, err)
 
 			_, hasV0 := dest.Get(peerServiceV0Key)
-			_, hasV1 := dest.Get(string(conventions.ServicePeerNameKey))
+			_, hasV1 := dest.Get("service.peer.name")
 			assert.Equal(t, tc.expectsV0, hasV0)
 			assert.Equal(t, tc.expectsV1, hasV1)
 		})
