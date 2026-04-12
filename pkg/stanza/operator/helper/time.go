@@ -100,7 +100,7 @@ func (t *TimeParser) Validate() error {
 		}
 	default:
 		return stanzaerrors.NewError(
-			fmt.Sprintf("unsupported layout_type %s", t.LayoutType),
+			fmt.Sprintf("unsupported  layout_type %s", t.LayoutType),
 			"valid values are 'strptime', 'gotime', and 'epoch'",
 		)
 	}
