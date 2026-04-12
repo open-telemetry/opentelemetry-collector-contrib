@@ -410,9 +410,9 @@ func TestResumePartitionsAfterRebalance(t *testing.T) {
 // TestResumePartitionsAfterBackoff verifies that when a non-permanent error
 // occurs with message_marking.after=true and message_marking.on_error=false,
 // the partition is paused and then automatically resumed after the configured
-// backoff delay. After resume, franz-go's internal fetch cursor has advanced
-// past the failed record, so new records produced after the resume are
-// consumed successfully, proving the partition is no longer stuck.
+// backoff delay. SetOffsets rewinds the fetch cursor to the failed record
+// before resuming, so the same record is retried on resume, consistent with
+// how a rebalance restarts from the last committed offset.
 func TestResumePartitionsAfterBackoff(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
@@ -425,8 +425,8 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 		Enabled:             true,
 		InitialInterval:     10 * time.Millisecond,
 		MaxInterval:         50 * time.Millisecond,
-		MaxElapsedTime:      5 * time.Second,
-		RandomizationFactor: 0, // deterministic for testing
+		MaxElapsedTime:      100 * time.Millisecond, // exhaust inner retries quickly
+		RandomizationFactor: 0,                      // deterministic for testing
 		Multiplier:          1.5,
 	}
 
@@ -457,7 +457,7 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
 
-	// Produce a record to trigger the error -> pause -> backoff -> resume cycle.
+	// Produce a single record to trigger the error -> pause -> rewind -> resume cycle.
 	traces := testdata.GenerateTraces(1)
 	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 	require.NoError(t, err)
@@ -472,22 +472,16 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 		t.Fatal("timed out waiting for consume error")
 	}
 
-	// Allow time for PauseFetchPartitions + backoff + ResumeFetchPartitions.
-	time.Sleep(200 * time.Millisecond)
-
-	// Switch to success mode and produce a new record. After the partition
-	// was resumed, franz-go's internal fetch cursor has advanced past the
-	// failed record, so a new record at a higher offset is needed.
-	// Without the fix, the partition stays paused and this record is never consumed.
+	// Switch to success mode. After inner retries exhaust (MaxElapsedTime),
+	// the partition is paused, SetOffsets rewinds the cursor to the failed
+	// record, and ResumeFetchPartitions resumes after MaxInterval. The same
+	// record is then retried successfully.
 	shouldError.Store(false)
-	require.NoError(t, kafkaClient.ProduceSync(t.Context(), &kgo.Record{
-		Topic: topic, Value: data,
-	}).FirstErr())
 
 	assert.Eventually(t, func() bool {
 		return consumeCount.Load() > 0
 	}, 5*time.Second, 50*time.Millisecond,
-		"expected partition to resume and process new records after backoff, but it stayed paused")
+		"expected partition to resume and retry the same record after backoff, but it stayed paused")
 }
 
 // TestNoResumePartitionsAfterPermanentError verifies that when a permanent

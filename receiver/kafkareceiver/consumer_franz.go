@@ -309,7 +309,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 		go func(pc *pc, msgs []*kgo.Record) {
 			defer wg.Done()
 			defer pc.done()
-			fatalOffset := int64(-1)
+			var fatalRecord *kgo.Record
 			fatalIsPermanent := false
 			var lastProcessed *kgo.Record
 			for _, msg := range msgs {
@@ -330,7 +330,7 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 					shouldMark := (!isPermanent && c.config.MessageMarking.OnError) || (isPermanent && c.config.MessageMarking.OnPermanentError)
 
 					if !shouldMark {
-						fatalOffset = msg.Offset
+						fatalRecord = msg
 						fatalIsPermanent = isPermanent
 						break // Stop processing messages.
 					}
@@ -338,19 +338,22 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 				lastProcessed = msg // Store so we can commit later.
 			}
 			// Pause topic/partition processing locally, then optionally
-			// resume after a backoff delay for non-permanent errors.
+			// rewind and resume after a backoff delay for non-permanent
+			// errors. SetOffsets rewinds the fetch cursor to the failed
+			// record so it is retried on resume, consistent with how a
+			// rebalance restarts from the last committed offset.
 			// Permanent errors and partitions without backoff configured
 			// stay paused until a rebalance triggers assigned(), which
 			// calls ResumeFetchPartitions.
-			if fatalOffset > -1 {
+			if fatalRecord != nil {
 				tp := map[string][]int32{p.Topic: {p.Partition}}
 				c.client.PauseFetchPartitions(tp)
 
 				switch {
 				case c.config.ErrorBackOff.Enabled && !fatalIsPermanent:
-					resumeDelay := c.config.ErrorBackOff.InitialInterval
+					resumeDelay := c.config.ErrorBackOff.MaxInterval
 					pc.logger.Info("pausing partition due to processing error, will resume after delay",
-						zap.Int64("offset", fatalOffset),
+						zap.Int64("offset", fatalRecord.Offset),
 						zap.Duration("delay", resumeDelay),
 					)
 					select {
@@ -360,17 +363,23 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 						return
 					case <-time.After(resumeDelay):
 					}
+					c.client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+						p.Topic: {p.Partition: {
+							Epoch:  fatalRecord.LeaderEpoch,
+							Offset: fatalRecord.Offset,
+						}},
+					})
 					c.client.ResumeFetchPartitions(tp)
 					pc.logger.Info("resumed partition after delay",
-						zap.Int64("offset", fatalOffset),
+						zap.Int64("offset", fatalRecord.Offset),
 					)
 				case fatalIsPermanent:
 					pc.logger.Error("pausing partition due to permanent processing error, partition will remain paused until rebalance",
-						zap.Int64("offset", fatalOffset),
+						zap.Int64("offset", fatalRecord.Offset),
 					)
 				default:
 					pc.logger.Error("pausing partition due to processing error (no backoff configured), partition will remain paused until rebalance",
-						zap.Int64("offset", fatalOffset),
+						zap.Int64("offset", fatalRecord.Offset),
 					)
 				}
 			}
