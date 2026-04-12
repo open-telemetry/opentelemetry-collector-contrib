@@ -32,6 +32,7 @@ linters:
     - errcheck
     - errorlint
     - exhaustive
+    - forbidigo
     - gocritic
     - gosec
     - govet
@@ -144,6 +145,86 @@ linters:
         path: internal/healthcheck/internal/http/
         text: "var-naming: avoid package names that conflict with Go standard library package names"
 
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
+      - linters:
+          - forbidigo
+        path: connector/datadogconnector/
+      - linters:
+          - forbidigo
+        path: connector/servicegraphconnector/
+      - linters:
+          - forbidigo
+        path: connector/spanmetricsconnector/
+      - linters:
+          - forbidigo
+        path: exporter/awsemfexporter/
+      - linters:
+          - forbidigo
+        path: exporter/awsxrayexporter/
+      - linters:
+          - forbidigo
+        path: exporter/clickhouseexporter/
+      - linters:
+          - forbidigo
+        path: exporter/datadogexporter/
+      - linters:
+          - forbidigo
+        path: exporter/googlecloudexporter/
+      - linters:
+          - forbidigo
+        path: exporter/prometheusremotewriteexporter/
+      - linters:
+          - forbidigo
+        path: exporter/signalfxexporter/
+      - linters:
+          - forbidigo
+        path: extension/encoding/awslogsencodingextension/
+      - linters:
+          - forbidigo
+        path: extension/jaegerremotesampling/
+      - linters:
+          - forbidigo
+        path: extension/opampextension/
+      - linters:
+          - forbidigo
+        path: internal/filter/
+      - linters:
+          - forbidigo
+        path: pkg/datadog/
+      - linters:
+          - forbidigo
+        path: pkg/ottl/
+      - linters:
+          - forbidigo
+        path: pkg/translator/prometheus/
+      - linters:
+          - forbidigo
+        path: processor/filterprocessor/
+      - linters:
+          - forbidigo
+        path: processor/tailsamplingprocessor/
+      - linters:
+          - forbidigo
+        path: processor/transformprocessor/
+      - linters:
+          - forbidigo
+        path: receiver/awscontainerinsightreceiver/
+      - linters:
+          - forbidigo
+        path: receiver/datadogreceiver/
+      - linters:
+          - forbidigo
+        path: receiver/hostmetricsreceiver/
+      - linters:
+          - forbidigo
+        path: receiver/jaegerreceiver/
+      - linters:
+          - forbidigo
+        path: receiver/prometheusreceiver/
+      - linters:
+          - forbidigo
+        path: receiver/vcenterreceiver/
+
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
 
@@ -213,11 +294,6 @@ linters:
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45086
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299
             - go.opentelemetry.io/otel/semconv/v1.28.0
-            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44994
-            - go.opentelemetry.io/otel/semconv/v1.31.0
-            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45030
-            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45034
-            - go.opentelemetry.io/otel/semconv/v1.34.0
             - go.opentelemetry.io/otel/semconv/v1.38.0
             - go.opentelemetry.io/otel/semconv/v1.39.0
             - go.opentelemetry.io/otel/semconv/v1.40.0
@@ -240,6 +316,14 @@ linters:
           # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
           files:
             - "!**/*_test.go"
+
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^featuregate\.Registry\.(MustRegister|Register)$
+          msg: >-
+            Define feature gates in metadata.yaml instead of registering them manually.
+            See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116.
 
     exhaustive:
       # Presence of "default" case in switch statements satisfies exhaustiveness,

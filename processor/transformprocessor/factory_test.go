@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -60,6 +61,10 @@ func TestFactory_Type(t *testing.T) {
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
+	})
+
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.EqualExportedValues(t, &Config{
@@ -71,6 +76,12 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	}, cfg)
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	err := featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, true)
+	require.NoError(t, err)
+
+	cfg = factory.CreateDefaultConfig()
+	assert.Equal(t, ottl.IgnoreError, cfg.(*Config).ErrorMode)
 }
 
 func TestFactoryCreateProcessor_Empty(t *testing.T) {
