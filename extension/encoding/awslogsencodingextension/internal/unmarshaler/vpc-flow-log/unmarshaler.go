@@ -30,8 +30,7 @@ import (
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
-	// defaultTGWFormat is for TGW flow logs delivered to S3 with a header
-	// Based on AWS TGW flow log format: https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html
+	// TGW flow logs from S3. See https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html
 	defaultTGWFormat = []string{"version", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "tgw-pair-attachment-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status", "type", "tcp-flags", "flow-direction", "region", "resource-type"}
 )
 
@@ -96,10 +95,7 @@ func NewVPCFlowLogUnmarshaler(
 	}, nil
 }
 
-// detectTGWFlow checks if the header line indicates a TGW flow log by examining the header fields.
-// TGW flow logs are identified by the presence of the "resource-type" field in the header.
-// See: https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html
-// VPC flow logs do not have this field.
+// detectTGWFlow returns true if the header contains "resource-type" (TGW logs only).
 func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
 	for _, field := range headerFields {
 		if field == "resource-type" {
@@ -109,15 +105,13 @@ func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
 	return false
 }
 
-// getFormatForDetection returns the appropriate format based on auto-detection of TGW vs VPC flow logs.
-// If a custom format was specified, it returns that. Otherwise, auto-detects from the header.
+// getFormatForDetection returns the format to use.
+// Uses custom format if set, otherwise detects TGW vs VPC from header.
 func (v *VPCFlowLogUnmarshaler) getFormatForDetection(headerFields []string) []string {
-	// If custom format was specified, use it
 	if v.cfg.Format != "" {
 		return v.cfg.parsedFormat
 	}
 
-	// Auto-detect based on the header
 	if v.detectTGWFlow(headerFields) {
 		v.logger.Debug("Detected TGW flow log format")
 		return defaultTGWFormat
@@ -526,8 +520,7 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	case "tgw-pair-attachment-id":
 		record.Attributes().PutStr("aws.vpc.flow.tgw-pair-attachment-id", value)
 	case "resource-type":
-		// This field indicates the resource type (e.g., "TransitGateway")
-		// We don't store it as an attribute since the format is already identified via encoding.format
+		// Skip - used for detection only, already captured in encoding.format
 	case "srcport":
 		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
 			return false, err

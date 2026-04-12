@@ -50,13 +50,12 @@ extensions:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
-      # Optional: format of the VPC flow log.
-      # When unset, uses built-in defaults and auto-detects VPC vs Transit Gateway (TGW) flow logs.
-      # Accepts a space-delimited list of field names.
+      # Optional: custom field format (space-delimited).
+      # When unset, auto-detects VPC vs TGW from S3 headers.
       format: version interface-id srcaddr dstaddr
 ```
 
-**Note**: This extension also supports [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html). When using the default configuration (no custom `format` specified), the extension automatically detects and handles both VPC and TGW flow logs from S3.
+**Note**: [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html) are also supported. With default config (no custom `format`), both VPC and TGW logs from S3 are auto-detected.
 
 Example for S3 access logs:
 ```yaml
