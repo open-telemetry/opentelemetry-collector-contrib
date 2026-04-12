@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/azure_encoding
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add semconv migration feature gates for azure encoding log attributes while keeping v0 behavior as default.
+note: Migrate semantic conventions to remove dependency on v1.39.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47543]
