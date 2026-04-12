@@ -163,7 +163,7 @@ func (r *azureMSDiagnosticErrorLog) PutCommonAttributes(attrs pcommon.Map, body 
 
 	// Then put custom top-level attributes
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureMSTaskName, r.TaskName)
-	unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.ErrorMessage)
+	attrPutErrorMessageBySemConv(attrs, r.ErrorMessage)
 	unmarshaler.AttrPutIntNumberIf(attrs, attributeAzureMSErrorCount, r.ErrorCount)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.OperationResult)
 }
@@ -308,7 +308,7 @@ func (r *azureMSOperationalLog) PutProperties(attrs pcommon.Map, _ pcommon.Value
 	unmarshaler.AttrPutURLParsed(attrs, r.Properties.ViaURL)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.AzureServiceRequestIDKey), r.Properties.TrackingID)
 	unmarshaler.AttrPutStrIf(attrs, attributeErrorCode, r.Properties.ErrorCode)
-	unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.Properties.ErrorMessage)
+	attrPutErrorMessageBySemConv(attrs, r.Properties.ErrorMessage)
 
 	return nil
 }

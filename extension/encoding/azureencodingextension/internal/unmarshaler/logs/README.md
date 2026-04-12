@@ -344,7 +344,7 @@ For log categories where the identity structure is not known, the entire identit
 | `ActivityName`            | `azure.operation.name`        | Log Attribute |
 | `TaskName`                | `azure.messaging.task.name`   | Log Attribute |
 | `OperationResult`         | `error.type`                  | Log Attribute |
-| `ErrorMessage`            | `exception.message`           | Log Attribute |
+| `ErrorMessage`            | `error.message` (default), `exception.message` (when `extension.azureencoding.EmitV1LogConventions` is enabled) | Log Attribute |
 | `ErrorCount`              | `azure.messaging.error.count` | Log Attribute |
 
 ### OperationalLogs
@@ -367,7 +367,7 @@ For log categories where the identity structure is not known, the entire identit
 | `EventProperties.Via`             | `url.full` with parsed `url.scheme`, `url.domain`, `url.fragment`, `url.query`, `url.path` and `url.port`. If unparsable - only `url.original` | Log Attribute |
 | `EventProperties.TrackingId`      | `azure.service.request.id`    | Log Attribute |
 | `EventProperties.ErrorCode`       | `error.code`                  | Log Attribute |
-| `EventProperties.ErrorMessage`    | `exception.message`           | Log Attribute |
+| `EventProperties.ErrorMessage`    | `error.message` (default), `exception.message` (when `extension.azureencoding.EmitV1LogConventions` is enabled) | Log Attribute |
 
 ### RuntimeAuditLogs
 
@@ -426,7 +426,7 @@ For log categories where the identity structure is not known, the entire identit
 | `SystemParameters`        | `azure.datafactory.system_parameters` | Log Attribute |
 | `Tags`                    | `azure.datafactory.tags`              | Log Attribute |
 | `Error.errorCode`         | `error.code`                          | Log Attribute |
-| `Error.message`           | `exception.message`                   | Log Attribute |
+| `Error.message`           | `error.message` (default), `exception.message` (when `extension.azureencoding.EmitV1LogConventions` is enabled) | Log Attribute |
 | `Error.failureType`       | `error.type`                          | Log Attribute |
 | `Error.target`            | `error.target`                        | Log Attribute |
 | `activityRunId`           | `azure.datafactory.activity.run_id`   | Log Attribute |
@@ -449,7 +449,7 @@ For log categories where the identity structure is not known, the entire identit
 | `SystemParameters`        | `azure.datafactory.system_parameters` | Log Attribute |
 | `Tags`                    | `azure.datafactory.tags`              | Log Attribute |
 | `Error.errorCode`         | `error.code`                          | Log Attribute |
-| `Error.message`           | `exception.message`                   | Log Attribute |
+| `Error.message`           | `error.message` (default), `exception.message` (when `extension.azureencoding.EmitV1LogConventions` is enabled) | Log Attribute |
 | `Error.failureType`       | `error.type`                          | Log Attribute |
 | `Error.target`            | `error.target`                        | Log Attribute |
 | `runId`                   | `azure.datafactory.pipeline.run_id`   | Log Attribute |
@@ -471,7 +471,7 @@ For log categories where the identity structure is not known, the entire identit
 | `SystemParameters`        | `azure.datafactory.system_parameters` | Log Attribute |
 | `Tags`                    | `azure.datafactory.tags`              | Log Attribute |
 | `Error.errorCode`         | `error.code`                          | Log Attribute |
-| `Error.message`           | `exception.message`                   | Log Attribute |
+| `Error.message`           | `error.message` (default), `exception.message` (when `extension.azureencoding.EmitV1LogConventions` is enabled) | Log Attribute |
 | `Error.failureType`       | `error.type`                          | Log Attribute |
 | `Error.target`            | `error.target`                        | Log Attribute |
 | `triggerId`               | `azure.datafactory.trigger.run_id`    | Log Attribute |

@@ -150,7 +150,7 @@ func (r *azureDataFactoryBaseLog) PutProperties(attrs pcommon.Map, _ pcommon.Val
 	unmarshaler.AttrPutMapIf(attrs, attributeDataFactoryTags, r.Properties.Tags)
 	// Errors
 	unmarshaler.AttrPutStrIf(attrs, attributeErrorCode, r.Properties.Error.Code)
-	unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.Properties.Error.Message)
+	attrPutErrorMessageBySemConv(attrs, r.Properties.Error.Message)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.Properties.Error.FailureType)
 	unmarshaler.AttrPutStrIf(attrs, attributeErrorTarget, r.Properties.Error.Target)
 
