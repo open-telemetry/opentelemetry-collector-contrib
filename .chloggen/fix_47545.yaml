@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/zipkin
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Align Zipkin translator peer service attribute migration with semconv v1.40.0 by supporting `service.peer.name` and preserving `peer.service` through existing migration feature gates.
+note: Migrate semantic conventions to remove dependency on v1.38.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47545]
