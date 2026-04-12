@@ -262,6 +262,18 @@ The table below summarizes streaming support details for each log type, along wi
 | `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
+| `tgw-id`                     | `aws.vpc.flow.transit-gateway-id`                                                                     |
+| `transit-gateway-id`         | `aws.vpc.flow.transit-gateway-id`                                                                     |
+| `tgw-attachment-id`          | `aws.vpc.flow.transit-gateway-attachment-id`                                                          |
+| `tgw-src-vpc-id`             | `aws.vpc.flow.tgw-src-vpc-id`                                                                         |
+| `tgw-dst-vpc-id`             | `aws.vpc.flow.tgw-dst-vpc-id`                                                                         |
+| `tgw-src-subnet-id`          | `aws.vpc.flow.tgw-src-subnet-id`                                                                      |
+| `tgw-dst-subnet-id`          | `aws.vpc.flow.tgw-dst-subnet-id`                                                                      |
+| `tgw-src-eni`                | `aws.vpc.flow.tgw-src-eni`                                                                            |
+| `tgw-dst-eni`                | `aws.vpc.flow.tgw-dst-eni`                                                                            |
+| `tgw-src-az-id`              | `aws.vpc.flow.tgw-src-az-id`                                                                          |
+| `tgw-dst-az-id`              | `aws.vpc.flow.tgw-dst-az-id`                                                                          |
+| `tgw-pair-attachment-id`     | `aws.vpc.flow.tgw-pair-attachment-id`                                                                 |
 
 ### S3 access log record fields
 
