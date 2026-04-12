@@ -11,11 +11,26 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
+
+func TestZipkinEndpointFromTagsPrefersV1ServicePeerName(t *testing.T) {
+	redundantKeys := make(map[string]bool)
+	zTags := map[string]string{
+		peerServiceV0Key:                       "legacy-peer",
+		string(conventions.ServicePeerNameKey): "v1-peer",
+	}
+
+	endpoint := zipkinEndpointFromTags(zTags, "local-service", true, redundantKeys)
+	assert.NotNil(t, endpoint)
+	assert.Equal(t, "v1-peer", endpoint.ServiceName)
+	assert.True(t, redundantKeys[string(conventions.ServicePeerNameKey)])
+	assert.False(t, redundantKeys[peerServiceV0Key])
+}
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
 	tests := []struct {

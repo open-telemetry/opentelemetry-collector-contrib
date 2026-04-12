@@ -28,7 +28,7 @@ import (
 const (
 	spanEventDataFormat = "%s|%s|%d"
 	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
-	peerServiceKey      = "peer.service"
+	peerServiceV0Key    = "peer.service"
 )
 
 var sampled = true
@@ -319,9 +319,14 @@ func zipkinEndpointFromTags(
 	redundantKeys map[string]bool,
 ) (endpoint *zipkinmodel.Endpoint) {
 	serviceName := localServiceName
-	if peerSvc, ok := zTags[peerServiceKey]; ok && remoteEndpoint {
-		serviceName = peerSvc
-		redundantKeys[peerServiceKey] = true
+	if remoteEndpoint {
+		if peerSvc, ok := zTags[string(conventions.ServicePeerNameKey)]; ok {
+			serviceName = peerSvc
+			redundantKeys[string(conventions.ServicePeerNameKey)] = true
+		} else if peerSvc, ok := zTags[peerServiceV0Key]; ok {
+			serviceName = peerSvc
+			redundantKeys[peerServiceV0Key] = true
+		}
 	}
 
 	var ipKey, v0IPKey, portKey string
