@@ -30,7 +30,7 @@ import (
 
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -67,7 +67,7 @@ func NewVPCFlowLogUnmarshaler(
 	logger *zap.Logger,
 	vpcFlowStartISO8601FormatEnabled bool,
 ) (*VPCFlowLogUnmarshaler, error) {
-	cfg.parsedFormat = defaultVPCFormat
+	cfg.parsedFormat = defaultFormat
 	if cfg.Format != "" {
 		cfg.parsedFormat = strings.Fields(cfg.Format)
 		logger.Debug("Using custom format for VPC flow log unmarshaling", zap.Strings("fields", cfg.parsedFormat))
