@@ -121,6 +121,7 @@ components:
         - resource
         - resourcedetection
         - span
+        - spanpruning
         - sumologic
         - tail_sampling
         - transform
@@ -169,7 +170,7 @@ components:
         - googlecloudspanner
         - haproxy
         - hostmetrics
-        - httpcheck
+        - http_check
         - iis
         - influxdb
         - jaeger
@@ -226,7 +227,7 @@ components:
         - systemd
         - tcp_log
         - tcpcheck
-        - tlscheck
+        - tls_check
         - udp_log
         - vcenter
         - wavefront
