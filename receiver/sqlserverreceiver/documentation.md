@@ -596,8 +596,8 @@ query sample
 | sqlserver.query_start | Timestamp of when the SQL query started (ISO 8601 format). | Any Str | - |
 | sqlserver.reads | Number of physical reads performed by the query. | Any Int | - |
 | sqlserver.request_status | Status of the request (e.g., running, suspended). | Any Str | - |
-| sqlserver.resource.id | SQL Server identifier for the locked or waited-on resource, if available. | Any Str | - |
-| sqlserver.resource.type | SQL Server type of the locked or waited-on resource, if available. | Any Str | - |
+| sqlserver.wait.resource.id | SQL Server identifier for the locked or waited-on resource, if available. | Any Str | - |
+| sqlserver.wait.resource.type | SQL Server type of the locked or waited-on resource, if available. | Any Str | - |
 | sqlserver.row_count | Number of rows affected or returned by the query. | Any Int | - |
 | sqlserver.session_id | ID of the SQL Server session. | Any Int | - |
 | sqlserver.session_status | Status of the session (e.g., running, sleeping). | Any Str | - |

@@ -210,14 +210,6 @@ attributes:
     description: Status of the request (e.g., running, suspended).
     type: string
     requirement_level: recommended
-  sqlserver.resource.id:
-    description: SQL Server identifier for the locked or waited-on resource, if available.
-    type: string
-    requirement_level: recommended
-  sqlserver.resource.type:
-    description: SQL Server type of the locked or waited-on resource, if available.
-    type: string
-    requirement_level: recommended
   sqlserver.row_count:
     description: Number of rows affected or returned by the query.
     type: int
@@ -266,6 +258,14 @@ attributes:
   sqlserver.transaction_isolation_level:
     description: Transaction isolation level used in the session. Represented as numeric constant.
     type: int
+    requirement_level: recommended
+  sqlserver.wait.resource.id:
+    description: SQL Server identifier for the locked or waited-on resource, if available.
+    type: string
+    requirement_level: recommended
+  sqlserver.wait.resource.type:
+    description: SQL Server type of the locked or waited-on resource, if available.
+    type: string
     requirement_level: recommended
   sqlserver.wait_resource:
     description: The resource for which the session is waiting.
@@ -341,8 +341,8 @@ events:
       - sqlserver.query_start
       - sqlserver.reads
       - sqlserver.request_status
-      - sqlserver.resource.id
-      - sqlserver.resource.type
+      - sqlserver.wait.resource.id
+      - sqlserver.wait.resource.type
       - sqlserver.row_count
       - sqlserver.session_id
       - sqlserver.session_status

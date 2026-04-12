@@ -91,10 +91,10 @@ resourceLogs:
               - key: sqlserver.request_status
                 value:
                   stringValue: running
-              - key: sqlserver.resource.id
+              - key: sqlserver.wait.resource.id
                 value:
                   stringValue: "72057594043359232"
-              - key: sqlserver.resource.type
+              - key: sqlserver.wait.resource.type
                 value:
                   stringValue: KEY
               - key: sqlserver.row_count

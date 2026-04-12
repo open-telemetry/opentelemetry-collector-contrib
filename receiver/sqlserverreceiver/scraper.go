@@ -176,13 +176,13 @@ func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
 				if !hasBlockingSession || !hasBlockingStartTime || blockingSessionIDAttr.Int() <= 0 || blockingStartTimeAttr.Str() == "" {
 					logRecord.Attributes().Remove("sqlserver.blocking.start_time")
 				}
-				resourceTypeAttr, hasResourceType := logRecord.Attributes().Get("sqlserver.resource.type")
+				resourceTypeAttr, hasResourceType := logRecord.Attributes().Get("sqlserver.wait.resource.type")
 				if !hasResourceType || resourceTypeAttr.Str() == "" {
-					logRecord.Attributes().Remove("sqlserver.resource.type")
+					logRecord.Attributes().Remove("sqlserver.wait.resource.type")
 				}
-				resourceIDAttr, hasResourceID := logRecord.Attributes().Get("sqlserver.resource.id")
+				resourceIDAttr, hasResourceID := logRecord.Attributes().Get("sqlserver.wait.resource.id")
 				if !hasResourceID || resourceIDAttr.Str() == "" {
-					logRecord.Attributes().Remove("sqlserver.resource.id")
+					logRecord.Attributes().Remove("sqlserver.wait.resource.id")
 				}
 			}
 		}
@@ -1072,6 +1072,7 @@ func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
 	const blockingSessionID = "blocking_session_id"
+	const blockingStartTime = "blocking_start_time"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
 	const command = "command"
@@ -1123,8 +1124,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 	resourcesAdded := false
 	propagator := propagation.TraceContext{}
-	now := time.Now()
-	timestamp := pcommon.NewTimestampFromTime(now)
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	dbSystemNameVal := "microsoft.sql_server"
 
 	for _, row := range rows {
@@ -1175,10 +1175,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		waitTimeMillisecondVal := s.retrieveValue(row, waitTimeMillisecond, &errs, retrieveInt).(int64)
 		waitTimeSecondVal := float64(waitTimeMillisecondVal) / 1000.0
 		resourceTypeVal, resourceIDVal := parseWaitResource(waitResourceVal)
-		blockingStartTimeVal := ""
-		if blockSessionIDVal > 0 && waitTimeMillisecondVal > 0 {
-			blockingStartTimeVal = now.Add(-time.Duration(waitTimeMillisecondVal) * time.Millisecond).Format(time.RFC3339)
-		}
+		blockingStartTimeVal := row[blockingStartTime]
 		waitTypeVal := row[waitType]
 		writesVal := s.retrieveValue(row, writes, &errs, retrieveInt).(int64)
 
