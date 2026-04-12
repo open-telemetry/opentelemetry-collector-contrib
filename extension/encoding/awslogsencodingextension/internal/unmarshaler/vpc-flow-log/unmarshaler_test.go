@@ -95,10 +95,10 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			featureGateEnabled:   false,
 		},
 		{
-			name:                 "Valid VPC flow log with fewer fields than required (missing trailing fields)",
-			logInputReader:       readAndCompressLogFile(t, dir, "vpc_flow_log_too_few_fields.log"),
-			logsExpectedFilename: "vpc_flow_log_too_few_fields_expected.yaml",
-			featureGateEnabled:   false,
+			name:               "Invalid VPC flow log with less fields than required",
+			logInputReader:     readAndCompressLogFile(t, dir, "vpc_flow_log_too_few_fields.log"),
+			expectedErr:        "log line has less fields than the ones expected",
+			featureGateEnabled: false,
 		},
 		{
 			name:               "Invalid VPC flow log with more fields than required",

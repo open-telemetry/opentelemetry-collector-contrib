@@ -289,9 +289,7 @@ func (v *VPCFlowLogUnmarshaler) fromCloudWatch(fields []string, reader *bufio.Re
 	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
 
 	for _, event := range cwLog.LogEvents {
-		// Use strict parsing if a custom format was specified
-		strictParsing := v.cfg.Format != ""
-		err := v.addToLogsWithStrictParsing(resourceLogs, scopeLogs, fields, event.Message, strictParsing)
+		err := v.addToLogs(resourceLogs, scopeLogs, fields, event.Message)
 		if err != nil {
 			return plog.Logs{}, 0, err
 		}
@@ -323,30 +321,14 @@ func (v *VPCFlowLogUnmarshaler) addToLogs(
 	fields []string,
 	logLine string,
 ) error {
-	return v.addToLogsWithStrictParsing(resourceLogs, scopeLogs, fields, logLine, false)
-}
-
-// addToLogsWithStrictParsing is the internal implementation that allows controlling whether to error on missing fields.
-// When strictParsing is true, missing fields (except those explicitly marked as "-" in the data) will return an error.
-func (v *VPCFlowLogUnmarshaler) addToLogsWithStrictParsing(
-	resourceLogs plog.ResourceLogs,
-	scopeLogs plog.ScopeLogs,
-	fields []string,
-	logLine string,
-	strictParsing bool,
-) error {
 	record := scopeLogs.LogRecords().AppendEmpty()
 	addr := &address{}
 	for _, field := range fields {
-		var value string
 		if logLine == "" {
-			if strictParsing {
-				return fmt.Errorf("expected field %q but log line has no more fields", field)
-			}
-			value = "-"
-		} else {
-			value, logLine, _ = strings.Cut(logLine, " ")
+			return errors.New("log line has less fields than the ones expected")
 		}
+		var value string
+		value, logLine, _ = strings.Cut(logLine, " ")
 
 		if value == "-" {
 			// If a field is not applicable or could not be computed for a
