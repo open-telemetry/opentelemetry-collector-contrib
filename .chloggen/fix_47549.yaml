@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/coreinternal
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add RPC semantic convention migration feature gates for goldendataset and support emitting stable v1 attributes.
+note: Migrate semantic conventions to remove dependency on v1.38.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47548]
