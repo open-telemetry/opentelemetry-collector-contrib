@@ -49,9 +49,11 @@ extensions:
     vpcflow:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
-      file_format: plain-text 
-      # Optional: custom field format (space-delimited).
-      # When unset, auto-detects VPC vs TGW from S3 headers.
+      file_format: plain-text
+      # Optional: format of the VPC flow log. Used when processing VPC flow logs arriving through CloudWatch Logs subscription filters. 
+      # Ignored when decoding VPC flow logs sent to S3, which include the format as a file header.
+      # Accepts a space delimited list of fields in the VPC flow log.
+      # When unset, built-in default  auto-detects VPC vs TGW from S3 headers.
       format: version interface-id srcaddr dstaddr
 ```
 
