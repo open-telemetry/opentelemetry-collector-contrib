@@ -1450,6 +1450,35 @@ func TestLocalRootConsumer(t *testing.T) {
 	assert.Equal(t, expectedEndTime, *segments[1].EndTime)
 }
 
+// TestLocalRootConsumerUsesResourceServiceName verifies that when a local root
+// Consumer span does not carry the aws.local.service attribute, the X-Ray
+// service segment falls back to resource.service.name rather than using the
+// span (operation) name.
+func TestLocalRootConsumerUsesResourceServiceName(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.NoError(t, err)
+
+	spanName := "destination operation"
+	resource := getBasicResource() // has service.name = "signup_aggregator"
+	parentSpanID := newSegmentID()
+
+	attributes := getBasicAttributes()
+	delete(attributes, awsLocalService) // remove aws.local.service to trigger fallback
+
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
+
+	segments, err := MakeSegmentsFromSpan(span, resource, []string{awsRemoteService, "myAnnotationKey"}, false, nil, false)
+
+	assert.NotNil(t, segments)
+	assert.Len(t, segments, 2)
+	assert.NoError(t, err)
+
+	serviceSegment := segments[1]
+	// Service segment must use the resource service name, not the span (operation) name.
+	assert.Equal(t, "signup_aggregator", *serviceSegment.Name)
+	assert.Nil(t, serviceSegment.Type)
+}
+
 func TestNonLocalRootConsumerProcess(t *testing.T) {
 	spanName := "destination operation"
 	resource := getBasicResource()
