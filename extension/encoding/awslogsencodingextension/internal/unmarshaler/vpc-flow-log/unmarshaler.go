@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -30,8 +31,6 @@ import (
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
-	// TGW flow logs from S3. See https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html
-	defaultTGWFormat = []string{"version", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "tgw-pair-attachment-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status", "type", "tcp-flags", "flow-direction", "region", "resource-type"}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -96,28 +95,8 @@ func NewVPCFlowLogUnmarshaler(
 }
 
 // detectTGWFlow returns true if the header contains "resource-type" (TGW logs only).
-func (v *VPCFlowLogUnmarshaler) detectTGWFlow(headerFields []string) bool {
-	for _, field := range headerFields {
-		if field == "resource-type" {
-			return true
-		}
-	}
-	return false
-}
-
-// getFormatForDetection returns the format to use.
-// Uses custom format if set, otherwise detects TGW vs VPC from header.
-func (v *VPCFlowLogUnmarshaler) getFormatForDetection(headerFields []string) []string {
-	if v.cfg.Format != "" {
-		return v.cfg.parsedFormat
-	}
-
-	if v.detectTGWFlow(headerFields) {
-		v.logger.Debug("Detected TGW flow log format")
-		return defaultTGWFormat
-	}
-
-	return defaultVPCFormat
+func detectTGWFlow(headerFields []string) bool {
+	return slices.Contains(headerFields, "resource-type")
 }
 
 func (v *VPCFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
@@ -231,7 +210,7 @@ func (v *VPCFlowLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...enco
 	fields := strings.Fields(line)
 
 	// Log TGW detection for debugging
-	if v.detectTGWFlow(fields) {
+	if detectTGWFlow(fields) {
 		v.logger.Debug("Detected TGW flow log format from S3 file header")
 	}
 
