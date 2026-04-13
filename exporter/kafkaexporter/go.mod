@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/client v1.55.1-0.20260409104450-d686cf9058ce
 	go.opentelemetry.io/collector/component v1.55.1-0.20260409104450-d686cf9058ce
 	go.opentelemetry.io/collector/component/componenttest v0.149.1-0.20260409104450-d686cf9058ce
+	go.opentelemetry.io/collector/config/configopaque v1.55.1-0.20260409104450-d686cf9058ce
 	go.opentelemetry.io/collector/config/configoptional v1.55.1-0.20260409104450-d686cf9058ce
 	go.opentelemetry.io/collector/config/configretry v1.55.1-0.20260409104450-d686cf9058ce
 	go.opentelemetry.io/collector/confmap v1.55.1-0.20260409104450-d686cf9058ce
@@ -104,7 +105,6 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.55.1-0.20260409104450-d686cf9058ce // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.55.1-0.20260409104450-d686cf9058ce // indirect
 	go.opentelemetry.io/collector/config/configtls v1.55.1-0.20260409104450-d686cf9058ce // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.149.1-0.20260409104450-d686cf9058ce // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.149.1-0.20260409104450-d686cf9058ce // indirect
