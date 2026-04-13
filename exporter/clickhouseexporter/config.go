@@ -320,8 +320,8 @@ func (cfg *Config) validateMaterializedColumns() (err error) {
 		default:
 			seenColumns[mc.Column] = true
 		}
-
 	}
+
 	return err
 }
 
