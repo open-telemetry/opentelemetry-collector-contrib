@@ -29,17 +29,13 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	config := &Config{
+	return &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		ClientConfig:         configkafka.NewDefaultClientConfig(),
 		GroupMatch:           defaultGroupMatch,
 		TopicMatch:           defaultTopicMatch,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	if config.ClusterAlias != "" {
-		config.ResourceAttributes.KafkaClusterAlias.Enabled = true
-	}
-	return config
 }
 
 func createMetricsReceiver(
@@ -49,6 +45,13 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
+	// Enable the kafka.cluster.alias resource attribute when the user has
+	// configured a cluster_alias. This must be done here (after user config is
+	// applied) rather than in createDefaultConfig, where ClusterAlias is always
+	// the zero value.
+	if c.ClusterAlias != "" {
+		c.ResourceAttributes.KafkaClusterAlias.Enabled = true
+	}
 	r, err := newMetricsReceiver(ctx, *c, params, nextConsumer)
 	if err != nil {
 		return nil, err
