@@ -14,5 +14,18 @@ status:
   distributions: [core, contrib, k8s]
   codeowners:
     active: [dmitryax, braydonk, rogercoll]
+
+feature_gates:
+  - id: hostmetrics.process.bootTimeCache
+    description: When enabled, all process scrapes will use the boot time value that is cached at the start of the process.
+    stage: beta
+    from_version: "v0.98.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/28849
+  - id: receiver.hostmetricsreceiver.UseLinuxMemAvailable
+    description: When enabled, the used value for the system.memory.usage and system.memory.utilization metrics will be based on the Linux kernel's MemAvailable statistic instead of MemFree, Buffers, and Cached.
+    stage: beta
+    from_version: "v0.137.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/42221
+
 tests:
   config:
