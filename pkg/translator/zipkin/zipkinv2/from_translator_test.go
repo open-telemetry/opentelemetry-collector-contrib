@@ -20,7 +20,7 @@ import (
 func TestZipkinEndpointFromTagsPrefersV1ServicePeerName(t *testing.T) {
 	redundantKeys := make(map[string]bool)
 	zTags := map[string]string{
-		peerServiceV0Key:    "legacy-peer",
+		"peer.service":      "legacy-peer",
 		"service.peer.name": "v1-peer",
 	}
 
@@ -28,7 +28,7 @@ func TestZipkinEndpointFromTagsPrefersV1ServicePeerName(t *testing.T) {
 	assert.NotNil(t, endpoint)
 	assert.Equal(t, "v1-peer", endpoint.ServiceName)
 	assert.True(t, redundantKeys["service.peer.name"])
-	assert.False(t, redundantKeys[peerServiceV0Key])
+	assert.False(t, redundantKeys["peer.service"])
 }
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {

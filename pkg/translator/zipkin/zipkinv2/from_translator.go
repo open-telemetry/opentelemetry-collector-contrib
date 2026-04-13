@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
+	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -28,7 +29,6 @@ import (
 const (
 	spanEventDataFormat = "%s|%s|%d"
 	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
-	peerServiceV0Key    = "peer.service"
 )
 
 var sampled = true
@@ -323,9 +323,9 @@ func zipkinEndpointFromTags(
 		if peerSvc, ok := zTags[string(conventions.ServicePeerNameKey)]; ok {
 			serviceName = peerSvc
 			redundantKeys[string(conventions.ServicePeerNameKey)] = true
-		} else if peerSvc, ok := zTags[peerServiceV0Key]; ok {
+		} else if peerSvc, ok := zTags[string(conventionsv138.PeerServiceKey)]; ok {
 			serviceName = peerSvc
-			redundantKeys[peerServiceV0Key] = true
+			redundantKeys[string(conventionsv138.PeerServiceKey)] = true
 		}
 	}
 

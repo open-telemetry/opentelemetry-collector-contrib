@@ -45,7 +45,7 @@ func TestZTagsToInternalAttrsRemoteServiceNameMigration(t *testing.T) {
 			err = zTagsToInternalAttrs(zspan, map[string]string{}, dest, false)
 			assert.NoError(t, err)
 
-			_, hasV0 := dest.Get(peerServiceV0Key)
+			_, hasV0 := dest.Get("peer.service")
 			_, hasV1 := dest.Get("service.peer.name")
 			assert.Equal(t, tc.expectsV0, hasV0)
 			assert.Equal(t, tc.expectsV1, hasV1)
