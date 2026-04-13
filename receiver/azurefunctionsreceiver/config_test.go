@@ -33,15 +33,15 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(metadata.Type),
 			expected: &Config{
 				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				Auth: component.MustNewID("azureauth"),
-				Logs: EncodingConfig{Encoding: component.MustNewID("azure_encoding")},
+				Auth: mustNewIDPtr("azureauth"),
+				Logs: EncodingConfig{Encoding: mustNewIDPtr("azure_encoding")},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "no_auth"),
 			expected: &Config{
 				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				Logs: EncodingConfig{Encoding: component.MustNewID("azure_encoding")},
+				Logs: EncodingConfig{Encoding: mustNewIDPtr("azure_encoding")},
 			},
 		},
 		{
@@ -73,4 +73,9 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func mustNewIDPtr(s string) *component.ID {
+	id := component.MustNewID(s)
+	return &id
 }
