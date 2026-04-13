@@ -124,10 +124,13 @@ exporters:
       # time to wait after the first failure before retrying;
       # ignored if enabled is false, default = 5s
       initial_interval: <initial_interval>
-      # is the upper bound on backoff; ignored if enabled is false, default = 30s
+      # multiplier is the factor applied to the previous delay to calculate the next retry delay;
+      # ignored if enabled is false, default = 1.2
+      multiplier: <multiplier>
+      # is the upper bound on backoff; ignored if enabled is false, default = 5m
       max_interval: <max_interval>
       # is the maximum amount of time spent trying to send a batch;
-      # ignored if enabled is false, default = 120s
+      # ignored if enabled is false, default = 1h
       max_elapsed_time: <max_elapsed_time>
 
     sending_queue:
