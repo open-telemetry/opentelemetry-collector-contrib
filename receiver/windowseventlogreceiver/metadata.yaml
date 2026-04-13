@@ -1,5 +1,6 @@
 display_name: Windows Event Log Receiver
-type: windowseventlog
+type: windows_event_log
+deprecated_type: windowseventlog
 
 description: |
   This receiver tails and parses logs from windows event log API using the

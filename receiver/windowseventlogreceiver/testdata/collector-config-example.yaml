@@ -10,25 +10,25 @@
 
 receivers:
   # Example 1: Basic Application Event Log monitoring
-  windowseventlog/application:
+  windows_event_log/application:
     channel: application
     start_at: end  # Start reading from the end (new events only)
 
   # Example 2: System Event Log with custom polling
-  windowseventlog/system:
+  windows_event_log/system:
     channel: system
     start_at: beginning  # Read all events from the beginning
     max_reads: 100  # Maximum records to read per poll
     poll_interval: 1s  # Poll every second
 
   # Example 3: Security Event Log monitoring
-  windowseventlog/security:
+  windows_event_log/security:
     channel: security
     start_at: end
     # Security logs often require elevated privileges
 
   # Example 4: Custom Event Log channel
-  windowseventlog/custom:
+  windows_event_log/custom:
     channel: "Microsoft-Windows-PowerShell/Operational"
     start_at: end
     max_reads: 50
@@ -55,10 +55,10 @@ service:
   pipelines:
     logs:
       receivers:
-        - windowseventlog/application
-        - windowseventlog/system
-        - windowseventlog/security
-        - windowseventlog/custom
+        - windows_event_log/application
+        - windows_event_log/system
+        - windows_event_log/security
+        - windows_event_log/custom
       processors:
         - batch
       exporters:

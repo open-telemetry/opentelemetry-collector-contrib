@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/windowseventlog
+component: receiver/windows_event_log
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `discover_domain_controllers` config flag to automatically discover and collect Security events from Active Directory domain controllers based on feature gate domainControllers.autodiscovery.

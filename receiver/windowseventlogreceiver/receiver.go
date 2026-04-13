@@ -26,7 +26,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// WindowsLogConfig defines configuration for the windowseventlog receiver
+// WindowsLogConfig defines configuration for the Windows Event Log receiver.
 type WindowsLogConfig struct {
 	InputConfig        windows.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`

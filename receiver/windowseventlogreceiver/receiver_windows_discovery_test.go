@@ -75,7 +75,7 @@ func TestCreateLogsReceiverWithDomainControllerDiscovery(t *testing.T) {
 	}
 	sink := new(consumertest.LogsSink)
 
-	rcvr, err := newFactoryAdapter().CreateLogs(
+	rcvr, err := NewFactory().CreateLogs(
 		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -102,7 +102,7 @@ func TestCreateLogsReceiverDomainControllerDiscoveryError(t *testing.T) {
 	cfg.DiscoverDomainControllers = true
 	sink := new(consumertest.LogsSink)
 
-	_, err := newFactoryAdapter().CreateLogs(
+	_, err := NewFactory().CreateLogs(
 		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
