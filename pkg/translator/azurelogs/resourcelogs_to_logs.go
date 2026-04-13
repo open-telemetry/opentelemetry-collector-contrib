@@ -394,7 +394,7 @@ func extractRawAttributes(log *azureLogRecord, rawRecord json.RawMessage) map[st
 	}
 
 	// The original log needs to be preserved for logs that don't have a properties field
-	if len(rawRecord) > 0 {
+	if len(properties) == 0 && len(rawRecord) > 0 {
 		// Format the JSON with proper indentation to match expected output
 		var formattedJSON bytes.Buffer
 		if err := json.Indent(&formattedJSON, rawRecord, "", "\t"); err == nil {
