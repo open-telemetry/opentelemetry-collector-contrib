@@ -12,8 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -1267,5 +1269,419 @@ func getConditionStrings(prefix string) []string {
 	return []string{
 		fmt.Sprintf(`%sattributes["test"] == "pass"`, prefix),
 		fmt.Sprintf(`%sattributes["another"] == "pass"`, prefix),
+	}
+}
+
+func TestValidateDeprecatedConfig(t *testing.T) {
+	gate := metadata.ProcessorFilterprocessorRemoveDeprecatedConfigFeatureGate
+
+	tests := []struct {
+		name               string
+		featureGateEnabled bool
+		cfgFunc            func(*Config)
+		expectedError      string
+	}{
+		// Gate disabled: all deprecated fields are still permitted.
+		{
+			name:               "gate_disabled_spans_include",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Spans.Include = &filterconfig.MatchProperties{}
+			},
+		},
+		{
+			name:               "gate_disabled_spans_exclude",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Spans.Exclude = &filterconfig.MatchProperties{}
+			},
+		},
+		{
+			name:               "gate_disabled_traces_resource",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Traces.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_traces_span",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Traces.SpanConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_traces_spanevent",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Traces.SpanEventConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_metrics_include",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{MatchType: filterconfig.MetricStrict}
+			},
+		},
+		{
+			name:               "gate_disabled_metrics_exclude",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.Exclude = &filterconfig.MetricMatchProperties{MatchType: filterconfig.MetricStrict}
+			},
+		},
+		{
+			name:               "gate_disabled_metrics_resource",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_metrics_metric",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.MetricConditions = []string{`name == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_metrics_datapoint",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.DataPointConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_logs_include",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.Include = &LogMatchProperties{}
+			},
+		},
+		{
+			name:               "gate_disabled_logs_exclude",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.Exclude = &LogMatchProperties{}
+			},
+		},
+		{
+			name:               "gate_disabled_logs_resource",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_logs_log",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.LogConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_profiles_resource",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Profiles.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		{
+			name:               "gate_disabled_profiles_profile",
+			featureGateEnabled: false,
+			cfgFunc: func(cfg *Config) {
+				cfg.Profiles.ProfileConditions = []string{`attributes["test"] == "pass"`}
+			},
+		},
+		// Gate enabled: each deprecated field on each signal must be rejected.
+		{
+			name:               "gate_enabled_spans_include",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Spans.Include = &filterconfig.MatchProperties{}
+			},
+			expectedError: "`spans` and `traces` configuration keys are not allowed",
+		},
+		{
+			name:               "gate_enabled_spans_exclude",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Spans.Exclude = &filterconfig.MatchProperties{}
+			},
+			expectedError: "`spans` and `traces` configuration keys are not allowed",
+		},
+		{
+			name:               "gate_enabled_traces_resource",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Traces.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`spans` and `traces` configuration keys are not allowed",
+		},
+		{
+			name:               "gate_enabled_traces_span",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Traces.SpanConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`spans` and `traces` configuration keys are not allowed",
+		},
+		{
+			name:               "gate_enabled_traces_spanevent",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Traces.SpanEventConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`spans` and `traces` configuration keys are not allowed",
+		},
+		{
+			name:               "gate_enabled_metrics_include",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{MatchType: filterconfig.MetricStrict}
+			},
+			expectedError: "`metrics` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_metrics_exclude",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.Exclude = &filterconfig.MetricMatchProperties{MatchType: filterconfig.MetricStrict}
+			},
+			expectedError: "`metrics` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_metrics_resource",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`metrics` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_metrics_metric",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.MetricConditions = []string{`name == "pass"`}
+			},
+			expectedError: "`metrics` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_metrics_datapoint",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.DataPointConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`metrics` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_logs_include",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.Include = &LogMatchProperties{}
+			},
+			expectedError: "`logs` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_logs_exclude",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.Exclude = &LogMatchProperties{}
+			},
+			expectedError: "`logs` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_logs_resource",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`logs` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_logs_log",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.LogConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`logs` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_trace_deprecated_and_new_style",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Spans.Include = &filterconfig.MatchProperties{}
+				cfg.TraceConditions = []condition.ContextConditions{{Conditions: []string{`attributes["test"] == "pass"`}}}
+			},
+			expectedError: "`spans` and `traces` configuration keys are not allowed",
+		},
+		{
+			name:               "gate_enabled_metric_deprecated_and_new_style",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Metrics.Include = &filterconfig.MetricMatchProperties{MatchType: filterconfig.MetricStrict}
+				cfg.MetricConditions = []condition.ContextConditions{{Conditions: []string{`name == "pass"`}}}
+			},
+			expectedError: "`metrics` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_log_deprecated_and_new_style",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Logs.Include = &LogMatchProperties{}
+				cfg.LogConditions = []condition.ContextConditions{{Conditions: []string{`attributes["test"] == "pass"`}}}
+			},
+			expectedError: "`logs` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_profiles_resource",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Profiles.ResourceConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`profiles` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_profiles_profile",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Profiles.ProfileConditions = []string{`attributes["test"] == "pass"`}
+			},
+			expectedError: "`profiles` configuration key is not allowed",
+		},
+		{
+			name:               "gate_enabled_profile_deprecated_and_new_style",
+			featureGateEnabled: true,
+			cfgFunc: func(cfg *Config) {
+				cfg.Profiles.ProfileConditions = []string{`attributes["test"] == "pass"`}
+				cfg.ProfileConditions = []condition.ContextConditions{{Conditions: []string{`profile.attributes["test"] == "pass"`}}}
+			},
+			expectedError: "`profiles` configuration key is not allowed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prevValue := gate.IsEnabled()
+			require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), tt.featureGateEnabled))
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prevValue))
+			})
+
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			tt.cfgFunc(cfg)
+
+			err := cfg.Validate()
+			if tt.expectedError != "" {
+				require.ErrorContains(t, err, tt.expectedError)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestFeatureGateWithTestdataConfigs validates config entries from the testdata
+// files already used in config_test.go with the RemoveDeprecatedConfig feature
+// gate enabled. Only entries that are valid without the gate are included;
+// entries that are already invalid for other reasons are omitted.
+func TestFeatureGateWithTestdataConfigs(t *testing.T) {
+	gate := metadata.ProcessorFilterprocessorRemoveDeprecatedConfigFeatureGate
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	})
+
+	tests := []struct {
+		file        string
+		id          string
+		expectError bool
+	}{
+		// Deprecated metrics.include / metrics.exclude — rejected by gate.
+		{"config_strict.yaml", "filter/empty", true},
+		{"config_strict.yaml", "filter/include", true},
+		{"config_strict.yaml", "filter/exclude", true},
+		{"config_strict.yaml", "filter/includeexclude", true},
+
+		// Deprecated logs.include / logs.exclude — rejected by gate.
+		{"config_logs_strict.yaml", "filter/empty", true},
+		{"config_logs_strict.yaml", "filter/include", true},
+		{"config_logs_strict.yaml", "filter/exclude", true},
+		{"config_logs_strict.yaml", "filter/includeexclude", true},
+		{"config_logs_severity_strict.yaml", "filter/include", true},
+		{"config_logs_severity_strict.yaml", "filter/exclude", true},
+		{"config_logs_severity_strict.yaml", "filter/includeexclude", true},
+		{"config_logs_severity_regexp.yaml", "filter/include", true},
+		{"config_logs_severity_regexp.yaml", "filter/exclude", true},
+		{"config_logs_severity_regexp.yaml", "filter/includeexclude", true},
+		{"config_logs_body_strict.yaml", "filter/include", true},
+		{"config_logs_body_strict.yaml", "filter/exclude", true},
+		{"config_logs_body_strict.yaml", "filter/includeexclude", true},
+		{"config_logs_body_regexp.yaml", "filter/include", true},
+		{"config_logs_body_regexp.yaml", "filter/exclude", true},
+		{"config_logs_body_regexp.yaml", "filter/includeexclude", true},
+		{"config_logs_min_severity.yaml", "filter/include", true},
+		{"config_logs_min_severity.yaml", "filter/exclude", true},
+		{"config_logs_min_severity.yaml", "filter/includeexclude", true},
+
+		// Deprecated metrics.include / metrics.exclude (regexp) — rejected by gate.
+		// "filter" has no fields set so it passes; the others are rejected.
+		{"config_regexp.yaml", "filter", false},
+		{"config_regexp.yaml", "filter/include", true},
+		{"config_regexp.yaml", "filter/exclude", true},
+		{"config_regexp.yaml", "filter/unlimitedcache", true},
+		{"config_regexp.yaml", "filter/limitedcache", true},
+
+		// Deprecated spans.include / spans.exclude — rejected by gate.
+		{"config_traces.yaml", "filter/spans", true},
+
+		// Deprecated metrics.include / metrics.exclude (expr) — rejected by gate.
+		{"config_expr.yaml", "filter/empty", true},
+		{"config_expr.yaml", "filter/include", true},
+		{"config_expr.yaml", "filter/exclude", true},
+		{"config_expr.yaml", "filter/includeexclude", true},
+
+		// Deprecated profiles sub-keys — rejected by gate.
+		{"config_profiles.yaml", "filter/profiles", true},
+
+		// Deprecated traces/metrics/logs sub-keys (OTTL style) — rejected by gate.
+		{"config_ottl.yaml", "filter/ottl", true},
+		{"config_ottl.yaml", "filter/multiline", true},
+
+		// New-style *_conditions — gate has no effect, all pass.
+		{"config_ottl.yaml", "filter/context_inferred_trace", false},
+		{"config_ottl.yaml", "filter/context_inferred_metric", false},
+		{"config_ottl.yaml", "filter/context_inferred_log", false},
+		{"config_ottl.yaml", "filter/context_inferred_profile", false},
+		{"config_ottl.yaml", "filter/context_inferred_with_error_mode", false},
+		{"config_ottl.yaml", "filter/context_inferred_multiple_conditions", false},
+		{"config_ottl.yaml", "filter/flat_style", false},
+		{"config_ottl.yaml", "filter/advance_style", false},
+		{"config_ottl.yaml", "filter/context_conditions_error_mode", false},
+	}
+
+	loadedConfs := map[string]*confmap.Conf{}
+	for _, tt := range tests {
+		t.Run(tt.file+"/"+tt.id, func(t *testing.T) {
+			if _, ok := loadedConfs[tt.file]; !ok {
+				cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.file))
+				require.NoError(t, err)
+				loadedConfs[tt.file] = cm
+			}
+
+			cfg := NewFactory().CreateDefaultConfig()
+			sub, err := loadedConfs[tt.file].Sub(tt.id)
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			err = cfg.(*Config).Validate()
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }

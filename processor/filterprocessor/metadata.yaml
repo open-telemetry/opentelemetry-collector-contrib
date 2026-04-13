@@ -50,3 +50,13 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+
+feature_gates:
+  - id: processor.filterprocessor.RemoveDeprecatedConfig
+    stage: alpha
+    description: >-
+      When enabled, filtering conditions can only be configured with the
+      `trace_conditions`, `metric_conditions`, `log_conditions`, and
+      `profile_conditions` keys.
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076

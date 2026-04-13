@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/condition"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 // Config defines configuration for Resource processor.
@@ -409,6 +410,9 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if err := validateDeprecatedConfig(cfg); err != nil {
+		return err
+	}
 	if err := cfg.validateInferredContextConfig(); err != nil {
 		return err
 	}
@@ -598,4 +602,23 @@ func (cfg *Config) newProfileParserCollection(telemetrySettings component.Teleme
 		condition.WithProfileErrorMode(cfg.ErrorMode),
 		condition.WithProfileCommonParsers(cfg.resourceFunctions),
 	)
+}
+
+func validateDeprecatedConfig(cfg *Config) error {
+	if metadata.ProcessorFilterprocessorRemoveDeprecatedConfigFeatureGate.IsEnabled() {
+		if cfg.Spans.Include != nil || cfg.Spans.Exclude != nil || len(cfg.Traces.ResourceConditions) > 0 || len(cfg.Traces.SpanConditions) > 0 || len(cfg.Traces.SpanEventConditions) > 0 {
+			return errors.New("the `spans` and `traces` configuration keys are not allowed when the `processor.filterprocessor.RemoveDeprecatedConfig` feature gate is enabled. Please use the `trace_conditions` configuration key with a list of OTTL conditions instead")
+		}
+		if cfg.Metrics.Include != nil || cfg.Metrics.Exclude != nil || len(cfg.Metrics.ResourceConditions) > 0 || len(cfg.Metrics.MetricConditions) > 0 || len(cfg.Metrics.DataPointConditions) > 0 {
+			return errors.New("the `metrics` configuration key is not allowed when the `processor.filterprocessor.RemoveDeprecatedConfig` feature gate is enabled. Please use the `metric_conditions` configuration key with a list of OTTL conditions instead")
+		}
+		if cfg.Logs.Include != nil || cfg.Logs.Exclude != nil || len(cfg.Logs.ResourceConditions) > 0 || len(cfg.Logs.LogConditions) > 0 {
+			return errors.New("the `logs` configuration key is not allowed when the `processor.filterprocessor.RemoveDeprecatedConfig` feature gate is enabled. Please use the `log_conditions` configuration key with a list of OTTL conditions instead")
+		}
+		if len(cfg.Profiles.ResourceConditions) > 0 || len(cfg.Profiles.ProfileConditions) > 0 {
+			return errors.New("the `profiles` configuration key is not allowed when the `processor.filterprocessor.RemoveDeprecatedConfig` feature gate is enabled. Please use the `profile_conditions` configuration key with a list of OTTL conditions instead")
+		}
+	}
+
+	return nil
 }
