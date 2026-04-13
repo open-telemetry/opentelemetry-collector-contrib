@@ -38,7 +38,6 @@ properties:
       format: duration
   metrics_flush_interval:
     description: MetricsFlushInterval is the interval at which metrics are flushed to the exporter. If set to 0, metrics are flushed on every received batch of traces. Default is 60s if unset.
-    x-pointer: true
     type: string
     format: duration
   metrics_timestamp_offset:

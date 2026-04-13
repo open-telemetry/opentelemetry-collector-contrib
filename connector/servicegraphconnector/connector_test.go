@@ -67,31 +67,27 @@ func TestConnectorShutdown(t *testing.T) {
 
 func TestConnectorConsume(t *testing.T) {
 	for _, tc := range []struct {
-		name          string
-		cfg           *Config
-		gates         []*featuregate.Gate
-		sampleTraces  ptrace.Traces
-		verifyMetrics func(t *testing.T, md pmetric.Metrics)
+		name           string
+		configModifier func(*Config)
+		gates          []*featuregate.Gate
+		sampleTraces   ptrace.Traces
+		verifyMetrics  func(t *testing.T, md pmetric.Metrics)
 	}{
 		{
 			name: "complete traces with client and server span",
-			cfg: &Config{
-				Dimensions: []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
+			configModifier: func(cfg *Config) {
+				cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+				cfg.Store.MaxItems = 10
+				cfg.Store.TTL = time.Nanosecond
 			},
 			sampleTraces:  buildSampleTrace(t, "val"),
 			verifyMetrics: verifyHappyCaseMetricsWithDuration(2, 1),
 		},
 		{
 			name: "test fix failed label not work",
-			cfg: &Config{
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
+			configModifier: func(cfg *Config) {
+				cfg.Store.MaxItems = 10
+				cfg.Store.TTL = time.Nanosecond
 			},
 			sampleTraces: getGoldenTraces(t, "testdata/failed-label-not-work-simple-trace.yaml"),
 			verifyMetrics: func(t *testing.T, actualMetrics pmetric.Metrics) {
@@ -110,12 +106,10 @@ func TestConnectorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with virtual server span",
-			cfg: &Config{
-				Dimensions: []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
+			configModifier: func(cfg *Config) {
+				cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+				cfg.Store.MaxItems = 10
+				cfg.Store.TTL = time.Nanosecond
 			},
 			sampleTraces: incompleteClientTraces(),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
@@ -126,12 +120,10 @@ func TestConnectorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with virtual client span",
-			cfg: &Config{
-				Dimensions: []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
+			configModifier: func(cfg *Config) {
+				cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+				cfg.Store.MaxItems = 10
+				cfg.Store.TTL = time.Nanosecond
 			},
 			sampleTraces: incompleteServerTraces(false),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
@@ -142,12 +134,10 @@ func TestConnectorConsume(t *testing.T) {
 		},
 		{
 			name: "incomplete traces with client span lost",
-			cfg: &Config{
-				Dimensions: []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
+			configModifier: func(cfg *Config) {
+				cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+				cfg.Store.MaxItems = 10
+				cfg.Store.TTL = time.Nanosecond
 			},
 			sampleTraces: incompleteServerTraces(true),
 			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
@@ -156,12 +146,10 @@ func TestConnectorConsume(t *testing.T) {
 		},
 		{
 			name: "complete traces with legacy latency metrics",
-			cfg: &Config{
-				Dimensions: []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
+			configModifier: func(cfg *Config) {
+				cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+				cfg.Store.MaxItems = 10
+				cfg.Store.TTL = time.Nanosecond
 			},
 			sampleTraces:  buildSampleTrace(t, "val"),
 			gates:         []*featuregate.Gate{legacyLatencyUnitMsFeatureGate},
@@ -175,9 +163,12 @@ func TestConnectorConsume(t *testing.T) {
 			}
 
 			// Prepare
+			cfg := createDefaultConfig().(*Config)
+			tc.configModifier(cfg)
+
 			set := componenttest.NewNopTelemetrySettings()
 			set.Logger = zaptest.NewLogger(t)
-			conn, err := newConnector(set, tc.cfg, newMockMetricsExporter())
+			conn, err := newConnector(set, cfg, newMockMetricsExporter())
 			require.NoError(t, err)
 			assert.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -464,14 +455,6 @@ func TestUpdateDurationMetrics(t *testing.T) {
 }
 
 func TestStaleSeriesCleanup(t *testing.T) {
-	// Prepare
-	cfg := &Config{
-		Dimensions: []string{"some-attribute", "non-existing-attribute"},
-		Store: StoreConfig{
-			MaxItems: 10,
-			TTL:      time.Second,
-		},
-	}
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 	mockMetricsExporter := newMockMetricsExporter()
@@ -491,6 +474,11 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	}
 
 	t.Run("use explicit histogram", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+		cfg.Store.MaxItems = 10
+		cfg.Store.TTL = time.Second
+
 		p, err := newConnector(set, cfg, mockMetricsExporter)
 		require.NoError(t, err)
 		assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
@@ -511,9 +499,13 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		assert.NoError(t, p.Shutdown(t.Context()))
 	})
 	t.Run("use exponential histogram", func(t *testing.T) {
-		cfg2 := cfg
+		cfg := createDefaultConfig().(*Config)
+		cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+		cfg.Store.MaxItems = 10
+		cfg.Store.TTL = time.Second
 		cfg.ExponentialHistogramMaxSize = 160
-		p, err := newConnector(set, cfg2, mockMetricsExporter)
+
+		p, err := newConnector(set, cfg, mockMetricsExporter)
 		require.NoError(t, err)
 		assert.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
 
@@ -536,13 +528,10 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// Prepare
-	cfg := &Config{
-		Dimensions: []string{"some-attribute", "non-existing-attribute"},
-		Store: StoreConfig{
-			MaxItems: 10,
-			TTL:      time.Second,
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+	cfg.Store.MaxItems = 10
+	cfg.Store.TTL = time.Second
 
 	mockMetricsExporter := newMockMetricsExporter()
 
@@ -595,13 +584,10 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 }
 
 func TestValidateOwnTelemetry(t *testing.T) {
-	cfg := &Config{
-		Dimensions: []string{"some-attribute", "non-existing-attribute"},
-		Store: StoreConfig{
-			MaxItems: 10,
-			TTL:      time.Second,
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+	cfg.Store.MaxItems = 10
+	cfg.Store.TTL = time.Second
 
 	mockMetricsExporter := newMockMetricsExporter()
 	tel := componenttest.NewTelemetry()
@@ -636,12 +622,11 @@ func TestValidateOwnTelemetry(t *testing.T) {
 func TestExtraDimensionsLabels(t *testing.T) {
 	t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39210")
 	extraDimensions := []string{"db.system", "messaging.system"}
-	cfg := &Config{
-		Dimensions:              extraDimensions,
-		LatencyHistogramBuckets: []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
-		Store:                   StoreConfig{MaxItems: 10},
-		MetricsFlushInterval:    ptr(0 * time.Millisecond),
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Dimensions = extraDimensions
+	cfg.LatencyHistogramBuckets = []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))}
+	cfg.Store.MaxItems = 10
+	cfg.MetricsFlushInterval = 0 * time.Millisecond
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
@@ -672,14 +657,13 @@ func TestExtraDimensionsLabels(t *testing.T) {
 
 func TestVirtualNodeServerLabels(t *testing.T) {
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
-	cfg := &Config{
-		Dimensions:                virtualNodeDimensions,
-		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
-		Store:                     StoreConfig{MaxItems: 10},
-		VirtualNodePeerAttributes: virtualNodeDimensions,
-		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      ptr(time.Millisecond),
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Dimensions = virtualNodeDimensions
+	cfg.LatencyHistogramBuckets = []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))}
+	cfg.Store.MaxItems = 10
+	cfg.VirtualNodePeerAttributes = virtualNodeDimensions
+	cfg.VirtualNodeExtraLabel = true
+	cfg.MetricsFlushInterval = time.Millisecond
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
@@ -721,14 +705,13 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 
 func TestVirtualNodeClientLabels(t *testing.T) {
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
-	cfg := &Config{
-		Dimensions:                virtualNodeDimensions,
-		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
-		Store:                     StoreConfig{MaxItems: 10},
-		VirtualNodePeerAttributes: virtualNodeDimensions,
-		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      ptr(time.Millisecond),
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Dimensions = virtualNodeDimensions
+	cfg.LatencyHistogramBuckets = []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))}
+	cfg.Store.MaxItems = 10
+	cfg.VirtualNodePeerAttributes = virtualNodeDimensions
+	cfg.VirtualNodeExtraLabel = true
+	cfg.MetricsFlushInterval = time.Millisecond
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
@@ -770,14 +753,12 @@ func TestExponentialHistogram(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 
-	cfg := &Config{
-		Dimensions: []string{"some-attribute", "non-existing-attribute"},
-		Store: StoreConfig{
-			MaxItems: 10,
-			TTL:      time.Nanosecond,
-		},
-		ExponentialHistogramMaxSize: 4,
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Dimensions = []string{"some-attribute", "non-existing-attribute"}
+	cfg.Store.MaxItems = 10
+	cfg.Store.TTL = time.Nanosecond
+	cfg.ExponentialHistogramMaxSize = 4
+
 	conn, err := newConnector(set, cfg, newMockMetricsExporter())
 	require.NoError(t, err)
 	assert.NoError(t, conn.Start(t.Context(), componenttest.NewNopHost()))
@@ -856,9 +837,4 @@ func verifyExpDuration(t *testing.T, m pmetric.Metric, expectedDp pmetric.Expone
 	dp.SetTimestamp(pcommon.Timestamp(0))
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
 	assert.Equal(t, expectedDp, dp)
-}
-
-// ptr returns a pointer to the given value.
-func ptr[T any](value T) *T {
-	return &value
 }
