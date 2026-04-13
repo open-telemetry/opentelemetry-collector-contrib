@@ -10,6 +10,6 @@ var ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate = featuregate.Glo
 	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33607"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/33741"),
 	featuregate.WithRegisterFromVersion("v0.104.0"),
 )
