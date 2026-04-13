@@ -205,9 +205,6 @@ linters:
         path: processor/tailsamplingprocessor/
       - linters:
           - forbidigo
-        path: processor/transformprocessor/
-      - linters:
-          - forbidigo
         path: receiver/awscontainerinsightreceiver/
       - linters:
           - forbidigo

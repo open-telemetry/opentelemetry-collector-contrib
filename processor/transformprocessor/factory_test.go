@@ -62,7 +62,7 @@ func TestFactory_Type(t *testing.T) {
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
+		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.ID(), false)
 	})
 
 	factory := NewFactory()
@@ -77,7 +77,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assertConfigContainsDefaultFunctions(t, *cfg.(*Config))
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
-	err := featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, true)
+	err := featuregate.GlobalRegistry().Set(metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.ID(), true)
 	require.NoError(t, err)
 
 	cfg = factory.CreateDefaultConfig()
