@@ -30,6 +30,7 @@ func BenchmarkReadExistingLogs(b *testing.B) {
 }
 
 func benchmarkReadExistingLogs(b *testing.B, lines int) {
+	b.ReportAllocs()
 	logFilePath := generateLogFile(b, lines)
 
 	config := NewConfig()
@@ -124,12 +125,13 @@ func (*benchmarkOutput) Stop() error {
 // Type implements operator.Operator.
 func (*benchmarkOutput) Type() string { return "benchmark_output" }
 
-func (o *benchmarkOutput) Process(_ context.Context, _ *entry.Entry) error {
+func (o *benchmarkOutput) Process(_ context.Context, e *entry.Entry) error {
 	o.logsReceived++
 	if o.logsReceived == o.totalLogs {
 		o.doneChan <- struct{}{}
 		o.logsReceived = 0
 	}
+	entry.Put(e)
 	return nil
 }
 
@@ -138,6 +140,9 @@ func (o *benchmarkOutput) ProcessBatch(_ context.Context, entries []*entry.Entry
 	if o.logsReceived >= o.totalLogs {
 		o.doneChan <- struct{}{}
 		o.logsReceived = 0
+	}
+	for _, e := range entries {
+		entry.Put(e)
 	}
 	return nil
 }

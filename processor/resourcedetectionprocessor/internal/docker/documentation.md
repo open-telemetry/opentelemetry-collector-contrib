@@ -6,9 +6,9 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| container.image.name | The container image name | Any Str | false |
-| container.name | The container name | Any Str | false |
-| host.name | The host.name | Any Str | true |
-| os.type | The os.type | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| container.image.name | The container image name | Any Str | false | - |
+| container.name | The container name | Any Str | false | - |
+| host.name | The host.name | Any Str | true | - |
+| os.type | The os.type | Any Str | true | - |

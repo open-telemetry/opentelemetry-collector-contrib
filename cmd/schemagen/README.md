@@ -77,7 +77,7 @@ allowedRefs:
   - go.opentelemetry.io/collector
   - github.com/open-telemetry/opentelemetry-collector-contrib
 componentOverrides:
-  receiver/namedpipe:
+  receiver/named_pipe:
     configName: 'NamedPipeConfig'
   receiver/file_log:
     configName: 'FileLogConfig'
