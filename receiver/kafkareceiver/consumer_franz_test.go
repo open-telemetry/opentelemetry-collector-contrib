@@ -382,9 +382,12 @@ func TestResumePartitionsAfterRebalance(t *testing.T) {
 		t.Fatal("timed out waiting for consume error")
 	}
 
-	// Allow time for PauseFetchPartitions to be called after the error
+	// Wait for PauseFetchPartitions to be called after the error
 	// propagates through handleMessage -> the consume loop.
-	time.Sleep(200 * time.Millisecond)
+	require.EventuallyWithT(t, func(ct *assert.CollectT) {
+		paused := c.client.PauseFetchPartitions(nil)
+		assert.NotEmpty(ct, paused, "expected partition to be paused")
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Switch to success mode and simulate a cooperative-sticky rebalance:
 	// the partition is lost (revoked) and then reassigned to the same consumer.
@@ -409,17 +412,16 @@ func TestResumePartitionsAfterRebalance(t *testing.T) {
 
 // TestResumePartitionsAfterBackoff verifies that when a non-permanent error
 // occurs with message_marking.after=true and message_marking.on_error=false,
-// the partition is paused and then automatically resumed after the configured
-// backoff delay. SetOffsets rewinds the fetch cursor to the failed record
-// before resuming, so the same record is retried on resume, consistent with
-// how a rebalance restarts from the last committed offset.
+// SetOffsets rewinds the fetch cursor to the failed record after inner retries
+// are exhausted. On the next PollRecords call, the same record is retried,
+// consistent with how a rebalance restarts from the last committed offset.
 func TestResumePartitionsAfterBackoff(t *testing.T) {
 	topic := "otlp_spans"
 	kafkaClient, cfg := mustNewFakeCluster(t, kfake.SeedTopics(1, topic))
 	cfg.GroupID = t.Name()
 	cfg.MessageMarking = MessageMarking{
 		After:   true,
-		OnError: false, // errors are NOT marked -> triggers PauseFetchPartitions
+		OnError: false, // errors are NOT marked -> triggers SetOffsets rewind
 	}
 	cfg.ErrorBackOff = configretry.BackOffConfig{
 		Enabled:             true,
@@ -457,7 +459,7 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 	require.NoError(t, c.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, c.Shutdown(t.Context())) }()
 
-	// Produce a single record to trigger the error -> pause -> rewind -> resume cycle.
+	// Produce a single record to trigger the error -> rewind -> retry cycle.
 	traces := testdata.GenerateTraces(1)
 	data, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
 	require.NoError(t, err)
@@ -473,15 +475,14 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 	}
 
 	// Switch to success mode. After inner retries exhaust (MaxElapsedTime),
-	// the partition is paused, SetOffsets rewinds the cursor to the failed
-	// record, and ResumeFetchPartitions resumes after MaxInterval. The same
-	// record is then retried successfully.
+	// SetOffsets rewinds the cursor to the failed record. The next
+	// PollRecords call retries it successfully.
 	shouldError.Store(false)
 
 	assert.Eventually(t, func() bool {
 		return consumeCount.Load() > 0
 	}, 5*time.Second, 50*time.Millisecond,
-		"expected partition to resume and retry the same record after backoff, but it stayed paused")
+		"expected the failed record to be retried after SetOffsets rewind, but it was not")
 }
 
 // TestNoResumePartitionsAfterPermanentError verifies that when a permanent
@@ -545,8 +546,11 @@ func TestNoResumePartitionsAfterPermanentError(t *testing.T) {
 		t.Fatal("timed out waiting for consume error")
 	}
 
-	// Allow generous time for any potential (incorrect) resume to happen.
-	time.Sleep(200 * time.Millisecond)
+	// Wait for PauseFetchPartitions to be called after the permanent error.
+	require.EventuallyWithT(t, func(ct *assert.CollectT) {
+		paused := c.client.PauseFetchPartitions(nil)
+		assert.NotEmpty(ct, paused, "expected partition to be paused")
+	}, 5*time.Second, 10*time.Millisecond)
 
 	// Produce another record. If the partition were incorrectly resumed,
 	// this would be consumed. With the fix, it stays paused.
@@ -554,8 +558,7 @@ func TestNoResumePartitionsAfterPermanentError(t *testing.T) {
 		Topic: topic, Value: data,
 	}).FirstErr())
 
-	// Wait and verify the second record is NOT consumed (partition stays paused).
-	time.Sleep(300 * time.Millisecond)
+	// Partition is confirmed paused, so the record cannot be consumed.
 	assert.Equal(t, int64(1), consumeCount.Load(),
 		"expected partition to remain paused after permanent error, but additional records were consumed")
 }
