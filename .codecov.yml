@@ -197,6 +197,10 @@ component_management:
     name: exporter_googlemanagedprometheus
     paths:
     - exporter/googlemanagedprometheusexporter/**
+  - component_id: exporter_googlesecops
+    name: exporter_googlesecops
+    paths:
+    - exporter/googlesecopsexporter/**
   - component_id: exporter_honeycombmarker
     name: exporter_honeycombmarker
     paths:
@@ -537,6 +541,10 @@ component_management:
     name: processor_span
     paths:
     - processor/spanprocessor/**
+  - component_id: processor_spanpruning
+    name: processor_spanpruning
+    paths:
+    - processor/spanpruningprocessor/**
   - component_id: processor_sumologic
     name: processor_sumologic
     paths:

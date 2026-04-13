@@ -293,7 +293,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5.5.4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -509,7 +509,7 @@ jobs:
           docker run otel/opentelemetry-collector-contrib-dev:"$GITHUB_SHA" --version
           docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}

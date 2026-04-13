@@ -23,6 +23,14 @@ var ReceiverPrometheusreceiverEnableNativeHistogramsFeatureGate = featuregate.Gl
 	featuregate.WithRegisterToVersion("v0.145.0"),
 )
 
+var ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.IgnoreScopeInfoMetric",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502"),
+	featuregate.WithRegisterFromVersion("v0.148.0"),
+)
+
 var ReceiverPrometheusreceiverRemoveStartTimeAdjustmentFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	featuregate.StageStable,
