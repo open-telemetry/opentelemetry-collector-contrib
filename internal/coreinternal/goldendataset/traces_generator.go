@@ -24,6 +24,9 @@ func GenerateTraces(tracePairsFile, spanPairsFile string) ([]ptrace.Traces, erro
 	if metadata.InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate.IsEnabled() {
 		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0NetworkConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1NetworkConventions")
 	}
+	if metadata.InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate.IsEnabled() && !metadata.InternalCoreinternalGoldendatasetEmitV1RPCConventionsFeatureGate.IsEnabled() {
+		return nil, errors.New("internal.coreinternal.goldendataset.DontEmitV0RPCConventions cannot be enabled without enabling internal.coreinternal.goldendataset.EmitV1RPCConventions")
+	}
 	random := (*randReader)(rand.New(rand.NewPCG(42, 0)))
 	pairsData, err := loadPictOutputFile(tracePairsFile)
 	if err != nil {
