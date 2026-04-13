@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	semconv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv138 "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // SanitizeSpanName obfuscates the span name if it represents a database statement.

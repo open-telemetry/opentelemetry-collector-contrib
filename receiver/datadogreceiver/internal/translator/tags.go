@@ -9,7 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 var MultiTagParsingFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -75,7 +76,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	// AWS S3
 	"aws.s3.bucket_name":      string(conventions.AWSS3BucketKey),
 	"aws.response.request_id": string(conventions.AWSRequestIDKey),
-	"aws.service":             string(conventions.RPCServiceKey),
+	"aws.service":             string(conventionsv138.RPCServiceKey),
 	"aws.operation":           string(conventions.RPCMethodKey),
 
 	// DB

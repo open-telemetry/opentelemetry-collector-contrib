@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
-	semconv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv138 "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // SanitizeSpanName sanitizes the span name if the span looks like an HTTP span.

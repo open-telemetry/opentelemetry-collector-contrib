@@ -253,9 +253,9 @@ linters:
           list-mode: lax
           deny:
             - pkg: go.opentelemetry.io/otel/semconv
-              desc: Use go.opentelemetry.io/otel/semconv/v1.39.0 instead. If a newer semconv version has been released, update the depguard rule.
+              desc: Use go.opentelemetry.io/otel/semconv/v1.40.0 instead. If a newer semconv version has been released, update the depguard rule.
           allow:
-            # TODO: Remove older semconv versions after v1.39.0 migration is complete.
+            # TODO: Remove older semconv versions after v1.40.0 migration is complete.
             # If for any reason an individual package needs to use an older semconv version,
             # add a nolint directive on the import line.
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35325
@@ -291,7 +291,14 @@ linters:
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45086
             # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45299
             - go.opentelemetry.io/otel/semconv/v1.28.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47544
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47545
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47546
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47547
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47551
             - go.opentelemetry.io/otel/semconv/v1.38.0
+            # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543
             - go.opentelemetry.io/otel/semconv/v1.39.0
             - go.opentelemetry.io/otel/semconv/v1.40.0
 
