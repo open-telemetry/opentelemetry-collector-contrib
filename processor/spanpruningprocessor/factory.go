@@ -38,7 +38,7 @@ func createDefaultConfig() component.Config {
 			100 * time.Millisecond,
 			250 * time.Millisecond,
 			500 * time.Millisecond,
-			1 * time.Second,
+			time.Second,
 			2500 * time.Millisecond,
 			5 * time.Second,
 			10 * time.Second,
