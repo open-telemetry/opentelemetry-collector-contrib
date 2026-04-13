@@ -52,11 +52,23 @@ func newTestProvider(configFile string) confmap.Provider {
 
 func TestFunctionalityS3URISplit(t *testing.T) {
 	fp := newTestProvider("./testdata/otel-config.yaml")
-	bucket, region, key, err := s3URISplit("s3://bucket.s3.region.amazonaws.com/key")
+	bucket, region, key, endpoint, err := s3URISplit("s3://bucket.s3.region.amazonaws.com/key")
 	assert.NoError(t, err)
 	assert.Equal(t, "bucket", bucket)
 	assert.Equal(t, "region", region)
 	assert.Equal(t, "key", key)
+	assert.Equal(t, "", endpoint)
+	assert.NoError(t, fp.Shutdown(t.Context()))
+}
+
+func TestFunctionalityS3URISplitCompatible(t *testing.T) {
+	fp := newTestProvider("./testdata/otel-config.yaml")
+	bucket, region, key, endpoint, err := s3URISplit("s3://storage.googleapis.com/my-bucket/path/to/key.yaml?region=us-east-1")
+	assert.NoError(t, err)
+	assert.Equal(t, "my-bucket", bucket)
+	assert.Equal(t, "us-east-1", region)
+	assert.Equal(t, "path/to/key.yaml", key)
+	assert.Equal(t, "https://storage.googleapis.com", endpoint)
 	assert.NoError(t, fp.Shutdown(t.Context()))
 }
 
@@ -79,6 +91,10 @@ func TestURIs(t *testing.T) {
 		{"Test malformed uri", "s3://some-bucket.s3.us-west-2.amazonaws.com/key%", "", "", "", false},
 		{"Unsupported scheme", "https://google.com", "", "", "", false},
 		{"Valid bucket", "s3://bucket.name-here.s3.us-west-2.amazonaws.com/key", "bucket.name-here", "us-west-2", "key", true},
+		// S3-compatible endpoint (path-style) cases
+		{"Compatible missing bucket or key", "s3://storage.googleapis.com/onlybucket", "", "", "", false},
+		{"Compatible valid with region", "s3://storage.googleapis.com/mybucket/config.yaml?region=us-east-1", "mybucket", "us-east-1", "config.yaml", true},
+		{"Compatible no region", "s3://minio.example.com/mybucket/config.yaml", "mybucket", "", "config.yaml", true},
 	}
 
 	for _, tt := range tests {
