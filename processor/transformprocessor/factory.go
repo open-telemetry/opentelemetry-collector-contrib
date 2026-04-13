@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
@@ -33,16 +32,6 @@ import (
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
-
-const defaultErrorModeIgnoreGateID = "processor.transform.defaultErrorModeIgnore"
-
-var defaultErrorModeIgnoreFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	defaultErrorModeIgnoreGateID,
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Changes the default error_mode of the transform processor from propagate to ignore"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47231"),
-	featuregate.WithRegisterFromVersion("v0.150.0"),
-)
 
 type transformProcessorFactory struct {
 	dataPointFunctions                  map[string]ottl.Factory[*ottldatapoint.TransformContext]
@@ -218,7 +207,7 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 
 func (f *transformProcessorFactory) createDefaultConfig() component.Config {
 	defaultErrorMode := ottl.PropagateError
-	if defaultErrorModeIgnoreFeatureGate.IsEnabled() {
+	if metadata.ProcessorTransformDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
 		defaultErrorMode = ottl.IgnoreError
 	}
 	return &Config{
