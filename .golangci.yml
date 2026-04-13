@@ -187,9 +187,6 @@ linters:
         path: receiver/jaegerreceiver/
       - linters:
           - forbidigo
-        path: receiver/prometheusreceiver/
-      - linters:
-          - forbidigo
         path: receiver/vcenterreceiver/
 
     # Log a warning if an exclusion rule is unused.
