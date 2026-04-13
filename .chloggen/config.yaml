@@ -331,13 +331,13 @@ components:
     - receiver/systemd
     - receiver/tcp_log
     - receiver/tcpcheck
-    - receiver/tlscheck
+    - receiver/tls_check
     - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
     - receiver/wavefront
     - receiver/webhookevent
-    - receiver/windowseventlog
+    - receiver/windows_event_log
     - receiver/windowsperfcounters
     - receiver/windowsservice
     - receiver/yang_grpc
