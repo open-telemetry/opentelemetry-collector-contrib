@@ -102,7 +102,7 @@ func newTransaction(
 	}
 }
 
-// Append returns a stable series reference to enable Prometheus staleness tracking.
+// append returns a stable series reference to enable Prometheus staleness tracking.
 func (t *transaction) append(ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	t.addingNativeHistogram = false
 	t.addingNHCB = false
@@ -112,14 +112,13 @@ func (t *transaction) append(ls labels.Labels, atMs int64, val float64) (storage
 		return 0, err
 	}
 
-	scope, _ := getScopeID(ls)
-	return t.addSampleDatapoint(*rKey, scope, ls, metricName, atMs, val, 0)
+	return t.addSampleDatapoint(*rKey, ls, metricName, atMs, val, 0)
 }
 
 // addSampleDatapoint processes one scraped sample and stores it in the
 // appropriate metric family for the resource/scope context. It is shared by
 // both V1 and V2 appender paths.
-func (t *transaction) addSampleDatapoint(rKey resourceKey, scope scopeID, ls labels.Labels, metricName string, atMs int64, val float64, stMs int64) (storage.SeriesRef, error) {
+func (t *transaction) addSampleDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, val float64, stMs int64) (storage.SeriesRef, error) {
 	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 	// But it can also be a staleNaN, which is inserted when the target goes away.
@@ -152,15 +151,15 @@ func (t *transaction) addSampleDatapoint(rKey resourceKey, scope scopeID, ls lab
 	t.addScopeAttributesFromLabels(rKey, parsedScope, attrs)
 
 	if value.IsStaleNaN(val) {
-		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls) {
+		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, parsedScope, metricName, ls) {
 			return 0, nil
 		}
 	}
 
-	curMF := t.getOrCreateMetricFamily(rKey, scope, metricName)
+	curMF := t.getOrCreateMetricFamily(rKey, parsedScope, metricName)
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 
-	if stMs > 0 {
+	if stMs != 0 {
 		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 	}
 
@@ -295,18 +294,20 @@ func (t *transaction) appendHistogram(ls labels.Labels, atMs int64, h *histogram
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	scope, _ := getScopeID(ls)
-	return t.addHistogramDatapoint(*rKey, scope, ls, metricName, atMs, h, fh, schema, 0)
+	return t.addHistogramDatapoint(*rKey, ls, metricName, atMs, h, fh, schema, 0)
 }
 
 // addHistogramDatapoint adds a native histogram or NHCB datapoint to the appropriate metric family.
-// When stMs > 0, it also records a creation timestamp on the metric family.
+// When stMs != 0, it also records a creation timestamp on the metric family.
 // It is shared by both V1 and V2 appender paths.
-func (t *transaction) addHistogramDatapoint(rKey resourceKey, scope scopeID, ls labels.Labels, metricName string, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, error) {
-	curMF := t.getOrCreateMetricFamily(rKey, scope, metricName)
+func (t *transaction) addHistogramDatapoint(rKey resourceKey, ls labels.Labels, metricName string, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram, schema int32, stMs int64) (storage.SeriesRef, error) {
+	parsedScope, attrs := getScopeID(ls)
+	t.addScopeAttributesFromLabels(rKey, parsedScope, attrs)
+
+	curMF := t.getOrCreateMetricFamily(rKey, parsedScope, metricName)
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 
-	if stMs > 0 {
+	if stMs != 0 {
 		curMF.addCreationTimestamp(seriesRef, ls, atMs, stMs)
 	}
 
@@ -315,7 +316,7 @@ func (t *transaction) addHistogramDatapoint(rKey resourceKey, scope scopeID, ls 
 	}
 
 	var err error
-	if schema == -53 {
+	if schema == histogram.CustomBucketsSchema {
 		err = curMF.addNHCBSeries(seriesRef, metricName, ls, atMs, h, fh)
 	} else {
 		err = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, h, fh)
@@ -673,16 +674,14 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, stMs, atMs i
 			schema = fh.Schema
 		}
 		t.addingNativeHistogram = true
-		t.addingNHCB = schema == -53
+		t.addingNHCB = schema == histogram.CustomBucketsSchema
 
-		scope, _ := getScopeID(ls)
-		sRef, _ = t.addHistogramDatapoint(*rKey, scope, ls, metricName, atMs, h, fh, schema, stMs)
+		sRef, _ = t.addHistogramDatapoint(*rKey, ls, metricName, atMs, h, fh, schema, stMs)
 	} else {
 		t.addingNativeHistogram = false
 		t.addingNHCB = false
 
-		scope, _ := getScopeID(ls)
-		sRef, _ = t.addSampleDatapoint(*rKey, scope, ls, metricName, atMs, val, stMs)
+		sRef, _ = t.addSampleDatapoint(*rKey, ls, metricName, atMs, val, stMs)
 	}
 
 	// Append the exemplars, continuing on error to try all exemplars.

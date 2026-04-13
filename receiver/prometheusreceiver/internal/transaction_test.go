@@ -2154,6 +2154,8 @@ func TestTransactionAppend(t *testing.T) {
 		labels             labels.Labels
 		expectedMetricType pmetric.MetricType
 		expectedExemplars  int
+		expectedScope      string
+		expectedVersion    string
 	}
 
 	tests := []testCase{
@@ -2207,6 +2209,41 @@ func TestTransactionAppend(t *testing.T) {
 			),
 			expectedExemplars: 0,
 		},
+		{
+			name:               "counter with scope name and version",
+			stMs:               1,
+			atMs:               ts,
+			val:                10.0,
+			opts:               storage.AOptions{},
+			expectedMetricType: pmetric.MetricTypeSum,
+			labels: labels.FromStrings(
+				model.InstanceLabel, "localhost:8080",
+				model.JobLabel, "test",
+				model.MetricNameLabel, "counter_test",
+				prometheus.ScopeNameLabelKey, "my.scope",
+				prometheus.ScopeVersionLabelKey, "v1.2.3",
+			),
+			expectedScope:   "my.scope",
+			expectedVersion: "v1.2.3",
+		},
+		{
+			name: "histogram with scope name and version",
+			stMs: 1,
+			atMs: ts,
+			h:    tsdbutil.GenerateTestHistogram(1),
+			opts: storage.AOptions{},
+			labels: labels.FromStrings(
+				model.InstanceLabel, "localhost:8080",
+				model.JobLabel, "test",
+				model.MetricNameLabel, "hist_test",
+				prometheus.ScopeNameLabelKey, "my.scope",
+				prometheus.ScopeVersionLabelKey, "v1.2.3",
+			),
+			expectedScope:      "my.scope",
+			expectedVersion:    "v1.2.3",
+			expectedMetricType: pmetric.MetricTypeExponentialHistogram,
+			expectedExemplars:  0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -2221,17 +2258,32 @@ func TestTransactionAppend(t *testing.T) {
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
 			md := mds[0]
-			require.Equal(t, tt.expectedMetricType, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Type())
+			sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
+			require.Equal(t, tt.expectedMetricType, sm.Metrics().At(0).Type())
+			if tt.expectedScope != "" {
+				require.Equal(t, tt.expectedScope, sm.Scope().Name())
+			}
+			if tt.expectedVersion != "" {
+				require.Equal(t, tt.expectedVersion, sm.Scope().Version())
+			}
 			switch tt.expectedMetricType {
 			case pmetric.MetricTypeSum:
-				require.Equal(t, tt.val, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).DoubleValue())
-				dp := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0)
+				dp := sm.Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, tt.val, dp.DoubleValue())
 				if tt.expectedExemplars > 0 {
 					require.Equal(t, tt.expectedExemplars, dp.Exemplars().Len())
 				}
 				require.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(tt.stMs)), dp.StartTimestamp())
 			case pmetric.MetricTypeExponentialHistogram:
-				dp := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
+				dp := sm.Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
+				expectedSum := func() float64 {
+					if tt.h != nil {
+						return tt.h.Sum
+					} else {
+						return tt.fh.Sum
+					}
+				}()
+				require.Equal(t, expectedSum, dp.Sum())
 				if tt.expectedExemplars > 0 {
 					require.Equal(t, tt.expectedExemplars, dp.Exemplars().Len())
 				}
