@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory"
 	pullobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/pull"
 	watchobserver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory/watch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -153,7 +153,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 
 	// Initialize storage client for resource version persistence if storage is configured
 	if kr.config.Storage != nil {
-		storageClient, storageErr := adapter.GetStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
+		storageClient, storageErr := getStorageClient(ctx, host, kr.config.Storage, kr.setting.ID)
 		if storageErr != nil {
 			return fmt.Errorf("failed to get storage client: %w", storageErr)
 		}
@@ -341,4 +341,26 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		// This shouldn't happen as we validate ErrorMode during config validation
 		return fmt.Errorf("invalid error_mode %q: %w", kr.config.ErrorMode, err)
 	}
+}
+
+func getStorageClient(ctx context.Context, host component.Host, storageID *component.ID, componentID component.ID) (storage.Client, error) {
+	if storageID == nil {
+		return storage.NewNopClient(), nil
+	}
+
+	extension, ok := host.GetExtensions()[*storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension '%s' not found", storageID)
+	}
+
+	storageExtension, ok := extension.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("non-storage extension '%s' found", storageID)
+	}
+
+	// Make storage immune to component renames that add underscores to the component type.
+	// This is a workaround for https://github.com/open-telemetry/opentelemetry-collector/issues/14988.
+	normalizedComponentType := strings.ReplaceAll(componentID.Type().String(), "_", "")
+	normalizedComponentID := component.MustNewIDWithName(normalizedComponentType, componentID.Name())
+	return storageExtension.GetClient(ctx, component.KindReceiver, normalizedComponentID, "")
 }
