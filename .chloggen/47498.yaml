@@ -7,10 +7,10 @@ change_type: enhancement
 component: exporter/sumologic
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Modify retry settings to prevent sumologic exporter dropping data on transient backend unavailability
+note: Modify default retry settings to prevent dropping data on transient backend unavailability
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47498]
+issues: [47503]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
