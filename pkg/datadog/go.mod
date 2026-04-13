@@ -50,6 +50,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.55.1-0.20260409104450-d686cf9058ce
 	go.opentelemetry.io/collector/pdata v1.55.1-0.20260409104450-d686cf9058ce
 	go.opentelemetry.io/otel/metric v1.43.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/net v0.52.0
 	google.golang.org/protobuf v1.36.11

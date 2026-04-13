@@ -190,9 +190,6 @@ linters:
         path: internal/filter/
       - linters:
           - forbidigo
-        path: pkg/datadog/
-      - linters:
-          - forbidigo
         path: pkg/ottl/
       - linters:
           - forbidigo
