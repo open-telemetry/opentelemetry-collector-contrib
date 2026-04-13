@@ -172,16 +172,14 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 	}
 
 	// AcceptsPackages and ReportsPackageStatuses are not yet fully implemented.
-	// They are included here for completeness
-	// and will be uncommented when the package upgrade feature is ready.
+	// They are included here for completeness.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272
-	//
-	// if c.AcceptsPackages {
-	// 	supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
-	// }
-	// if c.ReportsPackageStatuses {
-	// 	supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
-	// }
+	if c.AcceptsPackages {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
+	}
+	if c.ReportsPackageStatuses {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
+	}
 
 	return supportedCapabilities
 }

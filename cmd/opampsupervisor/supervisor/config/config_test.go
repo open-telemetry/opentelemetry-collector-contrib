@@ -629,12 +629,14 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
-			name: "Package capabilities have no effect",
+			name: "Package capabilities are reported",
 			capabilities: Capabilities{
 				AcceptsPackages:        true,
 				ReportsPackageStatuses: true,
 			},
-			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
 		},
 		{
 			name: "Many capabilities",
@@ -664,7 +666,9 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents |
-				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat,
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHeartbeat |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses,
 		},
 	}
 

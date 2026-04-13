@@ -321,10 +321,11 @@ func (s *Supervisor) Start(ctx context.Context) error {
 	}
 
 	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
-		s.telemetrySettings.Logger.Warn(
-			"accepts_packages and reports_package_statuses capabilities are not yet fully implemented and are disabled. " +
+		s.telemetrySettings.Logger.Error(
+			"accepts_packages and reports_package_statuses capabilities are not yet fully implemented. " +
 				"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47272 for progress.",
 		)
+		return errors.New("accepts_packages and reports_package_statuses capabilities are not yet fully implemented")
 	}
 
 	if err = s.getFeatureGates(); err != nil {
