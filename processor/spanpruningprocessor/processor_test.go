@@ -295,6 +295,40 @@ func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
 	}
 }
 
+func TestLeafSpanPruningProcessorWithHistogramDisabled(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.AggregationHistogramBuckets = []time.Duration{}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithKnownDurations(t, []int64{
+		int64(5 * time.Millisecond),
+		int64(15 * time.Millisecond),
+		int64(25 * time.Millisecond),
+		int64(75 * time.Millisecond),
+		int64(150 * time.Millisecond),
+	})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+
+	summarySpan, found := findSummarySpan(td)
+	require.True(t, found)
+
+	attrs := summarySpan.Attributes()
+
+	_, exists := attrs.Get("aggregation.histogram_bucket_bounds_s")
+	assert.False(t, exists)
+
+	_, exists = attrs.Get("aggregation.histogram_bucket_counts")
+	assert.False(t, exists)
+}
+
 func TestLeafSpanPruning_GroupByNonStringAttributes(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
