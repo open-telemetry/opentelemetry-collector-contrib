@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: processor/logdedupprocessor
+component: processor/logdedup
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add `metadata_keys` and `metadata_cardinality_limit` options to support multi-tenant pipelines by aggregating logs into separate buckets per unique metadata combination and preserving request context for downstream extensions.
