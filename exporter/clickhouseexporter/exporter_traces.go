@@ -30,11 +30,6 @@ type tracesExporter struct {
 	cfg    *Config
 }
 
-var tracesValidMaterializedSources = map[string]bool{
-	"ResourceAttributes": true,
-	"SpanAttributes":     true,
-}
-
 func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
 	return &tracesExporter{
 		logger: logger,
@@ -79,7 +74,7 @@ func (e *tracesExporter) detectSchemaFeatures(ctx context.Context) error {
 		return err
 	}
 
-	defs := internal.FilterMaterializedColumns(e.cfg.materializedColumnDefs(), tracesValidMaterializedSources)
+	defs := materializedColumnDefs(e.cfg.TracesMaterializedColumns)
 	e.materializedDefs = internal.ValidateMaterializedColumns(defs, columnNames, e.logger)
 
 	return nil

@@ -82,23 +82,6 @@ func ExtractMaterializedValues(defs []MaterializedColumnDef, sources map[string]
 	return values
 }
 
-// FilterMaterializedColumns filters materialized column definitions to only those
-// whose Map (source column) is in the validSources set.
-func FilterMaterializedColumns(defs []MaterializedColumnDef, validSources map[string]bool) []MaterializedColumnDef {
-	if len(defs) == 0 {
-		return nil
-	}
-
-	var filtered []MaterializedColumnDef
-	for _, def := range defs {
-		if validSources[def.Map] {
-			filtered = append(filtered, def)
-		}
-	}
-
-	return filtered
-}
-
 // AppendMaterializedValues appends extracted materialized column values to the columnValues slice.
 func AppendMaterializedValues(columnValues []any, defs []MaterializedColumnDef, sources map[string]pcommon.Map) []any {
 	if len(defs) == 0 {

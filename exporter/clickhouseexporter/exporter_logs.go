@@ -74,12 +74,6 @@ const (
 	logsColumnEventName = "EventName"
 )
 
-var logsValidMaterializedSources = map[string]bool{
-	"ResourceAttributes": true,
-	"ScopeAttributes":    true,
-	"LogAttributes":      true,
-}
-
 func (e *logsExporter) detectSchemaFeatures(ctx context.Context) error {
 	columnNames, err := internal.GetTableColumns(ctx, e.db, e.cfg.database(), e.cfg.LogsTableName)
 	if err != nil {
@@ -92,7 +86,7 @@ func (e *logsExporter) detectSchemaFeatures(ctx context.Context) error {
 		}
 	}
 
-	defs := internal.FilterMaterializedColumns(e.cfg.materializedColumnDefs(), logsValidMaterializedSources)
+	defs := materializedColumnDefs(e.cfg.LogsMaterializedColumns)
 	e.materializedDefs = internal.ValidateMaterializedColumns(defs, columnNames, e.logger)
 
 	return nil

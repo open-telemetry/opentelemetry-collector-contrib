@@ -72,10 +72,14 @@ type Config struct {
 	// ClickHouse v25+ is recommended for reliable JSON support.
 	// You may also need to add `enable_json_type=1` to your endpoint or connection_params.
 	JSON bool `mapstructure:"json"`
-	// MaterializedColumns configures client-side extraction of attribute values into dedicated columns.
+	// LogsMaterializedColumns configures client-side extraction of attribute values into dedicated columns for the logs table.
 	// Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value.
-	// Missing keys default to empty string. Only applies to logs and traces tables.
-	MaterializedColumns []MaterializedColumn `mapstructure:"materialized_columns"`
+	// Missing keys default to empty string. Valid source maps: ResourceAttributes, ScopeAttributes, LogAttributes.
+	LogsMaterializedColumns []MaterializedColumn `mapstructure:"logs_materialized_columns"`
+	// TracesMaterializedColumns configures client-side extraction of attribute values into dedicated columns for the traces table.
+	// Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value.
+	// Missing keys default to empty string. Valid source maps: ResourceAttributes, ScopeAttributes, SpanAttributes.
+	TracesMaterializedColumns []MaterializedColumn `mapstructure:"traces_materialized_columns"`
 	// MetricsTables defines the table names for metric types.
 	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
 }
@@ -93,11 +97,16 @@ type MaterializedColumn struct {
 	Column string `mapstructure:"column"`
 }
 
-var validMaterializedColumnSources = map[string]bool{
+var validLogsMaterializedColumnSources = map[string]bool{
+	"ResourceAttributes": true,
+	"ScopeAttributes":    true,
+	"LogAttributes":      true,
+}
+
+var validTracesMaterializedColumnSources = map[string]bool{
 	"ResourceAttributes": true,
 	"ScopeAttributes":    true,
 	"SpanAttributes":     true,
-	"LogAttributes":      true,
 }
 
 type MetricTablesConfig struct {
@@ -298,25 +307,31 @@ func (cfg *Config) areMetricTableNamesSet() bool {
 }
 
 func (cfg *Config) validateMaterializedColumns() (err error) {
-	seenColumns := make(map[string]bool, len(cfg.MaterializedColumns))
+	err = errors.Join(err, validateMaterializedColumnList("logs_materialized_columns", cfg.LogsMaterializedColumns, validLogsMaterializedColumnSources))
+	err = errors.Join(err, validateMaterializedColumnList("traces_materialized_columns", cfg.TracesMaterializedColumns, validTracesMaterializedColumnSources))
+	return err
+}
 
-	for i, mc := range cfg.MaterializedColumns {
+func validateMaterializedColumnList(fieldName string, columns []MaterializedColumn, validSources map[string]bool) (err error) {
+	seenColumns := make(map[string]bool, len(columns))
+
+	for i, mc := range columns {
 		switch {
 		case mc.Map == "":
-			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: map must not be empty", i))
-		case !validMaterializedColumnSources[mc.Map]:
-			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: invalid map %q, must be one of ResourceAttributes, ScopeAttributes, SpanAttributes, LogAttributes", i, mc.Map))
+			err = errors.Join(err, fmt.Errorf("%s[%d]: map must not be empty", fieldName, i))
+		case !validSources[mc.Map]:
+			err = errors.Join(err, fmt.Errorf("%s[%d]: invalid map %q", fieldName, i, mc.Map))
 		}
 
 		if mc.Key == "" {
-			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: key must not be empty", i))
+			err = errors.Join(err, fmt.Errorf("%s[%d]: key must not be empty", fieldName, i))
 		}
 
 		switch {
 		case mc.Column == "":
-			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: column must not be empty", i))
+			err = errors.Join(err, fmt.Errorf("%s[%d]: column must not be empty", fieldName, i))
 		case seenColumns[mc.Column]:
-			err = errors.Join(err, fmt.Errorf("materialized_columns[%d]: duplicate column name %q", i, mc.Column))
+			err = errors.Join(err, fmt.Errorf("%s[%d]: duplicate column name %q", fieldName, i, mc.Column))
 		default:
 			seenColumns[mc.Column] = true
 		}
@@ -325,14 +340,13 @@ func (cfg *Config) validateMaterializedColumns() (err error) {
 	return err
 }
 
-// materializedColumnDefs converts config MaterializedColumns to internal runtime definitions.
-func (cfg *Config) materializedColumnDefs() []internal.MaterializedColumnDef {
-	if len(cfg.MaterializedColumns) == 0 {
+func materializedColumnDefs(columns []MaterializedColumn) []internal.MaterializedColumnDef {
+	if len(columns) == 0 {
 		return nil
 	}
 
-	defs := make([]internal.MaterializedColumnDef, len(cfg.MaterializedColumns))
-	for i, mc := range cfg.MaterializedColumns {
+	defs := make([]internal.MaterializedColumnDef, len(columns))
+	for i, mc := range columns {
 		defs[i] = internal.MaterializedColumnDef{
 			Map:    mc.Map,
 			Key:    mc.Key,

@@ -787,31 +787,47 @@ func TestLoadConfigMaterializedColumns(t *testing.T) {
 	assert.NoError(t, xconfmap.Validate(cfg))
 
 	chCfg := cfg.(*Config)
-	require.Len(t, chCfg.MaterializedColumns, 2)
-	assert.Equal(t, "ResourceAttributes", chCfg.MaterializedColumns[0].Map)
-	assert.Equal(t, "service.id", chCfg.MaterializedColumns[0].Key)
-	assert.Equal(t, "ServiceId", chCfg.MaterializedColumns[0].Column)
-	assert.Equal(t, "SpanAttributes", chCfg.MaterializedColumns[1].Map)
-	assert.Equal(t, "http.method", chCfg.MaterializedColumns[1].Key)
-	assert.Equal(t, "HttpMethod", chCfg.MaterializedColumns[1].Column)
+	require.Len(t, chCfg.LogsMaterializedColumns, 2)
+	assert.Equal(t, "ResourceAttributes", chCfg.LogsMaterializedColumns[0].Map)
+	assert.Equal(t, "service.id", chCfg.LogsMaterializedColumns[0].Key)
+	assert.Equal(t, "ServiceId", chCfg.LogsMaterializedColumns[0].Column)
+	assert.Equal(t, "LogAttributes", chCfg.LogsMaterializedColumns[1].Map)
+	assert.Equal(t, "log.level", chCfg.LogsMaterializedColumns[1].Key)
+	assert.Equal(t, "LogLevel", chCfg.LogsMaterializedColumns[1].Column)
+
+	require.Len(t, chCfg.TracesMaterializedColumns, 2)
+	assert.Equal(t, "ResourceAttributes", chCfg.TracesMaterializedColumns[0].Map)
+	assert.Equal(t, "service.id", chCfg.TracesMaterializedColumns[0].Key)
+	assert.Equal(t, "ServiceId", chCfg.TracesMaterializedColumns[0].Column)
+	assert.Equal(t, "SpanAttributes", chCfg.TracesMaterializedColumns[1].Map)
+	assert.Equal(t, "http.method", chCfg.TracesMaterializedColumns[1].Key)
+	assert.Equal(t, "HttpMethod", chCfg.TracesMaterializedColumns[1].Column)
 }
 
 func TestValidateMaterializedColumns(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
-		columns []MaterializedColumn
-		wantErr bool
+		name         string
+		logsColumns  []MaterializedColumn
+		traceColumns []MaterializedColumn
+		wantErr      bool
 	}{
 		{
 			name:    "empty is valid",
-			columns: nil,
 			wantErr: false,
 		},
 		{
-			name: "valid config",
-			columns: []MaterializedColumn{
+			name: "valid logs config",
+			logsColumns: []MaterializedColumn{
+				{Map: "ResourceAttributes", Key: "service.name", Column: "mat_svc"},
+				{Map: "LogAttributes", Key: "log.level", Column: "mat_level"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid traces config",
+			traceColumns: []MaterializedColumn{
 				{Map: "ResourceAttributes", Key: "service.name", Column: "mat_svc"},
 				{Map: "SpanAttributes", Key: "http.method", Column: "mat_method"},
 			},
@@ -819,37 +835,44 @@ func TestValidateMaterializedColumns(t *testing.T) {
 		},
 		{
 			name: "empty map",
-			columns: []MaterializedColumn{
+			logsColumns: []MaterializedColumn{
 				{Map: "", Key: "service.name", Column: "mat_svc"},
 			},
 			wantErr: true,
 		},
 		{
-			name: "invalid map",
-			columns: []MaterializedColumn{
-				{Map: "InvalidColumn", Key: "service.name", Column: "mat_svc"},
+			name: "invalid map for logs",
+			logsColumns: []MaterializedColumn{
+				{Map: "SpanAttributes", Key: "http.method", Column: "mat_method"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid map for traces",
+			traceColumns: []MaterializedColumn{
+				{Map: "LogAttributes", Key: "log.level", Column: "mat_level"},
 			},
 			wantErr: true,
 		},
 		{
 			name: "empty key",
-			columns: []MaterializedColumn{
+			logsColumns: []MaterializedColumn{
 				{Map: "ResourceAttributes", Key: "", Column: "mat_svc"},
 			},
 			wantErr: true,
 		},
 		{
 			name: "empty column",
-			columns: []MaterializedColumn{
+			logsColumns: []MaterializedColumn{
 				{Map: "ResourceAttributes", Key: "service.name", Column: ""},
 			},
 			wantErr: true,
 		},
 		{
-			name: "duplicate column names",
-			columns: []MaterializedColumn{
+			name: "duplicate column names within logs",
+			logsColumns: []MaterializedColumn{
 				{Map: "ResourceAttributes", Key: "service.name", Column: "mat_svc"},
-				{Map: "SpanAttributes", Key: "http.method", Column: "mat_svc"},
+				{Map: "LogAttributes", Key: "log.level", Column: "mat_svc"},
 			},
 			wantErr: true,
 		},
@@ -859,7 +882,8 @@ func TestValidateMaterializedColumns(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = defaultEndpoint
-			cfg.MaterializedColumns = tt.columns
+			cfg.LogsMaterializedColumns = tt.logsColumns
+			cfg.TracesMaterializedColumns = tt.traceColumns
 			err := cfg.Validate()
 			if tt.wantErr {
 				assert.Error(t, err)

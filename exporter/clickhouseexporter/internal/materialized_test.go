@@ -161,38 +161,6 @@ func TestExtractMaterializedValues(t *testing.T) {
 	}
 }
 
-func TestFilterMaterializedColumns(t *testing.T) {
-	defs := []MaterializedColumnDef{
-		{Map: "ResourceAttributes", Key: "service.name", Column: "mat_svc"},
-		{Map: "SpanAttributes", Key: "http.method", Column: "mat_method"},
-		{Map: "LogAttributes", Key: "log.level", Column: "mat_level"},
-	}
-
-	tests := []struct {
-		name         string
-		validSources map[string]bool
-		wantLen      int
-	}{
-		{
-			name:         "logs sources",
-			validSources: map[string]bool{"ResourceAttributes": true, "ScopeAttributes": true, "LogAttributes": true},
-			wantLen:      2, // ResourceAttributes and LogAttributes
-		},
-		{
-			name:         "traces sources",
-			validSources: map[string]bool{"ResourceAttributes": true, "SpanAttributes": true},
-			wantLen:      2, // ResourceAttributes and SpanAttributes
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := FilterMaterializedColumns(defs, tt.validSources)
-			assert.Len(t, result, tt.wantLen)
-		})
-	}
-}
-
 func TestAppendMaterializedValues(t *testing.T) {
 	resAttr := pcommon.NewMap()
 	resAttr.PutStr("service.name", "my-service")

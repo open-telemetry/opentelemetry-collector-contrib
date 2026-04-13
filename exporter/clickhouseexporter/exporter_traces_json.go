@@ -96,7 +96,7 @@ func (e *tracesJSONExporter) detectSchemaFeatures(ctx context.Context) error {
 		}
 	}
 
-	defs := internal.FilterMaterializedColumns(e.cfg.materializedColumnDefs(), tracesValidMaterializedSources)
+	defs := materializedColumnDefs(e.cfg.TracesMaterializedColumns)
 	e.materializedDefs = internal.ValidateMaterializedColumns(defs, columnNames, e.logger)
 
 	return nil
