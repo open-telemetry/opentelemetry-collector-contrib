@@ -215,6 +215,7 @@ processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
+processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform
