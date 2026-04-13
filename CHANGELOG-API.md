@@ -7,6 +7,32 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.150.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Return errors when OTTL context accessors receive values of the wrong type (part 2) (#40198)
+  Setters in OTTL contexts now validate that values are of the expected type and return
+  descriptive errors when type mismatches occur. This is the continuation of work done in
+  \#43505, addressing remaining contexts: datapoint, profile, profilesample, resource, span,
+  and spanevent.
+  
+  Changes include:
+  - Slice setters (explicit_bounds, bucket_counts, positive.bucket_counts, negative.bucket_counts)
+    now use SetCommonTypedSliceValues/SetCommonIntSliceValues for better type handling.
+  - SetMap now returns an error for invalid value types instead of silently ignoring them.
+  
+  **Note:** Users may see new errors from OTTL statements that were previously silently failing
+  due to type mismatches. These errors indicate pre-existing issues in OTTL configurations that
+  were not being applied as expected.
+  
+
+### 💡 Enhancements 💡
+
+- `receiver/active_directory_ds`: Enables dynamic metric reaggregation in the Active Directory Domain Services receiver. This does not break existing configuration files. (#46346)
+
+<!-- previous-version -->
+
 ## v0.149.0
 
 ### 🛑 Breaking changes 🛑
