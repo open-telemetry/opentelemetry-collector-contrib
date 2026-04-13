@@ -303,7 +303,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.149.1-0.20260410191642-5d7304d49c2e // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.149.1-0.20260410191642-5d7304d49c2e // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.149.1-0.20260410191642-5d7304d49c2e // indirect
-  go.opentelemetry.io/collector/featuregate v1.55.1-0.20260410191642-5d7304d49c2e // indirect
+	go.opentelemetry.io/collector/featuregate v1.55.1-0.20260410191642-5d7304d49c2e // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.149.1-0.20260410191642-5d7304d49c2e // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.149.1-0.20260410191642-5d7304d49c2e // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.149.1-0.20260410191642-5d7304d49c2e // indirect
