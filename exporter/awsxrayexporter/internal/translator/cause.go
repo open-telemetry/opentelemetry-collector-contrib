@@ -207,7 +207,10 @@ func parseException(exceptionType, message, stacktrace string, isRemote bool, la
 		exceptions = fillJavaStacktrace(stacktrace, exceptions)
 	case "python":
 		exceptions = fillPythonStacktrace(stacktrace, exceptions)
-	case "javascript":
+	// "javascript" is kept for backwards compatibility, but the OTel JS SDK
+	// reports telemetry.sdk.language=nodejs (and webjs for browsers) per
+	// the semantic conventions — both produce V8 stack traces the same way.
+	case "javascript", "nodejs", "webjs":
 		exceptions = fillJavaScriptStacktrace(stacktrace, exceptions)
 	case "dotnet":
 		exceptions = fillDotnetStacktrace(stacktrace, exceptions)

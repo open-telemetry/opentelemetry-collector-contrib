@@ -1051,6 +1051,27 @@ func TestParseExceptionWithJavaScriptStacktrace(t *testing.T) {
 	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
+// The OTel JS SDK reports telemetry.sdk.language as "nodejs" (or "webjs" in
+// browsers) per the semantic conventions; AWS X-Ray stacktrace parsing must
+// handle those values the same as "javascript". See open-telemetry/
+// opentelemetry-collector-contrib#45356.
+func TestParseExceptionWithNodeJSStacktrace(t *testing.T) {
+	stacktrace := `TypeError: Cannot read property 'value' of null
+    at speedy (/home/gbusey/file.js:6:11)
+    at makeFaster (/home/gbusey/file.js:5:3)`
+
+	for _, language := range []string{"nodejs", "webjs"} {
+		t.Run(language, func(t *testing.T) {
+			exceptions := parseException("TypeError", "Cannot read property 'value' of null", stacktrace, true, language)
+			assert.Len(t, exceptions, 1)
+			assert.Len(t, exceptions[0].Stack, 2, "V8-style stack should be parsed for language %q", language)
+			assert.Equal(t, "speedy ", *exceptions[0].Stack[0].Label)
+			assert.Equal(t, "/home/gbusey/file.js", *exceptions[0].Stack[0].Path)
+			assert.Equal(t, 6, *exceptions[0].Stack[0].Line)
+		})
+	}
+}
+
 func TestParseExceptionWithStacktraceNotJavaScript(t *testing.T) {
 	exceptionType := "TypeError"
 	message := "Cannot read property 'value' of null"
