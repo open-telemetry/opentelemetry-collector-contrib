@@ -70,7 +70,11 @@ this case, it will select `v1` by default.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
-- `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. When configured, the receiver automatically persists the resourceVersion after processing each event for all watch-mode objects. On restart, each watch-mode object resumes from its persisted resourceVersion, preventing duplicate events. Pull-mode objects are unaffected. The attached storage should be a persistent volume, which is accessible by all the nodes in the given cluster. If local volume is used, persistence will break when the pod is moved to another node.
+- `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. When configured, the receiver automatically persists the resourceVersion after processing each event for all watch-mode objects. On restart, each watch-mode object resumes from its persisted resourceVersion, preventing duplicate events. Pull-mode objects are unaffected.
+  > **Important storage considerations:**
+  > - **Local or node-pinned volumes** (`hostPath`, local PV): the collector pod becomes tied to a specific node. If that node fails or the pod is rescheduled elsewhere, the persisted data will not be accessible and persistence will not work correctly.
+  > - **Network-attached volumes** (`ReadWriteMany`): the volume is accessible from any node, so the collector pod can be freely rescheduled or fail over to a different node while still resuming from the correct resourceVersion. This is the recommended approach, especially when used with `k8s_leader_elector`.
+  > - **Block volumes** (`ReadWriteOnce`): supported for single-replica deployments where restarts are graceful. Not recommended with leader election across multiple nodes, as Kubernetes may take 30–90 seconds to detach and reattach the volume after a node failure.
 
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
