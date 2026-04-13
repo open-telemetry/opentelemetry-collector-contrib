@@ -124,9 +124,6 @@ linters:
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
       - linters:
           - forbidigo
-        path: connector/datadogconnector/
-      - linters:
-          - forbidigo
         path: connector/servicegraphconnector/
       - linters:
           - forbidigo
