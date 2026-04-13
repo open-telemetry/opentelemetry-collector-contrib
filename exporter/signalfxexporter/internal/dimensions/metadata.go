@@ -5,6 +5,7 @@ package dimensions // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -22,9 +23,10 @@ func getDimensionUpdateFromMetadata(
 	defaults map[string]string,
 	metadata metadata.MetadataUpdate,
 	nonAlphanumericDimChars string,
+	stripK8sLabelPrefix bool,
 ) *DimensionUpdate {
 	skipSanitization := metadata.ResourceIDKey == "k8s.service.uid"
-	properties, tags := getPropertiesAndTags(defaults, metadata, skipSanitization)
+	properties, tags := getPropertiesAndTags(defaults, metadata, skipSanitization, stripK8sLabelPrefix)
 
 	return &DimensionUpdate{
 		Name:       FilterKeyChars(metadata.ResourceIDKey, nonAlphanumericDimChars),
@@ -39,14 +41,21 @@ const (
 	sfxK8sServicePrefix  = "kubernetes_service_"
 )
 
-func sanitizeProperty(property string) string {
+var oTelK8sLabelRe = regexp.MustCompile(`^k8s\.[^.]+\.label\.(.+)$`)
+
+func sanitizeProperty(property string, stripK8sLabelPrefix bool) string {
 	if strings.HasPrefix(property, oTelK8sServicePrefix) {
 		return strings.Replace(property, oTelK8sServicePrefix, sfxK8sServicePrefix, 1)
+	}
+	if stripK8sLabelPrefix {
+		if m := oTelK8sLabelRe.FindStringSubmatch(property); m != nil {
+			return m[1]
+		}
 	}
 	return property
 }
 
-func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdate, skipSanitization bool) (map[string]*string, map[string]bool) {
+func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdate, skipSanitization, stripK8sLabelPrefix bool) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
 	tags := map[string]bool{}
 
@@ -57,7 +66,7 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	for label, val := range kmu.MetadataToAdd {
 		key := label
 		if !skipSanitization {
-			key = sanitizeProperty(label)
+			key = sanitizeProperty(label, stripK8sLabelPrefix)
 		}
 		if key == "" {
 			continue
@@ -74,7 +83,7 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	for label, val := range kmu.MetadataToRemove {
 		key := label
 		if !skipSanitization {
-			key = sanitizeProperty(label)
+			key = sanitizeProperty(label, stripK8sLabelPrefix)
 		}
 		if key == "" {
 			continue
@@ -90,7 +99,7 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 	for label, val := range kmu.MetadataToUpdate {
 		key := label
 		if !skipSanitization {
-			key = sanitizeProperty(label)
+			key = sanitizeProperty(label, stripK8sLabelPrefix)
 		}
 		if key == "" {
 			continue
@@ -112,7 +121,7 @@ func getPropertiesAndTags(defaults map[string]string, kmu metadata.MetadataUpdat
 func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) error {
 	var errs error
 	for _, m := range metadata {
-		dimensionUpdate := getDimensionUpdateFromMetadata(dc.DefaultProperties, *m, dc.nonAlphanumericDimChars)
+		dimensionUpdate := getDimensionUpdateFromMetadata(dc.DefaultProperties, *m, dc.nonAlphanumericDimChars, dc.stripK8sLabelPrefix)
 
 		if dimensionUpdate.Name == "" || dimensionUpdate.Value == "" {
 			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)

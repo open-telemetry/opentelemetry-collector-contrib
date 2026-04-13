@@ -46,9 +46,8 @@ entities:
       - ref: k8s.deployment.uid
     description:
       - ref: k8s.deployment.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.replicaset
     brief: A Kubernetes replicaset
@@ -57,9 +56,8 @@ entities:
       - ref: k8s.replicaset.uid
     description:
       - ref: k8s.replicaset.name
-    relationships:
-      - type: managed_by
-        target: k8s.deployment
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.statefulset
     brief: A Kubernetes statefulset
@@ -68,9 +66,8 @@ entities:
       - ref: k8s.statefulset.uid
     description:
       - ref: k8s.statefulset.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.daemonset
     brief: A Kubernetes daemonset
@@ -79,9 +76,8 @@ entities:
       - ref: k8s.daemonset.uid
     description:
       - ref: k8s.daemonset.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.cronjob
     brief: A Kubernetes cronjob
@@ -90,9 +86,8 @@ entities:
       - ref: k8s.cronjob.uid
     description:
       - ref: k8s.cronjob.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.job
     brief: A Kubernetes job
@@ -101,11 +96,8 @@ entities:
       - ref: k8s.job.uid
     description:
       - ref: k8s.job.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
-      - type: managed_by
-        target: k8s.cronjob
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.pod
     brief: A Kubernetes pod
@@ -115,21 +107,9 @@ entities:
     description:
       - ref: k8s.pod.name
       - ref: k8s.pod.qos_class
-    relationships:
-      - type: scheduled_on
-        target: k8s.node
-      - type: part_of
-        target: k8s.namespace
-      - type: managed_by
-        target: k8s.replicaset
-      - type: managed_by
-        target: k8s.statefulset
-      - type: managed_by
-        target: k8s.daemonset
-      - type: managed_by
-        target: k8s.job
-      - type: managed_by
-        target: k8s.replicationcontroller
+    extra_attributes:
+      - ref: k8s.namespace.name
+      - ref: k8s.node.name
 
   - type: k8s.container
     brief: A Kubernetes container
@@ -141,9 +121,20 @@ entities:
       - ref: container.image.name
       - ref: container.image.tag
       - ref: k8s.container.status.last_terminated_reason
-    relationships:
-      - type: child_of
-        target: k8s.pod
+    # TODO: Use "relationships" instead of "extra_attribu˝˝tes" here.
+    # Currently, k8s.container does not inherit all descriptive attributes from
+    # the k8s.pod entity (for example, k8s.pod.qos_class is not emitted). To define
+    # a related entity here instead of using extra_attributes, we would need to either:
+    # - start explicitly emitting k8s.container metrics with the k8s.pod.qos_class attribute, or
+    # - make the related-entity description configurable.
+      # relationships:
+      #   target: k8s.pod
+      # - type: child_of
+    extra_attributes:
+      - ref: k8s.pod.uid
+      - ref: k8s.pod.name
+      - ref: k8s.namespace.name
+      - ref: k8s.node.name
 
   - type: k8s.replicationcontroller
     brief: A Kubernetes replication controller
@@ -152,9 +143,8 @@ entities:
       - ref: k8s.replicationcontroller.uid
     description:
       - ref: k8s.replicationcontroller.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.resourcequota
     brief: A Kubernetes resource quota
@@ -163,10 +153,13 @@ entities:
       - ref: k8s.resourcequota.uid
     description:
       - ref: k8s.resourcequota.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
+  # TODO: k8s.service uses the old ResourceBuilder API (not ForK8sService) because
+  # k8s.service.traffic_distribution is an optional field (nil pointer in the K8s API) and
+  # mdatagen-generated copyToResource unconditionally emits enabled string attributes even when
+  # never set. Switch to the entity API once mdatagen supports optional/omitempty string attributes.
   - type: k8s.service
     brief: A Kubernetes service
     stability: development
@@ -176,10 +169,9 @@ entities:
       - ref: k8s.service.name
       - ref: k8s.service.type
       - ref: k8s.service.publish_not_ready_addresses
+    extra_attributes:
+      - ref: k8s.namespace.name
       - ref: k8s.service.traffic_distribution
-    relationships:
-      - type: part_of
-        target: k8s.namespace
 
   - type: k8s.hpa
     brief: A Kubernetes horizontal pod autoscaler
@@ -191,9 +183,8 @@ entities:
       - ref: k8s.hpa.scaletargetref.apiversion
       - ref: k8s.hpa.scaletargetref.kind
       - ref: k8s.hpa.scaletargetref.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: openshift.clusterquota
     brief: An OpenShift cluster resource quota
