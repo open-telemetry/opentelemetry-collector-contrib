@@ -364,7 +364,7 @@ linters:
           msg: >-
             Define feature gates in metadata.yaml instead of registering them manually.
             See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116.
-        - pattern: ^http\.(Server|ListenAndServe|ListenAndServeTLS|Serve|ServeTLS)$
+        - pattern: ^http\.(ListenAndServe|ListenAndServeTLS|Serve|ServeTLS)$
           msg: >-
             Use confighttp.ServerConfig to create HTTP servers instead of net/http directly.
 
