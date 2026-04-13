@@ -486,7 +486,7 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	for _, bucket := range buckets {
 		index := indicesMap[bucket]
 		var countPerBucket uint64
-		if ip.ExplicitBounds().Len() > 0 && index < ip.ExplicitBounds().Len() {
+		if ip.ExplicitBounds().Len() > 0 && index < ip.ExplicitBounds().Len() && index < ip.BucketCounts().Len() {
 			countPerBucket = ip.BucketCounts().At(index)
 		}
 		cumCount += countPerBucket
