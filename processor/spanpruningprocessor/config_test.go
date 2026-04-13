@@ -30,6 +30,14 @@ var defaultHistogramBuckets = []time.Duration{
 	10 * time.Second,
 }
 
+var customHistogramBuckets = []time.Duration{
+	10 * time.Millisecond,
+	50 * time.Millisecond,
+	100 * time.Millisecond,
+	500 * time.Millisecond,
+	time.Second,
+}
+
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
@@ -55,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 				MinSpansToAggregate:         3,
 				MaxParentDepth:              1,
 				AggregationAttributePrefix:  "batch.",
-				AggregationHistogramBuckets: defaultHistogramBuckets,
+				AggregationHistogramBuckets: customHistogramBuckets,
 			},
 		},
 	}
