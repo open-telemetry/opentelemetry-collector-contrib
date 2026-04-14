@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: cmd/telemetrygen
+note: "Fix --allow-export-failures being ignored in batch mode: flushBuffer in logs and metrics workers now respects the flag and calls logger.Fatal when it is not set, matching non-batch behavior."
+issues: [47215]
+change_logs: [user]
