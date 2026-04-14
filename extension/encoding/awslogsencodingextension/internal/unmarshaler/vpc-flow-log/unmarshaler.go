@@ -29,7 +29,7 @@ import (
 
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
 	defaultTGWFormat              = []string{"version", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "tgw-pair-attachment-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status", "type", "tcp-flags", "flow-direction", "region"}
 )
 
@@ -67,7 +67,6 @@ func NewVPCFlowLogUnmarshaler(
 	logger *zap.Logger,
 	vpcFlowStartISO8601FormatEnabled bool,
 ) (*VPCFlowLogUnmarshaler, error) {
-	cfg.parsedFormat = defaultFormat
 	if cfg.Format != "" {
 		cfg.parsedFormat = strings.Fields(cfg.Format)
 		logger.Debug("Using custom format for VPC flow log unmarshaling", zap.Strings("fields", cfg.parsedFormat))
@@ -92,19 +91,6 @@ func NewVPCFlowLogUnmarshaler(
 		logger:                           logger,
 		vpcFlowStartISO8601FormatEnabled: vpcFlowStartISO8601FormatEnabled,
 	}, nil
-}
-
-// detectTGWFlowFromValues returns true if the log line values indicate a TGW flow log.
-// For CloudWatch logs without a custom format, we detect TGW by checking if field values
-// contain TGW-specific identifiers (tgw-* format).
-func detectTGWFlowFromValues(values []string) bool {
-	for _, value := range values {
-		// Check for TGW-specific identifier format (tgw-*)
-		if strings.HasPrefix(value, "tgw-") {
-			return true
-		}
-	}
-	return false
 }
 
 func (v *VPCFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
@@ -290,18 +276,24 @@ func (v *VPCFlowLogUnmarshaler) fromCloudWatch(fields []string, reader *bufio.Re
 	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
 	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
 
-	for _, event := range cwLog.LogEvents {
-		// Detect format per event if no custom format specified
-		eventFields := fields
-		if len(fields) == len(defaultFormat) {
-			messageFields := strings.Fields(event.Message)
-			if detectTGWFlowFromValues(messageFields) {
-				eventFields = defaultTGWFormat
-				v.logger.Debug("Detected TGW flow log format for CloudWatch event")
+	if fields == nil {
+		// No format specified, so we assume the default format. The default format is different
+		// for Transit Gateway and plain VPC flow logs, so we need to inspect the log message.
+		if len(cwLog.LogEvents) > 0 {
+			// The 3rd field (index 2) is tgw-id for TGW logs vs interface-id for VPC logs
+			parts := strings.SplitN(cwLog.LogEvents[0].Message, " ", 4)
+			if len(parts) >= 3 && strings.HasPrefix(parts[2], "tgw-") {
+				fields = defaultTGWFormat
+				v.logger.Debug("Detected TGW flow log format for CloudWatch stream")
+			} else {
+				fields = defaultVPCFormat
 			}
+			v.cfg.parsedFormat = fields
 		}
+	}
 
-		err := v.addToLogs(resourceLogs, scopeLogs, eventFields, event.Message)
+	for _, event := range cwLog.LogEvents {
+		err := v.addToLogs(resourceLogs, scopeLogs, fields, event.Message)
 		if err != nil {
 			return plog.Logs{}, 0, err
 		}
@@ -469,8 +461,6 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		// TODO Replace with conventions variable once it becomes available
 		record.Attributes().PutStr("network.interface.name", value)
 	case "tgw-id":
-		record.Attributes().PutStr("aws.tgw.id", value)
-	case "transit-gateway-id":
 		record.Attributes().PutStr("aws.tgw.id", value)
 	case "tgw-attachment-id":
 		record.Attributes().PutStr("aws.tgw.attachment.id", value)
