@@ -3,16 +3,106 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// NginxConnectionsAcceptedMetricConfig provides config for the nginx.connections_accepted metric.
+type NginxConnectionsAcceptedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *NginxConnectionsAcceptedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// NginxConnectionsCurrentMetricAttributeKey specifies the key of an attribute for the nginx.connections_current metric.
+type NginxConnectionsCurrentMetricAttributeKey string
+
+const (
+	NginxConnectionsCurrentMetricAttributeKeyState NginxConnectionsCurrentMetricAttributeKey = "state"
+)
+
+// NginxConnectionsCurrentMetricConfig provides config for the nginx.connections_current metric.
+type NginxConnectionsCurrentMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []NginxConnectionsCurrentMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *NginxConnectionsCurrentMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *NginxConnectionsCurrentMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case NginxConnectionsCurrentMetricAttributeKeyState:
+		default:
+			return fmt.Errorf("metric nginx.connections_current doesn't have an attribute %v, valid attributes: [state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// NginxConnectionsHandledMetricConfig provides config for the nginx.connections_handled metric.
+type NginxConnectionsHandledMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *NginxConnectionsHandledMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// NginxRequestsMetricConfig provides config for the nginx.requests metric.
+type NginxRequestsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *NginxRequestsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,24 +118,26 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for nginx metrics.
 type MetricsConfig struct {
-	NginxConnectionsAccepted MetricConfig `mapstructure:"nginx.connections_accepted"`
-	NginxConnectionsCurrent  MetricConfig `mapstructure:"nginx.connections_current"`
-	NginxConnectionsHandled  MetricConfig `mapstructure:"nginx.connections_handled"`
-	NginxRequests            MetricConfig `mapstructure:"nginx.requests"`
+	NginxConnectionsAccepted NginxConnectionsAcceptedMetricConfig `mapstructure:"nginx.connections_accepted"`
+	NginxConnectionsCurrent  NginxConnectionsCurrentMetricConfig  `mapstructure:"nginx.connections_current"`
+	NginxConnectionsHandled  NginxConnectionsHandledMetricConfig  `mapstructure:"nginx.connections_handled"`
+	NginxRequests            NginxRequestsMetricConfig            `mapstructure:"nginx.requests"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		NginxConnectionsAccepted: MetricConfig{
+		NginxConnectionsAccepted: NginxConnectionsAcceptedMetricConfig{
 			Enabled: true,
 		},
-		NginxConnectionsCurrent: MetricConfig{
+		NginxConnectionsCurrent: NginxConnectionsCurrentMetricConfig{
+			Enabled:             true,
+			AggregationStrategy: AggregationStrategySum,
+			EnabledAttributes:   []NginxConnectionsCurrentMetricAttributeKey{NginxConnectionsCurrentMetricAttributeKeyState},
+		},
+		NginxConnectionsHandled: NginxConnectionsHandledMetricConfig{
 			Enabled: true,
 		},
-		NginxConnectionsHandled: MetricConfig{
-			Enabled: true,
-		},
-		NginxRequests: MetricConfig{
+		NginxRequests: NginxRequestsMetricConfig{
 			Enabled: true,
 		},
 	}
