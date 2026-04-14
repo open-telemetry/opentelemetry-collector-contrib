@@ -35,7 +35,7 @@ jobs:
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
       - name: Upload Testbed Binaries
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: testbed-binaries
           path: ./bin/*
@@ -85,13 +85,13 @@ jobs:
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: test-result-archive-${{steps.filename.outputs.name}}
           path: ./*.tar
       - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
       - name: Upload benchmarks.json
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: benchmark-results-${{steps.filename.outputs.name}}
           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
