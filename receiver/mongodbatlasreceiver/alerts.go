@@ -236,7 +236,10 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 	}
 	a.listenClose = server.Shutdown
 	a.wg.Go(func() {
-		a.telemetrySettings.Logger.Debug("Starting Serve", zap.String("address", server.Addr))
+		a.telemetrySettings.Logger.Debug(
+			"Starting Serve",
+			zap.String("address", a.serverConfig.NetAddr.Endpoint),
+		)
 
 		err := server.Serve(listener)
 
