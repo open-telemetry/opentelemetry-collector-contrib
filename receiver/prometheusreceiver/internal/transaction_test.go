@@ -2279,9 +2279,8 @@ func TestTransactionAppend(t *testing.T) {
 				expectedSum := func() float64 {
 					if tt.h != nil {
 						return tt.h.Sum
-					} else {
-						return tt.fh.Sum
 					}
+					return tt.fh.Sum
 				}()
 				require.Equal(t, expectedSum, dp.Sum())
 				if tt.expectedExemplars > 0 {
