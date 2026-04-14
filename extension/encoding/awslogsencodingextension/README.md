@@ -53,11 +53,11 @@ extensions:
       # Optional: format of the VPC flow log. Used when processing VPC flow logs arriving through CloudWatch Logs subscription filters. 
       # Ignored when decoding VPC flow logs sent to S3, which include the format as a file header.
       # Accepts a space delimited list of fields in the VPC flow log.
-      # When unset, built-in default  auto-detects VPC vs TGW from S3 headers.
+      # When unset, built-in default auto-detects VPC (version 2 fields) vs. TGW (version 2-6 fields).
       format: version interface-id srcaddr dstaddr
 ```
 
-**Note**: [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html) are also supported. With default config (no custom `format`), both VPC and TGW logs from S3 are auto-detected.
+**Note**: [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html) are also supported.
 
 Example for S3 access logs:
 ```yaml
@@ -130,25 +130,6 @@ The following format values are supported in the `awslogsencodingextension` to i
 
 If you're using the old format values you should update the encoding extension configuration with the new format values.
 
-## Supported File Formats
-
-The following `file_format` values are supported for log types that support multiple file formats:
-
-| **Log Type** | **Supported Values** | **Description** |
-|--------------|---------------------|-----------------|
-| VPC Flow Logs | `plain-text` | Plain text format (VPC Flow Logs from S3 or CloudWatch) |
-| VPC Flow Logs | `parquet` | Apache Parquet format (planned for future implementation) |
-
-**Configuration Example:**
-
-```yaml
-extensions:
-  awslogs_encoding/vpcflow:
-    format: vpcflow
-    vpcflow:
-      file_format: plain-text  # or 'parquet' when implemented
-```
-
 ## Feature Gates
 
 Following feature gates are available to modify the behavior of the AWS Logs encoding extension.
@@ -220,7 +201,7 @@ The table below summarizes streaming support details for each log type, along wi
 
 ### VPC flow log record fields
 
-[VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
+[VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) and [Transit Gateway flow log record fields](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
 | Flow log field               | Attribute in OpenTelemetry log                                                                        |
 |------------------------------|-------------------------------------------------------------------------------------------------------|
@@ -264,18 +245,18 @@ The table below summarizes streaming support details for each log type, along wi
 | `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
-| `tgw-id`                     | `aws.vpc.flow.transit-gateway-id`                                                                     |
-| `transit-gateway-id`         | `aws.vpc.flow.transit-gateway-id`                                                                     |
-| `tgw-attachment-id`          | `aws.vpc.flow.transit-gateway-attachment-id`                                                          |
-| `tgw-src-vpc-id`             | `aws.vpc.flow.tgw-src-vpc-id`                                                                         |
-| `tgw-dst-vpc-id`             | `aws.vpc.flow.tgw-dst-vpc-id`                                                                         |
-| `tgw-src-subnet-id`          | `aws.vpc.flow.tgw-src-subnet-id`                                                                      |
-| `tgw-dst-subnet-id`          | `aws.vpc.flow.tgw-dst-subnet-id`                                                                      |
-| `tgw-src-eni`                | `aws.vpc.flow.tgw-src-eni`                                                                            |
-| `tgw-dst-eni`                | `aws.vpc.flow.tgw-dst-eni`                                                                            |
-| `tgw-src-az-id`              | `aws.vpc.flow.tgw-src-az-id`                                                                          |
-| `tgw-dst-az-id`              | `aws.vpc.flow.tgw-dst-az-id`                                                                          |
-| `tgw-pair-attachment-id`     | `aws.vpc.flow.tgw-pair-attachment-id`                                                                 |
+| `tgw-id`                     | `aws.tgw.id`                                                                                          |
+| `transit-gateway-id`         | `aws.tgw.id`                                                                                          |
+| `tgw-attachment-id`          | `aws.tgw.attachment.id`                                                                               |
+| `tgw-src-vpc-id`             | `aws.tgw.source.vpc.id`                                                                               |
+| `tgw-dst-vpc-id`             | `aws.tgw.destination.vpc.id`                                                                          |
+| `tgw-src-subnet-id`          | `aws.tgw.source.vpc.subnet.id`                                                                        |
+| `tgw-dst-subnet-id`          | `aws.tgw.destination.vpc.subnet.id`                                                                   |
+| `tgw-src-eni`                | `aws.tgw.source.eni.id`                                                                               |
+| `tgw-dst-eni`                | `aws.tgw.destination.eni.id`                                                                          |
+| `tgw-src-az-id`              | `aws.tgw.source.az.id`                                                                                |
+| `tgw-dst-az-id`              | `aws.tgw.destination.az.id`                                                                           |
+| `tgw-pair-attachment-id`     | `aws.tgw.attachment.pair.id`                                                                          |
 
 ### S3 access log record fields
 

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -31,6 +30,7 @@ import (
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
 	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	defaultTGWFormat              = []string{"version", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "tgw-pair-attachment-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status", "type", "tcp-flags", "flow-direction", "region"}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -94,9 +94,17 @@ func NewVPCFlowLogUnmarshaler(
 	}, nil
 }
 
-// detectTGWFlow returns true if the header contains "resource-type" (TGW logs only).
-func detectTGWFlow(headerFields []string) bool {
-	return slices.Contains(headerFields, "resource-type")
+// detectTGWFlowFromValues returns true if the log line values indicate a TGW flow log.
+// For CloudWatch logs without a custom format, we detect TGW by checking if field values
+// contain TGW-specific identifiers (tgw-* format).
+func detectTGWFlowFromValues(values []string) bool {
+	for _, value := range values {
+		// Check for TGW-specific identifier format (tgw-*)
+		if strings.HasPrefix(value, "tgw-") {
+			return true
+		}
+	}
+	return false
 }
 
 func (v *VPCFlowLogUnmarshaler) UnmarshalAWSLogs(reader io.Reader) (plog.Logs, error) {
@@ -208,12 +216,6 @@ func (v *VPCFlowLogUnmarshaler) NewLogsDecoder(reader io.Reader, options ...enco
 	offset += int64(len(line))
 
 	fields := strings.Fields(line)
-
-	// Log TGW detection for debugging
-	if detectTGWFlow(fields) {
-		v.logger.Debug("Detected TGW flow log format from S3 file header")
-	}
-
 	batchHelper := xstreamencoding.NewBatchHelper(options...)
 
 	if batchHelper.Options().Offset > 0 {
@@ -289,7 +291,17 @@ func (v *VPCFlowLogUnmarshaler) fromCloudWatch(fields []string, reader *bufio.Re
 	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
 
 	for _, event := range cwLog.LogEvents {
-		err := v.addToLogs(resourceLogs, scopeLogs, fields, event.Message)
+		// Detect format per event if no custom format specified
+		eventFields := fields
+		if len(fields) == len(defaultFormat) {
+			messageFields := strings.Fields(event.Message)
+			if detectTGWFlowFromValues(messageFields) {
+				eventFields = defaultTGWFormat
+				v.logger.Debug("Detected TGW flow log format for CloudWatch event")
+			}
+		}
+
+		err := v.addToLogs(resourceLogs, scopeLogs, eventFields, event.Message)
 		if err != nil {
 			return plog.Logs{}, 0, err
 		}
@@ -457,29 +469,29 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		// TODO Replace with conventions variable once it becomes available
 		record.Attributes().PutStr("network.interface.name", value)
 	case "tgw-id":
-		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-id", value)
+		record.Attributes().PutStr("aws.tgw.id", value)
 	case "transit-gateway-id":
-		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-id", value)
+		record.Attributes().PutStr("aws.tgw.id", value)
 	case "tgw-attachment-id":
-		record.Attributes().PutStr("aws.vpc.flow.transit-gateway-attachment-id", value)
+		record.Attributes().PutStr("aws.tgw.attachment.id", value)
 	case "tgw-src-vpc-id":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-src-vpc-id", value)
+		record.Attributes().PutStr("aws.tgw.source.vpc.id", value)
 	case "tgw-dst-vpc-id":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-vpc-id", value)
+		record.Attributes().PutStr("aws.tgw.destination.vpc.id", value)
 	case "tgw-src-subnet-id":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-src-subnet-id", value)
+		record.Attributes().PutStr("aws.tgw.source.vpc.subnet.id", value)
 	case "tgw-dst-subnet-id":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-subnet-id", value)
+		record.Attributes().PutStr("aws.tgw.destination.vpc.subnet.id", value)
 	case "tgw-src-eni":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-src-eni", value)
+		record.Attributes().PutStr("aws.tgw.source.eni.id", value)
 	case "tgw-dst-eni":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-eni", value)
+		record.Attributes().PutStr("aws.tgw.destination.eni.id", value)
 	case "tgw-src-az-id":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-src-az-id", value)
+		record.Attributes().PutStr("aws.tgw.source.az.id", value)
 	case "tgw-dst-az-id":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-dst-az-id", value)
+		record.Attributes().PutStr("aws.tgw.destination.az.id", value)
 	case "tgw-pair-attachment-id":
-		record.Attributes().PutStr("aws.vpc.flow.tgw-pair-attachment-id", value)
+		record.Attributes().PutStr("aws.tgw.attachment.pair.id", value)
 	case "resource-type":
 		// Skip - used for detection only, already captured in encoding.format
 	case "srcport":
@@ -537,8 +549,8 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-mtu-exceeded"); err != nil {
 			return false, err
 		}
-	case "packets-loss-ttl":
-		if err := addNumber(field, value, "aws.vpc.flow.packets-loss-ttl"); err != nil {
+	case "packets-lost-ttl-expired":
+		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-ttl-expired"); err != nil {
 			return false, err
 		}
 	case "start":

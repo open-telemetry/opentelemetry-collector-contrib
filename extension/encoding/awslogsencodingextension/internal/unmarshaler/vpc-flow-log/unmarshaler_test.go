@@ -112,6 +112,12 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			logsExpectedFilename: "valid_tgw_flow_log_expected.yaml",
 			featureGateEnabled:   false,
 		},
+		{
+			name:                 "Valid Transit Gateway (TGW) flow log from CloudWatch",
+			logInputReader:       readLogFile(t, dir, "valid_tgw_flow_cw.json"),
+			logsExpectedFilename: "valid_tgw_flow_cw_expected.yaml",
+			featureGateEnabled:   false,
+		},
 	}
 
 	for _, test := range tests {

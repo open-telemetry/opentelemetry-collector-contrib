@@ -4,6 +4,12 @@ resourceLogs:
     - key: cloud.provider
       value:
         stringValue: aws
+    - key: aws.log.group.names
+      value:
+        stringValue: /aws/tgw/flowlogs
+    - key: aws.log.stream.names
+      value:
+        stringValue: tgw-0abc12345def67890
     - key: cloud.account.id
       value:
         stringValue: "123456789012"
@@ -95,4 +101,3 @@ resourceLogs:
         value:
           stringValue: aws.vpcflow
       name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
-
