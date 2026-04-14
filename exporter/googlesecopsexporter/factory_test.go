@@ -20,7 +20,6 @@ func Test_createDefaultConfig(t *testing.T) {
 		TimeoutConfig:         exporterhelper.NewDefaultTimeoutConfig(),
 		QueueBatchConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:         configretry.NewDefaultBackOffConfig(),
-		Compression:           noCompression,
 		CollectAgentMetrics:   true,
 		MetricsInterval:       defaultMetricsInterval,
 		BatchRequestSizeLimit: defaultBatchRequestSizeLimit,

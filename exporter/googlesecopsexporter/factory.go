@@ -42,7 +42,6 @@ func createDefaultConfig() component.Config {
 		MetricsInterval:       defaultMetricsInterval,
 		LogErroredPayloads:    false,
 		ValidateLogTypes:      false,
-		Compression:           noCompression,
 		BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 		TimeoutConfig:         exporterhelper.NewDefaultTimeoutConfig(),
 		QueueBatchConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),

@@ -54,7 +54,6 @@ tests:
     customer_id: test-customer-id
     region: us
     project_number: "123456"
-    compression: none
     batch_request_size_limit: 4000000
     retry_on_failure:
       enabled: true

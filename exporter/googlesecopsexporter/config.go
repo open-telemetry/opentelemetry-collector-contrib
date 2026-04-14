@@ -21,7 +21,6 @@ import (
 )
 
 const (
-	noCompression     = "none"
 	chronicleAPI      = "chronicle"
 	backstoryAPI      = "backstory"
 	apiVersionV1Alpha = "v1alpha"
@@ -105,14 +104,14 @@ type Config struct {
 // Validate checks if the configuration is valid.
 func (cfg *Config) Validate() error {
 	if cfg.CredsFilePath != "" && cfg.Creds != "" {
-		return errors.New("can only specify creds_file_path or creds")
+		return errors.New("can only specify one of creds_file_path or creds")
 	}
 
 	if cfg.CustomerID == "" {
 		return errors.New("customer ID is required")
 	}
 
-	if cfg.Compression != gzip.Name && cfg.Compression != noCompression {
+	if cfg.Compression != "" && cfg.Compression != gzip.Name {
 		return fmt.Errorf("invalid compression type: %s", cfg.Compression)
 	}
 
@@ -133,7 +132,7 @@ func (cfg *Config) Validate() error {
 			return errors.New("hostname is required for the Chronicle API")
 		}
 		if cfg.ProjectNumber == "" {
-			return errors.New("project number is required for the Chronicle API")
+			return errors.New("project_number is required for the Chronicle API")
 		}
 		if cfg.APIVersion != "" {
 			if cfg.APIVersion != apiVersionV1Alpha && cfg.APIVersion != apiVersionV1Beta {
