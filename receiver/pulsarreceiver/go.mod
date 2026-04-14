@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsar
 go 1.25.0
 
 require (
-	github.com/apache/pulsar-client-go v0.18.0
+	github.com/apache/pulsar-client-go v0.19.0
 	github.com/apache/thrift v0.22.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.6.0
