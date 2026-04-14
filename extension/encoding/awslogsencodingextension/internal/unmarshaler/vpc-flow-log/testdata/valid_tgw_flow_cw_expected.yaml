@@ -13,9 +13,6 @@ resourceLogs:
     - key: cloud.account.id
       value:
         stringValue: "123456789012"
-    - key: cloud.region
-      value:
-        stringValue: us-east-1
   scopeLogs:
   - logRecords:
     - attributes:
@@ -52,9 +49,6 @@ resourceLogs:
       - key: aws.tgw.destination.az.id
         value:
           stringValue: use1-az2
-      - key: aws.tgw.attachment.pair.id
-        value:
-          stringValue: tgw-attach-0def12345abc67890
       - key: source.address
         value:
           stringValue: 10.0.0.1
@@ -82,15 +76,6 @@ resourceLogs:
       - key: aws.vpc.flow.status
         value:
           stringValue: OK
-      - key: network.type
-        value:
-          stringValue: ipv4
-      - key: network.tcp.flags
-        value:
-          stringValue: "2"
-      - key: network.io.direction
-        value:
-          stringValue: receive
       body: {}
       spanId: ""
       timeUnixNano: "1700000060000000000"
