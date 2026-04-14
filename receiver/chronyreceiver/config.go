@@ -70,8 +70,12 @@ func (c *Config) Validate() error {
 		if network != "unixgram" {
 			return fmt.Errorf("file_mount_path is only supported with unix/unixgram endpoints: %w", errInvalidValue)
 		}
-		if _, err := os.Stat(c.FileMountPath); err != nil {
+		fi, err := os.Stat(c.FileMountPath)
+		if err != nil {
 			return fmt.Errorf("file_mount_path directory %q: %w", c.FileMountPath, err)
+		}
+		if !fi.IsDir() {
+			return fmt.Errorf("file_mount_path %q is not a directory: %w", c.FileMountPath, errInvalidValue)
 		}
 	}
 	return nil

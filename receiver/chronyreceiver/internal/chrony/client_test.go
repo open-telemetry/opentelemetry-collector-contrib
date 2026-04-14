@@ -173,6 +173,39 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after Close")
 }
 
+func TestStaleSocketCleanup(t *testing.T) {
+	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping UDS test on windows")
+	}
+
+	// Use a short temp path to stay within the Unix socket name limit (~104 bytes on macOS).
+	sockDir, err := os.MkdirTemp("/tmp", "chrony-")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(sockDir) })
+
+	// Create a real Unix socket to simulate a stale leftover.
+	stalePath := filepath.Join(sockDir, "otel-chrony-deadbeef.sock")
+	l, err := net.Listen("unix", stalePath)
+	require.NoError(t, err)
+	require.NoError(t, l.Close()) // close listener but leave the socket file
+
+	// Also create a regular file with a matching name that must NOT be deleted.
+	regularPath := filepath.Join(sockDir, "otel-chrony-cafebabe.sock")
+	require.NoError(t, os.WriteFile(regularPath, []byte("keep"), 0o600))
+
+	// Creating a client with WithFileMountPath should clean up the stale socket.
+	_, err = New("unix://"+sockDir, 10*time.Second, WithFileMountPath(sockDir))
+	require.NoError(t, err)
+
+	_, err = os.Stat(stalePath)
+	assert.ErrorIs(t, err, os.ErrNotExist, "Stale socket must be removed on startup")
+
+	_, err = os.Stat(regularPath)
+	assert.NoError(t, err, "Regular file must not be removed")
+}
+
 func TestGettingTrackingData(t *testing.T) {
 	t.Parallel()
 

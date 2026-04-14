@@ -150,6 +150,23 @@ func TestValidate(t *testing.T) {
 			err: os.ErrNotExist,
 		},
 		{
+			scenario: "file_mount_path is a regular file",
+			conf: func() Config {
+				f := filepath.Join(t.TempDir(), "not-a-dir")
+				require.NoError(t, os.WriteFile(f, nil, 0o600))
+				return Config{
+					Endpoint: "unix://" + t.TempDir(),
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: time.Minute,
+						InitialDelay:       time.Second,
+						Timeout:            10 * time.Second,
+					},
+					FileMountPath: f,
+				}
+			}(),
+			err: errInvalidValue,
+		},
+		{
 			scenario: "Invalid timeout set",
 			conf: Config{
 				Endpoint: "unix://no/dir/to/socket",
