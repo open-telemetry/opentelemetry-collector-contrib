@@ -845,7 +845,7 @@ func isQueryExplainable(query string) bool {
 }
 
 // stripLeadingSQLComments removes leading block (/* ... */)
-// and line comments (-- ...) from a query.
+// and line comments (-- ... and # ...) from a query.
 func stripLeadingSQLComments(query string) string {
 	for {
 		switch {
@@ -855,7 +855,7 @@ func stripLeadingSQLComments(query string) string {
 				return query
 			}
 			query = strings.TrimSpace(query[end+2:])
-		case strings.HasPrefix(query, "--"):
+		case strings.HasPrefix(query, "--"), strings.HasPrefix(query, "#"):
 			end := strings.Index(query, "\n")
 			if end == -1 {
 				// remaining text is a comment

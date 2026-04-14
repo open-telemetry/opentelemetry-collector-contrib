@@ -82,15 +82,8 @@ func TestIsQueryExplainable(t *testing.T) {
 			input:    "SELECT * FROM very_long_table_na...",
 			expected: true, // still starts with SELECT
 		},
-		// Any leading block comment makes the query not explainable; digest_text
-		// from performance_schema does not include them, so this won't arise in practice.
-		{
-			name:     "leading block comment before SELECT is not explainable",
-			input:    "/* a comment */ SELECT * FROM t",
-			expected: false,
-		},
-
-		// Additional test cases for comment handling
+		// Leading comments (/* */, --, #) are stripped before checking the keyword,
+		// so queries with any leading comment are correctly identified as explainable.
 		// Block comments
 		{
 			name:     "block comment",
@@ -103,7 +96,7 @@ func TestIsQueryExplainable(t *testing.T) {
 			expected: true,
 		},
 
-		// Line comments
+		// Line comments with --
 		{
 			name:     "line comment",
 			input:    "-- comment\nSELECT * FROM t",
@@ -112,6 +105,18 @@ func TestIsQueryExplainable(t *testing.T) {
 		{
 			name:     "multiple line comments",
 			input:    "-- comment line1\n-- comment line2\nSELECT * FROM t",
+			expected: true,
+		},
+
+		// Line comments with #
+		{
+			name:     "hash comment",
+			input:    "# comment\nSELECT * FROM t",
+			expected: true,
+		},
+		{
+			name:     "multiple hash comments",
+			input:    "# comment line1\n# comment line2\nSELECT * FROM t",
 			expected: true,
 		},
 
