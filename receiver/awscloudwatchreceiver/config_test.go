@@ -159,7 +159,7 @@ func TestLoadLogsConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// defaultMetrics is the metrics config that results from createDefaultConfig() when no metrics
-	// section is present in the YAML. CollectionInterval must be positive for scraperhelper validation.
+	// section is present in the YAML. Period, Delay, and CollectionInterval are set to their defaults.
 	defaultMetrics := createDefaultConfig().(*Config).Metrics
 
 	cases := []struct {
@@ -307,6 +307,7 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute},
 					Period:           60 * time.Second,
+					Delay:            defaultMetricsDelay,
 					Metrics: []MetricQuery{
 						{
 							Namespace:  "AWS/EC2",
@@ -331,6 +332,7 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute},
 					Period:           300 * time.Second,
+					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
 						Namespace: "AWS/EC2",
 						Limit:     200,
@@ -347,6 +349,7 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 2 * time.Minute},
 					Period:           120 * time.Second,
+					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
 						Limit: 50,
 						Stat:  "Sum",

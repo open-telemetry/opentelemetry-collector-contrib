@@ -77,7 +77,16 @@ The metrics path uses the collector's scraper pattern. Configure under `metrics`
 | `metrics`             | List     | —          | Explicit list of metric queries (namespace, metric_name, dimensions, stat).                                                                                                                  |
 | `discovery`           | Optional | —          | Use ListMetrics to discover metrics (mutually exclusive with `metrics`).                                                                                                                     |
 
-When using `discovery`, set `namespace`, optional `metric_name`, `limit`, and `stat`. When using an explicit `metrics` list, each entry must have `namespace` and `metric_name`; for EC2 metrics include the `InstanceId` dimension.
+When using an explicit `metrics` list, each entry must have `namespace` and `metric_name`; for EC2 metrics include the `InstanceId` dimension.
+
+#### Discovery sub-parameters
+
+| Parameter     | Type    | Default   | Description                                                                              |
+| ------------- | ------- | --------- | ---------------------------------------------------------------------------------------- |
+| `namespace`   | String  | —         | Optional namespace filter (e.g. `AWS/EC2`). If omitted, all namespaces are discovered.  |
+| `metric_name` | String  | —         | Optional metric name filter.                                                             |
+| `limit`       | Integer | 100       | Maximum number of metrics to discover and scrape per collection interval.                |
+| `stat`        | String  | `Average` | CloudWatch statistic applied to all discovered metrics (e.g. `Sum`, `Maximum`).         |
 
 #### Naming conventions
 

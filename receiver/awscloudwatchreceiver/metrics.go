@@ -52,18 +52,6 @@ type metricsClient interface {
 }
 
 func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloudWatchMetricsScraper {
-	period := cfg.Metrics.Period
-	if period == 0 {
-		period = defaultMetricsPeriod
-	}
-	delay := cfg.Metrics.Delay
-	if delay == 0 {
-		delay = defaultMetricsDelay
-	}
-	collectionInterval := cfg.Metrics.CollectionInterval
-	if collectionInterval == 0 {
-		collectionInterval = defaultMetricsCollectionInt
-	}
 	var discovery *MetricsDiscoveryConfig
 	if cfg.Metrics.Discovery != nil {
 		d := *cfg.Metrics.Discovery
@@ -78,23 +66,33 @@ func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloud
 	return &cloudWatchMetricsScraper{
 		settings:           settings,
 		cfg:                cfg,
-		period:             period,
-		delay:              delay,
-		collectionInterval: collectionInterval,
+		period:             cfg.Metrics.Period,
+		delay:              cfg.Metrics.Delay,
+		collectionInterval: cfg.Metrics.CollectionInterval,
 		metrics:            cfg.Metrics.Metrics,
 		discovery:          discovery,
 	}
 }
 
 func (s *cloudWatchMetricsScraper) start(ctx context.Context, _ component.Host) error {
-	return s.ensureClient(ctx)
+	s.settings.Logger.Debug("initializing CloudWatch client", zap.String("region", s.cfg.Region))
+	opts := []func(*config.LoadOptions) error{config.WithRegion(s.cfg.Region)}
+	if s.cfg.IMDSEndpoint != "" {
+		opts = append(opts, config.WithEC2IMDSEndpoint(s.cfg.IMDSEndpoint))
+	}
+	if s.cfg.Profile != "" {
+		opts = append(opts, config.WithSharedConfigProfile(s.cfg.Profile))
+	}
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+	if err != nil {
+		return err
+	}
+	s.client = cloudwatch.NewFromConfig(cfg)
+	return nil
 }
 
 func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.settings.Logger.Debug("scraping CloudWatch metrics", zap.String("region", s.cfg.Region))
-	if err := s.ensureClient(ctx); err != nil {
-		return pmetric.NewMetrics(), err
-	}
 
 	var metricsToScrape []MetricQuery
 	if s.discovery != nil {
@@ -381,23 +379,3 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 	return md
 }
 
-func (s *cloudWatchMetricsScraper) ensureClient(ctx context.Context) error {
-	if s.client != nil {
-		return nil
-	}
-	s.settings.Logger.Debug("ensuring CloudWatch client", zap.String("region", s.cfg.Region))
-	opts := []func(*config.LoadOptions) error{config.WithRegion(s.cfg.Region)}
-	if s.cfg.IMDSEndpoint != "" {
-		opts = append(opts, config.WithEC2IMDSEndpoint(s.cfg.IMDSEndpoint))
-	}
-	if s.cfg.Profile != "" {
-		opts = append(opts, config.WithSharedConfigProfile(s.cfg.Profile))
-	}
-	cfg, err := config.LoadDefaultConfig(ctx, opts...)
-	if err != nil {
-		return err
-	}
-	s.client = cloudwatch.NewFromConfig(cfg)
-	s.settings.Logger.Debug("CloudWatch client initialized", zap.String("region", s.cfg.Region))
-	return nil
-}

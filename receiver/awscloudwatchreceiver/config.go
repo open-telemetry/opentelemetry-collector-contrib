@@ -142,28 +142,7 @@ func (c *Config) Validate() error {
 	return errs
 }
 
-func (c *Config) validateMetricsConfig() error {
-	if c.Metrics.Discovery != nil && len(c.Metrics.Metrics) > 0 {
-		return errMetricsAndDiscoveryConfigured
-	}
-	if c.Metrics.Discovery != nil {
-		if c.Metrics.Discovery.Limit <= 0 {
-			return errInvalidDiscoveryLimit
-		}
-		if c.Metrics.CollectionInterval != 0 && c.Metrics.CollectionInterval < time.Second {
-			return errInvalidMetricsCollectionInterval
-		}
-		if c.Metrics.Period != 0 && c.Metrics.Period < time.Second {
-			return errInvalidMetricsPeriod
-		}
-		if c.Metrics.Delay != 0 && c.Metrics.Delay < time.Second {
-			return errInvalidMetricsDelay
-		}
-		return nil
-	}
-	if len(c.Metrics.Metrics) == 0 {
-		return nil
-	}
+func (c *Config) validateMetricsDurations() error {
 	if c.Metrics.CollectionInterval != 0 && c.Metrics.CollectionInterval < time.Second {
 		return errInvalidMetricsCollectionInterval
 	}
@@ -172,6 +151,25 @@ func (c *Config) validateMetricsConfig() error {
 	}
 	if c.Metrics.Delay != 0 && c.Metrics.Delay < time.Second {
 		return errInvalidMetricsDelay
+	}
+	return nil
+}
+
+func (c *Config) validateMetricsConfig() error {
+	if c.Metrics.Discovery != nil && len(c.Metrics.Metrics) > 0 {
+		return errMetricsAndDiscoveryConfigured
+	}
+	if c.Metrics.Discovery != nil {
+		if c.Metrics.Discovery.Limit <= 0 {
+			return errInvalidDiscoveryLimit
+		}
+		return c.validateMetricsDurations()
+	}
+	if len(c.Metrics.Metrics) == 0 {
+		return nil
+	}
+	if err := c.validateMetricsDurations(); err != nil {
+		return err
 	}
 	for i, m := range c.Metrics.Metrics {
 		if m.Namespace == "" {

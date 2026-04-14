@@ -37,10 +37,19 @@ func (m *mockMetricsClient) GetMetricData(ctx context.Context, params *cloudwatc
 }
 
 func testScraper(cfg *Config) *cloudWatchMetricsScraper {
-	scr := newCloudWatchMetricsScraper(cfg, receiver.Settings{
+	defaults := createDefaultConfig().(*Config).Metrics
+	if cfg.Metrics.Period == 0 {
+		cfg.Metrics.Period = defaults.Period
+	}
+	if cfg.Metrics.Delay == 0 {
+		cfg.Metrics.Delay = defaults.Delay
+	}
+	if cfg.Metrics.CollectionInterval == 0 {
+		cfg.Metrics.CollectionInterval = defaults.CollectionInterval
+	}
+	return newCloudWatchMetricsScraper(cfg, receiver.Settings{
 		TelemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
 	})
-	return scr
 }
 
 // --- pure-function tests ---

@@ -72,6 +72,8 @@ func createDefaultConfig() component.Config {
 			// Metrics are only collected when a metrics pipeline is configured; this default does not
 			// enable metrics collection on its own.
 			ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: defaultMetricsCollectionInt},
+			Period:           defaultMetricsPeriod,
+			Delay:            defaultMetricsDelay,
 		},
 	}
 }
