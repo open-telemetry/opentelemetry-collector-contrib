@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -453,7 +454,7 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 func stackTraceID(frames []StackFrame) (string, error) {
 	var buf [24]byte
 	h := fnv.New128a()
-	for i := len(frames) - 1; i >= 0; i-- { // reverse ordered frames, done in stackFrames()
+	for i := range slices.Backward(frames) { // reverse ordered frames, done in stackFrames()
 		fID, err := newFrameIDFromString(frames[i].DocID)
 		if err != nil {
 			return "", fmt.Errorf("failed to create frameID from string: %w", err)

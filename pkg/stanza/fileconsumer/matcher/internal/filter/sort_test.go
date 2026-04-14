@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"testing"
 	"time"
 
@@ -163,8 +164,8 @@ func TestSort(t *testing.T) {
 					assert.Equal(t, tc.expectAscending, result)
 				} else {
 					descending := make([]string, 0, len(tc.expectAscending))
-					for i := len(tc.expectAscending) - 1; i >= 0; i-- {
-						descending = append(descending, tc.expectAscending[i])
+					for _, s := range slices.Backward(tc.expectAscending) {
+						descending = append(descending, s)
 					}
 					assert.Equal(t, descending, result)
 				}
