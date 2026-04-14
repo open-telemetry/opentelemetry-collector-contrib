@@ -538,19 +538,19 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 			return false, err
 		}
 	case "packets-lost-no-route":
-		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-no-route"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_no_route"); err != nil {
 			return false, err
 		}
 	case "packets-lost-blackhole":
-		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-blackhole"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_blackhole"); err != nil {
 			return false, err
 		}
 	case "packets-lost-mtu-exceeded":
-		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-mtu-exceeded"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_mtu_exceeded"); err != nil {
 			return false, err
 		}
 	case "packets-lost-ttl-expired":
-		if err := addNumber(field, value, "aws.vpc.flow.packets-lost-ttl-expired"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_ttl_expired"); err != nil {
 			return false, err
 		}
 	case "start":
