@@ -172,3 +172,31 @@ func (c *perRPCCredentials) GetRequestMetadata(ctx context.Context, _ ...string)
 func (*perRPCCredentials) RequireTransportSecurity() bool {
 	return true
 }
+
+// errorWrappingTokenSource wraps an oauth2.TokenSource and annotates errors
+// with the token endpoint URL for easier debugging.
+type errorWrappingTokenSource struct {
+	ts       oauth2.TokenSource
+	tokenURL string
+}
+
+func (e errorWrappingTokenSource) Token() (*oauth2.Token, error) {
+	tok, err := e.ts.Token()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"%w (endpoint %q): %w",
+			errFailedToGetSecurityToken, e.tokenURL, err,
+		)
+	}
+	return tok, nil
+}
+
+// TokenSource returns an oauth2.TokenSource that performs the client credentials flow
+// and refreshes tokens as needed.
+func (o *clientAuthenticator) TokenSource(ctx context.Context) (oauth2.TokenSource, error) {
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, o.client)
+	return errorWrappingTokenSource{
+		ts:       o.credentials.TokenSource(ctx),
+		tokenURL: o.credentials.TokenEndpoint(),
+	}, nil
+}

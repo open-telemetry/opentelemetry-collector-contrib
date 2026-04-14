@@ -208,6 +208,9 @@ $defs:
       mechanism:
         description: 'SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).'
         type: string
+      oauthbearer_token_file:
+        description: Path to a file containing a bearer token for OAUTHBEARER authentication. The file is read on every token refresh, enabling rotation without restart.
+        type: string
       oauthbearer_token_source:
         description: ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism, typically named "oauth2client"
         type: string

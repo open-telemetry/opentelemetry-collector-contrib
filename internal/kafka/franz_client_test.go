@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 	"testing"
@@ -20,6 +22,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -109,6 +112,40 @@ func TestNewFranzSyncProducer_SASL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigureKgoSASL_OAuthBearer(t *testing.T) {
+	// Missing extension
+	id := component.MustNewID("oauth2client")
+	emptyHost := hostWithExtensions(nil)
+	_, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+		Mechanism:              OAUTHBEARER,
+		OAuthBearerTokenSource: id,
+	}, emptyHost)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "not found")
+
+	// File-based token
+	tokenPath := filepath.Join(t.TempDir(), "token")
+	require.NoError(t, os.WriteFile(tokenPath, []byte("token"), 0o600))
+
+	opt, err := configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+		Mechanism:            OAUTHBEARER,
+		OAuthBearerTokenFile: tokenPath,
+	}, emptyHost)
+	require.NoError(t, err)
+	assert.NotNil(t, opt)
+
+	// Extension-based token
+	oauthHost := hostWithExtensions(map[component.ID]component.Component{
+		id: fakeTokenSourceExtension{},
+	})
+	opt, err = configureKgoSASL(t.Context(), &configkafka.SASLConfig{
+		Mechanism:              OAUTHBEARER,
+		OAuthBearerTokenSource: id,
+	}, oauthHost)
+	require.NoError(t, err)
+	assert.NotNil(t, opt)
 }
 
 func TestNewFranzSyncProducer_TLS(t *testing.T) {

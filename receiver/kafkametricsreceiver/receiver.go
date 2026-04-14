@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -37,7 +38,7 @@ var (
 		consumersScraperType.String(): createConsumerScraper,
 	}
 
-	newSaramaClient = kafka.NewSaramaClient
+	newSaramaClient func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) = kafka.NewSaramaClient
 	newClusterAdmin = sarama.NewClusterAdminFromClient
 )
 

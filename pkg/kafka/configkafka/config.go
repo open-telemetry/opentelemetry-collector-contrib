@@ -412,15 +412,30 @@ type SASLConfig struct {
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
-	// ID of type "extension" providing a TokenSource for OAUTHBEARER Mechanism,
-	// typically named "oauth2client"
+
+	// OAuthBearerTokenSource is the component.ID of an extension that provides OAuth tokens.
+	// Used with mechanism OAUTHBEARER. Mutually exclusive with OAuthBearerTokenFile.
 	OAuthBearerTokenSource component.ID `mapstructure:"oauthbearer_token_source,omitempty"`
+
+	// OAuthBearerTokenFile is a path to a file containing a bearer token.
+	// The file is read on every token refresh, enabling rotation without restart.
+	// Used with mechanism OAUTHBEARER. Mutually exclusive with OAuthBearerTokenSource.
+	OAuthBearerTokenFile string `mapstructure:"oauthbearer_token_file,omitempty"`
 }
 
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "AWS_MSK_IAM_OAUTHBEARER":
 		// TODO validate c.AWSMSK
+	case "OAUTHBEARER":
+		bothSet := c.OAuthBearerTokenSource != (component.ID{}) && c.OAuthBearerTokenFile != ""
+		neitherSet := c.OAuthBearerTokenSource == (component.ID{}) && c.OAuthBearerTokenFile == ""
+		if bothSet {
+			return errors.New("only one of oauthbearer_token_source or oauthbearer_token_file may be set")
+		}
+		if neitherSet {
+			return errors.New("one of oauthbearer_token_source or oauthbearer_token_file is required")
+		}
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
@@ -429,13 +444,9 @@ func (c SASLConfig) Validate() error {
 		if c.Password == "" {
 			return errors.New("password is required")
 		}
-	case "OAUTHBEARER":
-		if c.OAuthBearerTokenSource == (component.ID{}) {
-			return errors.New("oauth2authclient extension is required")
-		}
 	default:
 		return fmt.Errorf(
-			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
+			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
 			c.Mechanism,
 		)
 	}

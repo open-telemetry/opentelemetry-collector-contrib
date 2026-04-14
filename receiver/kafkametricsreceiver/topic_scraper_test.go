@@ -12,6 +12,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -57,7 +58,7 @@ func TestTopicScraper_createsScraper(t *testing.T) {
 }
 
 func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
-	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 		return nil, errors.New("no scraper here")
 	}
 	ms, err := createTopicsScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
@@ -68,7 +69,7 @@ func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 }
 
 func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
-	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 		return nil, errors.New("no scraper here")
 	}
 	ms, err := createTopicsScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))

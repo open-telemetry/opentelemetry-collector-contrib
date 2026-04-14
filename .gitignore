@@ -37,11 +37,18 @@ dist/
 *.DS_Store
 __debug_bin*
 
-# Coverage
-coverage/*
+# Go coverage artifacts (module-local)
+coverage/
+coverage.txt
+coverage.func
+coverage.out
+coverage.html
 *-coverage.txt
-integration-coverage.html
+*-coverage.html
 internal/tools/testresults/*
+
+# Coverage dirs created by `go test -test.gocoverdir=...`
+**/coverage/**
 
 # Wix
 *.wixobj

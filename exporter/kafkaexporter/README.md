@@ -19,6 +19,31 @@ Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a 
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
 processors for higher throughput and resiliency. Message payload encoding is configurable.
 
+## Integration tests
+
+- The OAuth end-to-end tests live in `test/integration/kafkaoauth` and are guarded by the `integration` build tag.
+- They require a local Docker daemon; the suite spins up Keycloak and a Kafka broker with SASL/OAUTHBEARER enabled, then validates exporter-to-receiver round trips.
+- To keep the tests fast and deterministic, the suite does **not** pull the Kafka/Keycloak images automatically. Pre-pull them once:
+
+  ```shell
+  docker pull confluentinc/cp-kafka:7.6.1
+  docker pull quay.io/keycloak/keycloak:26.3.3
+  ```
+  Note: testcontainers may still pull helper images (for example `testcontainers/ryuk`) if they are not present locally.
+- Run the full suite from the integration module:
+
+  ```shell
+  cd test/integration/kafkaoauth
+  go test -tags=integration -run OAuthIntegration ./...
+  ```
+
+- Scenarios covered:
+  - Happy path round trip (franz-go)
+  - Token refresh with short-lived access tokens
+  - Negative path: revoked/disabled Keycloak client fails to mint tokens deterministically
+- Approximate runtime:
+  - With images already pulled: typically under ~1 minute per run on a healthy Docker setup.
+
 ## Configuration settings
 
 > [!NOTE]
@@ -69,10 +94,12 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
-    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM_OAUTHBEARER, or PLAIN)
+    - `mechanism`: The SASL mechanism to use (`SCRAM-SHA-256`, `SCRAM-SHA-512`, `AWS_MSK_IAM_OAUTHBEARER`, `OAUTHBEARER`, or `PLAIN`). Username and password are not required for `OAUTHBEARER`.
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk`
       - `region`: AWS Region in case of AWS_MSK_IAM_OAUTHBEARER mechanism
+    - `oauthbearer_token_source`: ID of an extension that can provide an OAuth token source (for example `oauth2client`). Used with mechanism `OAUTHBEARER`. Mutually exclusive with `oauthbearer_token_file`.
+    - `oauthbearer_token_file`: Path to a file containing a bearer token. Used with mechanism `OAUTHBEARER`. The exporter rereads this file whenever Kafka requests a new token, so rotating the token in place is sufficient. If the file is unreadable or empty the authentication attempt will fail. Mutually exclusive with `oauthbearer_token_source`.
   - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
@@ -162,6 +189,43 @@ exporters:
     record_headers:
       my-custom-header: "my-custom-value"
       another-header: "another-value"
+```
+
+#### Generic OAuth bearer token
+
+When the Kafka brokers expect a generic SASL `OAUTHBEARER` token, configure the
+[`oauth2client`](../../extension/oauth2clientauthextension) extension and reference it from the
+exporter. The extension performs the OAuth client-credentials flow and refreshes tokens as needed.
+
+```yaml
+extensions:
+  oauth2client:
+    client_id: someclientid
+    client_secret: someclientsecret
+    token_url: https://example.com/oauth/token
+
+exporters:
+  kafka:
+    brokers:
+      - kafka:9092
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_source: oauth2client
+```
+
+If you instead supply tokens via a file maintained by another process, point the exporter at the file.
+Update the file in place to rotate credentials.
+
+```yaml
+exporters:
+  kafka:
+    brokers:
+      - kafka:9092
+    auth:
+      sasl:
+        mechanism: OAUTHBEARER
+        oauthbearer_token_file: /var/run/otel/kafka.token
 ```
 
 ## Destination Topic

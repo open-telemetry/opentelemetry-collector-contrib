@@ -30,10 +30,12 @@ type consumerScraper struct {
 	config       Config
 	mb           *metadata.MetricsBuilder
 	mu           sync.Mutex
+	host         component.Host
 }
 
-func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
+func (s *consumerScraper) start(_ context.Context, host component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
+	s.host = host
 	return nil
 }
 
@@ -46,7 +48,7 @@ func (s *consumerScraper) shutdown(_ context.Context) error {
 
 func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if s.client == nil || s.client.Closed() {
-		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig, s.host)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
 		}
