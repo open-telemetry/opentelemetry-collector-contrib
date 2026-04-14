@@ -41,8 +41,11 @@ func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) (*mongodba
 		return nil, fmt.Errorf("failed to create MongoDB Atlas client receiver: %w", err)
 	}
 
-	for _, p := range cfg.Projects {
-		p.populateIncludesAndExcludes()
+	// Use index-based iteration: cfg.Projects is []ProjectConfig (value slice),
+	// so a range-copy would make populateIncludesAndExcludes a no-op on the
+	// original elements.
+	for i := range cfg.Projects {
+		cfg.Projects[i].populateIncludesAndExcludes()
 	}
 
 	return &mongodbatlasreceiver{
@@ -117,7 +120,8 @@ func (s *mongodbatlasreceiver) pollAllProjects(ctx context.Context, time timecon
 
 // pollProject handles polling for specific projects as configured.
 func (s *mongodbatlasreceiver) pollProjects(ctx context.Context, time timeconstraints) error {
-	for _, projectCfg := range s.cfg.Projects {
+	for i := range s.cfg.Projects {
+		projectCfg := &s.cfg.Projects[i]
 		project, err := s.client.GetProject(ctx, projectCfg.Name)
 		if err != nil {
 			s.log.Error("error retrieving project", zap.String("projectName", projectCfg.Name), zap.Error(err))
@@ -130,7 +134,7 @@ func (s *mongodbatlasreceiver) pollProjects(ctx context.Context, time timeconstr
 			continue
 		}
 
-		if err := s.processProject(ctx, time, org.Name, project, &projectCfg); err != nil {
+		if err := s.processProject(ctx, time, org.Name, project, projectCfg); err != nil {
 			s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
 		}
 	}
