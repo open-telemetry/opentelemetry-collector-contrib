@@ -52,25 +52,3 @@ func SplitNetworkEndpoint(addr string) (network, endpoint string, err error) {
 
 	return network, endpoint, nil
 }
-
-// ParseEndpointPath parses a unix:// or unixgram:// URI into network and path
-// without validating that the path exists on disk. Use for addresses where the
-// socket file will be created at runtime (e.g., local_endpoint).
-func ParseEndpointPath(addr string) (network, endpoint string, err error) {
-	network, endpoint, err = splitSchemeEndpoint(addr)
-	if err != nil {
-		return "", "", err
-	}
-
-	switch network {
-	case "unix", "unixgram":
-		network = "unixgram"
-		if endpoint == "" {
-			return "", "", fmt.Errorf("empty path in %s endpoint: %w", network, ErrInvalidNetwork)
-		}
-	default:
-		return "", "", fmt.Errorf("only unix or unixgram networks are supported, got %s: %w", network, ErrInvalidNetwork)
-	}
-
-	return network, endpoint, nil
-}

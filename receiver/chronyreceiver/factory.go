@@ -41,12 +41,8 @@ func newMetricsReceiver(
 		scraper.WithStart(func(_ context.Context, _ component.Host) error {
 			var chronyc chrony.Client
 			var err error
-			if cfg.LocalEndpoint != "" {
-				_, localPath, parseErr := chrony.ParseEndpointPath(cfg.LocalEndpoint)
-				if parseErr != nil {
-					return parseErr
-				}
-				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout, chrony.WithLocalAddress(localPath))
+			if cfg.FileMountPath != "" {
+				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout, chrony.WithFileMountPath(cfg.FileMountPath))
 			} else {
 				chronyc, err = chrony.New(cfg.Endpoint, cfg.Timeout)
 			}

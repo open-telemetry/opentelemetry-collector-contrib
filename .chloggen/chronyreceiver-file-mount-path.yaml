@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/chrony
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add local_endpoint config option for cross-namespace Unix datagram socket communication
+note: Add file_mount_path config option for cross-namespace Unix datagram socket communication
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46833]
@@ -18,8 +18,8 @@ issues: [46833]
 subtext: |
   When the collector and chronyd run in separate containers with different network
   namespaces, Go's default abstract socket autobind fails because abstract sockets
-  are namespace-scoped. The new local_endpoint option binds the client socket to a
-  filesystem path on a shared volume, allowing chronyd to reply across namespaces.
+  are namespace-scoped. The new file_mount_path option uses a directory on a shared
+  volume to bind a random client socket, allowing chronyd to reply across namespaces.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

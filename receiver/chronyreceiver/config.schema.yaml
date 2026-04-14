@@ -3,8 +3,8 @@ properties:
   endpoint:
     description: 'Endpoint is the published address or unix socket that allows clients to connect to: The allowed format is: unix:///path/to/chronyd/unix.sock udp://localhost:323 The default value is unix:///var/run/chrony/chronyd.sock'
     type: string
-  local_endpoint:
-    description: 'LocalEndpoint is the local address to bind when using Unix datagram sockets. Required when the collector and chronyd run in separate network namespaces (e.g., different containers) sharing a filesystem volume for the socket. When empty, Go''s default abstract socket autobind is used (same-namespace only). Example: unix:///run/chrony/otel-reply.sock'
+  file_mount_path:
+    description: 'FileMountPath is used when the collector is running within a container. This allows the receiver to configure a local socket address so they can communicate across network namespaces. It is expected that this path is a directory mounted on a volume that chronyd has access to. When empty, Go''s default abstract socket autobind is used (same-namespace only). Example: /run/chrony'
     type: string
 allOf:
   - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config

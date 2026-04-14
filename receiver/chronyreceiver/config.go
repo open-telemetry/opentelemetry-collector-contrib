@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,12 +28,14 @@ type Config struct {
 	// The default value is unix:///var/run/chrony/chronyd.sock
 	Endpoint string `mapstructure:"endpoint"`
 
-	// LocalEndpoint is the local address to bind when using Unix datagram sockets.
-	// Required when the collector and chronyd run in separate network namespaces
-	// (e.g., different containers) sharing a filesystem volume for the socket.
+	// FileMountPath is used when the collector is running within a container.
+	// This allows the receiver to configure a local socket address so they can
+	// communicate across network namespaces.
+	// It is expected that this path is a directory mounted on a volume that
+	// chronyd has access to.
 	// When empty, Go's default abstract socket autobind is used (same-namespace only).
-	// Example: unix:///run/chrony/otel-reply.sock
-	LocalEndpoint string `mapstructure:"local_endpoint"`
+	// Example: /run/chrony
+	FileMountPath string `mapstructure:"file_mount_path"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -65,17 +66,12 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return err
 	}
-	if c.LocalEndpoint != "" {
+	if c.FileMountPath != "" {
 		if network != "unixgram" {
-			return fmt.Errorf("local_endpoint is only supported with unix/unixgram endpoints: %w", errInvalidValue)
+			return fmt.Errorf("file_mount_path is only supported with unix/unixgram endpoints: %w", errInvalidValue)
 		}
-		_, endpoint, err := chrony.ParseEndpointPath(c.LocalEndpoint)
-		if err != nil {
-			return err
-		}
-		dir := filepath.Dir(endpoint)
-		if _, err := os.Stat(dir); err != nil {
-			return fmt.Errorf("local_endpoint parent directory %q: %w", dir, err)
+		if _, err := os.Stat(c.FileMountPath); err != nil {
+			return fmt.Errorf("file_mount_path directory %q: %w", c.FileMountPath, err)
 		}
 	}
 	return nil

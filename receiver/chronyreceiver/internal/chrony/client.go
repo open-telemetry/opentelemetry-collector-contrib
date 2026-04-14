@@ -5,11 +5,13 @@ package chrony // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/facebook/time/ntp/chrony"
@@ -45,14 +47,14 @@ type client struct {
 	conn net.Conn
 }
 
-// WithLocalAddress sets a filesystem-based local socket address for unixgram
-// connections. Required when the collector and chronyd run in separate network
-// namespaces sharing a filesystem volume.
-func WithLocalAddress(addr string) ClientOption {
+// WithFileMountPath sets a filesystem-based directory for unixgram
+// connections to bind a random local socket. Required when the collector
+// and chronyd run in separate network namespaces sharing a filesystem volume.
+func WithFileMountPath(dir string) ClientOption {
 	return func(c *client) {
-		// Append PID to make the socket path unique to this process instance,
-		// preventing conflicts across restarts and ensuring we only delete our own file.
-		c.localAddr = fmt.Sprintf("%s.%d.sock", addr, os.Getpid())
+		b := make([]byte, 4)
+		_, _ = rand.Read(b)
+		c.localAddr = filepath.Join(dir, fmt.Sprintf("otel-chrony-%x.sock", b))
 	}
 }
 

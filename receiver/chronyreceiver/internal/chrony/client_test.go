@@ -83,20 +83,19 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestWithLocalAddress(t *testing.T) {
+func TestWithFileMountPath(t *testing.T) {
 	t.Parallel()
 
 	sockDir := t.TempDir()
-	localAddr := filepath.Join(sockDir, "otel-reply.sock")
 
-	c, err := New("unix://"+sockDir, 10*time.Second, WithLocalAddress(localAddr))
+	c, err := New("unix://"+sockDir, 10*time.Second, WithFileMountPath(sockDir))
 	require.NoError(t, err, "Must not error when creating client")
 
 	cl, ok := c.(*client)
 	require.True(t, ok, "Must be a *client")
 	
-	expectedAddr := fmt.Sprintf("%s.%d.sock", localAddr, os.Getpid())
-	assert.Equal(t, expectedAddr, cl.localAddr, "Must set the local address with PID appended")
+	assert.Contains(t, cl.localAddr, "otel-chrony-")
+	assert.Equal(t, sockDir, filepath.Dir(cl.localAddr), "Must be placed in the specified directory")
 }
 
 func newTrackingPayload(t *testing.T) []byte {
@@ -138,18 +137,15 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 	}
 
 	sockDir := t.TempDir()
-	localAddr := filepath.Join(sockDir, "otel-reply.sock")
-	expectedAddr := fmt.Sprintf("%s.%d.sock", localAddr, os.Getpid())
-
-	// Create a mock socket file to simulate dialer binding
-	require.NoError(t, os.WriteFile(expectedAddr, []byte(""), 0o600))
 
 	tracking := newTrackingPayload(t)
 
 	c, err := New("unix://"+sockDir, 10*time.Second,
-		WithLocalAddress(localAddr),
+		WithFileMountPath(sockDir),
 		func(c *client) {
 			c.dialer = func(context.Context, string, string) (net.Conn, error) {
+				// Create a mock socket file to simulate dialer binding
+				_ = os.WriteFile(c.localAddr, []byte(""), 0o600)
 				conn := newMockConn(t,
 					nil,
 					func(conn net.Conn) error {
@@ -165,6 +161,9 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 
 	_, err = c.GetTrackingData(t.Context())
 	require.NoError(t, err, "Must not error when getting tracking data")
+
+	cl := c.(*client)
+	expectedAddr := cl.localAddr
 
 	// Call Close to trigger cleanup
 	require.NoError(t, c.Close(), "Must not error closing client")

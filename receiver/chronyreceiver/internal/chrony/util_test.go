@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSplitNetworkEndpoint(t *testing.T) {
@@ -79,59 +78,6 @@ func TestSplitNetworkEndpoint(t *testing.T) {
 			assert.Equal(t, tc.network, network, "Must match the expected network")
 			assert.Equal(t, tc.endpoint, endpoint, "Must match the expected endpoint")
 			assert.ErrorIs(t, err, tc.err, "Must match the expected error")
-		})
-	}
-}
-
-func TestParseEndpointPath(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		scenario string
-		in       string
-		network  string
-		endpoint string
-		err      error
-	}{
-		{
-			scenario: "Valid unix path",
-			in:       "unix:///run/chrony/otel-reply.sock",
-			network:  "unixgram",
-			endpoint: "/run/chrony/otel-reply.sock",
-		},
-		{
-			scenario: "Valid unixgram path",
-			in:       "unixgram:///run/chrony/otel-reply.sock",
-			network:  "unixgram",
-			endpoint: "/run/chrony/otel-reply.sock",
-		},
-		{
-			scenario: "Invalid UDP scheme",
-			in:       "udp://localhost:323",
-			err:      ErrInvalidNetwork,
-		},
-		{
-			scenario: "Missing separator",
-			in:       "unix/run/chrony.sock",
-			err:      ErrInvalidNetwork,
-		},
-		{
-			scenario: "Empty unix path",
-			in:       "unix://",
-			err:      ErrInvalidNetwork,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.scenario, func(t *testing.T) {
-			network, endpoint, err := ParseEndpointPath(tc.in)
-			if tc.err != nil {
-				assert.ErrorIs(t, err, tc.err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tc.network, network)
-			assert.Equal(t, tc.endpoint, endpoint)
 		})
 	}
 }
