@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/postgresql
+note: "Fix panic in `collectTopQuery` when `pg_stat_statements` contains entries from deleted databases: change the `LEFT JOIN pg_database` to `INNER JOIN` so orphaned rows are excluded at query time, and add a nil guard in the scraper as a defence-in-depth measure."
+issues: [45713]
+change_logs: [user]
