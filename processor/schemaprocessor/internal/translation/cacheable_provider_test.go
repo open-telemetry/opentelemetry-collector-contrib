@@ -46,7 +46,7 @@ func (p *firstErrorProvider) Retrieve(_ context.Context, key string) (string, er
 // TestCacheableProviderConcurrentFetch verifies that the lock is not held during the
 // HTTP call. If it were, only one goroutine could be inside provider.Retrieve at a time.
 // The test uses a blockingProvider that signals when it has been entered and then blocks.
-// With correct behaviour, two goroutines can both be inside the HTTP call simultaneously.
+// With correct behavior, two goroutines can both be inside the HTTP call simultaneously.
 func TestCacheableProviderConcurrentFetch(t *testing.T) {
 	started := make(chan struct{}, 2)
 	release := make(chan struct{})
@@ -55,11 +55,9 @@ func TestCacheableProviderConcurrentFetch(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 2 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_, _ = cp.Retrieve(t.Context(), "key")
-		}()
+		})
 	}
 
 	// Both goroutines must reach the HTTP call concurrently.
