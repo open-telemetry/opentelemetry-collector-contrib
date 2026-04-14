@@ -23,6 +23,9 @@ type Client interface {
 	// and will read that instance tracking information relatively to the configured
 	// upstream NTP server(s).
 	GetTrackingData(ctx context.Context) (*Tracking, error)
+
+	// Close closes the underlying connection and cleans up any resources.
+	Close() error
 }
 
 // ClientOption configures the chrony client.
@@ -38,6 +41,8 @@ type client struct {
 	localAddr   string
 	timeout     time.Duration
 	dialer      func(ctx context.Context, network, addr string) (net.Conn, error)
+
+	conn net.Conn
 }
 
 // WithLocalAddress sets a filesystem-based local socket address for unixgram
@@ -45,7 +50,9 @@ type client struct {
 // namespaces sharing a filesystem volume.
 func WithLocalAddress(addr string) ClientOption {
 	return func(c *client) {
-		c.localAddr = addr
+		// Append PID to make the socket path unique to this process instance,
+		// preventing conflicts across restarts and ensuring we only delete our own file.
+		c.localAddr = fmt.Sprintf("%s.%d.sock", addr, os.Getpid())
 	}
 }
 
@@ -82,20 +89,16 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	ctx, cancel := c.getContext(ctx)
 	defer cancel()
 
-	if c.localAddr != "" && c.proto == "unixgram" {
-		if err := removeIfSocket(c.localAddr); err != nil {
+	if c.conn == nil {
+		sock, err := c.dialer(ctx, c.proto, c.addr)
+		if err != nil {
 			return nil, err
 		}
-		defer func() { _ = removeIfSocket(c.localAddr) }()
-	}
-
-	sock, err := c.dialer(ctx, c.proto, c.addr)
-	if err != nil {
-		return nil, err
+		c.conn = sock
 	}
 
 	if deadline, ok := ctx.Deadline(); ok {
-		err = sock.SetDeadline(deadline)
+		err := c.conn.SetDeadline(deadline)
 		if err != nil {
 			return nil, err
 		}
@@ -104,19 +107,29 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	packet := chrony.NewTrackingPacket()
 	packet.SetSequence(uint32(clockwork.FromContext(ctx).Now().UnixNano()))
 
-	if err := binary.Write(sock, binary.BigEndian, packet); err != nil {
-		return nil, errors.Join(err, sock.Close())
+	if err := binary.Write(c.conn, binary.BigEndian, packet); err != nil {
+		return nil, errors.Join(err, c.Close())
 	}
 	data := make([]uint8, 1024)
-	if _, err := sock.Read(data); err != nil {
-		return nil, errors.Join(err, sock.Close())
-	}
-
-	if err := sock.Close(); err != nil {
-		return nil, err
+	if _, err := c.conn.Read(data); err != nil {
+		return nil, errors.Join(err, c.Close())
 	}
 
 	return newTrackingData(data)
+}
+
+func (c *client) Close() error {
+	var err error
+	if c.conn != nil {
+		err = c.conn.Close()
+		c.conn = nil
+	}
+	if c.localAddr != "" && c.proto == "unixgram" {
+		if rmErr := os.Remove(c.localAddr); rmErr != nil && !errors.Is(rmErr, os.ErrNotExist) {
+			err = errors.Join(err, rmErr)
+		}
+	}
+	return err
 }
 
 func (c *client) getContext(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -125,21 +138,4 @@ func (c *client) getContext(ctx context.Context) (context.Context, context.Cance
 	}
 
 	return context.WithTimeout(ctx, c.timeout)
-}
-
-// removeIfSocket removes the file at path only if it is a Unix socket.
-// Returns nil if the file does not exist. Returns an error if the path
-// exists but is not a socket, preventing accidental deletion of regular files.
-func removeIfSocket(path string) error {
-	fi, err := os.Lstat(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if fi.Mode().Type()&os.ModeSocket == 0 {
-		return fmt.Errorf("local_endpoint path %q exists but is not a socket", path)
-	}
-	return os.Remove(path)
 }

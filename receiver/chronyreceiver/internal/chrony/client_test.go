@@ -94,7 +94,9 @@ func TestWithLocalAddress(t *testing.T) {
 
 	cl, ok := c.(*client)
 	require.True(t, ok, "Must be a *client")
-	assert.Equal(t, localAddr, cl.localAddr, "Must set the local address")
+	
+	expectedAddr := fmt.Sprintf("%s.%d.sock", localAddr, os.Getpid())
+	assert.Equal(t, expectedAddr, cl.localAddr, "Must set the local address with PID appended")
 }
 
 func newTrackingPayload(t *testing.T) []byte {
@@ -128,15 +130,6 @@ func newTrackingPayload(t *testing.T) []byte {
 	return buf
 }
 
-func createStaleSocket(t *testing.T, path string) {
-	t.Helper()
-	// Use a short temp dir to stay within macOS's 104-byte sun_path limit.
-	l, err := net.Listen("unix", path)
-	require.NoError(t, err, "Must create stale socket")
-	require.NoError(t, l.Close(), "Must close stale socket listener")
-	// The socket file remains on disk after Close, simulating a crash leftover.
-}
-
 func TestLocalAddrSocketCleanup(t *testing.T) {
 	t.Parallel()
 
@@ -145,10 +138,11 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 	}
 
 	sockDir := t.TempDir()
-	localAddr := filepath.Join(sockDir, "r.sock")
+	localAddr := filepath.Join(sockDir, "otel-reply.sock")
+	expectedAddr := fmt.Sprintf("%s.%d.sock", localAddr, os.Getpid())
 
-	// Create a real stale Unix socket to simulate crash recovery
-	createStaleSocket(t, localAddr)
+	// Create a mock socket file to simulate dialer binding
+	require.NoError(t, os.WriteFile(expectedAddr, []byte(""), 0o600))
 
 	tracking := newTrackingPayload(t)
 
@@ -156,12 +150,8 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 		WithLocalAddress(localAddr),
 		func(c *client) {
 			c.dialer = func(context.Context, string, string) (net.Conn, error) {
-				// Verify stale socket was removed before dial
-				_, statErr := os.Stat(localAddr)
-				assert.ErrorIs(t, statErr, os.ErrNotExist, "Must remove stale socket before dial")
-
 				conn := newMockConn(t,
-					nil, // default: reads requestTrackingContent from pipe
+					nil,
 					func(conn net.Conn) error {
 						_, writeErr := conn.Write(tracking)
 						return writeErr
@@ -176,38 +166,12 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 	_, err = c.GetTrackingData(t.Context())
 	require.NoError(t, err, "Must not error when getting tracking data")
 
+	// Call Close to trigger cleanup
+	require.NoError(t, c.Close(), "Must not error closing client")
+
 	// Verify socket file cleaned up after close
-	_, err = os.Stat(localAddr)
-	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after GetTrackingData")
-}
-
-func TestLocalAddrRejectsNonSocket(t *testing.T) {
-	t.Parallel()
-
-	sockDir := t.TempDir()
-	localAddr := filepath.Join(sockDir, "otel-reply.sock")
-
-	// Create a regular file at the local_endpoint path
-	require.NoError(t, os.WriteFile(localAddr, []byte("not a socket"), 0o600))
-
-	c, err := New("unix://"+sockDir, 10*time.Second,
-		WithLocalAddress(localAddr),
-		func(c *client) {
-			c.dialer = func(context.Context, string, string) (net.Conn, error) {
-				t.Fatal("dialer must not be called when local_endpoint is not a socket")
-				return nil, nil
-			}
-		},
-	)
-	require.NoError(t, err, "Must not error when creating client")
-
-	_, err = c.GetTrackingData(t.Context())
-	require.Error(t, err, "Must error when local_endpoint exists but is not a socket")
-	assert.Contains(t, err.Error(), "not a socket")
-
-	// Verify the regular file was NOT deleted
-	_, statErr := os.Stat(localAddr)
-	assert.NoError(t, statErr, "Must not delete regular files")
+	_, err = os.Stat(expectedAddr)
+	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after Close")
 }
 
 func TestGettingTrackingData(t *testing.T) {

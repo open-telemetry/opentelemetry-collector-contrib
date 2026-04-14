@@ -53,6 +53,12 @@ func newMetricsReceiver(
 			s.client = chronyc
 			return err
 		}),
+		scraper.WithShutdown(func(_ context.Context) error {
+			if s.client != nil {
+				return s.client.Close()
+			}
+			return nil
+		}),
 	)
 	if err != nil {
 		return nil, err
