@@ -6,9 +6,9 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.platform | The cloud.platform | Any Str | true |
-| cloud.provider | The cloud.provider | Any Str | true |
-| cloud.region | The cloud.region | Any Str | true |
-| k8s.cluster.name | The k8s.cluster.name | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| cloud.platform | The cloud.platform | Any Str | true | - |
+| cloud.provider | The cloud.provider | Any Str | true | - |
+| cloud.region | The cloud.region | Any Str | true | - |
+| k8s.cluster.name | The k8s.cluster.name | Any Str | true | - |

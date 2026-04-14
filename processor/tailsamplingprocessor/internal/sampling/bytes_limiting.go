@@ -57,6 +57,10 @@ func (b *bytesLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *sa
 	return samplingpolicy.NotSampled, nil
 }
 
+func (*bytesLimiting) IsStateful() bool {
+	return true
+}
+
 // calculateTraceSize calculates the accurate protobuf marshaled size of a trace in bytes
 // using the OpenTelemetry Collector's built-in ProtoMarshaler.TracesSize() method
 func calculateTraceSize(trace *samplingpolicy.TraceData) int64 {

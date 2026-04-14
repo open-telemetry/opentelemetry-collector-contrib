@@ -45,6 +45,7 @@ type Manager struct {
 	maxBatches     int
 	maxBatchFiles  int
 	pollsToArchive int
+	onTruncate     string
 
 	telemetryBuilder *metadata.TelemetryBuilder
 
@@ -151,7 +152,7 @@ func (m *Manager) poll(ctx context.Context) {
 	if m.persister != nil {
 		metadata := m.tracker.GetMetadata()
 		if metadata != nil {
-			if err := checkpoint.Save(context.Background(), m.persister, metadata); err != nil {
+			if err := checkpoint.Save(ctx, m.persister, metadata); err != nil {
 				m.set.Logger.Error("save offsets", zap.Error(err))
 			}
 		}
@@ -285,6 +286,34 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 		var err error
 
 		if md != nil {
+			// Check if stored offset exceeds current file size
+			if info, statErr := file.Stat(); statErr == nil && md.Offset > info.Size() {
+				// Stored offset exceeds current file size
+				switch m.onTruncate {
+				case OnTruncateReadWholeFile:
+					m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
+						zap.String("path", file.Name()),
+						zap.Int64("stored_offset", md.Offset),
+						zap.Int64("current_file_size", info.Size()),
+					)
+					md.Offset = 0
+				case OnTruncateReadNew:
+					m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
+						zap.String("path", file.Name()),
+						zap.Int64("stored_offset", md.Offset),
+						zap.Int64("current_file_size", info.Size()),
+						zap.Int64("new_offset", info.Size()),
+					)
+					md.Offset = info.Size()
+				case OnTruncateIgnore:
+					// Keep the old offset - no data will be read until file grows past the original offset
+					m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
+						zap.String("path", file.Name()),
+						zap.Int64("stored_offset", md.Offset),
+						zap.Int64("current_file_size", info.Size()),
+					)
+				}
+			}
 			reader, err = m.readerFactory.NewReaderFromMetadata(file, md)
 			if m.tracker.Name() != tracker.NoStateTracker {
 				m.set.Logger.Info("File found in archive. Started watching file again", zap.String("path", file.Name()))
@@ -322,11 +351,68 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 					zap.String("rotated_path", file.Name()))
 			}
 		}
-		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
+		// Close old reader and adjust offset if needed.
+		md := oldReader.Close()
+		if info, err := file.Stat(); err == nil && md.Offset > info.Size() {
+			// Stored offset exceeds current file size
+			switch m.onTruncate {
+			case OnTruncateReadWholeFile:
+				m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
+					zap.String("path", file.Name()),
+					zap.Int64("stored_offset", md.Offset),
+					zap.Int64("current_file_size", info.Size()),
+				)
+				md.Offset = 0
+			case OnTruncateReadNew:
+				m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
+					zap.String("path", file.Name()),
+					zap.Int64("stored_offset", md.Offset),
+					zap.Int64("current_file_size", info.Size()),
+					zap.Int64("new_offset", info.Size()),
+				)
+				md.Offset = info.Size()
+			case OnTruncateIgnore:
+				// Keep the old offset - no data will be read until file grows past the original offset
+				m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
+					zap.String("path", file.Name()),
+					zap.Int64("stored_offset", md.Offset),
+					zap.Int64("current_file_size", info.Size()),
+				)
+			}
+		}
+		return m.readerFactory.NewReaderFromMetadata(file, md)
 	}
 
 	// Check for closed files for match
 	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
+		// Check if stored offset exceeds current file size
+		if info, statErr := file.Stat(); statErr == nil && oldMetadata.Offset > info.Size() {
+			// Stored offset exceeds current file size
+			switch m.onTruncate {
+			case OnTruncateReadWholeFile:
+				m.set.Logger.Debug("Stored offset exceeds current file size. Resetting offset to 0",
+					zap.String("path", file.Name()),
+					zap.Int64("stored_offset", oldMetadata.Offset),
+					zap.Int64("current_file_size", info.Size()),
+				)
+				oldMetadata.Offset = 0
+			case OnTruncateReadNew:
+				m.set.Logger.Debug("Stored offset exceeds current file size. Storing new offset",
+					zap.String("path", file.Name()),
+					zap.Int64("stored_offset", oldMetadata.Offset),
+					zap.Int64("current_file_size", info.Size()),
+					zap.Int64("new_offset", info.Size()),
+				)
+				oldMetadata.Offset = info.Size()
+			case OnTruncateIgnore:
+				// Keep the old offset - no data will be read until file grows past the original offset
+				m.set.Logger.Debug("Stored offset exceeds current file size. Keeping original offset",
+					zap.String("path", file.Name()),
+					zap.Int64("stored_offset", oldMetadata.Offset),
+					zap.Int64("current_file_size", info.Size()),
+				)
+			}
+		}
 		r, err := m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
 		if err != nil {
 			return nil, err

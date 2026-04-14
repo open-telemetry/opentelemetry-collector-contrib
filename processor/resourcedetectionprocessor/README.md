@@ -22,18 +22,6 @@ override the resource value in telemetry data with this information.
 > **Note**
 >
 > If a configured resource detector fails, the error will propagate and stop the collector from starting.
-> The `processor.resourcedetection.propagateerrors` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) is now stable and always enabled
-> (as of v0.146.0).
-
-## Feature gates
-
-See [documentation.md](./documentation.md) for the complete list of feature gates supported by this processor.
-
-Feature gates can be enabled using the `--feature-gates` flag:
-
-```shell
-"--feature-gates=<feature-gate>"
-```
 
 ## Supported detectors
 
@@ -944,10 +932,26 @@ processors:
       protocol: https
 ```
 
+### IBM Cloud Classic
+
+Queries the [IBM Cloud Classic (SoftLayer) Resource Metadata Service](https://sldn.softlayer.com/reference/services/SoftLayer_Resource_Metadata/) to retrieve resource attributes from the instance.
+
+The list of the populated resource attributes can be found at [IBM Cloud Classic Detector Resource Attributes](./internal/ibmcloud/classic/documentation.md).
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/ibmcloud_classic:
+    detectors: [env, ibmcloud_classic]
+    timeout: 2s
+    override: false
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode", "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "heroku", "openshift", "dynatrace", "consul", "docker", "k8snode", "kubeadm", "hetzner", "akamai", "scaleway", "vultr", "oraclecloud", "digitalocean", "nova", "upcloud", "alibaba_ecs", "tencent_cvm", "ibmcloud_vpc", "ibmcloud_classic"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
