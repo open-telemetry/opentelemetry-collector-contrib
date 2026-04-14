@@ -1,7 +1,7 @@
 change_type: enhancement
 component: processor/schema
 note: Add internal metrics for schema translation skip rate and cache hit/miss
-issues: []
+issues: [47638]
 subtext: |
   Five new metrics are emitted via the collector's internal telemetry:
   - otelcol_processor_schema_logs.skipped
