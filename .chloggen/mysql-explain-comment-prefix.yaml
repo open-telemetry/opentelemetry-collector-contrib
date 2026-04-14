@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/mysql
+note: "Fix EXPLAIN failing for SQL statements prefixed with block comments (/* ... */) or line comments (-- ...); isQueryExplainable now strips leading comments before checking for DML keywords."
+issues: [46587]
+change_logs: [user]

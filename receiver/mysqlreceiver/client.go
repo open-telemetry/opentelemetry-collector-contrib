@@ -834,6 +834,29 @@ func isQueryExplainable(query string) bool {
 	}
 
 	trimmedQuery := strings.TrimSpace(query)
+
+	// Strip leading SQL comments so that queries prefixed by client-tool
+	// comments (e.g. /* ApplicationName=DBeaver */ SELECT ...) are still
+	// recognised as explainable. We handle both block comments (/* ... */)
+	// and line comments (-- ...).
+	for {
+		if strings.HasPrefix(trimmedQuery, "/*") {
+			end := strings.Index(trimmedQuery, "*/")
+			if end == -1 {
+				break
+			}
+			trimmedQuery = strings.TrimSpace(trimmedQuery[end+2:])
+		} else if strings.HasPrefix(trimmedQuery, "--") {
+			end := strings.IndexByte(trimmedQuery, '\n')
+			if end == -1 {
+				break
+			}
+			trimmedQuery = strings.TrimSpace(trimmedQuery[end+1:])
+		} else {
+			break
+		}
+	}
+
 	lowerQuery := strings.ToLower(trimmedQuery)
 
 	for _, keyword := range sqlStartingKeywords {
