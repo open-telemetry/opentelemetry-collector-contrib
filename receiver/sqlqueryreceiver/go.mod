@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.44.0
-	github.com/SAP/go-hdb v1.16.3
+	github.com/SAP/go-hdb v1.16.5
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/lib/pq v1.10.9
@@ -16,7 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.150.0
 	github.com/sijms/go-ora/v2 v2.9.0
-	github.com/snowflakedb/gosnowflake/v2 v2.0.0
+	github.com/snowflakedb/gosnowflake/v2 v2.0.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/thda/tds v0.1.7

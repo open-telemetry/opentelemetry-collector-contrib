@@ -34,8 +34,8 @@ github.com/ClickHouse/clickhouse-go/v2 v2.44.0 h1:9pxs5pRwIvhni5BDRPn/n5A8DeUod5
 github.com/ClickHouse/clickhouse-go/v2 v2.44.0/go.mod h1:giJfUVlMkcfUEPVfRpt51zZaGEx9i17gCos8gBl392c=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/SAP/go-hdb v1.16.3 h1:Uz6SbPHnQ46lr2liEUPon2F4ymXgRZhhvtU9Lk3gWlQ=
-github.com/SAP/go-hdb v1.16.3/go.mod h1:LNpXz+MoCtka8RqefdbjwXXCXpqngFcsF3qpARsCR3U=
+github.com/SAP/go-hdb v1.16.5 h1:92RDFI4OeC2rwaARq+NV3MfSGdSRYMaIkY74i0yM+V8=
+github.com/SAP/go-hdb v1.16.5/go.mod h1:+byHKTvE4QURGZE3ZrMrqbfxCR99QsHUkT13FTPAQ1U=
 github.com/andybalholm/brotli v1.2.0 h1:ukwgCxwYrmACq68yiUqwIWnGY0cTPox/M94sVwToPjQ=
 github.com/andybalholm/brotli v1.2.0/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/apache/arrow-go/v18 v18.4.0 h1:/RvkGqH517iY8bZKc4FD5/kkdwXJGjxf28JIXbJ/oB0=
@@ -297,8 +297,8 @@ github.com/sijms/go-ora/v2 v2.9.0 h1:+iQbUeTeCOFMb5BsOMgUhV8KWyrv9yjKpcK4x7+MFrg
 github.com/sijms/go-ora/v2 v2.9.0/go.mod h1:QgFInVi3ZWyqAiJwzBQA+nbKYKH77tdp1PYoCqhR2dU=
 github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w=
 github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=
-github.com/snowflakedb/gosnowflake/v2 v2.0.0 h1:oxTCOjOsJIPMG1a3cSc4s53nExst+wkgvqinBSwpeFo=
-github.com/snowflakedb/gosnowflake/v2 v2.0.0/go.mod h1:B+dGQsCHnpwet3hgbdh2t/vqKBG7HpEO2o3jWt3KHeo=
+github.com/snowflakedb/gosnowflake/v2 v2.0.1 h1:zRHCluGtwFLpc1wzN/T3U2GdWd11dx4/LeLgZBjxHvU=
+github.com/snowflakedb/gosnowflake/v2 v2.0.1/go.mod h1:c0hIqJ/dxgaMl7g1o8n4Ca3Mf5YCiiVx9igio/PNqC8=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
