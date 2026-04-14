@@ -232,21 +232,26 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	}
 
 	if req.Protocol != "" {
-		if strings.Count(req.Protocol, "/") != 1 {
+		if strings.Count(req.Protocol, "/") > 1 {
 			return fmt.Errorf(
-				`invalid protocol %q: expected exactly one "/" (format "<name>/<version>", e.g. "HTTP/1.1")`,
+				`invalid protocol %q: expected at most one "/" (format "<name>/<version>", e.g. "HTTP/1.1", or a short token like "h2")`,
 				req.Protocol,
 			)
 		}
-		name, version, found := strings.Cut(req.Protocol, "/")
-		if !found || name == "" || version == "" {
-			return fmt.Errorf(
-				`invalid protocol %q: name or version is missing (expected format "<name>/<version>", e.g. "HTTP/1.1")`,
-				req.Protocol,
-			)
+		if name, version, hasSlash := strings.Cut(req.Protocol, "/"); hasSlash {
+			if name == "" || version == "" {
+				return fmt.Errorf(
+					`invalid protocol %q: name or version is missing (expected format "<name>/<version>", e.g. "HTTP/1.1")`,
+					req.Protocol,
+				)
+			}
+			attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(name))
+			attributes.PutStr(string(conventions.NetworkProtocolVersionKey), version)
+		} else {
+			// Short ALPN token with no version component (e.g. "h2", "h3", "h2c").
+			// Store the full token as the protocol name; no version attribute is set.
+			attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(req.Protocol))
 		}
-		attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(name))
-		attributes.PutStr(string(conventions.NetworkProtocolVersionKey), version)
 	}
 
 	shared.PutInt(string(conventions.HTTPResponseStatusCodeKey), req.Status, attributes)

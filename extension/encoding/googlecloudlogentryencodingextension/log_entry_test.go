@@ -112,11 +112,31 @@ func TestHandleHTTPRequestField(t *testing.T) {
 			expectsErr: "failed to parse request url",
 		},
 		{
-			name: "invalid protocol",
+			// Short ALPN token — accepted as protocol name without version
+			// (regression test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45214)
+			name: "h2 protocol (no slash)",
 			request: &httpRequest{
-				Protocol: "invalid",
+				Protocol: "h2",
 			},
-			expectsErr: `expected exactly one "/"`,
+			expectsAttributes: map[string]any{
+				"network.protocol.name": "h2",
+			},
+		},
+		{
+			name: "h3 protocol (no slash)",
+			request: &httpRequest{
+				Protocol: "h3",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name": "h3",
+			},
+		},
+		{
+			name: "invalid protocol — too many slashes",
+			request: &httpRequest{
+				Protocol: "a/b/c",
+			},
+			expectsErr: `at most one "/"`,
 		},
 		{
 			name: "invalid protocol 2",
