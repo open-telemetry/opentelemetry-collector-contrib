@@ -653,6 +653,16 @@ When this feature gate is set, this will add additional attributes on each sampl
 | `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used                             |
 | `tailsampling.cached_decision`  | Records whether a trace was sampled by the decision cache                 | When decision cache used                               |
 
+### Tail storage extension
+
+To configure `tail_storage` on the tailsampling processor, you must enable the `processor.tailsamplingprocessor.tailstorageextension` feature gate. 
+When a storage extension implements the experimental `TailStorage` extension, it
+will be used instead of the default in-memory approach.
+
+Tail storage extension support is under active development. This feature gate is used to guard users from potential breaking changes and unstable behavior while the interface and implementation mature.
+
+By default, this feature gate is disabled. If `tail_storage` is set while the gate is disabled, configuration validation fails and the collector returns an error.
+
 ### Disable invert decisions
 
 The invert sampling decisions (`InvertSampled` and `InvertNotSampled`) have been deprecated, however, they are still available. To disable them before their complete removal, you can use the `processor.tailsamplingprocessor.disableinvertdecisions` feature gate. When this feature gate is set, sampling policy `invert_match` will result in a `Sampled` or `NotSampled` decision instead of `InvertSampled` or `InvertNotSampled`. This applies to the string, numeric, and boolean tag policy.
