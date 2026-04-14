@@ -4,6 +4,7 @@
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
+	"errors"
 	"fmt"
 
 	ast10 "go.opentelemetry.io/otel/schema/v1.0/ast"
@@ -132,7 +133,7 @@ func newSpanEventChangeList(spanEvents ast10.SpanEvents) (*changelist.ChangeList
 			spanEventAttributeChangeSet := transformer.SpanEventConditionalAttributes{MultiConditionalAttributeSet: multiConditionalAttributeSet}
 			values = append(values, spanEventAttributeChangeSet)
 		} else {
-			return nil, fmt.Errorf("span_events change must have either rename_events or rename_attributes")
+			return nil, errors.New("span_events change must have either rename_events or rename_attributes")
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}, nil
