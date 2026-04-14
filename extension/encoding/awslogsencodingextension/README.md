@@ -216,6 +216,10 @@ The table below summarizes streaming support details for each log type, along wi
 | `dstport`                    | `destination.port`                                                                                    |
 | `protocol`                   | `network.protocol.name`                                                                               |
 | `packets`                    | `aws.vpc.flow.packets`                                                                                |
+| `packets-lost-no-route`      | `aws.vpc.flow.packets-lost-no-route`                                                                  |
+| `packets-lost-blackhole`     | `aws.vpc.flow.packets-lost-blackhole`                                                                 |
+| `packets-lost-mtu-exceeded`  | `aws.vpc.flow.packets-lost-mtu-exceeded`                                                              |
+| `packets-lost-ttl-expired`   | `aws.vpc.flow.packets-lost-ttl-expired`                                                               |
 | `bytes`                      | `aws.vpc.flow.bytes`                                                                                  |
 | `start`                      | `aws.vpc.flow.start`                                                                                  |
 | `end`                        | Log timestamp                                                                                         |
