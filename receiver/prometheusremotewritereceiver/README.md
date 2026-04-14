@@ -35,7 +35,7 @@ This component's configuration is based on [confighttp](https://github.com/open-
 
 ```yaml
 receivers:
-  prometheusremotewrite:
+  prometheus_remote_write:
     endpoint: 0.0.0.0:9090
 ```
 

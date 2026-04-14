@@ -1,5 +1,6 @@
 display_name: Google Cloud LogEntry Encoding Extension
-type: googlecloudlogentry_encoding
+type: google_cloud_logentry_encoding
+deprecated_type: googlecloudlogentry_encoding
 
 description: >
   This extension can be used to unmarshall a

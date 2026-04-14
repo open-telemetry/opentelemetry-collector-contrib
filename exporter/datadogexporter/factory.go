@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -44,46 +46,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.UseLogsAgentExporter",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, datadogexporter uses the Datadog agent logs pipeline for exporting logs."),
-	featuregate.WithRegisterFromVersion("v0.100.0"),
-	featuregate.WithRegisterToVersion("v0.129.0"),
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.metricexportnativeclient",
-	featuregate.StageStable,
-	featuregate.WithRegisterToVersion("v0.135.0"),
-	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
-)
-
-// noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
-var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.DisableAPMStats",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
-)
-
-var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.metricexportserializerclient",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
-)
-
-var inferIntervalDeltaFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.InferIntervalForDeltaMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the exporter will infer the metrics interval for OTLP delta sums using a heuristic."),
-)
-
 func init() {
 	log.SetupLogger(log.Disabled(), "off")
 }
 
 func isMetricExportSerializerEnabled() bool {
-	return metricExportSerializerClientFeatureGate.IsEnabled()
+	return metadata.ExporterDatadogexporterMetricexportserializerclientFeatureGate.IsEnabled()
 }
 
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
@@ -414,11 +382,11 @@ func (f *factory) createTracesExporter(
 		return nil, err
 	}
 	cfg.LogWarnings(set.Logger)
-	if noAPMStatsFeatureGate.IsEnabled() {
+	if metadata.ExporterDatadogexporterDisableAPMStatsFeatureGate.IsEnabled() {
 		set.Logger.Info(
 			"Trace metrics are now disabled in the Datadog Exporter by default. To continue receiving Trace Metrics, configure the Datadog Connector or disable the feature gate.",
 			zap.String("documentation", "https://docs.datadoghq.com/opentelemetry/guide/migration/"),
-			zap.String("feature gate ID", noAPMStatsFeatureGate.ID()),
+			zap.String("feature gate ID", metadata.ExporterDatadogexporterDisableAPMStatsFeatureGate.ID()),
 		)
 	}
 

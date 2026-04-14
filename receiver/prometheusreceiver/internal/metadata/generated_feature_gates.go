@@ -23,28 +23,18 @@ var ReceiverPrometheusreceiverEnableNativeHistogramsFeatureGate = featuregate.Gl
 	featuregate.WithRegisterToVersion("v0.145.0"),
 )
 
-var ReceiverPrometheusreceiverEnableReportExtraScrapeMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.EnableReportExtraScrapeMetrics",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterDescription("Enables reporting of extra Prometheus scrape metrics. This gate is deprecated, use the `extra_scrape_metrics` Prometheus scrape configuration instead."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181"),
-	featuregate.WithRegisterFromVersion("v0.143.0"),
-	featuregate.WithRegisterToVersion("v0.148.0"),
-)
-
-var ReceiverPrometheusreceiverRemoveReportExtraScrapeMetricsConfigFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.RemoveReportExtraScrapeMetricsConfig",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("This gate is always enabled and cannot be turned off. The 'report_extra_scrape_metrics' configuration option is always ignored. The extra scrape metrics are controlled by the EnableReportExtraScrapeMetrics feature gate, unless otherwise specified in the Prometheus scrape configuration."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44181"),
-	featuregate.WithRegisterFromVersion("v0.143.0"),
-	featuregate.WithRegisterToVersion("v0.148.0"),
+var ReceiverPrometheusreceiverIgnoreScopeInfoMetricFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.IgnoreScopeInfoMetric",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the `otel_scope_info` metric is ignored for scope attribute extraction."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41502"),
+	featuregate.WithRegisterFromVersion("v0.148.0"),
 )
 
 var ReceiverPrometheusreceiverRemoveStartTimeAdjustmentFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will leave the start time unset. Use the metricstarttime processor instead if you need this functionality."),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will leave the start time unset. Use the metric_start_time processor instead if you need this functionality."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/36364"),
 	featuregate.WithRegisterFromVersion("v0.121.0"),
 	featuregate.WithRegisterToVersion("v0.142.0"),
