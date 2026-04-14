@@ -135,7 +135,7 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 		ReadHeaderTimeout: 20 * time.Second,
 	}
 	if cfg.TLS != nil {
-		serverConfig.TLS = configoptional.Default(*cfg.TLS)
+		serverConfig.TLS = configoptional.Some(*cfg.TLS)
 	}
 	recv.serverConfig = &serverConfig
 
