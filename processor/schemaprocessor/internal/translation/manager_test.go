@@ -39,6 +39,7 @@ func TestRequestTranslation(t *testing.T) {
 	m, err := NewManager(
 		[]string{schemaURL},
 		zaptest.NewLogger(t),
+		ManagerTelemetry{},
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err, "Must not error when created manager")
@@ -78,6 +79,7 @@ func TestManagerError(t *testing.T) {
 	m, err := NewManager(
 		[]string{"http://localhost/1.1.0"},
 		zaptest.NewLogger(t),
+		ManagerTelemetry{},
 		&errorProvider{},
 	)
 	require.NoError(t, err, "Must not error when created manager")

@@ -12,8 +12,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 
@@ -24,6 +26,10 @@ type schemaProcessor struct {
 	log *zap.Logger
 
 	manager translation.Manager
+
+	logsSkipped    metric.Int64Counter
+	metricsSkipped metric.Int64Counter
+	tracesSkipped  metric.Int64Counter
 }
 
 func newSchemaProcessor(_ context.Context, conf component.Config, set processor.Settings) (*schemaProcessor, error) {
@@ -32,18 +38,30 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		return nil, errors.New("invalid configuration provided")
 	}
 
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
 	m, err := translation.NewManager(
 		cfg.Targets,
 		set.Logger.Named("schema-manager"),
+		translation.ManagerTelemetry{
+			CacheHit:  tb.ProcessorSchemaCacheHits,
+			CacheMiss: tb.ProcessorSchemaCacheMisses,
+		},
 	)
 	if err != nil {
 		return nil, err
 	}
 	return &schemaProcessor{
-		config:    cfg,
-		telemetry: set.TelemetrySettings,
-		log:       set.Logger,
-		manager:   m,
+		config:         cfg,
+		telemetry:      set.TelemetrySettings,
+		log:            set.Logger,
+		manager:        m,
+		logsSkipped:    tb.ProcessorSchemaLogsSkipped,
+		metricsSkipped: tb.ProcessorSchemaMetricsSkipped,
+		tracesSkipped:  tb.ProcessorSchemaTracesSkipped,
 	}, nil
 }
 
@@ -72,6 +90,7 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 				logsSchemaURL = resourceSchemaURL
 			}
 			if logsSchemaURL == "" {
+				t.logsSkipped.Add(ctx, 1)
 				continue
 			}
 			tr, err := t.manager.
@@ -113,6 +132,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 				metricSchemaURL = resourceSchemaURL
 			}
 			if metricSchemaURL == "" {
+				t.metricsSkipped.Add(ctx, 1)
 				continue
 			}
 			tr, err := t.manager.
@@ -158,6 +178,7 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 				spanSchemaURL = resourceSchemaURL
 			}
 			if spanSchemaURL == "" {
+				t.tracesSkipped.Add(ctx, 1)
 				continue
 			}
 			tr, err := t.manager.

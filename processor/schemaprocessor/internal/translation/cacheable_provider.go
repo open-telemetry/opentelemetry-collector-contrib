@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // CacheableProvider is a provider that caches the result of another provider.
@@ -29,6 +30,10 @@ type CacheableProvider struct {
 	lastErr error
 	// resetTime is the time when the rate limit will be reset
 	resetTime time.Time
+	// hitCounter is incremented on each cache hit. May be nil.
+	hitCounter metric.Int64Counter
+	// missCounter is incremented on each cache miss (provider call). May be nil.
+	missCounter metric.Int64Counter
 }
 
 // NewCacheableProvider creates a new CacheableProvider.
@@ -47,6 +52,9 @@ func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) 
 func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, error) {
 	// Check if the key is in the cache.
 	if value, found := p.cache.Get(key); found {
+		if p.hitCounter != nil {
+			p.hitCounter.Add(ctx, 1)
+		}
 		return value.(string), nil
 	}
 
@@ -55,6 +63,9 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 
 	// Check if the key is in the cache again in case it was added while waiting for the lock.
 	if value, found := p.cache.Get(key); found {
+		if p.hitCounter != nil {
+			p.hitCounter.Add(ctx, 1)
+		}
 		return value.(string), nil
 	}
 
@@ -69,6 +80,9 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 	}
 	p.callcount++
 
+	if p.missCounter != nil {
+		p.missCounter.Add(ctx, 1)
+	}
 	v, err := p.provider.Retrieve(ctx, key)
 	if err != nil {
 		p.lastErr = err

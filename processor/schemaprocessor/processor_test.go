@@ -12,13 +12,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadatatest"
 )
 
 type dummySchemaProvider struct {
@@ -40,10 +43,10 @@ func newTestSchemaProcessor(t *testing.T, transformations, targerVerion string) 
 	cfg := &Config{
 		Targets: []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targerVerion)},
 	}
+	telSettings := componenttest.NewNopTelemetrySettings()
+	telSettings.Logger = zaptest.NewLogger(t)
 	trans, err := newSchemaProcessor(t.Context(), cfg, processor.Settings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zaptest.NewLogger(t),
-		},
+		TelemetrySettings: telSettings,
 	})
 	require.NoError(t, err, "Must not error when creating default schemaProcessor")
 	trans.manager.AddProvider(&dummySchemaProvider{
@@ -111,4 +114,48 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 		assert.NoError(t, err, "Must not error when processing metrics")
 		assert.Equal(t, in, out, "Must return the same data")
 	})
+}
+
+func TestSkipCounters(t *testing.T) {
+	t.Parallel()
+
+	testTel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, testTel.Shutdown(context.Background())) })
+
+	set := metadatatest.NewSettings(testTel)
+	set.Logger = zaptest.NewLogger(t)
+
+	cfg := &Config{
+		Targets: []string{"http://opentelemetry.io/schemas/1.9.0"},
+	}
+	proc, err := newSchemaProcessor(t.Context(), cfg, set)
+	require.NoError(t, err)
+
+	// log scope with no schema URL on scope or resource → should increment logsSkipped
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	_, err = proc.processLogs(t.Context(), ld)
+	require.NoError(t, err)
+
+	// metric scope with no schema URL → should increment metricsSkipped
+	md := pmetric.NewMetrics()
+	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	_, err = proc.processMetrics(t.Context(), md)
+	require.NoError(t, err)
+
+	// trace scope with no schema URL → should increment tracesSkipped
+	td := ptrace.NewTraces()
+	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	_, err = proc.processTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	metadatatest.AssertEqualProcessorSchemaLogsSkipped(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSchemaMetricsSkipped(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorSchemaTracesSkipped(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 }
