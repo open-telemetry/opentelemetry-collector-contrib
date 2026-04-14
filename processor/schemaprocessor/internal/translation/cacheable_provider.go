@@ -51,16 +51,18 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 	}
 
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	// Check if the key is in the cache again in case it was added while waiting for the lock.
 	if value, found := p.cache.Get(key); found {
+		p.mu.Unlock()
 		return value.(string), nil
 	}
 
 	// Check if the function is currently rate-limited
 	if time.Now().Before(p.resetTime) {
-		return "", fmt.Errorf("rate limited, last error: %w", p.lastErr)
+		lastErr := p.lastErr
+		p.mu.Unlock()
+		return "", fmt.Errorf("rate limited, last error: %w", lastErr)
 	}
 
 	// Reset count if past cooldown period
@@ -69,7 +71,14 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 	}
 	p.callcount++
 
+	// Release the lock before the HTTP call so other goroutines are not blocked
+	// for the duration of the network request.
+	p.mu.Unlock()
+
 	v, err := p.provider.Retrieve(ctx, key)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if err != nil {
 		p.lastErr = err
 		// If the call limit is reached, set the cooldown period

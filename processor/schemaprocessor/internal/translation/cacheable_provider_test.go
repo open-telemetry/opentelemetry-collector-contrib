@@ -10,8 +10,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// blockingProvider signals when Retrieve is called and blocks until released.
+// Used to verify that the lock is not held during the HTTP call.
+type blockingProvider struct {
+	started chan struct{}
+	release chan struct{}
+}
+
+func (p *blockingProvider) Retrieve(_ context.Context, key string) (string, error) {
+	p.started <- struct{}{}
+	<-p.release
+	return key, nil
+}
 
 type firstErrorProvider struct {
 	cnt int
@@ -27,6 +41,45 @@ func (p *firstErrorProvider) Retrieve(_ context.Context, key string) (string, er
 	}
 	p.cnt = 0
 	return key, nil
+}
+
+// TestCacheableProviderConcurrentFetch verifies that the lock is not held during the
+// HTTP call. If it were, only one goroutine could be inside provider.Retrieve at a time.
+// The test uses a blockingProvider that signals when it has been entered and then blocks.
+// With correct behaviour, two goroutines can both be inside the HTTP call simultaneously.
+func TestCacheableProviderConcurrentFetch(t *testing.T) {
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+
+	cp := NewCacheableProvider(&blockingProvider{started: started, release: release}, time.Minute, 10)
+
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, _ = cp.Retrieve(t.Context(), "key")
+		}()
+	}
+
+	// Both goroutines must reach the HTTP call concurrently.
+	// If the mutex were held during the HTTP call, the second goroutine would block
+	// on acquiring the lock and never reach provider.Retrieve until the first completes.
+	for range 2 {
+		select {
+		case <-started:
+		case <-time.After(2 * time.Second):
+			t.Fatal("goroutine blocked waiting for lock — mutex is held during HTTP call")
+		}
+	}
+
+	close(release)
+	wg.Wait()
+
+	// After both complete, the result should be cached.
+	v, err := cp.Retrieve(t.Context(), "key")
+	assert.NoError(t, err)
+	assert.Equal(t, "key", v)
 }
 
 func TestCacheableProvider(t *testing.T) {
