@@ -26,7 +26,6 @@ func NewFactory() exporter.Factory {
 }
 
 const (
-	defaultHostname              = "chronicle.googleapis.com"
 	defaultBatchRequestSizeLimit = 4000000
 	defaultMetricsInterval       = 1 * time.Minute
 	defaultCollectorID           = "aaaa1111-aaaa-1111-aaaa-1111aaaa1111"
@@ -35,13 +34,11 @@ const (
 // createDefaultConfig creates the default configuration for the google secops exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		API:                   chronicleAPI,
-		Hostname:              defaultHostname,
 		APIVersion:            apiVersionV1Alpha,
-		CollectAgentMetrics:   true,
-		MetricsInterval:       defaultMetricsInterval,
 		LogErroredPayloads:    false,
 		ValidateLogTypes:      false,
+		CollectAgentMetrics:   true,
+		MetricsInterval:       defaultMetricsInterval,
 		BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 		TimeoutConfig:         exporterhelper.NewDefaultTimeoutConfig(),
 		QueueBatchConfig:      configoptional.Some(exporterhelper.NewDefaultQueueConfig()),

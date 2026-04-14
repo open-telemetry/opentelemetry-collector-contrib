@@ -29,16 +29,18 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Missing customer ID",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				Creds:                 "creds_example",
 				DefaultLogType:        "log_type_example",
 				API:                   backstoryAPI,
 				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 			},
-			expectedErr: "customer ID is required",
+			expectedErr: "customer_id is required",
 		},
 		{
 			desc: "Valid backstory config with creds",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				Creds:                 "creds_example",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -50,6 +52,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Valid backstory config with creds_file_path",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -61,6 +64,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Valid backstory config with raw log field",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -73,17 +77,19 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Invalid batch request size limit",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				Creds:                 "creds_example",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
 				API:                   backstoryAPI,
 				BatchRequestSizeLimit: 0,
 			},
-			expectedErr: "positive batch request size limit is required",
+			expectedErr: "batch_request_size_limit must be greater than 0",
 		},
 		{
 			desc: "Invalid compression type",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -93,19 +99,9 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "invalid compression type",
 		},
 		{
-			desc: "Hostname contains protocol prefix",
-			config: &Config{
-				Hostname:              "https://myendpoint.com",
-				CredsFilePath:         "/path/to/creds_file",
-				CustomerID:            "customer_example",
-				DefaultLogType:        "log_type_example",
-				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
-			},
-			expectedErr: "host should not contain a protocol prefix",
-		},
-		{
 			desc: "Empty API",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -116,6 +112,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Invalid API",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -127,7 +124,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Chronicle API missing region",
 			config: &Config{
-				Hostname:              "myendpoint.com",
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -138,7 +135,7 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "region is required for the Chronicle API",
 		},
 		{
-			desc: "Chronicle API missing hostname",
+			desc: "Chronicle API missing service endpoint",
 			config: &Config{
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
@@ -148,12 +145,12 @@ func TestConfigValidate(t *testing.T) {
 				Region:                "region_example",
 				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 			},
-			expectedErr: "hostname is required for the Chronicle API",
+			expectedErr: "service_endpoint is required",
 		},
 		{
 			desc: "Chronicle API missing project number",
 			config: &Config{
-				Hostname:              "myendpoint.com",
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -166,7 +163,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Valid Chronicle API config",
 			config: &Config{
-				Hostname:              "myendpoint.com",
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -179,7 +176,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Valid Chronicle API config with custom API version",
 			config: &Config{
-				Hostname:              "myendpoint.com",
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -193,7 +190,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Invalid API version",
 			config: &Config{
-				Hostname:              "myendpoint.com",
+				ServiceEndpoint:       "myendpoint.com",
 				CredsFilePath:         "/path/to/creds_file",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -203,11 +200,12 @@ func TestConfigValidate(t *testing.T) {
 				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 				APIVersion:            "invalid",
 			},
-			expectedErr: "invalid API version: invalid",
+			expectedErr: "invalid api_version: invalid",
 		},
 		{
 			desc: "Invalid collector ID",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				Creds:                 "creds_example",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -215,11 +213,12 @@ func TestConfigValidate(t *testing.T) {
 				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 				CollectorID:           "not-a-uuid",
 			},
-			expectedErr: "invalid collector ID",
+			expectedErr: "invalid collector_id",
 		},
 		{
 			desc: "Valid collector ID",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				Creds:                 "creds_example",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -231,6 +230,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Invalid raw log field",
 			config: &Config{
+				ServiceEndpoint:       "myendpoint.com",
 				Creds:                 "creds_example",
 				CustomerID:            "customer_example",
 				DefaultLogType:        "log_type_example",
@@ -239,6 +239,17 @@ func TestConfigValidate(t *testing.T) {
 				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
 			},
 			expectedErr: "invalid raw_log_field",
+		},
+		{
+			desc: "Invalid service endpoint URL",
+			config: &Config{
+				ServiceEndpoint:       "://missing-scheme",
+				Creds:                 "creds_example",
+				CustomerID:            "customer_example",
+				API:                   backstoryAPI,
+				BatchRequestSizeLimit: defaultBatchRequestSizeLimit,
+			},
+			expectedErr: "invalid service_endpoint",
 		},
 	}
 

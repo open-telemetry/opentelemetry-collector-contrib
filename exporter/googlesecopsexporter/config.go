@@ -6,7 +6,7 @@ package googlesecopsexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"fmt"
-	"strings"
+	"net/url"
 	"time"
 
 	"github.com/google/uuid"
@@ -33,15 +33,11 @@ type Config struct {
 	// Either "chronicle" or "backstory".
 	API string `mapstructure:"api"`
 
-	// Hostname is the hostname used to construct the base URL for the API endpoints.
-	Hostname string `mapstructure:"hostname"`
+	// ServiceEndpoint is the base service endpoint used to construct the API endpoints.
+	ServiceEndpoint string `mapstructure:"service_endpoint"`
 
 	// CustomerID is the customer ID that will be used to send logs to Google SecOps.
 	CustomerID string `mapstructure:"customer_id"`
-
-	// OverrideHostname determines whether or not the Region field is used when constructing the base URL for the Chronicle API.
-	// Only applies to the Chronicle API.
-	OverrideHostname bool `mapstructure:"override_hostname"`
 
 	// APIVersion is the version of the Chronicle API to use. Defaults to "v1alpha".
 	// Only used for the Chronicle API.
@@ -107,20 +103,25 @@ func (cfg *Config) Validate() error {
 		return errors.New("can only specify one of creds_file_path or creds")
 	}
 
+	if cfg.ServiceEndpoint == "" {
+		return errors.New("service_endpoint is required")
+	}
+
+	_, err := url.Parse(cfg.ServiceEndpoint)
+	if err != nil {
+		return fmt.Errorf("invalid service_endpoint: %w", err)
+	}
+
 	if cfg.CustomerID == "" {
-		return errors.New("customer ID is required")
+		return errors.New("customer_id is required")
 	}
 
 	if cfg.Compression != "" && cfg.Compression != gzip.Name {
 		return fmt.Errorf("invalid compression type: %s", cfg.Compression)
 	}
 
-	if strings.HasPrefix(cfg.Hostname, "http://") || strings.HasPrefix(cfg.Hostname, "https://") {
-		return fmt.Errorf("host should not contain a protocol prefix: %s", cfg.Hostname)
-	}
-
 	if cfg.BatchRequestSizeLimit <= 0 {
-		return errors.New("positive batch request size limit is required")
+		return errors.New("batch_request_size_limit must be greater than 0")
 	}
 
 	switch cfg.API {
@@ -128,15 +129,12 @@ func (cfg *Config) Validate() error {
 		if cfg.Region == "" {
 			return errors.New("region is required for the Chronicle API")
 		}
-		if cfg.Hostname == "" {
-			return errors.New("hostname is required for the Chronicle API")
-		}
 		if cfg.ProjectNumber == "" {
 			return errors.New("project_number is required for the Chronicle API")
 		}
 		if cfg.APIVersion != "" {
 			if cfg.APIVersion != apiVersionV1Alpha && cfg.APIVersion != apiVersionV1Beta {
-				return fmt.Errorf("invalid API version: %s", cfg.APIVersion)
+				return fmt.Errorf("invalid api_version: %s", cfg.APIVersion)
 			}
 		}
 	case backstoryAPI:
@@ -157,7 +155,7 @@ func (cfg *Config) Validate() error {
 
 	if cfg.CollectorID != "" {
 		if uuid.Validate(cfg.CollectorID) != nil {
-			return errors.New("invalid collector ID")
+			return errors.New("invalid collector_id")
 		}
 	}
 
