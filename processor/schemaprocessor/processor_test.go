@@ -120,7 +120,6 @@ func TestSkipCounters(t *testing.T) {
 	t.Parallel()
 
 	testTel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, testTel.Shutdown(context.Background())) })
 
 	set := metadatatest.NewSettings(testTel)
 	set.Logger = zaptest.NewLogger(t)
@@ -158,4 +157,6 @@ func TestSkipCounters(t *testing.T) {
 	metadatatest.AssertEqualProcessorSchemaTracesSkipped(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+
+	require.NoError(t, testTel.Shutdown(t.Context()))
 }
