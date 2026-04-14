@@ -223,7 +223,7 @@ func (a *alertsReceiver) startListening(ctx context.Context, host component.Host
 	a.telemetrySettings.Logger.Debug("starting alerts receiver in listening mode")
 	server, err := a.serverConfig.ToServer(
 		ctx,
-		nil,
+		host.GetExtensions(),
 		a.telemetrySettings,
 		http.HandlerFunc(a.handleRequest),
 	)
