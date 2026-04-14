@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/xray"
 	"github.com/aws/smithy-go"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -73,6 +74,11 @@ func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, 
 			}
 			return err
 		},
+		// The translator removes the aws.xray.inprogress attribute from spans
+		// (segment.go:makeEndTimeAndInProgress). Declare MutatesData so the
+		// collector clones the data before passing it to this exporter and
+		// fanout pipelines are not affected.
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(func(context.Context, component.Host) error {
 			sender.Start(ctx)
 			return nil

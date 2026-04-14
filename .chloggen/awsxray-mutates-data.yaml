@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: exporter/awsxray
+note: "Declare `MutatesData: true` capability so the collector clones trace data before fanout, preventing `panic: invalid access to shared data` when the exporter is used alongside other exporters in the same pipeline."
+issues: [46889]
+change_logs: [user]
