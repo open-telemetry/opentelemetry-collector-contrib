@@ -16,7 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.150.0
 	github.com/sijms/go-ora/v2 v2.9.0
-	github.com/snowflakedb/gosnowflake/v2 v2.0.0
+	github.com/snowflakedb/gosnowflake/v2 v2.0.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/thda/tds v0.1.7
