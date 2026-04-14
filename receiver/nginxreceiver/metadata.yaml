@@ -5,6 +5,8 @@ description: |
   This receiver can fetch stats from a NGINX instance using the `ngx_http_stub_status_module` module's `status`
   endpoint.
 
+reaggregation_enabled: true
+
 status:
   class: receiver
   stability:
@@ -18,6 +20,7 @@ attributes:
   state:
     description: The state of a connection
     type: string
+    requirement_level: recommended
     enum:
       - active
       - reading
