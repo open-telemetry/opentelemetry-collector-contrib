@@ -441,6 +441,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) (bool, error) {
 				return false, fmt.Errorf("undefined function %s", name)
 			}
 			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
+			allLiteral = false
 		case fieldType.Kind() == reflect.Slice:
 			var argLiteral bool
 			val, argLiteral, err = p.buildSliceArg(arg.Value, fieldType)
@@ -449,6 +450,9 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) (bool, error) {
 			}
 		default:
 			val, err = p.buildArg(arg.Value, fieldType)
+			if err == nil && !isLiteralArg(val) {
+				allLiteral = false
+			}
 		}
 		if err != nil {
 			return false, fmt.Errorf("invalid argument at position %v: %w", i, err)
@@ -458,17 +462,6 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) (bool, error) {
 			field.Set(manager.set(val))
 		} else {
 			field.Set(reflect.ValueOf(val))
-		}
-
-		// For non-slice arguments, check whether the constructed value is a
-		// compile-time literal. Getter wrappers propagate the literalGetter
-		// marker, and raw scalars (string, int64, float64, bool) from the
-		// OTTL grammar are inherently literal. Slice arguments are already
-		// tracked via buildSliceArg above.
-		if fieldType.Kind() != reflect.Slice {
-			if !isLiteralArg(val) {
-				allLiteral = false
-			}
 		}
 	}
 
