@@ -26,6 +26,7 @@ const MinSize = 16 // bytes
 // A file's fingerprint is the first N bytes of the file
 type Fingerprint struct {
 	firstBytes []byte
+	key        string
 }
 
 func New(first []byte) *Fingerprint {
@@ -66,11 +67,21 @@ func NewFromFile(file *os.File, size int, decompressData bool, logger *zap.Logge
 func (f Fingerprint) Copy() *Fingerprint {
 	buf := make([]byte, len(f.firstBytes), cap(f.firstBytes))
 	n := copy(buf, f.firstBytes)
-	return New(buf[:n])
+	return &Fingerprint{firstBytes: buf[:n]}
 }
 
 func (f *Fingerprint) Len() int {
 	return len(f.firstBytes)
+}
+
+func (f *Fingerprint) Key() string {
+	if f == nil || len(f.firstBytes) == 0 {
+		return ""
+	}
+	if f.key == "" {
+		f.key = string(f.firstBytes)
+	}
+	return f.key
 }
 
 // Equal returns true if the fingerprints have the same FirstBytes,

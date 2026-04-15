@@ -86,16 +86,16 @@ func (t *fileTracker) Add(reader *reader.Reader) {
 }
 
 func (t *fileTracker) GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Reader {
-	return t.currentPollFiles.Match(fp, fileset.Equal)
+	return t.currentPollFiles.MatchEqual(fp)
 }
 
 func (t *fileTracker) GetOpenFile(fp *fingerprint.Fingerprint) *reader.Reader {
-	return t.previousPollFiles.Match(fp, fileset.StartsWith)
+	return t.previousPollFiles.MatchStartsWith(fp)
 }
 
 func (t *fileTracker) GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadata {
 	for i := 0; i < len(t.knownFiles); i++ {
-		if oldMetadata := t.knownFiles[i].Match(fp, fileset.StartsWith); oldMetadata != nil {
+		if oldMetadata := t.knownFiles[i].MatchStartsWith(fp); oldMetadata != nil {
 			return oldMetadata
 		}
 	}
@@ -157,9 +157,11 @@ func (t *fileTracker) EndPoll(ctx context.Context) {
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
 
 	// Instead of throwing it away, archive it.
-	t.archive.WriteFiles(ctx, t.knownFiles[2])
-	copy(t.knownFiles[1:], t.knownFiles)
-	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles)
+	oldest := t.knownFiles[len(t.knownFiles)-1]
+	t.archive.WriteFiles(ctx, oldest)
+	copy(t.knownFiles[1:], t.knownFiles[:len(t.knownFiles)-1])
+	oldest.Reset()
+	t.knownFiles[0] = oldest
 }
 
 func (t *fileTracker) TotalReaders() int {
@@ -204,7 +206,7 @@ func (t *noStateTracker) CurrentPollFiles() []*reader.Reader {
 }
 
 func (t *noStateTracker) GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Reader {
-	return t.currentPollFiles.Match(fp, fileset.Equal)
+	return t.currentPollFiles.MatchEqual(fp)
 }
 
 func (t *noStateTracker) EndConsume() (filesClosed int) {
@@ -212,8 +214,8 @@ func (t *noStateTracker) EndConsume() (filesClosed int) {
 		r.Close()
 		filesClosed++
 	}
-	t.unmatchedFiles = make([]*os.File, 0)
-	t.unmatchedFps = make([]*fingerprint.Fingerprint, 0)
+	t.unmatchedFiles = t.unmatchedFiles[:0]
+	t.unmatchedFps = t.unmatchedFps[:0]
 	return filesClosed
 }
 
