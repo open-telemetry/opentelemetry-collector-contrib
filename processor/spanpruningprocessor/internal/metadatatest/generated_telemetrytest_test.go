@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -21,6 +21,10 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ProcessorSpanpruningAggregationGroupSize.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningAggregationsCreated.Add(context.Background(), 1)
+	tb.ProcessorSpanpruningLeafAttributeDiversityLoss.Record(context.Background(), 1)
+	tb.ProcessorSpanpruningLeafAttributeLoss.Record(context.Background(), 1)
+	tb.ProcessorSpanpruningParentAttributeDiversityLoss.Record(context.Background(), 1)
+	tb.ProcessorSpanpruningParentAttributeLoss.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningProcessingDuration.Record(context.Background(), 1)
 	tb.ProcessorSpanpruningSpansPruned.Add(context.Background(), 1)
 	tb.ProcessorSpanpruningSpansReceived.Add(context.Background(), 1)
@@ -30,6 +34,18 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningAggregationsCreated(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningLeafAttributeDiversityLoss(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningLeafAttributeLoss(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningParentAttributeDiversityLoss(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSpanpruningParentAttributeLoss(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSpanpruningProcessingDuration(t, testTel,
 		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
