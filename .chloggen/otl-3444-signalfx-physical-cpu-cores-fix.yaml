@@ -10,20 +10,12 @@ component: exporter/signalfx
 note: Fix incorrect `host_physical_cpus` and `host_cpu_cores` values reported on Linux
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [3444]
+issues: [47550]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  On Linux, `host_physical_cpus` was incorrectly set to the number of logical CPUs because
-  `cpu.InfoWithContext` returns one `InfoStat` record per logical CPU. It now uses
-  `cpu.CountsWithContext(false)` which correctly returns the physical socket count.
-  Similarly, `host_cpu_cores` was computed by summing the `Cores` field of each `InfoStat`
-  record, but on Linux that field is always `1`, so the result equalled the logical CPU count.
-  It now counts unique `{PhysicalID, CoreID}` pairs, giving the true number of physical cores.
-  For example, on a host with 2 sockets x 16 cores x 2 threads (64 logical CPUs), the
-  corrected values are: `host_physical_cpus=2`, `host_cpu_cores=32`, `host_logical_cpus=64`.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

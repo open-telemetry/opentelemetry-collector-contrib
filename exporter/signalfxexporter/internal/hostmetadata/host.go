@@ -53,21 +53,19 @@ func (c *hostCPU) toStringMap() map[string]string {
 func getCPU(ctx context.Context) (info *hostCPU, err error) {
 	info = &hostCPU{}
 
-	// get physical cpu stats
 	var cpus []cpu.InfoStat
 
 	// On Windows this can sometimes take longer than the default timeout (10 seconds).
 	ctx, cancel := context.WithTimeout(ctx, cpuStatsTimeout)
 	defer cancel()
 
+	// get cpu infoStats
 	cpus, err = cpuInfo(ctx)
 	if err != nil {
 		return info, err
 	}
 
-	// On Linux, cpu.InfoWithContext returns one record per logical CPU, so len(cpus)
-	// would equal the logical count. Use cpu.CountsWithContext(false) instead to get
-	// the true number of physical CPUs (sockets).
+	// get physical cpu stats
 	info.HostPhysicalCPUs, err = cpuCounts(ctx, false)
 	if err != nil {
 		return info, err
@@ -80,8 +78,6 @@ func getCPU(ctx context.Context) (info *hostCPU, err error) {
 	}
 
 	// Count physical CPU cores by tracking unique {PhysicalID, CoreID} pairs.
-	// On Linux, cpu.InfoWithContext returns one InfoStat per logical CPU with Cores=1,
-	// so summing Cores gives the logical count rather than the physical core count.
 	physicalCores := make(map[string]bool)
 	for i := range cpus {
 		k := fmt.Sprintf("%s,%s", cpus[i].PhysicalID, cpus[i].CoreID)
