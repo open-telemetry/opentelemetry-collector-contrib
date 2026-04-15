@@ -18,10 +18,12 @@ import (
 	"sync"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -155,8 +157,8 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// ddSpan.Attributes["grpc.status.code"] contains the gRPC status code name (eg "OK")
 	// not the numeric value (eg "0")
 	// it's ddSpan.error that indicates holds the gRPC status code numeric value
-	newSpan.Attributes().PutStr(string(conventions.RPCSystemKey), conventions.RPCSystemGRPC.Value.AsString())
-	newSpan.Attributes().PutInt(string(conventions.RPCGRPCStatusCodeKey), int64(span.GetError()))
+	newSpan.Attributes().PutStr(string(conventionsv138.RPCSystemKey), conventionsv138.RPCSystemGRPC.Value.AsString())
+	newSpan.Attributes().PutInt(string(conventionsv138.RPCGRPCStatusCodeKey), int64(span.GetError()))
 
 	method := ""
 	service := ""
@@ -198,10 +200,10 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 	spanName := ""
 	if method != "" {
 		newSpan.Attributes().PutStr(string(conventions.RPCMethodKey), method)
-		newSpan.Attributes().PutStr(string(conventions.RPCServiceKey), service)
+		newSpan.Attributes().PutStr(string(conventionsv138.RPCServiceKey), service)
 		spanName = service + "/" + method
 	} else if service != "" {
-		newSpan.Attributes().PutStr(string(conventions.RPCServiceKey), service)
+		newSpan.Attributes().PutStr(string(conventionsv138.RPCServiceKey), service)
 		spanName = service
 	}
 	if spanName != "" {
@@ -211,7 +213,7 @@ func processGRPCSpan(span *pb.Span, newSpan *ptrace.Span) {
 
 func processAWSSdkSpan(span *pb.Span, newSpan *ptrace.Span) {
 	// https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
-	newSpan.Attributes().PutStr(string(conventions.RPCSystemKey), "aws-api")
+	newSpan.Attributes().PutStr(string(conventionsv138.RPCSystemKey), "aws-api")
 	if service, ok := span.Meta[("aws.service")]; ok {
 		if operation, ok := span.Meta[("aws.operation")]; ok {
 			newSpan.SetName(service + "/" + operation)
@@ -227,11 +229,22 @@ func processSpanByName(span *pb.Span, newSpan *ptrace.Span) {
 	}
 }
 
-func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
-	var traces pb.Traces
-	for _, p := range payload.GetChunks() {
-		traces = append(traces, p.GetSpans())
+func traceChunkSamplingPriority(traceChunk *pb.TraceChunk) (float64, bool) {
+	if traceChunk == nil {
+		return 0, false
 	}
+	if traceChunk.Priority != int32(ddsampler.PriorityNone) {
+		return float64(traceChunk.Priority), true
+	}
+	for _, span := range traceChunk.GetSpans() {
+		if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
+			return samplingPriority, true
+		}
+	}
+	return 0, false
+}
+
+func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *lru.Cache[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
 		string(conventions.ContainerIDKey):               payload.ContainerID,
@@ -262,8 +275,9 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	// now instead of being a span level attribute.
 	groupByService := make(map[string]ptrace.SpanSlice)
 
-	for _, trace := range traces {
-		for _, span := range trace {
+	for _, traceChunk := range payload.GetChunks() {
+		samplingPriority, hasSamplingPriority := traceChunkSamplingPriority(traceChunk)
+		for _, span := range traceChunk.GetSpans() {
 			// Restore base service name as the service name.
 			// Without this, internal spans such as postgresql queries have a service.name set to postgresql
 			if val, ok := span.Meta["_dd.base_service"]; ok {
@@ -300,7 +314,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
-			if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
+			if hasSamplingPriority {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
 			}
 			if span.Error > 0 {
@@ -575,7 +589,7 @@ func traceChunksFromSpans(spans []pb.Span) []*pb.TraceChunk {
 	}
 	for _, t := range byID {
 		traceChunks = append(traceChunks, &pb.TraceChunk{
-			Priority: int32(0),
+			Priority: int32(ddsampler.PriorityNone),
 			Spans:    t,
 		})
 	}
@@ -586,7 +600,7 @@ func traceChunksFromTraces(traces pb.Traces) []*pb.TraceChunk {
 	traceChunks := make([]*pb.TraceChunk, 0, len(traces))
 	for _, trace := range traces {
 		traceChunks = append(traceChunks, &pb.TraceChunk{
-			Priority: int32(0),
+			Priority: int32(ddsampler.PriorityNone),
 			Spans:    trace,
 		})
 	}

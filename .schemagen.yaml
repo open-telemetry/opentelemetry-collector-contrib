@@ -25,19 +25,19 @@ allowedRefs:
   - go.opentelemetry.io/collector
   - github.com/open-telemetry/opentelemetry-collector-contrib
 componentOverrides:
-  receiver/namedpipe:
+  receiver/named_pipe:
     configName: 'NamedPipeConfig'
-  receiver/filelog:
+  receiver/file_log:
     configName: 'FileLogConfig'
   receiver/journald:
     configName: 'JournaldConfig'
   receiver/syslog:
     configName: 'SysLogConfig'
-  receiver/tcplog:
+  receiver/tcp_log:
     configName: 'TCPLogConfig'
-  receiver/udplog:
+  receiver/udp_log:
     configName: 'UDPLogConfig'
-  receiver/windowseventlog:
+  receiver/windows_event_log:
     configName: 'WindowsLogConfig'
   connector/signaltometrics:
     configName: 'config.Config'

@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/nginx
+note: Enable the re-aggregation feature for the nginx receiver
+issues: [46368]
+subtext:
+change_logs: [user]

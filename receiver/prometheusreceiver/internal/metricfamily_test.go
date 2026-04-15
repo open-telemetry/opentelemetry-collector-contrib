@@ -257,7 +257,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				} else {
 					lbls = tt.labels.Copy()
 				}
-				sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+				sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
 				err := mp.addSeries(sRef, tv.metric, lbls, tv.at, tv.value)
 				if tt.wantErr {
 					if i != 0 {
@@ -405,7 +405,7 @@ func TestMetricGroupData_toNHCBDistributionUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.metricName, mc, zap.NewNop(), false, false)
-			sRef, _ := getSeriesRef(nil, tt.labels, mp.mtype)
+			sRef, _ := getSeriesRefWithoutScopeLabels(nil, tt.labels, mp.mtype)
 
 			err := mp.addNHCBSeries(sRef, tt.metricName, tt.labels, tt.intervalStartTimeMs, tt.integerHistogram, tt.floatHistogram)
 			require.NoError(t, err)
@@ -575,14 +575,14 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 				switch {
 				case tv.integerHistogram != nil:
 					mp.mtype = pmetric.MetricTypeExponentialHistogram
-					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+					sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
 					err = mp.addExponentialHistogramSeries(sRef, tv.metric, lbls, tv.at, tv.integerHistogram, nil)
 				case tv.floatHistogram != nil:
 					mp.mtype = pmetric.MetricTypeExponentialHistogram
-					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+					sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
 					err = mp.addExponentialHistogramSeries(sRef, tv.metric, lbls, tv.at, nil, tv.floatHistogram)
 				default:
-					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+					sRef, _ := getSeriesRefWithoutScopeLabels(nil, lbls, mp.mtype)
 					err = mp.addSeries(sRef, tv.metric, lbls, tv.at, tv.value)
 				}
 				if tt.wantErr {
@@ -866,7 +866,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			for _, lbs := range tt.labelsScrapes {
 				for i, scrape := range lbs.scrapes {
 					lb := lbs.labels.Copy()
-					sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+					sRef, _ := getSeriesRefWithoutScopeLabels(nil, lb, mp.mtype)
 					err := mp.addSeries(sRef, scrape.metric, lb, scrape.at, scrape.value)
 					if tt.wantErr {
 						// The first scrape won't have an error
@@ -1004,7 +1004,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop(), false, false)
 			for _, tv := range tt.scrapes {
 				lb := tt.labels.Copy()
-				sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+				sRef, _ := getSeriesRefWithoutScopeLabels(nil, lb, mp.mtype)
 				require.NoError(t, mp.addSeries(sRef, tv.metric, lb, tv.at, tv.value))
 			}
 

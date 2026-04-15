@@ -6,8 +6,8 @@
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| cloud.region | The cloud.region | Any Str | true |
-| host.id | The host.id | Any Str | true |
-| host.name | The hostname | Any Str | true |
+| Name | Description | Values | Enabled | Semantic Convention |
+| ---- | ----------- | ------ | ------- | ------------------- |
+| cloud.region | The cloud.region | Any Str | true | - |
+| host.id | The host.id | Any Str | true | - |
+| host.name | The hostname | Any Str | true | - |

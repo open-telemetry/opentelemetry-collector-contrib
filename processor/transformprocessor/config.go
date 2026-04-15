@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -22,16 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
-var (
-	flatLogsFeatureGate = featuregate.GlobalRegistry().MustRegister("transform.flatten.logs", featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("Flatten log data prior to transformation so every record has a unique copy of the resource and scope. Regroups logs based on resource and scope after transformations."),
-		featuregate.WithRegisterFromVersion("v0.103.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953"),
-	)
-	errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
-)
+var errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -39,7 +32,7 @@ type Config struct {
 	// Valid values are `ignore` and `propagate`.
 	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
 	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
-	// The default value is `propagate`.
+	// The current default value is `propagate`, which will change to `ignore` when the `processor.transform.defaultErrorModeIgnore` feature gate is stable.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
 
 	TraceStatements   []common.ContextStatements `mapstructure:"trace_statements"`
@@ -196,7 +189,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.FlattenData && !flatLogsFeatureGate.IsEnabled() {
+	if c.FlattenData && !metadata.TransformFlattenLogsFeatureGate.IsEnabled() {
 		errors = multierr.Append(errors, errFlatLogsGateDisabled)
 	}
 
