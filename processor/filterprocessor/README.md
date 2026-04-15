@@ -97,9 +97,15 @@ This condition translates to: For each span event, check whether its parent span
 
 The filter processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing an OTTL condition. `propagate` is the default mode.
 
+| error_mode | description                                                                                                                                    |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| ignore     | The processor ignores errors returned by conditions, logs them, and continues on to the next condition.  This is the recommended mode. |
+| silent     | The processor ignores errors returned by conditions, does not log them, and continues on to the next condition.                        |
+| propagate  | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.                    |
+
 #### Feature Gate
 
-**`processor.filter.defaultErrorModeIgnore`**
+##### `processor.filter.defaultErrorModeIgnore`
 
 The `processor.filter.defaultErrorModeIgnore` feature gate changes the default `error_mode` of the filter processor from `propagate` to `ignore`. 
 `ignore` is the recommended mode to improve resiliency, as errors are logged for visibility but valid data is preserved, and processing continues with the next condition.
@@ -107,13 +113,7 @@ This feature gate is currently in Alpha (disabled by default) and must be explic
 
 **Example Usage**
 
-Run the collector with the feature gate enabled: `./otelcol --config config.yaml --feature-gates=processor.filter.defaultErrorModeIgnore`
-
-| error_mode | description                                                                                                                                    |
-|------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| ignore     | The processor ignores errors returned by conditions, logs them, and continues on to the next condition.  This is the recommended mode. |
-| silent     | The processor ignores errors returned by conditions, does not log them, and continues on to the next condition.                        |
-| propagate  | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.                    |                    |
+Run the collector with the feature gate enabled: `./otelcol --config config.yaml --feature-gates=processor.filter.defaultErrorModeIgnore`                    |                    |
 
 ### Basic Config
 
