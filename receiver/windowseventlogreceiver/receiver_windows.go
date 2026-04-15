@@ -27,15 +27,6 @@ import (
 // It is a variable to allow mocking in tests.
 var getDomainControllersRemoteConfig = discovery.GetJoinedDomainControllersRemoteConfig
 
-// newFactoryAdapter creates a factory for windowseventlog receiver
-func newFactoryAdapter() receiver.Factory {
-	return receiver.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-	)
-}
-
 // createLogsReceiver creates a logs receiver with SID enrichment support
 func createLogsReceiver(
 	ctx context.Context,
@@ -44,7 +35,6 @@ func createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
 	receiverCfg := cfg.(*WindowsLogConfig)
-
 	// Create SID cache if enabled
 	var cache sidcache.Cache
 	if receiverCfg.ResolveSIDs.Enabled {

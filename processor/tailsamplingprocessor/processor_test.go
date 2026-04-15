@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -31,6 +32,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -50,6 +52,7 @@ var (
 			},
 		},
 	}
+	testExtensionID = component.MustNewID("my_extension")
 )
 
 type TestPolicyEvaluator struct {
@@ -1520,6 +1523,107 @@ func TestExtension(t *testing.T) {
 	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
 }
 
+func TestTailStorageExtensionFromHost(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	controller := newTestTSPController()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		TailStorageID:    &testExtensionID,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	host := &extensionHost{}
+	require.NoError(t, p.Start(t.Context(), host))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Positive(t, host.extension.appendCount)
+	assert.Positive(t, host.extension.takeCount)
+}
+
+func TestTailStorageExtensionNotConfigured(t *testing.T) {
+	controller := newTestTSPController()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	host := &extensionHost{}
+	require.NoError(t, p.Start(t.Context(), host))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Zero(t, host.extension.appendCount)
+	assert.Zero(t, host.extension.takeCount)
+}
+
+func TestTailStorageExtensionNotFound(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		TailStorageID:    &testExtensionID,
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "tail storage extension 'my_extension' not found")
+}
+
+func TestTailStorageExtensionWrongType(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		TailStorageID:    &testExtensionID,
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), &nonTailStorageExtensionHost{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "non-tail-storage extension 'my_extension' found")
+}
+
 type extensionHost struct {
 	extension *extension
 }
@@ -1529,22 +1633,53 @@ func (h *extensionHost) GetExtensions() map[component.ID]component.Component {
 		h.extension = &extension{}
 	}
 	return map[component.ID]component.Component{
-		component.MustNewID("my_extension"): h.extension,
+		testExtensionID: h.extension,
 	}
 }
 
 type extension struct {
 	policyName string
 	cfg        map[string]any
+	storage    tailstorageextension.TailStorage
+	appendCount,
+	takeCount,
+	deleteCount int
 }
 
-var _ samplingpolicy.Extension = &extension{}
+var (
+	_ samplingpolicy.Extension         = &extension{}
+	_ tailstorageextension.TailStorage = &extension{}
+)
 
 // NewEvaluator implements samplingpolicy.Extension.
 func (e *extension) NewEvaluator(policyName string, cfg map[string]any) (samplingpolicy.Evaluator, error) {
 	e.policyName = policyName
 	e.cfg = cfg
 	return nil, nil
+}
+
+func (e *extension) ensureStorage() {
+	if e.storage == nil {
+		e.storage = tailstorageextension.NewInMemoryTailStorage()
+	}
+}
+
+func (e *extension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
+	e.ensureStorage()
+	e.storage.Append(traceID, rss)
+	e.appendCount++
+}
+
+func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+	e.ensureStorage()
+	e.takeCount++
+	return e.storage.Take(traceID)
+}
+
+func (e *extension) Delete(traceID pcommon.TraceID) {
+	e.ensureStorage()
+	e.storage.Delete(traceID)
+	e.deleteCount++
 }
 
 // Start implements component.Component.
@@ -1554,5 +1689,32 @@ func (*extension) Start(_ context.Context, _ component.Host) error {
 
 // Shutdown implements component.Component.
 func (*extension) Shutdown(_ context.Context) error {
+	return nil
+}
+
+type nonTailStorageExtensionHost struct{}
+
+func (*nonTailStorageExtensionHost) GetExtensions() map[component.ID]component.Component {
+	return map[component.ID]component.Component{
+		testExtensionID: &nonTailStorageExtension{},
+	}
+}
+
+func enableTailStorageFeatureGateForTest(t *testing.T) {
+	t.Helper()
+	prev := tailstorageextension.IsFeatureGateEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, prev))
+	})
+}
+
+type nonTailStorageExtension struct{}
+
+func (*nonTailStorageExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (*nonTailStorageExtension) Shutdown(context.Context) error {
 	return nil
 }
