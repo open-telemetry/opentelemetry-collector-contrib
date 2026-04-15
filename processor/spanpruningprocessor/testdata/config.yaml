@@ -10,3 +10,9 @@ spanpruning/custom:
     - "db.name"
   min_spans_to_aggregate: 3
   aggregation_attribute_prefix: "batch."
+  aggregation_histogram_buckets:
+    - "10ms"
+    - "50ms"
+    - "100ms"
+    - "500ms"
+    - "1s"
