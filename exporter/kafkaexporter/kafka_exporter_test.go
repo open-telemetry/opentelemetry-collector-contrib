@@ -236,7 +236,7 @@ func (k *kafkaTestStatusReporter) Report(event *componentstatus.Event) {
 	k.statusChan <- event
 }
 
-func (_ *kafkaTestStatusReporter) GetExtensions() map[component.ID]component.Component {
+func (*kafkaTestStatusReporter) GetExtensions() map[component.ID]component.Component {
 	return make(map[component.ID]component.Component)
 }
 

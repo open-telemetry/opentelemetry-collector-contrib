@@ -22,8 +22,7 @@ import (
 func isNonRecoverableKafkaError(err error) bool {
 	return errors.Is(err, kerr.SaslAuthenticationFailed) ||
 		errors.Is(err, kerr.ClusterAuthorizationFailed) ||
-		errors.Is(err, kerr.UnsupportedVersion) ||
-		errors.Is(err, kerr.TopicAuthorizationFailed)
+		errors.Is(err, kerr.UnsupportedVersion)
 }
 
 // MessageTooLargeError wraps a MessageTooLarge Kafka error with the actual
