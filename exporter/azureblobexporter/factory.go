@@ -5,6 +5,7 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -38,7 +39,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 		Auth: Authentication{
 			Type: ConnectionString,
 		},

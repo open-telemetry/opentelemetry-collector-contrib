@@ -6,6 +6,7 @@ package azureblobexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
 				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type:         "service_principal",
@@ -69,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
 				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type: "system_managed_identity",
@@ -101,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
 				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type:     "user_managed_identity",
@@ -134,7 +135,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "wif"),
 			expected: &Config{
 				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type:               "workload_identity",
@@ -174,7 +175,7 @@ func TestLoadConfig(t *testing.T) {
 					queue.QueueSize = 100
 					return queue
 				}()),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				URL:             "https://fakeaccount.blob.core.windows.net/",
 				Auth: Authentication{
 					Type: "system_managed_identity",
@@ -206,7 +207,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "conn-string"),
 			expected: &Config{
 				QueueSettings:   configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: 30 * time.Second},
 				Auth: Authentication{
 					Type:             "connection_string",
 					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
