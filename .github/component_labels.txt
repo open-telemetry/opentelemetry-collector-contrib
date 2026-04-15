@@ -47,6 +47,7 @@ exporter/googlecloudexporter exporter/googlecloud
 exporter/googlecloudpubsubexporter exporter/googlecloudpubsub
 exporter/googlecloudstorageexporter exporter/googlecloudstorage
 exporter/googlemanagedprometheusexporter exporter/googlemanagedprometheus
+exporter/googlesecopsexporter exporter/googlesecops
 exporter/honeycombmarkerexporter exporter/honeycombmarker
 exporter/influxdbexporter exporter/influxdb
 exporter/kafkaexporter exporter/kafka
@@ -214,6 +215,7 @@ processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
+processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform

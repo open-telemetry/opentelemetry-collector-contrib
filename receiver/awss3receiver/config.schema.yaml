@@ -40,6 +40,8 @@ $defs:
         type: string
       s3_prefix:
         type: string
+      tag_object_after_ingestion:
+        type: boolean
   sqs_config:
     description: SQSConfig holds SQS queue configuration for receiving object change notifications.
     type: object
