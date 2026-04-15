@@ -7,10 +7,10 @@ change_type: bug_fix
 component: receiver/syslog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support malformed dates in RFC3164 syslogs
+note: Support days with leading zeros in RFC 3164 syslogs
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [0]
+issues: [47665]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
