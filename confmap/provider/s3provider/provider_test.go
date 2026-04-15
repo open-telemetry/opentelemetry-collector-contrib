@@ -72,6 +72,17 @@ func TestFunctionalityS3URISplitCompatible(t *testing.T) {
 	assert.NoError(t, fp.Shutdown(t.Context()))
 }
 
+func TestFunctionalityS3URISplitCompatibleInsecure(t *testing.T) {
+	fp := newTestProvider("./testdata/otel-config.yaml")
+	bucket, region, key, endpoint, err := s3URISplit("s3://minio.example.com/my-bucket/config.yaml?insecure=true")
+	assert.NoError(t, err)
+	assert.Equal(t, "my-bucket", bucket)
+	assert.Empty(t, region)
+	assert.Equal(t, "config.yaml", key)
+	assert.Equal(t, "http://minio.example.com", endpoint)
+	assert.NoError(t, fp.Shutdown(t.Context()))
+}
+
 func TestURIs(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -95,6 +106,7 @@ func TestURIs(t *testing.T) {
 		{"Compatible missing bucket or key", "s3://storage.googleapis.com/onlybucket", "", "", "", false},
 		{"Compatible valid with region", "s3://storage.googleapis.com/mybucket/config.yaml?region=us-east-1", "mybucket", "us-east-1", "config.yaml", true},
 		{"Compatible no region", "s3://minio.example.com/mybucket/config.yaml", "mybucket", "", "config.yaml", true},
+		{"Compatible insecure", "s3://minio.example.com/mybucket/config.yaml?insecure=true", "mybucket", "", "config.yaml", true},
 	}
 
 	for _, tt := range tests {

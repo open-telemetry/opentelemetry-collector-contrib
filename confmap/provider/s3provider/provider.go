@@ -155,8 +155,13 @@ func s3URISplit(uri string) (bucket, region, key, endpoint string, err error) {
 	}
 	bucket = parts[0]
 	key = parts[1]
-	region = u.Query().Get("region")
-	endpoint = "https://" + u.Host
+	q := u.Query()
+	region = q.Get("region")
+	scheme := "https"
+	if q.Get("insecure") == "true" {
+		scheme = "http"
+	}
+	endpoint = scheme + "://" + u.Host
 
 	return bucket, region, key, endpoint, nil
 }
