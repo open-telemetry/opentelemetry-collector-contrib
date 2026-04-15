@@ -120,8 +120,7 @@ func (s *mongodbatlasreceiver) pollAllProjects(ctx context.Context, time timecon
 
 // pollProject handles polling for specific projects as configured.
 func (s *mongodbatlasreceiver) pollProjects(ctx context.Context, time timeconstraints) error {
-	for i := range s.cfg.Projects {
-		projectCfg := &s.cfg.Projects[i]
+	for _, projectCfg := range s.cfg.Projects {
 		project, err := s.client.GetProject(ctx, projectCfg.Name)
 		if err != nil {
 			s.log.Error("error retrieving project", zap.String("projectName", projectCfg.Name), zap.Error(err))
@@ -134,7 +133,7 @@ func (s *mongodbatlasreceiver) pollProjects(ctx context.Context, time timeconstr
 			continue
 		}
 
-		if err := s.processProject(ctx, time, org.Name, project, projectCfg); err != nil {
+		if err := s.processProject(ctx, time, org.Name, project, &projectCfg); err != nil {
 			s.log.Error("error processing project", zap.String("projectID", project.ID), zap.Error(err))
 		}
 	}

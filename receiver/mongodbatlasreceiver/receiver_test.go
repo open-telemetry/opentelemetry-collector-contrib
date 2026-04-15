@@ -144,11 +144,8 @@ func TestShouldProcessCluster(t *testing.T) {
 	}
 }
 
-// TestNewMongoDBAtlasReceiverPopulatesClusterFilters is a regression test for
-// the range-copy bug: cfg.Projects is []ProjectConfig (value slice), so a
-// plain `for _, p := range cfg.Projects` loop handed populateIncludesAndExcludes
-// a copy of each element, leaving the original maps nil.  The fix uses
-// index-based iteration so the original slice elements are updated in place.
+// TestNewMongoDBAtlasReceiverPopulatesClusterFilters verifies that include/exclude
+// cluster filters are applied to the original ProjectConfig elements after receiver creation.
 func TestNewMongoDBAtlasReceiverPopulatesClusterFilters(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Projects = []ProjectConfig{
