@@ -11,62 +11,77 @@ import (
 )
 
 func TestConfigValidate(t *testing.T) {
-	valid := func() *Config {
-		cfg := createDefaultConfig().(*Config)
-		return cfg
+	validCfg := func() *Config {
+		return createDefaultConfig().(*Config)
 	}
 
-	t.Run("valid default config", func(t *testing.T) {
-		require.NoError(t, valid().Validate())
-	})
+	tests := []struct {
+		name    string
+		mutate  func(*Config)
+		wantErr bool
+	}{
+		{
+			name:    "default config is valid",
+			mutate:  func(_ *Config) {},
+			wantErr: false,
+		},
+		{
+			name:    "tree_depth below minimum",
+			mutate:  func(c *Config) { c.TreeDepth = 2 },
+			wantErr: true,
+		},
+		{
+			name:    "tree_depth at minimum",
+			mutate:  func(c *Config) { c.TreeDepth = 3 },
+			wantErr: false,
+		},
+		{
+			name:    "merge_threshold below range",
+			mutate:  func(c *Config) { c.MergeThreshold = -0.1 },
+			wantErr: true,
+		},
+		{
+			name:    "merge_threshold above range",
+			mutate:  func(c *Config) { c.MergeThreshold = 1.1 },
+			wantErr: true,
+		},
+		{
+			name:    "merge_threshold at lower boundary",
+			mutate:  func(c *Config) { c.MergeThreshold = 0.0 },
+			wantErr: false,
+		},
+		{
+			name:    "merge_threshold at upper boundary",
+			mutate:  func(c *Config) { c.MergeThreshold = 1.0 },
+			wantErr: false,
+		},
+		{
+			name:    "warmup_min_clusters negative",
+			mutate:  func(c *Config) { c.WarmupMinClusters = -1 },
+			wantErr: true,
+		},
+		{
+			name:    "warmup_min_clusters zero",
+			mutate:  func(c *Config) { c.WarmupMinClusters = 0 },
+			wantErr: false,
+		},
+		{
+			name:    "warmup_min_clusters positive",
+			mutate:  func(c *Config) { c.WarmupMinClusters = 20 },
+			wantErr: false,
+		},
+	}
 
-	t.Run("tree_depth < 3", func(t *testing.T) {
-		cfg := valid()
-		cfg.TreeDepth = 2
-		assert.Error(t, cfg.Validate())
-	})
-
-	t.Run("tree_depth == 3 is valid", func(t *testing.T) {
-		cfg := valid()
-		cfg.TreeDepth = 3
-		require.NoError(t, cfg.Validate())
-	})
-
-	t.Run("merge_threshold below range", func(t *testing.T) {
-		cfg := valid()
-		cfg.MergeThreshold = -0.1
-		assert.Error(t, cfg.Validate())
-	})
-
-	t.Run("merge_threshold above range", func(t *testing.T) {
-		cfg := valid()
-		cfg.MergeThreshold = 1.1
-		assert.Error(t, cfg.Validate())
-	})
-
-	t.Run("merge_threshold at boundaries", func(t *testing.T) {
-		cfg := valid()
-		cfg.MergeThreshold = 0.0
-		require.NoError(t, cfg.Validate())
-		cfg.MergeThreshold = 1.0
-		require.NoError(t, cfg.Validate())
-	})
-
-	t.Run("warmup_min_clusters negative", func(t *testing.T) {
-		cfg := valid()
-		cfg.WarmupMinClusters = -1
-		assert.Error(t, cfg.Validate())
-	})
-
-	t.Run("warmup_min_clusters zero is valid", func(t *testing.T) {
-		cfg := valid()
-		cfg.WarmupMinClusters = 0
-		require.NoError(t, cfg.Validate())
-	})
-
-	t.Run("warmup_min_clusters positive is valid", func(t *testing.T) {
-		cfg := valid()
-		cfg.WarmupMinClusters = 20
-		require.NoError(t, cfg.Validate())
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := validCfg()
+			tt.mutate(cfg)
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

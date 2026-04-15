@@ -10,6 +10,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// connectedLines are structurally similar log lines used across several tests.
+// The first three tokens ("connected to host") are identical, which routes them
+// to the same leaf node in the Drain parse tree for similarity scoring.
+var connectedLines = []string{
+	"connected to host 10.0.0.1 on port 443",
+	"connected to host 192.168.1.1 on port 8080",
+	"connected to host 172.16.0.1 on port 80",
+}
+
 func defaultCfg() Config {
 	return Config{
 		Depth:        5,
@@ -35,14 +44,8 @@ func TestTrainSimilarLinesShareTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	// "connected to host <IP> on port <PORT>" — first 3 tokens identical
-	lines := []string{
-		"connected to host 10.0.0.1 on port 443",
-		"connected to host 192.168.1.1 on port 8080",
-		"connected to host 172.16.0.1 on port 80",
-	}
-
 	var templates []string
-	for _, line := range lines {
+	for _, line := range connectedLines {
 		tmpl, err := d.Train(line)
 		require.NoError(t, err)
 		templates = append(templates, tmpl)
@@ -78,11 +81,7 @@ func TestMatchAfterTemplateAbstracts(t *testing.T) {
 
 	// Build the cluster with enough examples to abstract the template.
 	var trainTmpl string
-	for _, line := range []string{
-		"connected to host 10.0.0.1 on port 443",
-		"connected to host 192.168.1.1 on port 8080",
-		"connected to host 172.16.0.1 on port 80",
-	} {
+	for _, line := range connectedLines {
 		var err error
 		trainTmpl, err = d.Train(line)
 		require.NoError(t, err)
@@ -111,11 +110,7 @@ func TestSnapshotRoundtrip(t *testing.T) {
 	require.NoError(t, err)
 
 	var trainTmpl string
-	for _, line := range []string{
-		"connected to host 10.0.0.1 on port 443",
-		"connected to host 192.168.1.1 on port 8080",
-		"connected to host 172.16.0.1 on port 80",
-	} {
+	for _, line := range connectedLines {
 		var trainErr error
 		trainTmpl, trainErr = d.Train(line)
 		require.NoError(t, trainErr)
