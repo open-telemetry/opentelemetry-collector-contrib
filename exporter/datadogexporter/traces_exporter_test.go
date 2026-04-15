@@ -25,8 +25,11 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -542,6 +545,222 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	assert.Empty(t, tracerPayload.Env)
 	assert.Equal(t, "otlpresourcenoservicename", span.Service)
 	assert.Empty(t, span.Meta["version"])
+}
+
+// mockConnectorCheckerExtension implements both extension.Extension and datadog.ConnectorChecker.
+type mockConnectorCheckerExtension struct {
+	extension.Extension
+	connectors map[component.Type]struct{}
+}
+
+func (m *mockConnectorCheckerExtension) HasConnector(connectorType component.Type) bool {
+	_, ok := m.connectors[connectorType]
+	return ok
+}
+
+// mockHostWithExtensions implements component.Host with configurable extensions.
+type mockHostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (m *mockHostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return m.extensions
+}
+
+func (m *mockHostWithExtensions) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
+}
+
+func TestStartDetectsStatsConnector(t *testing.T) {
+	t.Run("false when datadog connector is present", func(t *testing.T) {
+		exp := &traceExporter{params: exportertest.NewNopSettings(metadata.Type)}
+		host := &mockHostWithExtensions{
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("datadog"): &mockConnectorCheckerExtension{
+					connectors: map[component.Type]struct{}{
+						component.MustNewType("datadog"): {},
+					},
+				},
+			},
+		}
+		err := exp.start(t.Context(), host)
+		require.NoError(t, err)
+		assert.False(t, exp.extensionFoundNoStatsConnector)
+	})
+
+	t.Run("false when spanmetrics connector is present", func(t *testing.T) {
+		exp := &traceExporter{params: exportertest.NewNopSettings(metadata.Type)}
+		host := &mockHostWithExtensions{
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("datadog"): &mockConnectorCheckerExtension{
+					connectors: map[component.Type]struct{}{
+						component.MustNewType("spanmetrics"): {},
+					},
+				},
+			},
+		}
+		err := exp.start(t.Context(), host)
+		require.NoError(t, err)
+		assert.False(t, exp.extensionFoundNoStatsConnector)
+	})
+
+	t.Run("true when extension present but no stats connector configured", func(t *testing.T) {
+		exp := &traceExporter{params: exportertest.NewNopSettings(metadata.Type)}
+		host := &mockHostWithExtensions{
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("datadog"): &mockConnectorCheckerExtension{
+					connectors: map[component.Type]struct{}{},
+				},
+			},
+		}
+		err := exp.start(t.Context(), host)
+		require.NoError(t, err)
+		assert.True(t, exp.extensionFoundNoStatsConnector)
+	})
+
+	t.Run("false when no ConnectorChecker extension present", func(t *testing.T) {
+		exp := &traceExporter{params: exportertest.NewNopSettings(metadata.Type)}
+		host := componenttest.NewNopHost()
+		err := exp.start(t.Context(), host)
+		require.NoError(t, err)
+		assert.False(t, exp.extensionFoundNoStatsConnector)
+	})
+}
+
+func TestConsumeTracesEnrichesResourceAttrs(t *testing.T) {
+	t.Run("adds attribute when extension present but no stats connector", func(t *testing.T) {
+		server := testutil.DatadogServerMock()
+		defer server.Close()
+		cfg := &datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+			TagsConfig: datadogconfig.TagsConfig{
+				Hostname: "test-host",
+			},
+			Metrics: datadogconfig.MetricsConfig{
+				TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+			},
+			Traces: datadogconfig.TracesExporterConfig{
+				TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+			},
+		}
+
+		params := exportertest.NewNopSettings(metadata.Type)
+		f := NewFactory()
+		exp, err := f.CreateTraces(t.Context(), params, cfg)
+		require.NoError(t, err)
+
+		// Start with extension present but no connectors configured
+		host := &mockHostWithExtensions{
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("datadog"): &mockConnectorCheckerExtension{
+					connectors: map[component.Type]struct{}{},
+				},
+			},
+		}
+		err = exp.Start(t.Context(), host)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, exp.Shutdown(t.Context())) }()
+
+		td := simpleTraces(map[string]any{"service.name": "test-svc"}, nil, ptrace.SpanKindClient)
+		err = exp.ConsumeTraces(t.Context(), td)
+		require.NoError(t, err)
+
+		// Verify the resource attribute was added
+		rspans := td.ResourceSpans()
+		require.Equal(t, 1, rspans.Len())
+		val, ok := rspans.At(0).Resource().Attributes().Get("_dd.extension_found_no_stats_connector")
+		assert.True(t, ok, "expected _dd.extension_found_no_stats_connector attribute")
+		assert.True(t, val.Bool())
+	})
+
+	t.Run("does not add attribute when stats connector is present", func(t *testing.T) {
+		server := testutil.DatadogServerMock()
+		defer server.Close()
+		cfg := &datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+			TagsConfig: datadogconfig.TagsConfig{
+				Hostname: "test-host",
+			},
+			Metrics: datadogconfig.MetricsConfig{
+				TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+			},
+			Traces: datadogconfig.TracesExporterConfig{
+				TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+			},
+		}
+
+		params := exportertest.NewNopSettings(metadata.Type)
+		f := NewFactory()
+		exp, err := f.CreateTraces(t.Context(), params, cfg)
+		require.NoError(t, err)
+
+		// Start with extension present AND datadog connector configured
+		host := &mockHostWithExtensions{
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("datadog"): &mockConnectorCheckerExtension{
+					connectors: map[component.Type]struct{}{
+						component.MustNewType("datadog"): {},
+					},
+				},
+			},
+		}
+		err = exp.Start(t.Context(), host)
+		require.NoError(t, err)
+		defer func() { require.NoError(t, exp.Shutdown(t.Context())) }()
+
+		td := simpleTraces(map[string]any{"service.name": "test-svc"}, nil, ptrace.SpanKindClient)
+		err = exp.ConsumeTraces(t.Context(), td)
+		require.NoError(t, err)
+
+		// Verify no attribute was added
+		rspans := td.ResourceSpans()
+		require.Equal(t, 1, rspans.Len())
+		_, ok := rspans.At(0).Resource().Attributes().Get("_dd.extension_found_no_stats_connector")
+		assert.False(t, ok, "expected no _dd.extension_found_no_stats_connector attribute")
+	})
+
+	t.Run("does not add attribute when no extension present", func(t *testing.T) {
+		server := testutil.DatadogServerMock()
+		defer server.Close()
+		cfg := &datadogconfig.Config{
+			API: datadogconfig.APIConfig{
+				Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			},
+			TagsConfig: datadogconfig.TagsConfig{
+				Hostname: "test-host",
+			},
+			Metrics: datadogconfig.MetricsConfig{
+				TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+			},
+			Traces: datadogconfig.TracesExporterConfig{
+				TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+			},
+		}
+
+		params := exportertest.NewNopSettings(metadata.Type)
+		f := NewFactory()
+		exp, err := f.CreateTraces(t.Context(), params, cfg)
+		require.NoError(t, err)
+
+		err = exp.Start(t.Context(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		defer func() { require.NoError(t, exp.Shutdown(t.Context())) }()
+
+		td := simpleTraces(map[string]any{"service.name": "test-svc"}, nil, ptrace.SpanKindClient)
+		err = exp.ConsumeTraces(t.Context(), td)
+		require.NoError(t, err)
+
+		// Verify no attribute was added
+		rspans := td.ResourceSpans()
+		require.Equal(t, 1, rspans.Len())
+		_, ok := rspans.At(0).Resource().Attributes().Get("_dd.extension_found_no_stats_connector")
+		assert.False(t, ok, "expected no _dd.extension_found_no_stats_connector attribute")
+	})
 }
 
 func simpleTraces(rattrs, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {

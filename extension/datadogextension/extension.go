@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/service"
@@ -30,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension/internal/payload"
+	datadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/agentcomponents"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
@@ -53,9 +55,10 @@ func (*realUUIDProvider) NewString() string {
 }
 
 type configs struct {
-	collector *confmap.Conf
-	extension *Config
-	mutex     sync.RWMutex
+	collector  *confmap.Conf
+	extension  *Config
+	connectors map[component.ID]component.Config // parsed from collector config
+	mutex      sync.RWMutex
 }
 
 type info struct {
@@ -99,6 +102,7 @@ var (
 	_ extensioncapabilities.ConfigWatcher   = (*datadogExtension)(nil)
 	_ extensioncapabilities.PipelineWatcher = (*datadogExtension)(nil)
 	_ componentstatus.Watcher               = (*datadogExtension)(nil)
+	_ datadog.ConnectorChecker              = (*datadogExtension)(nil)
 )
 
 // NotifyConfig implements the extensioncapabilities.ConfigWatcher interface, which allows
@@ -109,6 +113,14 @@ func (e *datadogExtension) NotifyConfig(_ context.Context, conf *confmap.Conf) e
 	defer e.configs.mutex.Unlock()
 
 	e.configs.collector = conf
+
+	// Parse and cache connector configuration for HasConnector queries
+	oc := otelcol.Config{}
+	if err := conf.Unmarshal(&oc); err != nil {
+		e.logger.Warn("Failed to unmarshal collector config for connector checking", zap.Error(err))
+	} else {
+		e.configs.connectors = oc.Connectors
+	}
 
 	// Create the build info struct for the payload
 	buildInfo := payload.CustomBuildInfo{
@@ -346,6 +358,19 @@ func (e *datadogExtension) stopPeriodicPayloadSending() {
 // with the same proxy configuration.
 func (e *datadogExtension) GetSerializer() agentcomponents.SerializerWithForwarder {
 	return e.serializer
+}
+
+// HasConnector implements datadog.ConnectorChecker. It reports whether at least
+// one connector of the given type is configured in the collector pipeline.
+func (e *datadogExtension) HasConnector(connectorType component.Type) bool {
+	e.configs.mutex.RLock()
+	defer e.configs.mutex.RUnlock()
+	for id := range e.configs.connectors {
+		if id.Type() == connectorType {
+			return true
+		}
+	}
+	return false
 }
 
 func newExtension(

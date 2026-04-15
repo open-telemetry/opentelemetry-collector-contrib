@@ -22,12 +22,14 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/datadog-go/v5/statsd"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	datadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
@@ -43,14 +45,15 @@ type traceExporter struct {
 	cfg    *datadogconfig.Config
 	ctx    context.Context // ctx triggers shutdown upon cancellation
 
-	metricsAPI       *datadogV2.MetricsApi    // client sends running metrics to backend
-	scrubber         scrub.Scrubber           // scrubber scrubs sensitive information from error messages
-	onceMetadata     *sync.Once               // onceMetadata ensures that metadata is sent only once across all exporters
-	agent            *agent.Agent             // agent processes incoming traces
-	sourceProvider   source.Provider          // is able to source the origin of a trace (hostname, container, etc)
-	metadataReporter *inframetadata.Reporter  // reports host metadata from resource attributes and metrics
-	retrier          *clientutil.Retrier      // retrier handles retries on requests
-	gatewayUsage     *attributes.GatewayUsage // gatewayUsage stores the gateway usage metrics
+	metricsAPI        *datadogV2.MetricsApi    // client sends running metrics to backend
+	scrubber          scrub.Scrubber           // scrubber scrubs sensitive information from error messages
+	onceMetadata      *sync.Once               // onceMetadata ensures that metadata is sent only once across all exporters
+	agent             *agent.Agent             // agent processes incoming traces
+	sourceProvider    source.Provider          // is able to source the origin of a trace (hostname, container, etc)
+	metadataReporter  *inframetadata.Reporter  // reports host metadata from resource attributes and metrics
+	retrier           *clientutil.Retrier      // retrier handles retries on requests
+	gatewayUsage      *attributes.GatewayUsage // gatewayUsage stores the gateway usage metrics
+	extensionFoundNoStatsConnector bool // true if datadogextension is present but no stats connector is configured
 }
 
 func newTracesExporter(
@@ -94,6 +97,31 @@ func newTracesExporter(
 
 var _ consumer.ConsumeTracesFunc = (*traceExporter)(nil).consumeTraces
 
+var (
+	datadogConnectorType    = component.MustNewType("datadog")
+	spanmetricsConnectorType = component.MustNewType("spanmetrics")
+)
+
+// start checks for stats connectors in the pipeline via the datadogextension.
+// If the extension is present but no stats connector is configured, the exporter
+// will stamp traces with _dd.pipeline_has_no_stats_connector.
+func (exp *traceExporter) start(_ context.Context, host component.Host) error {
+	for _, ext := range host.GetExtensions() {
+		checker, ok := ext.(datadog.ConnectorChecker)
+		if !ok {
+			continue
+		}
+		// Extension found — check if any stats connector is configured
+		if !checker.HasConnector(datadogConnectorType) && !checker.HasConnector(spanmetricsConnectorType) {
+			exp.extensionFoundNoStatsConnector = true
+			exp.params.Logger.Warn("No stats connector (datadog or spanmetrics) detected in pipeline",
+				zap.Bool("extensionFoundNoStatsConnector", true))
+		}
+		break
+	}
+	return nil
+}
+
 // headerComputedStats specifies the HTTP header which indicates whether APM stats
 // have already been computed for a payload.
 const headerComputedStats = "Datadog-Client-Computed-Stats"
@@ -129,6 +157,9 @@ func (exp *traceExporter) consumeTraces(
 	}
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
+		if exp.extensionFoundNoStatsConnector {
+			rspan.Resource().Attributes().PutBool("_dd.extension_found_no_stats_connector", true)
+		}
 		var src source.Source
 		src, err = exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
 		if err != nil {

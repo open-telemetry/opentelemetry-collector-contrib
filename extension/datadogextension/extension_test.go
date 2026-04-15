@@ -1172,3 +1172,85 @@ func TestExtensionLivenessMetric(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestHasConnector(t *testing.T) {
+	set := extension.Settings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.BuildInfo{Version: "1.0.0"},
+	}
+	hostProvider := &mockSourceProvider{source: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}}
+	uuidProvider := &mockUUIDProvider{mockUUID: "test-uuid"}
+	cfg := &Config{
+		API: datadogconfig.APIConfig{Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Site: "datadoghq.com"},
+		HTTPConfig: &httpserver.Config{
+			ServerConfig: confighttp.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:0",
+				},
+			},
+			Path: "/test-path",
+		},
+	}
+
+	ext, err := newExtension(t.Context(), cfg, set, hostProvider, uuidProvider)
+	require.NoError(t, err)
+	ext.serializer = &mockSerializer{}
+	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
+
+	t.Run("returns false before NotifyConfig", func(t *testing.T) {
+		assert.False(t, ext.HasConnector(component.MustNewType("spanmetrics")))
+	})
+
+	t.Run("returns true when connector is configured", func(t *testing.T) {
+		conf := confmap.NewFromStringMap(map[string]any{
+			"connectors": map[string]any{
+				"spanmetrics": map[string]any{},
+			},
+			"receivers": map[string]any{
+				"otlp": map[string]any{},
+			},
+			"exporters": map[string]any{
+				"debug": map[string]any{},
+			},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": []any{"otlp"},
+						"exporters": []any{"spanmetrics"},
+					},
+					"metrics": map[string]any{
+						"receivers": []any{"spanmetrics"},
+						"exporters": []any{"debug"},
+					},
+				},
+			},
+		})
+		err := ext.NotifyConfig(t.Context(), conf)
+		require.NoError(t, err)
+
+		assert.True(t, ext.HasConnector(component.MustNewType("spanmetrics")))
+		assert.False(t, ext.HasConnector(component.MustNewType("routing")))
+	})
+
+	t.Run("returns false when no connectors configured", func(t *testing.T) {
+		conf := confmap.NewFromStringMap(map[string]any{
+			"receivers": map[string]any{"otlp": map[string]any{}},
+			"exporters": map[string]any{"debug": map[string]any{}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": []any{"otlp"},
+						"exporters": []any{"debug"},
+					},
+				},
+			},
+		})
+		err := ext.NotifyConfig(t.Context(), conf)
+		require.NoError(t, err)
+
+		assert.False(t, ext.HasConnector(component.MustNewType("spanmetrics")))
+	})
+
+	require.NoError(t, ext.Shutdown(t.Context()))
+}

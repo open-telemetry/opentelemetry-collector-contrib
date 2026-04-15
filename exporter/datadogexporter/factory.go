@@ -392,6 +392,7 @@ func (f *factory) createTracesExporter(
 
 	var (
 		pusher consumer.ConsumeTracesFunc
+		start  component.StartFunc
 		stop   component.ShutdownFunc
 		wg     sync.WaitGroup // waits for agent to exit
 	)
@@ -456,6 +457,7 @@ func (f *factory) createTracesExporter(
 			return nil, err2
 		}
 		pusher = tracex.consumeTraces
+		start = tracex.start
 		stop = func(context.Context) error {
 			cancel() // first cancel context
 			f.StopReporter()
@@ -463,17 +465,23 @@ func (f *factory) createTracesExporter(
 		}
 	}
 
-	return exporterhelper.NewTraces(
-		ctx,
-		set,
-		cfg,
-		pusher,
+	opts := []exporterhelper.Option{
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0 * time.Second}),
 		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(stop),
+	}
+	if start != nil {
+		opts = append(opts, exporterhelper.WithStart(start))
+	}
+	return exporterhelper.NewTraces(
+		ctx,
+		set,
+		cfg,
+		pusher,
+		opts...,
 	)
 }
 
