@@ -135,7 +135,7 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 
 			allEventsCount++
-			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, "db.namespace-val", "db.query.text-val", "db.system.name-val", "network.peer.address-val", 17, 29, "sqlserver.context_info-val", "sqlserver.command-val", 18.100000, 27, 35.100000, 22.100000, 23, 32, 26.100000, "sqlserver.query_hash-val", "sqlserver.query_plan_hash-val", "sqlserver.query_start-val", 15, "sqlserver.request_status-val", 19, 20, "sqlserver.session_status-val", 28.100000, 24, 37, "sqlserver.wait_resource-val", 19.100000, "sqlserver.wait_type-val", 16, "user.name-val", "sqlserver.procedure_id-val", "sqlserver.procedure_name-val")
+			lb.RecordDbServerQuerySampleEvent(ctx, timestamp, "client.address-val", 11, "db.namespace-val", "db.query.text-val", "db.system.name-val", "network.peer.address-val", 17, 29, "sqlserver.blocking.start_time-val", "sqlserver.context_info-val", "sqlserver.command-val", 18.100000, 27, 35.100000, 22.100000, 23, 32, 26.100000, "sqlserver.query_hash-val", "sqlserver.query_plan_hash-val", "sqlserver.query_start-val", 15, "sqlserver.request_status-val", "sqlserver.wait.resource.id-val", "sqlserver.wait.resource.type-val", 19, 20, "sqlserver.session_status-val", 28.100000, 24, 37, "sqlserver.wait_resource-val", 19.100000, "sqlserver.wait_type-val", 16, "user.name-val", "sqlserver.procedure_id-val", "sqlserver.procedure_name-val")
 
 			allEventsCount++
 			lb.RecordDbServerTopQueryEvent(ctx, timestamp, 27.100000, "db.query.text-val", 25, 29, 30, 30, "sqlserver.query_hash-val", "sqlserver.query_plan-val", "sqlserver.query_plan_hash-val", 20, 28.100000, 24, "server.address-val", 11, "db.system.name-val", 35, "sqlserver.procedure_id-val", "sqlserver.procedure_name-val")
@@ -201,6 +201,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("sqlserver.blocking_session_id")
 					assert.True(t, ok)
 					assert.EqualValues(t, 29, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("sqlserver.blocking.start_time")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.blocking.start_time-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("sqlserver.context_info")
 					assert.True(t, ok)
 					assert.Equal(t, "sqlserver.context_info-val", attrVal.Str())
@@ -243,6 +246,12 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("sqlserver.request_status")
 					assert.True(t, ok)
 					assert.Equal(t, "sqlserver.request_status-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.wait.resource.id")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.wait.resource.id-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("sqlserver.wait.resource.type")
+					assert.True(t, ok)
+					assert.Equal(t, "sqlserver.wait.resource.type-val", attrVal.Str())
 					attrVal, ok = lr.Attributes().Get("sqlserver.row_count")
 					assert.True(t, ok)
 					assert.EqualValues(t, 19, attrVal.Int())
