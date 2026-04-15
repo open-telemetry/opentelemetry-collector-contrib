@@ -122,7 +122,7 @@ func (s *sqlServerPCScraper) emitMetricGroup(recorders []curriedRecorder, databa
 	}
 
 	rb := s.mb.NewResourceBuilder()
-	rb.SetServiceName("microsoft.sql_server")
+	rb.SetServiceName("unknown_service:microsoft.sql_server")
 	rb.SetServiceNamespace("")
 	if databaseName != "" {
 		rb.SetSqlserverDatabaseName(databaseName)

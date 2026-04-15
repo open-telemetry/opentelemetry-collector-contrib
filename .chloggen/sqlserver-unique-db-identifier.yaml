@@ -16,7 +16,7 @@ issues: [46176]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When `service.name` is enabled, the receiver sets it to `microsoft.sql_server` (aligned with `db.system.name` for SQL Server).
+  When `service.name` is enabled, the receiver sets it to `unknown_service:microsoft.sql_server` per OTel specification.
   When `service.namespace` is enabled, it defaults to an empty string until overridden by future configuration.
   Enable them under `resource_attributes` if you need the full service identity tuple with `service.instance.id`.
 
