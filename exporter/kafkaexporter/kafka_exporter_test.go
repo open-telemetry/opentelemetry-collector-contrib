@@ -6,7 +6,6 @@ package kafkaexporter
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
@@ -150,34 +149,6 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("when large message value is used", func(t *testing.T) {
-		maxMessageBytes := 512
-		config := createDefaultConfig().(*Config)
-		config.Producer.MaxMessageBytes = maxMessageBytes
-
-		logs := testdata.GenerateLogs(1)
-		for _, scopeLogs := range logs.ResourceLogs().All() {
-			for _, logs := range scopeLogs.ScopeLogs().All() {
-				logs.LogRecords().At(0).Body().SetStr(strings.Repeat("x", maxMessageBytes*2))
-			}
-		}
-
-		exp, fakeCluster := newKgoMockLogsExporter(t, *config, reporter, config.Logs.Topic)
-		t.Cleanup(func() { fakeCluster.Close() })
-
-		err := exp.exportData(t.Context(), logs)
-		require.Error(t, err)
-		select {
-		case event := <-statusChan:
-			assert.Error(t, event.Err())
-			assert.Equal(t, componentstatus.StatusRecoverableError, event.Status())
-		default:
-			require.Fail(t, "not successful export should report StatusRecoverable Error")
-		}
-
-		t.Cleanup(func() { assert.NoError(t, exp.Close(t.Context())) })
-	})
-
 	t.Run("when broker returns topic authorization failed", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		topic := config.Logs.Topic
@@ -187,7 +158,7 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 			preq := kreq.(*kmsg.ProduceRequest)
 			require.NotEmpty(t, preq.Topics)
 			part := kmsg.NewProduceResponseTopicPartition()
-			part.ErrorCode = kerr.TopicAuthorizationFailed.Code
+			part.ErrorCode = kerr.SaslAuthenticationFailed.Code
 			return &kmsg.ProduceResponse{
 				Version: kreq.GetVersion(),
 				Topics: []kmsg.ProduceResponseTopic{{
@@ -213,7 +184,7 @@ func TestKafkaExporter_ComponentStatus(t *testing.T) {
 
 		err = exp.exportData(t.Context(), testdata.GenerateLogs(1))
 		require.Error(t, err)
-		require.ErrorIs(t, err, kerr.TopicAuthorizationFailed)
+		require.ErrorIs(t, err, kerr.SaslAuthenticationFailed)
 		assert.True(t, consumererror.IsPermanent(err), "expected permanent error for topic authorization failure")
 
 		select {

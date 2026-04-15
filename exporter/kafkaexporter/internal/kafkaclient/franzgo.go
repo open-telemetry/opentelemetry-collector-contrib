@@ -98,7 +98,7 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 		}
 		kgoErr := &kerr.Error{}
 		if errors.As(r.Err, &kgoErr) && !kgoErr.Retriable {
-			if isNonRecoverableKafkaError(r.Err) || errors.Is(r.Err, kerr.MessageTooLarge) {
+			if isNonRecoverableKafkaError(r.Err) {
 				componentstatus.ReportStatus(p.host, componentstatus.NewRecoverableErrorEvent(err))
 			}
 			err = consumererror.NewPermanent(err)
