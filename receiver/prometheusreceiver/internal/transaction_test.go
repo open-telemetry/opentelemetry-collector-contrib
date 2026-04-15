@@ -131,7 +131,6 @@ func TestTransactionAppendResource(t *testing.T) {
 func testTransactionAppendResource(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := tr
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -144,7 +143,7 @@ func testTransactionAppendResource(t *testing.T) {
 		model.MetricNameLabel: startTimeMetricName,
 	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
-	assert.NoError(t, w.Commit())
+	assert.NoError(t, tr.Commit())
 	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
@@ -159,7 +158,6 @@ func TestTransactionAppendMultipleResources(t *testing.T) {
 func testTransactionAppendMultipleResources(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := tr
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test-1",
@@ -172,7 +170,7 @@ func testTransactionAppendMultipleResources(t *testing.T) {
 		model.MetricNameLabel: startTimeMetricName,
 	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
-	assert.NoError(t, w.Commit())
+	assert.NoError(t, tr.Commit())
 
 	expectedResources := []pcommon.Resource{
 		CreateResource("test-1", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
@@ -207,14 +205,13 @@ func TestReceiverVersionAndNameAreAttached(t *testing.T) {
 func testReceiverVersionAndNameAreAttached(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	w := tr
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
 	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
-	assert.NoError(t, w.Commit())
+	assert.NoError(t, tr.Commit())
 
 	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
@@ -267,7 +264,6 @@ func testTransactionAppendHistogramNoLe(t *testing.T) {
 		false,
 		true,
 	)
-	w := tr
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -280,7 +276,7 @@ func testTransactionAppendHistogramNoLe(t *testing.T) {
 	assert.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
 
-	assert.NoError(t, w.Commit())
+	assert.NoError(t, tr.Commit())
 	assert.Empty(t, sink.AllMetrics())
 }
 
@@ -302,7 +298,6 @@ func testTransactionAppendSummaryNoQuantile(t *testing.T) {
 		false,
 		true,
 	)
-	w := tr
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -315,7 +310,7 @@ func testTransactionAppendSummaryNoQuantile(t *testing.T) {
 	assert.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
 
-	assert.NoError(t, w.Commit())
+	assert.NoError(t, tr.Commit())
 	assert.Empty(t, sink.AllMetrics())
 }
 
@@ -337,7 +332,6 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 		false,
 		true,
 	)
-	w := tr
 
 	// a valid counter
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
@@ -360,7 +354,7 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 	assert.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
 
-	assert.NoError(t, w.Commit())
+	assert.NoError(t, tr.Commit())
 	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
@@ -674,16 +668,14 @@ func TestAppendHistogramStableSeriesRefEnablesSeriesDisappearanceTracking(t *tes
 
 	// Scrape #1: both series are present.
 	tr1 := newTxn(t, false)
-	w1 := tr1
-	refA1, err := w1.Append(0, lsA, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
+	refA1, err := tr1.Append(0, lsA, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
-	refB1, err := w1.Append(0, lsB, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
+	refB1, err := tr1.Append(0, lsB, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 
 	// Scrape #2: only series A is present.
 	tr2 := newTxn(t, false)
-	w2 := tr2
-	refA2, err := w2.Append(0, lsA, 0, ts+interval, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
+	refA2, err := tr2.Append(0, lsA, 0, ts+interval, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 
 	prev := map[storage.SeriesRef]struct{}{refA1: {}, refB1: {}}
@@ -1909,7 +1901,6 @@ func (tt buildTestData) run(t *testing.T) {
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
 		tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-		w := tr
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st
@@ -1918,7 +1909,7 @@ func (tt buildTestData) run(t *testing.T) {
 			})
 			assert.NoError(t, err)
 		}
-		assert.NoError(t, w.Commit())
+		assert.NoError(t, tr.Commit())
 		mds := sink.AllMetrics()
 		if wants[i].ResourceMetrics().Len() == 0 {
 			// Receiver does not emit empty metrics, so will not have anything in the sink.
