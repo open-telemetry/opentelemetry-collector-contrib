@@ -169,7 +169,7 @@ components:
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
+        - host_metrics
         - http_check
         - iis
         - influxdb

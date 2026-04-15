@@ -1,8 +1,8 @@
-host_metrics:
+hostmetrics:
   scrapers:
     cpu:
 
-host_metrics/customname:
+hostmetrics/customname:
   collection_interval: 30s
   scrapers:
     cpu:
