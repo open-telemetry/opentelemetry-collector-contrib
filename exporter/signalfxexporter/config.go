@@ -163,6 +163,7 @@ type DimensionClientConfig struct {
 	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 	Timeout             time.Duration `mapstructure:"timeout"`
 	DropTags            bool          `mapstructure:"drop_tags"`
+	StripK8sLabelPrefix bool          `mapstructure:"strip_k8s_label_prefix"`
 }
 
 func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricTranslator, error) {
