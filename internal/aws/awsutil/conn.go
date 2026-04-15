@@ -31,7 +31,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 		InsecureSkipVerify: noVerify,
 	}
 
-	proxyFunc, err := getProxyFunc(proxyAddress)
+	proxyFunc, err := GetProxyFunc(proxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, err
@@ -56,11 +56,10 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 	return http, err
 }
 
-// getProxyFunc returns an appropriate proxy function for http.Transport.
-// When no explicit proxyAddress is configured, it delegates to
-// http.ProxyFromEnvironment which correctly respects NO_PROXY.
-// When an explicit proxyAddress is configured, it uses http.ProxyURL.
-func getProxyFunc(proxyAddress string) (func(*http.Request) (*url.URL, error), error) {
+// GetProxyFunc returns a proxy function for use in http.Transport.
+// When an explicit proxy address is configured, it returns http.ProxyURL.
+// Otherwise, it returns http.ProxyFromEnvironment which respects NO_PROXY.
+func GetProxyFunc(proxyAddress string) (func(*http.Request) (*url.URL, error), error) {
 	if proxyAddress == "" {
 		return http.ProxyFromEnvironment, nil
 	}
