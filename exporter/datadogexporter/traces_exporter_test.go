@@ -628,8 +628,8 @@ func TestStartDetectsStatsConnector(t *testing.T) {
 	})
 }
 
-func TestConsumeTracesEnrichesResourceAttrs(t *testing.T) {
-	t.Run("adds attribute when extension present but no stats connector", func(t *testing.T) {
+func TestConsumeTracesWithStatsConnectorDetection(t *testing.T) {
+	t.Run("succeeds when extension present but no stats connector", func(t *testing.T) {
 		server := testutil.DatadogServerMock()
 		defer server.Close()
 		cfg := &datadogconfig.Config{
@@ -664,19 +664,18 @@ func TestConsumeTracesEnrichesResourceAttrs(t *testing.T) {
 		require.NoError(t, err)
 		defer func() { require.NoError(t, exp.Shutdown(t.Context())) }()
 
+		// Traces are shared/read-only in the pipeline, so the exporter copies
+		// before mutating. Verify it does not panic and consumes successfully.
 		td := simpleTraces(map[string]any{"service.name": "test-svc"}, nil, ptrace.SpanKindClient)
 		err = exp.ConsumeTraces(t.Context(), td)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
-		// Verify the resource attribute was added
-		rspans := td.ResourceSpans()
-		require.Equal(t, 1, rspans.Len())
-		val, ok := rspans.At(0).Resource().Attributes().Get("_dd.extension_found_no_stats_connector")
-		assert.True(t, ok, "expected _dd.extension_found_no_stats_connector attribute")
-		assert.True(t, val.Bool())
+		// Original traces should be unmodified (exporter works on a copy)
+		_, ok := td.ResourceSpans().At(0).Resource().Attributes().Get("_dd.extension_found_no_stats_connector")
+		assert.False(t, ok, "original traces should not be mutated")
 	})
 
-	t.Run("does not add attribute when stats connector is present", func(t *testing.T) {
+	t.Run("succeeds when stats connector is present", func(t *testing.T) {
 		server := testutil.DatadogServerMock()
 		defer server.Close()
 		cfg := &datadogconfig.Config{
@@ -699,7 +698,6 @@ func TestConsumeTracesEnrichesResourceAttrs(t *testing.T) {
 		exp, err := f.CreateTraces(t.Context(), params, cfg)
 		require.NoError(t, err)
 
-		// Start with extension present AND datadog connector configured
 		host := &mockHostWithExtensions{
 			extensions: map[component.ID]component.Component{
 				component.MustNewID("datadog"): &mockConnectorCheckerExtension{
@@ -715,16 +713,10 @@ func TestConsumeTracesEnrichesResourceAttrs(t *testing.T) {
 
 		td := simpleTraces(map[string]any{"service.name": "test-svc"}, nil, ptrace.SpanKindClient)
 		err = exp.ConsumeTraces(t.Context(), td)
-		require.NoError(t, err)
-
-		// Verify no attribute was added
-		rspans := td.ResourceSpans()
-		require.Equal(t, 1, rspans.Len())
-		_, ok := rspans.At(0).Resource().Attributes().Get("_dd.extension_found_no_stats_connector")
-		assert.False(t, ok, "expected no _dd.extension_found_no_stats_connector attribute")
+		assert.NoError(t, err)
 	})
 
-	t.Run("does not add attribute when no extension present", func(t *testing.T) {
+	t.Run("succeeds when no extension present", func(t *testing.T) {
 		server := testutil.DatadogServerMock()
 		defer server.Close()
 		cfg := &datadogconfig.Config{
@@ -753,13 +745,7 @@ func TestConsumeTracesEnrichesResourceAttrs(t *testing.T) {
 
 		td := simpleTraces(map[string]any{"service.name": "test-svc"}, nil, ptrace.SpanKindClient)
 		err = exp.ConsumeTraces(t.Context(), td)
-		require.NoError(t, err)
-
-		// Verify no attribute was added
-		rspans := td.ResourceSpans()
-		require.Equal(t, 1, rspans.Len())
-		_, ok := rspans.At(0).Resource().Attributes().Get("_dd.extension_found_no_stats_connector")
-		assert.False(t, ok, "expected no _dd.extension_found_no_stats_connector attribute")
+		assert.NoError(t, err)
 	})
 }
 

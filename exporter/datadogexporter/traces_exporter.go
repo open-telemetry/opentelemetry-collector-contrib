@@ -131,6 +131,13 @@ func (exp *traceExporter) consumeTraces(
 	td ptrace.Traces,
 ) (err error) {
 	defer func() { err = exp.scrubber.Scrub(err) }()
+	// If we need to enrich resource attributes, copy the traces data first
+	// since the pipeline shares it read-only across exporters.
+	if exp.extensionFoundNoStatsConnector {
+		cp := ptrace.NewTraces()
+		td.CopyTo(cp)
+		td = cp
+	}
 	if exp.cfg.HostMetadata.Enabled {
 		// start host metadata with resource attributes from
 		// the first payload.
