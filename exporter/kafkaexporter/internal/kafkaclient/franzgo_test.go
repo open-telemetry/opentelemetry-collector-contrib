@@ -12,7 +12,9 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
@@ -64,4 +66,47 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	// Verify sizes appear in the error string for pipeline-level visibility.
 	assert.Contains(t, err.Error(), "record size")
 	assert.Contains(t, err.Error(), "exceeds max")
+}
+
+func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
+	recordHeaders := configopaque.MapList{
+		{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
+		{Name: "shared-key", Value: configopaque.String("static-value-override")},
+	}
+
+	md := client.NewMetadata(map[string][]string{
+		"dynamic-key-ONLY": {"dynamic-value"},
+		"shared-key":       {"dynamic-value-wins"},
+	})
+	ctx := client.NewContext(t.Context(), client.Info{Metadata: md})
+
+	msgs := Messages{
+		Count: 1,
+		TopicMessages: []TopicMessages{{
+			Topic: "test-topic",
+			Messages: []marshaler.Message{{
+				Value: []byte("test-payload"),
+			}},
+		}},
+	}
+
+	records := makeFranzMessages(msgs, recordHeaders)
+	setMessageHeaders(ctx, records, []string{"dynamic-key-ONLY", "shared-key"})
+
+	require.Len(t, records, 1, "expected exactly 1 record")
+	record := records[0]
+
+	assert.Equal(t, "test-topic", record.Topic)
+	assert.Equal(t, []byte("test-payload"), record.Value)
+
+	require.Len(t, record.Headers, 4, "expected exactly 4 headers on the record")
+
+	headerMap := make(map[string]string)
+	for _, h := range record.Headers {
+		headerMap[h.Key] = string(h.Value)
+	}
+
+	assert.Equal(t, "static-value", headerMap["static-key-ONLY"], "static headers unique key failed")
+	assert.Equal(t, "dynamic-value", headerMap["dynamic-key-ONLY"], "dynamic headers unique key failed")
+	assert.Equal(t, "dynamic-value-wins", headerMap["shared-key"], "Precedence for common key failed")
 }

@@ -218,6 +218,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
+    - processor/spanpruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/tencentcvmdetector
@@ -269,7 +270,7 @@ components:
     - receiver/googlecloudspanner
     - receiver/haproxy
     - receiver/hostmetrics
-    - receiver/httpcheck
+    - receiver/http_check
     - receiver/huaweicloudcesreceiver
     - receiver/icmpcheckreceiver
     - receiver/iis
@@ -290,7 +291,7 @@ components:
     - receiver/mongodb
     - receiver/mongodb_atlas
     - receiver/mysql
-    - receiver/namedpipe
+    - receiver/named_pipe
     - receiver/netflow
     - receiver/nginx
     - receiver/nsxt
@@ -328,15 +329,15 @@ components:
     - receiver/stef
     - receiver/syslog
     - receiver/systemd
+    - receiver/tcp_log
     - receiver/tcpcheck
-    - receiver/tcplog
-    - receiver/tlscheck
-    - receiver/udplog
+    - receiver/tls_check
+    - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
     - receiver/wavefront
     - receiver/webhookevent
-    - receiver/windowseventlog
+    - receiver/windows_event_log
     - receiver/windowsperfcounters
     - receiver/windowsservice
     - receiver/yang_grpc
