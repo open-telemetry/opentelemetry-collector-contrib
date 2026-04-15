@@ -7,6 +7,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -775,6 +776,27 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			}
 		}
 
+		var queryPlan string
+		var ok bool
+		if queryPlan, ok = m.queryPlanCache.Get(sample.processlistDB + "-" + sample.digest); !ok {
+			queryPlan = m.sqlclient.explainQuery(
+				obfuscatedQuery,      // reused — already obfuscated above
+				sample.sqlText,       // concrete SQL for EXPLAIN execution
+				sample.processlistDB, // schema for USE statement
+				sample.digest,        // for logging
+				m.logger,
+			)
+
+			if queryPlan != "" {
+				var planErr error
+				queryPlan, planErr = m.obfuscator.obfuscatePlan(queryPlan)
+				if planErr != nil {
+					m.logger.Error("Failed to obfuscate query plan", zap.Error(planErr))
+				}
+			}
+
+		}
+
 		m.lb.RecordDbServerQuerySampleEvent(
 			recordCtx,
 			now,
@@ -786,6 +808,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			sample.processlistState,
 			obfuscatedQuery,
 			sample.digest,
+			queryPlan,
 			sample.digest,
 			sample.eventID,
 			sample.waitEvent,
