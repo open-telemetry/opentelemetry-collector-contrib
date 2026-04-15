@@ -125,6 +125,7 @@ func exporterFactory(cfg *Config, logger *zap.Logger) exporterFunc {
 func createExporter(cfg *Config, logger *zap.Logger) (sdkmetric.Exporter, error) {
 	var exp sdkmetric.Exporter
 	var err error
+
 	if cfg.UseHTTP {
 		var exporterOpts []otlpmetrichttp.Option
 
