@@ -53,8 +53,8 @@ func Test_getGenericMetadata(t *testing.T) {
 		"k8s.owner-kind-1.uid":            "owner1",
 		"k8s.owner-kind-2.name":           "owner2",
 		"k8s.owner-kind-2.uid":            "owner2",
-		"foo":                             "bar",
-		"foo1":                            "",
+		"k8s.resourcetype.label.foo":      "bar",
+		"k8s.resourcetype.label.foo1":     "",
 	}, rm.Metadata)
 }
 
