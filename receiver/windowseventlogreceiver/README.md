@@ -48,6 +48,8 @@ This receiver tails and parses logs from windows event log API using the
 | `resolve_sids.enabled`              | `false`      | If `true`, automatically resolves SIDs to user and group names in Windows event logs.                                                                                                                                          |
 | `resolve_sids.cache_size`           | `10000`      | Maximum number of SID-to-name mappings to cache in memory. Older entries are evicted using LRU policy.                                                                                                                         |
 | `resolve_sids.cache_ttl`            | `15m`        | Time-to-live for cached SID mappings. After this duration, SIDs will be re-resolved from the Windows LSA API.                                                                                                                  |
+| `discover_domain_controllers`       | `false`      | Automatically discover and collect  events from Active Directory domain controllers.                                                                                                                                           |
+
 
 ### Feature Gates
 
@@ -77,6 +79,14 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 #### Simple
 
 Configuration:
+```yaml
+receivers:
+    windows_event_log:
+        channel: application
+```
+
+The deprecated component type `windowseventlog` is still accepted:
+
 ```yaml
 receivers:
     windowseventlog:
@@ -169,7 +179,7 @@ If collection of the local event log is desired, a separate receiver needs to be
 Single server configuration:
 ```yaml
 receivers:
-    windowseventlog:
+    windows_event_log:
         channel: application
         remote:
             server:   "remote-server"
@@ -186,7 +196,7 @@ The following example only forwards logs from the `Application` from `foo` or `b
 
 ```yaml
 receivers:
-  windowseventlog/query:
+  windows_event_log/query:
     query: |
       <QueryList>
         <Query Id="0">
@@ -210,7 +220,7 @@ Windows Event Logs often contain Security Identifiers (SIDs) instead of readable
 **Configuration:**
 ```yaml
 receivers:
-  windowseventlog:
+  windows_event_log:
     channel: Security
     resolve_sids:
       enabled: true        # Enable SID resolution

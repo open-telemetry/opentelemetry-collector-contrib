@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sync"
@@ -191,7 +192,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 
 // fillLogsBuffer fills the buffer with Splunk events until the buffer is full or all logs are processed.
 func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterState, []error) {
-	var b []byte
 	var permanentErrors []error
 
 	for i := is.resource; i < logs.ResourceLogs().Len(); i++ {
@@ -203,8 +203,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 				is.record = 0 // Reset record index for next library.
 				logRecord := sl.LogRecords().At(k)
 
+				var err error
 				if c.config.ExportRaw {
-					b = []byte(logRecord.Body().AsString() + "\n")
+					b := []byte(logRecord.Body().AsString() + "\n")
+					_, err = buf.Write(b)
 				} else {
 					// Parsing log record to Splunk event.
 					event := translator.LogToSplunkEvent(rl.Resource(), logRecord, c.config.OtelAttrsToHec, c.config.HecFields, c.config.Source, c.config.SourceType, c.config.Index)
@@ -214,16 +216,15 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 					}
 
 					// JSON encoding event and writing to buffer.
-					var err error
-					b, err = marshalEvent(event, c.config.MaxEventSize)
-					if err != nil {
-						permanentErrors = append(permanentErrors, consumererror.NewPermanent(err))
+					var jsonErr error
+					jsonErr, err = marshalEvent(event, c.config.MaxEventSize, buf)
+					if jsonErr != nil {
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(jsonErr))
 						continue
 					}
 				}
 
 				// Continue adding events to buffer up to capacity.
-				_, err := buf.Write(b)
 				if err == nil {
 					continue
 				}
@@ -233,7 +234,7 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), c.config.MaxContentLengthLogs)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthLogs)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors,
@@ -248,7 +249,6 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
 
-	tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
 	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
@@ -260,20 +260,18 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 
 				// Parsing metric record to Splunk event.
 				events := translator.MetricToSplunkEvent(rm.Resource(), metric, c.logger, c.config.OtelAttrsToHec, c.config.Source, c.config.SourceType, c.config.Index)
-				tempBuf.Reset()
+				var err error
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
-					b, err := marshalEvent(event, c.config.MaxEventSize)
-					if err != nil {
-						permanentErrors = append(permanentErrors, consumererror.NewPermanent(err))
+					var jsonErr error
+					jsonErr, err = marshalEvent(event, c.config.MaxEventSize, buf)
+					if jsonErr != nil {
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(jsonErr))
 						continue
 					}
-					tempBuf.Write(b)
 				}
 
 				// Continue adding events to buffer up to capacity.
-				b := tempBuf.Bytes()
-				_, err := buf.Write(b)
 				if err == nil {
 					continue
 				}
@@ -283,7 +281,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
@@ -301,12 +299,11 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*translator.Event, buf b
 	for i := is.record; i < len(events); i++ {
 		event := events[i]
 		// JSON encoding event and writing to buffer.
-		b, jsonErr := marshalEvent(event, c.config.MaxEventSize)
+		jsonErr, err := marshalEvent(event, c.config.MaxEventSize, buf)
 		if jsonErr != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(jsonErr))
 			continue
 		}
-		_, err := buf.Write(b)
 		if errors.Is(err, errOverCapacity) {
 			if !buf.Empty() {
 				return iterState{
@@ -316,7 +313,7 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*translator.Event, buf b
 			}
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-					" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
+					" content length %d bytes", buf.Len(), c.config.MaxContentLengthMetrics)))
 			return iterState{
 				record: i + 1,
 				done:   i+1 != len(events),
@@ -346,14 +343,13 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 				event := translator.SpanToSplunkEvent(rs.Resource(), span, c.config.OtelAttrsToHec, c.config.Source, c.config.SourceType, c.config.Index)
 
 				// JSON encoding event and writing to buffer.
-				b, err := marshalEvent(event, c.config.MaxEventSize)
-				if err != nil {
-					permanentErrors = append(permanentErrors, consumererror.NewPermanent(err))
+				jsonErr, err := marshalEvent(event, c.config.MaxEventSize, buf)
+				if jsonErr != nil {
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(jsonErr))
 					continue
 				}
 
 				// Continue adding events to buffer up to capacity.
-				_, err = buf.Write(b)
 				if err == nil {
 					continue
 				}
@@ -363,7 +359,7 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), c.config.MaxContentLengthTraces)))
+							" content length %d bytes", buf.Len(), c.config.MaxContentLengthTraces)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
@@ -677,14 +673,26 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 	}
 }
 
+var jsonBufferPool = sync.Pool{
+	New: func() any {
+		return new(bytes.Buffer)
+	},
+}
+
 // marshalEvent marshals an event to JSON
-func marshalEvent(event *translator.Event, sizeLimit uint) ([]byte, error) {
-	b, err := json.Marshal(event)
-	if err != nil {
+func marshalEvent(event *translator.Event, sizeLimit uint, writer io.Writer) (error, error) {
+	buf := jsonBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer jsonBufferPool.Put(buf)
+
+	enc := json.NewEncoder(buf)
+	if err := enc.Encode(event); err != nil {
 		return nil, err
 	}
-	if uint(len(b)) > sizeLimit {
-		return nil, fmt.Errorf("event size %d exceeds limit %d", len(b), sizeLimit)
+	if uint(buf.Len()) > sizeLimit {
+		return fmt.Errorf("event size %d exceeds limit %d", buf.Len(), sizeLimit), nil
 	}
-	return b, nil
+
+	_, err := writer.Write(buf.Bytes())
+	return nil, err
 }
