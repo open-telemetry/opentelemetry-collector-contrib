@@ -78,7 +78,7 @@ processors:
     # Attribute loss exemplar sampling rate
     # Fraction of attribute-loss metric recordings that include trace exemplars
     # Range: 0.0 (disabled) to 1.0 (always)
-    # Default: 0.01 (1%)
+    # Default: 0 (disabled)
     attribute_loss_exemplar_sample_rate: 0.01
 ```
 
@@ -92,7 +92,7 @@ processors:
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
 | `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for latency histogram buckets |
 | `enable_attribute_loss_analysis` | bool | false | Enable attribute loss analysis (records attribute-loss metrics and adds summary span loss attributes) |
-| `attribute_loss_exemplar_sample_rate` | float64 | 0.01 | Fraction of attribute-loss metric recordings with exemplars (0.0-1.0). Only applies when `enable_attribute_loss_analysis` is true. |
+| `attribute_loss_exemplar_sample_rate` | float64 | 0 (disabled) | Fraction of attribute-loss metric recordings with exemplars (0.0-1.0). Only applies when `enable_attribute_loss_analysis` is true. |
 
 ### Glob Pattern Support
 
