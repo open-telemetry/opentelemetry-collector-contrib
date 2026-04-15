@@ -83,6 +83,130 @@ CloudWatch Logs events are handled in the following manner:
   - Default encoding: Parse CloudWatch Logs messages to OpenTelemetry log records
   - Custom encoding: Use specified encoding extension (for example, `aws_logs_encoding` for AWS log formats)
 
+## Deployment
+
+The following example shows how to deploy the collector as an AWS Lambda function that receives logs from a CloudWatch Logs subscription filter, using the AWS CLI.
+
+### Build the collector binary
+
+Use the [OpenTelemetry Collector Builder (OCB)](https://opentelemetry.io/docs/collector/custom-collector/) to build a minimal binary containing only the required components.
+This keeps the binary small enough for Lambda's deployment package size limit.
+
+Create a builder manifest:
+
+```shell
+cat > builder-config.yaml << 'EOF'
+dist:
+  name: collector
+  output_path: .
+  otelcol_version: 0.149.0
+
+receivers:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver v0.149.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.149.0
+EOF
+```
+
+Build the binary for Lambda:
+
+```shell
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 builder --config=builder-config.yaml
+```
+
+### Package and deploy
+
+The Lambda `provided.al2023` runtime executes a binary named `bootstrap`.
+Create a wrapper script that passes the `--config` flag to the collector:
+
+```shell
+cat > bootstrap << 'EOF'
+#!/bin/sh
+exec /var/task/collector --config /var/task/collector-config.yaml "$@"
+EOF
+chmod +x bootstrap
+```
+
+Write a collector configuration:
+
+```shell
+cat > collector-config.yaml << 'EOF'
+receivers:
+  awslambda:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs:
+      receivers: [awslambda]
+      exporters: [debug]
+EOF
+
+zip function.zip bootstrap collector collector-config.yaml
+```
+
+Create an IAM role for the Lambda function:
+
+```shell
+aws iam create-role \
+  --role-name otel-lambda-role \
+  --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [{
+      "Effect": "Allow",
+      "Principal": {"Service": "lambda.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+    }]
+  }'
+
+aws iam attach-role-policy \
+  --role-name otel-lambda-role \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+```
+
+Create the Lambda function:
+
+```shell
+aws lambda create-function \
+  --function-name otel-lambda-cloudwatch-logs \
+  --runtime provided.al2023 \
+  --handler bootstrap \
+  --architectures arm64 \
+  --zip-file fileb://function.zip \
+  --role arn:aws:iam::<ACCOUNT_ID>:role/otel-lambda-role \
+  --timeout 30
+```
+
+### Set up the CloudWatch Logs trigger
+
+Grant CloudWatch Logs permission to invoke the Lambda function:
+
+```shell
+aws lambda add-permission \
+  --function-name otel-lambda-cloudwatch-logs \
+  --statement-id cw-logs-trigger \
+  --action lambda:InvokeFunction \
+  --principal logs.amazonaws.com \
+  --source-arn "arn:aws:logs:<REGION>:<ACCOUNT_ID>:log-group:<LOG_GROUP_NAME>:*"
+```
+
+Create a subscription filter to forward log events to the Lambda:
+
+```shell
+aws logs put-subscription-filter \
+  --log-group-name <LOG_GROUP_NAME> \
+  --filter-name otel-lambda-filter \
+  --filter-pattern "" \
+  --destination-arn "arn:aws:lambda:<REGION>:<ACCOUNT_ID>:function:otel-lambda-cloudwatch-logs"
+```
+
+An empty `--filter-pattern` forwards all log events.
+See [Filter pattern syntax](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html) for filtering options.
+
 ### Configurations
 
 The following receiver configuration parameters are supported.

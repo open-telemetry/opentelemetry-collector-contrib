@@ -1,5 +1,0 @@
-change_type: enhancement
-component: receiver/hostmetrics
-note: Enable re-aggregation for system scraper
-issues: [46624]
-subtext: Enabled the reaggregation feature gate for the system scraper.

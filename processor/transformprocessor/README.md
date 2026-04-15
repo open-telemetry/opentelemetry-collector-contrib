@@ -43,7 +43,7 @@ Each statement can access and transform telemetry using functions, and allows th
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements: []
+  <trace|metric|log|profile>_statements: []
 ```
 
 The Transform Processor's primary configuration section is broken down by signal (traces, metrics, logs, and profiles)
@@ -88,7 +88,7 @@ Format:
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements:
+  <trace|metric|log|profile>_statements:
     - string
     - string
     - string
@@ -671,7 +671,7 @@ The primary use case of the `set_semconv_span_name()` function is to address hig
 
 Parameters:
 
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. `1.37.0` is currently the only supported version.
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. Versions `1.37.0` to `1.40.0` are supported.
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:
@@ -686,7 +686,7 @@ Sanitization examples:
            http.route: /api/v1/users/{id}
            url.path: /api/v1/users/123
         ```
-   * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+   * Span name after applying `set_semconv_span_name("1.40.0")`: `GET /api/v1/users/{id}`
    * No loss of information on `span.name` occurs because the recommended attribute `http.route` is present.
 * Span with high-cardinality name lacking recommended semantic convention attribute `http.route`
     * Incoming span:
@@ -697,7 +697,7 @@ Sanitization examples:
             http.request.method: GET
             url.path: /api/v1/users/123
          ```
-    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET`
+    * Span name after applying `set_semconv_span_name("1.40.0")`: `GET`
     * Loss of information on `span.name` occurs because the recommended attribute `http.route` is missing.
     Note that this loss of information is mitigated if the instrumentation produced attributes that contain the URL path like `url.path` or `url.full`.
 * Compliant span name is unchanged
@@ -710,25 +710,26 @@ Sanitization examples:
             http.route: /api/v1/users/{id}
             url.path: /api/v1/users/123
          ```
-    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+    * Span name after applying `set_semconv_span_name("1.40.0")`: `GET /api/v1/users/{id}`
 
 
-Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.37.0 semantic conventions:
+Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.39.0 semantic conventions:
 
-| v1.37.0 Attribute     | Older attribute        |
-|-----------------------|------------------------|
-| `http.request.method` | `http.method`          |
-| `rpc.method`          | `rpc.grpc.method`      |
-| `rpc.service`         | `rpc.grpc.service`     |
-| `db.system.name`      | `db.system`            |
-| `db.operation.name`   | `db.operation`         |
-| `db.collection.name`  | `db.name`              |
+| v1.40.0 Attribute     | Older attribute    |
+|-----------------------|--------------------|
+| `http.request.method` | `http.method`      |
+| `rpc.method`          | `rpc.grpc.method`  |
+| `rpc.service`         | `rpc.grpc.service` |
+| `rpc.system.name`     | `rpc.system`       |
+| `db.system.name`      | `db.system`        |
+| `db.operation.name`   | `db.operation`     |
+| `db.collection.name`  | `db.name`          |
 
 Examples:
 
-- `set_semconv_span_name("1.37.0")`
+- `set_semconv_span_name("1.40.0")`
 
-- `set_semconv_span_name("1.37.0", "original_span_name")`
+- `set_semconv_span_name("1.40.0", "original_span_name")`
 
 ## Examples
 

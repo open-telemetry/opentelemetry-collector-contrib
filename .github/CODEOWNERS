@@ -66,6 +66,7 @@ exporter/googlecloudexporter/                                    @open-telemetry
 exporter/googlecloudpubsubexporter/                              @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/googlecloudstorageexporter/                             @open-telemetry/collector-contrib-approvers @constanca-m @braydonk
 exporter/googlemanagedprometheusexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
+exporter/googlesecopsexporter/                                   @open-telemetry/collector-contrib-approvers @braydonk @colelaven @dpaasman00 @mrsillydog
 exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
 exporter/influxdbexporter/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/kafkaexporter/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw @paulojmdias
@@ -80,7 +81,7 @@ exporter/prometheusremotewriteexporter/                          @open-telemetry
 exporter/pulsarexporter/                                         @open-telemetry/collector-contrib-approvers @dao-jun
 exporter/rabbitmqexporter/                                       @open-telemetry/collector-contrib-approvers @atoulme
 exporter/sematextexporter/                                       @open-telemetry/collector-contrib-approvers @AkhigbeEromo
-exporter/sentryexporter/                                         @open-telemetry/collector-contrib-approvers @AbhiPrasad
+exporter/sentryexporter/                                         @open-telemetry/collector-contrib-approvers @AbhiPrasad @giortzisg
 exporter/signalfxexporter/                                       @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 exporter/splunkhecexporter/                                      @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 exporter/stefexporter/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @dmitryax
@@ -233,6 +234,7 @@ processor/resourcedetectionprocessor/internal/vultr/             @open-telemetry
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @dmitryax
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96 @dineshg13
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
+processor/spanpruningprocessor/                                  @open-telemetry/collector-contrib-approvers @portertech
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @pankaj101A @jagan2221
 processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech @Logiraptor @jmacd
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu

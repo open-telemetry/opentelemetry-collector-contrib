@@ -117,6 +117,7 @@ exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
 exporter/googlecloudstorageexporter
 exporter/googlemanagedprometheusexporter
+exporter/googlesecopsexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
 pkg/kafka/configkafka
@@ -232,6 +233,7 @@ processor/remotetapprocessor
 processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
+processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver
