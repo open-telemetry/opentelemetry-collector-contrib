@@ -54,35 +54,37 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 
 	sink := emittest.NewSink(emittest.WithCallBuffer(cfg.sinkChanSize))
 	return &Factory{
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		FromBeginning:     cfg.fromBeginning,
-		FingerprintSize:   cfg.fingerprintSize,
-		InitialBufferSize: cfg.initialBufferSize,
-		MaxLogSize:        cfg.maxLogSize,
-		Encoding:          cfg.encoding,
-		SplitFunc:         splitFunc,
-		TrimFunc:          cfg.trimFunc,
-		FlushTimeout:      cfg.flushPeriod,
-		EmitFunc:          sink.Callback,
-		Attributes:        cfg.attributes,
-		Compression:       cfg.compression,
+		TelemetrySettings:    componenttest.NewNopTelemetrySettings(),
+		FromBeginning:        cfg.fromBeginning,
+		FingerprintSize:      cfg.fingerprintSize,
+		InitialBufferSize:    cfg.initialBufferSize,
+		MaxLogSize:           cfg.maxLogSize,
+		TruncateOnMaxLogSize: cfg.truncateOnMaxLogSize,
+		Encoding:             cfg.encoding,
+		SplitFunc:            splitFunc,
+		TrimFunc:             cfg.trimFunc,
+		FlushTimeout:         cfg.flushPeriod,
+		EmitFunc:             sink.Callback,
+		Attributes:           cfg.attributes,
+		Compression:          cfg.compression,
 	}, sink
 }
 
 type testFactoryOpt func(*testFactoryCfg)
 
 type testFactoryCfg struct {
-	fromBeginning     bool
-	fingerprintSize   int
-	initialBufferSize int
-	maxLogSize        int
-	encoding          encoding.Encoding
-	splitCfg          split.Config
-	trimFunc          trim.Func
-	flushPeriod       time.Duration
-	sinkChanSize      int
-	attributes        attrs.Resolver
-	compression       string
+	fromBeginning        bool
+	fingerprintSize      int
+	initialBufferSize    int
+	maxLogSize           int
+	truncateOnMaxLogSize bool
+	encoding             encoding.Encoding
+	splitCfg             split.Config
+	trimFunc             trim.Func
+	flushPeriod          time.Duration
+	sinkChanSize         int
+	attributes           attrs.Resolver
+	compression          string
 }
 
 func withFingerprintSize(size int) testFactoryOpt {
@@ -106,6 +108,12 @@ func withInitialBufferSize(size int) testFactoryOpt {
 func withMaxLogSize(size int) testFactoryOpt {
 	return func(c *testFactoryCfg) {
 		c.maxLogSize = size
+	}
+}
+
+func withTruncateOnMaxLogSize(truncate bool) testFactoryOpt {
+	return func(c *testFactoryCfg) {
+		c.truncateOnMaxLogSize = truncate
 	}
 }
 

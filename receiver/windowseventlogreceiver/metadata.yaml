@@ -1,5 +1,6 @@
 display_name: Windows Event Log Receiver
-type: windowseventlog
+type: windows_event_log
+deprecated_type: windowseventlog
 
 description: |
   This receiver tails and parses logs from windows event log API using the
@@ -18,3 +19,12 @@ tests:
   config:
     start_at: end
     channel: application
+
+feature_gates:
+  - id: domainControllers.autodiscovery
+    stage: alpha
+    description: >-
+      When enabled and is remote automatically discover domain controllers through joined controllers and 
+      start collecting logs from specified channel.
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156
