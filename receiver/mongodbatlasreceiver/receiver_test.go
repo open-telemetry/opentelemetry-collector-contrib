@@ -143,3 +143,36 @@ func TestShouldProcessCluster(t *testing.T) {
 		})
 	}
 }
+
+// TestNewMongoDBAtlasReceiverPopulatesClusterFilters is a regression test for
+// the range-copy bug: cfg.Projects is []ProjectConfig (value slice), so a
+// plain `for _, p := range cfg.Projects` loop handed populateIncludesAndExcludes
+// a copy of each element, leaving the original maps nil.  The fix uses
+// index-based iteration so the original slice elements are updated in place.
+func TestNewMongoDBAtlasReceiverPopulatesClusterFilters(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.Projects = []ProjectConfig{
+		{
+			Name:            "proj-include",
+			IncludeClusters: []string{"ClusterA", "ClusterB"},
+		},
+		{
+			Name:            "proj-exclude",
+			ExcludeClusters: []string{"ClusterX"},
+		},
+	}
+
+	recv, err := newMongoDBAtlasReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+
+	// After receiver creation the include/exclude maps must be populated on the
+	// original ProjectConfig values (not on ephemeral range-loop copies).
+	require.True(t, shouldProcessCluster(&recv.cfg.Projects[0], "ClusterA"),
+		"ClusterA should be included for proj-include")
+	require.False(t, shouldProcessCluster(&recv.cfg.Projects[0], "ClusterC"),
+		"ClusterC should not be included for proj-include (not in include list)")
+	require.True(t, shouldProcessCluster(&recv.cfg.Projects[1], "ClusterA"),
+		"ClusterA should be processed for proj-exclude (not in exclude list)")
+	require.False(t, shouldProcessCluster(&recv.cfg.Projects[1], "ClusterX"),
+		"ClusterX should be excluded for proj-exclude")
+}
