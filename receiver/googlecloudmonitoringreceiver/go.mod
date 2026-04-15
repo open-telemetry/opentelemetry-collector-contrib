@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.150.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260401001100-f93e5f3e9f0f
+	google.golang.org/genproto/googleapis/api v0.0.0-20260401024825-9d38bb4040a9
 )
 
 require (
@@ -50,7 +50,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/monitoring v1.25.0
+	cloud.google.com/go/monitoring v1.27.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -76,7 +76,7 @@ require (
 	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
-	google.golang.org/api v0.275.0
+	google.golang.org/api v0.276.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260401024825-9d38bb4040a9 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11
