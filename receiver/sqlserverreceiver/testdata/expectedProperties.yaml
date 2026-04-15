@@ -15,7 +15,7 @@ resourceMetrics:
             stringValue: 0.0.0.0:1433
         - key: service.name
           value:
-            stringValue: microsoft.sql_server
+            stringValue: unknown_service:microsoft.sql_server
         - key: sqlserver.instance.name
           value:
             stringValue: ad8fb2b53dce
