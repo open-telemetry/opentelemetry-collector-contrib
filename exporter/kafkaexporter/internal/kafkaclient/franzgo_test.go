@@ -36,7 +36,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 
-	producer := NewFranzSyncProducer(client, nil, maxMessageBytes, componenttest.NewNopHost())
+	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, componenttest.NewNopHost())
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
