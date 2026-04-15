@@ -6,6 +6,7 @@ package spanpruningprocessor
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -244,6 +245,88 @@ func TestLeafSpanPruning_DurationStats(t *testing.T) {
 
 	totalDuration, _ := attrs.Get("aggregation.duration_total_ns")
 	assert.Equal(t, int64(600), totalDuration.Int())
+}
+
+func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.AggregationHistogramBuckets = []time.Duration{
+		10 * time.Millisecond,
+		50 * time.Millisecond,
+		100 * time.Millisecond,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithKnownDurations(t, []int64{
+		int64(5 * time.Millisecond),
+		int64(15 * time.Millisecond),
+		int64(25 * time.Millisecond),
+		int64(75 * time.Millisecond),
+		int64(150 * time.Millisecond),
+	})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+
+	summarySpan, found := findSummarySpan(td)
+	require.True(t, found)
+
+	attrs := summarySpan.Attributes()
+
+	bounds, exists := attrs.Get("aggregation.histogram_bucket_bounds_s")
+	require.True(t, exists)
+	require.Equal(t, 3, bounds.Slice().Len())
+	expectedBounds := []float64{0.01, 0.05, 0.1}
+	for i, expected := range expectedBounds {
+		assert.InDelta(t, expected, bounds.Slice().At(i).Double(), 1e-9)
+	}
+
+	counts, exists := attrs.Get("aggregation.histogram_bucket_counts")
+	require.True(t, exists)
+	expectedCounts := []int64{1, 3, 4, 5}
+	require.Equal(t, len(expectedCounts), counts.Slice().Len())
+	for i, expected := range expectedCounts {
+		assert.Equal(t, expected, counts.Slice().At(i).Int())
+	}
+}
+
+func TestLeafSpanPruningProcessorWithHistogramDisabled(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.AggregationHistogramBuckets = []time.Duration{}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithKnownDurations(t, []int64{
+		int64(5 * time.Millisecond),
+		int64(15 * time.Millisecond),
+		int64(25 * time.Millisecond),
+		int64(75 * time.Millisecond),
+		int64(150 * time.Millisecond),
+	})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+
+	summarySpan, found := findSummarySpan(td)
+	require.True(t, found)
+
+	attrs := summarySpan.Attributes()
+
+	_, exists := attrs.Get("aggregation.histogram_bucket_bounds_s")
+	assert.False(t, exists)
+
+	_, exists = attrs.Get("aggregation.histogram_bucket_counts")
+	assert.False(t, exists)
 }
 
 func TestLeafSpanPruning_GroupByNonStringAttributes(t *testing.T) {

@@ -6,6 +6,7 @@ package spanpruningprocessor
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,6 +15,28 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor/internal/metadata"
 )
+
+var defaultHistogramBuckets = []time.Duration{
+	5 * time.Millisecond,
+	10 * time.Millisecond,
+	25 * time.Millisecond,
+	50 * time.Millisecond,
+	100 * time.Millisecond,
+	250 * time.Millisecond,
+	500 * time.Millisecond,
+	time.Second,
+	2500 * time.Millisecond,
+	5 * time.Second,
+	10 * time.Second,
+}
+
+var customHistogramBuckets = []time.Duration{
+	10 * time.Millisecond,
+	50 * time.Millisecond,
+	100 * time.Millisecond,
+	500 * time.Millisecond,
+	time.Second,
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -26,19 +49,21 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				GroupByAttributes:          []string{"db.operation"},
-				MinSpansToAggregate:        5,
-				MaxParentDepth:             1,
-				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:           []string{"db.operation"},
+				MinSpansToAggregate:         5,
+				MaxParentDepth:              1,
+				AggregationAttributePrefix:  "aggregation.",
+				AggregationHistogramBuckets: defaultHistogramBuckets,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
-				GroupByAttributes:          []string{"db.operation", "db.name"},
-				MinSpansToAggregate:        3,
-				MaxParentDepth:             1,
-				AggregationAttributePrefix: "batch.",
+				GroupByAttributes:           []string{"db.operation", "db.name"},
+				MinSpansToAggregate:         3,
+				MaxParentDepth:              1,
+				AggregationAttributePrefix:  "batch.",
+				AggregationHistogramBuckets: customHistogramBuckets,
 			},
 		},
 	}
@@ -152,6 +177,56 @@ func TestConfig_Validate(t *testing.T) {
 				MinSpansToAggregate:        2,
 				AggregationAttributePrefix: "aggregation.",
 				MaxParentDepth:             -1,
+			},
+			expectError: false,
+		},
+		{
+			name: "valid histogram buckets",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				AggregationHistogramBuckets: []time.Duration{
+					10 * time.Millisecond,
+					50 * time.Millisecond,
+					100 * time.Millisecond,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "negative histogram bucket value",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				AggregationHistogramBuckets: []time.Duration{
+					10 * time.Millisecond,
+					-1 * time.Millisecond,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "unsorted histogram buckets",
+			config: &Config{
+				MinSpansToAggregate:        2,
+				AggregationAttributePrefix: "aggregation.",
+				GroupByAttributes:          []string{"db.operation"},
+				AggregationHistogramBuckets: []time.Duration{
+					100 * time.Millisecond,
+					50 * time.Millisecond,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "empty histogram buckets",
+			config: &Config{
+				MinSpansToAggregate:         2,
+				AggregationAttributePrefix:  "aggregation.",
+				GroupByAttributes:           []string{"db.operation"},
+				AggregationHistogramBuckets: []time.Duration{},
 			},
 			expectError: false,
 		},

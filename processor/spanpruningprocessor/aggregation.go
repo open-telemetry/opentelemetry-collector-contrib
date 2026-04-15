@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"math/rand/v2"
 	"sort"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -172,6 +173,21 @@ func (p *spanPruningProcessor) createSummarySpanWithParent(group aggregationGrou
 	newSpan.Attributes().PutInt(prefix+"duration_total_ns", int64(data.sumDuration))
 	if data.count > 0 {
 		newSpan.Attributes().PutInt(prefix+"duration_avg_ns", int64(data.sumDuration)/data.count)
+	}
+
+	// Add histogram attributes if enabled.
+	if len(p.config.AggregationHistogramBuckets) > 0 {
+		// Add bucket bounds in seconds.
+		bucketBoundsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_bounds_s")
+		for _, bucket := range p.config.AggregationHistogramBuckets {
+			bucketBoundsSlice.AppendEmpty().SetDouble(float64(bucket) / float64(time.Second))
+		}
+
+		// Add cumulative bucket counts.
+		bucketCountsSlice := newSpan.Attributes().PutEmptySlice(prefix + "histogram_bucket_counts")
+		for _, count := range data.bucketCounts {
+			bucketCountsSlice.AppendEmpty().SetInt(count)
+		}
 	}
 
 	return newSpan
