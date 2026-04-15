@@ -20,7 +20,7 @@ func TestGetProxyFunc(t *testing.T) {
 		t.Setenv("HTTPS_PROXY", "http://env-https-proxy:8080")
 		t.Setenv("NO_PROXY", "")
 
-		fn, err := getProxyFunc("http://explicit:9999")
+		fn, err := GetProxyFunc("http://explicit:9999")
 		require.NoError(t, err)
 		require.NotNil(t, fn)
 
@@ -34,7 +34,7 @@ func TestGetProxyFunc(t *testing.T) {
 		t.Setenv("HTTPS_PROXY", "http://env-https-proxy:8080")
 		t.Setenv("NO_PROXY", "")
 
-		fn, err := getProxyFunc("")
+		fn, err := GetProxyFunc("")
 		require.NoError(t, err)
 		require.NotNil(t, fn)
 
@@ -46,7 +46,7 @@ func TestGetProxyFunc(t *testing.T) {
 	})
 
 	t.Run("InvalidProxyAddressReturnsError", func(t *testing.T) {
-		fn, err := getProxyFunc("http://bad-percent-encoding%")
+		fn, err := GetProxyFunc("http://bad-percent-encoding%")
 		assert.Error(t, err)
 		assert.Nil(t, fn)
 	})

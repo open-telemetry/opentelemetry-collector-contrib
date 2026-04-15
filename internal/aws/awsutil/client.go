@@ -40,7 +40,7 @@ func newHTTPClient(
 			zap.String("file", certificateFilePath), zap.Error(certPoolErr))
 	}
 
-	proxyFunc, err := getProxyFunc(proxyAddress)
+	proxyFunc, err := GetProxyFunc(proxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, err
@@ -63,10 +63,10 @@ func newHTTPClient(
 	return client, nil
 }
 
-// getProxyFunc returns the proxy resolver for an *http.Transport. An
+// GetProxyFunc returns the proxy resolver for an *http.Transport. An
 // empty proxyAddress falls through to http.ProxyFromEnvironment, which
 // honors HTTP_PROXY, HTTPS_PROXY, and NO_PROXY (upper- and lowercase).
-func getProxyFunc(proxyAddress string) (func(*http.Request) (*url.URL, error), error) {
+func GetProxyFunc(proxyAddress string) (func(*http.Request) (*url.URL, error), error) {
 	if proxyAddress == "" {
 		return http.ProxyFromEnvironment, nil
 	}
@@ -96,7 +96,7 @@ func loadCertPool(bundleFile string) (*x509.CertPool, error) {
 // the upstream client has already SigV4-signed (gzip would invalidate
 // the signature).
 func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http.Transport, error) {
-	proxyFunc, err := getProxyFunc(config.ProxyAddress)
+	proxyFunc, err := GetProxyFunc(config.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, err

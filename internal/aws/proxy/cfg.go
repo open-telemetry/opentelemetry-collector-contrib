@@ -11,11 +11,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
-const (
-	idleConnTimeout                = 30
-	remoteProxyMaxIdleConnsPerHost = 2
-)
-
 // Config is the configuration for the local TCP proxy server.
 type Config struct {
 	// endpoint is the TCP address and port on which this receiver listens for
@@ -112,11 +107,11 @@ func (cfg *Config) toSessionConfig() *awsutil.AWSSessionSettings {
 	sessionSettings.Endpoint = cfg.AWSEndpoint
 	sessionSettings.IMDSRetries = cfg.IMDSRetries
 	sessionSettings.LocalMode = cfg.LocalMode
-	sessionSettings.MaxRetries = remoteProxyMaxIdleConnsPerHost
+	sessionSettings.MaxRetries = 2
 	sessionSettings.Profile = cfg.Profile
 	sessionSettings.ProxyAddress = cfg.ProxyAddress
 	sessionSettings.Region = cfg.Region
-	sessionSettings.RequestTimeoutSeconds = idleConnTimeout
+	sessionSettings.RequestTimeoutSeconds = 30
 	sessionSettings.RoleARN = cfg.RoleARN
 	sessionSettings.SharedCredentialsFile = cfg.SharedCredentialsFile
 	return &sessionSettings
