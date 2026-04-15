@@ -90,11 +90,12 @@ func createLogsReceiver(
 	cfg := rConf.(*Config)
 
 	opts := make([]scraperhelper.ControllerOption, 0)
+	queryPlanCache := newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, cfg.TopQueryCollection.QueryPlanCacheTTL)
 
 	if cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled {
 		// we have 2 updated only attributes. so we set the cache size accordingly.
 		// TODO: parameterize this cache size.
-		ns := newMySQLScraper(params, cfg, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)), newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, cfg.TopQueryCollection.QueryPlanCacheTTL))
+		ns := newMySQLScraper(params, cfg, newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)), queryPlanCache)
 		s, err := scraper.NewLogs(
 			ns.scrapeTopQueryFunc,
 			scraper.WithStart(ns.start),
@@ -114,7 +115,7 @@ func createLogsReceiver(
 	if cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled {
 		// query sample collection does not need cache, but we do not want to make it
 		// nil, so create one size 1 cache as a placeholder.
-		ns := newMySQLScraper(params, cfg, newCache[int64](1), newTTLCache[string](0, time.Hour*24*365*10))
+		ns := newMySQLScraper(params, cfg, newCache[int64](1), queryPlanCache)
 		s, err := scraper.NewLogs(
 			ns.scrapeQuerySampleFunc,
 			scraper.WithStart(ns.start),
