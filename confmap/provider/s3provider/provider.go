@@ -151,7 +151,7 @@ func s3URISplit(uri string) (bucket, region, key, endpoint string, err error) {
 	// The host is the endpoint; the path provides bucket and key.
 	parts := strings.SplitN(strings.TrimPrefix(u.Path, "/"), "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", "", "", fmt.Errorf("invalid s3-uri: for S3-compatible services use s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]")
+		return "", "", "", "", errors.New("invalid s3-uri: for S3-compatible services use s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]")
 	}
 	bucket = parts[0]
 	key = parts[1]

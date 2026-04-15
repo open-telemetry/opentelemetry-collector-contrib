@@ -57,7 +57,7 @@ func TestFunctionalityS3URISplit(t *testing.T) {
 	assert.Equal(t, "bucket", bucket)
 	assert.Equal(t, "region", region)
 	assert.Equal(t, "key", key)
-	assert.Equal(t, "", endpoint)
+	assert.Empty(t, endpoint)
 	assert.NoError(t, fp.Shutdown(t.Context()))
 }
 
