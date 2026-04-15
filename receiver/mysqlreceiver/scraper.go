@@ -698,7 +698,8 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 
 		var queryPlan string
 		var ok bool
-		if queryPlan, ok = m.queryPlanCache.Get(q.schemaName + "-" + q.digest); !ok {
+		cacheKey := createCacheKey(q.schemaName, q.digest)
+		if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
 			// attempt to explain the query
 			queryPlan = m.sqlclient.explainQuery(q.digestText, q.querySampleText, q.schemaName, q.digest, m.logger)
 			if queryPlan == "" {
@@ -712,7 +713,7 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 				}
 			}
 			// add the obfuscated plan to the cache so we can use it again
-			m.queryPlanCache.Add(q.schemaName+"-"+q.digest, queryPlan)
+			m.queryPlanCache.Add(cacheKey, queryPlan)
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -778,7 +779,8 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 
 		var queryPlan string
 		var ok bool
-		if queryPlan, ok = m.queryPlanCache.Get(sample.processlistDB + "-" + sample.digest); !ok {
+		cacheKey := createCacheKey(sample.processlistDB, sample.digest)
+		if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
 			queryPlan = m.sqlclient.explainQuery(
 				obfuscatedQuery,      // reused — already obfuscated above
 				sample.sqlText,       // concrete SQL for EXPLAIN execution
@@ -794,7 +796,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 					m.logger.Error("Failed to obfuscate query plan", zap.Error(planErr))
 				}
 			}
-
+			m.queryPlanCache.Add(cacheKey, queryPlan)
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
@@ -821,6 +823,10 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			networkPeerPort,
 		)
 	}
+}
+
+func createCacheKey(dbName string, digest string) string {
+	return dbName + "-" + digest
 }
 
 // contextWithTraceparent extracts a W3C TraceContext traceparent from the given
