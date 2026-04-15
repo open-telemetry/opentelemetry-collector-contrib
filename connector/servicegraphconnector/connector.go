@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	conventionsv125 "go.opentelemetry.io/otel/semconv/v1.25.0"
 	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
+	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -36,7 +37,6 @@ const (
 	virtualNodeLabel   = "virtual_node"
 	millisecondsUnit   = "ms"
 	secondsUnit        = "s"
-	peerServiceAttr    = "peer.service"
 )
 
 var (
@@ -48,7 +48,7 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		peerServiceAttr, string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
+		string(conventionsv138.PeerServiceKey), string(conventionsv125.DBNameKey), string(conventionsv128.DBSystemKey),
 	}
 
 	defaultDatabaseNameAttributes = []string{string(conventionsv125.DBNameKey)}
