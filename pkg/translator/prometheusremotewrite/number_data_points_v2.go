@@ -24,6 +24,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 	resource pcommon.Resource, scope pcommon.InstrumentationScope, settings Settings, name string, metadata metadata,
 ) error {
 	var errs error
+	symbolize := func(s string) uint32 { return c.symbolTable.Symbolize(s) }
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 
@@ -46,7 +47,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
 		ts := c.addSample(sample, labels, metadata)
-		ts.Exemplars = append(ts.Exemplars, getPromExemplarsV2(pt, func(s string) uint32 { return c.symbolTable.Symbolize(s) })...)
+		ts.Exemplars = append(ts.Exemplars, getPromExemplarsV2(pt, symbolize)...)
 	}
 	return errs
 }
@@ -55,6 +56,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 	resource pcommon.Resource, scope pcommon.InstrumentationScope, _ pmetric.Metric, settings Settings, name string, metadata metadata,
 ) error {
 	var errs error
+	symbolize := func(s string) uint32 { return c.symbolTable.Symbolize(s) }
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		lbls, err := createAttributes(resource, pt.Attributes(), scope, settings.ExternalLabels, nil, true, c.labelNamer, settings.DisableScopeInfo, model.MetricNameLabel, name)
@@ -77,7 +79,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
 		ts := c.addSample(sample, lbls, metadata)
-		ts.Exemplars = append(ts.Exemplars, getPromExemplarsV2(pt, func(s string) uint32 { return c.symbolTable.Symbolize(s) })...)
+		ts.Exemplars = append(ts.Exemplars, getPromExemplarsV2(pt, symbolize)...)
 	}
 	return errs
 }
