@@ -856,11 +856,12 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 		procID := row[storedProcedureID]
 
+		if row[queryText] == "" {
+			continue
+		}
+
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			if statement == "" {
-				return "", nil
-			}
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				if s.config.UnsafeLogRawSQL {
@@ -874,10 +875,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 			return obfuscated, nil
 		})
-
-		if queryTextVal == nil || queryTextVal.(string) == "" {
-			continue
-		}
 
 		var cached bool
 
@@ -1154,13 +1151,14 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
+		if row[statementText] == "" {
+			continue
+		}
+
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
-			if statement == "" {
-				return "", nil
-			}
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
 				if s.config.UnsafeLogRawSQL {
@@ -1173,9 +1171,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			}
 			return obfuscated, nil
 		}).(string)
-		if queryTextVal == "" {
-			continue
-		}
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)

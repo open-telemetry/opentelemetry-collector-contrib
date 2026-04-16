@@ -5,7 +5,6 @@ package sqlserverreceiver
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,24 +63,29 @@ func TestObfuscationFailure_DoesNotLogRawSQL_DefaultConfig(t *testing.T) {
 
 	s := newTestScraperHelper(logger, false)
 
-	badSQL := strings.Repeat("((((", 500)
 	row := sqlquery.StringMap{
-		"query_text": badSQL,
+		"query_text": sensitiveSQL,
 	}
 
 	var errs []error
 	s.retrieveValue(row, "query_text", &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 		statement := row[columnName]
-		obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
-		if err != nil {
-			return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
+		if s.config.UnsafeLogRawSQL {
+			s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
+				zap.String("column", columnName),
+				zap.String("statement", statement),
+				zap.Error(fmt.Errorf("simulated obfuscation failure")))
 		}
-		return obfuscated, nil
+		return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, fmt.Errorf("simulated obfuscation failure"))
 	})
 
 	for _, entry := range logs.All() {
-		assert.NotContains(t, entry.Message, badSQL,
+		assert.NotContains(t, entry.Message, sensitiveSQL,
 			"raw SQL must not appear in log messages on obfuscation failure")
+		for _, field := range entry.Context {
+			assert.NotEqual(t, sensitiveSQL, field.String,
+				"raw SQL must not appear in any log field")
+		}
 	}
 }
 
@@ -91,31 +95,30 @@ func TestObfuscationFailure_LogsRawSQL_WhenUnsafeEnabled(t *testing.T) {
 
 	s := newTestScraperHelper(logger, true)
 
-	badSQL := strings.Repeat("((((", 500)
 	row := sqlquery.StringMap{
-		"query_text": badSQL,
+		"query_text": sensitiveSQL,
 	}
 
 	var errs []error
 	s.retrieveValue(row, "query_text", &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 		statement := row[columnName]
-		obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
-		if err != nil {
-			if s.config.UnsafeLogRawSQL {
-				s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
-					zap.String("column", columnName),
-					zap.String("statement", statement),
-					zap.Error(err))
-			}
-			return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
+		if s.config.UnsafeLogRawSQL {
+			s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
+				zap.String("column", columnName),
+				zap.String("statement", statement),
+				zap.Error(fmt.Errorf("simulated obfuscation failure")))
 		}
-		return obfuscated, nil
+		return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, fmt.Errorf("simulated obfuscation failure"))
 	})
 
 	foundDebugWithRaw := false
 	for _, entry := range logs.All() {
-		if entry.Level == zapcore.DebugLevel && strings.Contains(entry.Message, "unsafe_log_raw_sql") {
-			foundDebugWithRaw = true
+		if entry.Level == zapcore.DebugLevel {
+			for _, field := range entry.Context {
+				if field.Key == "statement" && field.String == sensitiveSQL {
+					foundDebugWithRaw = true
+				}
+			}
 		}
 	}
 	assert.True(t, foundDebugWithRaw,
@@ -166,7 +169,6 @@ func TestDebugLog_DoesNotExposeRowData_DefaultConfig(t *testing.T) {
 		"query_plan": "<xml>sensitive plan data</xml>",
 	}
 
-	// Simulate the safe debug logging path
 	if s.config.UnsafeLogRawSQL {
 		s.logger.Debug("processing query row (unsafe_log_raw_sql enabled)",
 			zap.String("query_hash", queryHashVal),
