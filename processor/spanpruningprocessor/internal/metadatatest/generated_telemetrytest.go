@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings(processortest.NopType)
-	set.ID = component.NewID(component.MustNewType("spanpruning"))
+	set.ID = component.NewID(component.MustNewType("span_pruning"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

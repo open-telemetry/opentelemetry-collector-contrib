@@ -121,7 +121,7 @@ components:
         - resource
         - resourcedetection
         - span
-        - spanpruning
+        - span_pruning
         - sumologic
         - tail_sampling
         - transform

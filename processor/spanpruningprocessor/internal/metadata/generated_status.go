@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("spanpruning")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
+	Type           = component.MustNewType("span_pruning")
+	DeprecatedType = component.MustNewType("spanpruning")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanpruningprocessor"
 )
 
 const (
