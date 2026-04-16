@@ -856,6 +856,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 		procID := row[storedProcedureID]
 
+		// Skip rows where the database returned NULL for query text.
+		// This check uses the raw map value (not the post-obfuscation result)
+		// so that rows with present-but-unobfuscatable SQL still get processed.
 		if row[queryText] == "" {
 			continue
 		}
@@ -985,6 +988,8 @@ func (s *sqlServerScraperHelper) retrieveValue(
 ) any {
 	value, err := valueRetriever(row, column)
 	if err != nil {
+		// The column value is intentionally omitted from this log to prevent
+		// exposure of unobfuscated SQL statements or query plans.
 		s.logger.Error("failed to retrieve value",
 			zap.String("column", column),
 			zap.Error(err))
@@ -1151,6 +1156,9 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
+		// Skip rows where the database returned NULL for statement text.
+		// This check uses the raw map value (not the post-obfuscation result)
+		// so that rows with present-but-unobfuscatable SQL still get processed.
 		if row[statementText] == "" {
 			continue
 		}

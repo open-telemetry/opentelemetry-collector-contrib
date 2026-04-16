@@ -63,6 +63,9 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
+							// Replace the failing attribute with a safe placeholder rather than
+							// aborting the entire plan. The raw value must never be logged or
+							// returned, as it may contain unobfuscated customer SQL.
 							elem.Attr[i].Value = "?"
 							continue
 						}
