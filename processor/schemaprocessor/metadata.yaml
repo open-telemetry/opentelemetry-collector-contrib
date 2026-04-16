@@ -27,6 +27,14 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+    processor_schema_logs.failed:
+      enabled: true
+      description: Number of log scope translation requests that failed
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
     processor_schema_logs.skipped:
       enabled: true
       description: Number of log scope translation requests skipped because no schema URL was present
@@ -35,9 +43,41 @@ telemetry:
         value_type: int
         monotonic: true
       stability: development
+    processor_schema_metrics.failed:
+      enabled: true
+      description: Number of metric scope translation requests that failed
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
     processor_schema_metrics.skipped:
       enabled: true
       description: Number of metric scope translation requests skipped because no schema URL was present
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_resource.failed:
+      enabled: true
+      description: Number of resource translation requests that failed
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_resource.skipped:
+      enabled: true
+      description: Number of resource translation requests skipped because no schema URL was present
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_traces.failed:
+      enabled: true
+      description: Number of trace scope translation requests that failed
       unit: "{translations}"
       sum:
         value_type: int

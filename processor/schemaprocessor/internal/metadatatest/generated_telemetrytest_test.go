@@ -21,8 +21,13 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ProcessorSchemaCacheHits.Add(context.Background(), 1)
 	tb.ProcessorSchemaCacheMisses.Add(context.Background(), 1)
+	tb.ProcessorSchemaLogsFailed.Add(context.Background(), 1)
 	tb.ProcessorSchemaLogsSkipped.Add(context.Background(), 1)
+	tb.ProcessorSchemaMetricsFailed.Add(context.Background(), 1)
 	tb.ProcessorSchemaMetricsSkipped.Add(context.Background(), 1)
+	tb.ProcessorSchemaResourceFailed.Add(context.Background(), 1)
+	tb.ProcessorSchemaResourceSkipped.Add(context.Background(), 1)
+	tb.ProcessorSchemaTracesFailed.Add(context.Background(), 1)
 	tb.ProcessorSchemaTracesSkipped.Add(context.Background(), 1)
 	AssertEqualProcessorSchemaCacheHits(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
@@ -30,10 +35,25 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualProcessorSchemaCacheMisses(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSchemaLogsFailed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSchemaLogsSkipped(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSchemaMetricsFailed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSchemaMetricsSkipped(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSchemaResourceFailed(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSchemaResourceSkipped(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorSchemaTracesFailed(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorSchemaTracesSkipped(t, testTel,

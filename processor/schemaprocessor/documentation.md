@@ -22,6 +22,14 @@ Number of schema cache misses
 | ---- | ----------- | ---------- | --------- | --------- |
 | {requests} | Sum | Int | true | Development |
 
+### otelcol_processor_schema_logs.failed
+
+Number of log scope translation requests that failed
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {translations} | Sum | Int | true | Development |
+
 ### otelcol_processor_schema_logs.skipped
 
 Number of log scope translation requests skipped because no schema URL was present
@@ -30,9 +38,41 @@ Number of log scope translation requests skipped because no schema URL was prese
 | ---- | ----------- | ---------- | --------- | --------- |
 | {translations} | Sum | Int | true | Development |
 
+### otelcol_processor_schema_metrics.failed
+
+Number of metric scope translation requests that failed
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {translations} | Sum | Int | true | Development |
+
 ### otelcol_processor_schema_metrics.skipped
 
 Number of metric scope translation requests skipped because no schema URL was present
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {translations} | Sum | Int | true | Development |
+
+### otelcol_processor_schema_resource.failed
+
+Number of resource translation requests that failed
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {translations} | Sum | Int | true | Development |
+
+### otelcol_processor_schema_resource.skipped
+
+Number of resource translation requests skipped because no schema URL was present
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {translations} | Sum | Int | true | Development |
+
+### otelcol_processor_schema_traces.failed
+
+Number of trace scope translation requests that failed
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
