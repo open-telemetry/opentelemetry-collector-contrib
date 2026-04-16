@@ -31,6 +31,7 @@ type Input struct {
 	channel                  string
 	ignoreChannelErrors      bool
 	query                    *string
+	path                     *string
 	maxReads                 int
 	currentMaxReads          int
 	startAt                  string
@@ -151,7 +152,7 @@ func (i *Input) Start(persister operator.Persister) error {
 		subscription = NewRemoteSubscription(i.remote.Server, i.Logger())
 	}
 
-	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
 		var errorString string
 		if isNonTransientError(err) {
 			if i.isRemote() {
@@ -294,7 +295,7 @@ func (i *Input) readBatch(ctx context.Context) bool {
 				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
 				return false
 			}
-			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.bookmark); err != nil {
+			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.query, i.path, i.bookmark); err != nil {
 				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 				return false
 			}
@@ -399,7 +400,7 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 		return nil
 	}
 
-	publisher, err := i.publisherCache.get(providerName)
+	publisher, err := i.publisherCache.get(providerName, i.path)
 	if err != nil {
 		return multierr.Append(
 			fmt.Errorf("open event source for provider %q: %w", providerName, err),
