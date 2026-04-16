@@ -34,6 +34,9 @@ For HTTPS endpoints, the receiver can collect TLS certificate metrics including 
 
 ## Configuration
 
+> **Note:** This receiver was renamed from `httpcheck` to `http_check` to match the snake_case naming convention.
+> The deprecated component type `httpcheck` is still accepted as an alias and will log a deprecation warning.
+
 The following configuration settings are available:
 
 - `targets` (required): The list of targets to be monitored.
@@ -59,7 +62,7 @@ For HTTPS endpoints, TLS certificate metrics can be enabled:
 
 ```yaml
 receivers:
-  httpcheck:
+  http_check:
     metrics:
       httpcheck.tls.cert_remaining:
         enabled: true
@@ -71,7 +74,7 @@ For detailed performance analysis, timing breakdown metrics are available:
 
 ```yaml
 receivers:
-  httpcheck:
+  http_check:
     metrics:
       httpcheck.dns.lookup.duration:
         enabled: true
@@ -100,7 +103,7 @@ For API monitoring and health checks, response validation metrics are available:
 
 ```yaml
 receivers:
-  httpcheck:
+  http_check:
     metrics:
       httpcheck.validation.passed:
         enabled: true
@@ -118,7 +121,7 @@ The receiver supports sending request bodies for POST, PUT, PATCH, and other HTT
 
 ```yaml
 receivers:
-  httpcheck:
+  http_check:
     targets:
       # POST with JSON body
       - endpoint: "https://api.example.com/users"
@@ -151,7 +154,7 @@ The receiver supports response body validation for API monitoring:
 
 ```yaml
 receivers:
-  httpcheck:
+  http_check:
     targets:
       - endpoint: "https://api.example.com/health"
         validations:
@@ -184,7 +187,7 @@ receivers:
 
 ```yaml
 receivers:
-  httpcheck:
+  http_check:
     collection_interval: 30s
     # Optional: Enable timing breakdown metrics
     metrics:
@@ -236,7 +239,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [httpcheck]
+      receivers: [http_check]
       exporters: [debug]
 ```
 
