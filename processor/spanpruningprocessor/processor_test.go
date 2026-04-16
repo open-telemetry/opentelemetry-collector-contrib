@@ -407,7 +407,7 @@ func TestLeafSpanPruning_TemplateEventsAndLinksPreserved(t *testing.T) {
 
 func TestAttributeLoss_RecordsMetricsAndSummaryAttributesWhenEnabled(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -440,15 +440,15 @@ func TestAttributeLoss_RecordsMetricsAndSummaryAttributesWhenEnabled(t *testing.
 	require.True(t, exists)
 	assert.Contains(t, parentMissing.Str(), "handler.version(1)")
 
-	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_diversity_loss", 1)
-	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_loss", 1)
-	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_diversity_loss", 1)
-	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_loss", 1)
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_diversity_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_leaf_attribute_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_diversity_loss")
+	assertHistogramRecordedOnceWithSum(t, tel, "otelcol_processor_spanpruning_parent_attribute_loss")
 }
 
 func TestAttributeLoss_ExemplarSampling(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -471,7 +471,7 @@ func TestAttributeLoss_ExemplarSampling(t *testing.T) {
 
 func TestAttributeLoss_DisabledByDefault(t *testing.T) {
 	tel := componenttest.NewTelemetry()
-	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) }) //nolint:usetesting
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -511,12 +511,12 @@ func TestAttributeLoss_DisabledByDefault(t *testing.T) {
 
 // Helper functions
 
-func assertHistogramRecordedOnceWithSum(t *testing.T, tel *componenttest.Telemetry, metricName string, expectedSum int64) {
+func assertHistogramRecordedOnceWithSum(t *testing.T, tel *componenttest.Telemetry, metricName string) {
 	t.Helper()
 	hist := requireInt64HistogramMetric(t, tel, metricName)
 	require.Len(t, hist.DataPoints, 1, "expected a single data point for %s", metricName)
 	assert.Equal(t, uint64(1), hist.DataPoints[0].Count)
-	assert.Equal(t, expectedSum, hist.DataPoints[0].Sum)
+	assert.Equal(t, int64(1), hist.DataPoints[0].Sum)
 }
 
 func assertHistogramHasTraceExemplar(t *testing.T, tel *componenttest.Telemetry, metricName string, expectedTraceID pcommon.TraceID) {
