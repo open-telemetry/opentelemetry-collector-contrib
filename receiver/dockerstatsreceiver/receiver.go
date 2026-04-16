@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	ctypes "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	ctypes "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -155,10 +155,10 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
-	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
+	if err := r.recordBaseMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	if err := r.recordHostConfigMetrics(now, container.ContainerJSON); err != nil {
+	if err := r.recordHostConfigMetrics(now, container.InspectResponse); err != nil {
 		errs = multierr.Append(errs, err)
 	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
@@ -313,7 +313,7 @@ func (r *metricsReceiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *ct
 	}
 }
 
-func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.ContainerJSONBase) error {
+func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *ctypes.InspectResponse) error {
 	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
 	if err != nil {
 		// value not available or invalid

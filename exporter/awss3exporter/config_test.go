@@ -320,6 +320,50 @@ func TestConfig_Validate(t *testing.T) {
 			}(),
 			errExpected: errors.New("region is required"),
 		},
+		{
+			name: "valid storage class GLACIER_IR",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "GLACIER_IR"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "valid storage class REDUCED_REDUNDANCY",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "REDUCED_REDUNDANCY"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "valid storage class EXPRESS_ONEZONE",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "EXPRESS_ONEZONE"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "invalid storage class FAKE_CLASS",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "us-east-1"
+				c.S3Uploader.S3Bucket = "mybucket"
+				c.S3Uploader.StorageClass = "FAKE_CLASS"
+				return c
+			}(),
+			errExpected: errors.New("invalid StorageClass"),
+		},
 	}
 
 	for _, tt := range tests {
