@@ -26,7 +26,7 @@ type Subscription struct {
 // Open will open the subscription handle.
 // It returns an error if the subscription handle is already open or if any step in the process fails.
 // If the remote server is not reachable, it returns an error indicating the failure.
-func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, query *string, bookmark Bookmark) error {
+func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, query, path *string, bookmark Bookmark) error {
 	if s.handle != 0 {
 		return errors.New("subscription handle is already open")
 	}
@@ -61,10 +61,23 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 		}
 	}
 
-	flags := s.createFlags(startAt, bookmark)
-	subscriptionHandle, err := evtSubscribe(sessionHandle, signalEvent, channelPtr, queryPtr, bookmark.handle, 0, 0, flags)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
+	var subscriptionHandle uintptr
+	if path != nil {
+		var pathPtr *uint16
+		pathPtr, err = syscall.UTF16PtrFromString(*path)
+		if err != nil {
+			return fmt.Errorf("failed to convert path to utf16: %w", err)
+		}
+		subscriptionHandle, err = evtQuery(sessionHandle, pathPtr, queryPtr, EvtQueryFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to query events from %s: %w", *path, err)
+		}
+	} else {
+		flags := s.createFlags(startAt, bookmark)
+		subscriptionHandle, err = evtSubscribe(sessionHandle, signalEvent, channelPtr, queryPtr, bookmark.handle, 0, 0, flags)
+		if err != nil {
+			return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
+		}
 	}
 
 	closeSignalOnErr = false // success — handle is now owned by the Subscription
