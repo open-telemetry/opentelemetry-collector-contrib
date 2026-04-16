@@ -36,6 +36,8 @@ func (*mockAccumulator) Accumulate(pmetric.ResourceMetrics) (n int) {
 	return 0
 }
 
+func (*mockAccumulator) cleanupExpired() {}
+
 func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map, []string, []string, []string, []pcommon.Map) {
 	rAttrs := make([]pcommon.Map, len(a.metrics))
 	scopeNames := make([]string, len(a.metrics))
@@ -249,6 +251,28 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	require.Equal(t, 3.0, buckets[0].GetExemplar().GetValue())
 	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())
+}
+
+func TestConvertDoubleHistogramEmptyBucketCounts(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDescription("this is test metric")
+	metric.SetUnit("T")
+
+	histogramDataPoint := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{5, 25, 90})
+
+	pMap := pcommon.NewMap()
+
+	c := newCollector(&Config{}, zap.NewNop())
+	c.accumulator = &mockAccumulator{
+		metrics:            []pmetric.Metric{metric},
+		resourceAttributes: pMap,
+	}
+
+	// Should not panic
+	_, err := c.convertDoubleHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	require.NoError(t, err)
 }
 
 func TestConvertMonotonicSumExemplar(t *testing.T) {
