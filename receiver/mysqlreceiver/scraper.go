@@ -7,7 +7,6 @@ import (
 	"container/heap"
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"sort"
 	"strconv"

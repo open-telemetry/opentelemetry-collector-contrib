@@ -304,6 +304,27 @@ type mockClient struct {
 	topQueriesFile              string
 }
 
+type queryPlanSpyClient struct {
+	mockClient
+	querySamples []querySample
+	topQueries   []topQuery
+	explainCalls int
+	explainPlan  string
+}
+
+func (c *queryPlanSpyClient) getQuerySamples(uint64) ([]querySample, error) {
+	return c.querySamples, nil
+}
+
+func (c *queryPlanSpyClient) getTopQueries(uint64, uint64) ([]topQuery, error) {
+	return c.topQueries, nil
+}
+
+func (c *queryPlanSpyClient) explainQuery(_, _, _, _ string, _ *zap.Logger) string {
+	c.explainCalls++
+	return c.explainPlan
+}
+
 func readFile(fname string) (map[string]string, error) {
 	stats := map[string]string{}
 	file, err := os.Open(filepath.Join("testdata", "scraper", fname+".txt"))
@@ -644,4 +665,113 @@ func (*mockClient) explainQuery(_, _, _, _ string, _ *zap.Logger) string {
 
 func (*mockClient) Close() error {
 	return nil
+}
+
+func TestQueryPlanCacheReuse(t *testing.T) {
+	baseCfg := createDefaultConfig().(*Config)
+	baseCfg.Username = "otel"
+	baseCfg.Password = "otel"
+	baseCfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	baseCfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	baseCfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	baseCfg.TopQueryCollection.TopQueryCount = 10
+
+	makeScraper := func(t *testing.T, cfg *Config, spy *queryPlanSpyClient) *mySQLScraper {
+		t.Helper()
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](10, time.Hour*24*365*10))
+		scraper.sqlclient = spy
+		return scraper
+	}
+
+	seedTopQueryDiffCache := func(scraper *mySQLScraper, schema, digest string, countStar, sumTimerWait int64) {
+		// Top query events are emitted only when the value is already cached and increases.
+		scraper.cacheAndDiff(schema, digest, "count_star", countStar-1)
+		scraper.cacheAndDiff(schema, digest, "sum_timer_wait", sumTimerWait-1)
+	}
+
+	t.Run("query samples first then top queries reuses cached plan", func(t *testing.T) {
+		cfg := *baseCfg
+		schema := "adventureworks"
+		digest := "digest-shared"
+		spy := &queryPlanSpyClient{
+			querySamples: []querySample{
+				{
+					processlistDB:      schema,
+					processlistHost:    "192.168.1.80:1234",
+					processlistUser:    "myuser",
+					processlistCommand: "Query",
+					processlistState:   "executing",
+					sqlText:            "SELECT * FROM t",
+					digest:             digest,
+					eventID:            1,
+					sessionStatus:      "waiting",
+					waitEvent:          "CPU",
+				},
+			},
+			topQueries: []topQuery{
+				{
+					schemaName:                schema,
+					digest:                    digest,
+					digestText:                "SELECT * FROM t",
+					querySampleText:           "SELECT * FROM t",
+					countStar:                 10,
+					sumTimerWaitInPicoSeconds: 200,
+				},
+			},
+			explainPlan: `{"query_block":{"select_id":1}}`,
+		}
+
+		scraper := makeScraper(t, &cfg, spy)
+		seedTopQueryDiffCache(scraper, schema, digest, 10, 200)
+
+		_, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+		_, err = scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+
+		require.Equal(t, 1, spy.explainCalls, "query plan should be fetched only once across both flows")
+	})
+
+	t.Run("top queries first then query samples reuses cached plan", func(t *testing.T) {
+		cfg := *baseCfg
+		schema := "adventureworks"
+		digest := "digest-shared"
+		spy := &queryPlanSpyClient{
+			querySamples: []querySample{
+				{
+					processlistDB:      schema,
+					processlistHost:    "192.168.1.80:1234",
+					processlistUser:    "myuser",
+					processlistCommand: "Query",
+					processlistState:   "executing",
+					sqlText:            "SELECT * FROM t",
+					digest:             digest,
+					eventID:            1,
+					sessionStatus:      "waiting",
+					waitEvent:          "CPU",
+				},
+			},
+			topQueries: []topQuery{
+				{
+					schemaName:                schema,
+					digest:                    digest,
+					digestText:                "SELECT * FROM t",
+					querySampleText:           "SELECT * FROM t",
+					countStar:                 10,
+					sumTimerWaitInPicoSeconds: 200,
+				},
+			},
+			explainPlan: `{"query_block":{"select_id":1}}`,
+		}
+
+		scraper := makeScraper(t, &cfg, spy)
+		seedTopQueryDiffCache(scraper, schema, digest, 10, 200)
+
+		_, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		_, err = scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err)
+
+		require.Equal(t, 1, spy.explainCalls, "query plan should be fetched only once across both flows")
+	})
 }
