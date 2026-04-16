@@ -232,7 +232,7 @@ func TestFromMetrics_NonMonotonicSum(t *testing.T) {
 	metricNonMonotonic.CopyTo(metrics.AppendEmpty())
 	metricMonotonic.CopyTo(metrics.AppendEmpty())
 
-	tsMap, err := FromMetrics(md, Settings{})
+	tsMap, err := FromMetrics(md, Settings{AddMetricSuffixes: true})
 	require.NoError(t, err)
 	require.Len(t, tsMap, 2)
 
@@ -242,7 +242,7 @@ func TestFromMetrics_NonMonotonicSum(t *testing.T) {
 			if l.Name == model.MetricNameLabel {
 				if l.Value == "test_non_monotonic_sum" {
 					tsNonMonotonic = ts
-				} else if l.Value == "test_monotonic_sum" {
+				} else if l.Value == "test_monotonic_sum_total" {
 					tsMonotonic = ts
 				}
 			}
