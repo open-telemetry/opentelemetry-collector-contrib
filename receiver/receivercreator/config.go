@@ -36,9 +36,10 @@ type receiverConfig struct {
 type userConfigMap map[string]any
 
 type receiverSignals struct {
-	metrics bool
-	logs    bool
-	traces  bool
+	metrics  bool
+	logs     bool
+	traces   bool
+	profiles bool
 }
 
 // receiverTemplate is the configuration of a single subreceiver.
@@ -67,7 +68,7 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 	}
 
 	return receiverTemplate{
-		signals: receiverSignals{metrics: true, logs: true, traces: true},
+		signals: receiverSignals{metrics: true, logs: true, traces: true, profiles: true},
 		receiverConfig: receiverConfig{
 			id:         id,
 			config:     cfg,
