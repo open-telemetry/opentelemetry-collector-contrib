@@ -126,6 +126,12 @@ func getPromExemplarsV2[T exemplarType](pt T, symbolize func(string) uint32) []w
 		attrs := exemplar.FilteredAttributes()
 		var labelsFromAttributes []prompb.Label
 		for key, value := range attrs.All() {
+			if key == otlptranslator.ExemplarTraceIDKey && !exemplar.TraceID().IsEmpty() {
+				continue
+			}
+			if key == otlptranslator.ExemplarSpanIDKey && !exemplar.SpanID().IsEmpty() {
+				continue
+			}
 			val := value.AsString()
 			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			labelsFromAttributes = append(labelsFromAttributes, prompb.Label{

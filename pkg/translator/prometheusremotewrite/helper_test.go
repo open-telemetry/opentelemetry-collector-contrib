@@ -615,6 +615,17 @@ func Test_getPromExemplarsV2(t *testing.T) {
 			},
 		},
 		{
+			name:      "duplicate_trace_id_dropped",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarTraceIDKey, "duplicate_val"),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+		},
+		{
 			name:      "too_many_runes_drops_labels",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
 			expected: []writev2.Exemplar{
