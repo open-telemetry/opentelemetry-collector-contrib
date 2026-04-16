@@ -18,6 +18,9 @@ import (
 	"time"
 
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -27,6 +30,24 @@ import (
 type Server interface {
 	ListenAndServe() error
 	Shutdown(ctx context.Context) error
+}
+
+type server struct {
+	server       *http.Server
+	serverConfig *confighttp.ServerConfig
+}
+
+func (s *server) ListenAndServe() error {
+	listener, err := s.serverConfig.ToListener(context.Background())
+	if err != nil {
+		return err
+	}
+
+	return s.server.Serve(listener)
+}
+
+func (s *server) Shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }
 
 // NewServer returns a local TCP server that proxies requests to AWS
@@ -91,9 +112,9 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			r.Out.Host = awsURL.Host
 
 			// Consume body and calculate payload hash for signing
-			body, payloadHash, err := consumeBody(r.In.Body)
-			if err != nil {
-				logger.Error("Unable to consume request body", zap.Error(err))
+			body, payloadHash, bodyErr := consumeBody(r.In.Body)
+			if bodyErr != nil {
+				logger.Error("Unable to consume request body", zap.Error(bodyErr))
 				return
 			}
 
@@ -103,24 +124,41 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			}
 
 			// Retrieve credentials for signing
-			creds, err := credentials.Retrieve(r.Out.Context())
-			if err != nil {
-				logger.Error("Unable to retrieve credentials", zap.Error(err))
+			creds, credsErr := credentials.Retrieve(r.Out.Context())
+			if credsErr != nil {
+				logger.Error("Unable to retrieve credentials", zap.Error(credsErr))
 				return
 			}
 
 			// Sign request using v4 signer
-			err = signer.SignHTTP(r.Out.Context(), creds, r.Out, payloadHash, serviceName, region, time.Now())
-			if err != nil {
-				logger.Error("Unable to sign request", zap.Error(err))
+			signErr := signer.SignHTTP(r.Out.Context(), creds, r.Out, payloadHash, serviceName, region, time.Now())
+			if signErr != nil {
+				logger.Error("Unable to sign request", zap.Error(signErr))
 			}
 		},
 	}
 
-	return &http.Server{
-		Addr:              cfg.Endpoint,
-		Handler:           handler,
+	serverConfig := confighttp.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  cfg.Endpoint,
+			Transport: "tcp",
+		},
 		ReadHeaderTimeout: 20 * time.Second,
+	}
+
+	httpServer, err := serverConfig.ToServer(
+		ctx,
+		nil,
+		component.TelemetrySettings{Logger: logger},
+		handler,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &server{
+		server:       httpServer,
+		serverConfig: &serverConfig,
 	}, nil
 }
 

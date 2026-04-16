@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/http/httputil"
 	"strings"
 	"testing"
 	"time"
@@ -31,6 +30,16 @@ const (
 	regionEnvVarName = "AWS_DEFAULT_REGION"
 	regionEnvVar     = "us-west-2"
 )
+
+func getHTTPServer(t *testing.T, srv Server) *http.Server {
+	t.Helper()
+
+	proxyServer, ok := srv.(*server)
+	require.True(t, ok, "expected proxy server implementation")
+	require.NotNil(t, proxyServer.server)
+
+	return proxyServer.server
+}
 
 func TestHappyCase(t *testing.T) {
 	logger, recordedLogs := logSetup()
@@ -75,7 +84,7 @@ func TestHandlerHappyCase(t *testing.T) {
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
-	handler := srv.(*http.Server).Handler.ServeHTTP
+	handler := getHTTPServer(t, srv).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", strings.NewReader(`{"NextToken": null}`))
 	rec := httptest.NewRecorder()
@@ -101,7 +110,7 @@ func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	expectedErr := errors.New("expected mockReadCloser error")
-	handler := srv.(*http.Server).Handler.ServeHTTP
+	handler := getHTTPServer(t, srv).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", &mockReadCloser{
 			readErr: expectedErr,
@@ -129,7 +138,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
-	handler := srv.(*http.Server).Handler.ServeHTTP
+	handler := getHTTPServer(t, srv).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", http.NoBody)
 	rec := httptest.NewRecorder()
@@ -167,7 +176,7 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 
-	handler := srv.(*http.Server).Handler.ServeHTTP
+	handler := getHTTPServer(t, srv).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", strings.NewReader(`{}`))
 	rec := httptest.NewRecorder()
@@ -431,8 +440,6 @@ func TestSignedRequestHasAuthorizationHeader(t *testing.T) {
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
-	srv, err := NewServer(cfg, logger)
-	assert.NoError(t, err, "NewServer should succeed")
 
 	// Create a mock backend server to capture the signed request
 	capturedReqCh := make(chan *http.Request, 1)
@@ -440,21 +447,12 @@ func TestSignedRequestHasAuthorizationHeader(t *testing.T) {
 		capturedReqCh <- r.Clone(r.Context())
 	}))
 	defer backend.Close()
+	cfg.AWSEndpoint = backend.URL
 
-	// Override the transport to use mock backend
-	httpSrv := srv.(*http.Server)
-	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
 
-	// Save original rewrite and wrap it
-	originalRewrite := proxy.Rewrite
-	proxy.Rewrite = func(r *httputil.ProxyRequest) {
-		originalRewrite(r)
-		// Redirect to mock backend
-		r.Out.URL.Scheme = "http"
-		r.Out.URL.Host = backend.Listener.Addr().String()
-		r.Out.Host = backend.Listener.Addr().String()
-	}
-
+	httpSrv := getHTTPServer(t, srv)
 	handler := httpSrv.Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules",
@@ -493,8 +491,6 @@ func TestSignedRequestHasRequiredHeaders(t *testing.T) {
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
-	srv, err := NewServer(cfg, logger)
-	assert.NoError(t, err, "NewServer should succeed")
 
 	// Create a mock backend server to capture the signed request
 	capturedReqCh := make(chan *http.Request, 1)
@@ -502,19 +498,12 @@ func TestSignedRequestHasRequiredHeaders(t *testing.T) {
 		capturedReqCh <- r.Clone(r.Context())
 	}))
 	defer backend.Close()
+	cfg.AWSEndpoint = backend.URL
 
-	// Override the transport to use mock backend
-	httpSrv := srv.(*http.Server)
-	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
 
-	originalRewrite := proxy.Rewrite
-	proxy.Rewrite = func(r *httputil.ProxyRequest) {
-		originalRewrite(r)
-		r.Out.URL.Scheme = "http"
-		r.Out.URL.Host = backend.Listener.Addr().String()
-		r.Out.Host = backend.Listener.Addr().String()
-	}
-
+	httpSrv := getHTTPServer(t, srv)
 	handler := httpSrv.Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules",
@@ -550,26 +539,18 @@ func TestConnectionHeaderRemovedBeforeSigning(t *testing.T) {
 	cfg := DefaultConfig()
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
-	srv, err := NewServer(cfg, logger)
-	assert.NoError(t, err, "NewServer should succeed")
 
 	capturedReqCh := make(chan *http.Request, 1)
 	backend := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		capturedReqCh <- r.Clone(r.Context())
 	}))
 	defer backend.Close()
+	cfg.AWSEndpoint = backend.URL
 
-	httpSrv := srv.(*http.Server)
-	proxy := httpSrv.Handler.(*httputil.ReverseProxy)
+	srv, err := NewServer(cfg, logger)
+	assert.NoError(t, err, "NewServer should succeed")
 
-	originalRewrite := proxy.Rewrite
-	proxy.Rewrite = func(r *httputil.ProxyRequest) {
-		originalRewrite(r)
-		r.Out.URL.Scheme = "http"
-		r.Out.URL.Host = backend.Listener.Addr().String()
-		r.Out.Host = backend.Listener.Addr().String()
-	}
-
+	httpSrv := getHTTPServer(t, srv)
 	handler := httpSrv.Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules",

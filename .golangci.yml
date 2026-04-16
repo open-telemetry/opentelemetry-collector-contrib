@@ -191,10 +191,6 @@ linters:
         text: confighttp
       - linters:
           - forbidigo
-        path: internal/aws/proxy/
-        text: confighttp
-      - linters:
-          - forbidigo
         path: extension/datadogextension/
         text: confighttp
       - linters:
