@@ -66,7 +66,8 @@ func limit[K any](target ottl.PMapGetSetter[K], limit int64, priorityKeys []stri
 			}
 		}
 
-		removed := []string{}
+		var removed []string
+		debugEnabled := logger.Core().Enabled(zap.DebugLevel)
 		val.RemoveIf(func(key string, _ pcommon.Value) bool {
 			if _, ok := keep[key]; ok {
 				return false
@@ -75,13 +76,13 @@ func limit[K any](target ottl.PMapGetSetter[K], limit int64, priorityKeys []stri
 				count++
 				return false
 			}
-			if logger.Core().Enabled(zap.DebugLevel) {
+			if debugEnabled {
 				removed = append(removed, key)
 			}
 			return true
 		})
 		if len(removed) != 0 {
-			logger.Debug(fmt.Sprintf("discarded %d values", len(removed)), zap.Strings("discarded", removed))
+			logger.Debug(fmt.Sprintf("discarded %d values", len(removed)), zap.Strings("keys", removed))
 		}
 		return nil, target.Set(ctx, tCtx, val)
 	}, nil

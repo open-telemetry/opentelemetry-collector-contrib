@@ -46,7 +46,8 @@ func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl
 		if err != nil {
 			return nil, err
 		}
-		truncated := []string{}
+		var truncated []string
+		debugEnabled := logger.Core().Enabled(zap.DebugLevel)
 		for key, value := range val.All() {
 			stringVal := value.Str()
 			if int64(len(stringVal)) > limit {
@@ -58,13 +59,13 @@ func TruncateAll[K any](target ottl.PMapGetSetter[K], limit int64, utf8Safe ottl
 					}
 				}
 				value.SetStr(stringVal[:truncateAt])
-				if logger.Core().Enabled(zap.DebugLevel) {
+				if debugEnabled {
 					truncated = append(truncated, key)
 				}
 			}
 		}
 		if len(truncated) != 0 {
-			logger.Debug(fmt.Sprintf("truncated %d values", len(truncated)), zap.Strings("truncated", truncated))
+			logger.Debug(fmt.Sprintf("truncated %d values", len(truncated)), zap.Strings("keys", truncated))
 		}
 		return nil, target.Set(ctx, tCtx, val)
 	}, nil
