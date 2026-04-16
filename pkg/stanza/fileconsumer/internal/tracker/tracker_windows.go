@@ -15,6 +15,7 @@ func (t *fileTracker) EndConsume() (filesClosed int) {
 	spare := t.previousPollFiles
 	// t.currentPollFiles -> t.previousPollFiles
 	t.previousPollFiles = t.currentPollFiles
+	t.previousPollFiles.Reindex()
 	filesClosed = t.ClosePreviousFiles()
 	if spare == nil {
 		t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)

@@ -18,6 +18,7 @@ func (t *fileTracker) EndConsume() (filesClosed int) {
 
 	// t.currentPollFiles -> t.previousPollFiles
 	t.previousPollFiles = t.currentPollFiles
+	t.previousPollFiles.Reindex()
 	if spare == nil {
 		t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
 	} else {

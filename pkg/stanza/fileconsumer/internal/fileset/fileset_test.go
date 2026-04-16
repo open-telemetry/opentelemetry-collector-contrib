@@ -36,7 +36,8 @@ func pop[T Matchable](expectedErr error, expectedElemet T) func(t *testing.T, fi
 		el, err := fileset.Pop()
 		if expectedErr == nil {
 			require.NoError(t, err)
-			require.Equal(t, expectedElemet, el)
+			require.NotNil(t, el)
+			require.True(t, expectedElemet.GetFingerprint().Equal(el.GetFingerprint()))
 			require.Equal(t, pr-1, fileset.Len())
 		} else {
 			require.ErrorIs(t, err, expectedErr)
@@ -59,11 +60,9 @@ func match[T Matchable](ele T, expect bool) func(t *testing.T, fileset *Fileset[
 }
 
 func newReader(bytes []byte) *reader.Reader {
-	fp := fingerprint.New(bytes)
-	fp.Key()
 	return &reader.Reader{
 		Metadata: &reader.Metadata{
-			Fingerprint: fp,
+			Fingerprint: fingerprint.New(bytes),
 		},
 	}
 }
@@ -174,4 +173,16 @@ func TestFilesetStartsWithAndMultipleRemoves(t *testing.T) {
 
 	fs.Add(newReader([]byte("ABCDEF")))
 	require.NotNil(t, fs.MatchStartsWith(fingerprint.New([]byte("ABCDEFGHIJ"))))
+}
+
+func TestFilesetReindexAfterFingerprintChange(t *testing.T) {
+	fs := New[*reader.Reader](10)
+	r := newReader([]byte("ABC"))
+	fs.Add(r)
+
+	r.Fingerprint = fingerprint.New([]byte("ABCDEFG"))
+	fs.Reindex()
+
+	matched := fs.MatchStartsWith(fingerprint.New([]byte("ABCDEFGH")))
+	require.Equal(t, r, matched)
 }

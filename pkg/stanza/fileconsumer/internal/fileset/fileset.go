@@ -32,16 +32,18 @@ type bucketPos struct {
 }
 
 type Fileset[T Matchable] struct {
-	readers   []T
-	positions []bucketPos
-	buckets   map[int]map[string]*bucket
+	readers       []T
+	positions     []bucketPos
+	buckets       map[int]map[string]*bucket
+	bucketLengths []int
 }
 
 func New[T Matchable](capacity int) *Fileset[T] {
 	return &Fileset[T]{
-		readers:   make([]T, 0, capacity),
-		positions: make([]bucketPos, 0, capacity),
-		buckets:   make(map[int]map[string]*bucket),
+		readers:       make([]T, 0, capacity),
+		positions:     make([]bucketPos, 0, capacity),
+		buckets:       make(map[int]map[string]*bucket),
+		bucketLengths: make([]int, 0),
 	}
 }
 
@@ -63,10 +65,26 @@ func (set *Fileset[T]) Reset() {
 		set.positions[i] = bucketPos{}
 	}
 	set.positions = set.positions[:0]
-	for _, bucketsByLength := range set.buckets {
-		for _, bucket := range bucketsByLength {
-			bucket.indices = bucket.indices[:0]
+	clear(set.buckets)
+	set.bucketLengths = set.bucketLengths[:0]
+}
+
+func (set *Fileset[T]) Reindex() {
+	if len(set.readers) == 0 {
+		clear(set.buckets)
+		set.bucketLengths = set.bucketLengths[:0]
+		return
+	}
+
+	clear(set.buckets)
+	set.bucketLengths = set.bucketLengths[:0]
+
+	for idx, reader := range set.readers {
+		pos := bucketPos{}
+		if fp := reader.GetFingerprint(); fp != nil && fp.Len() > 0 {
+			pos = set.insertIntoBucket(idx, fp)
 		}
+		set.positions[idx] = pos
 	}
 }
 
@@ -117,7 +135,10 @@ func (set *Fileset[T]) MatchStartsWith(fp *fingerprint.Fingerprint) T {
 		return zero
 	}
 	fpKey := fp.Key()
-	for length := len(fpKey); length > 0; length-- {
+	for _, length := range set.bucketLengths {
+		if length > len(fpKey) {
+			continue
+		}
 		bucketsByLength, ok := set.buckets[length]
 		if !ok {
 			continue
@@ -153,6 +174,10 @@ func (set *Fileset[T]) insertIntoBucket(idx int, fp *fingerprint.Fingerprint) bu
 	if bucketsByLength == nil {
 		bucketsByLength = make(map[string]*bucket)
 		set.buckets[keyLen] = bucketsByLength
+		set.bucketLengths = append(set.bucketLengths, keyLen)
+		slices.SortFunc(set.bucketLengths, func(a, b int) int {
+			return b - a
+		})
 	}
 
 	b := bucketsByLength[key]
