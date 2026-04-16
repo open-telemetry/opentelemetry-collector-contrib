@@ -18,6 +18,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
@@ -152,6 +153,7 @@ func (r ResourceMetricsUnmarshaler) unmarshalRecord(allResourceScopeMetrics map[
 		scopeMetrics = pmetric.NewScopeMetrics()
 		scopeMetrics.Scope().SetName(metadata.ScopeName)
 		scopeMetrics.Scope().SetVersion(r.buildInfo.Version)
+		scopeMetrics.Scope().Attributes().PutStr(constants.FormatIdentificationTag, constants.ProviderFromResourceID(azureMetric.ResourceID))
 		allResourceScopeMetrics[azureMetric.ResourceID] = scopeMetrics
 	}
 
