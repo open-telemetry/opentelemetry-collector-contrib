@@ -29,6 +29,10 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 		return resp, err
 	}
 
+	if !isRetryable(resp) {
+		return resp, nil
+	}
+
 	b := &backoff.ExponentialBackOff{
 		InitialInterval:     rt.cfg.InitialInterval,
 		RandomizationFactor: rt.cfg.RandomizationFactor,
@@ -48,28 +52,37 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 
 		delay := b.NextBackOff()
 
-		// Honor Retry-After header from GitHub secondary rate limits,
-		// capped to MaxInterval to prevent excessive delays.
+		// Honor Retry-After header from GitHub rate limits. The value is
+		// used as-is (not capped) because retrying before the server's
+		// requested delay just wastes an attempt. Context cancellation
+		// and MaxRetries already bound total retry behavior.
 		if ra := parseRetryAfter(resp.Header); ra > 0 {
-			delay = min(time.Duration(ra)*time.Second, rt.cfg.MaxInterval)
+			delay = time.Duration(ra) * time.Second
 			b.Reset()
 		}
 
-		rt.logger.Warn("retrying GitHub API request",
+		rt.logger.Debug("retrying GitHub API request",
+			zap.String("url", req.URL.String()),
 			zap.Int("status", resp.StatusCode),
 			zap.Int("attempt", attempt+1),
 			zap.Duration("backoff", delay),
 		)
 
 		// Drain and close the response body to reuse the TCP connection.
-		io.Copy(io.Discard, resp.Body) //nolint:errcheck
-		resp.Body.Close()
+		if _, drainErr := io.Copy(io.Discard, resp.Body); drainErr != nil {
+			rt.logger.Debug("failed to drain response body", zap.Error(drainErr))
+		}
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			rt.logger.Debug("failed to close response body", zap.Error(closeErr))
+		}
 
 		// Wait for backoff or context cancellation.
+		timer := time.NewTimer(delay)
 		select {
 		case <-req.Context().Done():
+			timer.Stop()
 			return nil, req.Context().Err()
-		case <-time.After(delay):
+		case <-timer.C:
 		}
 
 		// Reset request body for retry (genqlient uses bytes.NewReader which

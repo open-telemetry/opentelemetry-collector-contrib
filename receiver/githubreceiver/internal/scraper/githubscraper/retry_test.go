@@ -135,7 +135,7 @@ func TestRetryOn403WithRetryAfter(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	// Retry-After of 1s is capped to MaxInterval (5ms) by the round tripper.
+	// Retry-After of 1s is respected as-is (not capped).
 	rt := newTestRetryRT(http.DefaultTransport)
 	client := &http.Client{Transport: rt}
 

@@ -63,7 +63,9 @@ formula). A sensible default is `300s`.
 ### Automatic Retry
 
 The scraper automatically retries requests that fail with transient HTTP errors
-using exponential backoff with jitter. The following responses are retried:
+using exponential backoff with jitter.
+
+The following responses are retried:
 
 - **502 Bad Gateway** -- GitHub's proxy failed to reach the backend
 - **503 Service Unavailable** -- GitHub is temporarily down for maintenance
@@ -81,11 +83,11 @@ Retry behaviour is configurable under `retry_on_failure`:
 github:
   github_org: my-org
   retry_on_failure:
-    enabled: true           # default
-    max_retries: 10         # default; 0 = unlimited (bounded by context)
-    initial_interval: 1s    # default
-    max_interval: 30s       # default
-    multiplier: 1.5         # default
+    enabled: true              # default
+    max_retries: 10            # default; 0 = unlimited (bounded by context)
+    initial_interval: 1s       # default
+    max_interval: 30s          # default
+    multiplier: 1.5            # default
     randomization_factor: 0.5  # default
 ```
 
