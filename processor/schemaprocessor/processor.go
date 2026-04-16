@@ -65,9 +65,7 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 	for rt := 0; rt < ld.ResourceLogs().Len(); rt++ {
 		rLogs := ld.ResourceLogs().At(rt)
 		resourceSchemaURL := rLogs.SchemaUrl()
-		if resourceSchemaURL == "" {
-			t.telemetryBuilder.ProcessorSchemaResourceSkipped.Add(ctx, 1)
-		} else {
+		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
 			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
@@ -116,9 +114,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 	for mt := 0; mt < md.ResourceMetrics().Len(); mt++ {
 		rMetric := md.ResourceMetrics().At(mt)
 		resourceSchemaURL := rMetric.SchemaUrl()
-		if resourceSchemaURL == "" {
-			t.telemetryBuilder.ProcessorSchemaResourceSkipped.Add(ctx, 1)
-		} else {
+		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
 			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
@@ -167,10 +163,7 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 	for rt := 0; rt < td.ResourceSpans().Len(); rt++ {
 		rTrace := td.ResourceSpans().At(rt)
 		resourceSchemaURL := rTrace.SchemaUrl()
-
-		if resourceSchemaURL == "" {
-			t.telemetryBuilder.ProcessorSchemaResourceSkipped.Add(ctx, 1)
-		} else {
+		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
 			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {

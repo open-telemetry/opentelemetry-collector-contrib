@@ -156,9 +156,6 @@ func TestSkipCounters(t *testing.T) {
 	_, err = proc.processTraces(t.Context(), td)
 	require.NoError(t, err)
 
-	metadatatest.AssertEqualProcessorSchemaResourceSkipped(t, testTel,
-		[]metricdata.DataPoint[int64]{{Value: 3}},
-		metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualProcessorSchemaLogsSkipped(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
