@@ -1239,13 +1239,10 @@ func TestConflictingScopeAttributesDropped(t *testing.T) {
 	tsMap, err := FromMetrics(md, Settings{})
 	require.NoError(t, err)
 	require.NotEmpty(t, tsMap)
+	require.Len(t, tsMap, 1)
 
-	var ts *prompb.TimeSeries
-	for _, v := range tsMap {
-		ts = v
-		break
-	}
-	require.NotNil(t, ts)
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
 
 	labels := make(map[string]string)
 	for _, l := range ts.Labels {
@@ -1254,5 +1251,6 @@ func TestConflictingScopeAttributesDropped(t *testing.T) {
 
 	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should come from scope.Name(), not attribute")
 	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should come from scope.Version(), not attribute")
+	assert.NotContains(t, labels, "otel_scope_schema_url", "schema_url should not be exported as scope attribute")
 	assert.Equal(t, "valid-value", labels["otel_scope_valid_attr"], "valid scope attribute should be present")
 }
