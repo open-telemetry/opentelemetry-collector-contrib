@@ -31,8 +31,9 @@ func createDefaultConfig() component.Config {
 	httpClientConfig.Timeout = 10 * time.Second
 
 	return &Config{
-		ClientConfig: httpClientConfig,
-		RetryConfig:  configretry.NewDefaultBackOffConfig(),
+		ClientConfig:               httpClientConfig,
+		RetryConfig:                configretry.NewDefaultBackOffConfig(),
+		EnrichMetricWithAttributes: true,
 	}
 }
 

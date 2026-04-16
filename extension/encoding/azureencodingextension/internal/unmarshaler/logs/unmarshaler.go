@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/constants"
@@ -86,9 +86,9 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	// `gojson.Path.Extract` is a bit faster and use ~25% less bytes per operation
 	// comparing to unmarshaling to intermediate structure (e.g. using `var recordsHolder []json.RawMessage`)
 	case unmarshaler.FormatObjectRecords, unmarshaler.FormatJSONArray:
-		jsonPath := unmarshaler.JSONPathEventHubLogRecords
+		jsonPath := unmarshaler.JSONPathEventHubRecords
 		if batchFormat == unmarshaler.FormatJSONArray {
-			jsonPath = unmarshaler.JSONPathBlobStorageLogRecords
+			jsonPath = unmarshaler.JSONPathBlobStorageRecords
 		}
 
 		// This will allow us to parse Azure Log Records in both formats:
@@ -109,10 +109,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		for _, record := range records {
 			r.unmarshalRecord(allResourceScopeLogs, record)
 		}
-	// This is happened on empty input
+	// This happens on empty input
 	case unmarshaler.FormatUnknown:
 		return plog.NewLogs(), nil
 	default:
+		return plog.NewLogs(), fmt.Errorf("unrecognized batch format: %q", batchFormat)
 	}
 
 	l := plog.NewLogs()

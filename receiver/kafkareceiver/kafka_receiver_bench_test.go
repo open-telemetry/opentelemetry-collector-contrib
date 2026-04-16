@@ -10,37 +10,43 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
-func BenchmarkContextWithHeaders(b *testing.B) {
+func BenchmarkContextWithMetadata(b *testing.B) {
 	baseCtx := b.Context()
 	tests := []struct {
-		name    string
-		headers messageHeaders
+		name   string
+		record *kgo.Record
 	}{
 		{
-			name:    "no headers",
-			headers: franzHeaders{headers: nil},
+			name:   "no headers",
+			record: &kgo.Record{Topic: "test-topic", Partition: 0, Offset: 42},
 		},
 		{
 			name: "1 header",
-			headers: franzHeaders{headers: []kgo.RecordHeader{
-				{Key: "trace-id", Value: []byte("abc123")},
-			}},
+			record: &kgo.Record{
+				Topic: "test-topic", Partition: 0, Offset: 42,
+				Headers: []kgo.RecordHeader{
+					{Key: "trace-id", Value: []byte("abc123")},
+				},
+			},
 		},
 		{
 			name: "5 headers",
-			headers: franzHeaders{headers: []kgo.RecordHeader{
-				{Key: "trace-id", Value: []byte("abc123")},
-				{Key: "span-id", Value: []byte("def456")},
-				{Key: "tenant", Value: []byte("acme")},
-				{Key: "source", Value: []byte("app1")},
-				{Key: "env", Value: []byte("prod")},
-			}},
+			record: &kgo.Record{
+				Topic: "test-topic", Partition: 0, Offset: 42,
+				Headers: []kgo.RecordHeader{
+					{Key: "trace-id", Value: []byte("abc123")},
+					{Key: "span-id", Value: []byte("def456")},
+					{Key: "tenant", Value: []byte("acme")},
+					{Key: "source", Value: []byte("app1")},
+					{Key: "env", Value: []byte("prod")},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
 			for b.Loop() {
-				_ = contextWithHeaders(baseCtx, tt.headers)
+				_ = contextWithMetadata(baseCtx, tt.record)
 			}
 		})
 	}
@@ -64,12 +70,10 @@ func BenchmarkGetMessageHeaderResourceAttributes(b *testing.B) {
 				Key:   "unrelated",
 				Value: []byte("ignored"),
 			})
-			headers := franzHeaders{headers: kgoHeaders}
-
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				for k, v := range getMessageHeaderResourceAttributes(headers, headerAttrKeys) {
+				for k, v := range getMessageHeaderResourceAttributes(kgoHeaders, headerAttrKeys) {
 					_ = k
 					_ = v
 				}

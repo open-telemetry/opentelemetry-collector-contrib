@@ -46,14 +46,21 @@ The following settings can be optionally configured:
   - `topic` (default = otlp\_spans): The name of the Kafka topic to publish traces to.
   - `encoding` (default = otlp\_proto): The encoding for traces. See [Supported encodings](#supported-encodings).
   - `topic_from_metadata_key` (default = ""): The name of the metadata key whose value should be used as the message's topic. Useful to dynamically produce to topics based on request inputs. It takes precedence over `topic_from_attribute` and `topic` settings.
-- `topic` (Deprecated in v0.124.0: use `logs::topic`, `metrics::topic`, and `traces::topic`) If specified, this is used as the default topic, but will be overridden by signal-specific configuration. See [Destination Topic](#destination-topic) below for more details.
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details.
-- `encoding` (Deprecated in v0.124.0: use `logs::encoding`, `metrics::encoding`, and `traces::encoding`) If specified, this is used as the default encoding, but will be overridden by signal-specific configuration. See [Supported encodings](#supported-encodings) below for more details.
-- `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored. The keys also partition the data before export if `sending_queue::batch` is defined.
+- `include_metadata_keys` (default = []): Specifies a list of metadata keys to propagate as Kafka message headers. If one or more keys aren't found in the metadata, they are ignored. When `sending_queue::batch` is enabled, `sending_queue::batch::partition::metadata_keys` must be configured and include all values configured in `include_metadata_keys`.
+- `record_headers` (default = {}): Specifies a map of key/value pairs to set as static headers on every outgoing Kafka record.
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `partition_logs_by_trace_id` (default = false): configures the exporter to partition log messages by trace ID, if the log record has one associated. Note: `partition_logs_by_resource_attributes` and `partition_logs_by_trace_id` are mutually exclusive, and enabling both will lead to an error.
+- `record_partitioner`: Configures the Kafka record partitioning strategy. **At most one** option may be set. If multiple partitioners are configured, an error will be returned. If none is configured, the default is `sticky_key` with a Sarama-compatible hasher (preserving previous behavior).
+  - `sticky_key`: Uses a sticky-key partitioner.
+    - `hasher`: The hash algorithm used for key-based partition assignment.
+      - `sarama_compat` (default): Uses Sarama-compatible FNV-1a hashing.
+      - `murmur2`: Uses Murmur2 hashing
+  - `round_robin`: Distributes records evenly across all available partitions in round-robin order.
+  - `least_backup`: Routes each record to the partition with the fewest buffered (in-flight) records.
+  - `extension`: The component ID of a custom partitioner extension. When set, partitioning is delegated to the specified extension.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options. Set to `tls: insecure: false` explicitly when using `AWS_MSK_IAM_OAUTHBEARER` as the authentication method.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
@@ -100,7 +107,7 @@ The following settings can be optionally configured:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
-  - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
+  - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes, calculated before compression.
   - `required_acks` (default = 1) controls when a message is regarded as transmitted. <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks>
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` <https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type>
   - `compression_params`
@@ -152,13 +159,48 @@ exporters:
   kafka:
     brokers:
       - localhost:9092
+    record_headers:
+      my-custom-header: "my-custom-value"
+      another-header: "another-value"
 ```
 
 ## Destination Topic
 
 The destination topic can be defined in a few different ways and takes priority in the following order:
 
-1. When `<signal>.topic_from_metadata_key` is set to use a key from the request metadata, the value of this key is used as the signal specific topic.
+1. When `<signal>::topic_from_metadata_key` is set to use a key from the request metadata, the value of this key is used as the signal specific topic.
 2. Otherwise, if `topic_from_attribute` is configured, and the corresponding attribute is found on the ingested data, the value of this attribute is used.
 3. If a prior component in the collector pipeline sets the topic on the context via the `topic.WithTopic` function (from the `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic` package), the value set in the context is used.
-4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic. If this is not explicitly configured, the `topic` configuration (deprecated in v0.124.0) is used as a fallback for all signals.
+4. Finally, the `<signal>::topic` configuration is used for the signal-specific destination topic.
+
+## Partitioning Kafka Records
+
+The exporter supports multiple strategies to control how records are distributed across kafka partitions within a topic. 
+
+Available strategies for partitioning are `sticky_key`, `sticky`, `round_robin`, `least_backup` and `extension`
+
+### Using custom partitioner
+
+The Kafka exporter allows you to define a custom partitioning strategy via an extension. A sample config for custom partitioner would look like:
+
+```yaml
+exporters:
+  kafka:
+    brokers:
+      - localhost:9092
+    record_partitioner:
+      extension: my_custom_partitioner
+  
+extensions:
+  my_custom_partitioner:
+    # your extension-specific configuration here
+
+# rest of the pipeline config
+```
+
+Use custom partitioner if:
+- Built-in strategies (round_robin, least_backup, etc.) don’t fit your needs
+- You require domain-specific routing logic
+
+> [!NOTE]
+> The custom partitioner extension must implement the RecordPartitionerExtension interface (see [partitioner.go](./partitioner.go)).

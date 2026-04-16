@@ -48,3 +48,7 @@ func (r *rateLimiting) Evaluate(_ context.Context, _ pcommon.TraceID, trace *sam
 
 	return samplingpolicy.NotSampled, nil
 }
+
+func (*rateLimiting) IsStateful() bool {
+	return true
+}

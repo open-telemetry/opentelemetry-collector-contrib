@@ -4,9 +4,10 @@ go 1.25.0
 
 require (
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235
-	k8s.io/api v0.35.2
-	k8s.io/apimachinery v0.35.2
-	k8s.io/client-go v0.35.2
+	github.com/stretchr/testify v1.11.1
+	k8s.io/api v0.35.3
+	k8s.io/apimachinery v0.35.3
+	k8s.io/client-go v0.35.3
 )
 
 require (

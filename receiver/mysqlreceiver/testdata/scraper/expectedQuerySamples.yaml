@@ -1,5 +1,9 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: mysql.instance.endpoint
+          value:
+            stringValue: localhost:3306
     scopeLogs:
       - logRecords:
           - attributes:
@@ -27,12 +31,21 @@ resourceLogs:
               - key: mysql.events_statements_current.digest
                 value:
                   stringValue: aaaaaa
+              - key: mysql.query_plan.hash
+                value:
+                  stringValue: aaaaaa
               - key: mysql.event_id
                 value:
                   intValue: "17470257762"
               - key: mysql.wait_type
                 value:
                   stringValue: CPU
+              - key: mysql.session.status
+                value:
+                  stringValue: waiting
+              - key: mysql.session.id
+                value:
+                  intValue: "-54321"
               - key: mysql.events_waits_current.timer_wait
                 value:
                   doubleValue: 1.2851652e-05
@@ -50,7 +63,9 @@ resourceLogs:
                   intValue: "1234"
             body: {}
             eventName: db.server.query_sample
-            timeUnixNano: "1754284840912240000"
+            spanId: "2222222222222222"
+            timeUnixNano: "1774540151557334000"
+            traceId: "11111111111111111111111111111111"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
           version: latest
