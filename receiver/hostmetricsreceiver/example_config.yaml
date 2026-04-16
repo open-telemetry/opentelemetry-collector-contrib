@@ -3,7 +3,7 @@ extensions:
     endpoint: 0.0.0.0:55679
 
 receivers:
-  hostmetrics:
+  host_metrics:
     collection_interval: 1m
     scrapers:
       cpu:
@@ -25,7 +25,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [hostmetrics]
+      receivers: [host_metrics]
       exporters: [prometheus, debug]
 
   extensions: [zpages]
