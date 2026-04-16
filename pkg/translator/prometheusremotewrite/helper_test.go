@@ -586,8 +586,8 @@ func Test_getPromExemplarsV2(t *testing.T) {
 			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     floatVal1,
-					Timestamp: timestamp.FromTime(tnow),
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
 					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
@@ -597,18 +597,72 @@ func Test_getPromExemplarsV2(t *testing.T) {
 			histogram: getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     float64(intVal2),
-					Timestamp: timestamp.FromTime(tnow),
+					Value:      float64(intVal2),
+					Timestamp:  timestamp.FromTime(tnow),
 					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
 		},
+		{
+			name:      "with_exemplars_without_trace_or_span",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", label11, value11),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+		},
+		{
+			name:      "too_many_runes_drops_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: nil,
+				},
+			},
+		},
+		{
+			name:      "runes_at_limit_bytes_over_keeps_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith128Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+		},
+		{
+			name:      "too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, keyWith64Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+		},
+		{
+			name:      "without_exemplar",
+			histogram: pmetric.NewHistogramDataPoint(),
+			expected:  []writev2.Exemplar{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			symbols := make(map[string]uint32)
 			var counter uint32
 			symbolize := func(s string) uint32 {
+				if id, ok := symbols[s]; ok {
+					return id
+				}
 				counter++
+				symbols[s] = counter
 				return counter
 			}
 			requests := getPromExemplarsV2(tt.histogram, symbolize)

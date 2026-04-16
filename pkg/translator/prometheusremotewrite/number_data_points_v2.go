@@ -144,8 +144,7 @@ func getPromExemplarsV2[T exemplarType](pt T, symbolize func(string) uint32) []w
 		if len(labels) > 0 {
 			buf := make([]uint32, 0, len(labels)*2)
 			for _, l := range labels {
-				buf = append(buf, symbolize(l.Name))
-				buf = append(buf, symbolize(l.Value))
+				buf = append(buf, symbolize(l.Name), symbolize(l.Value))
 			}
 			promExemplar.LabelsRefs = buf
 		}
