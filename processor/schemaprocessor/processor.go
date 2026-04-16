@@ -35,7 +35,7 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		return nil, errors.New("invalid configuration provided")
 	}
 
-	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -43,10 +43,7 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 	m, err := translation.NewManager(
 		cfg.Targets,
 		set.Logger.Named("schema-manager"),
-		translation.ManagerTelemetry{
-			CacheHit:  tb.ProcessorSchemaCacheHits,
-			CacheMiss: tb.ProcessorSchemaCacheMisses,
-		},
+		telemetryBuilder,
 	)
 	if err != nil {
 		return nil, err
@@ -56,7 +53,7 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		telemetry:        set.TelemetrySettings,
 		log:              set.Logger,
 		manager:          m,
-		telemetryBuilder: tb,
+		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 

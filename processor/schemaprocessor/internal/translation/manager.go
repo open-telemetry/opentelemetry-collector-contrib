@@ -10,18 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 )
 
 var errNilValueProvided = errors.New("nil value provided")
-
-// ManagerTelemetry holds optional metric instruments for the manager.
-// The zero value is safe: nil counters are no-ops in CacheableProvider.
-type ManagerTelemetry struct {
-	CacheHit  metric.Int64Counter
-	CacheMiss metric.Int64Counter
-}
 
 // Manager is responsible for ensuring that schemas are kept up to date
 // with the most recent version that are requested.
@@ -36,8 +30,8 @@ type Manager interface {
 }
 
 type manager struct {
-	log *zap.Logger
-	tel ManagerTelemetry
+	log              *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	rw            sync.RWMutex
 	providers     []Provider
@@ -49,7 +43,7 @@ var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
 // of schema
-func NewManager(targetSchemaURLS []string, log *zap.Logger, tel ManagerTelemetry, providers ...Provider) (Manager, error) {
+func NewManager(targetSchemaURLS []string, log *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder, providers ...Provider) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
@@ -64,10 +58,10 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, tel ManagerTelemetry
 	}
 
 	m := &manager{
-		log:           log,
-		tel:           tel,
-		match:         match,
-		translatorMap: make(map[string]*translator),
+		log:              log,
+		telemetryBuilder: telemetryBuilder,
+		match:            match,
+		translatorMap:    make(map[string]*translator),
 	}
 
 	// wrap providers with cacheable provider
@@ -81,8 +75,7 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, tel ManagerTelemetry
 // newCacheableProvider wraps p with a CacheableProvider wired to the manager's telemetry.
 func (m *manager) newCacheableProvider(p Provider) Provider {
 	cp := NewCacheableProvider(p, 5*time.Minute, 5).(*CacheableProvider)
-	cp.hitCounter = m.tel.CacheHit
-	cp.missCounter = m.tel.CacheMiss
+	cp.telemetryBuilder = m.telemetryBuilder
 	return cp
 }
 

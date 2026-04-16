@@ -10,10 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadatatest"
 )
 
 type firstErrorProvider struct {
@@ -38,26 +41,6 @@ func (p *staticProvider) Retrieve(_ context.Context, _ string) (string, error) {
 	return p.value, nil
 }
 
-func collectSum(t *testing.T, reader sdkmetric.Reader, name string) int64 {
-	var rm metricdata.ResourceMetrics
-	require.NoError(t, reader.Collect(t.Context(), &rm))
-	for _, sm := range rm.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name != name {
-				continue
-			}
-			sum, ok := m.Data.(metricdata.Sum[int64])
-			require.True(t, ok)
-			var total int64
-			for _, dp := range sum.DataPoints {
-				total += dp.Value
-			}
-			return total
-		}
-	}
-	return 0
-}
-
 func TestCacheableProviderCounters(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -80,27 +63,30 @@ func TestCacheableProviderCounters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader := sdkmetric.NewManualReader()
-			mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-			t.Cleanup(func() { assert.NoError(t, mp.Shutdown(t.Context())) })
+			testTel := componenttest.NewTelemetry()
 
-			meter := mp.Meter("test")
-			hitCounter, err := meter.Int64Counter("cache.hits")
-			require.NoError(t, err)
-			missCounter, err := meter.Int64Counter("cache.misses")
+			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(testTel).TelemetrySettings)
 			require.NoError(t, err)
 
 			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5).(*CacheableProvider)
-			cp.hitCounter = hitCounter
-			cp.missCounter = missCounter
+			cp.telemetryBuilder = tb
 
 			for _, key := range tt.retrievals {
 				_, err := cp.Retrieve(t.Context(), key)
 				require.NoError(t, err)
 			}
 
-			assert.Equal(t, tt.wantHits, collectSum(t, reader, "cache.hits"))
-			assert.Equal(t, tt.wantMisses, collectSum(t, reader, "cache.misses"))
+			if tt.wantHits > 0 {
+				metadatatest.AssertEqualProcessorSchemaCacheHits(t, testTel,
+					[]metricdata.DataPoint[int64]{{Value: tt.wantHits}},
+					metricdatatest.IgnoreTimestamp())
+			}
+			if tt.wantMisses > 0 {
+				metadatatest.AssertEqualProcessorSchemaCacheMisses(t, testTel,
+					[]metricdata.DataPoint[int64]{{Value: tt.wantMisses}},
+					metricdatatest.IgnoreTimestamp())
+			}
+			require.NoError(t, testTel.Shutdown(t.Context()))
 		})
 	}
 }

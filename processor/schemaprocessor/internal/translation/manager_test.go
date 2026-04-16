@@ -14,7 +14,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 )
 
 //go:embed testdata/schema.yaml
@@ -36,10 +39,13 @@ func TestRequestTranslation(t *testing.T) {
 
 	schemaURL := fmt.Sprintf("%s/1.1.0", s.URL)
 
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
 	m, err := NewManager(
 		[]string{schemaURL},
 		zaptest.NewLogger(t),
-		ManagerTelemetry{},
+		telemetryBuilder,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err, "Must not error when created manager")
@@ -76,10 +82,13 @@ func (*errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
 func TestManagerError(t *testing.T) {
 	t.Parallel()
 
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
 	m, err := NewManager(
 		[]string{"http://localhost/1.1.0"},
 		zaptest.NewLogger(t),
-		ManagerTelemetry{},
+		telemetryBuilder,
 		&errorProvider{},
 	)
 	require.NoError(t, err, "Must not error when created manager")
