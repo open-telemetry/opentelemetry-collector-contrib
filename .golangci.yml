@@ -195,10 +195,6 @@ linters:
         text: confighttp
       - linters:
           - forbidigo
-        path: extension/datadogextension/
-        text: confighttp
-      - linters:
-          - forbidigo
         path: testbed/
         text: confighttp
 
