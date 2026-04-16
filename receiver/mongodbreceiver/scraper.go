@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -32,6 +33,20 @@ var (
 	otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 )
 
+const (
+	namespaceKey             = "ns"
+	commandKey               = "command"
+	opKey                    = "op"
+	activeKey                = "active"
+	durationMicrosKey        = "microsecs_running"
+	clientKey                = "client"
+	applicationNameKey       = "appName"
+	effectiveUsersKey        = "effectiveUsers"
+	operationIDKey           = "opid"
+	waitingForLockKey        = "waitingForLock"
+	waitingForFlowControlKey = "waitingForFlowControl"
+)
+
 // generateInstanceID generates a deterministic UUID v5 from server address and port.
 func generateInstanceID(serverAddress string, serverPort int64) string {
 	name := fmt.Sprintf("%s:%d", serverAddress, serverPort)
@@ -45,12 +60,14 @@ type mongodbScraper struct {
 	secondaryClients   []client
 	mongoVersion       *version.Version
 	mb                 *metadata.MetricsBuilder
+	lb                 *metadata.LogsBuilder
 	prevReplTimestamp  pcommon.Timestamp
 	prevReplCounts     map[string]int64
 	prevTimestamp      pcommon.Timestamp
 	prevFlushTimestamp pcommon.Timestamp
 	prevCounts         map[string]int64
 	prevFlushCount     int64
+	obfuscator         *obfuscator
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
@@ -58,6 +75,7 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		logger:             settings.Logger,
 		config:             config,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lb:                 metadata.NewLogsBuilder(config.LogsBuilderConfig, settings),
 		mongoVersion:       unknownVersion(),
 		prevReplTimestamp:  pcommon.Timestamp(0),
 		prevReplCounts:     make(map[string]int64),
@@ -65,6 +83,7 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		prevFlushTimestamp: pcommon.Timestamp(0),
 		prevCounts:         make(map[string]int64),
 		prevFlushCount:     0,
+		obfuscator:         newObfuscator(),
 	}
 }
 
@@ -143,6 +162,206 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
 	s.collectMetrics(ctx, errs)
 	return s.mb.Emit(), errs.Combine()
+}
+
+func (s *mongodbScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	if err := s.scrapeLogsFromClient(ctx, s.client, now); err != nil {
+		return plog.NewLogs(), err
+	}
+
+	for _, c := range s.secondaryClients {
+		if err := s.scrapeLogsFromClient(ctx, c, now); err != nil {
+			s.logger.Warn("Failed to scrape logs from secondary", zap.Error(err))
+		}
+	}
+
+	return s.lb.Emit(), nil
+}
+
+func (s *mongodbScraper) scrapeLogsFromClient(ctx context.Context, c client, now pcommon.Timestamp) error {
+	operations, err := c.CurrentOp(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get current operations", zap.Error(err))
+		return err
+	}
+
+	s.processCurrentOp(ctx, operations, now)
+
+	serverStatus, err := c.ServerStatus(ctx, "admin")
+	if err != nil {
+		s.logger.Debug("Failed to get server status for logs", zap.Error(err))
+		s.lb.EmitForResource()
+		return nil
+	}
+
+	serverAddress, serverPort, err := serverAddressAndPort(serverStatus)
+	if err != nil {
+		s.logger.Debug("Failed to extract server address and port for logs", zap.Error(err))
+		s.lb.EmitForResource()
+		return nil
+	}
+
+	rb := s.lb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	s.lb.EmitForResource(metadata.WithLogsResource(rb.Emit()))
+	return nil
+}
+
+func (s *mongodbScraper) processCurrentOp(ctx context.Context, operations []bson.M, now pcommon.Timestamp) {
+	for _, op := range operations {
+		if !s.shouldIncludeOperation(op) {
+			continue
+		}
+		namespace := getValue[string](op, namespaceKey)
+		databaseName := getDBFromNamespace(namespace)
+		command := getValue[bson.D](op, commandKey)
+		opType := getValue[string](op, opKey)
+		commandType := command[0].Key
+		operationStatus, ok := deriveOperationStatus(op)
+		if !ok {
+			s.logger.Debug("Skipping operation without supported status", zap.Any("operation", op))
+			continue
+		}
+		durationSeconds := float64(getValue[int64](op, durationMicrosKey)) / 1_000_000.0
+		clientAddr := getValue[string](op, clientKey)
+		applicationName := getValue[string](op, applicationNameKey)
+		userName := extractEffectiveUserName(op)
+		operationID := extractOperationID(op)
+		port := 0
+		server := ""
+		if clientAddr != "" {
+			clientSplit := strings.Split(clientAddr, ":")
+			server = clientSplit[0]
+			if len(clientSplit) > 1 {
+				if p, err := strconv.Atoi(clientSplit[1]); err == nil {
+					port = p
+				}
+			}
+		}
+		collectionName := getCollectionFromNamespace(namespace)
+		cleanedCommand := cleanCommand(command)
+		obfuscatedStatement := s.obfuscator.obfuscateMongoDBString(cleanedCommand.String())
+
+		s.lb.RecordDbServerQuerySampleEvent(
+			ctx,
+			now,
+			server,
+			int64(port),
+			metadata.AttributeDbSystemNameMongodb,
+			namespace,
+			collectionName,
+			commandType,
+			obfuscatedStatement,
+			userName,
+			applicationName,
+			databaseName,
+			operationID,
+			operationStatus,
+			opType,
+			durationSeconds,
+		)
+	}
+	s.logger.Debug("Processed MongoDB current operations", zap.Int("total_operations", len(operations)))
+}
+
+func extractOperationID(op bson.M) string {
+	if opIDRaw, ok := op[operationIDKey]; ok {
+		return fmt.Sprintf("%v", opIDRaw)
+	}
+	return ""
+}
+
+func deriveOperationStatus(op bson.M) (metadata.AttributeMongodbOperationStatus, bool) {
+	if getValue[bool](op, waitingForLockKey) || getValue[bool](op, waitingForFlowControlKey) {
+		return metadata.AttributeMongodbOperationStatusWaiting, true
+	}
+	if getValue[bool](op, activeKey) {
+		return metadata.AttributeMongodbOperationStatusActive, true
+	}
+	return 0, false
+}
+
+func extractEffectiveUserName(op bson.M) string {
+	effectiveUsers, ok := op[effectiveUsersKey].(bson.A)
+	if !ok || len(effectiveUsers) == 0 {
+		return ""
+	}
+
+	switch first := effectiveUsers[0].(type) {
+	case bson.M:
+		user, _ := first["user"].(string)
+		return user
+	case bson.D:
+		for _, e := range first {
+			if e.Key == "user" {
+				user, _ := e.Value.(string)
+				return user
+			}
+		}
+	case map[string]any:
+		user, _ := first["user"].(string)
+		return user
+	}
+
+	return ""
+}
+
+func (s *mongodbScraper) shouldIncludeOperation(op bson.M) bool {
+	if ns := getValue[string](op, namespaceKey); ns == "" {
+		s.logger.Debug("Skipping operation without namespace", zap.Any("operation", op))
+		return false
+	}
+
+	if db := getDBFromNamespace(getValue[string](op, namespaceKey)); db == "admin" || db == "local" {
+		s.logger.Debug("Skipping operation for admin and local database", zap.Any("operation", op))
+		return false
+	}
+
+	command := getValue[bson.D](op, commandKey)
+	if len(command) == 0 {
+		s.logger.Debug("Skipping operation without command", zap.Any("operation", op))
+		return false
+	}
+
+	for _, v := range command {
+		if v.Key == "hello" || v.Key == "ping" || v.Key == "isMaster" {
+			s.logger.Debug("Skipping operation", zap.Any("operation", op))
+			return false
+		}
+	}
+
+	return true
+}
+
+func getDBFromNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, ".", 2)
+	if len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
+}
+
+func getCollectionFromNamespace(namespace string) string {
+	parts := strings.SplitN(namespace, ".", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return ""
+}
+
+// getValue extracts a value from a BSON document with type assertion
+func getValue[T any](doc bson.M, key string) T {
+	var zero T
+	if val, ok := doc[key]; ok {
+		if typedVal, ok := val.(T); ok {
+			return typedVal
+		}
+	}
+	return zero
 }
 
 func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {

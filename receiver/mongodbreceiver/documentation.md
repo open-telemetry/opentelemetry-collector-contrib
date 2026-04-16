@@ -534,6 +534,49 @@ The number of bytes read into the WiredTiger cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | true | Development |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### db.server.query_sample
+
+query sample
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| client.address | Hostname or address of the client. | Any Str | - |
+| client.port | TCP port used by the client. | Any Int | - |
+| db.system.name | The database management system (DBMS) product as identified by the client instrumentation. | Str: ``mongodb`` | - |
+| db.namespace | The name of a database. | Any Str | - |
+| db.collection.name | The namespace of the MongoDB operation (database.collection). | Any Str | - |
+| db.operation.name | The name of the MongoDB command being executed. | Any Str | - |
+| db.query.text | The obfuscated MongoDB command statement. | Any Str | - |
+| user.name | Name of the user associated with the operation. | Any Str | - |
+| mongodb.application.name | The identifier of the client application which ran the operation | Any Str | - |
+| mongodb.database.name | The name of the MongoDB database. | Any Str | - |
+| mongodb.operation.id | Identifier of the MongoDB operation. | Any Str | - |
+| mongodb.operation.status | Simplified status of the MongoDB operation. | Str: ``active``, ``waiting`` | - |
+| mongodb.operation.type | The low-level MongoDB operation type (e.g. query, insert, update, remove, getmore, command). | Any Str | - |
+| mongodb.operation.duration | The duration of the MongoDB operation in seconds. | Any Double | - |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled | Semantic Convention |
