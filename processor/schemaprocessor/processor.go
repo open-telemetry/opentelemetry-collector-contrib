@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
@@ -26,11 +25,8 @@ type schemaProcessor struct {
 
 	log *zap.Logger
 
-	manager translation.Manager
-
-	logsSkipped    metric.Int64Counter
-	metricsSkipped metric.Int64Counter
-	tracesSkipped  metric.Int64Counter
+	manager          translation.Manager
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func newSchemaProcessor(_ context.Context, conf component.Config, set processor.Settings) (*schemaProcessor, error) {
@@ -56,32 +52,33 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		return nil, err
 	}
 	return &schemaProcessor{
-		config:         cfg,
-		telemetry:      set.TelemetrySettings,
-		log:            set.Logger,
-		manager:        m,
-		logsSkipped:    tb.ProcessorSchemaLogsSkipped,
-		metricsSkipped: tb.ProcessorSchemaMetricsSkipped,
-		tracesSkipped:  tb.ProcessorSchemaTracesSkipped,
+		config:           cfg,
+		telemetry:        set.TelemetrySettings,
+		log:              set.Logger,
+		manager:          m,
+		telemetryBuilder: tb,
 	}, nil
 }
 
 func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	var skipped int64
+	var skipped, failed int64
 	for rt := 0; rt < ld.ResourceLogs().Len(); rt++ {
 		rLogs := ld.ResourceLogs().At(rt)
 		resourceSchemaURL := rLogs.SchemaUrl()
-		if resourceSchemaURL != "" {
+		if resourceSchemaURL == "" {
+			t.telemetryBuilder.ProcessorSchemaResourceSkipped.Add(ctx, 1)
+		} else {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
-			tr, err := t.manager.
-				RequestTranslation(ctx, resourceSchemaURL)
+			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
+				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return ld, err
 			}
 			err = tr.ApplyAllResourceChanges(rLogs, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply resource changes", zap.Error(err))
+				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return ld, err
 			}
 		}
@@ -92,39 +89,47 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 				skipped++
 				continue
 			}
-			tr, err := t.manager.
-				RequestTranslation(ctx, schemaURL)
+			tr, err := t.manager.RequestTranslation(ctx, schemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
+				failed++
 				continue
 			}
 			err = tr.ApplyScopeLogChanges(logs, schemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope log changes", zap.Error(err))
+				failed++
 			}
 		}
 	}
 	if skipped > 0 {
-		t.logsSkipped.Add(ctx, skipped)
+		t.telemetryBuilder.ProcessorSchemaLogsSkipped.Add(ctx, skipped)
+	}
+	if failed > 0 {
+		t.telemetryBuilder.ProcessorSchemaLogsFailed.Add(ctx, failed)
 	}
 	return ld, nil
 }
 
 func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	var skipped int64
+	var skipped, failed int64
 	for mt := 0; mt < md.ResourceMetrics().Len(); mt++ {
 		rMetric := md.ResourceMetrics().At(mt)
 		resourceSchemaURL := rMetric.SchemaUrl()
-		if resourceSchemaURL != "" {
+		if resourceSchemaURL == "" {
+			t.telemetryBuilder.ProcessorSchemaResourceSkipped.Add(ctx, 1)
+		} else {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
 			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
+				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return md, err
 			}
 			err = tr.ApplyAllResourceChanges(rMetric, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply resource changes", zap.Error(err))
+				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return md, err
 			}
 		}
@@ -135,42 +140,48 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 				skipped++
 				continue
 			}
-			tr, err := t.manager.
-				RequestTranslation(ctx, schemaURL)
+			tr, err := t.manager.RequestTranslation(ctx, schemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
-				return md, err
+				failed++
+				continue
 			}
 			err = tr.ApplyScopeMetricChanges(metric, schemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope metric changes", zap.Error(err))
-				return md, err
+				failed++
 			}
 		}
 	}
 	if skipped > 0 {
-		t.metricsSkipped.Add(ctx, skipped)
+		t.telemetryBuilder.ProcessorSchemaMetricsSkipped.Add(ctx, skipped)
+	}
+	if failed > 0 {
+		t.telemetryBuilder.ProcessorSchemaMetricsFailed.Add(ctx, failed)
 	}
 	return md, nil
 }
 
 func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	var skipped int64
+	var skipped, failed int64
 	for rt := 0; rt < td.ResourceSpans().Len(); rt++ {
 		rTrace := td.ResourceSpans().At(rt)
 		resourceSchemaURL := rTrace.SchemaUrl()
 
-		if resourceSchemaURL != "" {
+		if resourceSchemaURL == "" {
+			t.telemetryBuilder.ProcessorSchemaResourceSkipped.Add(ctx, 1)
+		} else {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
-			tr, err := t.manager.
-				RequestTranslation(ctx, resourceSchemaURL)
+			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
+				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return td, err
 			}
 			err = tr.ApplyAllResourceChanges(rTrace, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply resource changes", zap.Error(err))
+				t.telemetryBuilder.ProcessorSchemaResourceFailed.Add(ctx, 1)
 				return td, err
 			}
 		}
@@ -181,20 +192,24 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 				skipped++
 				continue
 			}
-			tr, err := t.manager.
-				RequestTranslation(ctx, schemaURL)
+			tr, err := t.manager.RequestTranslation(ctx, schemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
+				failed++
 				continue
 			}
 			err = tr.ApplyScopeSpanChanges(span, schemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope span changes", zap.Error(err))
+				failed++
 			}
 		}
 	}
 	if skipped > 0 {
-		t.tracesSkipped.Add(ctx, skipped)
+		t.telemetryBuilder.ProcessorSchemaTracesSkipped.Add(ctx, skipped)
+	}
+	if failed > 0 {
+		t.telemetryBuilder.ProcessorSchemaTracesFailed.Add(ctx, failed)
 	}
 	return td, nil
 }
