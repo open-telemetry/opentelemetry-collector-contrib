@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
-// RetryConfig defines retry behaviour for transient GitHub API errors.
+// RetryConfig defines retry behavior for transient GitHub API errors.
 type RetryConfig struct {
 	configretry.BackOffConfig `mapstructure:",squash"`
 	// MaxRetries is the maximum number of retry attempts per request.
@@ -38,7 +38,7 @@ type Config struct {
 	MergedPRLookbackDays int `mapstructure:"merged_pr_lookback_days"`
 	// SearchQuery is the query to use when defining a custom search for repository data
 	SearchQuery string `mapstructure:"search_query"`
-	// RetryConfig defines retry behaviour for transient GitHub API errors.
+	// RetryConfig defines retry behavior for transient GitHub API errors.
 	RetryConfig RetryConfig `mapstructure:"retry_on_failure"`
 }
 
@@ -53,7 +53,7 @@ func (cfg *Config) Validate() error {
 	if cfg.RetryConfig.MaxRetries < 0 {
 		return errors.New("max_retries must be non-negative")
 	}
-	if err := cfg.RetryConfig.BackOffConfig.Validate(); err != nil {
+	if err := cfg.RetryConfig.Validate(); err != nil {
 		return err
 	}
 	return nil

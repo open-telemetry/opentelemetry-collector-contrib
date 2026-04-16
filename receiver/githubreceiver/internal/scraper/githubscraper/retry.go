@@ -94,10 +94,10 @@ func (rt *retryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 // GitHub API error worth retrying.
 func isRetryable(resp *http.Response) bool {
 	switch resp.StatusCode {
-	case http.StatusTooManyRequests,     // 429
-		http.StatusBadGateway,           // 502
-		http.StatusServiceUnavailable,   // 503
-		http.StatusGatewayTimeout:       // 504
+	case http.StatusTooManyRequests, // 429
+		http.StatusBadGateway,         // 502
+		http.StatusServiceUnavailable, // 503
+		http.StatusGatewayTimeout:     // 504
 		return true
 	case http.StatusForbidden: // 403 -- only with Retry-After (secondary rate limit)
 		return resp.Header.Get("Retry-After") != ""
