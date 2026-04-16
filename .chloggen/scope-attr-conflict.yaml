@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/prometheusremotewrite
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "name", "version", and "schema_url" scope attributes are dropped to prevent conflicts with the scope's name, version, and schema url fields.
+note: Scope attributes "name", "version", and "schema_url" are dropped to prevent conflicts with the scope's name, version, and schema url fields.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47683]
