@@ -222,7 +222,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
-    - processor/spanpruning
+    - processor/span_pruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/tencentcvmdetector
