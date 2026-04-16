@@ -113,19 +113,18 @@ func TestMetrics_Errors(t *testing.T) {
 	tests := []struct {
 		name            string
 		in              pmetric.Metrics
-		wantErr         bool
 		errormsg        string
 		transformations string
 		targetVersion   string
 	}{
 		{
-			name: "scope_error_is_skipped",
+			name: "target_attribute_already_exists",
 			in: func() pmetric.Metrics {
 				in, err := golden.ReadMetrics(filepath.Join("testdata", "metric-with-old-attr.yaml"))
 				assert.NoError(t, err, "Failed to read input metrics")
 				return in
 			}(),
-			wantErr: false,
+			errormsg: "value \"old.attr.name\" already exists",
 			transformations: `
 	1.9.0:
 	  all:
@@ -149,7 +148,6 @@ func TestMetrics_Errors(t *testing.T) {
 				in.ResourceMetrics().At(0).SetSchemaUrl("invalid_schema_url")
 				return in
 			}(),
-			wantErr:  true,
 			errormsg: "invalid schema version",
 			transformations: `
 	1.9.0:
@@ -171,13 +169,10 @@ func TestMetrics_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := newTestSchemaProcessor(t, tt.transformations, tt.targetVersion)
-			_, err := pr.processMetrics(t.Context(), tt.in)
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Equal(t, tt.errormsg, err.Error())
-			} else {
-				assert.NoError(t, err)
-			}
+			ctx := t.Context()
+			_, err := pr.processMetrics(ctx, tt.in)
+			require.Error(t, err)
+			assert.Equal(t, tt.errormsg, err.Error())
 		})
 	}
 }
