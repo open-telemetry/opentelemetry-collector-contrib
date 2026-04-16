@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DeRuina/timberjack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -240,4 +241,53 @@ func TestMigrateLegacyBackups_NoFiles(t *testing.T) {
 
 	rotation := &Rotation{}
 	assert.NoError(t, migrateLegacyBackups(logPath, rotation, zap.NewNop()))
+}
+
+// TestMigrateLegacyBackups_TimberjackRecognizesRenamedFiles verifies the
+// critical integration property: after migration, timberjack actually
+// recognizes the renamed files and subjects them to max_days cleanup.
+//
+// This ensures the rename produces filenames that timberjack can parse, not
+// just that the rename itself succeeds.
+func TestMigrateLegacyBackups_TimberjackRecognizesRenamedFiles(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "data.jsonl")
+
+	// Create a lumberjack-format backup older than max_days so timberjack
+	// should delete it once it recognizes the file.
+	oldTS := time.Now().Add(-48 * time.Hour)
+	legacyFile := createLumberjackFile(t, dir, oldTS)
+
+	// Run the migration — renames data-<ts>.jsonl to data-<ts>-size.jsonl.
+	rotation := &Rotation{MaxDays: 1}
+	require.NoError(t, migrateLegacyBackups(logPath, rotation, zap.NewNop()))
+
+	// The original lumberjack file must be gone.
+	_, err := os.Stat(legacyFile)
+	require.True(t, os.IsNotExist(err), "lumberjack source file must have been renamed")
+
+	// Start a timberjack logger with the same path and retention config.
+	// Calling Rotate() triggers timberjack's cleanup mill (millRunOnce),
+	// which calls oldLogFiles() and removes files that violate max_days.
+	logger := &timberjack.Logger{
+		Filename:   logPath,
+		MaxAge:     rotation.MaxDays,
+		MaxBackups: rotation.MaxBackups,
+		LocalTime:  rotation.LocalTime,
+	}
+	require.NoError(t, logger.Rotate())
+	require.NoError(t, logger.Close())
+
+	// Give the async mill goroutine a moment to finish.
+	time.Sleep(200 * time.Millisecond)
+
+	// Timberjack should have deleted the renamed file since it is older than
+	// max_days. If it remains, timberjack did not recognize it — the rename
+	// produced an unrecognizable filename and the fix is broken.
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	for _, e := range entries {
+		assert.NotContains(t, e.Name(), oldTS.UTC().Format(lumberjackTimeFormat),
+			"timberjack must have cleaned up the renamed legacy file: %s", e.Name())
+	}
 }
