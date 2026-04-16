@@ -858,14 +858,26 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
+			if statement == "" {
+				return "", nil
+			}
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return "", nil
+				if s.config.UnsafeLogRawSQL {
+					s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
+						zap.String("column", columnName),
+						zap.String("statement", statement),
+						zap.Error(err))
+				}
+				return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
 			}
 
 			return obfuscated, nil
 		})
+
+		if queryTextVal == nil || queryTextVal.(string) == "" {
+			continue
+		}
 
 		var cached bool
 
@@ -927,7 +939,16 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
+		if s.config.UnsafeLogRawSQL {
+			s.logger.Debug("processing query row (unsafe_log_raw_sql enabled)",
+				zap.String("query_hash", queryHashVal),
+				zap.String("plan_hash", queryPlanHashVal),
+				zap.Any("row", row))
+		} else {
+			s.logger.Debug("processing query row",
+				zap.String("query_hash", queryHashVal),
+				zap.String("plan_hash", queryPlanHashVal))
+		}
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
@@ -967,7 +988,9 @@ func (s *sqlServerScraperHelper) retrieveValue(
 ) any {
 	value, err := valueRetriever(row, column)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", column, row[column], err))
+		s.logger.Error("failed to retrieve value",
+			zap.String("column", column),
+			zap.Error(err))
 		*errs = append(*errs, err)
 	}
 
@@ -1135,13 +1158,24 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		dbNamespaceVal := row[dbName]
 		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
 			statement := row[columnName]
+			if statement == "" {
+				return "", nil
+			}
 			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
-				return "", nil
+				if s.config.UnsafeLogRawSQL {
+					s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
+						zap.String("column", columnName),
+						zap.String("statement", statement),
+						zap.Error(err))
+				}
+				return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
 			}
 			return obfuscated, nil
 		}).(string)
+		if queryTextVal == "" {
+			continue
+		}
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)

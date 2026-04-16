@@ -6,7 +6,8 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
+	"errors"
+	"io"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
@@ -46,7 +47,7 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 	for {
 		token, err := decoder.Token()
 		if err != nil {
-			if err.Error() == "EOF" {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return "", err
@@ -62,8 +63,8 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
-							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
-							return "", nil
+							elem.Attr[i].Value = "?"
+							continue
 						}
 						elem.Attr[i].Value = val
 					}
