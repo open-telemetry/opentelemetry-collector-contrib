@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/beare
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.146.2-0.20260219223409-66996adfaaf7
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/internal/credentialsfile v0.150.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.56.0
 	go.opentelemetry.io/collector/component/componenttest v0.150.0

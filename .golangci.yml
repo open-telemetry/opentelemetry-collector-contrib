@@ -151,9 +151,6 @@ linters:
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/jaegerremotesampling/
-      - linters:
-          - forbidigo
         path: extension/opampextension/
       - linters:
           - forbidigo
@@ -164,9 +161,6 @@ linters:
       - linters:
           - forbidigo
         path: pkg/translator/prometheus/
-      - linters:
-          - forbidigo
-        path: processor/filterprocessor/
       - linters:
           - forbidigo
         path: processor/tailsamplingprocessor/
@@ -198,10 +192,6 @@ linters:
       - linters:
           - forbidigo
         path: internal/aws/proxy/
-        text: confighttp
-      - linters:
-          - forbidigo
-        path: extension/datadogextension/
         text: confighttp
       - linters:
           - forbidigo
