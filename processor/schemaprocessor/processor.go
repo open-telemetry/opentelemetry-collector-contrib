@@ -78,12 +78,11 @@ func (t schemaProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 				RequestTranslation(ctx, logsSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
-				return ld, err
+				continue
 			}
 			err = tr.ApplyScopeLogChanges(logs, logsSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope log changes", zap.Error(err))
-				return ld, err
 			}
 		}
 	}
@@ -120,12 +119,11 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 				RequestTranslation(ctx, metricSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
-				return md, err
+				continue
 			}
 			err = tr.ApplyScopeMetricChanges(metric, metricSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope metric changes", zap.Error(err))
-				return md, err
 			}
 		}
 	}
@@ -165,12 +163,11 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 				RequestTranslation(ctx, spanSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
-				return td, err
+				continue
 			}
 			err = tr.ApplyScopeSpanChanges(span, spanSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope span changes", zap.Error(err))
-				return td, err
 			}
 		}
 	}
