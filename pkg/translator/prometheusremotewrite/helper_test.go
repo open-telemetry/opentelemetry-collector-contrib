@@ -588,8 +588,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
 		},
@@ -600,15 +599,19 @@ func Test_getPromExemplarsV2(t *testing.T) {
 				{
 					Value:     float64(intVal2),
 					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplarsV2(tt.histogram)
+			var counter uint32
+			symbolize := func(s string) uint32 {
+				counter++
+				return counter
+			}
+			requests := getPromExemplarsV2(tt.histogram, symbolize)
 			assert.Exactly(t, tt.expected, requests)
 		})
 	}
