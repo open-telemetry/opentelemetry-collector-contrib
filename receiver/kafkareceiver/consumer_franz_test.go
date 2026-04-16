@@ -405,7 +405,7 @@ func TestResumePartitionsAfterRebalance(t *testing.T) {
 	}).FirstErr())
 
 	assert.Eventually(t, func() bool {
-		return consumeCount.Load() > 0
+		return consumeCount.Load() == 1
 	}, 5*time.Second, 50*time.Millisecond,
 		"expected partition to resume consuming after rebalance, but it stayed paused")
 }
@@ -480,7 +480,7 @@ func TestResumePartitionsAfterBackoff(t *testing.T) {
 	shouldError.Store(false)
 
 	assert.Eventually(t, func() bool {
-		return consumeCount.Load() > 0
+		return consumeCount.Load() == 1
 	}, 5*time.Second, 50*time.Millisecond,
 		"expected the failed record to be retried after SetOffsets rewind, but it was not")
 }

@@ -318,10 +318,19 @@ func (c *franzConsumer) consume(ctx context.Context, size int) bool {
 				}
 				c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, msg.Offset, metric.WithAttributeSet(pc.attrs))
 				if err := c.handleMessage(pc, msg); err != nil {
-					pc.logger.Error("unable to process message",
-						zap.Error(err),
-						zap.Int64("offset", msg.Offset),
-					)
+					// Log at DEBUG level for shutdown/rebalance interruptions
+					// (context cancellation), ERROR for real processing failures.
+					if pc.ctx.Err() != nil {
+						pc.logger.Debug("message processing interrupted",
+							zap.Error(err),
+							zap.Int64("offset", msg.Offset),
+						)
+					} else {
+						pc.logger.Error("unable to process message",
+							zap.Error(err),
+							zap.Int64("offset", msg.Offset),
+						)
+					}
 					// Pause consumption for partitions that have fatal errors.
 					// handleMessage only returns an error when After=true and
 					// the message should not be marked, so checking !shouldMark
