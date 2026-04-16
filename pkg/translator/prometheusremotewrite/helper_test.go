@@ -577,9 +577,10 @@ func Test_getPromExemplars(t *testing.T) {
 func Test_getPromExemplarsV2(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
-		name      string
-		histogram pmetric.HistogramDataPoint
-		expected  []writev2.Exemplar
+		name            string
+		histogram       pmetric.HistogramDataPoint
+		expected        []writev2.Exemplar
+		expectedStrings []string
 	}{
 		{
 			name:      "with_exemplars_double_value",
@@ -591,6 +592,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
 		},
 		{
 			name:      "with_exemplars_int_value",
@@ -602,6 +604,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
 		},
 		{
 			name:      "with_exemplars_without_trace_or_span",
@@ -613,6 +616,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 					LabelsRefs: []uint32{1, 2},
 				},
 			},
+			expectedStrings: []string{label11, value11},
 		},
 		{
 			name:      "duplicate_trace_id_dropped",
@@ -624,6 +628,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 					LabelsRefs: []uint32{1, 2, 3, 4},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
 		},
 		{
 			name:      "too_many_runes_drops_labels",
@@ -635,6 +640,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 					LabelsRefs: nil,
 				},
 			},
+			expectedStrings: nil,
 		},
 		{
 			name:      "runes_at_limit_bytes_over_keeps_labels",
@@ -646,6 +652,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 					LabelsRefs: []uint32{1, 2},
 				},
 			},
+			expectedStrings: []string{keyWith128Runes, ""},
 		},
 		{
 			name:      "too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
@@ -657,18 +664,22 @@ func Test_getPromExemplarsV2(t *testing.T) {
 					LabelsRefs: []uint32{1, 2, 3, 4},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
 		},
 		{
-			name:      "without_exemplar",
-			histogram: pmetric.NewHistogramDataPoint(),
-			expected:  []writev2.Exemplar{},
+			name:            "without_exemplar",
+			histogram:       pmetric.NewHistogramDataPoint(),
+			expected:        []writev2.Exemplar{},
+			expectedStrings: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			symbols := make(map[string]uint32)
 			var counter uint32
+			var recordedStrings []string
 			symbolize := func(s string) uint32 {
+				recordedStrings = append(recordedStrings, s)
 				if id, ok := symbols[s]; ok {
 					return id
 				}
@@ -678,6 +689,7 @@ func Test_getPromExemplarsV2(t *testing.T) {
 			}
 			requests := getPromExemplarsV2(tt.histogram, symbolize)
 			assert.Exactly(t, tt.expected, requests)
+			assert.Equal(t, tt.expectedStrings, recordedStrings)
 		})
 	}
 }
