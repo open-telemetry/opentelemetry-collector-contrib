@@ -233,6 +233,7 @@ processor/remotetapprocessor
 processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
+processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver

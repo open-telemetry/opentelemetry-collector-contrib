@@ -226,8 +226,12 @@ func NewFactoryWithOptions(options ...FactoryOption) processor.Factory {
 }
 
 func (f *filterProcessorFactory) createDefaultConfig() component.Config {
+	defaultErrorMode := ottl.PropagateError
+	if metadata.ProcessorFilterDefaultErrorModeIgnoreFeatureGate.IsEnabled() {
+		defaultErrorMode = ottl.IgnoreError
+	}
 	return &Config{
-		ErrorMode:          ottl.PropagateError,
+		ErrorMode:          defaultErrorMode,
 		resourceFunctions:  f.resourceFunctions,
 		dataPointFunctions: f.dataPointFunctions,
 		logFunctions:       f.logFunctions,
