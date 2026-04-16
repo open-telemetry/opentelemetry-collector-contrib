@@ -6,6 +6,7 @@ package schemaprocessor
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -26,6 +27,12 @@ import (
 
 type dummySchemaProvider struct {
 	transformations string
+}
+
+type errorSchemaProvider struct{}
+
+func (*errorSchemaProvider) Retrieve(_ context.Context, _ string) (string, error) {
+	return "", errors.New("provider error")
 }
 
 func (m *dummySchemaProvider) Retrieve(_ context.Context, _ string) (string, error) {
@@ -116,38 +123,42 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 	})
 }
 
-func TestSkipCounters(t *testing.T) {
-	t.Parallel()
-
+func newTestSchemaProcessorWithTelemetry(t *testing.T) (*schemaProcessor, *componenttest.Telemetry) {
 	testTel := componenttest.NewTelemetry()
-
 	set := metadatatest.NewSettings(testTel)
 	set.Logger = zaptest.NewLogger(t)
-
 	cfg := &Config{
 		Targets: []string{"http://opentelemetry.io/schemas/1.9.0"},
 	}
 	proc, err := newSchemaProcessor(t.Context(), cfg, set)
 	require.NoError(t, err)
+	return proc, testTel
+}
 
-	// log scope with no schema URL on scope or resource → should increment logsSkipped
+func TestSkipCounters(t *testing.T) {
+	t.Parallel()
+
+	proc, testTel := newTestSchemaProcessorWithTelemetry(t)
+
+	// no schema URL on resource or scope → resourceSkipped + signal skipped
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
-	_, err = proc.processLogs(t.Context(), ld)
+	_, err := proc.processLogs(t.Context(), ld)
 	require.NoError(t, err)
 
-	// metric scope with no schema URL → should increment metricsSkipped
 	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	_, err = proc.processMetrics(t.Context(), md)
 	require.NoError(t, err)
 
-	// trace scope with no schema URL → should increment tracesSkipped
 	td := ptrace.NewTraces()
 	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 	_, err = proc.processTraces(t.Context(), td)
 	require.NoError(t, err)
 
+	metadatatest.AssertEqualProcessorSchemaResourceSkipped(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 3}},
+		metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualProcessorSchemaLogsSkipped(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -159,4 +170,73 @@ func TestSkipCounters(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(t.Context()))
+}
+
+func TestFailedCounters(t *testing.T) {
+	t.Parallel()
+
+	const schemaURL = "http://opentelemetry.io/schemas/1.9.0"
+
+	t.Run("resource_failed", func(t *testing.T) {
+		// resource has a schema URL but provider always errors → resourceFailed
+		proc, testTel := newTestSchemaProcessorWithTelemetry(t)
+		proc.manager.AddProvider(&errorSchemaProvider{})
+
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty().SetSchemaUrl(schemaURL)
+		_, err := proc.processLogs(t.Context(), ld)
+		require.Error(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaResourceFailed(t, testTel,
+			[]metricdata.DataPoint[int64]{{Value: 1}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+
+	t.Run("logs_scope_failed", func(t *testing.T) {
+		// resource has no URL (skipped), scope has URL but provider errors → logsFailed
+		proc, testTel := newTestSchemaProcessorWithTelemetry(t)
+		proc.manager.AddProvider(&errorSchemaProvider{})
+
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.ScopeLogs().AppendEmpty().SetSchemaUrl(schemaURL)
+		_, err := proc.processLogs(t.Context(), ld)
+		require.NoError(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaLogsFailed(t, testTel,
+			[]metricdata.DataPoint[int64]{{Value: 1}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+
+	t.Run("metrics_scope_failed", func(t *testing.T) {
+		proc, testTel := newTestSchemaProcessorWithTelemetry(t)
+		proc.manager.AddProvider(&errorSchemaProvider{})
+
+		md := pmetric.NewMetrics()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().SetSchemaUrl(schemaURL)
+		_, err := proc.processMetrics(t.Context(), md)
+		require.NoError(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaMetricsFailed(t, testTel,
+			[]metricdata.DataPoint[int64]{{Value: 1}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
+
+	t.Run("traces_scope_failed", func(t *testing.T) {
+		proc, testTel := newTestSchemaProcessorWithTelemetry(t)
+		proc.manager.AddProvider(&errorSchemaProvider{})
+
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().SetSchemaUrl(schemaURL)
+		_, err := proc.processTraces(t.Context(), td)
+		require.NoError(t, err)
+
+		metadatatest.AssertEqualProcessorSchemaTracesFailed(t, testTel,
+			[]metricdata.DataPoint[int64]{{Value: 1}},
+			metricdatatest.IgnoreTimestamp())
+		require.NoError(t, testTel.Shutdown(t.Context()))
+	})
 }
