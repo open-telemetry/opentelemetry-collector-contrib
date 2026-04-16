@@ -401,6 +401,13 @@ func getSQLServerQuerySamplesQuery() string {
 	return sqlServerQuerySamples
 }
 
+//go:embed templates/sqlServerIdleBlockingQuerySample.tmpl
+var sqlServerIdleBlockingQuerySamples string
+
+func getSQLServerIdleBlockingSessionsQuery() string {
+	return sqlServerIdleBlockingQuerySamples
+}
+
 // Conditional check based on Azure SQL DB v/s the rest aka (Azure SQL Managed instance OR On-prem SQL Server)
 // EngineEdition=5 is Azure SQL DB
 const sqlServerWaitStatsQuery string = `
