@@ -124,9 +124,6 @@ linters:
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116
       - linters:
           - forbidigo
-        path: connector/datadogconnector/
-      - linters:
-          - forbidigo
         path: connector/servicegraphconnector/
       - linters:
           - forbidigo
@@ -154,25 +151,16 @@ linters:
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/jaegerremotesampling/
-      - linters:
-          - forbidigo
         path: extension/opampextension/
       - linters:
           - forbidigo
         path: internal/filter/
       - linters:
           - forbidigo
-        path: pkg/datadog/
-      - linters:
-          - forbidigo
         path: pkg/ottl/
       - linters:
           - forbidigo
         path: pkg/translator/prometheus/
-      - linters:
-          - forbidigo
-        path: processor/filterprocessor/
       - linters:
           - forbidigo
         path: processor/tailsamplingprocessor/
@@ -190,10 +178,39 @@ linters:
         path: receiver/jaegerreceiver/
       - linters:
           - forbidigo
-        path: receiver/prometheusreceiver/
+        path: receiver/vcenterreceiver/
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
           - forbidigo
-        path: receiver/vcenterreceiver/
+        path: receiver/cloudflarereceiver/
+        text: confighttp
+      - linters:
+          - forbidigo
+        path: receiver/mongodbatlasreceiver/
+        text: confighttp
+      - linters:
+          - forbidigo
+        path: internal/aws/proxy/
+        text: confighttp
+      - linters:
+          - forbidigo
+        path: testbed/
+        text: confighttp
+
+      # Exclude tests and examples from the confighttp rule.
+      - linters:
+          - forbidigo
+        path: _test\.go
+        text: confighttp
+      - linters:
+          - forbidigo
+        path: examples/
+        text: confighttp
+      - linters:
+          - forbidigo
+        path: testdata/
+        text: confighttp
 
     # Log a warning if an exclusion rule is unused.
     warn-unused: true
@@ -301,6 +318,9 @@ linters:
           msg: >-
             Define feature gates in metadata.yaml instead of registering them manually.
             See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46116.
+        - pattern: ^http\.(ListenAndServe|ListenAndServeTLS|Serve|ServeTLS)$
+          msg: >-
+            Use confighttp.ServerConfig to create HTTP servers instead of net/http directly.
 
     exhaustive:
       # Presence of "default" case in switch statements satisfies exhaustiveness,
