@@ -22,19 +22,18 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                          metric.Meter
-	mu                             sync.Mutex
-	registrations                  []metric.Registration
-	ProcessorSchemaCacheHits       metric.Int64Counter
-	ProcessorSchemaCacheMisses     metric.Int64Counter
-	ProcessorSchemaLogsFailed      metric.Int64Counter
-	ProcessorSchemaLogsSkipped     metric.Int64Counter
-	ProcessorSchemaMetricsFailed   metric.Int64Counter
-	ProcessorSchemaMetricsSkipped  metric.Int64Counter
-	ProcessorSchemaResourceFailed  metric.Int64Counter
-	ProcessorSchemaResourceSkipped metric.Int64Counter
-	ProcessorSchemaTracesFailed    metric.Int64Counter
-	ProcessorSchemaTracesSkipped   metric.Int64Counter
+	meter                         metric.Meter
+	mu                            sync.Mutex
+	registrations                 []metric.Registration
+	ProcessorSchemaCacheHits      metric.Int64Counter
+	ProcessorSchemaCacheMisses    metric.Int64Counter
+	ProcessorSchemaLogsFailed     metric.Int64Counter
+	ProcessorSchemaLogsSkipped    metric.Int64Counter
+	ProcessorSchemaMetricsFailed  metric.Int64Counter
+	ProcessorSchemaMetricsSkipped metric.Int64Counter
+	ProcessorSchemaResourceFailed metric.Int64Counter
+	ProcessorSchemaTracesFailed   metric.Int64Counter
+	ProcessorSchemaTracesSkipped  metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -86,7 +85,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorSchemaLogsSkipped, err = builder.meter.Int64Counter(
 		"otelcol_processor_schema_logs.skipped",
-		metric.WithDescription("Number of log scope translation requests skipped because no schema URL was present [Development]"),
+		metric.WithDescription("Number of log scope translation requests skipped because no schema URL was present on the scope or its resource [Development]"),
 		metric.WithUnit("{translations}"),
 	)
 	errs = errors.Join(errs, err)
@@ -98,19 +97,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorSchemaMetricsSkipped, err = builder.meter.Int64Counter(
 		"otelcol_processor_schema_metrics.skipped",
-		metric.WithDescription("Number of metric scope translation requests skipped because no schema URL was present [Development]"),
+		metric.WithDescription("Number of metric scope translation requests skipped because no schema URL was present on the scope or its resource [Development]"),
 		metric.WithUnit("{translations}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorSchemaResourceFailed, err = builder.meter.Int64Counter(
 		"otelcol_processor_schema_resource.failed",
 		metric.WithDescription("Number of resource translation requests that failed [Development]"),
-		metric.WithUnit("{translations}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ProcessorSchemaResourceSkipped, err = builder.meter.Int64Counter(
-		"otelcol_processor_schema_resource.skipped",
-		metric.WithDescription("Number of resource translation requests skipped because no schema URL was present [Development]"),
 		metric.WithUnit("{translations}"),
 	)
 	errs = errors.Join(errs, err)
@@ -122,7 +115,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorSchemaTracesSkipped, err = builder.meter.Int64Counter(
 		"otelcol_processor_schema_traces.skipped",
-		metric.WithDescription("Number of trace scope translation requests skipped because no schema URL was present [Development]"),
+		metric.WithDescription("Number of trace scope translation requests skipped because no schema URL was present on the scope or its resource [Development]"),
 		metric.WithUnit("{translations}"),
 	)
 	errs = errors.Join(errs, err)

@@ -37,7 +37,7 @@ telemetry:
       stability: development
     processor_schema_logs.skipped:
       enabled: true
-      description: Number of log scope translation requests skipped because no schema URL was present
+      description: Number of log scope translation requests skipped because no schema URL was present on the scope or its resource
       unit: "{translations}"
       sum:
         value_type: int
@@ -53,7 +53,7 @@ telemetry:
       stability: development
     processor_schema_metrics.skipped:
       enabled: true
-      description: Number of metric scope translation requests skipped because no schema URL was present
+      description: Number of metric scope translation requests skipped because no schema URL was present on the scope or its resource
       unit: "{translations}"
       sum:
         value_type: int
@@ -62,14 +62,6 @@ telemetry:
     processor_schema_resource.failed:
       enabled: true
       description: Number of resource translation requests that failed
-      unit: "{translations}"
-      sum:
-        value_type: int
-        monotonic: true
-      stability: development
-    processor_schema_resource.skipped:
-      enabled: true
-      description: Number of resource translation requests skipped because no schema URL was present
       unit: "{translations}"
       sum:
         value_type: int
@@ -85,7 +77,7 @@ telemetry:
       stability: development
     processor_schema_traces.skipped:
       enabled: true
-      description: Number of trace scope translation requests skipped because no schema URL was present
+      description: Number of trace scope translation requests skipped because no schema URL was present on the scope or its resource
       unit: "{translations}"
       sum:
         value_type: int

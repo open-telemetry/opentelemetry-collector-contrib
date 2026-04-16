@@ -32,7 +32,7 @@ Number of log scope translation requests that failed
 
 ### otelcol_processor_schema_logs.skipped
 
-Number of log scope translation requests skipped because no schema URL was present
+Number of log scope translation requests skipped because no schema URL was present on the scope or its resource
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -48,7 +48,7 @@ Number of metric scope translation requests that failed
 
 ### otelcol_processor_schema_metrics.skipped
 
-Number of metric scope translation requests skipped because no schema URL was present
+Number of metric scope translation requests skipped because no schema URL was present on the scope or its resource
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -57,14 +57,6 @@ Number of metric scope translation requests skipped because no schema URL was pr
 ### otelcol_processor_schema_resource.failed
 
 Number of resource translation requests that failed
-
-| Unit | Metric Type | Value Type | Monotonic | Stability |
-| ---- | ----------- | ---------- | --------- | --------- |
-| {translations} | Sum | Int | true | Development |
-
-### otelcol_processor_schema_resource.skipped
-
-Number of resource translation requests skipped because no schema URL was present
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -80,7 +72,7 @@ Number of trace scope translation requests that failed
 
 ### otelcol_processor_schema_traces.skipped
 
-Number of trace scope translation requests skipped because no schema URL was present
+Number of trace scope translation requests skipped because no schema URL was present on the scope or its resource
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

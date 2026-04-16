@@ -72,7 +72,7 @@ func AssertEqualProcessorSchemaLogsFailed(t *testing.T, tt *componenttest.Teleme
 func AssertEqualProcessorSchemaLogsSkipped(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_schema_logs.skipped",
-		Description: "Number of log scope translation requests skipped because no schema URL was present [Development]",
+		Description: "Number of log scope translation requests skipped because no schema URL was present on the scope or its resource [Development]",
 		Unit:        "{translations}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -104,7 +104,7 @@ func AssertEqualProcessorSchemaMetricsFailed(t *testing.T, tt *componenttest.Tel
 func AssertEqualProcessorSchemaMetricsSkipped(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_schema_metrics.skipped",
-		Description: "Number of metric scope translation requests skipped because no schema URL was present [Development]",
+		Description: "Number of metric scope translation requests skipped because no schema URL was present on the scope or its resource [Development]",
 		Unit:        "{translations}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -133,22 +133,6 @@ func AssertEqualProcessorSchemaResourceFailed(t *testing.T, tt *componenttest.Te
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorSchemaResourceSkipped(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_processor_schema_resource.skipped",
-		Description: "Number of resource translation requests skipped because no schema URL was present [Development]",
-		Unit:        "{translations}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got, err := tt.GetMetric("otelcol_processor_schema_resource.skipped")
-	require.NoError(t, err)
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
 func AssertEqualProcessorSchemaTracesFailed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_schema_traces.failed",
@@ -168,7 +152,7 @@ func AssertEqualProcessorSchemaTracesFailed(t *testing.T, tt *componenttest.Tele
 func AssertEqualProcessorSchemaTracesSkipped(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_schema_traces.skipped",
-		Description: "Number of trace scope translation requests skipped because no schema URL was present [Development]",
+		Description: "Number of trace scope translation requests skipped because no schema URL was present on the scope or its resource [Development]",
 		Unit:        "{translations}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
