@@ -195,6 +195,11 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		return
 	}
 
+	if kp.kc == nil {
+		kp.logger.Warn("kubernetes client is not initialized, skipping resource processing")
+		return
+	}
+
 	var pod *kube.Pod
 	var podFound bool
 	podIdentifierStr := buildPodIdentifierString(podIdentifierValue)

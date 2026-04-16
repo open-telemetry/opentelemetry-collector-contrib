@@ -1720,6 +1720,37 @@ func TestPassthroughStart(t *testing.T) {
 	assert.NoError(t, p.Shutdown(t.Context()))
 }
 
+func TestProcessResourceNilKubeClient(t *testing.T) {
+	// Simulate the scenario where kp.kc is nil when processResource is called (issue #47672).
+	// This should not panic.
+	set := processortest.NewNopSettings(metadata.Type)
+	telemetry, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	require.NoError(t, err)
+
+	kp := &kubernetesprocessor{
+		logger:    set.Logger,
+		telemetry: telemetry,
+		kc:        nil, // simulate uninitialized kube client
+	}
+
+	ctx := client.NewContext(t.Context(), client.Info{
+		Addr: &net.IPAddr{
+			IP: net.IPv4(1, 1, 1, 1),
+		},
+	})
+
+	// Should not panic
+	assert.NotPanics(t, func() {
+		kp.processResource(ctx, generateTraces().ResourceSpans().At(0).Resource(), "traces")
+	})
+	assert.NotPanics(t, func() {
+		kp.processResource(ctx, generateMetrics().ResourceMetrics().At(0).Resource(), "metrics")
+	})
+	assert.NotPanics(t, func() {
+		kp.processResource(ctx, generateLogs().ResourceLogs().At(0).Resource(), "logs")
+	})
+}
+
 func TestRealClient(t *testing.T) {
 	newMultiTest(
 		t,
