@@ -240,9 +240,10 @@ func TestFromMetrics_NonMonotonicSum(t *testing.T) {
 	for _, ts := range tsMap {
 		for _, l := range ts.Labels {
 			if l.Name == model.MetricNameLabel {
-				if l.Value == "test_non_monotonic_sum" {
+				switch l.Value {
+				case "test_non_monotonic_sum":
 					tsNonMonotonic = ts
-				} else if l.Value == "test_monotonic_sum_total" {
+				case "test_monotonic_sum_total":
 					tsMonotonic = ts
 				}
 			}
