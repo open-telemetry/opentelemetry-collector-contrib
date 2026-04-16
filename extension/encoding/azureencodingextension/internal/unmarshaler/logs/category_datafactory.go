@@ -11,6 +11,7 @@ import (
 	conventionsv139 "go.opentelemetry.io/otel/semconv/v1.39.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
 
@@ -150,8 +151,13 @@ func (r *azureDataFactoryBaseLog) PutProperties(attrs pcommon.Map, _ pcommon.Val
 	unmarshaler.AttrPutMapIf(attrs, attributeDataFactorySystemParameters, r.Properties.SystemParameters)
 	unmarshaler.AttrPutMapIf(attrs, attributeDataFactoryTags, r.Properties.Tags)
 	// Errors
+	if !metadata.ExtensionAzureencodingDontEmitV0LogConventionsFeatureGate.IsEnabled() {
+		unmarshaler.AttrPutStrIf(attrs, string(conventionsv139.ErrorMessageKey), r.Properties.Error.Message)
+	}
+	if metadata.ExtensionAzureencodingEmitV1LogConventionsFeatureGate.IsEnabled() {
+		unmarshaler.AttrPutStrIf(attrs, string(conventions.ExceptionMessageKey), r.Properties.Error.Message)
+	}
 	unmarshaler.AttrPutStrIf(attrs, attributeErrorCode, r.Properties.Error.Code)
-	unmarshaler.AttrPutStrIf(attrs, string(conventionsv139.ErrorMessageKey), r.Properties.Error.Message)
 	unmarshaler.AttrPutStrIf(attrs, string(conventions.ErrorTypeKey), r.Properties.Error.FailureType)
 	unmarshaler.AttrPutStrIf(attrs, attributeErrorTarget, r.Properties.Error.Target)
 
