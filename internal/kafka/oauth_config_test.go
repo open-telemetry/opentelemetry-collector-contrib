@@ -98,10 +98,10 @@ func TestResolveOAuthBearerProvider(t *testing.T) {
 	host := hostWithExtensions(map[component.ID]component.Component{
 		id: fakeTokenSourceExtension{},
 	})
-	tp, err := resolveOAuthBearerProvider(context.Background(), cfg, host)
+	tp, err := resolveOAuthBearerProvider(t.Context(), cfg, host)
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	val, err := tp.Token(context.Background())
+	val, err := tp.Token(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "ext-token", val)
 }
@@ -115,10 +115,10 @@ func TestResolveOAuthBearerProviderFileToken(t *testing.T) {
 		OAuthBearerTokenFile: tokenPath,
 	}
 	host := hostWithExtensions(nil)
-	tp, err := resolveOAuthBearerProvider(context.Background(), cfg, host)
+	tp, err := resolveOAuthBearerProvider(t.Context(), cfg, host)
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	val, err := tp.Token(context.Background())
+	val, err := tp.Token(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "file-token", val)
 }
@@ -133,7 +133,7 @@ func TestResolveOAuthBearerProviderStripsDeadlineFromContext(t *testing.T) {
 		id: deadlineSensitiveTokenSourceExtension{},
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 	// resolveOAuthBearerProvider is called with context.WithoutCancel(ctx) by its callers,
 	// but the extension itself verifies no deadline is present. Pass the deadline ctx
@@ -153,10 +153,10 @@ func TestResolveOAuthBearerProviderLegacyContextTokenSource(t *testing.T) {
 	host := hostWithExtensions(map[component.ID]component.Component{
 		id: fakeContextTokenSourceExtension{},
 	})
-	tp, err := resolveOAuthBearerProvider(context.Background(), cfg, host)
+	tp, err := resolveOAuthBearerProvider(t.Context(), cfg, host)
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	val, err := tp.Token(context.Background())
+	val, err := tp.Token(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, "legacy-token", val)
 }
@@ -170,7 +170,7 @@ func TestResolveOAuthBearerProviderErrors(t *testing.T) {
 			OAuthBearerTokenSource: id,
 		}
 		host := hostWithExtensions(map[component.ID]component.Component{})
-		_, err := resolveOAuthBearerProvider(context.Background(), cfg, host)
+		_, err := resolveOAuthBearerProvider(t.Context(), cfg, host)
 		require.ErrorContains(t, err, "oauth token source extension \"oauth2client\" not found")
 	})
 
@@ -182,7 +182,7 @@ func TestResolveOAuthBearerProviderErrors(t *testing.T) {
 		host := hostWithExtensions(map[component.ID]component.Component{
 			id: otherExtension{},
 		})
-		_, err := resolveOAuthBearerProvider(context.Background(), cfg, host)
+		_, err := resolveOAuthBearerProvider(t.Context(), cfg, host)
 		require.ErrorContains(t, err, "does not implement TokenSource(context.Context) (oauth2.TokenSource, error)")
 	})
 
@@ -194,7 +194,7 @@ func TestResolveOAuthBearerProviderErrors(t *testing.T) {
 		host := hostWithExtensions(map[component.ID]component.Component{
 			id: errorTokenSourceExtension{},
 		})
-		_, err := resolveOAuthBearerProvider(context.Background(), cfg, host)
+		_, err := resolveOAuthBearerProvider(t.Context(), cfg, host)
 		require.ErrorContains(t, err, "failed to obtain token source from extension \"oauth2client\"")
 		require.ErrorContains(t, err, "boom")
 	})

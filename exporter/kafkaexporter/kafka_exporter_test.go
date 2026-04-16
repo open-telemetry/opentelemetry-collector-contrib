@@ -131,9 +131,9 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 func TestExporterStartWithFranzOAuthExtension(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	extID := component.MustNewID("oauth2client")
-	config.ClientConfig.Authentication.SASL = &configkafka.SASLConfig{
-		Mechanism: kafka.OAUTHBEARER,
-		Version:   1,
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
 		OAuthBearerTokenSource: extID,
 	}
 
@@ -155,9 +155,9 @@ func TestExporterStartWithFranzOAuthExtension(t *testing.T) {
 func TestExporterStartWithFranzOAuthExtensionMissing(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	extID := component.MustNewID("oauth2client")
-	config.ClientConfig.Authentication.SASL = &configkafka.SASLConfig{
-		Mechanism: kafka.OAUTHBEARER,
-		Version:   1,
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
 		OAuthBearerTokenSource: extID,
 	}
 
@@ -177,9 +177,9 @@ func TestExporterStartWithFranzOAuthExtensionMissing(t *testing.T) {
 func TestExporterStartWithFranzOAuthExtensionWrongType(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	extID := component.MustNewID("oauth2client")
-	config.ClientConfig.Authentication.SASL = &configkafka.SASLConfig{
-		Mechanism: kafka.OAUTHBEARER,
-		Version:   1,
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
 		OAuthBearerTokenSource: extID,
 	}
 
@@ -199,9 +199,9 @@ func TestExporterStartWithFranzOAuthExtensionWrongType(t *testing.T) {
 func TestExporterStartWithFranzOAuthExtensionTokenSourceError(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	extID := component.MustNewID("oauth2client")
-	config.ClientConfig.Authentication.SASL = &configkafka.SASLConfig{
-		Mechanism: kafka.OAUTHBEARER,
-		Version:   1,
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
 		OAuthBearerTokenSource: extID,
 	}
 

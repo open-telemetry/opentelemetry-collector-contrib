@@ -4,7 +4,6 @@
 package kafka
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -267,7 +266,7 @@ func TestSaramaOAuthTokenProvider_RejectsEmptyToken(t *testing.T) {
 	t.Parallel()
 
 	p := &saramaOAuthTokenProvider{
-		ctx:      context.Background(),
+		ctx:      t.Context(),
 		provider: stubTokenProvider{token: ""},
 	}
 	_, err := p.Token()

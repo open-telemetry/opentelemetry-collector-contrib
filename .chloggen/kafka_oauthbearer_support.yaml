@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/kafka, receiver/kafka, receiver/kafkametrics, extension/observer/kafkatopicsobserver
+component: exporter/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Add generic Kafka SASL OAUTHBEARER support with extension-backed and file-based token sources."

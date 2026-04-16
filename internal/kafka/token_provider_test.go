@@ -4,7 +4,6 @@
 package kafka
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -25,8 +24,7 @@ func TestFileTokenProvider(t *testing.T) {
 		t.Fatalf("NewFileTokenProvider failed: %v", err)
 	}
 
-	ctx := context.Background()
-	token, err := provider.Token(ctx)
+	token, err := provider.Token(t.Context())
 	if err != nil {
 		t.Fatalf("Token returned error: %v", err)
 	}
@@ -35,11 +33,11 @@ func TestFileTokenProvider(t *testing.T) {
 	}
 
 	// Update token and ensure we read the new value on subsequent calls.
-	if err := os.WriteFile(path, []byte("next-token"), 0o600); err != nil {
-		t.Fatalf("rewrite token file: %v", err)
+	if writeErr := os.WriteFile(path, []byte("next-token"), 0o600); writeErr != nil {
+		t.Fatalf("rewrite token file: %v", writeErr)
 	}
 
-	token, err = provider.Token(ctx)
+	token, err = provider.Token(t.Context())
 	if err != nil {
 		t.Fatalf("Token returned error after update: %v", err)
 	}
@@ -53,27 +51,26 @@ func TestFileTokenProviderErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFileTokenProvider unexpected error: %v", err)
 	}
-
-	if _, err := provider.Token(context.Background()); err == nil {
+	if _, tokenErr := provider.Token(t.Context()); tokenErr == nil {
 		t.Fatal("expected error for missing file")
 	}
 
-	provider, err = NewFileTokenProvider("")
+	_, err = NewFileTokenProvider("")
 	if err == nil {
 		t.Fatal("expected error for empty path")
 	}
 
 	dir := t.TempDir()
 	emptyPath := filepath.Join(dir, "empty")
-	if err := os.WriteFile(emptyPath, []byte(" \n\t"), 0o600); err != nil {
-		t.Fatalf("write empty token file: %v", err)
+	if writeErr := os.WriteFile(emptyPath, []byte(" \n\t"), 0o600); writeErr != nil {
+		t.Fatalf("write empty token file: %v", writeErr)
 	}
 
 	provider, err = NewFileTokenProvider(emptyPath)
 	if err != nil {
 		t.Fatalf("NewFileTokenProvider unexpected error for empty token file: %v", err)
 	}
-	if _, err := provider.Token(context.Background()); err != ErrEmptyToken {
+	if _, err := provider.Token(t.Context()); !errors.Is(err, ErrEmptyToken) {
 		t.Fatalf("expected ErrEmptyToken, got %v", err)
 	}
 }
@@ -83,7 +80,7 @@ func TestTokenSourceProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTokenSourceProvider failed: %v", err)
 	}
-	token, err := provider.Token(context.Background())
+	token, err := provider.Token(t.Context())
 	if err != nil {
 		t.Fatalf("Token returned error: %v", err)
 	}
@@ -91,7 +88,7 @@ func TestTokenSourceProvider(t *testing.T) {
 		t.Fatalf("unexpected token %q", token)
 	}
 
-	if _, err := NewTokenSourceProvider(nil); err == nil {
+	if _, nilErr := NewTokenSourceProvider(nil); nilErr == nil {
 		t.Fatal("expected error for nil token source")
 	}
 
@@ -99,7 +96,7 @@ func TestTokenSourceProvider(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTokenSourceProvider unexpected error: %v", err)
 	}
-	if _, err := emptyProvider.Token(context.Background()); !errors.Is(err, ErrEmptyToken) {
+	if _, err := emptyProvider.Token(t.Context()); !errors.Is(err, ErrEmptyToken) {
 		t.Fatalf("expected ErrEmptyToken, got %v", err)
 	}
 }

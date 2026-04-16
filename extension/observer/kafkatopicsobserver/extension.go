@@ -56,7 +56,7 @@ func newObserver(
 	return o, nil
 }
 
-func (k *kafkaTopicsObserver) Start(ctx context.Context, host component.Host) error {
+func (k *kafkaTopicsObserver) Start(_ context.Context, host component.Host) error {
 	kCtx, cancel := context.WithCancel(context.Background())
 	adminClient, err := k.newAdminClusterClient(kCtx, k.config.ClientConfig, host)
 	if err != nil {

@@ -39,7 +39,7 @@ var (
 	}
 
 	newSaramaClient func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) = kafka.NewSaramaClient
-	newClusterAdmin = sarama.NewClusterAdminFromClient
+	newClusterAdmin                                                                                        = sarama.NewClusterAdminFromClient
 )
 
 // scrapersForCurrentGate returns the appropriate scraper factory map

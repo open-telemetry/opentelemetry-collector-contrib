@@ -39,7 +39,7 @@ func newOAuthObserverConfig() *Config {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	extID := component.MustNewID("oauth2client")
-	cfg.ClientConfig.Authentication.SASL = &configkafka.SASLConfig{
+	cfg.Authentication.SASL = &configkafka.SASLConfig{
 		Mechanism:              kafka.OAUTHBEARER,
 		OAuthBearerTokenSource: extID,
 	}
@@ -68,7 +68,7 @@ func TestStart_OAuthExtensionMissing(t *testing.T) {
 func TestStart_OAuthExtensionWrongType(t *testing.T) {
 	cfg := newOAuthObserverConfig()
 	obs := newTestObserver(t, cfg)
-	extID := cfg.ClientConfig.Authentication.SASL.OAuthBearerTokenSource
+	extID := cfg.Authentication.SASL.OAuthBearerTokenSource
 
 	err := obs.Start(t.Context(), extensionsHost{extID: nonTokenSourceExtension{}})
 	require.Error(t, err)
@@ -78,7 +78,7 @@ func TestStart_OAuthExtensionWrongType(t *testing.T) {
 func TestStart_OAuthExtensionError(t *testing.T) {
 	cfg := newOAuthObserverConfig()
 	obs := newTestObserver(t, cfg)
-	extID := cfg.ClientConfig.Authentication.SASL.OAuthBearerTokenSource
+	extID := cfg.Authentication.SASL.OAuthBearerTokenSource
 
 	err := obs.Start(t.Context(), extensionsHost{extID: errorTokenSourceExtension{}})
 	require.Error(t, err)
