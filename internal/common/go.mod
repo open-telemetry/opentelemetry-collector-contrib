@@ -5,14 +5,14 @@ go 1.25.0
 require (
 	github.com/distribution/reference v0.6.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/featuregate v1.54.1-0.20260330144813-4d17eb8959de
+	go.opentelemetry.io/collector/featuregate v1.56.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/hashicorp/go-version v1.8.0 // indirect
+	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
