@@ -5,6 +5,7 @@ package faro // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"testing"
 	"time"
@@ -244,6 +245,168 @@ func Test_extractK6FromKeyVal(t *testing.T) {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "extractK6FromKeyVal(%v)", tt.kv)
+		})
+	}
+}
+
+func Test_extractDeviceFromKeyVal(t *testing.T) {
+	testcases := []struct {
+		name    string
+		kv      map[string]string
+		want    faroTypes.Device
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name:    "empty kv yields zero-value Device",
+			kv:      map[string]string{},
+			want:    faroTypes.Device{},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "all fields populated",
+			kv: map[string]string{
+				"device_manufacturer":     "Apple",
+				"device_model_identifier": "iPhone14,5",
+				"device_model_name":       "iPhone 13",
+				"device_brand":            "iPhone",
+				"device_is_physical":      "true",
+				"device_type":             "mobile",
+			},
+			want: faroTypes.Device{
+				Manufacturer:    "Apple",
+				ModelIdentifier: "iPhone14,5",
+				ModelName:       "iPhone 13",
+				Brand:           "iPhone",
+				IsPhysical:      true,
+				Type:            "mobile",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "device_is_physical cannot be parsed as boolean",
+			kv: map[string]string{
+				"device_is_physical": "nope",
+			},
+			want:    faroTypes.Device{},
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractDeviceFromKeyVal(tt.kv)
+			if !tt.wantErr(t, err, fmt.Sprintf("extractDeviceFromKeyVal(%v)", tt.kv)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "extractDeviceFromKeyVal(%v)", tt.kv)
+		})
+	}
+}
+
+func Test_extractOSFromKeyVal(t *testing.T) {
+	testcases := []struct {
+		name string
+		kv   map[string]string
+		want faroTypes.OS
+	}{
+		{
+			name: "empty kv yields zero-value OS",
+			kv:   map[string]string{},
+			want: faroTypes.OS{},
+		},
+		{
+			name: "all fields populated",
+			kv: map[string]string{
+				"os_name":     "iOS",
+				"os_version":  "18.1",
+				"os_build_id": "22G91",
+				"os_detail":   "iOS 18.1 (22G91)",
+			},
+			want: faroTypes.OS{
+				Name:    "iOS",
+				Version: "18.1",
+				BuildID: "22G91",
+				Detail:  "iOS 18.1 (22G91)",
+			},
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, extractOSFromKeyVal(tt.kv))
+		})
+	}
+}
+
+func Test_extractAppFromKeyVal_InstallationID(t *testing.T) {
+	testcases := []struct {
+		name string
+		kv   map[string]string
+		want string
+	}{
+		{
+			name: "installation_id absent",
+			kv:   map[string]string{},
+			want: "",
+		},
+		{
+			name: "installation_id present",
+			kv:   map[string]string{"app_installation_id": "install-abc-123"},
+			want: "install-abc-123",
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			app := extractAppFromKeyVal(tt.kv, pcommon.NewResource())
+			assert.Equal(t, tt.want, app.InstallationID)
+		})
+	}
+}
+
+func Test_extractExceptionFromKeyVal_Fatal(t *testing.T) {
+	baseKV := func(extra map[string]string) map[string]string {
+		kv := map[string]string{
+			"type":  "NullPointerException",
+			"value": "something bad",
+		}
+		maps.Copy(kv, extra)
+		return kv
+	}
+	testcases := []struct {
+		name      string
+		kv        map[string]string
+		wantFatal bool
+		wantErr   assert.ErrorAssertionFunc
+	}{
+		{
+			name:      "fatal absent defaults to false",
+			kv:        baseKV(nil),
+			wantFatal: false,
+			wantErr:   assert.NoError,
+		},
+		{
+			name:      "fatal=true parses as true",
+			kv:        baseKV(map[string]string{"fatal": "true"}),
+			wantFatal: true,
+			wantErr:   assert.NoError,
+		},
+		{
+			name:      "fatal=false parses as false",
+			kv:        baseKV(map[string]string{"fatal": "false"}),
+			wantFatal: false,
+			wantErr:   assert.NoError,
+		},
+		{
+			name:    "fatal cannot be parsed as boolean",
+			kv:      baseKV(map[string]string{"fatal": "nope"}),
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			exception, err := extractExceptionFromKeyVal(tt.kv)
+			if !tt.wantErr(t, err, fmt.Sprintf("extractExceptionFromKeyVal(%v)", tt.kv)) {
+				return
+			}
+			assert.Equal(t, tt.wantFatal, exception.Fatal)
 		})
 	}
 }
