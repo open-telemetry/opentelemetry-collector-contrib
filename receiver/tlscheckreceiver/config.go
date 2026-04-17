@@ -42,6 +42,7 @@ type CertificateTarget struct {
 	FilePath                string              `mapstructure:"file_path"`
 	FileFormat              FileFormat          `mapstructure:"file_format"`
 	Password                configopaque.String `mapstructure:"password"`
+	ScrapeAllCerts          bool                `mapstructure:"scrape_all_certs"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
