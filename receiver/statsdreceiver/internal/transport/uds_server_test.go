@@ -40,6 +40,32 @@ func Test_UDSServer_Close(t *testing.T) {
 	assert.True(t, os.IsNotExist(err))
 }
 
+func Test_NewUDSServer_CleansUpStaleSocket(t *testing.T) {
+	socketPath := "/tmp/test_socket_stale"
+	defer os.Remove(socketPath)
+
+	// Create first server
+	server1, err := NewUDSServer("unixgram", socketPath, 0o622)
+	require.NoError(t, err)
+	require.NotNil(t, server1)
+
+	// Simulate a crash — close the connection but leave the socket file
+	// (don't call server1.Close() which would remove the file)
+	server1.(*udsServer).packetConn.Close()
+
+	// Verify socket file still exists (simulating stale socket after crash)
+	_, err = os.Stat(socketPath)
+	require.NoError(t, err, "socket file should still exist after simulated crash")
+
+	// Create second server on the same path — should succeed
+	server2, err := NewUDSServer("unixgram", socketPath, 0o622)
+	require.NoError(t, err, "should be able to start a new server on the same socket path")
+	require.NotNil(t, server2)
+
+	err = server2.Close()
+	assert.NoError(t, err)
+}
+
 func Test_NewUDSServer_AppliesChmod(t *testing.T) {
 	socketPath := "/tmp/test_socket_chmod"
 	defer os.Remove(socketPath) // Cleanup after test
