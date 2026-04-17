@@ -4,7 +4,7 @@
 package sqlserverreceiver
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func TestRetrieveValue_DoesNotLogRawData(t *testing.T) {
 
 	var errs []error
 	s.retrieveValue(row, "query_text", &errs, func(_ sqlquery.StringMap, _ string) (any, error) {
-		return nil, fmt.Errorf("simulated parse error")
+		return nil, errors.New("simulated parse error")
 	})
 
 	require.Len(t, errs, 1)
@@ -66,7 +66,7 @@ func TestRetrieveValue_LogsAtWarnLevel(t *testing.T) {
 
 	var errs []error
 	s.retrieveValue(sqlquery.StringMap{"col": "val"}, "col", &errs, func(_ sqlquery.StringMap, _ string) (any, error) {
-		return nil, fmt.Errorf("simulated failure")
+		return nil, errors.New("simulated failure")
 	})
 
 	require.Len(t, errs, 1)
@@ -100,7 +100,7 @@ func TestObfuscationFailure_ReturnsEmptyString(t *testing.T) {
 		return obfuscated, nil
 	})
 
-	assert.Equal(t, "", result,
+	assert.Empty(t, result,
 		"obfuscation failure should return empty string")
 }
 
@@ -137,12 +137,12 @@ func TestEmptyStatement_SkippedBeforeRetriever(t *testing.T) {
 		"query_text": "",
 	}
 
-	assert.Equal(t, "", row["query_text"],
+	assert.Empty(t, row["query_text"],
 		"empty query_text should be detected by the caller's guard")
 
 	// Non-empty values should pass through to the retriever.
 	row["query_text"] = "SELECT 1"
-	assert.NotEqual(t, "", row["query_text"])
+	assert.NotEmpty(t, row["query_text"])
 }
 
 func TestDebugLog_IncludesRowData(t *testing.T) {
