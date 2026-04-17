@@ -412,7 +412,7 @@ func TestPathSetterWithEntityRefs(t *testing.T) {
 			expectedResource := createResourceWithEntityRefs()
 			tt.modified(expectedResource)
 
-			require.Equal(t, resource, expectedResource)
+			require.Equal(t, expectedResource, resource)
 		})
 	}
 }
