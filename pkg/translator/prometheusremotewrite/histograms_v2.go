@@ -62,6 +62,11 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 	pSpans, pDeltas := convertBucketsLayoutV2(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayoutV2(p.Negative(), scaleDown)
 
+	zeroThreshold := p.ZeroThreshold()
+	if zeroThreshold == 0 {
+		zeroThreshold = defaultZeroThreshold
+	}
+
 	h := writev2.Histogram{
 		// The counter reset detection must be compatible with Prometheus to
 		// safely set ResetHint to NO. This is not ensured currently.
@@ -75,10 +80,8 @@ func exponentialToNativeHistogramV2(p pmetric.ExponentialHistogramDataPoint) (wr
 		ResetHint: writev2.Histogram_RESET_HINT_UNSPECIFIED,
 		Schema:    scale,
 
-		ZeroCount: &writev2.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
-		// TODO use zero_threshold, if set, see
-		// https://github.com/open-telemetry/opentelemetry-proto/pull/441
-		ZeroThreshold: defaultZeroThreshold,
+		ZeroCount:     &writev2.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
+		ZeroThreshold: zeroThreshold,
 
 		PositiveSpans:  pSpans,
 		PositiveDeltas: pDeltas,
