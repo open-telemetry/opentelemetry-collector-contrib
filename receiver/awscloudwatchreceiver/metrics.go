@@ -378,4 +378,3 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 	}
 	return md
 }
-
