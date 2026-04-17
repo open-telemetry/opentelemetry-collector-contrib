@@ -10,7 +10,7 @@ component: clickhouseexporter
 note: Update the default logs table schema with an improved ORDER BY, materialized k8s/deployment attribute columns, and automatic ClickHouse 26.2+ full text search index selection.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [47720]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
