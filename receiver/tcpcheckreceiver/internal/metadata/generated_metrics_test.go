@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,9 +57,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["TcpcheckError"] = mb.metricTcpcheckError.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -65,6 +75,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionRefused)
+			if tt.name == "reaggregate_set" {
+				mb.RecordTcpcheckErrorDataPoint(ts, 3, "tcpcheck.endpoint-val", AttributeErrorCodeConnectionTimeout)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -72,6 +85,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricTcpcheckError.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -114,25 +130,54 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ok)
 					assert.Equal(t, "tcpcheck.endpoint-val", tcpcheckEndpointAttrVal.Str())
 				case "tcpcheck.error":
-					assert.False(t, validatedMetrics["tcpcheck.error"], "Found a duplicate in the metrics slice: tcpcheck.error")
-					validatedMetrics["tcpcheck.error"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
-					assert.Equal(t, "Records errors occurring during TCP check.", mi.Description())
-					assert.Equal(t, "{errors}", mi.Unit())
-					assert.True(t, mi.Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
-					dp := mi.Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					tcpcheckEndpointAttrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
-					assert.True(t, ok)
-					assert.Equal(t, "tcpcheck.endpoint-val", tcpcheckEndpointAttrVal.Str())
-					errorCodeAttrVal, ok := dp.Attributes().Get("error.code")
-					assert.True(t, ok)
-					assert.Equal(t, "connection_refused", errorCodeAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["tcpcheck.error"], "Found a duplicate in the metrics slice: tcpcheck.error")
+						validatedMetrics["tcpcheck.error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during TCP check.", mi.Description())
+						assert.Equal(t, "{errors}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						tcpcheckEndpointAttrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
+						assert.True(t, ok)
+						assert.Equal(t, "tcpcheck.endpoint-val", tcpcheckEndpointAttrVal.Str())
+						errorCodeAttrVal, ok := dp.Attributes().Get("error.code")
+						assert.True(t, ok)
+						assert.Equal(t, "connection_refused", errorCodeAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["tcpcheck.error"], "Found a duplicate in the metrics slice: tcpcheck.error")
+						validatedMetrics["tcpcheck.error"] = true
+						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						assert.Equal(t, "Records errors occurring during TCP check.", mi.Description())
+						assert.Equal(t, "{errors}", mi.Unit())
+						assert.True(t, mi.Sum().IsMonotonic())
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+						dp := mi.Sum().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["tcpcheck.error"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("tcpcheck.endpoint")
+						assert.True(t, ok)
+						_, ok = dp.Attributes().Get("error.code")
+						assert.False(t, ok)
+					}
 				case "tcpcheck.status":
 					assert.False(t, validatedMetrics["tcpcheck.status"], "Found a duplicate in the metrics slice: tcpcheck.status")
 					validatedMetrics["tcpcheck.status"] = true
