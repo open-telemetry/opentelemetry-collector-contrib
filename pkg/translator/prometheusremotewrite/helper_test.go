@@ -577,39 +577,119 @@ func Test_getPromExemplars(t *testing.T) {
 func Test_getPromExemplarsV2(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
-		name      string
-		histogram pmetric.HistogramDataPoint
-		expected  []writev2.Exemplar
+		name            string
+		histogram       pmetric.HistogramDataPoint
+		expected        []writev2.Exemplar
+		expectedStrings []string
 	}{
 		{
 			name:      "with_exemplars_double_value",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     floatVal1,
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
 		},
 		{
 			name:      "with_exemplars_int_value",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     float64(intVal2),
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      float64(intVal2),
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:      "with_exemplars_without_trace_or_span",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", label11, value11),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+			expectedStrings: []string{label11, value11},
+		},
+		{
+			name:      "duplicate_trace_id_dropped",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarTraceIDKey, "duplicate_val"),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:      "too_many_runes_drops_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: nil,
+				},
+			},
+			expectedStrings: nil,
+		},
+		{
+			name:      "runes_at_limit_bytes_over_keeps_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith128Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+			expectedStrings: []string{keyWith128Runes, ""},
+		},
+		{
+			name:      "too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, keyWith64Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:            "without_exemplar",
+			histogram:       pmetric.NewHistogramDataPoint(),
+			expected:        []writev2.Exemplar{},
+			expectedStrings: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplarsV2(tt.histogram)
+			symbols := make(map[string]uint32)
+			var counter uint32
+			var recordedStrings []string
+			symbolize := func(s string) uint32 {
+				recordedStrings = append(recordedStrings, s)
+				if id, ok := symbols[s]; ok {
+					return id
+				}
+				counter++
+				symbols[s] = counter
+				return counter
+			}
+			requests := getPromExemplarsV2(tt.histogram, symbolize)
 			assert.Exactly(t, tt.expected, requests)
+			assert.Equal(t, tt.expectedStrings, recordedStrings)
 		})
 	}
 }
