@@ -66,6 +66,8 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 use this config to specify the group to select. By default, it will select the first group.
 For example, `events` resource is available in both `v1` and `events.k8s.io/v1` APIGroup. In
 this case, it will select `v1` by default.
+- `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
+- `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
 
 

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestScraper_ErrorOnStart(t *testing.T) {
@@ -360,6 +361,85 @@ func TestScraper_FakeDB_Warnings(t *testing.T) {
 	}
 	_, err := scrpr.ScrapeMetrics(t.Context())
 	require.NoError(t, err)
+}
+
+func TestScraper_FakeDB_UnreferencedNullColumnWarning(t *testing.T) {
+	// An unreferenced NULL column (col_1) should only produce a warning when
+	// IgnoreNullValues is false (or unset). When true, no warning is logged.
+	tests := []struct {
+		name             string
+		ignoreNullValues bool
+		expectWarning    bool
+	}{
+		{name: "default", ignoreNullValues: false, expectWarning: true},
+		{name: "explicit_false", ignoreNullValues: false, expectWarning: true},
+		{name: "true", ignoreNullValues: true, expectWarning: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := fakeDB{rowVals: [][]any{{42, nil}}}
+			core, recorded := observer.New(zap.WarnLevel)
+			logger := zap.New(core)
+			scrpr := Scraper{
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Client:               NewDbClient(db, "", logger, TelemetryConfig{}),
+				Logger:               logger,
+				Query: Query{
+					IgnoreNullValues: tt.ignoreNullValues,
+					Metrics: []MetricCfg{{
+						MetricName:  "my.name",
+						ValueColumn: "col_0",
+						Description: "my description",
+						Unit:        "my-unit",
+					}},
+				},
+			}
+			_, err := scrpr.ScrapeMetrics(t.Context())
+			require.NoError(t, err)
+			if tt.expectWarning {
+				all := recorded.All()
+				require.Len(t, all, 1)
+				assert.Equal(t, "problems encountered getting metric rows", all[0].Message)
+			} else {
+				assert.Empty(t, recorded.All(), "expected no warnings when IgnoreNullValues is true")
+			}
+		})
+	}
+}
+
+func TestScraper_FakeDB_Warnings_ReferencedNullColumnStillErrors(t *testing.T) {
+	// A PartialScrapeError must be returned when a referenced column
+	// (ValueColumn) is NULL, regardless of the IgnoreNullValues setting.
+	tests := []struct {
+		name             string
+		ignoreNullValues bool
+	}{
+		{name: "default", ignoreNullValues: false},
+		{name: "explicit_false", ignoreNullValues: false},
+		{name: "true", ignoreNullValues: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := fakeDB{rowVals: [][]any{{nil, "ok"}}}
+			scrpr := Scraper{
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Client:               NewDbClient(db, "", zap.NewNop(), TelemetryConfig{}),
+				Logger:               zap.NewNop(),
+				Query: Query{
+					IgnoreNullValues: tt.ignoreNullValues,
+					Metrics: []MetricCfg{{
+						MetricName:       "my.name",
+						ValueColumn:      "col_0",
+						AttributeColumns: []string{"col_1"},
+					}},
+				},
+			}
+			_, err := scrpr.ScrapeMetrics(t.Context())
+			require.Error(t, err)
+			assert.True(t, scrapererror.IsPartialScrapeError(err))
+			assert.ErrorContains(t, err, "value_column 'col_0' not found in result set")
+		})
+	}
 }
 
 func TestScraper_FakeDB_MultiRows_Warnings(t *testing.T) {
@@ -852,6 +932,36 @@ func TestBuildDataSourceString(t *testing.T) {
 			password:    "pass#word@123",
 			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
 			expected:    "oracle://user%40domain%3C:pass%23word%40123@localhost:2484/service_name?app=my%23app&sslmode=disable",
+		},
+		{
+			name:     "clickhouse basic",
+			driver:   "clickhouse",
+			host:     "localhost",
+			port:     9000,
+			database: "default",
+			expected: "clickhouse://localhost:9000/default",
+		},
+		{
+			name:        "clickhouse with username and password",
+			driver:      "clickhouse",
+			host:        "localhost",
+			port:        9000,
+			database:    "default",
+			username:    "user",
+			password:    "pass",
+			queryParams: map[string]any{"dial_timeout": "10s", "compress": true},
+			expected:    "clickhouse://user:pass@localhost:9000/default?compress=true&dial_timeout=10s",
+		},
+		{
+			name:        "clickhouse with invalid username and password",
+			driver:      "clickhouse",
+			host:        "localhost",
+			port:        9000,
+			database:    "default",
+			username:    "user@domain%",
+			password:    "pass#word@123",
+			queryParams: map[string]any{"debug": true},
+			expected:    "clickhouse://user%40domain%25:pass%23word%40123@localhost:9000/default?debug=true",
 		},
 	}
 

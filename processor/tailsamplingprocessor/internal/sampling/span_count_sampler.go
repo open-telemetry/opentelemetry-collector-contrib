@@ -44,3 +44,7 @@ func (c *spanCount) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *sa
 		return samplingpolicy.NotSampled, nil
 	}
 }
+
+func (*spanCount) IsStateful() bool {
+	return false
+}

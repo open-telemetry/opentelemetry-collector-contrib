@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/versions"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
+	"github.com/moby/moby/client/pkg/versions"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
@@ -37,6 +37,11 @@ type Config struct {
 	// over HTTPS. When nil (the default), the connection uses no custom TLS — suitable
 	// for Unix sockets and plain HTTP endpoints.
 	TLS configoptional.Optional[configtls.ClientConfig] `mapstructure:"tls,omitempty"`
+	// StreamStats enables a persistent streaming connection per container to collect stats.
+	// When true, each container maintains an open Docker stats stream and the scraper reads
+	// from the cached latest value, which reduces connection overhead.  When false (default),
+	// a new connection is opened and closed on every scrape cycle, matching the original behavior.
+	StreamStats bool `mapstructure:"stream_stats"`
 }
 
 func (config *Config) Unmarshal(conf *confmap.Conf) error {
