@@ -121,6 +121,7 @@ components:
         - resource
         - resourcedetection
         - span
+        - spanpruning
         - sumologic
         - tail_sampling
         - transform
@@ -168,8 +169,8 @@ components:
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - iis
         - influxdb
         - jaeger
@@ -226,12 +227,12 @@ components:
         - systemd
         - tcp_log
         - tcpcheck
-        - tlscheck
+        - tls_check
         - udp_log
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
         - yang_grpc
