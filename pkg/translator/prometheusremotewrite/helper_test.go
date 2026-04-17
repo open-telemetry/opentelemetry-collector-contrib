@@ -1294,3 +1294,43 @@ func TestDisableScopeInfo(t *testing.T) {
 	assert.NotContains(t, labels, "otel_scope_version")
 	assert.NotContains(t, labels, "otel_scope_scope_attr")
 }
+
+func TestConflictingScopeAttributesDropped(t *testing.T) {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("name", "dropped-name")
+	scope.Attributes().PutStr("version", "dropped-version")
+	scope.Attributes().PutStr("schema_url", "dropped-schema-url")
+	scope.Attributes().PutStr("valid_attr", "valid-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	tsMap, err := FromMetrics(md, Settings{})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+	require.Len(t, tsMap, 1)
+
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should come from scope.Name(), not attribute")
+	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should come from scope.Version(), not attribute")
+	assert.NotContains(t, labels, "otel_scope_schema_url", "schema_url should not be exported as scope attribute")
+	assert.Equal(t, "valid-value", labels["otel_scope_valid_attr"], "valid scope attribute should be present")
+}
