@@ -1,6 +1,7 @@
 display_name: MongoDB Atlas Receiver
 type: mongodb_atlas
 deprecated_type: mongodbatlas
+reaggregation_enabled: true
 
 description: |
   The MongoDB Atlas Receiver receives metrics from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 
@@ -74,6 +75,7 @@ resource_attributes:
 attributes:
   assert_type:
     description: MongoDB assertion type
+    requirement_level: recommended
     type: string
     enum:
       - regular
@@ -82,6 +84,7 @@ attributes:
       - user
   btree_counter_type:
     description: Database index effectiveness
+    requirement_level: recommended
     type: string
     enum:
       - accesses
@@ -89,30 +92,35 @@ attributes:
       - misses
   cache_direction:
     description: Whether read into or written from
+    requirement_level: recommended
     type: string
     enum:
       - read_into
       - written_from
   cache_ratio_type:
     description: Cache ratio type
+    requirement_level: recommended
     type: string
     enum:
       - cache_fill
       - dirty_fill
   cache_status:
     description: Cache status
+    requirement_level: recommended
     type: string
     enum:
       - dirty
       - used
   cluster_role:
     description: Whether process is acting as replica or primary
+    requirement_level: recommended
     type: string
     enum:
       - primary
       - replica
   cpu_state:
     description: CPU state
+    requirement_level: recommended
     type: string
     enum:
       - kernel
@@ -125,18 +133,21 @@ attributes:
       - steal
   cursor_state:
     description: Whether cursor is open or timed out
+    requirement_level: recommended
     type: string
     enum:
       - timed_out
       - open
   direction:
     description: Network traffic direction
+    requirement_level: recommended
     type: string
     enum:
       - receive
       - transmit
   disk_direction:
     description: Measurement type for disk operation
+    requirement_level: recommended
     type: string
     enum:
       - read
@@ -144,12 +155,14 @@ attributes:
       - total
   disk_status:
     description: Disk measurement type
+    requirement_level: recommended
     type: string
     enum:
       - free
       - used
   document_status:
     description: Status of documents in the database
+    requirement_level: recommended
     type: string
     enum:
       - returned
@@ -158,6 +171,7 @@ attributes:
       - deleted
   execution_type:
     description: Type of command
+    requirement_level: recommended
     type: string
     enum:
       - reads
@@ -165,6 +179,7 @@ attributes:
       - commands
   global_lock_state:
     description: Which queue is locked
+    requirement_level: recommended
     type: string
     enum:
       - current_queue_total
@@ -172,6 +187,7 @@ attributes:
       - current_queue_writers
   memory_issue_type:
     description: Type of memory issue encountered
+    requirement_level: recommended
     type: string
     enum:
       - extra_info
@@ -179,6 +195,7 @@ attributes:
       - exceptions_thrown
   memory_state:
     description: Memory usage type
+    requirement_level: recommended
     type: string
     enum:
       - resident
@@ -190,6 +207,7 @@ attributes:
       - used
   memory_status:
     description: Memory measurement type
+    requirement_level: recommended
     type: string
     enum:
       - available
@@ -200,6 +218,7 @@ attributes:
       - used
   object_type:
     description: MongoDB object type
+    requirement_level: recommended
     type: string
     enum:
       - collection
@@ -211,6 +230,7 @@ attributes:
       - data
   operation:
     description: Type of database operation
+    requirement_level: recommended
     type: string
     enum:
       - cmd
@@ -223,6 +243,7 @@ attributes:
       - ttl_deleted
   oplog_type:
     description: Oplog type
+    requirement_level: recommended
     type: string
     enum:
       - slave_lag_master_time
@@ -230,12 +251,14 @@ attributes:
       - master_lag_time_diff
   scanned_type:
     description: Objects or indexes scanned during query
+    requirement_level: recommended
     type: string
     enum:
       - index_items
       - objects
   storage_status:
     description: Views on database size
+    requirement_level: recommended
     type: string
     enum:
       - total
@@ -244,6 +267,7 @@ attributes:
       - data_size_wo_system
   ticket_type:
     description: Type of ticket available
+    requirement_level: recommended
     type: string
     enum:
       - available_reads
