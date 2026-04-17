@@ -31,16 +31,19 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/extensions"
 )
 
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
-	Server       OpAMPServer  `mapstructure:"server"`
-	Agent        Agent        `mapstructure:"agent"`
-	Capabilities Capabilities `mapstructure:"capabilities"`
-	Storage      Storage      `mapstructure:"storage"`
-	Telemetry    Telemetry    `mapstructure:"telemetry"`
-	HealthCheck  HealthCheck  `mapstructure:"healthcheck"`
+	Server       OpAMPServer    `mapstructure:"server"`
+	Agent        Agent          `mapstructure:"agent"`
+	Capabilities Capabilities   `mapstructure:"capabilities"`
+	Storage      Storage        `mapstructure:"storage"`
+	Telemetry    Telemetry      `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck    `mapstructure:"healthcheck"`
+	Extensions   map[string]any `mapstructure:"extensions,omitempty"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -74,13 +77,10 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, err
 	}
 
-	if err := cfg.Validate(); err != nil {
-		return Supervisor{}, fmt.Errorf("cannot validate supervisor config %s: %w", configFile, err)
-	}
-
 	return cfg, nil
 }
 
+// Validate validates the Supervisor configuration
 func (s Supervisor) Validate() error {
 	if err := s.Server.Validate(); err != nil {
 		return err
@@ -96,6 +96,11 @@ func (s Supervisor) Validate() error {
 
 	if err := s.Telemetry.Resource.Validate(); err != nil {
 		return fmt.Errorf("invalid telemetry::resource settings: %w", err)
+	}
+
+	// extensions have their own validation in the extensions package
+	if err := extensions.ValidateConfigs(s.Extensions); err != nil {
+		return err
 	}
 
 	return nil

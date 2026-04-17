@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -558,6 +559,30 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestSupervisor_UnmarshalExtensionsRawMap(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"extensions": map[string]any{
+			"foo": map[string]any{
+				"key": "value",
+			},
+			"bar/named": map[string]any{
+				"token": "secret",
+			},
+		},
+	})
+
+	cfg := DefaultSupervisor()
+	require.NoError(t, conf.Unmarshal(&cfg))
+	require.Equal(t, map[string]any{
+		"foo": map[string]any{
+			"key": "value",
+		},
+		"bar/named": map[string]any{
+			"token": "secret",
+		},
+	}, cfg.Extensions)
+}
+
 func TestOpAMPServer_OpaqueHeaders(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -865,20 +890,6 @@ agent:
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
 				require.NoError(t, os.Remove(cfgPath))
 				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("cannot retrieve the configuration: unable to read the file"))
-			},
-		},
-		{
-			desc: "Failed Validation Supervisor",
-			testFunc: func(t *testing.T) {
-				config := `
-server:
-
-agent:
-  executable: %s
-`
-				config = fmt.Sprintf(config, executablePath)
-				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
-				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("cannot validate supervisor config"))
 			},
 		},
 	}
