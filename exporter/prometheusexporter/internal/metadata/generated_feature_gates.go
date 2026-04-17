@@ -13,3 +13,11 @@ var ExporterPrometheusexporterDisableAddMetricSuffixesFeatureGate = featuregate.
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 	featuregate.WithRegisterFromVersion("v0.132.0"),
 )
+
+var ExporterPrometheusexporterDropDeltaMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusexporter.DropDeltaMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, drops all metrics with Delta aggregation temporality. Users should use the deltatocumulative processor instead."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47721"),
+	featuregate.WithRegisterFromVersion("v0.151.0"),
+)

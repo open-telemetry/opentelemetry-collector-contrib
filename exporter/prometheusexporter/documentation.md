@@ -9,5 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `exporter.prometheusexporter.DisableAddMetricSuffixes` | alpha | When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used | v0.132.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-specification/pull/4533) |
+| `exporter.prometheusexporter.DropDeltaMetrics` | alpha | When enabled, drops all metrics with Delta aggregation temporality. Users should use the deltatocumulative processor instead. | v0.151.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47721) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 )
 
 // stringBuilderPool is a pool of strings.Builder instances to reduce allocations
@@ -199,6 +201,11 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 		return n
 	}
 
+	if metadata.ExporterPrometheusexporterDropDeltaMetricsFeatureGate.IsEnabled() && doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		a.logger.Debug("dropping delta sum metric", zap.String("metric_name", metric.Name()))
+		return 0
+	}
+
 	// Drop non-monotonic and non-cumulative metrics
 	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !doubleSum.IsMonotonic() {
 		a.logger.Debug("refusing non-monotonic delta sum metric",
@@ -258,6 +265,12 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, scopeName, s
 
 func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	histogram := metric.Histogram()
+
+	if metadata.ExporterPrometheusexporterDropDeltaMetricsFeatureGate.IsEnabled() && histogram.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		a.logger.Debug("dropping delta histogram metric", zap.String("metric_name", metric.Name()))
+		return 0
+	}
+
 	a.logger.Debug("Accumulate histogram.....")
 	dps := histogram.DataPoints()
 
@@ -327,6 +340,12 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, scopeN
 
 func (a *lastValueAccumulator) accumulateExponentialHistogram(metric pmetric.Metric, scopeName, scopeVersion, scopeSchemaURL string, scopeAttributes, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	expHistogram := metric.ExponentialHistogram()
+
+	if metadata.ExporterPrometheusexporterDropDeltaMetricsFeatureGate.IsEnabled() && expHistogram.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		a.logger.Debug("dropping delta exponential histogram metric", zap.String("metric_name", metric.Name()))
+		return 0
+	}
+
 	a.logger.Debug("Accumulate native histogram.....")
 	dps := expHistogram.DataPoints()
 

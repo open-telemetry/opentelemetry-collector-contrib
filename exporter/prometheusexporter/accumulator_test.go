@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -1135,4 +1136,58 @@ func TestAccumulateSum_RefusedNonMonotonicDelta_Logging(t *testing.T) {
 	require.Equal(t, "test_refused_metric", fieldMap["metric_name"])
 	require.Equal(t, "non-monotonic sum with delta aggregation temporality is not supported", fieldMap["reason"])
 	require.Equal(t, int64(2), fieldMap["data_points_refused"])
+}
+
+func TestAccumulateDeltaMetrics_FeatureGateEnabled(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.prometheusexporter.DropDeltaMetrics", true)
+	require.NoError(t, err)
+	defer func() { _ = featuregate.GlobalRegistry().Set("exporter.prometheusexporter.DropDeltaMetrics", false) }()
+
+	tests := []struct {
+		name       string
+		fillMetric func(pmetric.Metric)
+	}{
+		{
+			name: "DeltaSum",
+			fillMetric: func(metric pmetric.Metric) {
+				metric.SetName("test_metric")
+				metric.SetEmptySum().SetIsMonotonic(true)
+				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(42)
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			},
+		},
+		{
+			name: "DeltaHistogram",
+			fillMetric: func(metric pmetric.Metric) {
+				metric.SetName("test_metric")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				dp := metric.Histogram().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			},
+		},
+		{
+			name: "DeltaExponentialHistogram",
+			fillMetric: func(metric pmetric.Metric) {
+				metric.SetName("test_metric")
+				metric.SetEmptyExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				dp := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resourceMetrics := pmetric.NewResourceMetrics()
+			ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
+			ilm.Scope().SetName("test")
+			tt.fillMetric(ilm.Metrics().AppendEmpty())
+
+			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+			n := a.Accumulate(resourceMetrics)
+			require.Equal(t, 0, n)
+		})
+	}
 }

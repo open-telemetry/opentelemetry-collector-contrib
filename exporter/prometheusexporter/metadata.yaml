@@ -17,6 +17,11 @@ feature_gates:
     stage: alpha
     from_version: "v0.132.0"
     reference_url: https://github.com/open-telemetry/opentelemetry-specification/pull/4533
+  - id: exporter.prometheusexporter.DropDeltaMetrics
+    description: When enabled, drops all metrics with Delta aggregation temporality. Users should use the deltatocumulative processor instead.
+    stage: alpha
+    from_version: "v0.151.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47721
 
 tests:
   config:
