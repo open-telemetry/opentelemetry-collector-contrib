@@ -678,7 +678,7 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 
 	makeScraper := func(t *testing.T, cfg *Config, spy *queryPlanSpyClient) *mySQLScraper {
 		t.Helper()
-		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](10, time.Hour*24*365*10))
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 		scraper.sqlclient = spy
 		return scraper
 	}
