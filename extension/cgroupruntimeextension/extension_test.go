@@ -4,6 +4,7 @@
 package cgroupruntimeextension
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -29,7 +30,7 @@ func TestExtension(t *testing.T) {
 					Ratio:   0.5,
 				},
 			},
-			expectedCalls: 4,
+			expectedCalls: 3,
 		},
 		{
 			name: "everything disabled",
@@ -55,7 +56,7 @@ func TestExtension(t *testing.T) {
 					RefreshInterval: 15 * time.Second,
 				},
 			},
-			expectedCalls: 2,
+			expectedCalls: 1,
 		},
 	}
 
@@ -63,12 +64,16 @@ func TestExtension(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			allCalls := 0
 			var _err error
-			setterMock := func() (undoFunc, error) {
+			maxProcsSetterMock := func() (undoFunc, error) {
 				allCalls++
 				return func() { allCalls++ }, _err
 			}
+			memLimitSetterMock := func(_ float64) (int64, error) {
+				allCalls++
+				return 1000, _err
+			}
 			settings := extensiontest.NewNopSettings(extensiontest.NopType)
-			cg := newCgroupRuntime(test.config, settings.Logger, setterMock, func(_ float64, _ time.Duration) (undoFunc, error) { return setterMock() })
+			cg := newCgroupRuntime(test.config, settings.Logger, maxProcsSetterMock, memLimitSetterMock)
 			ctx := t.Context()
 
 			err := cg.Start(ctx, componenttest.NewNopHost())
@@ -78,4 +83,41 @@ func TestExtension(t *testing.T) {
 			require.Equal(t, test.expectedCalls, allCalls)
 		})
 	}
+}
+
+func TestMemLimitRefreshStopsOnShutdown(t *testing.T) {
+	var memLimitCalls atomic.Int64
+
+	config := &Config{
+		GoMaxProcs: GoMaxProcsConfig{Enabled: false},
+		GoMemLimit: GoMemLimitConfig{
+			Enabled:         true,
+			Ratio:           0.8,
+			RefreshInterval: 10 * time.Millisecond,
+		},
+	}
+
+	maxProcsSetterMock := func() (undoFunc, error) {
+		return func() {}, nil
+	}
+	memLimitSetterMock := func(_ float64) (int64, error) {
+		memLimitCalls.Add(1)
+		return 1000, nil
+	}
+
+	settings := extensiontest.NewNopSettings(extensiontest.NopType)
+	cg := newCgroupRuntime(config, settings.Logger, maxProcsSetterMock, memLimitSetterMock)
+	ctx := t.Context()
+
+	require.NoError(t, cg.Start(ctx, componenttest.NewNopHost()))
+	require.Eventually(t, func() bool {
+		// one call happens at startup; second verifies ticker-based refresh is active.
+		return memLimitCalls.Load() >= 2
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	require.NoError(t, cg.Shutdown(ctx))
+
+	callsAfterShutdown := memLimitCalls.Load()
+	time.Sleep(50 * time.Millisecond)
+	require.Equal(t, callsAfterShutdown, memLimitCalls.Load())
 }

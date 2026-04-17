@@ -7,6 +7,7 @@
 package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
@@ -103,9 +104,13 @@ func cgroupMaxCPU(filename string) (quota int64, period uint64, err error) {
 // startExtension starts the extension with the given config
 func startExtension(t *testing.T, config *Config) {
 	factory := NewFactory()
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(t.Context())
 	extension, err := factory.Create(ctx, extensiontest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		assert.NoError(t, extension.Shutdown(ctx))
+		cancel()
+	})
 
 	err = extension.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
