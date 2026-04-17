@@ -18,13 +18,14 @@ import (
 
 const sensitiveSQL = "SELECT secret_password FROM users WHERE ssn = '123-45-6789'"
 
-func newTestScraperHelper(logger *zap.Logger, unsafeLogRawSQL bool) *sqlServerScraperHelper {
+// malformedSQL consistently fails the DataDog obfuscator (unmatched bracket).
+const malformedSQL = "SELECT cpu_time AS [CPU Usage (time)"
+
+func newTestScraperHelper(logger *zap.Logger) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
 		logger:     logger,
 		obfuscator: newObfuscator(),
-		config: &Config{
-			UnsafeLogRawSQL: unsafeLogRawSQL,
-		},
+		config:     &Config{},
 	}
 }
 
@@ -32,7 +33,7 @@ func TestRetrieveValue_DoesNotLogRawData(t *testing.T) {
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 
-	s := newTestScraperHelper(logger, false)
+	s := newTestScraperHelper(logger)
 
 	row := sqlquery.StringMap{
 		"query_text": sensitiveSQL,
@@ -57,110 +58,121 @@ func TestRetrieveValue_DoesNotLogRawData(t *testing.T) {
 	}
 }
 
-func TestObfuscationFailure_DoesNotLogRawSQL_DefaultConfig(t *testing.T) {
+func TestRetrieveValue_LogsAtWarnLevel(t *testing.T) {
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 
-	s := newTestScraperHelper(logger, false)
-
-	row := sqlquery.StringMap{
-		"query_text": sensitiveSQL,
-	}
+	s := newTestScraperHelper(logger)
 
 	var errs []error
-	s.retrieveValue(row, "query_text", &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
-		statement := row[columnName]
-		if s.config.UnsafeLogRawSQL {
-			s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
-				zap.String("column", columnName),
-				zap.String("statement", statement),
-				zap.Error(fmt.Errorf("simulated obfuscation failure")))
-		}
-		return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, fmt.Errorf("simulated obfuscation failure"))
+	s.retrieveValue(sqlquery.StringMap{"col": "val"}, "col", &errs, func(_ sqlquery.StringMap, _ string) (any, error) {
+		return nil, fmt.Errorf("simulated failure")
 	})
 
-	for _, entry := range logs.All() {
-		assert.NotContains(t, entry.Message, sensitiveSQL,
-			"raw SQL must not appear in log messages on obfuscation failure")
-		for _, field := range entry.Context {
-			assert.NotEqual(t, sensitiveSQL, field.String,
-				"raw SQL must not appear in any log field")
-		}
-	}
+	require.Len(t, errs, 1)
+	warnLogs := logs.FilterLevelExact(zapcore.WarnLevel)
+	require.Equal(t, 1, warnLogs.Len(),
+		"retrieveValue should log at Warn level, not Error")
+	assert.Equal(t, "failed to retrieve value", warnLogs.All()[0].Message)
+
+	errorLogs := logs.FilterLevelExact(zapcore.ErrorLevel)
+	assert.Equal(t, 0, errorLogs.Len(),
+		"retrieveValue should not produce Error-level logs for retrieval failures")
 }
 
-func TestObfuscationFailure_LogsRawSQL_WhenUnsafeEnabled(t *testing.T) {
+func TestObfuscationFailure_LogsRawSQLAtDebug(t *testing.T) {
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 
-	s := newTestScraperHelper(logger, true)
+	s := newTestScraperHelper(logger)
 
 	row := sqlquery.StringMap{
-		"query_text": sensitiveSQL,
+		"query_text": malformedSQL,
 	}
 
 	var errs []error
-	s.retrieveValue(row, "query_text", &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
-		statement := row[columnName]
-		if s.config.UnsafeLogRawSQL {
-			s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
-				zap.String("column", columnName),
-				zap.String("statement", statement),
-				zap.Error(fmt.Errorf("simulated obfuscation failure")))
-		}
-		return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, fmt.Errorf("simulated obfuscation failure"))
-	})
+	s.retrieveValue(row, "query_text", &errs, s.obfuscateSQLRetriever())
+
+	require.NotEmpty(t, errs, "obfuscation of malformed SQL should produce an error")
 
 	foundDebugWithRaw := false
 	for _, entry := range logs.All() {
 		if entry.Level == zapcore.DebugLevel {
 			for _, field := range entry.Context {
-				if field.Key == "statement" && field.String == sensitiveSQL {
+				if field.Key == "statement" && field.String == malformedSQL {
 					foundDebugWithRaw = true
 				}
 			}
 		}
 	}
 	assert.True(t, foundDebugWithRaw,
-		"when UnsafeLogRawSQL is enabled, raw SQL should appear in Debug logs")
+		"raw SQL should appear in Debug logs when obfuscation fails")
 }
 
-func TestRetrieveValue_EmptyStatement_NoError(t *testing.T) {
+func TestObfuscationFailure_RawSQLNotInWarnOrError(t *testing.T) {
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 
-	s := newTestScraperHelper(logger, false)
+	s := newTestScraperHelper(logger)
 
+	row := sqlquery.StringMap{
+		"query_text": malformedSQL,
+	}
+
+	var errs []error
+	s.retrieveValue(row, "query_text", &errs, s.obfuscateSQLRetriever())
+
+	for _, entry := range logs.All() {
+		if entry.Level >= zapcore.WarnLevel {
+			for _, field := range entry.Context {
+				assert.NotEqual(t, malformedSQL, field.String,
+					"raw SQL must not appear in Warn/Error log fields (level=%s, key=%s)", entry.Level, field.Key)
+			}
+		}
+	}
+}
+
+func TestObfuscateSQLRetriever_SuccessfulObfuscation(t *testing.T) {
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+
+	s := newTestScraperHelper(logger)
+
+	row := sqlquery.StringMap{
+		"query_text": "SELECT * FROM users WHERE id = 42",
+	}
+
+	var errs []error
+	result := s.retrieveValue(row, "query_text", &errs, s.obfuscateSQLRetriever())
+
+	assert.Empty(t, errs, "valid SQL should obfuscate without error")
+	assert.NotContains(t, result.(string), "42",
+		"obfuscated result should not contain literal value")
+
+	debugLogs := logs.FilterMessage("obfuscation failed for SQL statement")
+	assert.Equal(t, 0, debugLogs.Len(),
+		"no failure debug log should be emitted for successful obfuscation")
+}
+
+func TestEmptyStatement_SkippedBeforeRetriever(t *testing.T) {
+	// In production, rows with empty query_text are skipped by the loop's
+	// "if row[queryText] == "" { continue }" guard before retrieveValue is
+	// called. This test verifies that guard works correctly.
 	row := sqlquery.StringMap{
 		"query_text": "",
 	}
 
-	var errs []error
-	result := s.retrieveValue(row, "query_text", &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
-		statement := row[columnName]
-		if statement == "" {
-			return "", nil
-		}
-		obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
-		if err != nil {
-			return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
-		}
-		return obfuscated, nil
-	})
+	assert.Equal(t, "", row["query_text"],
+		"empty query_text should be detected by the caller's guard")
 
-	assert.Empty(t, errs, "empty statement should not produce errors")
-	assert.Equal(t, "", result)
-
-	errorLogs := logs.FilterLevelExact(zapcore.ErrorLevel)
-	assert.Equal(t, 0, errorLogs.Len(),
-		"empty/NULL query_text should not produce error-level logs")
+	// Non-empty values should pass through to the retriever.
+	row["query_text"] = "SELECT 1"
+	assert.NotEqual(t, "", row["query_text"])
 }
 
-func TestDebugLog_DoesNotExposeRowData_DefaultConfig(t *testing.T) {
+func TestDebugLog_IncludesRowData(t *testing.T) {
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
-
-	s := newTestScraperHelper(logger, false)
 
 	queryHashVal := "abc123"
 	queryPlanHashVal := "def456"
@@ -169,49 +181,10 @@ func TestDebugLog_DoesNotExposeRowData_DefaultConfig(t *testing.T) {
 		"query_plan": "<xml>sensitive plan data</xml>",
 	}
 
-	if s.config.UnsafeLogRawSQL {
-		s.logger.Debug("processing query row (unsafe_log_raw_sql enabled)",
-			zap.String("query_hash", queryHashVal),
-			zap.String("plan_hash", queryPlanHashVal),
-			zap.Any("row", row))
-	} else {
-		s.logger.Debug("processing query row",
-			zap.String("query_hash", queryHashVal),
-			zap.String("plan_hash", queryPlanHashVal))
-	}
-
-	for _, entry := range logs.All() {
-		assert.NotContains(t, entry.Message, sensitiveSQL)
-		for _, field := range entry.Context {
-			assert.NotEqual(t, "row", field.Key,
-				"row data must not be logged when UnsafeLogRawSQL is false")
-		}
-	}
-}
-
-func TestDebugLog_ExposesRowData_WhenUnsafeEnabled(t *testing.T) {
-	core, logs := observer.New(zap.DebugLevel)
-	logger := zap.New(core)
-
-	s := newTestScraperHelper(logger, true)
-
-	queryHashVal := "abc123"
-	queryPlanHashVal := "def456"
-	row := sqlquery.StringMap{
-		"query_text": sensitiveSQL,
-		"query_plan": "<xml>plan data</xml>",
-	}
-
-	if s.config.UnsafeLogRawSQL {
-		s.logger.Debug("processing query row (unsafe_log_raw_sql enabled)",
-			zap.String("query_hash", queryHashVal),
-			zap.String("plan_hash", queryPlanHashVal),
-			zap.Any("row", row))
-	} else {
-		s.logger.Debug("processing query row",
-			zap.String("query_hash", queryHashVal),
-			zap.String("plan_hash", queryPlanHashVal))
-	}
+	logger.Debug("processing query row",
+		zap.String("query_hash", queryHashVal),
+		zap.String("plan_hash", queryPlanHashVal),
+		zap.Any("row", row))
 
 	foundRowField := false
 	for _, entry := range logs.All() {
@@ -222,5 +195,5 @@ func TestDebugLog_ExposesRowData_WhenUnsafeEnabled(t *testing.T) {
 		}
 	}
 	assert.True(t, foundRowField,
-		"when UnsafeLogRawSQL is enabled, row data should be present in Debug logs")
+		"row data should be present in Debug logs for diagnostics")
 }

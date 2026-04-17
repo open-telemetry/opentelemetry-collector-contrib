@@ -5,8 +5,6 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -58,25 +56,12 @@ type Config struct {
 	Server   string              `mapstructure:"server"`
 	Username string              `mapstructure:"username"`
 
-	// UnsafeLogRawSQL enables logging of raw (unobfuscated) SQL data at Debug
-	// level when obfuscation fails. This MUST NEVER be enabled in production
-	// as it exposes sensitive customer SQL statements and query plans in
-	// collector logs.
-	UnsafeLogRawSQL bool `mapstructure:"unsafe_log_raw_sql"`
-
 	// Flag to check if the connection is direct or not. It should only be
 	// used after a successful call to the `Validate` method.
 	isDirectDBConnectionEnabled bool
 }
 
 func (cfg *Config) Validate() error {
-	if cfg.UnsafeLogRawSQL {
-		fmt.Fprintf(os.Stderr,
-			"WARNING: sqlserverreceiver: unsafe_log_raw_sql is enabled. "+
-				"Raw SQL statements and query plans will appear in logs at Debug level. "+
-				"This MUST NOT be used in production.\n")
-	}
-
 	err := cfg.validateInstanceAndComputerName()
 	if err != nil {
 		return err

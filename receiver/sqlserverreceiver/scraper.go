@@ -863,21 +863,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
-			statement := row[columnName]
-			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
-			if err != nil {
-				if s.config.UnsafeLogRawSQL {
-					s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
-						zap.String("column", columnName),
-						zap.String("statement", statement),
-						zap.Error(err))
-				}
-				return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
-			}
-
-			return obfuscated, nil
-		})
+		queryTextVal := s.retrieveValue(row, queryText, &errs, s.obfuscateSQLRetriever())
 
 		var cached bool
 
@@ -905,9 +891,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			physicalReadsVal = int64(0)
 		}
 
-		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
-			return s.obfuscator.obfuscateXMLPlan(row[columnName])
-		})
+		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, s.obfuscateXMLPlanRetriever())
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
 		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, rowsReturned, rowsReturnedVal.(int64))
@@ -939,16 +923,10 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		if s.config.UnsafeLogRawSQL {
-			s.logger.Debug("processing query row (unsafe_log_raw_sql enabled)",
-				zap.String("query_hash", queryHashVal),
-				zap.String("plan_hash", queryPlanHashVal),
-				zap.Any("row", row))
-		} else {
-			s.logger.Debug("processing query row",
-				zap.String("query_hash", queryHashVal),
-				zap.String("plan_hash", queryPlanHashVal))
-		}
+		s.logger.Debug("processing query row",
+			zap.String("query_hash", queryHashVal),
+			zap.String("plan_hash", queryPlanHashVal),
+			zap.Any("row", row))
 
 		if !resourcesAdded {
 			resources = s.setupResourceBuilder(s.lb.NewResourceBuilder(), row).Emit()
@@ -990,13 +968,36 @@ func (s *sqlServerScraperHelper) retrieveValue(
 	if err != nil {
 		// The column value is intentionally omitted from this log to prevent
 		// exposure of unobfuscated SQL statements or query plans.
-		s.logger.Error("failed to retrieve value",
+		s.logger.Warn("failed to retrieve value",
 			zap.String("column", column),
 			zap.Error(err))
 		*errs = append(*errs, err)
 	}
 
 	return value
+}
+
+func (s *sqlServerScraperHelper) obfuscateSQLRetriever() func(sqlquery.StringMap, string) (any, error) {
+	return func(row sqlquery.StringMap, columnName string) (any, error) {
+		statement := row[columnName]
+		obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
+		if err != nil {
+			// Raw statement is logged at Debug only; operators who enable
+			// debug verbosity accept that sensitive data may appear in logs.
+			s.logger.Debug("obfuscation failed for SQL statement",
+				zap.String("column", columnName),
+				zap.String("statement", statement),
+				zap.Error(err))
+			return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
+		}
+		return obfuscated, nil
+	}
+}
+
+func (s *sqlServerScraperHelper) obfuscateXMLPlanRetriever() func(sqlquery.StringMap, string) (any, error) {
+	return func(row sqlquery.StringMap, columnName string) (any, error) {
+		return s.obfuscator.obfuscateXMLPlan(row[columnName])
+	}
 }
 
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
@@ -1165,20 +1166,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := row[dbName]
-		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
-			statement := row[columnName]
-			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
-			if err != nil {
-				if s.config.UnsafeLogRawSQL {
-					s.logger.Debug("obfuscation failed for SQL statement (unsafe_log_raw_sql enabled)",
-						zap.String("column", columnName),
-						zap.String("statement", statement),
-						zap.Error(err))
-				}
-				return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
-			}
-			return obfuscated, nil
-		}).(string)
+		queryTextVal := s.retrieveValue(row, statementText, &errs, s.obfuscateSQLRetriever()).(string)
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)
