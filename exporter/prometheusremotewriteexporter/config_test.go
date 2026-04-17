@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -49,9 +50,10 @@ func TestLoadConfig(t *testing.T) {
 		{Name: "X-Scope-OrgID", Value: "234"},
 	}
 	tests := []struct {
-		id           component.ID
-		expected     component.Config
-		errorMessage string
+		id               component.ID
+		expected         component.Config
+		errorMessage     string
+		enableSendingRW2 bool
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
@@ -116,12 +118,14 @@ func TestLoadConfig(t *testing.T) {
 					cc.Timeout = 5 * time.Second
 					return cc
 				}(),
-				RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
+				RemoteWriteProtoMsg: remoteapi.WriteV2MessageType,
 				TargetInfo: TargetInfo{
 					Enabled: true,
 				},
 			},
+			enableSendingRW2: true,
 		},
+
 		{
 			id:           component.NewIDWithName(metadata.Type, "negative_queue_size"),
 			errorMessage: "remote write queue size can't be negative",
@@ -146,10 +150,24 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "invalid_translation_strategy"),
 			errorMessage: "invalid translation_strategy: invalid_strategy",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "v1_no_utf8"),
+			errorMessage: "translation strategy NoUTF8EscapingWithSuffixes requires Prometheus Remote Write 2.0",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "v1_no_translation"),
+			errorMessage: "translation strategy NoTranslation requires Prometheus Remote Write 2.0",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
+			if tt.enableSendingRW2 {
+				oldValue := enableSendingRW2FeatureGate.IsEnabled()
+				testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, true)
+				defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
+			}
+
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 

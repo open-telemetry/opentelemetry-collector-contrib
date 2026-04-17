@@ -165,6 +165,10 @@ func (cfg *Config) Validate() error {
 		default:
 			return fmt.Errorf("invalid translation_strategy: %s", cfg.TranslationStrategy)
 		}
+
+		if cfg.RemoteWriteProtoMsg == remoteapi.WriteV1MessageType && (cfg.TranslationStrategy == noUTF8EscapingWithSuffixes || cfg.TranslationStrategy == noTranslation) {
+			return fmt.Errorf("translation strategy %s requires Prometheus Remote Write 2.0 (UTF-8 support)", cfg.TranslationStrategy)
+		}
 	}
 
 	return nil
