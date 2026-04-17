@@ -696,23 +696,8 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 		}
 
 		var queryPlan string
-		var ok bool
-		cacheKey := createCacheKey(q.schemaName, q.digest)
-		if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
-			// attempt to explain the query
-			queryPlan = m.sqlclient.explainQuery(q.digestText, q.querySampleText, q.schemaName, q.digest, m.logger)
-			if queryPlan == "" {
-				m.logger.Debug("query plan not available", zap.String("digest", q.digest), zap.String("digest_text", q.digestText))
-			} else {
-				// Obfuscate the plan
-				queryPlan, err = m.obfuscator.obfuscatePlan(queryPlan)
-				if err != nil {
-					// Obfuscation returned an error, log it. We cannot publish the unobfuscated plan as it may contain sensitive data
-					m.logger.Error("Failed to obfuscate query plan", zap.Error(err))
-				}
-			}
-			// add the obfuscated plan to the cache so we can use it again
-			m.queryPlanCache.Add(cacheKey, queryPlan)
+		if q.digest != "" {
+			queryPlan = m.retrieveQueryPlan(q.digestText, q.querySampleText, q.schemaName, q.digest)
 		}
 
 		m.lb.RecordDbServerTopQueryEvent(
@@ -777,25 +762,8 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 		}
 
 		var queryPlan string
-		var ok bool
-		cacheKey := createCacheKey(sample.processlistDB, sample.digest)
-		if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
-			queryPlan = m.sqlclient.explainQuery(
-				obfuscatedQuery,      // reused — already obfuscated above
-				sample.sqlText,       // concrete SQL for EXPLAIN execution
-				sample.processlistDB, // schema for USE statement
-				sample.digest,        // for logging
-				m.logger,
-			)
-
-			if queryPlan != "" {
-				var planErr error
-				queryPlan, planErr = m.obfuscator.obfuscatePlan(queryPlan)
-				if planErr != nil {
-					m.logger.Error("Failed to obfuscate query plan", zap.Error(planErr))
-				}
-			}
-			m.queryPlanCache.Add(cacheKey, queryPlan)
+		if sample.digest != "" {
+			queryPlan = m.retrieveQueryPlan(obfuscatedQuery, sample.sqlText, sample.processlistDB, sample.digest)
 		}
 
 		m.lb.RecordDbServerQuerySampleEvent(
@@ -824,7 +792,31 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 	}
 }
 
-func createCacheKey(dbName string, digest string) string {
+func (m *mySQLScraper) retrieveQueryPlan(queryDigestText, querySampleText, schemaOrDbName, digest string) string {
+	var queryPlan string
+	var ok bool
+	cacheKey := createCacheKey(schemaOrDbName, digest)
+	if queryPlan, ok = m.queryPlanCache.Get(cacheKey); !ok {
+		// attempt to explain the query
+		queryPlan = m.sqlclient.explainQuery(queryDigestText, querySampleText, schemaOrDbName, digest, m.logger)
+		if queryPlan == "" {
+			m.logger.Debug("query plan not available", zap.String("digest", digest), zap.String("digest_text", queryDigestText))
+		} else {
+			// Obfuscate the plan
+			var obfErr error
+			queryPlan, obfErr = m.obfuscator.obfuscatePlan(queryPlan)
+			if obfErr != nil {
+				// Obfuscation returned an error, log it. We cannot publish the unobfuscated plan as it may contain sensitive data
+				m.logger.Error("Failed to obfuscate query plan", zap.Error(obfErr))
+			}
+		}
+		// add the obfuscated plan to the cache so we can use it again
+		m.queryPlanCache.Add(cacheKey, queryPlan)
+	}
+	return queryPlan
+}
+
+func createCacheKey(dbName, digest string) string {
 	return dbName + "-" + digest
 }
 
