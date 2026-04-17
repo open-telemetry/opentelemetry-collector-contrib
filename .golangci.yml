@@ -136,9 +136,6 @@ linters:
         path: exporter/awsxrayexporter/
       - linters:
           - forbidigo
-        path: exporter/clickhouseexporter/
-      - linters:
-          - forbidigo
         path: exporter/googlecloudexporter/
       - linters:
           - forbidigo

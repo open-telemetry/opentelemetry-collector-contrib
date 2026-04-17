@@ -11,18 +11,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
-)
-
-// Deprecated: Use the `json` config option instead. This feature gate will be removed in a future version.
-var featureGateJSON = featuregate.GlobalRegistry().MustRegister(
-	"clickhouse.json",
-	featuregate.StageDeprecated,
-	featuregate.WithRegisterDescription("Deprecated: Use the `json` config option instead."),
-	featuregate.WithRegisterToVersion("v0.149.0"),
 )
 
 // NewFactory creates a factory for the ClickHouse exporter.
@@ -93,7 +84,7 @@ func createTracesExporter(
 }
 
 func useJSON(logger *zap.Logger, c *Config) bool {
-	if featureGateJSON.IsEnabled() {
+	if metadata.ClickhouseJSONFeatureGate.IsEnabled() {
 		logger.Warn("The clickhouse.json feature gate is deprecated. Use the `json` config option instead.")
 		return true
 	}

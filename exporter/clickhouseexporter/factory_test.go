@@ -40,11 +40,11 @@ func TestFactory_CreateLogsJSON(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = defaultEndpoint
 	})
-	gatePrev := featureGateJSON.IsEnabled()
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), true)
+	gatePrev := metadata.ClickhouseJSONFeatureGate.IsEnabled()
+	_ = featuregate.GlobalRegistry().Set(metadata.ClickhouseJSONFeatureGate.ID(), true)
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), gatePrev)
+	_ = featuregate.GlobalRegistry().Set(metadata.ClickhouseJSONFeatureGate.ID(), gatePrev)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
@@ -69,11 +69,11 @@ func TestFactory_CreateTracesJSON(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = defaultEndpoint
 	})
-	gatePrev := featureGateJSON.IsEnabled()
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), true)
+	gatePrev := metadata.ClickhouseJSONFeatureGate.IsEnabled()
+	_ = featuregate.GlobalRegistry().Set(metadata.ClickhouseJSONFeatureGate.ID(), true)
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
-	_ = featuregate.GlobalRegistry().Set(featureGateJSON.ID(), gatePrev)
+	_ = featuregate.GlobalRegistry().Set(metadata.ClickhouseJSONFeatureGate.ID(), gatePrev)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 

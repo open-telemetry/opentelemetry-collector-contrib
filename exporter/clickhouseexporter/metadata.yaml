@@ -11,6 +11,14 @@ status:
     active: [hanjm, Frapschen, SpencerTorres]
     emeritus: [dmitryax]
 
+feature_gates:
+  - id: clickhouse.json
+    description: "Deprecated: Use the `json` config option instead."
+    stage: deprecated
+    from_version: "v0.147.0"
+    to_version: "v0.149.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/46553
+
 tests:
   config:
     endpoint: clickhouse://localhost:9000
