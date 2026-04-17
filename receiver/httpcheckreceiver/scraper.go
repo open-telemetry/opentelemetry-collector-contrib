@@ -48,36 +48,36 @@ type timingInfo struct {
 	responseStart atomic.Int64
 }
 
-// getDurations calculates the duration for each phase in milliseconds
-func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs int64) {
+// getDurations calculates the duration for each phase in milliseconds.
+func (t *timingInfo) getDurations() (dnsMs, tcpMs, tlsMs, requestMs, responseMs float64) {
 	dnsStartNs := t.dnsStart.Load()
 	dnsEndNs := t.dnsEnd.Load()
 	if dnsStartNs != 0 && dnsEndNs != 0 {
-		dnsMs = (dnsEndNs - dnsStartNs) / int64(time.Millisecond)
+		dnsMs = float64(dnsEndNs-dnsStartNs) / float64(time.Millisecond)
 	}
 
 	connectStartNs := t.connectStart.Load()
 	connectEndNs := t.connectEnd.Load()
 	if connectStartNs != 0 && connectEndNs != 0 {
-		tcpMs = (connectEndNs - connectStartNs) / int64(time.Millisecond)
+		tcpMs = float64(connectEndNs-connectStartNs) / float64(time.Millisecond)
 	}
 
 	tlsStartNs := t.tlsStart.Load()
 	tlsEndNs := t.tlsEnd.Load()
 	if tlsStartNs != 0 && tlsEndNs != 0 {
-		tlsMs = (tlsEndNs - tlsStartNs) / int64(time.Millisecond)
+		tlsMs = float64(tlsEndNs-tlsStartNs) / float64(time.Millisecond)
 	}
 
 	writeStartNs := t.writeStart.Load()
 	writeEndNs := t.writeEnd.Load()
 	if writeStartNs != 0 && writeEndNs != 0 {
-		requestMs = (writeEndNs - writeStartNs) / int64(time.Millisecond)
+		requestMs = float64(writeEndNs-writeStartNs) / float64(time.Millisecond)
 	}
 
 	readStartNs := t.readStart.Load()
 	readEndNs := t.readEnd.Load()
 	if readStartNs != 0 && readEndNs != 0 {
-		responseMs = (readEndNs - readStartNs) / int64(time.Millisecond)
+		responseMs = float64(readEndNs-readStartNs) / float64(time.Millisecond)
 	}
 
 	return dnsMs, tcpMs, tlsMs, requestMs, responseMs

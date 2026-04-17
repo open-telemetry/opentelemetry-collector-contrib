@@ -68,7 +68,7 @@ metrics:
     enabled: false
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
     attributes: [http.url, network.transport]
   httpcheck.client.request.duration:
@@ -76,7 +76,7 @@ metrics:
     enabled: false
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
     attributes: [http.url]
   httpcheck.dns.lookup.duration:
@@ -84,7 +84,7 @@ metrics:
     enabled: false
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
     attributes: [http.url]
   httpcheck.duration:
@@ -110,7 +110,7 @@ metrics:
     enabled: false
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
     attributes: [http.url]
   httpcheck.response.size:
@@ -144,7 +144,7 @@ metrics:
     enabled: false
     stability: development
     gauge:
-      value_type: int
+      value_type: double
     unit: ms
     attributes: [http.url]
   httpcheck.validation.failed:
