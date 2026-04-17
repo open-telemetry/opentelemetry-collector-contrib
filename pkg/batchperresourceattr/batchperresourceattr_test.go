@@ -4,6 +4,7 @@
 package batchperresourceattr
 
 import (
+	"context"
 	"errors"
 	"math/rand/v2"
 	"sort"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -452,6 +455,173 @@ func fillResourceLogs(rs plog.ResourceLogs, kv ...string) {
 	firstLogRecord.SetFlags(plog.LogRecordFlags(rand.Int32()))
 	secondLogRecord := ils.LogRecords().AppendEmpty()
 	secondLogRecord.SetFlags(plog.LogRecordFlags(rand.Int32()))
+}
+
+// ctxTracesSink records the context passed to each ConsumeTraces call.
+type ctxTracesSink struct {
+	contexts []context.Context
+	consumertest.TracesSink
+}
+
+func (*ctxTracesSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (s *ctxTracesSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	s.contexts = append(s.contexts, ctx)
+	return s.TracesSink.ConsumeTraces(ctx, td)
+}
+
+// ctxMetricsSink records the context passed to each ConsumeMetrics call.
+type ctxMetricsSink struct {
+	contexts []context.Context
+	consumertest.MetricsSink
+}
+
+func (*ctxMetricsSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (s *ctxMetricsSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	s.contexts = append(s.contexts, ctx)
+	return s.MetricsSink.ConsumeMetrics(ctx, md)
+}
+
+// ctxLogsSink records the context passed to each ConsumeLogs call.
+type ctxLogsSink struct {
+	contexts []context.Context
+	consumertest.LogsSink
+}
+
+func (*ctxLogsSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (s *ctxLogsSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	s.contexts = append(s.contexts, ctx)
+	return s.LogsSink.ConsumeLogs(ctx, ld)
+}
+
+func TestWithMetadataInjectionTraces(t *testing.T) {
+	t.Run("single resource injects metadata", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "val1")
+
+		sink := &ctxTracesSink{}
+		bpr := NewBatchPerResourceTraces("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeTraces(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		meta := client.FromContext(sink.contexts[0]).Metadata
+		assert.Equal(t, []string{"val1"}, meta.Get("attr_key"))
+	})
+
+	t.Run("multiple resources same value injects shared metadata", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "shared")
+		fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "shared")
+
+		sink := &ctxTracesSink{}
+		bpr := NewBatchPerResourceTraces("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeTraces(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		assert.Equal(t, []string{"shared"}, client.FromContext(sink.contexts[0]).Metadata.Get("attr_key"))
+	})
+
+	t.Run("multiple resources different values each batch gets own metadata", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "a")
+		fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "b")
+
+		sink := &ctxTracesSink{}
+		bpr := NewBatchPerResourceTraces("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeTraces(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 2)
+		vals := []string{
+			client.FromContext(sink.contexts[0]).Metadata.Get("attr_key")[0],
+			client.FromContext(sink.contexts[1]).Metadata.Get("attr_key")[0],
+		}
+		assert.ElementsMatch(t, []string{"a", "b"}, vals)
+	})
+
+	t.Run("no metadata when option not set", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "val1")
+
+		sink := &ctxTracesSink{}
+		bpr := NewBatchPerResourceTraces("attr_key", sink)
+		require.NoError(t, bpr.ConsumeTraces(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		assert.Empty(t, client.FromContext(sink.contexts[0]).Metadata.Get("attr_key"))
+	})
+
+	t.Run("key absent from resource omitted from metadata", func(t *testing.T) {
+		inBatch := ptrace.NewTraces()
+		fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "other_key", "val")
+
+		sink := &ctxTracesSink{}
+		bpr := NewBatchPerResourceTraces("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeTraces(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		assert.Empty(t, client.FromContext(sink.contexts[0]).Metadata.Get("attr_key"))
+	})
+}
+
+func TestWithMetadataInjectionMetrics(t *testing.T) {
+	t.Run("single resource injects metadata", func(t *testing.T) {
+		inBatch := pmetric.NewMetrics()
+		fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "val1")
+
+		sink := &ctxMetricsSink{}
+		bpr := NewBatchPerResourceMetrics("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeMetrics(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		assert.Equal(t, []string{"val1"}, client.FromContext(sink.contexts[0]).Metadata.Get("attr_key"))
+	})
+
+	t.Run("multiple resources different values each batch gets own metadata", func(t *testing.T) {
+		inBatch := pmetric.NewMetrics()
+		fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "a")
+		fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "b")
+
+		sink := &ctxMetricsSink{}
+		bpr := NewBatchPerResourceMetrics("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeMetrics(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 2)
+		vals := []string{
+			client.FromContext(sink.contexts[0]).Metadata.Get("attr_key")[0],
+			client.FromContext(sink.contexts[1]).Metadata.Get("attr_key")[0],
+		}
+		assert.ElementsMatch(t, []string{"a", "b"}, vals)
+	})
+}
+
+func TestWithMetadataInjectionLogs(t *testing.T) {
+	t.Run("single resource injects metadata", func(t *testing.T) {
+		inBatch := plog.NewLogs()
+		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "val1")
+
+		sink := &ctxLogsSink{}
+		bpr := NewBatchPerResourceLogs("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeLogs(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		assert.Equal(t, []string{"val1"}, client.FromContext(sink.contexts[0]).Metadata.Get("attr_key"))
+	})
+
+	t.Run("multiple resources different values each batch gets own metadata", func(t *testing.T) {
+		inBatch := plog.NewLogs()
+		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "a")
+		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "b")
+
+		sink := &ctxLogsSink{}
+		bpr := NewBatchPerResourceLogs("attr_key", sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeLogs(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 2)
+		vals := []string{
+			client.FromContext(sink.contexts[0]).Metadata.Get("attr_key")[0],
+			client.FromContext(sink.contexts[1]).Metadata.Get("attr_key")[0],
+		}
+		assert.ElementsMatch(t, []string{"a", "b"}, vals)
+	})
 }
 
 func BenchmarkBatchPerResourceTraces(b *testing.B) {
