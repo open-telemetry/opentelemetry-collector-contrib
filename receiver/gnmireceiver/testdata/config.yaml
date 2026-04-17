@@ -1,0 +1,12 @@
+gnmi:
+  targets:
+    - address: "10.0.0.1:57400"
+      username: "admin"
+      password: "password"
+      encoding: "proto"
+      redial: 10s
+      subscriptions:
+        - name: "interfaces"
+          path: "/interfaces/interface/state/counters"
+          subscription_mode: "sample"
+          sample_interval: 30s
