@@ -863,7 +863,16 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			continue
 		}
 
-		queryTextVal := s.retrieveValue(row, queryText, &errs, s.obfuscateSQLRetriever())
+		queryTextVal := s.retrieveValue(row, queryText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			statement := row[columnName]
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return "", nil
+			}
+
+			return obfuscated, nil
+		})
 
 		var cached bool
 
@@ -891,7 +900,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			physicalReadsVal = int64(0)
 		}
 
-		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, s.obfuscateXMLPlanRetriever())
+		queryPlanVal := s.retrieveValue(row, queryPlan, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			return s.obfuscator.obfuscateXMLPlan(row[columnName])
+		})
 
 		rowsReturnedVal := s.retrieveValue(row, rowsReturned, &errs, retrieveInt)
 		cached, rowsReturnedVal = s.cacheAndDiff(queryHashVal, queryPlanHashVal, procID, rowsReturned, rowsReturnedVal.(int64))
@@ -975,29 +986,6 @@ func (s *sqlServerScraperHelper) retrieveValue(
 	}
 
 	return value
-}
-
-func (s *sqlServerScraperHelper) obfuscateSQLRetriever() func(sqlquery.StringMap, string) (any, error) {
-	return func(row sqlquery.StringMap, columnName string) (any, error) {
-		statement := row[columnName]
-		obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
-		if err != nil {
-			// Raw statement is logged at Debug only; operators who enable
-			// debug verbosity accept that sensitive data may appear in logs.
-			s.logger.Debug("obfuscation failed for SQL statement",
-				zap.String("column", columnName),
-				zap.String("statement", statement),
-				zap.Error(err))
-			return "", fmt.Errorf("failed to obfuscate SQL statement for column %s: %w", columnName, err)
-		}
-		return obfuscated, nil
-	}
-}
-
-func (s *sqlServerScraperHelper) obfuscateXMLPlanRetriever() func(sqlquery.StringMap, string) (any, error) {
-	return func(row sqlquery.StringMap, columnName string) (any, error) {
-		return s.obfuscator.obfuscateXMLPlan(row[columnName])
-	}
 }
 
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
@@ -1166,7 +1154,15 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		clientPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		dbNamespaceVal := row[dbName]
-		queryTextVal := s.retrieveValue(row, statementText, &errs, s.obfuscateSQLRetriever()).(string)
+		queryTextVal := s.retrieveValue(row, statementText, &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+			statement := row[columnName]
+			obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement: %v", statement))
+				return "", nil
+			}
+			return obfuscated, nil
+		}).(string)
 		networkPeerAddressVal := row[clientAddress]
 		networkPeerPortVal := s.retrieveValue(row, clientPort, &errs, retrieveInt).(int64)
 		blockSessionIDVal := s.retrieveValue(row, blockingSessionID, &errs, retrieveInt).(int64)

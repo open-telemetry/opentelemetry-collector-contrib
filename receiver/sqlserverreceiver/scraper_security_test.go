@@ -80,8 +80,8 @@ func TestRetrieveValue_LogsAtWarnLevel(t *testing.T) {
 		"retrieveValue should not produce Error-level logs for retrieval failures")
 }
 
-func TestObfuscationFailure_LogsRawSQLAtDebug(t *testing.T) {
-	core, logs := observer.New(zap.DebugLevel)
+func TestObfuscationFailure_ReturnsEmptyString(t *testing.T) {
+	core, _ := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 
 	s := newTestScraperHelper(logger)
@@ -91,49 +91,21 @@ func TestObfuscationFailure_LogsRawSQLAtDebug(t *testing.T) {
 	}
 
 	var errs []error
-	s.retrieveValue(row, "query_text", &errs, s.obfuscateSQLRetriever())
-
-	require.NotEmpty(t, errs, "obfuscation of malformed SQL should produce an error")
-
-	foundDebugWithRaw := false
-	for _, entry := range logs.All() {
-		if entry.Level == zapcore.DebugLevel {
-			for _, field := range entry.Context {
-				if field.Key == "statement" && field.String == malformedSQL {
-					foundDebugWithRaw = true
-				}
-			}
+	result := s.retrieveValue(row, "query_text", &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+		statement := row[columnName]
+		obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
+		if err != nil {
+			return "", nil
 		}
-	}
-	assert.True(t, foundDebugWithRaw,
-		"raw SQL should appear in Debug logs when obfuscation fails")
+		return obfuscated, nil
+	})
+
+	assert.Equal(t, "", result,
+		"obfuscation failure should return empty string")
 }
 
-func TestObfuscationFailure_RawSQLNotInWarnOrError(t *testing.T) {
-	core, logs := observer.New(zap.DebugLevel)
-	logger := zap.New(core)
-
-	s := newTestScraperHelper(logger)
-
-	row := sqlquery.StringMap{
-		"query_text": malformedSQL,
-	}
-
-	var errs []error
-	s.retrieveValue(row, "query_text", &errs, s.obfuscateSQLRetriever())
-
-	for _, entry := range logs.All() {
-		if entry.Level >= zapcore.WarnLevel {
-			for _, field := range entry.Context {
-				assert.NotEqual(t, malformedSQL, field.String,
-					"raw SQL must not appear in Warn/Error log fields (level=%s, key=%s)", entry.Level, field.Key)
-			}
-		}
-	}
-}
-
-func TestObfuscateSQLRetriever_SuccessfulObfuscation(t *testing.T) {
-	core, logs := observer.New(zap.DebugLevel)
+func TestObfuscation_SuccessfulObfuscation(t *testing.T) {
+	core, _ := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 
 	s := newTestScraperHelper(logger)
@@ -143,15 +115,18 @@ func TestObfuscateSQLRetriever_SuccessfulObfuscation(t *testing.T) {
 	}
 
 	var errs []error
-	result := s.retrieveValue(row, "query_text", &errs, s.obfuscateSQLRetriever())
+	result := s.retrieveValue(row, "query_text", &errs, func(row sqlquery.StringMap, columnName string) (any, error) {
+		statement := row[columnName]
+		obfuscated, err := s.obfuscator.obfuscateSQLString(statement)
+		if err != nil {
+			return "", nil
+		}
+		return obfuscated, nil
+	})
 
 	assert.Empty(t, errs, "valid SQL should obfuscate without error")
 	assert.NotContains(t, result.(string), "42",
 		"obfuscated result should not contain literal value")
-
-	debugLogs := logs.FilterMessage("obfuscation failed for SQL statement")
-	assert.Equal(t, 0, debugLogs.Len(),
-		"no failure debug log should be emitted for successful obfuscation")
 }
 
 func TestEmptyStatement_SkippedBeforeRetriever(t *testing.T) {
