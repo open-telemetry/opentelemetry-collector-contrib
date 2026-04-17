@@ -276,7 +276,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData, err := OtelMetricsToMetadata(tt.metrics, false, tt.namespace)
+			metaData, err := OtelMetricsToMetadata(tt.metrics, Settings{Namespace: tt.namespace, AddMetricSuffixes: false})
 			require.NoError(t, err)
 
 			for i := range metaData {

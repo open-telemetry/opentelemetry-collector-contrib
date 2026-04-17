@@ -58,3 +58,11 @@ prometheusremotewrite/non_snappy_compression_type:
 
 prometheusremotewrite/unknown_protobuf_message:
   protobuf_message: "io.prometheus.write.v4.Request"
+
+prometheusremotewrite/translation_strategy:
+  endpoint: "localhost:8888"
+  translation_strategy: "NoTranslation"
+
+prometheusremotewrite/invalid_translation_strategy:
+  endpoint: "localhost:8888"
+  translation_strategy: "invalid_strategy"
