@@ -2443,7 +2443,7 @@ service:
 						Directory: t.TempDir(),
 					},
 					Agent: config.Agent{
-						InitialFallbackConfigs: []string{fallbackConfigPath},
+						StartupFallbackConfigs: []string{fallbackConfigPath},
 					},
 				},
 				hasNewConfig:                   make(chan struct{}, 1),
@@ -2502,7 +2502,7 @@ service:
 					Directory: t.TempDir(),
 				},
 				Agent: config.Agent{
-					InitialFallbackConfigs: []string{"/nonexistent/path/fallback_config.yaml"},
+					StartupFallbackConfigs: []string{"/nonexistent/path/fallback_config.yaml"},
 				},
 			},
 			hasNewConfig:                   make(chan struct{}, 1),
@@ -2535,7 +2535,7 @@ service:
 					Directory: t.TempDir(),
 				},
 				Agent: config.Agent{
-					InitialFallbackConfigs: []string{fallbackConfigPath},
+					StartupFallbackConfigs: []string{fallbackConfigPath},
 				},
 			},
 			hasNewConfig:                   make(chan struct{}, 1),
@@ -2626,7 +2626,7 @@ service:
 					Directory: t.TempDir(),
 				},
 				Agent: config.Agent{
-					InitialFallbackConfigs: []string{basePath, overridePath},
+					StartupFallbackConfigs: []string{basePath, overridePath},
 				},
 			},
 			hasNewConfig:                   make(chan struct{}, 1),

@@ -180,7 +180,7 @@ agent:
   # Together, these must be complete, standalone Collector configuration.
   # The fallback configs are intentionally not merged with config_files to ensure
   # predictable fallback behavior.
-  initial_fallback_configs:
+  startup_fallback_configs:
   - /etc/otelcol/fallback.yaml
 
 # Supervisor's internal telemetry settings.
@@ -309,16 +309,16 @@ The supervisor will continually attempt to reconnect to the OpAMP server with ex
 
 #### Fallback Configuration
 
-For enhanced resilience, the Supervisor supports an initial fallback configuration mechanism.
-When configured, the Supervisor can automatically switch to this initial fallback configuration
+For enhanced resilience, the Supervisor supports a startup fallback configuration mechanism.
+When configured, the Supervisor can automatically switch to this startup fallback configuration
 if the OpAMP server is unreachable or unavailable.
 
-To enable this feature, the user must set the `agent::initial_fallback_configs`
+To enable this feature, the user must set the `agent::startup_fallback_configs`
 configuration option. The Supervisor will validate the configurations
 using the binary indicated by the `agent::executable` via the `validate` subcommand
 to ensure that they are valid configurations.
 
-If more than one initial fallback configurations are specified, the Supervisor
+If more than one startup fallback configurations are specified, the Supervisor
 will merge them in order.
 
 **Recovery**: When the connection to the OpAMP server is restored after using the

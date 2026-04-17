@@ -29,9 +29,8 @@ agent:
   # Fallback configuration file to use when OpAMP server is unreachable.
   # This must be a complete, standalone Collector configuration.
   # Note: This is NOT merged with config_files - it's used as-is when fallback is triggered.
-  initial_fallback_configs:
+  startup_fallback_configs:
   - /etc/otelcol/fallback.yaml
 
 storage:
   directory: /var/lib/otelcol/supervisor
-

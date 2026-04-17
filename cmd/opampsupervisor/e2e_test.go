@@ -311,7 +311,7 @@ func escapePathStringForWin(path string) string {
 }
 
 // This test ensures the Supervisor config validation path can validate
-// agent::initial_fallback_configs by executing the real Collector binary with:
+// agent::startup_fallback_configs by executing the real Collector binary with:
 //
 //	<collector> validate --config <cfg1> [--config <cfg2> ...]
 //
@@ -333,7 +333,7 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 		cfgFile := getSupervisorConfig(t, "fallback", map[string]string{
 			"url":                     "localhost:12345",
 			"storage_dir":             t.TempDir(),
-			"initial_fallback_config": escapePathStringForWin(goodColConfigPath),
+			"startup_fallback_config": escapePathStringForWin(goodColConfigPath),
 		})
 
 		_, err := config.Load(cfgFile.Name())
@@ -345,11 +345,11 @@ func TestValidateFallbackConfigsWithColBin_E2E(t *testing.T) {
 		badCfgFile := getSupervisorConfig(t, "fallback", map[string]string{
 			"url":                     "localhost:12345",
 			"storage_dir":             t.TempDir(),
-			"initial_fallback_config": escapePathStringForWin(badColConfigPath),
+			"startup_fallback_config": escapePathStringForWin(badColConfigPath),
 		})
 
 		_, err := config.Load(badCfgFile.Name())
-		require.ErrorContains(t, err, "could not validate initial fallback configs with agent::executable")
+		require.ErrorContains(t, err, "could not validate startup fallback configs with agent::executable")
 	})
 }
 
@@ -645,7 +645,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *test
 			extraConfigData := map[string]string{
 				"url":                     server.addr,
 				"storage_dir":             storageDir,
-				"initial_fallback_config": escapePathStringForWin(fallbackConfigPath),
+				"startup_fallback_config": escapePathStringForWin(fallbackConfigPath),
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
@@ -2784,7 +2784,7 @@ func TestSupervisorFallbackWhenNoPersistedConfig(t *testing.T) {
 		"url":                     server.addr,
 		"storage_dir":             storageDir,
 		"local_config":            localConfigPath,
-		"initial_fallback_config": escapePathStringForWin(fallbackConfigPath),
+		"startup_fallback_config": escapePathStringForWin(fallbackConfigPath),
 	})
 
 	require.NoError(t, s.Start(t.Context()))
@@ -2849,7 +2849,7 @@ func TestSupervisorFallbackDisablesAfterFirstConnect(t *testing.T) {
 		"url":                     server.addr,
 		"storage_dir":             storageDir,
 		"local_config":            localConfigPath,
-		"initial_fallback_config": escapePathStringForWin(fallbackConfigPath),
+		"startup_fallback_config": escapePathStringForWin(fallbackConfigPath),
 	})
 
 	require.NoError(t, s.Start(t.Context()))
