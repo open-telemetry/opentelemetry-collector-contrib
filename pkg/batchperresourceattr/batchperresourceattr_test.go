@@ -463,7 +463,7 @@ type ctxTracesSink struct {
 	consumertest.TracesSink
 }
 
-func (s *ctxTracesSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (_ *ctxTracesSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 func (s *ctxTracesSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	s.contexts = append(s.contexts, ctx)
 	return s.TracesSink.ConsumeTraces(ctx, td)
@@ -475,7 +475,7 @@ type ctxMetricsSink struct {
 	consumertest.MetricsSink
 }
 
-func (s *ctxMetricsSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (_ *ctxMetricsSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 func (s *ctxMetricsSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	s.contexts = append(s.contexts, ctx)
 	return s.MetricsSink.ConsumeMetrics(ctx, md)
@@ -487,7 +487,7 @@ type ctxLogsSink struct {
 	consumertest.LogsSink
 }
 
-func (s *ctxLogsSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (_ *ctxLogsSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
 func (s *ctxLogsSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	s.contexts = append(s.contexts, ctx)
 	return s.LogsSink.ConsumeLogs(ctx, ld)
