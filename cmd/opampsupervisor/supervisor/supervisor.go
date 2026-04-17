@@ -1539,15 +1539,13 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 // composeFallbackConfig composes the agent configuration using the fallback config files
 // (merged in order) instead of the remote config. This is used when the OpAMP server is unreachable.
 func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
-	k := koanf.New("::")
-
-	s.addSpecialConfigFiles()
-
 	if len(s.config.Agent.StartupFallbackConfigs) == 0 {
 		return false, errors.New("no fallback configs configured")
 	}
 
-	// Load and merge fallback config files, in order.
+	k := koanf.New("::")
+	// Load and merge fallback config files in order. Unlike regular config files,
+	// fallback config load failures are fatal because there is no alternate source.
 	for _, fallbackPath := range s.config.Agent.StartupFallbackConfigs {
 		fallbackConfigBytes, readErr := os.ReadFile(fallbackPath)
 		if readErr != nil {
@@ -1559,26 +1557,8 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 		}
 	}
 
-	// Add the OpAMP extension config
-	opampExtConfig := s.composeOpAMPExtensionConfig()
-	if err = k.Load(rawbytes.Provider(opampExtConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-		return false, fmt.Errorf("could not merge opamp extension config: %w", err)
-	}
-
-	// Add own telemetry config if available
-	ownTelemetryConfig := s.composeOwnTelemetryConfig()
-	if ownTelemetryConfig != nil {
-		if err = k.Load(rawbytes.Provider(ownTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-			return false, fmt.Errorf("could not merge own telemetry config: %w", err)
-		}
-	}
-
-	// Add extra telemetry config
-	extraTelemetryConfig := s.composeExtraTelemetryConfig()
-	if extraTelemetryConfig != nil {
-		if err = k.Load(rawbytes.Provider(extraTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-			return false, fmt.Errorf("could not merge extra telemetry config: %w", err)
-		}
+	if err = s.loadFallbackExtraConfigs(k); err != nil {
+		return false, err
 	}
 
 	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
@@ -1600,6 +1580,26 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 	}
 
 	return configChanged, nil
+}
+
+func (s *Supervisor) loadFallbackExtraConfigs(k *koanf.Koanf) error {
+	if err := k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		return fmt.Errorf("could not merge opamp extension config: %w", err)
+	}
+
+	if ownTelemetryConfig := s.composeOwnTelemetryConfig(); ownTelemetryConfig != nil {
+		if err := k.Load(rawbytes.Provider(ownTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return fmt.Errorf("could not merge own telemetry config: %w", err)
+		}
+	}
+
+	if extraTelemetryConfig := s.composeExtraTelemetryConfig(); extraTelemetryConfig != nil {
+		if err := k.Load(rawbytes.Provider(extraTelemetryConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+			return fmt.Errorf("could not merge extra telemetry config: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // loadAndWriteFallbackConfig switches the agent to use the fallback configuration.
