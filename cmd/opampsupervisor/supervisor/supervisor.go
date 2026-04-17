@@ -1314,6 +1314,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 		if err != nil {
 			return fmt.Errorf("could not switch to fallback config: %w", err)
 		}
+		s.metrics.SetCollectorFallbackStatus(s.runCtx, true)
 		return nil
 	}
 
