@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -128,4 +129,72 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 	le, err = createLogsExporter(t.Context(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	assert.True(t, le.Capabilities().MutatesData)
+}
+
+func TestHecQueueSettings(t *testing.T) {
+	t.Run("no queue settings", func(t *testing.T) {
+		out := hecQueueSettings(configoptional.None[exporterhelper.QueueBatchConfig]())
+		assert.False(t, out.HasValue())
+	})
+
+	t.Run("queue without batch", func(t *testing.T) {
+		qs := configoptional.Some(exporterhelper.QueueBatchConfig{NumConsumers: 2, QueueSize: 100})
+		out := hecQueueSettings(qs)
+		require.True(t, out.HasValue())
+		assert.False(t, out.Get().Batch.HasValue())
+	})
+
+	someBatch := func(keys []string) exporterhelper.QueueBatchConfig {
+		cfg := exporterhelper.NewDefaultQueueConfig()
+		batch := exporterhelper.BatchConfig{
+			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        exporterhelper.RequestSizerTypeItems,
+			MinSize:      8192,
+		}
+		batch.Partition.MetadataKeys = keys
+		cfg.Batch = configoptional.Some(batch)
+		return cfg
+	}
+
+	t.Run("required keys added when missing", func(t *testing.T) {
+		out := hecQueueSettings(configoptional.Some(someBatch(nil)))
+		require.True(t, out.Get().Batch.HasValue())
+		keys := out.Get().Batch.Get().Partition.MetadataKeys
+		assert.Contains(t, keys, splunk.HecTokenLabel)
+		assert.Contains(t, keys, splunk.DefaultIndexLabel)
+	})
+
+	t.Run("user keys preserved and required keys appended", func(t *testing.T) {
+		out := hecQueueSettings(configoptional.Some(someBatch([]string{"custom_key"})))
+		keys := out.Get().Batch.Get().Partition.MetadataKeys
+		assert.Contains(t, keys, "custom_key")
+		assert.Contains(t, keys, splunk.HecTokenLabel)
+		assert.Contains(t, keys, splunk.DefaultIndexLabel)
+	})
+
+	t.Run("no duplicates when required keys already present", func(t *testing.T) {
+		out := hecQueueSettings(configoptional.Some(someBatch([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel})))
+		keys := out.Get().Batch.Get().Partition.MetadataKeys
+		count := 0
+		for _, k := range keys {
+			if k == splunk.HecTokenLabel || k == splunk.DefaultIndexLabel {
+				count++
+			}
+		}
+		assert.Equal(t, 2, count, "required keys should appear exactly once each")
+	})
+
+	t.Run("case-insensitive deduplication", func(t *testing.T) {
+		out := hecQueueSettings(configoptional.Some(someBatch([]string{"Com.Splunk.Hec.Access_Token", "COM.SPLUNK.INDEX"})))
+		// should not add the required keys again since case-insensitive match found
+		keys := out.Get().Batch.Get().Partition.MetadataKeys
+		assert.Len(t, keys, 2)
+	})
+
+	t.Run("original config is not mutated", func(t *testing.T) {
+		orig := someBatch(nil)
+		origKeys := orig.Batch.Get().Partition.MetadataKeys
+		_ = hecQueueSettings(configoptional.Some(orig))
+		assert.Equal(t, origKeys, orig.Batch.Get().Partition.MetadataKeys)
+	})
 }
