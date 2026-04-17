@@ -73,6 +73,31 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 		}, cfg)
 }
 
+func TestMarshalHttpConfigPreservesEmbeddedFields(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cm := confmap.NewFromStringMap(map[string]any{
+		"server": map[string]any{
+			"http": map[string]any{
+				"endpoint":         "https://127.0.0.1:4320/v1/opamp",
+				"headers":          map[string]any{"x-test": "abc"},
+				"auth":             "basicauth/client",
+				"polling_interval": "17s",
+			},
+		},
+	})
+	require.NoError(t, cm.Unmarshal(cfg))
+
+	out := confmap.New()
+	require.NoError(t, out.Marshal(cfg))
+
+	server := out.ToStringMap()["server"].(map[string]any)
+	http := server["http"].(map[string]any)
+	assert.Equal(t, "https://127.0.0.1:4320/v1/opamp", http["endpoint"])
+	assert.Equal(t, map[string]any{"x-test": "[REDACTED]"}, http["headers"])
+	assert.Equal(t, "basicauth/client", http["auth"])
+	assert.Equal(t, time.Duration(17*time.Second), http["polling_interval"])
+}
+
 func TestConfig_Getters(t *testing.T) {
 	type fields struct {
 		Server *OpAMPServer

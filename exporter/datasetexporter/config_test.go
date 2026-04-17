@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -128,4 +129,42 @@ func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	err := config.Unmarshal(configMap)
 	assert.NoError(t, err)
 	assert.False(t, config.ExportScopeInfo)
+}
+
+func TestConfigMarshalRoundTripPreservesExportSettings(t *testing.T) {
+	f := NewFactory()
+	config := f.CreateDefaultConfig().(*Config)
+	configMap := confmap.NewFromStringMap(map[string]any{
+		"dataset_url": "https://example.com",
+		"api_key":     "secret",
+		"traces": map[string]any{
+			"export_separator":             "::",
+			"export_distinguishing_suffix": "__",
+		},
+		"logs": map[string]any{
+			"export_scope_prefix":          "scope.",
+			"export_separator":             "//",
+			"export_distinguishing_suffix": "++",
+		},
+	})
+	require.NoError(t, config.Unmarshal(configMap))
+
+	out := confmap.New()
+	require.NoError(t, out.Marshal(config))
+
+	roundTrip := out.ToStringMap()
+	assert.Equal(t, map[string]any{
+		"export_separator":             "::",
+		"export_distinguishing_suffix": "__",
+	}, roundTrip["traces"])
+	assert.Equal(t, map[string]any{
+		"decompose_complex_message_field":   false,
+		"decomposed_complex_message_prefix": "body.map.",
+		"export_resource_info_on_event":     false,
+		"export_resource_prefix":            "resource.attributes.",
+		"export_scope_info_on_event":        true,
+		"export_scope_prefix":               "scope.",
+		"export_separator":                  "//",
+		"export_distinguishing_suffix":      "++",
+	}, roundTrip["logs"])
 }

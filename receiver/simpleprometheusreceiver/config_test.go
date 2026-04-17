@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -96,4 +97,32 @@ func TestLoadConfig(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestMarshalRoundTripPreservesDeprecatedHTTPConfig(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	in := confmap.NewFromStringMap(map[string]any{
+		"endpoint":     "example.invalid:9443",
+		"metrics_path": "/m",
+		"tls_enabled":  true,
+		"tls_config": map[string]any{
+			"ca_file":              "ca.pem",
+			"cert_file":            "cert.pem",
+			"key_file":             "key.pem",
+			"insecure_skip_verify": true,
+		},
+	})
+	require.NoError(t, in.Unmarshal(cfg))
+
+	out := confmap.New()
+	require.NoError(t, out.Marshal(cfg))
+
+	roundTrip := out.ToStringMap()
+	assert.Equal(t, true, roundTrip["tls_enabled"])
+	assert.Equal(t, map[string]any{
+		"ca_file":              "ca.pem",
+		"cert_file":            "cert.pem",
+		"key_file":             "key.pem",
+		"insecure_skip_verify": true,
+	}, roundTrip["tls_config"])
 }

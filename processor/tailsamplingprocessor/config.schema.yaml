@@ -15,9 +15,7 @@ $defs:
         description: Configs for any extensions that are used.
         type: object
         additionalProperties:
-          type: object
-          additionalProperties:
-            x-customType: any
+          x-customType: any
       boolean_attribute:
         description: Configs for boolean attribute filter sampling policy evaluator.
         $ref: boolean_attribute_cfg
@@ -109,9 +107,7 @@ $defs:
         description: Configs for any extensions that are used.
         type: object
         additionalProperties:
-          type: object
-          additionalProperties:
-            x-customType: any
+          x-customType: any
       and:
         description: Configs for and policy evaluator.
         $ref: and_cfg
@@ -197,9 +193,7 @@ $defs:
         description: Configs for any extensions that are used.
         type: object
         additionalProperties:
-          type: object
-          additionalProperties:
-            x-customType: any
+          x-customType: any
       boolean_attribute:
         description: Configs for boolean attribute filter sampling policy evaluator.
         $ref: boolean_attribute_cfg
@@ -279,9 +273,7 @@ $defs:
         description: Configs for any extensions that are used.
         type: object
         additionalProperties:
-          type: object
-          additionalProperties:
-            x-customType: any
+          x-customType: any
       and:
         description: Configs for defining and policy
         $ref: and_cfg
