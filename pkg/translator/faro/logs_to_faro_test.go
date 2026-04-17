@@ -5,6 +5,7 @@ package faro // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"testing"
 	"time"
@@ -366,9 +367,7 @@ func Test_extractExceptionFromKeyVal_Fatal(t *testing.T) {
 			"type":  "NullPointerException",
 			"value": "something bad",
 		}
-		for k, v := range extra {
-			kv[k] = v
-		}
+		maps.Copy(kv, extra)
 		return kv
 	}
 	testcases := []struct {
