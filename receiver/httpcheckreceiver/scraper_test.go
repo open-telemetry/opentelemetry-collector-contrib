@@ -277,7 +277,9 @@ func TestHTTPSWithTLS(t *testing.T) {
 		if metric.Name() == "httpcheck.tls.cert_remaining" {
 			found = true
 			assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
-			dp := metric.Gauge().DataPoints().At(0)
+			dps := metric.Gauge().DataPoints()
+			require.Equal(t, 1, dps.Len())
+			dp := dps.At(0)
 
 			// Check attributes
 			attrs := dp.Attributes()
