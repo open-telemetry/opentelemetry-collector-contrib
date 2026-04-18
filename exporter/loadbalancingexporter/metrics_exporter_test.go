@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -641,6 +642,76 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			compareMetricsMaps(t, expectedOutput, actualOutput)
 		})
 	}
+}
+
+func TestConsumeMetrics_ReturnsOnlyFailedMetricsOnPartialError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}}),
+		},
+		RoutingKey: svcRoutingStr,
+	}
+
+	p, err := newMetricsExporter(ts, config)
+	require.NoError(t, err)
+
+	dir := filepath.Join("testdata", "metrics", "consume_metrics", "triple_endpoint", "resource_service_name")
+	input, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
+	require.NoError(t, err)
+	expectedOutput := loadMetricsMap(t, filepath.Join(dir, "output.yaml"))
+
+	failedEndpoint := ""
+	for endpoint, md := range expectedOutput {
+		if md.ResourceMetrics().Len() > 0 {
+			failedEndpoint = endpoint
+			break
+		}
+	}
+	require.NotEmpty(t, failedEndpoint)
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		if endpoint == failedEndpoint+":4317" {
+			return newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+				return errors.New("expected export failure")
+			}), nil
+		}
+
+		return newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+			return nil
+		}), nil
+	}
+
+	lb, err := newLoadBalancer(ts.Logger, config, componentFactory, tb)
+	require.NoError(t, err)
+
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1", "endpoint-2", "endpoint-3"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1", "endpoint-2", "endpoint-3"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	err = p.ConsumeMetrics(t.Context(), input)
+	require.Error(t, err)
+
+	var metricsErr consumererror.Metrics
+	require.ErrorAs(t, err, &metricsErr)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedOutput[failedEndpoint], metricsErr.Data(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
 }
 
 // this test validates that exporter is can concurrently change the endpoints while consuming metrics.

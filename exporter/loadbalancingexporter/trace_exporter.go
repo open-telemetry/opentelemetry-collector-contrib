@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -128,12 +129,16 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	}
 
 	var errs error
+	failedTraces := ptrace.NewTraces()
 
 	for exp, td := range exporterSegregatedTraces {
 		start := time.Now()
 		err := exp.ConsumeTraces(ctx, td)
 		exp.consumeWG.Done()
 		errs = multierr.Append(errs, err)
+		if err != nil {
+			failedTraces = mergeTraces(failedTraces, td)
+		}
 		duration := time.Since(start)
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
@@ -144,7 +149,11 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 	}
 
-	return errs
+	if errs == nil {
+		return nil
+	}
+
+	return consumererror.NewTraces(errs, failedTraces)
 }
 
 // routingIdentifiersFromTraces reads the traces and determines an identifier that can be used to define a position on the

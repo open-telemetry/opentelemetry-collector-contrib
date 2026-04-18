@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -81,12 +82,20 @@ func (e *logExporterImp) Shutdown(ctx context.Context) error {
 
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var errs error
+	failedLogs := plog.NewLogs()
 	batches := batchpersignal.SplitLogs(ld)
 	for _, batch := range batches {
-		errs = multierr.Append(errs, e.consumeLog(ctx, batch))
+		if err := e.consumeLog(ctx, batch); err != nil {
+			errs = multierr.Append(errs, err)
+			failedLogs = mergeLogs(failedLogs, batch)
+		}
 	}
 
-	return errs
+	if errs == nil {
+		return nil
+	}
+
+	return consumererror.NewLogs(errs, failedLogs)
 }
 
 func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {

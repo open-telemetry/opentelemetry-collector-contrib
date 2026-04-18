@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -151,6 +152,45 @@ func TestConsumeTraces(t *testing.T) {
 
 	// verify
 	assert.NoError(t, res)
+}
+
+func TestConsumeTraces_ReturnsFailedDataOnError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockTracesExporter(func(context.Context, ptrace.Traces) error {
+			return errors.New("expected trace export failure")
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(ts, endpoint2Config())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	input := simpleTraces()
+	err = p.ConsumeTraces(t.Context(), input)
+	require.Error(t, err)
+
+	var traceErr consumererror.Traces
+	require.ErrorAs(t, err, &traceErr)
+	require.Equal(t, input.SpanCount(), traceErr.Data().SpanCount())
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.

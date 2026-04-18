@@ -147,6 +147,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	}
 
 	var errs error
+	failedMetrics := pmetric.NewMetrics()
 	for exp, mds := range metricsByExporter {
 		start := time.Now()
 		err := exp.ConsumeMetrics(ctx, mds)
@@ -154,6 +155,9 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 
 		exp.consumeWG.Done()
 		errs = multierr.Append(errs, err)
+		if err != nil {
+			failedMetrics = mergeMetrics(failedMetrics, mds)
+		}
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
@@ -163,7 +167,11 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		}
 	}
 
-	return errs
+	if errs == nil {
+		return nil
+	}
+
+	return consumererror.NewMetrics(errs, failedMetrics)
 }
 
 func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, []error) {

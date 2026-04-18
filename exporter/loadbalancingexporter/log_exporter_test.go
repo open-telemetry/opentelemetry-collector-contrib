@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -159,6 +160,45 @@ func TestConsumeLogs(t *testing.T) {
 
 	// verify
 	assert.NoError(t, res)
+}
+
+func TestConsumeLogs_ReturnsFailedDataOnError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newMockLogsExporter(func(context.Context, plog.Logs) error {
+			return errors.New("expected logs export failure")
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newLogsExporter(ts, endpoint2Config())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	input := simpleLogs()
+	err = p.ConsumeLogs(t.Context(), input)
+	require.Error(t, err)
+
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	require.Equal(t, input.LogRecordCount(), logsErr.Data().LogRecordCount())
 }
 
 func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {
