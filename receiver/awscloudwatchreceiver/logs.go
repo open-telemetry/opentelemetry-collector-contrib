@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -54,16 +55,21 @@ type client interface {
 }
 
 type streamNames struct {
-	group string
-	names []*string
+	group           string
+	groupIdentifier string
+	names           []*string
 }
 
 func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName: &sn.group,
-		StartTime:    aws.Int64(st.UnixMilli()),
-		EndTime:      aws.Int64(et.UnixMilli()),
-		Limit:        aws.Int32(int32(limit)),
+		StartTime: aws.Int64(st.UnixMilli()),
+		EndTime:   aws.Int64(et.UnixMilli()),
+		Limit:     aws.Int32(int32(limit)),
+	}
+	if sn.groupIdentifier != "" {
+		base.LogGroupIdentifier = &sn.groupIdentifier
+	} else {
+		base.LogGroupName = &sn.group
 	}
 	if len(sn.names) > 0 {
 		base.LogStreamNames = aws.ToStringSlice(sn.names)
@@ -79,17 +85,22 @@ func (sn *streamNames) groupName() string {
 }
 
 type streamPrefix struct {
-	group  string
-	prefix *string
+	group           string
+	groupIdentifier string
+	prefix          *string
 }
 
 func (sp *streamPrefix) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName:        &sp.group,
 		StartTime:           aws.Int64(st.UnixMilli()),
 		EndTime:             aws.Int64(et.UnixMilli()),
 		Limit:               aws.Int32(int32(limit)),
 		LogStreamNamePrefix: sp.prefix,
+	}
+	if sp.groupIdentifier != "" {
+		base.LogGroupIdentifier = &sp.groupIdentifier
+	} else {
+		base.LogGroupName = &sp.group
 	}
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
@@ -452,18 +463,26 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 
 			numGroups++
 
+			var groupArn string
+			if lg.Arn != nil {
+				// AWS DescribeLogGroups returns ARNs with a trailing ":*" suffix
+				// (e.g. "arn:aws:logs:us-east-2:123456:log-group:/my/group:*")
+				// but FilterLogEvents LogGroupIdentifier rejects the ":*".
+				groupArn = strings.TrimSuffix(*lg.Arn, ":*")
+			}
+
 			// default behavior is to collect all if not stream filtered
 			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
-				groups = append(groups, &streamNames{group: *lg.LogGroupName})
+				groups = append(groups, &streamNames{group: *lg.LogGroupName, groupIdentifier: groupArn})
 				continue
 			}
 
 			for _, prefix := range auto.Streams.Prefixes {
-				groups = append(groups, &streamPrefix{group: *lg.LogGroupName, prefix: prefix})
+				groups = append(groups, &streamPrefix{group: *lg.LogGroupName, groupIdentifier: groupArn, prefix: prefix})
 			}
 
 			if len(auto.Streams.Names) > 0 {
-				groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
+				groups = append(groups, &streamNames{group: *lg.LogGroupName, groupIdentifier: groupArn, names: auto.Streams.Names})
 			}
 		}
 		nextToken = dlgResults.NextToken
