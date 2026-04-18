@@ -4,6 +4,8 @@
 package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -21,6 +23,11 @@ import (
 
 const defaultLogsEncoding = cwlog.TypeStr
 
+var (
+	awsLogsEncodingType           = component.MustNewType("aws_logs_encoding")
+	awsLogsEncodingDeprecatedType = component.MustNewType("awslogs_encoding")
+)
+
 // logsConsumer implements the firehoseConsumer
 // to use a logs consumer and unmarshaler.
 type logsConsumer struct {
@@ -32,7 +39,8 @@ type logsConsumer struct {
 	consumer consumer.Logs
 	// unmarshaler is the configured plog.Unmarshaler
 	// to use when processing the records.
-	unmarshaler plog.Unmarshaler
+	unmarshaler          plog.Unmarshaler
+	decompressGzipRecord bool
 }
 
 var _ firehoseConsumer = (*logsConsumer)(nil)
@@ -78,6 +86,16 @@ func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
 			return fmt.Errorf("failed to load encoding extension: %w", err)
 		}
 		c.unmarshaler = unmarshaler
+
+		id, err := encodingToComponentID(encoding)
+		if err != nil {
+			return fmt.Errorf("invalid encoding extension %q: %w", encoding, err)
+		}
+
+		componentType := id.Type()
+		if componentType == awsLogsEncodingType || componentType == awsLogsEncodingDeprecatedType {
+			c.decompressGzipRecord = true
+		}
 	}
 	return nil
 }
@@ -90,6 +108,12 @@ func (c *logsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, c
 		record, err := nextRecord()
 		if errors.Is(err, io.EOF) {
 			break
+		}
+		if c.decompressGzipRecord {
+			record, err = gunzipRecordIfNeeded(record)
+			if err != nil {
+				return http.StatusBadRequest, fmt.Errorf("failed to decompress record: %w", err)
+			}
 		}
 		logs, err := c.unmarshaler.UnmarshalLogs(record)
 		if err != nil {
@@ -115,4 +139,23 @@ func (c *logsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, c
 		}
 	}
 	return http.StatusOK, nil
+}
+
+func gunzipRecordIfNeeded(record []byte) ([]byte, error) {
+	if len(record) < 2 || record[0] != 0x1f || record[1] != 0x8b {
+		return record, nil
+	}
+
+	reader, err := gzip.NewReader(bytes.NewReader(record))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	decompressed, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressed, nil
 }
