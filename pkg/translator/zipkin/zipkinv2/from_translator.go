@@ -242,7 +242,7 @@ func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) 
 }
 
 func attributeMapToStringMap(attrMap pcommon.Map) map[string]string {
-	rawMap := make(map[string]string)
+	rawMap := make(map[string]string, attrMap.Len())
 	for k, v := range attrMap.All() {
 		rawMap[k] = v.AsString()
 	}
@@ -260,8 +260,8 @@ func removeRedundantTags(redundantKeys map[string]bool, zTags map[string]string)
 func resourceToZipkinEndpointServiceNameAndAttributeMap(
 	resource pcommon.Resource,
 ) (serviceName string, zTags map[string]string) {
-	zTags = make(map[string]string)
 	attrs := resource.Attributes()
+	zTags = make(map[string]string, attrs.Len())
 	if attrs.Len() == 0 {
 		return tracetranslator.ResourceNoServiceName, zTags
 	}
