@@ -33,12 +33,12 @@ The following configuration options are required:
   - `api_url` (no default): Destination to which [properties and
     tags](https://help.splunk.com/en/splunk-observability-cloud/data-tools/metric-finder-and-metadata-catalogue)
     are sent. If `realm` is set, this option is derived and will be
-    `https://api.{realm}.signalfx.com`. If a value is explicitly set, the
+    `https://api.{realm}.observability.splunkcloud.com`. If a value is explicitly set, the
     value of `realm` will not be used in determining `api_url`. The explicit
     value will be used instead.
   - `ingest_url` (no default): Destination where SignalFx metrics are sent. If
     `realm` is set, this option is derived and will be
-    `https://ingest.{realm}.signalfx.com`. If a value is
+    `https://ingest.{realm}.observability.splunkcloud.com`. If a value is
     explicitly set, the value of `realm` will not be used in determining
     `ingest_url`. The explicit value will be used instead. The exporter will 
     automatically append the appropriate path: "/v2/datapoint" for metrics, 
@@ -168,11 +168,11 @@ One of `realm` and `api_url` are required.
 - `access_token` (required, no default): The access token is the authentication token
   provided by SignalFx.
 - `realm` (no default): SignalFx realm where the data will be received.
-- `api_url` (default = `https://api.{realm}.signalfx.com/`): Destination to which correlation updates
+- `api_url` (default = `https://api.{realm}.observability.splunkcloud.com/`): Destination to which correlation updates
    are sent. If a value is explicitly set, the value of `realm` will not be used in determining `api_url`.
    The explicit value will be used instead.
 - `correlation` Contains options controlling the syncing of service and environment properties onto dimensions.
-  - `endpoint` (required, default = `api_url` or `https://api.{realm}.signalfx.com/`): This is the base URL for API requests (e.g. `https://api.us0.signalfx.com`).
+  - `endpoint` (required, default = `api_url` or `https://api.{realm}.observability.splunkcloud.com/`): This is the base URL for API requests (e.g. `https://api.us0.observability.splunkcloud.com`).
   - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
   - `stale_service_timeout` (default = 5 minutes): How long to wait after a span's service name is last seen before uncorrelating it.
   - `max_requests` (default = 20): Max HTTP requests to be made in parallel.
