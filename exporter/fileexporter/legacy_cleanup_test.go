@@ -278,16 +278,15 @@ func TestMigrateLegacyBackups_TimberjackRecognizesRenamedFiles(t *testing.T) {
 	require.NoError(t, logger.Rotate())
 	require.NoError(t, logger.Close())
 
-	// Give the async mill goroutine a moment to finish.
-	time.Sleep(200 * time.Millisecond)
-
-	// Timberjack should have deleted the renamed file since it is older than
-	// max_days. If it remains, timberjack did not recognize it — the rename
-	// produced an unrecognizable filename and the fix is broken.
-	entries, err := os.ReadDir(dir)
-	require.NoError(t, err)
-	for _, e := range entries {
-		assert.NotContains(t, e.Name(), oldTS.UTC().Format(lumberjackTimeFormat),
-			"timberjack must have cleaned up the renamed legacy file: %s", e.Name())
-	}
+	// Timberjack's cleanup mill runs asynchronously after Rotate(). Poll until
+	// the renamed file disappears or the deadline is reached.
+	tsStr := oldTS.UTC().Format(lumberjackTimeFormat)
+	require.EventuallyWithT(t, func(ct *assert.CollectT) {
+		entries, err := os.ReadDir(dir)
+		require.NoError(ct, err)
+		for _, e := range entries {
+			assert.NotContains(ct, e.Name(), tsStr,
+				"timberjack must have cleaned up the renamed legacy file: %s", e.Name())
+		}
+	}, 2*time.Second, 50*time.Millisecond)
 }
