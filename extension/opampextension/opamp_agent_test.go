@@ -864,6 +864,40 @@ func TestOpAMPAgent_onCommand(t *testing.T) {
 	})
 }
 
+func TestGetOSDescription(t *testing.T) {
+	originalHostPlatformInformation := hostPlatformInformation
+	t.Cleanup(func() {
+		hostPlatformInformation = originalHostPlatformInformation
+	})
+
+	t.Run("falls back to runtime GOOS when host platform lookup fails", func(t *testing.T) {
+		hostPlatformInformation = func() (string, string, string, error) {
+			return "", "", "", errors.New("host platform lookup failed")
+		}
+
+		description := getOSDescription(zaptest.NewLogger(t))
+		require.Equal(t, runtime.GOOS, description)
+	})
+
+	t.Run("uses platform information when available", func(t *testing.T) {
+		hostPlatformInformation = func() (string, string, string, error) {
+			return "testplatform", "", "1.2.3", nil
+		}
+
+		description := getOSDescription(zaptest.NewLogger(t))
+		switch runtime.GOOS {
+		case "darwin":
+			require.Equal(t, "macOS 1.2.3", description)
+		case "linux":
+			require.Equal(t, "Testplatform 1.2.3", description)
+		case "windows":
+			require.Equal(t, "testplatform 1.2.3", description)
+		default:
+			require.Equal(t, runtime.GOOS, description)
+		}
+	})
+}
+
 func setupSignalHandler(ctx context.Context, tb testing.TB, signalCallback func()) {
 	tb.Helper()
 
