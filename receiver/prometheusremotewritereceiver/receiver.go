@@ -830,8 +830,7 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) sco
 		case "otel_scope_schema_url":
 			si.SchemaURL = l.Value
 		default:
-			if strings.HasPrefix(l.Name, "otel_scope_") {
-				attrKey := strings.TrimPrefix(l.Name, "otel_scope_")
+			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok {
 				si.extraAttrs = append(si.extraAttrs, [2]string{attrKey, l.Value})
 			}
 		}
