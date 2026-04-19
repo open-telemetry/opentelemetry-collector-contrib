@@ -1,5 +1,6 @@
 display_name: Kubelet Stats Receiver
 type: kubeletstats
+reaggregation_enabled: true
 
 description: |
   The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet
@@ -94,10 +95,12 @@ resource_attributes:
 attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
+    requirement_level: recommended
     type: string
     enum: [receive, transmit]
   interface:
     description: Name of the network interface.
+    requirement_level: recommended
     type: string
 
 metrics:

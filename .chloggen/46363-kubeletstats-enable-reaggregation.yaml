@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/kubeletstats
+
+note: Enables dynamic metric reaggregation in the Kubelet Stats receiver. This does not break existing configuration files.
+
+issues: [46363]
+
+subtext:
+
+change_logs: [user]
