@@ -31,6 +31,12 @@ func TestWithFilterNamespace(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, withFilterNamespace("testns")(p))
 	assert.Equal(t, "testns", p.filters.Namespace)
+	assert.Equal(t, []string{"testns"}, p.filters.Namespaces)
+
+	p = &kubernetesprocessor{}
+	assert.NoError(t, withFilterNamespace("ns1", "ns2", "ns1")(p))
+	assert.Empty(t, p.filters.Namespace)
+	assert.Equal(t, []string{"ns1", "ns2"}, p.filters.Namespaces)
 }
 
 func TestWithFilterNode(t *testing.T) {
