@@ -5,502 +5,1144 @@ $defs:
     type: object
     properties:
       vcenter.cluster.cpu.effective:
-        description: "VcenterClusterCPUEffectiveConfig provides config for the vcenter.cluster.cpu.effective metric."
+        description: "VcenterClusterCPUEffectiveMetricConfig provides config for the vcenter.cluster.cpu.effective metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.cluster.cpu.limit:
-        description: "VcenterClusterCPULimitConfig provides config for the vcenter.cluster.cpu.limit metric."
+        description: "VcenterClusterCPULimitMetricConfig provides config for the vcenter.cluster.cpu.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.cluster.host.count:
-        description: "VcenterClusterHostCountConfig provides config for the vcenter.cluster.host.count metric."
+        description: "VcenterClusterHostCountMetricConfig provides config for the vcenter.cluster.host.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "effective"
+            default:
+              - "effective"
       vcenter.cluster.memory.effective:
-        description: "VcenterClusterMemoryEffectiveConfig provides config for the vcenter.cluster.memory.effective metric."
+        description: "VcenterClusterMemoryEffectiveMetricConfig provides config for the vcenter.cluster.memory.effective metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.cluster.memory.limit:
-        description: "VcenterClusterMemoryLimitConfig provides config for the vcenter.cluster.memory.limit metric."
+        description: "VcenterClusterMemoryLimitMetricConfig provides config for the vcenter.cluster.memory.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.cluster.vm.count:
-        description: "VcenterClusterVMCountConfig provides config for the vcenter.cluster.vm.count metric."
+        description: "VcenterClusterVMCountMetricConfig provides config for the vcenter.cluster.vm.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "power_state"
+            default:
+              - "power_state"
       vcenter.cluster.vm_template.count:
-        description: "VcenterClusterVMTemplateCountConfig provides config for the vcenter.cluster.vm_template.count metric."
+        description: "VcenterClusterVMTemplateCountMetricConfig provides config for the vcenter.cluster.vm_template.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.cluster.vsan.congestions:
-        description: "VcenterClusterVsanCongestionsConfig provides config for the vcenter.cluster.vsan.congestions metric."
+        description: "VcenterClusterVsanCongestionsMetricConfig provides config for the vcenter.cluster.vsan.congestions metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.cluster.vsan.latency.avg:
-        description: "VcenterClusterVsanLatencyAvgConfig provides config for the vcenter.cluster.vsan.latency.avg metric."
+        description: "VcenterClusterVsanLatencyAvgMetricConfig provides config for the vcenter.cluster.vsan.latency.avg metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.cluster.vsan.operations:
-        description: "VcenterClusterVsanOperationsConfig provides config for the vcenter.cluster.vsan.operations metric."
+        description: "VcenterClusterVsanOperationsMetricConfig provides config for the vcenter.cluster.vsan.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.cluster.vsan.throughput:
-        description: "VcenterClusterVsanThroughputConfig provides config for the vcenter.cluster.vsan.throughput metric."
+        description: "VcenterClusterVsanThroughputMetricConfig provides config for the vcenter.cluster.vsan.throughput metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       vcenter.datacenter.cluster.count:
-        description: "VcenterDatacenterClusterCountConfig provides config for the vcenter.datacenter.cluster.count metric."
+        description: "VcenterDatacenterClusterCountMetricConfig provides config for the vcenter.datacenter.cluster.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+            default:
+              - "status"
       vcenter.datacenter.cpu.limit:
-        description: "VcenterDatacenterCPULimitConfig provides config for the vcenter.datacenter.cpu.limit metric."
+        description: "VcenterDatacenterCPULimitMetricConfig provides config for the vcenter.datacenter.cpu.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.datacenter.datastore.count:
-        description: "VcenterDatacenterDatastoreCountConfig provides config for the vcenter.datacenter.datastore.count metric."
+        description: "VcenterDatacenterDatastoreCountMetricConfig provides config for the vcenter.datacenter.datastore.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.datacenter.disk.space:
-        description: "VcenterDatacenterDiskSpaceConfig provides config for the vcenter.datacenter.disk.space metric."
+        description: "VcenterDatacenterDiskSpaceMetricConfig provides config for the vcenter.datacenter.disk.space metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_state"
+            default:
+              - "disk_state"
       vcenter.datacenter.host.count:
-        description: "VcenterDatacenterHostCountConfig provides config for the vcenter.datacenter.host.count metric."
+        description: "VcenterDatacenterHostCountMetricConfig provides config for the vcenter.datacenter.host.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+                - "power_state"
+            default:
+              - "status"
+              - "power_state"
       vcenter.datacenter.memory.limit:
-        description: "VcenterDatacenterMemoryLimitConfig provides config for the vcenter.datacenter.memory.limit metric."
+        description: "VcenterDatacenterMemoryLimitMetricConfig provides config for the vcenter.datacenter.memory.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.datacenter.vm.count:
-        description: "VcenterDatacenterVMCountConfig provides config for the vcenter.datacenter.vm.count metric."
+        description: "VcenterDatacenterVMCountMetricConfig provides config for the vcenter.datacenter.vm.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "status"
+                - "power_state"
+            default:
+              - "status"
+              - "power_state"
       vcenter.datastore.disk.usage:
-        description: "VcenterDatastoreDiskUsageConfig provides config for the vcenter.datastore.disk.usage metric."
+        description: "VcenterDatastoreDiskUsageMetricConfig provides config for the vcenter.datastore.disk.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_state"
+            default:
+              - "disk_state"
       vcenter.datastore.disk.utilization:
-        description: "VcenterDatastoreDiskUtilizationConfig provides config for the vcenter.datastore.disk.utilization metric."
+        description: "VcenterDatastoreDiskUtilizationMetricConfig provides config for the vcenter.datastore.disk.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.cpu.capacity:
-        description: "VcenterHostCPUCapacityConfig provides config for the vcenter.host.cpu.capacity metric."
+        description: "VcenterHostCPUCapacityMetricConfig provides config for the vcenter.host.cpu.capacity metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.cpu.reserved:
-        description: "VcenterHostCPUReservedConfig provides config for the vcenter.host.cpu.reserved metric."
+        description: "VcenterHostCPUReservedMetricConfig provides config for the vcenter.host.cpu.reserved metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_reservation_type"
+            default:
+              - "cpu_reservation_type"
       vcenter.host.cpu.usage:
-        description: "VcenterHostCPUUsageConfig provides config for the vcenter.host.cpu.usage metric."
+        description: "VcenterHostCPUUsageMetricConfig provides config for the vcenter.host.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.cpu.utilization:
-        description: "VcenterHostCPUUtilizationConfig provides config for the vcenter.host.cpu.utilization metric."
+        description: "VcenterHostCPUUtilizationMetricConfig provides config for the vcenter.host.cpu.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.disk.latency.avg:
-        description: "VcenterHostDiskLatencyAvgConfig provides config for the vcenter.host.disk.latency.avg metric."
+        description: "VcenterHostDiskLatencyAvgMetricConfig provides config for the vcenter.host.disk.latency.avg metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.disk.latency.max:
-        description: "VcenterHostDiskLatencyMaxConfig provides config for the vcenter.host.disk.latency.max metric."
+        description: "VcenterHostDiskLatencyMaxMetricConfig provides config for the vcenter.host.disk.latency.max metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.host.disk.throughput:
-        description: "VcenterHostDiskThroughputConfig provides config for the vcenter.host.disk.throughput metric."
+        description: "VcenterHostDiskThroughputMetricConfig provides config for the vcenter.host.disk.throughput metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.memory.capacity:
-        description: "VcenterHostMemoryCapacityConfig provides config for the vcenter.host.memory.capacity metric."
+        description: "VcenterHostMemoryCapacityMetricConfig provides config for the vcenter.host.memory.capacity metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       vcenter.host.memory.usage:
-        description: "VcenterHostMemoryUsageConfig provides config for the vcenter.host.memory.usage metric."
+        description: "VcenterHostMemoryUsageMetricConfig provides config for the vcenter.host.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.memory.utilization:
-        description: "VcenterHostMemoryUtilizationConfig provides config for the vcenter.host.memory.utilization metric."
+        description: "VcenterHostMemoryUtilizationMetricConfig provides config for the vcenter.host.memory.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.network.packet.drop.rate:
-        description: "VcenterHostNetworkPacketDropRateConfig provides config for the vcenter.host.network.packet.drop.rate metric."
+        description: "VcenterHostNetworkPacketDropRateMetricConfig provides config for the vcenter.host.network.packet.drop.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.packet.error.rate:
-        description: "VcenterHostNetworkPacketErrorRateConfig provides config for the vcenter.host.network.packet.error.rate metric."
+        description: "VcenterHostNetworkPacketErrorRateMetricConfig provides config for the vcenter.host.network.packet.error.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.packet.rate:
-        description: "VcenterHostNetworkPacketRateConfig provides config for the vcenter.host.network.packet.rate metric."
+        description: "VcenterHostNetworkPacketRateMetricConfig provides config for the vcenter.host.network.packet.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.throughput:
-        description: "VcenterHostNetworkThroughputConfig provides config for the vcenter.host.network.throughput metric."
+        description: "VcenterHostNetworkThroughputMetricConfig provides config for the vcenter.host.network.throughput metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.host.network.usage:
-        description: "VcenterHostNetworkUsageConfig provides config for the vcenter.host.network.usage metric."
+        description: "VcenterHostNetworkUsageMetricConfig provides config for the vcenter.host.network.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.host.vsan.cache.hit_rate:
-        description: "VcenterHostVsanCacheHitRateConfig provides config for the vcenter.host.vsan.cache.hit_rate metric."
+        description: "VcenterHostVsanCacheHitRateMetricConfig provides config for the vcenter.host.vsan.cache.hit_rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.vsan.congestions:
-        description: "VcenterHostVsanCongestionsConfig provides config for the vcenter.host.vsan.congestions metric."
+        description: "VcenterHostVsanCongestionsMetricConfig provides config for the vcenter.host.vsan.congestions metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.host.vsan.latency.avg:
-        description: "VcenterHostVsanLatencyAvgConfig provides config for the vcenter.host.vsan.latency.avg metric."
+        description: "VcenterHostVsanLatencyAvgMetricConfig provides config for the vcenter.host.vsan.latency.avg metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.host.vsan.operations:
-        description: "VcenterHostVsanOperationsConfig provides config for the vcenter.host.vsan.operations metric."
+        description: "VcenterHostVsanOperationsMetricConfig provides config for the vcenter.host.vsan.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.host.vsan.throughput:
-        description: "VcenterHostVsanThroughputConfig provides config for the vcenter.host.vsan.throughput metric."
+        description: "VcenterHostVsanThroughputMetricConfig provides config for the vcenter.host.vsan.throughput metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       vcenter.resource_pool.cpu.shares:
-        description: "VcenterResourcePoolCPUSharesConfig provides config for the vcenter.resource_pool.cpu.shares metric."
+        description: "VcenterResourcePoolCPUSharesMetricConfig provides config for the vcenter.resource_pool.cpu.shares metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.resource_pool.cpu.usage:
-        description: "VcenterResourcePoolCPUUsageConfig provides config for the vcenter.resource_pool.cpu.usage metric."
+        description: "VcenterResourcePoolCPUUsageMetricConfig provides config for the vcenter.resource_pool.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.resource_pool.memory.ballooned:
-        description: "VcenterResourcePoolMemoryBalloonedConfig provides config for the vcenter.resource_pool.memory.ballooned metric."
+        description: "VcenterResourcePoolMemoryBalloonedMetricConfig provides config for the vcenter.resource_pool.memory.ballooned metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.resource_pool.memory.granted:
-        description: "VcenterResourcePoolMemoryGrantedConfig provides config for the vcenter.resource_pool.memory.granted metric."
+        description: "VcenterResourcePoolMemoryGrantedMetricConfig provides config for the vcenter.resource_pool.memory.granted metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.resource_pool.memory.shares:
-        description: "VcenterResourcePoolMemorySharesConfig provides config for the vcenter.resource_pool.memory.shares metric."
+        description: "VcenterResourcePoolMemorySharesMetricConfig provides config for the vcenter.resource_pool.memory.shares metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.resource_pool.memory.swapped:
-        description: "VcenterResourcePoolMemorySwappedConfig provides config for the vcenter.resource_pool.memory.swapped metric."
+        description: "VcenterResourcePoolMemorySwappedMetricConfig provides config for the vcenter.resource_pool.memory.swapped metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.resource_pool.memory.usage:
-        description: "VcenterResourcePoolMemoryUsageConfig provides config for the vcenter.resource_pool.memory.usage metric."
+        description: "VcenterResourcePoolMemoryUsageMetricConfig provides config for the vcenter.resource_pool.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.vm.cpu.readiness:
-        description: "VcenterVMCPUReadinessConfig provides config for the vcenter.vm.cpu.readiness metric."
+        description: "VcenterVMCPUReadinessMetricConfig provides config for the vcenter.vm.cpu.readiness metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.cpu.time:
-        description: "VcenterVMCPUTimeConfig provides config for the vcenter.vm.cpu.time metric."
+        description: "VcenterVMCPUTimeMetricConfig provides config for the vcenter.vm.cpu.time metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cpu_state"
+                - "object"
+            default:
+              - "cpu_state"
+              - "object"
       vcenter.vm.cpu.usage:
-        description: "VcenterVMCPUUsageConfig provides config for the vcenter.vm.cpu.usage metric."
+        description: "VcenterVMCPUUsageMetricConfig provides config for the vcenter.vm.cpu.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.cpu.utilization:
-        description: "VcenterVMCPUUtilizationConfig provides config for the vcenter.vm.cpu.utilization metric."
+        description: "VcenterVMCPUUtilizationMetricConfig provides config for the vcenter.vm.cpu.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.disk.latency.avg:
-        description: "VcenterVMDiskLatencyAvgConfig provides config for the vcenter.vm.disk.latency.avg metric."
+        description: "VcenterVMDiskLatencyAvgMetricConfig provides config for the vcenter.vm.disk.latency.avg metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "disk_type"
+                - "object"
+            default:
+              - "direction"
+              - "disk_type"
+              - "object"
       vcenter.vm.disk.latency.max:
-        description: "VcenterVMDiskLatencyMaxConfig provides config for the vcenter.vm.disk.latency.max metric."
+        description: "VcenterVMDiskLatencyMaxMetricConfig provides config for the vcenter.vm.disk.latency.max metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.vm.disk.throughput:
-        description: "VcenterVMDiskThroughputConfig provides config for the vcenter.vm.disk.throughput metric."
+        description: "VcenterVMDiskThroughputMetricConfig provides config for the vcenter.vm.disk.throughput metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.disk.usage:
-        description: "VcenterVMDiskUsageConfig provides config for the vcenter.vm.disk.usage metric."
+        description: "VcenterVMDiskUsageMetricConfig provides config for the vcenter.vm.disk.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "disk_state"
+            default:
+              - "disk_state"
       vcenter.vm.disk.utilization:
-        description: "VcenterVMDiskUtilizationConfig provides config for the vcenter.vm.disk.utilization metric."
+        description: "VcenterVMDiskUtilizationMetricConfig provides config for the vcenter.vm.disk.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.memory.ballooned:
-        description: "VcenterVMMemoryBalloonedConfig provides config for the vcenter.vm.memory.ballooned metric."
+        description: "VcenterVMMemoryBalloonedMetricConfig provides config for the vcenter.vm.memory.ballooned metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.memory.granted:
-        description: "VcenterVMMemoryGrantedConfig provides config for the vcenter.vm.memory.granted metric."
+        description: "VcenterVMMemoryGrantedMetricConfig provides config for the vcenter.vm.memory.granted metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       vcenter.vm.memory.swapped:
-        description: "VcenterVMMemorySwappedConfig provides config for the vcenter.vm.memory.swapped metric."
+        description: "VcenterVMMemorySwappedMetricConfig provides config for the vcenter.vm.memory.swapped metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.memory.swapped_ssd:
-        description: "VcenterVMMemorySwappedSsdConfig provides config for the vcenter.vm.memory.swapped_ssd metric."
+        description: "VcenterVMMemorySwappedSsdMetricConfig provides config for the vcenter.vm.memory.swapped_ssd metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.memory.usage:
-        description: "VcenterVMMemoryUsageConfig provides config for the vcenter.vm.memory.usage metric."
+        description: "VcenterVMMemoryUsageMetricConfig provides config for the vcenter.vm.memory.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.memory.utilization:
-        description: "VcenterVMMemoryUtilizationConfig provides config for the vcenter.vm.memory.utilization metric."
+        description: "VcenterVMMemoryUtilizationMetricConfig provides config for the vcenter.vm.memory.utilization metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       vcenter.vm.network.broadcast.packet.rate:
-        description: "VcenterVMNetworkBroadcastPacketRateConfig provides config for the vcenter.vm.network.broadcast.packet.rate metric."
+        description: "VcenterVMNetworkBroadcastPacketRateMetricConfig provides config for the vcenter.vm.network.broadcast.packet.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.multicast.packet.rate:
-        description: "VcenterVMNetworkMulticastPacketRateConfig provides config for the vcenter.vm.network.multicast.packet.rate metric."
+        description: "VcenterVMNetworkMulticastPacketRateMetricConfig provides config for the vcenter.vm.network.multicast.packet.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.packet.drop.rate:
-        description: "VcenterVMNetworkPacketDropRateConfig provides config for the vcenter.vm.network.packet.drop.rate metric."
+        description: "VcenterVMNetworkPacketDropRateMetricConfig provides config for the vcenter.vm.network.packet.drop.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.packet.rate:
-        description: "VcenterVMNetworkPacketRateConfig provides config for the vcenter.vm.network.packet.rate metric."
+        description: "VcenterVMNetworkPacketRateMetricConfig provides config for the vcenter.vm.network.packet.rate metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.throughput:
-        description: "VcenterVMNetworkThroughputConfig provides config for the vcenter.vm.network.throughput metric."
+        description: "VcenterVMNetworkThroughputMetricConfig provides config for the vcenter.vm.network.throughput metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+                - "object"
+            default:
+              - "direction"
+              - "object"
       vcenter.vm.network.usage:
-        description: "VcenterVMNetworkUsageConfig provides config for the vcenter.vm.network.usage metric."
+        description: "VcenterVMNetworkUsageMetricConfig provides config for the vcenter.vm.network.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "object"
+            default:
+              - "object"
       vcenter.vm.vsan.latency.avg:
-        description: "VcenterVMVsanLatencyAvgConfig provides config for the vcenter.vm.vsan.latency.avg metric."
+        description: "VcenterVMVsanLatencyAvgMetricConfig provides config for the vcenter.vm.vsan.latency.avg metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.vm.vsan.operations:
-        description: "VcenterVMVsanOperationsConfig provides config for the vcenter.vm.vsan.operations metric."
+        description: "VcenterVMVsanOperationsMetricConfig provides config for the vcenter.vm.vsan.operations metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "type"
+            default:
+              - "type"
       vcenter.vm.vsan.throughput:
-        description: "VcenterVMVsanThroughputConfig provides config for the vcenter.vm.vsan.throughput metric."
+        description: "VcenterVMVsanThroughputMetricConfig provides config for the vcenter.vm.vsan.throughput metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for vcenter resource attributes.
     type: object

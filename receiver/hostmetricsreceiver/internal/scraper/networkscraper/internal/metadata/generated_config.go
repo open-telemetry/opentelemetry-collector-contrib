@@ -8,24 +8,24 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// SystemNetworkConnectionsAttributeKey specifies the key of an attribute for the system.network.connections metric.
-type SystemNetworkConnectionsAttributeKey string
+// SystemNetworkConnectionsMetricAttributeKey specifies the key of an attribute for the system.network.connections metric.
+type SystemNetworkConnectionsMetricAttributeKey string
 
 const (
-	SystemNetworkConnectionsAttributeKeyProtocol SystemNetworkConnectionsAttributeKey = "protocol"
-	SystemNetworkConnectionsAttributeKeyState    SystemNetworkConnectionsAttributeKey = "state"
+	SystemNetworkConnectionsMetricAttributeKeyProtocol SystemNetworkConnectionsMetricAttributeKey = "protocol"
+	SystemNetworkConnectionsMetricAttributeKeyState    SystemNetworkConnectionsMetricAttributeKey = "state"
 )
 
-// SystemNetworkConnectionsConfig provides config for the system.network.connections metric.
-type SystemNetworkConnectionsConfig struct {
+// SystemNetworkConnectionsMetricConfig provides config for the system.network.connections metric.
+type SystemNetworkConnectionsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                                 `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemNetworkConnectionsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkConnectionsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemNetworkConnectionsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkConnectionsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -39,10 +39,10 @@ func (ms *SystemNetworkConnectionsConfig) Unmarshal(parser *confmap.Conf) error 
 	return nil
 }
 
-func (ms *SystemNetworkConnectionsConfig) Validate() error {
+func (ms *SystemNetworkConnectionsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemNetworkConnectionsAttributeKeyProtocol, SystemNetworkConnectionsAttributeKeyState:
+		case SystemNetworkConnectionsMetricAttributeKeyProtocol, SystemNetworkConnectionsMetricAttributeKeyState:
 		default:
 			return fmt.Errorf("metric system.network.connections doesn't have an attribute %v, valid attributes: [protocol, state]", val)
 		}
@@ -57,13 +57,13 @@ func (ms *SystemNetworkConnectionsConfig) Validate() error {
 	return nil
 }
 
-// SystemNetworkConntrackCountConfig provides config for the system.network.conntrack.count metric.
-type SystemNetworkConntrackCountConfig struct {
+// SystemNetworkConntrackCountMetricConfig provides config for the system.network.conntrack.count metric.
+type SystemNetworkConntrackCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemNetworkConntrackCountConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkConntrackCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -77,13 +77,13 @@ func (ms *SystemNetworkConntrackCountConfig) Unmarshal(parser *confmap.Conf) err
 	return nil
 }
 
-// SystemNetworkConntrackMaxConfig provides config for the system.network.conntrack.max metric.
-type SystemNetworkConntrackMaxConfig struct {
+// SystemNetworkConntrackMaxMetricConfig provides config for the system.network.conntrack.max metric.
+type SystemNetworkConntrackMaxMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *SystemNetworkConntrackMaxConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkConntrackMaxMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -97,24 +97,24 @@ func (ms *SystemNetworkConntrackMaxConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
-// SystemNetworkDroppedAttributeKey specifies the key of an attribute for the system.network.dropped metric.
-type SystemNetworkDroppedAttributeKey string
+// SystemNetworkDroppedMetricAttributeKey specifies the key of an attribute for the system.network.dropped metric.
+type SystemNetworkDroppedMetricAttributeKey string
 
 const (
-	SystemNetworkDroppedAttributeKeyDevice    SystemNetworkDroppedAttributeKey = "device"
-	SystemNetworkDroppedAttributeKeyDirection SystemNetworkDroppedAttributeKey = "direction"
+	SystemNetworkDroppedMetricAttributeKeyDevice    SystemNetworkDroppedMetricAttributeKey = "device"
+	SystemNetworkDroppedMetricAttributeKeyDirection SystemNetworkDroppedMetricAttributeKey = "direction"
 )
 
-// SystemNetworkDroppedConfig provides config for the system.network.dropped metric.
-type SystemNetworkDroppedConfig struct {
+// SystemNetworkDroppedMetricConfig provides config for the system.network.dropped metric.
+type SystemNetworkDroppedMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemNetworkDroppedAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkDroppedMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemNetworkDroppedConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkDroppedMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -128,10 +128,10 @@ func (ms *SystemNetworkDroppedConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemNetworkDroppedConfig) Validate() error {
+func (ms *SystemNetworkDroppedMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemNetworkDroppedAttributeKeyDevice, SystemNetworkDroppedAttributeKeyDirection:
+		case SystemNetworkDroppedMetricAttributeKeyDevice, SystemNetworkDroppedMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric system.network.dropped doesn't have an attribute %v, valid attributes: [device, direction]", val)
 		}
@@ -146,24 +146,24 @@ func (ms *SystemNetworkDroppedConfig) Validate() error {
 	return nil
 }
 
-// SystemNetworkErrorsAttributeKey specifies the key of an attribute for the system.network.errors metric.
-type SystemNetworkErrorsAttributeKey string
+// SystemNetworkErrorsMetricAttributeKey specifies the key of an attribute for the system.network.errors metric.
+type SystemNetworkErrorsMetricAttributeKey string
 
 const (
-	SystemNetworkErrorsAttributeKeyDevice    SystemNetworkErrorsAttributeKey = "device"
-	SystemNetworkErrorsAttributeKeyDirection SystemNetworkErrorsAttributeKey = "direction"
+	SystemNetworkErrorsMetricAttributeKeyDevice    SystemNetworkErrorsMetricAttributeKey = "device"
+	SystemNetworkErrorsMetricAttributeKeyDirection SystemNetworkErrorsMetricAttributeKey = "direction"
 )
 
-// SystemNetworkErrorsConfig provides config for the system.network.errors metric.
-type SystemNetworkErrorsConfig struct {
+// SystemNetworkErrorsMetricConfig provides config for the system.network.errors metric.
+type SystemNetworkErrorsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                            `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemNetworkErrorsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkErrorsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemNetworkErrorsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -177,10 +177,10 @@ func (ms *SystemNetworkErrorsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemNetworkErrorsConfig) Validate() error {
+func (ms *SystemNetworkErrorsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemNetworkErrorsAttributeKeyDevice, SystemNetworkErrorsAttributeKeyDirection:
+		case SystemNetworkErrorsMetricAttributeKeyDevice, SystemNetworkErrorsMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric system.network.errors doesn't have an attribute %v, valid attributes: [device, direction]", val)
 		}
@@ -195,24 +195,24 @@ func (ms *SystemNetworkErrorsConfig) Validate() error {
 	return nil
 }
 
-// SystemNetworkIoAttributeKey specifies the key of an attribute for the system.network.io metric.
-type SystemNetworkIoAttributeKey string
+// SystemNetworkIoMetricAttributeKey specifies the key of an attribute for the system.network.io metric.
+type SystemNetworkIoMetricAttributeKey string
 
 const (
-	SystemNetworkIoAttributeKeyDevice    SystemNetworkIoAttributeKey = "device"
-	SystemNetworkIoAttributeKeyDirection SystemNetworkIoAttributeKey = "direction"
+	SystemNetworkIoMetricAttributeKeyDevice    SystemNetworkIoMetricAttributeKey = "device"
+	SystemNetworkIoMetricAttributeKeyDirection SystemNetworkIoMetricAttributeKey = "direction"
 )
 
-// SystemNetworkIoConfig provides config for the system.network.io metric.
-type SystemNetworkIoConfig struct {
+// SystemNetworkIoMetricConfig provides config for the system.network.io metric.
+type SystemNetworkIoMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                        `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemNetworkIoAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkIoMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkIoMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -226,10 +226,10 @@ func (ms *SystemNetworkIoConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemNetworkIoConfig) Validate() error {
+func (ms *SystemNetworkIoMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemNetworkIoAttributeKeyDevice, SystemNetworkIoAttributeKeyDirection:
+		case SystemNetworkIoMetricAttributeKeyDevice, SystemNetworkIoMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric system.network.io doesn't have an attribute %v, valid attributes: [device, direction]", val)
 		}
@@ -244,24 +244,24 @@ func (ms *SystemNetworkIoConfig) Validate() error {
 	return nil
 }
 
-// SystemNetworkPacketsAttributeKey specifies the key of an attribute for the system.network.packets metric.
-type SystemNetworkPacketsAttributeKey string
+// SystemNetworkPacketsMetricAttributeKey specifies the key of an attribute for the system.network.packets metric.
+type SystemNetworkPacketsMetricAttributeKey string
 
 const (
-	SystemNetworkPacketsAttributeKeyDevice    SystemNetworkPacketsAttributeKey = "device"
-	SystemNetworkPacketsAttributeKeyDirection SystemNetworkPacketsAttributeKey = "direction"
+	SystemNetworkPacketsMetricAttributeKeyDevice    SystemNetworkPacketsMetricAttributeKey = "device"
+	SystemNetworkPacketsMetricAttributeKeyDirection SystemNetworkPacketsMetricAttributeKey = "direction"
 )
 
-// SystemNetworkPacketsConfig provides config for the system.network.packets metric.
-type SystemNetworkPacketsConfig struct {
+// SystemNetworkPacketsMetricConfig provides config for the system.network.packets metric.
+type SystemNetworkPacketsMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 
-	AggregationStrategy string                             `mapstructure:"aggregation_strategy"`
-	EnabledAttributes   []SystemNetworkPacketsAttributeKey `mapstructure:"attributes"`
+	AggregationStrategy string                                   `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SystemNetworkPacketsMetricAttributeKey `mapstructure:"attributes"`
 }
 
-func (ms *SystemNetworkPacketsConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *SystemNetworkPacketsMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -275,10 +275,10 @@ func (ms *SystemNetworkPacketsConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-func (ms *SystemNetworkPacketsConfig) Validate() error {
+func (ms *SystemNetworkPacketsMetricConfig) Validate() error {
 	for _, val := range ms.EnabledAttributes {
 		switch val {
-		case SystemNetworkPacketsAttributeKeyDevice, SystemNetworkPacketsAttributeKeyDirection:
+		case SystemNetworkPacketsMetricAttributeKeyDevice, SystemNetworkPacketsMetricAttributeKeyDirection:
 		default:
 			return fmt.Errorf("metric system.network.packets doesn't have an attribute %v, valid attributes: [device, direction]", val)
 		}
@@ -295,47 +295,47 @@ func (ms *SystemNetworkPacketsConfig) Validate() error {
 
 // MetricsConfig provides config for network metrics.
 type MetricsConfig struct {
-	SystemNetworkConnections    SystemNetworkConnectionsConfig    `mapstructure:"system.network.connections"`
-	SystemNetworkConntrackCount SystemNetworkConntrackCountConfig `mapstructure:"system.network.conntrack.count"`
-	SystemNetworkConntrackMax   SystemNetworkConntrackMaxConfig   `mapstructure:"system.network.conntrack.max"`
-	SystemNetworkDropped        SystemNetworkDroppedConfig        `mapstructure:"system.network.dropped"`
-	SystemNetworkErrors         SystemNetworkErrorsConfig         `mapstructure:"system.network.errors"`
-	SystemNetworkIo             SystemNetworkIoConfig             `mapstructure:"system.network.io"`
-	SystemNetworkPackets        SystemNetworkPacketsConfig        `mapstructure:"system.network.packets"`
+	SystemNetworkConnections    SystemNetworkConnectionsMetricConfig    `mapstructure:"system.network.connections"`
+	SystemNetworkConntrackCount SystemNetworkConntrackCountMetricConfig `mapstructure:"system.network.conntrack.count"`
+	SystemNetworkConntrackMax   SystemNetworkConntrackMaxMetricConfig   `mapstructure:"system.network.conntrack.max"`
+	SystemNetworkDropped        SystemNetworkDroppedMetricConfig        `mapstructure:"system.network.dropped"`
+	SystemNetworkErrors         SystemNetworkErrorsMetricConfig         `mapstructure:"system.network.errors"`
+	SystemNetworkIo             SystemNetworkIoMetricConfig             `mapstructure:"system.network.io"`
+	SystemNetworkPackets        SystemNetworkPacketsMetricConfig        `mapstructure:"system.network.packets"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemNetworkConnections: SystemNetworkConnectionsConfig{
+		SystemNetworkConnections: SystemNetworkConnectionsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemNetworkConnectionsAttributeKey{SystemNetworkConnectionsAttributeKeyProtocol, SystemNetworkConnectionsAttributeKeyState},
+			EnabledAttributes:   []SystemNetworkConnectionsMetricAttributeKey{SystemNetworkConnectionsMetricAttributeKeyProtocol, SystemNetworkConnectionsMetricAttributeKeyState},
 		},
-		SystemNetworkConntrackCount: SystemNetworkConntrackCountConfig{
+		SystemNetworkConntrackCount: SystemNetworkConntrackCountMetricConfig{
 			Enabled: false,
 		},
-		SystemNetworkConntrackMax: SystemNetworkConntrackMaxConfig{
+		SystemNetworkConntrackMax: SystemNetworkConntrackMaxMetricConfig{
 			Enabled: false,
 		},
-		SystemNetworkDropped: SystemNetworkDroppedConfig{
+		SystemNetworkDropped: SystemNetworkDroppedMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemNetworkDroppedAttributeKey{SystemNetworkDroppedAttributeKeyDevice, SystemNetworkDroppedAttributeKeyDirection},
+			EnabledAttributes:   []SystemNetworkDroppedMetricAttributeKey{SystemNetworkDroppedMetricAttributeKeyDevice, SystemNetworkDroppedMetricAttributeKeyDirection},
 		},
-		SystemNetworkErrors: SystemNetworkErrorsConfig{
+		SystemNetworkErrors: SystemNetworkErrorsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemNetworkErrorsAttributeKey{SystemNetworkErrorsAttributeKeyDevice, SystemNetworkErrorsAttributeKeyDirection},
+			EnabledAttributes:   []SystemNetworkErrorsMetricAttributeKey{SystemNetworkErrorsMetricAttributeKeyDevice, SystemNetworkErrorsMetricAttributeKeyDirection},
 		},
-		SystemNetworkIo: SystemNetworkIoConfig{
+		SystemNetworkIo: SystemNetworkIoMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemNetworkIoAttributeKey{SystemNetworkIoAttributeKeyDevice, SystemNetworkIoAttributeKeyDirection},
+			EnabledAttributes:   []SystemNetworkIoMetricAttributeKey{SystemNetworkIoMetricAttributeKeyDevice, SystemNetworkIoMetricAttributeKeyDirection},
 		},
-		SystemNetworkPackets: SystemNetworkPacketsConfig{
+		SystemNetworkPackets: SystemNetworkPacketsMetricConfig{
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
-			EnabledAttributes:   []SystemNetworkPacketsAttributeKey{SystemNetworkPacketsAttributeKeyDevice, SystemNetworkPacketsAttributeKeyDirection},
+			EnabledAttributes:   []SystemNetworkPacketsMetricAttributeKey{SystemNetworkPacketsMetricAttributeKeyDevice, SystemNetworkPacketsMetricAttributeKeyDirection},
 		},
 	}
 }

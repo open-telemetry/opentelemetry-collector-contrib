@@ -181,9 +181,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("request")
+						requestAttrVal, ok := dp.Attributes().Get("request")
 						assert.True(t, ok)
-						assert.Equal(t, "put", attrVal.Str())
+						assert.Equal(t, "put", requestAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.node.operation.count"], "Found a duplicate in the metrics slice: riak.node.operation.count")
 						validatedMetrics["riak.node.operation.count"] = true
@@ -223,9 +223,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("request")
+						requestAttrVal, ok := dp.Attributes().Get("request")
 						assert.True(t, ok)
-						assert.Equal(t, "put", attrVal.Str())
+						assert.Equal(t, "put", requestAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
 						validatedMetrics["riak.node.operation.time.mean"] = true
@@ -279,9 +279,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "read", attrVal.Str())
+						assert.Equal(t, "read", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.vnode.index.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.index.operation.count")
 						validatedMetrics["riak.vnode.index.operation.count"] = true
@@ -323,9 +323,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("request")
+						requestAttrVal, ok := dp.Attributes().Get("request")
 						assert.True(t, ok)
-						assert.Equal(t, "put", attrVal.Str())
+						assert.Equal(t, "put", requestAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
 						validatedMetrics["riak.vnode.operation.count"] = true

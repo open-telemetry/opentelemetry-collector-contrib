@@ -25,6 +25,37 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
+type attemptCounterKey struct{}
+
+// attemptCounter tracks the number of round-trip attempts for a single
+// _bulk request call in the Elasticsearch client.
+type attemptCounter struct {
+	value atomic.Int64
+}
+
+func (c *attemptCounter) Attempts() int { return int(c.value.Load()) }
+func (c *attemptCounter) Retries() int  { return max(c.Attempts()-1, 0) }
+
+// newAttemptContext returns a context carrying a fresh attemptCounter,
+// along with the counter itself so the caller can inspect it after.
+func newAttemptContext(ctx context.Context) (context.Context, *attemptCounter) {
+	counter := &attemptCounter{}
+	return context.WithValue(ctx, attemptCounterKey{}, counter), counter
+}
+
+// countRetriesInterceptor returns an interceptor that increments the
+// attemptCounter stored in the request context on every round-trip.
+func countRetriesInterceptor() elastictransport.InterceptorFunc {
+	return func(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
+		return func(req *http.Request) (*http.Response, error) {
+			if counter, ok := req.Context().Value(attemptCounterKey{}).(*attemptCounter); ok {
+				counter.value.Add(1)
+			}
+			return next(req)
+		}
+	}
+}
+
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
 type clientLogger struct {
@@ -229,6 +260,9 @@ func newElasticsearchClient(
 			false, /* captureSearchBody */
 			elastictransportversion.Version,
 		),
+		Interceptors: []elastictransport.InterceptorFunc{
+			countRetriesInterceptor(),
+		},
 	}
 
 	tp, err := elastictransport.New(tpConfig)

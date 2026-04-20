@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -40,9 +41,18 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, errors.New("the `start_at` field must be set to `beginning` or `end`")
 	}
 
+	if c.EventDataFormat != EventDataFormatMap && c.EventDataFormat != EventDataFormatArray {
+		return nil, errors.New("the `event_data_format` field must be set to `map` or `array`")
+	}
+
 	if (c.Remote.Server != "" || c.Remote.Username != "" || c.Remote.Password != "") && // any not empty
 		(c.Remote.Server == "" || c.Remote.Username == "" || c.Remote.Password == "") { // any empty
 		return nil, errors.New("remote configuration must have non-empty `username` and `password`")
+	}
+
+	maxEventsPerPoll := c.MaxEventsPerPoll
+	if metadata.StanzaWindowsEventDrivenScrapingFeatureGate.IsEnabled() {
+		maxEventsPerPoll = 0
 	}
 
 	input := &Input{
@@ -51,11 +61,13 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		channel:                  c.Channel,
 		ignoreChannelErrors:      c.IgnoreChannelErrors,
 		maxReads:                 c.MaxReads,
-		maxEventsPerPollCycle:    c.MaxEventsPerPoll,
+		maxEventsPerPollCycle:    maxEventsPerPoll,
 		currentMaxReads:          c.MaxReads,
 		startAt:                  c.StartAt,
 		pollInterval:             c.PollInterval,
+		waitTimeout:              c.WaitTimeout,
 		raw:                      c.Raw,
+		eventDataFormat:          c.EventDataFormat,
 		includeLogRecordOriginal: c.IncludeLogRecordOriginal,
 		excludeProviders:         excludeProvidersSet(c.ExcludeProviders),
 		remote:                   c.Remote,

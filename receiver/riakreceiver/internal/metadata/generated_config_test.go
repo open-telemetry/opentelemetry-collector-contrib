@@ -26,31 +26,31 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit: RiakMemoryLimitConfig{
+					RiakMemoryLimit: RiakMemoryLimitMetricConfig{
 						Enabled: true,
 					},
-					RiakNodeOperationCount: RiakNodeOperationCountConfig{
+					RiakNodeOperationCount: RiakNodeOperationCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []RiakNodeOperationCountAttributeKey{RiakNodeOperationCountAttributeKeyRequest},
+						EnabledAttributes:   []RiakNodeOperationCountMetricAttributeKey{RiakNodeOperationCountMetricAttributeKeyRequest},
 					},
-					RiakNodeOperationTimeMean: RiakNodeOperationTimeMeanConfig{
+					RiakNodeOperationTimeMean: RiakNodeOperationTimeMeanMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []RiakNodeOperationTimeMeanAttributeKey{RiakNodeOperationTimeMeanAttributeKeyRequest},
+						EnabledAttributes:   []RiakNodeOperationTimeMeanMetricAttributeKey{RiakNodeOperationTimeMeanMetricAttributeKeyRequest},
 					},
-					RiakNodeReadRepairCount: RiakNodeReadRepairCountConfig{
+					RiakNodeReadRepairCount: RiakNodeReadRepairCountMetricConfig{
 						Enabled: true,
 					},
-					RiakVnodeIndexOperationCount: RiakVnodeIndexOperationCountConfig{
+					RiakVnodeIndexOperationCount: RiakVnodeIndexOperationCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []RiakVnodeIndexOperationCountAttributeKey{RiakVnodeIndexOperationCountAttributeKeyOperation},
+						EnabledAttributes:   []RiakVnodeIndexOperationCountMetricAttributeKey{RiakVnodeIndexOperationCountMetricAttributeKeyOperation},
 					},
-					RiakVnodeOperationCount: RiakVnodeOperationCountConfig{
+					RiakVnodeOperationCount: RiakVnodeOperationCountMetricConfig{
 						Enabled:             true,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []RiakVnodeOperationCountAttributeKey{RiakVnodeOperationCountAttributeKeyRequest},
+						EnabledAttributes:   []RiakVnodeOperationCountMetricAttributeKey{RiakVnodeOperationCountMetricAttributeKeyRequest},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -62,31 +62,31 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					RiakMemoryLimit: RiakMemoryLimitConfig{
+					RiakMemoryLimit: RiakMemoryLimitMetricConfig{
 						Enabled: false,
 					},
-					RiakNodeOperationCount: RiakNodeOperationCountConfig{
+					RiakNodeOperationCount: RiakNodeOperationCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []RiakNodeOperationCountAttributeKey{RiakNodeOperationCountAttributeKeyRequest},
+						EnabledAttributes:   []RiakNodeOperationCountMetricAttributeKey{RiakNodeOperationCountMetricAttributeKeyRequest},
 					},
-					RiakNodeOperationTimeMean: RiakNodeOperationTimeMeanConfig{
+					RiakNodeOperationTimeMean: RiakNodeOperationTimeMeanMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategyAvg,
-						EnabledAttributes:   []RiakNodeOperationTimeMeanAttributeKey{RiakNodeOperationTimeMeanAttributeKeyRequest},
+						EnabledAttributes:   []RiakNodeOperationTimeMeanMetricAttributeKey{RiakNodeOperationTimeMeanMetricAttributeKeyRequest},
 					},
-					RiakNodeReadRepairCount: RiakNodeReadRepairCountConfig{
+					RiakNodeReadRepairCount: RiakNodeReadRepairCountMetricConfig{
 						Enabled: false,
 					},
-					RiakVnodeIndexOperationCount: RiakVnodeIndexOperationCountConfig{
+					RiakVnodeIndexOperationCount: RiakVnodeIndexOperationCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []RiakVnodeIndexOperationCountAttributeKey{RiakVnodeIndexOperationCountAttributeKeyOperation},
+						EnabledAttributes:   []RiakVnodeIndexOperationCountMetricAttributeKey{RiakVnodeIndexOperationCountMetricAttributeKeyOperation},
 					},
-					RiakVnodeOperationCount: RiakVnodeOperationCountConfig{
+					RiakVnodeOperationCount: RiakVnodeOperationCountMetricConfig{
 						Enabled:             false,
 						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []RiakVnodeOperationCountAttributeKey{RiakVnodeOperationCountAttributeKeyRequest},
+						EnabledAttributes:   []RiakVnodeOperationCountMetricAttributeKey{RiakVnodeOperationCountMetricAttributeKeyRequest},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -98,7 +98,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RiakMemoryLimitConfig{}, RiakNodeOperationCountConfig{}, RiakNodeOperationTimeMeanConfig{}, RiakNodeReadRepairCountConfig{}, RiakVnodeIndexOperationCountConfig{}, RiakVnodeOperationCountConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(RiakMemoryLimitMetricConfig{}, RiakNodeOperationCountMetricConfig{}, RiakNodeOperationTimeMeanMetricConfig{}, RiakNodeReadRepairCountMetricConfig{}, RiakVnodeIndexOperationCountMetricConfig{}, RiakVnodeOperationCountMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

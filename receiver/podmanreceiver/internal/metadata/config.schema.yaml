@@ -5,77 +5,93 @@ $defs:
     type: object
     properties:
       container.blockio.io_service_bytes_recursive.read:
-        description: "ContainerBlockioIoServiceBytesRecursiveReadConfig provides config for the container.blockio.io_service_bytes_recursive.read metric."
+        description: "ContainerBlockioIoServiceBytesRecursiveReadMetricConfig provides config for the container.blockio.io_service_bytes_recursive.read metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.blockio.io_service_bytes_recursive.write:
-        description: "ContainerBlockioIoServiceBytesRecursiveWriteConfig provides config for the container.blockio.io_service_bytes_recursive.write metric."
+        description: "ContainerBlockioIoServiceBytesRecursiveWriteMetricConfig provides config for the container.blockio.io_service_bytes_recursive.write metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.cpu.percent:
-        description: "ContainerCPUPercentConfig provides config for the container.cpu.percent metric."
+        description: "ContainerCPUPercentMetricConfig provides config for the container.cpu.percent metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.cpu.usage.percpu:
-        description: "ContainerCPUUsagePercpuConfig provides config for the container.cpu.usage.percpu metric."
+        description: "ContainerCPUUsagePercpuMetricConfig provides config for the container.cpu.usage.percpu metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "core"
+            default:
+              - "core"
       container.cpu.usage.system:
-        description: "ContainerCPUUsageSystemConfig provides config for the container.cpu.usage.system metric."
+        description: "ContainerCPUUsageSystemMetricConfig provides config for the container.cpu.usage.system metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.cpu.usage.total:
-        description: "ContainerCPUUsageTotalConfig provides config for the container.cpu.usage.total metric."
+        description: "ContainerCPUUsageTotalMetricConfig provides config for the container.cpu.usage.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.percent:
-        description: "ContainerMemoryPercentConfig provides config for the container.memory.percent metric."
+        description: "ContainerMemoryPercentMetricConfig provides config for the container.memory.percent metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.usage.limit:
-        description: "ContainerMemoryUsageLimitConfig provides config for the container.memory.usage.limit metric."
+        description: "ContainerMemoryUsageLimitMetricConfig provides config for the container.memory.usage.limit metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.memory.usage.total:
-        description: "ContainerMemoryUsageTotalConfig provides config for the container.memory.usage.total metric."
+        description: "ContainerMemoryUsageTotalMetricConfig provides config for the container.memory.usage.total metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.network.io.usage.rx_bytes:
-        description: "ContainerNetworkIoUsageRxBytesConfig provides config for the container.network.io.usage.rx_bytes metric."
+        description: "ContainerNetworkIoUsageRxBytesMetricConfig provides config for the container.network.io.usage.rx_bytes metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: true
       container.network.io.usage.tx_bytes:
-        description: "ContainerNetworkIoUsageTxBytesConfig provides config for the container.network.io.usage.tx_bytes metric."
+        description: "ContainerNetworkIoUsageTxBytesMetricConfig provides config for the container.network.io.usage.tx_bytes metric."
         type: object
         properties:
           enabled:

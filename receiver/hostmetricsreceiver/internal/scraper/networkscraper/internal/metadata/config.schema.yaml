@@ -5,7 +5,7 @@ $defs:
     type: object
     properties:
       system.network.connections:
-        description: "SystemNetworkConnectionsConfig provides config for the system.network.connections metric."
+        description: "SystemNetworkConnectionsMetricConfig provides config for the system.network.connections metric."
         type: object
         properties:
           enabled:
@@ -30,21 +30,21 @@ $defs:
               - "protocol"
               - "state"
       system.network.conntrack.count:
-        description: "SystemNetworkConntrackCountConfig provides config for the system.network.conntrack.count metric."
+        description: "SystemNetworkConntrackCountMetricConfig provides config for the system.network.conntrack.count metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.network.conntrack.max:
-        description: "SystemNetworkConntrackMaxConfig provides config for the system.network.conntrack.max metric."
+        description: "SystemNetworkConntrackMaxMetricConfig provides config for the system.network.conntrack.max metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
       system.network.dropped:
-        description: "SystemNetworkDroppedConfig provides config for the system.network.dropped metric."
+        description: "SystemNetworkDroppedMetricConfig provides config for the system.network.dropped metric."
         type: object
         properties:
           enabled:
@@ -69,7 +69,7 @@ $defs:
               - "device"
               - "direction"
       system.network.errors:
-        description: "SystemNetworkErrorsConfig provides config for the system.network.errors metric."
+        description: "SystemNetworkErrorsMetricConfig provides config for the system.network.errors metric."
         type: object
         properties:
           enabled:
@@ -94,7 +94,7 @@ $defs:
               - "device"
               - "direction"
       system.network.io:
-        description: "SystemNetworkIoConfig provides config for the system.network.io metric."
+        description: "SystemNetworkIoMetricConfig provides config for the system.network.io metric."
         type: object
         properties:
           enabled:
@@ -119,7 +119,7 @@ $defs:
               - "device"
               - "direction"
       system.network.packets:
-        description: "SystemNetworkPacketsConfig provides config for the system.network.packets metric."
+        description: "SystemNetworkPacketsMetricConfig provides config for the system.network.packets metric."
         type: object
         properties:
           enabled:

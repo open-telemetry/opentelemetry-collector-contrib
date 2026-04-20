@@ -144,9 +144,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("cpu.mode")
+						cpuModeAttrVal, ok := dp.Attributes().Get("cpu.mode")
 						assert.True(t, ok)
-						assert.Equal(t, "system", attrVal.Str())
+						assert.Equal(t, "system", cpuModeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["systemd.service.cpu.time"], "Found a duplicate in the metrics slice: systemd.service.cpu.time")
 						validatedMetrics["systemd.service.cpu.time"] = true
@@ -202,9 +202,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("systemd.unit.active_state")
+						systemdUnitActiveStateAttrVal, ok := dp.Attributes().Get("systemd.unit.active_state")
 						assert.True(t, ok)
-						assert.Equal(t, "active", attrVal.Str())
+						assert.Equal(t, "active", systemdUnitActiveStateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["systemd.unit.state"], "Found a duplicate in the metrics slice: systemd.unit.state")
 						validatedMetrics["systemd.unit.state"] = true

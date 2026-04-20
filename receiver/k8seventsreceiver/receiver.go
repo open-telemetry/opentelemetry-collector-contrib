@@ -153,8 +153,8 @@ func (kr *k8seventsReceiver) startWatchers() {
 				Gvr:        eventsGVR,
 				Namespaces: namespaces,
 			},
-			IncludeInitialState: false, // Don't send initial state, only new events
-			Exclude:             nil,   // Don't exclude any event types
+			IncludeInitialState: false,                                               // Don't send initial state, only new events
+			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
 		},
 		kr.settings.Logger,
 		func(event *apiWatch.Event) {
