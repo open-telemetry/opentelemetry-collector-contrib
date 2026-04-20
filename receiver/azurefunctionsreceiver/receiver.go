@@ -41,27 +41,8 @@ func (r *functionsReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	mux := http.NewServeMux()
-	// TODO: Refactor so Start() collects path+profile specs from each trigger (logs and, later, metrics) and registers them in one loop; adding a trigger or signal should not duplicate registration logic here.
-	if r.cfg.EventHub != nil && len(r.cfg.EventHub.Logs) > 0 {
-		unmarshalers, err := loadLogsUnmarshalers(host, r.cfg.EventHub.Logs)
-		if err != nil {
-			return err
-		}
-
-		decoder := transport.NewBinaryDecoder()
-		var extractor MetadataExtractor
-		if r.cfg.EventHub.IncludeMetadata {
-			extractor = eventhub.ExtractMetadata
-		}
-
-		for _, b := range r.cfg.EventHub.Logs {
-			u := unmarshalers[b.Name]
-			protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
-			consumer := eventhub.NewLogsConsumer(u, r.nextLogs)
-			prof := newProfile(b.Name, protocol, consumer)
-			path := "/" + b.Name
-			mux.Handle(path, createHandler(prof))
-		}
+	if err := r.registerTriggerRoutes(mux, host); err != nil {
+		return err
 	}
 
 	server, err := r.cfg.HTTP.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mux)
@@ -82,6 +63,40 @@ func (r *functionsReceiver) Start(ctx context.Context, host component.Host) erro
 		}
 	})
 
+	return nil
+}
+
+// registerTriggerRoutes attaches HTTP handlers for each configured trigger. Add new triggers here
+// alongside extensions to hasTriggerWithBindings in config.go.
+func (r *functionsReceiver) registerTriggerRoutes(mux *http.ServeMux, host component.Host) error {
+	return r.registerEventHubRoutes(mux, host)
+}
+
+func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host component.Host) error {
+	eh := r.cfg.EventHub
+	if eh == nil || len(eh.Logs) == 0 {
+		return nil
+	}
+
+	unmarshalers, err := loadLogsUnmarshalers(host, eh.Logs)
+	if err != nil {
+		return err
+	}
+
+	decoder := transport.NewBinaryDecoder()
+	var extractor MetadataExtractor
+	if eh.IncludeMetadata {
+		extractor = eventhub.ExtractMetadata
+	}
+
+	for _, b := range eh.Logs {
+		u := unmarshalers[b.Name]
+		protocol := newInvokeProtocol(decoder, r.settings.Logger, extractor)
+		consumer := eventhub.NewLogsConsumer(u, r.nextLogs)
+		prof := newProfile(b.Name, protocol, consumer)
+		path := "/" + b.Name
+		mux.Handle(path, createHandler(prof))
+	}
 	return nil
 }
 

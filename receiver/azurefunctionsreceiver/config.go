@@ -37,11 +37,23 @@ type LogsEncodingConfig struct {
 	Encoding component.ID `mapstructure:"encoding"`
 }
 
+// hasTriggerWithBindings returns true if any trigger is configured with at least one binding.
+func (cfg *Config) hasTriggerWithBindings() bool {
+	if cfg.EventHub != nil && len(cfg.EventHub.Logs) > 0 {
+		return true
+	}
+	return false
+}
+
 // Validate checks if the receiver configuration is valid.
 func (cfg *Config) Validate() error {
 	var errs []error
 	if cfg.HTTP == nil || cfg.HTTP.NetAddr.Endpoint == "" {
 		errs = append(errs, errors.New("missing http server settings"))
+	}
+
+	if !cfg.hasTriggerWithBindings() {
+		errs = append(errs, errors.New("at least one configured trigger with at least one binding is required"))
 	}
 
 	if cfg.EventHub != nil {

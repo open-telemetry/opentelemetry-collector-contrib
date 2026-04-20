@@ -59,22 +59,12 @@ func TestLoadConfig(t *testing.T) {
 			expectedErrMessage: "missing http server settings",
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "no_event_hub"),
-			expected: &Config{
-				HTTP:     &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				Auth:     component.MustNewID("azureauth"),
-				EventHub: nil,
-			},
+			id:                 component.NewIDWithName(metadata.Type, "no_event_hub"),
+			expectedErrMessage: "at least one configured trigger with at least one binding is required",
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "empty_event_hub_logs"),
-			expected: &Config{
-				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				Auth: component.MustNewID("azureauth"),
-				EventHub: &EventHubTriggerConfig{
-					Logs: []LogsEncodingConfig{},
-				},
-			},
+			id:                 component.NewIDWithName(metadata.Type, "empty_event_hub_logs"),
+			expectedErrMessage: "at least one configured trigger with at least one binding is required",
 		},
 		{
 			id:                 component.NewIDWithName(metadata.Type, "missing_binding_name"),

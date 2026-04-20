@@ -44,7 +44,5 @@ func writeResponse(w http.ResponseWriter, resp InvokeResponse) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(data); err != nil {
-		http.Error(w, fmt.Sprintf("write response: %v", err), http.StatusInternalServerError)
-	}
+	_, _ = w.Write(data) // headers are flushed on Write; nothing useful we can do on error
 }

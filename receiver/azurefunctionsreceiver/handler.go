@@ -19,22 +19,22 @@ import (
 // writes success or failure responses. Different triggers may share the same
 // protocol (e.g. invoke envelope + transport decode) or use a different one.
 type Protocol interface {
-	ParseRequest(methodName string, body []byte) (trigger.ParsedRequest, error)
+	ParseRequest(bindingName string, body []byte) (trigger.ParsedRequest, error)
 	Success(w http.ResponseWriter)
 	Failure(w http.ResponseWriter, err error, body []byte)
 }
 
-// profile binds a method name (binding/path) to a Protocol and Consumer.
+// profile binds an Azure Functions binding name to a Protocol and Consumer.
 // The generic HTTP handler uses it to: parse request with protocol, then consume with consumer.
 type profile struct {
-	method   string
+	binding  string
 	protocol Protocol
 	consumer trigger.Consumer
 }
 
-func newProfile(method string, protocol Protocol, consumer trigger.Consumer) profile {
+func newProfile(binding string, protocol Protocol, consumer trigger.Consumer) profile {
 	return profile{
-		method:   method,
+		binding:  binding,
 		protocol: protocol,
 		consumer: consumer,
 	}
@@ -45,7 +45,7 @@ func newProfile(method string, protocol Protocol, consumer trigger.Consumer) pro
 type MetadataExtractor func(raw []byte) map[string]string
 
 // invokeProtocol implements Protocol for the Azure Functions invoke envelope:
-// parse body, decode Data[methodName] via transport, optionally fill Metadata using an extractor.
+// parse body, decode Data[bindingName] via transport, optionally fill Metadata using an extractor.
 type invokeProtocol struct {
 	decoder   *transport.BinaryDecoder
 	logger    *zap.Logger
@@ -66,14 +66,14 @@ func newInvokeProtocol(decoder *transport.BinaryDecoder, logger *zap.Logger, ext
 }
 
 // ParseRequest implements Protocol.
-func (p *invokeProtocol) ParseRequest(methodName string, body []byte) (trigger.ParsedRequest, error) {
+func (p *invokeProtocol) ParseRequest(bindingName string, body []byte) (trigger.ParsedRequest, error) {
 	invokeReq, err := protocol.ParseInvokeRequest(body)
 	if err != nil {
 		return trigger.ParsedRequest{}, err
 	}
-	data, ok := invokeReq.Data[methodName]
+	data, ok := invokeReq.Data[bindingName]
 	if !ok {
-		return trigger.ParsedRequest{}, fmt.Errorf("missing data for binding %q", methodName)
+		return trigger.ParsedRequest{}, fmt.Errorf("missing data for binding %q", bindingName)
 	}
 	content, err := p.decoder.Decode(data)
 	if err != nil {
@@ -109,7 +109,7 @@ func createHandler(p profile) http.Handler {
 			return
 		}
 
-		parsed, err := p.protocol.ParseRequest(p.method, body)
+		parsed, err := p.protocol.ParseRequest(p.binding, body)
 		if err != nil {
 			p.protocol.Failure(w, err, body)
 			return

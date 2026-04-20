@@ -47,6 +47,8 @@ func (c *LogsConsumer) ConsumeEvents(ctx context.Context, req trigger.ParsedRequ
 		}
 	}
 	if merged.LogRecordCount() == 0 {
+		// Decision: Log events that result in zero records are treated
+		// as anomalies and rejected as permanent errors.
 		return errors.New("no logs to consume")
 	}
 	return c.nextLogs.ConsumeLogs(ctx, merged)
