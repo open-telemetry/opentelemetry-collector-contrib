@@ -1,0 +1,11 @@
+type: k8snodemetadata
+
+status:
+  class: processor
+  stability:
+    beta: [metrics]
+    alpha: [logs]
+
+tests:
+  config:
+    local_mode: false
