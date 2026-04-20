@@ -59,3 +59,7 @@ s3://localhost:9000/my-bucket/config.yaml
 
 - Need to setup access keys with permission to access the bucket (aws_access_key_id and aws_secret_access_key for AWS, or equivalent credentials for other providers)
 - For AWS SDK configuration details, see https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
+
+## Limitations
+
+Authentication is handled through a single set of credentials (environment variables or workload identity). As a result, all S3 URIs in a given configuration must be accessible with the same credentials — mixing different providers or authentication methods in the same configuration is not supported.
