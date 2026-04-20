@@ -319,7 +319,7 @@ func Test_readTelemetryForTime_skipTaggedObjects(t *testing.T) {
 					{
 						Contents: []types.Object{
 							{
-								// Already tagged by the receiver
+								// Not tagged
 								Key: &testKey1,
 							},
 						},
@@ -327,6 +327,7 @@ func Test_readTelemetryForTime_skipTaggedObjects(t *testing.T) {
 					{
 						Contents: []types.Object{
 							{
+								// Already tagged by the receiver as ingested
 								Key: &testKey2,
 							},
 						},
@@ -348,13 +349,8 @@ func Test_readTelemetryForTime_skipTaggedObjects(t *testing.T) {
 				require.Equal(t, "bucket", *params.Bucket)
 				// testKey2 should not be fetched because it has the ingested tag
 				require.Contains(t, []string{testKey1, testKey3}, *params.Key)
-				tagCount := int32(0)
-				if *params.Key == testKey2 || *params.Key == testKey3 {
-					tagCount = 1
-				}
 				return &s3.GetObjectOutput{
 					Body:     io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
-					TagCount: &tagCount,
 				}, nil
 			},
 			getObjectTaggingFunc: func(_ context.Context, params *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {
@@ -391,9 +387,7 @@ func Test_readTelemetryForTime_skipTaggedObjects(t *testing.T) {
 		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil
 	})
-	require.Contains(t, dataCallbackKeys, testKey1)
-	require.NotContains(t, dataCallbackKeys, testKey2)
-	require.Contains(t, dataCallbackKeys, testKey3)
+	require.Equal(t, []string{testKey1, testKey3}, dataCallbackKeys)
 	require.NoError(t, err)
 }
 
@@ -883,10 +877,8 @@ func Test_readTelemetryForTime_GetTagError(t *testing.T) {
 				t.Helper()
 				require.Equal(t, "bucket", *params.Bucket)
 				require.Equal(t, testKey, *params.Key)
-				tagCount := int32(1) // Return TagCount > 0 to trigger tag checking
 				return &s3.GetObjectOutput{
 					Body:     io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
-					TagCount: &tagCount,
 				}, nil
 			},
 			getObjectTaggingFunc: func(_ context.Context, params *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {

@@ -39,18 +39,9 @@ func (m *mockS3ClientSQS) GetObject(ctx context.Context, params *s3.GetObjectInp
 		return nil, errors.New("unexpected type for mock GetObject content")
 	}
 
-	result := &s3.GetObjectOutput{
+	return &s3.GetObjectOutput{
 		Body: io.NopCloser(strings.NewReader(string(content))),
-	}
-
-	// Check if TagCount is provided as third argument
-	if len(args) > 2 && args.Get(2) != nil {
-		if tagCount, ok := args.Get(2).(int32); ok {
-			result.TagCount = aws.Int32(tagCount)
-		}
-	}
-
-	return result, args.Error(1)
+	}, args.Error(1)
 }
 
 func (m *mockS3ClientSQS) GetObjectTagging(ctx context.Context, params *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {
