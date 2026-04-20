@@ -46,10 +46,10 @@ type TimeParser struct {
 	Layout      string            `mapstructure:"layout"`
 	LayoutType  string            `mapstructure:"layout_type"`
 	Location    string            `mapstructure:"location"`
-	TimeZoneLocations map[string]string `mapstructure:"time_zone_locations"` // optional: abbreviation → IANA location name
+	TimeZoneLocations map[string]string `mapstructure:"time_zone_locations"`
 
 	location    *time.Location
-	locationMap map[string]*time.Location // compiled from TimeZoneLocations at Validate() time
+	locationMap map[string]*time.Location
 }
 
 // Unmarshal starting from default settings
@@ -106,7 +106,7 @@ func (t *TimeParser) Validate() error {
 		}
 	default:
 		return stanzaerrors.NewError(
-			fmt.Sprintf("unsupported  layout_type %s", t.LayoutType),
+			fmt.Sprintf("unsupported layout_type %s", t.LayoutType),
 			"valid values are 'strptime', 'gotime', and 'epoch'",
 		)
 	}
@@ -115,7 +115,7 @@ func (t *TimeParser) Validate() error {
 		if err := t.setLocation(); err != nil {
 			return fmt.Errorf("invalid 'location': %w", err)
 		}
-		// time_zone_locations only takes effect when %Z / MST is present in the layout
+		
 		if len(t.TimeZoneLocations) > 0 && !strings.Contains(t.Layout, "MST") {
 			return fmt.Errorf("'time_zone_locations' requires the layout to contain a timezone abbreviation directive (%%Z for strptime / MST for gotime), but layout %q has none", t.Layout)
 		}
@@ -125,7 +125,6 @@ func (t *TimeParser) Validate() error {
 }
 
 func (t *TimeParser) setLocation() error {
-	// Resolve single location (existing behaviour, unchanged)
 	if t.Location != "" {
 		// If "location" is specified, it must be in the local timezone database
 		loc, err := time.LoadLocation(t.Location)
@@ -197,8 +196,6 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		}
 		entry.Timestamp = timeutils.SetTimestampYear(timeValue)
 	case GotimeKey:
-		// resolveLocation selects per-abbreviation location from time_zone_locations if configured,
-		// otherwise falls back to the single t.location (existing behaviour)
 		timeValue, err := timeutils.ParseGotime(t.Layout, value, t.resolveLocation(value))
 		if err != nil {
 			return err

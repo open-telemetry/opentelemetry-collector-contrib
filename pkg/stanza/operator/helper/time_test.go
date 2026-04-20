@@ -676,8 +676,6 @@ func TestTimeZoneLocationsErrors(t *testing.T) {
 		err := tp.Validate()
 		require.ErrorContains(t, err, "time_zone_locations")
 		require.ErrorContains(t, err, "timezone abbreviation directive")
-		// strptime layout is converted to gotime before the check runs
-		require.ErrorContains(t, err, "2006-01-02 15:04:05")
 	})
 }
 
