@@ -82,8 +82,6 @@ github.com/onsi/ginkgo/v2 v2.27.2 h1:LzwLj0b89qtIy6SSASkzlNvX6WktqurSHwkk2ipF/Ns
 github.com/onsi/ginkgo/v2 v2.27.2/go.mod h1:ArE1D/XhNXBXCBkKOLkbsb2c81dQHCRcF5zwn/ykDRo=
 github.com/onsi/gomega v1.38.2 h1:eZCjf2xjZAqe+LeWvKb5weQ+NcPwX84kqJ0cZNxok2A=
 github.com/onsi/gomega v1.38.2/go.mod h1:W2MJcYxRGV63b418Ai34Ud0hEdTVXq9NW9+Sx6uXf3k=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.147.0 h1:esfK3tYYNEea3jfmcOKJyR7Ezz9+KmI3bgF3+TwOOiQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.147.0/go.mod h1:+Y4GA0ade48Tu2jJ6BbsP8ZCyv7FqSvsHR+F+aUKJHY=
 github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 h1:Ot2fbEEPmF3WlPQkyEW/bUCV38GMugH/UmZvxpWceNc=
 github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7/go.mod h1:d5uzF0YN2nQQFA0jIEWzzOZ+edmo6wzlGLvx5Fhz4uY=
 github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 h1:9JBeIXmnHlpXTQPi7LPmu1jdxznBhAE7bb1K+3D8gxY=
@@ -132,8 +130,7 @@ go.opentelemetry.io/collector/extension v1.56.1-0.20260415114935-307e3abdbae9 h1
 go.opentelemetry.io/collector/extension v1.56.1-0.20260415114935-307e3abdbae9/go.mod h1:GMuwYa2Sgy8rGTvPWMi0muzAcs6oBs7TRV41b5TA+Q4=
 go.opentelemetry.io/collector/extension/extensiontest v0.150.1-0.20260415114935-307e3abdbae9 h1:VOy/JsYZn96/OgyltgOkvZX5e6zn0CPDHAiuAHgbOxM=
 go.opentelemetry.io/collector/extension/extensiontest v0.150.1-0.20260415114935-307e3abdbae9/go.mod h1:XkwVtWA6tQPbm7Yhu3MZNg83k1qDMVd8YZFaEDQSf1o=
-go.opentelemetry.io/collector/extension/xextension v0.149.1-0.20260409104450-d686cf9058ce h1:wQG0Ui/tQwGOMQ7KXV+tqqb9NnxWIRDGKSkoVq0Kgqk=
-go.opentelemetry.io/collector/extension/xextension v0.149.1-0.20260409104450-d686cf9058ce/go.mod h1:xZ0yph1lwMckRmiVmB+hhP+A84jR2jVJn9OT8yv5TNc=
+go.opentelemetry.io/collector/extension/xextension v0.150.1-0.20260415114935-307e3abdbae9 h1:JTur3vZzxrsqI++SYHylGFsIY45G/akZp+bMO6X0ISA=
 go.opentelemetry.io/collector/extension/xextension v0.150.1-0.20260415114935-307e3abdbae9/go.mod h1:4j63nieN77xkax46IhQ+HVyRbJ8RJ7D1Sv4GJwoDHwc=
 go.opentelemetry.io/collector/featuregate v1.56.1-0.20260415114935-307e3abdbae9 h1:JMMYu48DiKErKQFBNEqRbatDkz6wNF8K7w2EjXg41fw=
 go.opentelemetry.io/collector/featuregate v1.56.1-0.20260415114935-307e3abdbae9/go.mod h1:4ga1QBMPEejXXmpyJS8lmaRpknJ3Lb9Bvk6e420bUFU=
