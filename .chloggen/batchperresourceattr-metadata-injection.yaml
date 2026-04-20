@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/batchperresourceattr
+note: Add `WithMetadataInjection()` option to inject batched resource attribute values as `client.Metadata` into the context passed to the next consumer.
+issues: [47695]
+change_logs: [api]
