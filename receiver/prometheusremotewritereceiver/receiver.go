@@ -97,14 +97,14 @@ func (si scopeInfo) key() string {
 // according to the OpenTelemetry Protocol data model.
 // The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
 type metricIdentity struct {
-	ResourceID   string
-	ScopeName    string
-	ScopeVersion string
+	ResourceID     string
+	ScopeName      string
+	ScopeVersion   string
 	ScopeSchemaURL string
-	ScopeAttrs   []attribute
-	MetricName   string
-	Unit         string
-	Type         writev2.Metadata_MetricType
+	ScopeAttrs     []attribute
+	MetricName     string
+	Unit           string
+	Type           writev2.Metadata_MetricType
 }
 
 // createMetricIdentity creates a metricIdentity struct from the required components
