@@ -3,80 +3,112 @@ all_set:
   metrics:
     mongodbatlas.db.counts:
       enabled: true
+      attributes: ["object_type"]
     mongodbatlas.db.size:
       enabled: true
+      attributes: ["object_type"]
     mongodbatlas.disk.partition.iops.average:
       enabled: true
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.iops.max:
       enabled: true
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.latency.average:
       enabled: true
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.latency.max:
       enabled: true
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.queue.depth:
       enabled: true
     mongodbatlas.disk.partition.space.average:
       enabled: true
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.space.max:
       enabled: true
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.throughput:
       enabled: true
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.usage.average:
       enabled: true
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.usage.max:
       enabled: true
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.utilization.average:
       enabled: true
     mongodbatlas.disk.partition.utilization.max:
       enabled: true
     mongodbatlas.process.asserts:
       enabled: true
+      attributes: ["assert_type"]
     mongodbatlas.process.background_flush:
       enabled: true
     mongodbatlas.process.cache.io:
       enabled: true
+      attributes: ["cache_direction"]
     mongodbatlas.process.cache.ratio:
       enabled: true
+      attributes: ["cache_ratio_type"]
     mongodbatlas.process.cache.size:
       enabled: true
+      attributes: ["cache_status"]
     mongodbatlas.process.connections:
       enabled: true
     mongodbatlas.process.cpu.children.normalized.usage.average:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.children.normalized.usage.max:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.children.usage.average:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.children.usage.max:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.normalized.usage.average:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.normalized.usage.max:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.usage.average:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.usage.max:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.process.cursors:
       enabled: true
+      attributes: ["cursor_state"]
     mongodbatlas.process.db.document.rate:
       enabled: true
+      attributes: ["document_status"]
     mongodbatlas.process.db.operations.rate:
       enabled: true
+      attributes: ["operation","cluster_role"]
     mongodbatlas.process.db.operations.time:
       enabled: true
+      attributes: ["execution_type"]
     mongodbatlas.process.db.query_executor.scanned:
       enabled: true
+      attributes: ["scanned_type"]
     mongodbatlas.process.db.query_targeting.scanned_per_returned:
       enabled: true
+      attributes: ["scanned_type"]
     mongodbatlas.process.db.storage:
       enabled: true
+      attributes: ["storage_status"]
     mongodbatlas.process.global_lock:
       enabled: true
+      attributes: ["global_lock_state"]
     mongodbatlas.process.index.btree_miss_ratio:
       enabled: true
     mongodbatlas.process.index.counters:
       enabled: true
+      attributes: ["btree_counter_type"]
     mongodbatlas.process.journaling.commits:
       enabled: true
     mongodbatlas.process.journaling.data_files:
@@ -85,52 +117,283 @@ all_set:
       enabled: true
     mongodbatlas.process.memory.usage:
       enabled: true
+      attributes: ["memory_state"]
     mongodbatlas.process.network.io:
       enabled: true
+      attributes: ["direction"]
     mongodbatlas.process.network.requests:
       enabled: true
     mongodbatlas.process.oplog.rate:
       enabled: true
     mongodbatlas.process.oplog.time:
       enabled: true
+      attributes: ["oplog_type"]
     mongodbatlas.process.page_faults:
       enabled: true
+      attributes: ["memory_issue_type"]
     mongodbatlas.process.restarts:
       enabled: true
     mongodbatlas.process.tickets:
       enabled: true
+      attributes: ["ticket_type"]
     mongodbatlas.system.cpu.normalized.usage.average:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.system.cpu.normalized.usage.max:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.system.cpu.usage.average:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.system.cpu.usage.max:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.system.fts.cpu.normalized.usage:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.system.fts.cpu.usage:
       enabled: true
+      attributes: ["cpu_state"]
     mongodbatlas.system.fts.disk.used:
       enabled: true
     mongodbatlas.system.fts.memory.usage:
       enabled: true
+      attributes: ["memory_state"]
     mongodbatlas.system.memory.usage.average:
       enabled: true
+      attributes: ["memory_status"]
     mongodbatlas.system.memory.usage.max:
       enabled: true
+      attributes: ["memory_status"]
     mongodbatlas.system.network.io.average:
       enabled: true
+      attributes: ["direction"]
     mongodbatlas.system.network.io.max:
       enabled: true
+      attributes: ["direction"]
     mongodbatlas.system.paging.io.average:
       enabled: true
+      attributes: ["direction"]
     mongodbatlas.system.paging.io.max:
       enabled: true
+      attributes: ["direction"]
     mongodbatlas.system.paging.usage.average:
       enabled: true
+      attributes: ["memory_state"]
     mongodbatlas.system.paging.usage.max:
       enabled: true
+      attributes: ["memory_state"]
+  resource_attributes:
+    mongodb_atlas.cluster.name:
+      enabled: true
+    mongodb_atlas.db.name:
+      enabled: true
+    mongodb_atlas.disk.partition:
+      enabled: true
+    mongodb_atlas.host.name:
+      enabled: true
+    mongodb_atlas.org_name:
+      enabled: true
+    mongodb_atlas.process.id:
+      enabled: true
+    mongodb_atlas.process.port:
+      enabled: true
+    mongodb_atlas.process.type_name:
+      enabled: true
+    mongodb_atlas.project.id:
+      enabled: true
+    mongodb_atlas.project.name:
+      enabled: true
+    mongodb_atlas.provider.name:
+      enabled: true
+    mongodb_atlas.region.name:
+      enabled: true
+    mongodb_atlas.user.alias:
+      enabled: true
+reaggregate_set:
+  metrics:
+    mongodbatlas.db.counts:
+      enabled: true
+      attributes: []
+    mongodbatlas.db.size:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.iops.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.iops.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.latency.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.latency.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.queue.depth:
+      enabled: true
+    mongodbatlas.disk.partition.space.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.space.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.throughput:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.disk.partition.utilization.average:
+      enabled: true
+    mongodbatlas.disk.partition.utilization.max:
+      enabled: true
+    mongodbatlas.process.asserts:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.background_flush:
+      enabled: true
+    mongodbatlas.process.cache.io:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cache.ratio:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cache.size:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.connections:
+      enabled: true
+    mongodbatlas.process.cpu.children.normalized.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cpu.children.normalized.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cpu.children.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cpu.children.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cpu.normalized.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cpu.normalized.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cpu.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cpu.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.cursors:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.db.document.rate:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.db.operations.rate:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.db.operations.time:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.db.query_executor.scanned:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.db.query_targeting.scanned_per_returned:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.db.storage:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.global_lock:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.index.btree_miss_ratio:
+      enabled: true
+    mongodbatlas.process.index.counters:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.journaling.commits:
+      enabled: true
+    mongodbatlas.process.journaling.data_files:
+      enabled: true
+    mongodbatlas.process.journaling.written:
+      enabled: true
+    mongodbatlas.process.memory.usage:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.network.io:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.network.requests:
+      enabled: true
+    mongodbatlas.process.oplog.rate:
+      enabled: true
+    mongodbatlas.process.oplog.time:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.page_faults:
+      enabled: true
+      attributes: []
+    mongodbatlas.process.restarts:
+      enabled: true
+    mongodbatlas.process.tickets:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.cpu.normalized.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.cpu.normalized.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.cpu.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.cpu.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.fts.cpu.normalized.usage:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.fts.cpu.usage:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.fts.disk.used:
+      enabled: true
+    mongodbatlas.system.fts.memory.usage:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.memory.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.memory.usage.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.network.io.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.network.io.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.paging.io.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.paging.io.max:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.paging.usage.average:
+      enabled: true
+      attributes: []
+    mongodbatlas.system.paging.usage.max:
+      enabled: true
+      attributes: []
   resource_attributes:
     mongodb_atlas.cluster.name:
       enabled: true
@@ -162,80 +425,112 @@ none_set:
   metrics:
     mongodbatlas.db.counts:
       enabled: false
+      attributes: ["object_type"]
     mongodbatlas.db.size:
       enabled: false
+      attributes: ["object_type"]
     mongodbatlas.disk.partition.iops.average:
       enabled: false
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.iops.max:
       enabled: false
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.latency.average:
       enabled: false
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.latency.max:
       enabled: false
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.queue.depth:
       enabled: false
     mongodbatlas.disk.partition.space.average:
       enabled: false
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.space.max:
       enabled: false
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.throughput:
       enabled: false
+      attributes: ["disk_direction"]
     mongodbatlas.disk.partition.usage.average:
       enabled: false
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.usage.max:
       enabled: false
+      attributes: ["disk_status"]
     mongodbatlas.disk.partition.utilization.average:
       enabled: false
     mongodbatlas.disk.partition.utilization.max:
       enabled: false
     mongodbatlas.process.asserts:
       enabled: false
+      attributes: ["assert_type"]
     mongodbatlas.process.background_flush:
       enabled: false
     mongodbatlas.process.cache.io:
       enabled: false
+      attributes: ["cache_direction"]
     mongodbatlas.process.cache.ratio:
       enabled: false
+      attributes: ["cache_ratio_type"]
     mongodbatlas.process.cache.size:
       enabled: false
+      attributes: ["cache_status"]
     mongodbatlas.process.connections:
       enabled: false
     mongodbatlas.process.cpu.children.normalized.usage.average:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.children.normalized.usage.max:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.children.usage.average:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.children.usage.max:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.normalized.usage.average:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.normalized.usage.max:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.usage.average:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cpu.usage.max:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.process.cursors:
       enabled: false
+      attributes: ["cursor_state"]
     mongodbatlas.process.db.document.rate:
       enabled: false
+      attributes: ["document_status"]
     mongodbatlas.process.db.operations.rate:
       enabled: false
+      attributes: ["operation","cluster_role"]
     mongodbatlas.process.db.operations.time:
       enabled: false
+      attributes: ["execution_type"]
     mongodbatlas.process.db.query_executor.scanned:
       enabled: false
+      attributes: ["scanned_type"]
     mongodbatlas.process.db.query_targeting.scanned_per_returned:
       enabled: false
+      attributes: ["scanned_type"]
     mongodbatlas.process.db.storage:
       enabled: false
+      attributes: ["storage_status"]
     mongodbatlas.process.global_lock:
       enabled: false
+      attributes: ["global_lock_state"]
     mongodbatlas.process.index.btree_miss_ratio:
       enabled: false
     mongodbatlas.process.index.counters:
       enabled: false
+      attributes: ["btree_counter_type"]
     mongodbatlas.process.journaling.commits:
       enabled: false
     mongodbatlas.process.journaling.data_files:
@@ -244,52 +539,72 @@ none_set:
       enabled: false
     mongodbatlas.process.memory.usage:
       enabled: false
+      attributes: ["memory_state"]
     mongodbatlas.process.network.io:
       enabled: false
+      attributes: ["direction"]
     mongodbatlas.process.network.requests:
       enabled: false
     mongodbatlas.process.oplog.rate:
       enabled: false
     mongodbatlas.process.oplog.time:
       enabled: false
+      attributes: ["oplog_type"]
     mongodbatlas.process.page_faults:
       enabled: false
+      attributes: ["memory_issue_type"]
     mongodbatlas.process.restarts:
       enabled: false
     mongodbatlas.process.tickets:
       enabled: false
+      attributes: ["ticket_type"]
     mongodbatlas.system.cpu.normalized.usage.average:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.system.cpu.normalized.usage.max:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.system.cpu.usage.average:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.system.cpu.usage.max:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.system.fts.cpu.normalized.usage:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.system.fts.cpu.usage:
       enabled: false
+      attributes: ["cpu_state"]
     mongodbatlas.system.fts.disk.used:
       enabled: false
     mongodbatlas.system.fts.memory.usage:
       enabled: false
+      attributes: ["memory_state"]
     mongodbatlas.system.memory.usage.average:
       enabled: false
+      attributes: ["memory_status"]
     mongodbatlas.system.memory.usage.max:
       enabled: false
+      attributes: ["memory_status"]
     mongodbatlas.system.network.io.average:
       enabled: false
+      attributes: ["direction"]
     mongodbatlas.system.network.io.max:
       enabled: false
+      attributes: ["direction"]
     mongodbatlas.system.paging.io.average:
       enabled: false
+      attributes: ["direction"]
     mongodbatlas.system.paging.io.max:
       enabled: false
+      attributes: ["direction"]
     mongodbatlas.system.paging.usage.average:
       enabled: false
+      attributes: ["memory_state"]
     mongodbatlas.system.paging.usage.max:
       enabled: false
+      attributes: ["memory_state"]
   resource_attributes:
     mongodb_atlas.cluster.name:
       enabled: false

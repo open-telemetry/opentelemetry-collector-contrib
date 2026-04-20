@@ -157,9 +157,9 @@ func TestGetResourceMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.resourceAttrs {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), true))
 				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), false))
 				})
 			}
 			require.Equal(t, tt.expected, getResourceMetrics(tt.metrics, &tt.envelope))
@@ -255,9 +255,9 @@ func TestGetResourceLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.resourceAttrs {
-				require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), true))
 				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), false))
 				})
 			}
 			require.Equal(t, tt.expected, getResourceLogs(tt.logs, &tt.envelope))
@@ -269,9 +269,9 @@ func TestBuildLogsWithResourceAttrs(t *testing.T) {
 	logs := plog.NewLogs()
 	observedTime := time.Date(2022, time.July, 14, 9, 30, 0, 0, time.UTC)
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), false))
 	})
 
 	// adding the first item to the logs
@@ -470,9 +470,9 @@ func TestBuildMetricsWithResourceAttrs(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	observedTime := time.Date(2022, time.July, 14, 9, 30, 0, 0, time.UTC)
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(allowResourceAttributes.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.CloudfoundryResourceAttributesAllowFeatureGate.ID(), false))
 	})
 
 	// adding the first item to the metrics
