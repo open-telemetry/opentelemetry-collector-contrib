@@ -22,22 +22,19 @@ type routedEncoding struct {
 // Encodings must be pre-sorted by specificity (most specific first, catch-all last).
 // Use S3Config.sortedEncodings() to obtain a correctly sorted slice.
 type logsDecoderRouter struct {
-	encodings      []routedEncoding
-	decoders       map[string]encoding.LogsDecoderFactory
-	defaultDecoder encoding.LogsDecoderFactory
+	encodings []routedEncoding
+	decoders  map[string]encoding.LogsDecoderFactory
 }
 
 // newLogsDecoderRouter creates a new S3 logs decoder router.
 //   - encodings: pre-sorted S3Encoding slice.
-//   - decoders: maps encoding.Name => LogsDecoderFactory for entries with an Encoding field set.
-//   - defaultDecoder: used for entries with no Encoding (raw passthrough).
+//   - decoders: maps encoding.Name => LogsDecoderFactory for every entry (including raw-passthrough ones).
 //
 // Path patterns are split on "/" at construction time so that GetDecoder only
 // splits the object key once per S3 event rather than once per pattern.
 func newLogsDecoderRouter(
 	encodings []S3Encoding,
 	decoders map[string]encoding.LogsDecoderFactory,
-	defaultDecoder encoding.LogsDecoderFactory,
 ) *logsDecoderRouter {
 	routed := make([]routedEncoding, len(encodings))
 	for i, enc := range encodings {
@@ -47,9 +44,8 @@ func newLogsDecoderRouter(
 		}
 	}
 	return &logsDecoderRouter{
-		encodings:      routed,
-		decoders:       decoders,
-		defaultDecoder: defaultDecoder,
+		encodings: routed,
+		decoders:  decoders,
 	}
 }
 
@@ -61,10 +57,6 @@ func (r *logsDecoderRouter) GetDecoder(objectKey string) (encoding.LogsDecoderFa
 	for _, re := range r.encodings {
 		if !matchPrefixWithWildcard(targetParts, re.patternParts) {
 			continue
-		}
-		// No encoding => raw passthrough using the default decoder.
-		if re.enc.Encoding == "" {
-			return r.defaultDecoder, re.enc.Name, nil
 		}
 		decoder, ok := r.decoders[re.enc.Name]
 		if !ok {

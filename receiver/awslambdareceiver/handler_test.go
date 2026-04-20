@@ -771,10 +771,11 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 			},
 			encodings: []S3Encoding{
 				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
-				{Name: "catchall", PathPattern: "*"}, // no encoding => default decoder
+				{Name: "catchall", PathPattern: "*"},
 			},
 			decoders: map[string]encoding.LogsDecoderFactory{
-				"vpcflow": &customLogUnmarshaler{},
+				"vpcflow":  &customLogUnmarshaler{},
+				"catchall": internal.NewDefaultS3LogsDecoder(),
 			},
 		},
 		{
@@ -805,8 +806,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
 				AnyTimes()
 
-			defaultDecoder := internal.NewDefaultS3LogsDecoder()
-			router := newLogsDecoderRouter(test.encodings, test.decoders, defaultDecoder)
+			router := newLogsDecoderRouter(test.encodings, test.decoders)
 			handler := newMultiFormatS3LogsHandler(s3Service, zap.NewNop(), router, &noOpLogsConsumer{})
 
 			event, err := json.Marshal(test.s3Event)

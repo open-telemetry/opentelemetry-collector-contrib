@@ -61,7 +61,8 @@ func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 				{Name: "catchall", PathPattern: "*"},
 			},
 			decoders: map[string]encoding.LogsDecoderFactory{
-				"vpcflow": vpcDecoder,
+				"vpcflow":  vpcDecoder,
+				"catchall": defaultDecoder,
 			},
 			objectKey:      "random/path/to/file.log",
 			expectedFormat: "catchall",
@@ -74,6 +75,7 @@ func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 			},
 			decoders: map[string]encoding.LogsDecoderFactory{
 				"vpcflow": vpcDecoder,
+				"raw":     defaultDecoder,
 			},
 			objectKey:      "raw-logs/file.txt",
 			expectedFormat: "raw",
@@ -104,7 +106,7 @@ func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			router := newLogsDecoderRouter(tt.encodings, tt.decoders, defaultDecoder)
+			router := newLogsDecoderRouter(tt.encodings, tt.decoders)
 			decoder, formatName, err := router.GetDecoder(tt.objectKey)
 
 			if tt.expectError {
@@ -122,7 +124,6 @@ func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 func TestLogsDecoderRouter_PatternPriority(t *testing.T) {
 	t.Parallel()
 
-	defaultDecoder := internal.NewDefaultS3LogsDecoder()
 	vpcDecoder := internal.NewDefaultS3LogsDecoder()
 	catchallDecoder := internal.NewDefaultS3LogsDecoder()
 
@@ -136,7 +137,7 @@ func TestLogsDecoderRouter_PatternPriority(t *testing.T) {
 		"catchall": catchallDecoder,
 	}
 
-	router := newLogsDecoderRouter(encodings, decoders, defaultDecoder)
+	router := newLogsDecoderRouter(encodings, decoders)
 
 	_, name, err := router.GetDecoder("AWSLogs/123/vpcflowlogs/us-east-1/file.log")
 	require.NoError(t, err)

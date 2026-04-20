@@ -275,9 +275,12 @@ func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*
 	sortedEncodings := cfg.sortedEncodings()
 	decoders := make(map[string]encoding.LogsDecoderFactory, len(sortedEncodings))
 
+	defaultDecoder := internal.NewDefaultS3LogsDecoder()
 	for _, enc := range sortedEncodings {
 		if enc.Encoding == "" {
-			continue // raw passthrough uses the default decoder
+			// No extension configured: use the raw-passthrough decoder.
+			decoders[enc.Name] = defaultDecoder
+			continue
 		}
 		decoder, err := resolveLogsDecoder(host, enc.Encoding)
 		if err != nil {
@@ -291,7 +294,7 @@ func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*
 		decoders[enc.Name] = decoder
 	}
 
-	return newLogsDecoderRouter(sortedEncodings, decoders, internal.NewDefaultS3LogsDecoder()), nil
+	return newLogsDecoderRouter(sortedEncodings, decoders), nil
 }
 
 func newMetricsHandler(
