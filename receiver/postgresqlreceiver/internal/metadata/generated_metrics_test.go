@@ -340,9 +340,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("source")
+						bgBufferSourceAttrVal, ok := dp.Attributes().Get("source")
 						assert.True(t, ok)
-						assert.Equal(t, "backend", attrVal.Str())
+						assert.Equal(t, "backend", bgBufferSourceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.bgwriter.buffers.writes"], "Found a duplicate in the metrics slice: postgresql.bgwriter.buffers.writes")
 						validatedMetrics["postgresql.bgwriter.buffers.writes"] = true
@@ -384,9 +384,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("type")
+						bgCheckpointTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "requested", attrVal.Str())
+						assert.Equal(t, "requested", bgCheckpointTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.bgwriter.checkpoint.count"], "Found a duplicate in the metrics slice: postgresql.bgwriter.checkpoint.count")
 						validatedMetrics["postgresql.bgwriter.checkpoint.count"] = true
@@ -428,9 +428,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("type")
+						bgDurationTypeAttrVal, ok := dp.Attributes().Get("type")
 						assert.True(t, ok)
-						assert.Equal(t, "sync", attrVal.Str())
+						assert.Equal(t, "sync", bgDurationTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.bgwriter.duration"], "Found a duplicate in the metrics slice: postgresql.bgwriter.duration")
 						validatedMetrics["postgresql.bgwriter.duration"] = true
@@ -514,9 +514,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("source")
+						sourceAttrVal, ok := dp.Attributes().Get("source")
 						assert.True(t, ok)
-						assert.Equal(t, "heap_read", attrVal.Str())
+						assert.Equal(t, "heap_read", sourceAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.blocks_read"], "Found a duplicate in the metrics slice: postgresql.blocks_read")
 						validatedMetrics["postgresql.blocks_read"] = true
@@ -596,15 +596,15 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("relation")
+						relationAttrVal, ok := dp.Attributes().Get("relation")
 						assert.True(t, ok)
-						assert.Equal(t, "relation-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("mode")
+						assert.Equal(t, "relation-val", relationAttrVal.Str())
+						modeAttrVal, ok := dp.Attributes().Get("mode")
 						assert.True(t, ok)
-						assert.Equal(t, "mode-val", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("lock_type")
+						assert.Equal(t, "mode-val", modeAttrVal.Str())
+						lockTypeAttrVal, ok := dp.Attributes().Get("lock_type")
 						assert.True(t, ok)
-						assert.Equal(t, "lock_type-val", attrVal.Str())
+						assert.Equal(t, "lock_type-val", lockTypeAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.database.locks"], "Found a duplicate in the metrics slice: postgresql.database.locks")
 						validatedMetrics["postgresql.database.locks"] = true
@@ -676,9 +676,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("function")
+						functionAttrVal, ok := dp.Attributes().Get("function")
 						assert.True(t, ok)
-						assert.Equal(t, "function-val", attrVal.Str())
+						assert.Equal(t, "function-val", functionAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.function.calls"], "Found a duplicate in the metrics slice: postgresql.function.calls")
 						validatedMetrics["postgresql.function.calls"] = true
@@ -746,9 +746,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
+						operationAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "ins", attrVal.Str())
+						assert.Equal(t, "ins", operationAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.operations"], "Found a duplicate in the metrics slice: postgresql.operations")
 						validatedMetrics["postgresql.operations"] = true
@@ -788,9 +788,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("replication_client")
+						replicationClientAttrVal, ok := dp.Attributes().Get("replication_client")
 						assert.True(t, ok)
-						assert.Equal(t, "replication_client-val", attrVal.Str())
+						assert.Equal(t, "replication_client-val", replicationClientAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.replication.data_delay"], "Found a duplicate in the metrics slice: postgresql.replication.data_delay")
 						validatedMetrics["postgresql.replication.data_delay"] = true
@@ -844,9 +844,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("state")
+						stateAttrVal, ok := dp.Attributes().Get("state")
 						assert.True(t, ok)
-						assert.Equal(t, "dead", attrVal.Str())
+						assert.Equal(t, "dead", stateAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.rows"], "Found a duplicate in the metrics slice: postgresql.rows")
 						validatedMetrics["postgresql.rows"] = true
@@ -1052,12 +1052,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-						attrVal, ok := dp.Attributes().Get("operation")
+						walOperationLagAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "flush", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("replication_client")
+						assert.Equal(t, "flush", walOperationLagAttrVal.Str())
+						replicationClientAttrVal, ok := dp.Attributes().Get("replication_client")
 						assert.True(t, ok)
-						assert.Equal(t, "replication_client-val", attrVal.Str())
+						assert.Equal(t, "replication_client-val", replicationClientAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.wal.delay"], "Found a duplicate in the metrics slice: postgresql.wal.delay")
 						validatedMetrics["postgresql.wal.delay"] = true
@@ -1097,12 +1097,12 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.Equal(t, ts, dp.Timestamp())
 						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 						assert.Equal(t, int64(1), dp.IntValue())
-						attrVal, ok := dp.Attributes().Get("operation")
+						walOperationLagAttrVal, ok := dp.Attributes().Get("operation")
 						assert.True(t, ok)
-						assert.Equal(t, "flush", attrVal.Str())
-						attrVal, ok = dp.Attributes().Get("replication_client")
+						assert.Equal(t, "flush", walOperationLagAttrVal.Str())
+						replicationClientAttrVal, ok := dp.Attributes().Get("replication_client")
 						assert.True(t, ok)
-						assert.Equal(t, "replication_client-val", attrVal.Str())
+						assert.Equal(t, "replication_client-val", replicationClientAttrVal.Str())
 					} else {
 						assert.False(t, validatedMetrics["postgresql.wal.lag"], "Found a duplicate in the metrics slice: postgresql.wal.lag")
 						validatedMetrics["postgresql.wal.lag"] = true

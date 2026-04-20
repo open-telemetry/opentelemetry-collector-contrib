@@ -17,6 +17,25 @@ status:
 
 reaggregation_enabled: true
 
+feature_gates:
+  - id: postgresqlreceiver.preciselagmetrics
+    description: Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`.
+    stage: beta
+    from_version: "v0.89.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
+
+  - id: receiver.postgresql.connectionPool
+    description: Use of connection pooling
+    stage: beta
+    from_version: "v0.96.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30831
+
+  - id: receiver.postgresql.separateSchemaAttr
+    description: Moves Schema Names into dedicated Attribute
+    stage: alpha
+    from_version: "v0.122.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559
+
 resource_attributes:
   postgresql.database.name:
     description: The name of the database.

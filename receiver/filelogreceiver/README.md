@@ -10,7 +10,7 @@ This receiver tails and parses logs from files.
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Ffilelog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Ffilelog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Ffilelog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Ffilelog) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_filelog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_filelog&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@andrzej-stencel](https://www.github.com/andrzej-stencel), [@paulojmdias](https://www.github.com/paulojmdias), [@VihasMakwana](https://www.github.com/VihasMakwana), [@braydonk](https://www.github.com/braydonk) \| Seeking more code owners! |
 | Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -43,7 +43,8 @@ This receiver tails and parses logs from files.
 | `poll_interval`                       | 200ms                                | The [duration](#time-parameters) between filesystem polls.                                                                                                                                                                                                      |
 | `fingerprint_size`                    | `1kb`                                | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time) |
 | `initial_buffer_size`                 | `16KiB`                              | The initial size of the to read buffer for headers and logs, the buffer will be grown as necessary. Larger values may lead to unnecessary large buffer allocations, and smaller values may lead to lots of copies while growing the buffer.                     |
-| `max_log_size`                        | `1MiB`                               | The maximum size of a log entry to read. A log entry will be truncated if it is larger than `max_log_size`. Protects against reading large amounts of data into memory.                                                                                         |
+| `max_log_size`                        | `1MiB`                               | The maximum size of a log entry to read. The behavior for oversized log entries is controlled by `max_log_size_behavior`. Protects against reading large amounts of data into memory.                                                                            |
+| `max_log_size_behavior`               | `split`                              | Behavior when a log entry exceeds `max_log_size`. Options are `split` (default) which splits oversized entries into multiple log entries, or `truncate` which truncates the entry and drops the remainder.                                                       |
 | `max_concurrent_files`                | 1024                                 | The maximum number of log files from which logs will be read concurrently. If the number of files matched in the `include` pattern exceeds this number, then files will be processed in batches.                                                                |
 | `max_batches`                         | 0                                    | Only applicable when files must be batched in order to respect `max_concurrent_files`. This value limits the number of batches that will be processed during a single poll interval. A value of 0 indicates no limit.                                           |
 | `delete_after_read`                   | `false`                              | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. Must be `false` when `start_at` is set to `end`.                                                                     |
@@ -69,6 +70,7 @@ This receiver tails and parses logs from files.
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
 | `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are  ``, `gzip`, or `auto`. `auto` auto-detects file compression type. Currently, gzip files are the only compressed files auto-detected, based on its headers [See RFC 1952](https://www.rfc-editor.org/rfc/rfc1952#section-2.3). `auto` option is useful when ingesting a mix of compressed and uncompressed files with the same filelogreceiver.              |
 | `polls_to_archive`                    |  `0`                                    | This settings controls the number of poll cycles to store on disk, rather than being discarded. By default, the receiver will purge the record of readers that have existed for 3 generations. Refer [archiving](#archiving) and [polling](../../pkg/stanza/fileconsumer/design.md#polling) for more details. **Note: This feature is experimental.** |
+| `on_truncate`                         | `ignore`                             | Behavior when a file with the same fingerprint is detected but with a smaller size (indicating a copytruncate rotation). Options are `ignore`, `read_whole_file`, or `read_new`. See [handling copytruncate rotation](#handling-copytruncate-rotation) for more details.                                                                              |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -146,20 +148,37 @@ Example: With `include: /var/log/pods/*/*/*.log*`, when `0.log` is rotated to `0
 
 For more details, see [issue #38454](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38454).
 
-#### Copy-Truncate Rotation Strategy
+#### Handling Copytruncate Rotation
 
-When log rotation uses a copy-truncate strategy (the file is copied to a backup, then the original is truncated), the receiver handles this automatically through fingerprint-based deduplication. During the brief moment when both the original and the copied file exist with identical content, the receiver detects the duplicate fingerprint and ingests the file only once.
+When log files are rotated using the `copytruncate` strategy (where the file is copied and then truncated in place), the receiver can detect when a file has been truncated by comparing the stored offset with the current file size. The `on_truncate` setting controls how the receiver behaves when truncation is detected:
 
-After the original file is truncated, the receiver detects the fingerprint change and begins reading the file from the beginning, picking up any new logs written to it.
+- `ignore` (default): The receiver keeps the original offset and will not read any data until the file grows past the original offset. This prevents duplicate log ingestion when a file is rotated.
+- `read_whole_file`: The receiver resets the offset to 0 and reads the entire file from the beginning. Use this mode when you want to ensure no data loss, even if it means potentially re-reading some logs.
+- `read_new`: The receiver updates the offset to the current file size (the position after truncation). This allows reading new data that is written after the truncation without re-reading existing content.
 
-> **Note:** If rotated backup files fall outside the `include` pattern, there is a small window where data loss can occur — if new data is written to the file after the copy but before the truncate, and the receiver has not yet read it. For more details, see the [fileconsumer design doc](../../pkg/stanza/fileconsumer/design.md).
+**Example configuration:**
+
+```yaml
+receivers:
+  filelog:
+    include: [ /var/log/myapp/*.log ]
+    on_truncate: read_whole_file  # Read entire file after copytruncate rotation
+    operators:
+      - type: json_parser
+```
+
+**When to use each mode:**
+
+- Use `ignore` when you want to avoid duplicate logs and your log rotation strategy ensures that rotated files are properly renamed or moved.
+- Use `read_whole_file` when data completeness is critical and you can tolerate duplicate logs, or when you have deduplication logic downstream.
+- Use `read_new` when files are expected to be deleted after rotation and you want to read only new data written after the truncation point. 
 
 ## Example - Tailing a simple json file
 
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /var/log/myservice/*.json ]
     operators:
       - type: json_parser
@@ -173,7 +192,7 @@ receivers:
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /simple.log ]
     operators:
       - type: regex_parser
@@ -196,7 +215,7 @@ The above configuration will read logs from the "simple.log" file. Some examples
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
     - /var/log/example/multiline.log
     multiline:
@@ -221,7 +240,7 @@ Exception in thread 2 "main" java.lang.NullPointerException
 Receiver Configuration
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
     - /var/log/example/compressed.log.gz
     compression: gzip

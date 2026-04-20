@@ -32,9 +32,12 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.namespace")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.namespace.uid")
+		k8sNamespaceUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.namespace.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.namespace.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.namespace.uid-val", k8sNamespaceUIDAttrVal.Str())
+		k8sNamespaceNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -84,9 +87,9 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.namespace")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.namespace.uid")
+		k8sNamespaceUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.namespace.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.namespace.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.namespace.uid-val", k8sNamespaceUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
@@ -114,8 +117,7 @@ func TestEntityBuilders(t *testing.T) {
 		e := NewK8sDeploymentEntity("k8s.deployment.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sDeploymentName("k8s.deployment.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sDeployment(e)
 		eb.RecordK8sDeploymentAvailableDataPoint(ts, 1)
@@ -127,9 +129,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.deployment")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.deployment.uid")
+		k8sDeploymentUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.deployment.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.deployment.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.deployment.uid-val", k8sDeploymentUIDAttrVal.Str())
+		k8sDeploymentNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.deployment.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.deployment.name-val", k8sDeploymentNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -165,10 +175,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sDeploymentName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sDeploymentEntity("k8s.deployment.uid-val")
 		e.SetK8sDeploymentName("k8s.deployment.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sDeployment(e)
 		eb.RecordK8sDeploymentAvailableDataPoint(ts, 1)
@@ -181,11 +193,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.deployment")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.deployment.uid")
+		k8sDeploymentUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.deployment.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.deployment.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.deployment.uid-val", k8sDeploymentUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.deployment.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -193,8 +207,7 @@ func TestEntityBuilders(t *testing.T) {
 		e := NewK8sReplicasetEntity("k8s.replicaset.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sReplicasetName("k8s.replicaset.name-val")
-		relatedK8sDeployment := NewK8sDeploymentEntity("k8s.deployment.uid-val")
-		e.SetManagedByK8sDeployment(relatedK8sDeployment)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sReplicaset(e)
 		eb.RecordK8sReplicasetAvailableDataPoint(ts, 1)
@@ -206,9 +219,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicaset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
+		k8sReplicasetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.replicaset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.replicaset.uid-val", k8sReplicasetUIDAttrVal.Str())
+		k8sReplicasetNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.replicaset.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.replicaset.name-val", k8sReplicasetNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -244,10 +265,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sReplicasetName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sReplicasetEntity("k8s.replicaset.uid-val")
 		e.SetK8sReplicasetName("k8s.replicaset.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sReplicaset(e)
 		eb.RecordK8sReplicasetAvailableDataPoint(ts, 1)
@@ -260,11 +283,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicaset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
+		k8sReplicasetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicaset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.replicaset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.replicaset.uid-val", k8sReplicasetUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.replicaset.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -272,8 +297,7 @@ func TestEntityBuilders(t *testing.T) {
 		e := NewK8sStatefulsetEntity("k8s.statefulset.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sStatefulsetName("k8s.statefulset.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sStatefulset(e)
 		eb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
@@ -287,9 +311,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.statefulset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.statefulset.uid")
+		k8sStatefulsetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.statefulset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.statefulset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.statefulset.uid-val", k8sStatefulsetUIDAttrVal.Str())
+		k8sStatefulsetNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.statefulset.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.statefulset.name-val", k8sStatefulsetNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -327,10 +359,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sStatefulsetName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sStatefulsetEntity("k8s.statefulset.uid-val")
 		e.SetK8sStatefulsetName("k8s.statefulset.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sStatefulset(e)
 		eb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
@@ -345,11 +379,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.statefulset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.statefulset.uid")
+		k8sStatefulsetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.statefulset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.statefulset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.statefulset.uid-val", k8sStatefulsetUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.statefulset.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -357,8 +393,7 @@ func TestEntityBuilders(t *testing.T) {
 		e := NewK8sDaemonsetEntity("k8s.daemonset.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sDaemonsetName("k8s.daemonset.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sDaemonset(e)
 		eb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, 1)
@@ -372,9 +407,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.daemonset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.daemonset.uid")
+		k8sDaemonsetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.daemonset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.daemonset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.daemonset.uid-val", k8sDaemonsetUIDAttrVal.Str())
+		k8sDaemonsetNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.daemonset.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.daemonset.name-val", k8sDaemonsetNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -412,10 +455,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sDaemonsetName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sDaemonsetEntity("k8s.daemonset.uid-val")
 		e.SetK8sDaemonsetName("k8s.daemonset.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sDaemonset(e)
 		eb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, 1)
@@ -430,11 +475,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.daemonset")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.daemonset.uid")
+		k8sDaemonsetUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.daemonset.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.daemonset.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.daemonset.uid-val", k8sDaemonsetUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.daemonset.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -442,8 +489,7 @@ func TestEntityBuilders(t *testing.T) {
 		e := NewK8sCronjobEntity("k8s.cronjob.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sCronjobName("k8s.cronjob.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sCronjob(e)
 		eb.RecordK8sCronjobActiveJobsDataPoint(ts, 1)
@@ -454,9 +500,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.cronjob")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.cronjob.uid")
+		k8sCronjobUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.cronjob.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.cronjob.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.cronjob.uid-val", k8sCronjobUIDAttrVal.Str())
+		k8sCronjobNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.cronjob.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.cronjob.name-val", k8sCronjobNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -491,10 +545,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sCronjobName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sCronjobEntity("k8s.cronjob.uid-val")
 		e.SetK8sCronjobName("k8s.cronjob.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sCronjob(e)
 		eb.RecordK8sCronjobActiveJobsDataPoint(ts, 1)
@@ -506,11 +562,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.cronjob")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.cronjob.uid")
+		k8sCronjobUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.cronjob.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.cronjob.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.cronjob.uid-val", k8sCronjobUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.cronjob.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -518,10 +576,7 @@ func TestEntityBuilders(t *testing.T) {
 		e := NewK8sJobEntity("k8s.job.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sJobName("k8s.job.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
-		relatedK8sCronjob := NewK8sCronjobEntity("k8s.cronjob.uid-val")
-		e.SetManagedByK8sCronjob(relatedK8sCronjob)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sJob(e)
 		eb.RecordK8sJobActivePodsDataPoint(ts, 1)
@@ -536,9 +591,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.job")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.job.uid")
+		k8sJobUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.job.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.job.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.job.uid-val", k8sJobUIDAttrVal.Str())
+		k8sJobNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.job.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.job.name-val", k8sJobNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -577,10 +640,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sJobName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sJobEntity("k8s.job.uid-val")
 		e.SetK8sJobName("k8s.job.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sJob(e)
 		eb.RecordK8sJobActivePodsDataPoint(ts, 1)
@@ -596,11 +661,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.job")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.job.uid")
+		k8sJobUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.job.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.job.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.job.uid-val", k8sJobUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.job.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -609,20 +676,8 @@ func TestEntityBuilders(t *testing.T) {
 		require.NotNil(t, e)
 		e.SetK8sPodName("k8s.pod.name-val")
 		e.SetK8sPodQosClass("k8s.pod.qos_class-val")
-		relatedK8sNode := NewK8sNodeEntity("k8s.node.uid-val")
-		e.SetScheduledOnK8sNode(relatedK8sNode)
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
-		relatedK8sReplicaset := NewK8sReplicasetEntity("k8s.replicaset.uid-val")
-		e.SetManagedByK8sReplicaset(relatedK8sReplicaset)
-		relatedK8sStatefulset := NewK8sStatefulsetEntity("k8s.statefulset.uid-val")
-		e.SetManagedByK8sStatefulset(relatedK8sStatefulset)
-		relatedK8sDaemonset := NewK8sDaemonsetEntity("k8s.daemonset.uid-val")
-		e.SetManagedByK8sDaemonset(relatedK8sDaemonset)
-		relatedK8sJob := NewK8sJobEntity("k8s.job.uid-val")
-		e.SetManagedByK8sJob(relatedK8sJob)
-		relatedK8sReplicationcontroller := NewK8sReplicationcontrollerEntity("k8s.replicationcontroller.uid-val")
-		e.SetManagedByK8sReplicationcontroller(relatedK8sReplicationcontroller)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
+		e.SetK8sNodeName("k8s.node.name-val")
 
 		eb := mb.ForK8sPod(e)
 		eb.RecordK8sPodPhaseDataPoint(ts, 1)
@@ -634,9 +689,24 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.pod")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
+		k8sPodUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.pod.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
+		k8sPodNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.pod.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.pod.name-val", k8sPodNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.qos_class")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.node.name")
+		assert.False(t, ok)
+		k8sNodeNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.node.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.node.name-val", k8sNodeNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -674,11 +744,15 @@ func TestEntityBuilders(t *testing.T) {
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sPodName.Enabled = false
 		cfg.ResourceAttributes.K8sPodQosClass.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
+		cfg.ResourceAttributes.K8sNodeName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sPodEntity("k8s.pod.uid-val")
 		e.SetK8sPodName("k8s.pod.name-val")
 		e.SetK8sPodQosClass("k8s.pod.qos_class-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
+		e.SetK8sNodeName("k8s.node.name-val")
 
 		eb := mb.ForK8sPod(e)
 		eb.RecordK8sPodPhaseDataPoint(ts, 1)
@@ -691,13 +765,17 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.pod")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
+		k8sPodUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.pod.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.pod.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.name")
 		assert.False(t, ok)
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.qos_class")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.node.name")
 		assert.False(t, ok)
 	})
 
@@ -708,8 +786,10 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetContainerImageName("container.image.name-val")
 		e.SetContainerImageTag("container.image.tag-val")
 		e.SetK8sContainerStatusLastTerminatedReason("k8s.container.status.last_terminated_reason-val")
-		relatedK8sPod := NewK8sPodEntity("k8s.pod.uid-val")
-		e.SetChildOfK8sPod(relatedK8sPod)
+		e.SetK8sPodUID("k8s.pod.uid-val")
+		e.SetK8sPodName("k8s.pod.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
+		e.SetK8sNodeName("k8s.node.name-val")
 
 		eb := mb.ForK8sContainer(e)
 		eb.RecordK8sContainerCPULimitDataPoint(ts, 1)
@@ -731,9 +811,40 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.container")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("container.id")
+		containerIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("container.id")
 		require.True(t, ok)
-		assert.Equal(t, "container.id-val", attrVal.Str())
+		assert.Equal(t, "container.id-val", containerIDAttrVal.Str())
+		k8sContainerNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.container.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.container.name-val", k8sContainerNameAttrVal.Str())
+		containerImageNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("container.image.name")
+		require.True(t, ok)
+		assert.Equal(t, "container.image.name-val", containerImageNameAttrVal.Str())
+		containerImageTagAttrVal, ok := entityVal.DescriptiveAttributes().Get("container.image.tag")
+		require.True(t, ok)
+		assert.Equal(t, "container.image.tag-val", containerImageTagAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.container.status.last_terminated_reason")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.uid")
+		assert.False(t, ok)
+		k8sPodUIDAttrVal, ok := rm.Resource().Attributes().Get("k8s.pod.uid")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.pod.uid-val", k8sPodUIDAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.name")
+		assert.False(t, ok)
+		k8sPodNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.pod.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.pod.name-val", k8sPodNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.node.name")
+		assert.False(t, ok)
+		k8sNodeNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.node.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.node.name-val", k8sNodeNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -789,6 +900,10 @@ func TestEntityBuilders(t *testing.T) {
 		cfg.ResourceAttributes.ContainerImageName.Enabled = false
 		cfg.ResourceAttributes.ContainerImageTag.Enabled = false
 		cfg.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = false
+		cfg.ResourceAttributes.K8sPodUID.Enabled = false
+		cfg.ResourceAttributes.K8sPodName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
+		cfg.ResourceAttributes.K8sNodeName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sContainerEntity("container.id-val")
@@ -796,6 +911,10 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetContainerImageName("container.image.name-val")
 		e.SetContainerImageTag("container.image.tag-val")
 		e.SetK8sContainerStatusLastTerminatedReason("k8s.container.status.last_terminated_reason-val")
+		e.SetK8sPodUID("k8s.pod.uid-val")
+		e.SetK8sPodName("k8s.pod.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
+		e.SetK8sNodeName("k8s.node.name-val")
 
 		eb := mb.ForK8sContainer(e)
 		eb.RecordK8sContainerCPULimitDataPoint(ts, 1)
@@ -818,9 +937,9 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.container")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("container.id")
+		containerIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("container.id")
 		require.True(t, ok)
-		assert.Equal(t, "container.id-val", attrVal.Str())
+		assert.Equal(t, "container.id-val", containerIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.container.name")
 		assert.False(t, ok)
@@ -830,14 +949,21 @@ func TestEntityBuilders(t *testing.T) {
 		assert.False(t, ok)
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.container.status.last_terminated_reason")
 		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.uid")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.pod.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.node.name")
+		assert.False(t, ok)
 	})
 
 	t.Run("k8s.replicationcontroller", func(t *testing.T) {
 		e := NewK8sReplicationcontrollerEntity("k8s.replicationcontroller.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sReplicationcontrollerName("k8s.replicationcontroller.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sReplicationcontroller(e)
 		eb.RecordK8sReplicationControllerAvailableDataPoint(ts, 1)
@@ -849,9 +975,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicationcontroller")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicationcontroller.uid")
+		k8sReplicationcontrollerUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicationcontroller.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.replicationcontroller.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.replicationcontroller.uid-val", k8sReplicationcontrollerUIDAttrVal.Str())
+		k8sReplicationcontrollerNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.replicationcontroller.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.replicationcontroller.name-val", k8sReplicationcontrollerNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -887,10 +1021,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sReplicationcontrollerName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sReplicationcontrollerEntity("k8s.replicationcontroller.uid-val")
 		e.SetK8sReplicationcontrollerName("k8s.replicationcontroller.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sReplicationcontroller(e)
 		eb.RecordK8sReplicationControllerAvailableDataPoint(ts, 1)
@@ -903,11 +1039,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.replicationcontroller")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicationcontroller.uid")
+		k8sReplicationcontrollerUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.replicationcontroller.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.replicationcontroller.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.replicationcontroller.uid-val", k8sReplicationcontrollerUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.replicationcontroller.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -915,8 +1053,7 @@ func TestEntityBuilders(t *testing.T) {
 		e := NewK8sResourcequotaEntity("k8s.resourcequota.uid-val")
 		require.NotNil(t, e)
 		e.SetK8sResourcequotaName("k8s.resourcequota.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sResourcequota(e)
 		eb.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
@@ -928,9 +1065,17 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.resourcequota")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.resourcequota.uid")
+		k8sResourcequotaUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.resourcequota.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.resourcequota.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.resourcequota.uid-val", k8sResourcequotaUIDAttrVal.Str())
+		k8sResourcequotaNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.resourcequota.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.resourcequota.name-val", k8sResourcequotaNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -966,10 +1111,12 @@ func TestEntityBuilders(t *testing.T) {
 		// with its identity but the disabled attribute is not added.
 		cfg := DefaultMetricsBuilderConfig()
 		cfg.ResourceAttributes.K8sResourcequotaName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sResourcequotaEntity("k8s.resourcequota.uid-val")
 		e.SetK8sResourcequotaName("k8s.resourcequota.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sResourcequota(e)
 		eb.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
@@ -982,11 +1129,13 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.resourcequota")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.resourcequota.uid")
+		k8sResourcequotaUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.resourcequota.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.resourcequota.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.resourcequota.uid-val", k8sResourcequotaUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.resourcequota.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -996,9 +1145,8 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetK8sServiceName("k8s.service.name-val")
 		e.SetK8sServiceType("k8s.service.type-val")
 		e.SetK8sServicePublishNotReadyAddresses(false)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 		e.SetK8sServiceTrafficDistribution("k8s.service.traffic_distribution-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
 
 		eb := mb.ForK8sService(e)
 		eb.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
@@ -1016,8 +1164,7 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetK8sHpaScaletargetrefApiversion("k8s.hpa.scaletargetref.apiversion-val")
 		e.SetK8sHpaScaletargetrefKind("k8s.hpa.scaletargetref.kind-val")
 		e.SetK8sHpaScaletargetrefName("k8s.hpa.scaletargetref.name-val")
-		relatedK8sNamespace := NewK8sNamespaceEntity("k8s.namespace.uid-val")
-		e.SetPartOfK8sNamespace(relatedK8sNamespace)
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sHpa(e)
 		eb.RecordK8sHpaCurrentReplicasDataPoint(ts, 1)
@@ -1031,9 +1178,23 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.hpa")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.hpa.uid")
+		k8sHpaUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.hpa.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.hpa.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.hpa.uid-val", k8sHpaUIDAttrVal.Str())
+		k8sHpaNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("k8s.hpa.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.hpa.name-val", k8sHpaNameAttrVal.Str())
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.hpa.scaletargetref.apiversion")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.hpa.scaletargetref.kind")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.hpa.scaletargetref.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
+		assert.False(t, ok)
+		k8sNamespaceNameAttrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
+		require.True(t, ok)
+		assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -1077,6 +1238,7 @@ func TestEntityBuilders(t *testing.T) {
 		cfg.ResourceAttributes.K8sHpaScaletargetrefApiversion.Enabled = false
 		cfg.ResourceAttributes.K8sHpaScaletargetrefKind.Enabled = false
 		cfg.ResourceAttributes.K8sHpaScaletargetrefName.Enabled = false
+		cfg.ResourceAttributes.K8sNamespaceName.Enabled = false
 		mb := NewMetricsBuilder(cfg, settings, WithStartTime(start))
 
 		e := NewK8sHpaEntity("k8s.hpa.uid-val")
@@ -1084,6 +1246,7 @@ func TestEntityBuilders(t *testing.T) {
 		e.SetK8sHpaScaletargetrefApiversion("k8s.hpa.scaletargetref.apiversion-val")
 		e.SetK8sHpaScaletargetrefKind("k8s.hpa.scaletargetref.kind-val")
 		e.SetK8sHpaScaletargetrefName("k8s.hpa.scaletargetref.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
 
 		eb := mb.ForK8sHpa(e)
 		eb.RecordK8sHpaCurrentReplicasDataPoint(ts, 1)
@@ -1098,9 +1261,9 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("k8s.hpa")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.hpa.uid")
+		k8sHpaUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("k8s.hpa.uid")
 		require.True(t, ok)
-		assert.Equal(t, "k8s.hpa.uid-val", attrVal.Str())
+		assert.Equal(t, "k8s.hpa.uid-val", k8sHpaUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.hpa.name")
 		assert.False(t, ok)
@@ -1109,6 +1272,8 @@ func TestEntityBuilders(t *testing.T) {
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.hpa.scaletargetref.kind")
 		assert.False(t, ok)
 		_, ok = entityVal.DescriptiveAttributes().Get("k8s.hpa.scaletargetref.name")
+		assert.False(t, ok)
+		_, ok = entityVal.DescriptiveAttributes().Get("k8s.namespace.name")
 		assert.False(t, ok)
 	})
 
@@ -1129,9 +1294,12 @@ func TestEntityBuilders(t *testing.T) {
 		rm := metrics.ResourceMetrics().At(0)
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("openshift.clusterquota")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("openshift.clusterquota.uid")
+		openshiftClusterquotaUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("openshift.clusterquota.uid")
 		require.True(t, ok)
-		assert.Equal(t, "openshift.clusterquota.uid-val", attrVal.Str())
+		assert.Equal(t, "openshift.clusterquota.uid-val", openshiftClusterquotaUIDAttrVal.Str())
+		openshiftClusterquotaNameAttrVal, ok := entityVal.DescriptiveAttributes().Get("openshift.clusterquota.name")
+		require.True(t, ok)
+		assert.Equal(t, "openshift.clusterquota.name-val", openshiftClusterquotaNameAttrVal.Str())
 
 		require.Equal(t, 1, rm.ScopeMetrics().Len())
 		ms := rm.ScopeMetrics().At(0).Metrics()
@@ -1187,9 +1355,9 @@ func TestEntityBuilders(t *testing.T) {
 		// Entity must still be produced since identity attributes are enabled.
 		entityVal, ok := entity.ResourceEntities(rm.Resource()).Get("openshift.clusterquota")
 		require.True(t, ok)
-		attrVal, ok := entityVal.IdentifyingAttributes().Get("openshift.clusterquota.uid")
+		openshiftClusterquotaUIDAttrVal, ok := entityVal.IdentifyingAttributes().Get("openshift.clusterquota.uid")
 		require.True(t, ok)
-		assert.Equal(t, "openshift.clusterquota.uid-val", attrVal.Str())
+		assert.Equal(t, "openshift.clusterquota.uid-val", openshiftClusterquotaUIDAttrVal.Str())
 		// Disabled descriptive/extra attributes must not be present.
 		_, ok = entityVal.DescriptiveAttributes().Get("openshift.clusterquota.name")
 		assert.False(t, ok)
