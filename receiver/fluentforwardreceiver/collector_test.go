@@ -16,10 +16,10 @@ type fakeEvent struct {
 	records plog.LogRecordSlice
 }
 
-func (f *fakeEvent) DecodeMsg(_ *msgp.Reader) error  { return nil }
+func (*fakeEvent) DecodeMsg(_ *msgp.Reader) error    { return nil }
 func (f *fakeEvent) LogRecords() plog.LogRecordSlice { return f.records }
-func (f *fakeEvent) Chunk() string                   { return "" }
-func (f *fakeEvent) Compressed() string              { return "" }
+func (*fakeEvent) Chunk() string                     { return "" }
+func (*fakeEvent) Compressed() string                { return "" }
 
 func newFakeEvent(numRecords int) event {
 	records := plog.NewLogRecordSlice()
