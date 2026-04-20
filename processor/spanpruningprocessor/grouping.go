@@ -133,12 +133,15 @@ func writeAttributeSliceKey(builder *strings.Builder, value pcommon.Slice) {
 }
 
 // buildParentGroupKey constructs a parent grouping key from name and status
-// only; attributes are intentionally excluded for parent aggregation.
-func (*spanPruningProcessor) buildParentGroupKey(span ptrace.Span) string {
+// only; attributes are intentionally excluded for parent aggregation. Depth is
+// required to avoid duplicate names and status entries overwriting each other.
+func (*spanPruningProcessor) buildParentGroupKey(span ptrace.Span, depth int) string {
 	builder := builderPool.Get().(*strings.Builder)
 	builder.Reset()
 	defer builderPool.Put(builder)
 
+	builder.WriteString(strconv.Itoa(depth))
+	builder.WriteByte('|')
 	builder.WriteString(span.Name())
 	builder.WriteString("|kind=")
 	builder.WriteString(span.Kind().String())

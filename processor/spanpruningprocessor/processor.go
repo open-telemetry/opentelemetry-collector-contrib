@@ -224,7 +224,7 @@ func (p *spanPruningProcessor) analyzeAggregationsWithTree(tree *traceTree) map[
 		// Group parent candidates by name + status
 		parentGroups := make(map[string][]*spanNode)
 		for _, node := range eligibleParents {
-			parentKey := p.buildParentGroupKey(node.span)
+			parentKey := p.buildParentGroupKey(node.span, depth)
 			parentGroups[parentKey] = append(parentGroups[parentKey], node)
 		}
 
