@@ -14,10 +14,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
-// collector acts as an aggregator of LogRecords so that we don't have to
-// generate as many plog.Logs instances...we can pre-batch the LogRecord
-// instances from several Forward events into one to hopefully reduce
-// allocations and GC overhead.
+// collector aggregates LogRecords from multiple Forward events into a single
+// plog.Logs per ConsumeLogs call for batching efficiency. Each event is placed
+// in its own ResourceLogs to ensure resource attribute isolation.
 type collector struct {
 	nextConsumer     consumer.Logs
 	eventCh          <-chan event
@@ -47,13 +46,12 @@ func (c *collector) processEvents(ctx context.Context) {
 			return
 		case e := <-c.eventCh:
 			out := plog.NewLogs()
-			rls := out.ResourceLogs().AppendEmpty()
-			logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
-			e.LogRecords().MoveAndAppendTo(logSlice)
+			appendEventToLogs(out, e)
 
-			// Pull out anything waiting on the eventCh to get better
-			// efficiency on LogResource allocations.
-			c.fillBufferUntilChanEmpty(logSlice)
+			// Drain anything waiting on the eventCh into the same plog.Logs
+			// for batching efficiency. Each event gets its own ResourceLogs to
+			// ensure resource attribute isolation across events.
+			c.fillBufferUntilChanEmpty(out)
 
 			logRecordCount := out.LogRecordCount()
 			c.telemetryBuilder.FluentRecordsGenerated.Add(ctx, int64(logRecordCount))
@@ -64,11 +62,19 @@ func (c *collector) processEvents(ctx context.Context) {
 	}
 }
 
-func (c *collector) fillBufferUntilChanEmpty(dest plog.LogRecordSlice) {
+// appendEventToLogs places an event's log records into a new ResourceLogs
+// within out, ensuring resource attribute isolation between events.
+func appendEventToLogs(out plog.Logs, e event) {
+	rls := out.ResourceLogs().AppendEmpty()
+	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
+	e.LogRecords().MoveAndAppendTo(logSlice)
+}
+
+func (c *collector) fillBufferUntilChanEmpty(out plog.Logs) {
 	for {
 		select {
 		case e := <-c.eventCh:
-			e.LogRecords().MoveAndAppendTo(dest)
+			appendEventToLogs(out, e)
 		default:
 			return
 		}
