@@ -20,7 +20,7 @@ type routedEncoding struct {
 // based on path pattern matching with wildcards.
 //
 // Encodings must be pre-sorted by specificity (most specific first, catch-all last).
-// Use S3Config.SortedEncodings() to obtain a correctly sorted slice.
+// Use S3Config.sortedEncodings() to obtain a correctly sorted slice.
 type logsDecoderRouter struct {
 	encodings      []routedEncoding
 	decoders       map[string]encoding.LogsDecoderFactory
@@ -43,7 +43,7 @@ func newLogsDecoderRouter(
 	for i, enc := range encodings {
 		routed[i] = routedEncoding{
 			enc:          enc,
-			patternParts: strings.Split(enc.ResolvePathPattern(), "/"),
+			patternParts: strings.Split(enc.resolvePathPattern(), "/"),
 		}
 	}
 	return &logsDecoderRouter{

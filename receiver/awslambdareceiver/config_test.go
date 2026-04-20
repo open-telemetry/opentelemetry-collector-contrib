@@ -208,7 +208,7 @@ func TestS3EncodingResolvePathPattern(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, tt.enc.ResolvePathPattern())
+			require.Equal(t, tt.expected, tt.enc.resolvePathPattern())
 		})
 	}
 }
@@ -255,7 +255,7 @@ func TestS3ConfigSortedEncodings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sorted := tt.config.SortedEncodings()
+			sorted := tt.config.sortedEncodings()
 			if tt.expectedOrder == nil {
 				require.Nil(t, sorted)
 				return

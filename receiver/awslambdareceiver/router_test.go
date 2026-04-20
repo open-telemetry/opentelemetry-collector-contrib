@@ -126,7 +126,7 @@ func TestLogsDecoderRouter_PatternPriority(t *testing.T) {
 	vpcDecoder := internal.NewDefaultS3LogsDecoder()
 	catchallDecoder := internal.NewDefaultS3LogsDecoder()
 
-	// Formats passed in already sorted (as SortedEncodings() would return).
+	// Formats passed in already sorted (as sortedEncodings() would return).
 	encodings := []S3Encoding{
 		{Name: "vpcflow"}, // default: AWSLogs/*/vpcflowlogs
 		{Name: "catchall", PathPattern: "*"},

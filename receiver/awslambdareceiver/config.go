@@ -40,9 +40,9 @@ type S3Encoding struct {
 	PathPattern string `mapstructure:"path_pattern"`
 }
 
-// ResolvePathPattern returns the effective path pattern for this encoding entry.
+// resolvePathPattern returns the effective path pattern for this encoding entry.
 // Returns the configured PathPattern if set, else the default for known names.
-func (e *S3Encoding) ResolvePathPattern() string {
+func (e *S3Encoding) resolvePathPattern() string {
 	if e.PathPattern != "" {
 		return e.PathPattern
 	}
@@ -53,10 +53,6 @@ func (e *S3Encoding) ResolvePathPattern() string {
 func (e *S3Encoding) Validate() error {
 	if e.Name == "" {
 		return errors.New("'name' is required")
-	}
-	// Catch-all is always valid.
-	if e.PathPattern == catchAllPattern {
-		return nil
 	}
 	// Unknown name without an explicit path_pattern is not routable.
 	if e.PathPattern == "" {
@@ -104,10 +100,10 @@ func (c *S3Config) Validate() error {
 	return nil
 }
 
-// SortedEncodings returns a copy of Encodings sorted by path pattern specificity:
+// sortedEncodings returns a copy of Encodings sorted by path pattern specificity:
 // more-specific patterns first, catch-all "*" last.
 // This makes matching order-independent — users can list encodings in any order.
-func (c *S3Config) SortedEncodings() []S3Encoding {
+func (c *S3Config) sortedEncodings() []S3Encoding {
 	if len(c.Encodings) == 0 {
 		return nil
 	}
@@ -118,15 +114,15 @@ func (c *S3Config) SortedEncodings() []S3Encoding {
 	// as the sort swaps elements.
 	splitCache := make(map[string][]string, len(sorted))
 	for _, enc := range sorted {
-		p := enc.ResolvePathPattern()
+		p := enc.resolvePathPattern()
 		if _, ok := splitCache[p]; !ok {
 			splitCache[p] = strings.Split(p, "/")
 		}
 	}
 
 	sort.SliceStable(sorted, func(i, j int) bool {
-		pi := sorted[i].ResolvePathPattern()
-		pj := sorted[j].ResolvePathPattern()
+		pi := sorted[i].resolvePathPattern()
+		pj := sorted[j].resolvePathPattern()
 		if isCatchAllPattern(pi) && !isCatchAllPattern(pj) {
 			return false
 		}
