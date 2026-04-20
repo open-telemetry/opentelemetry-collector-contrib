@@ -269,7 +269,7 @@ components:
     - receiver/googlecloudpubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
-    - receiver/hostmetrics
+    - receiver/host_metrics
     - receiver/http_check
     - receiver/huaweicloudcesreceiver
     - receiver/icmpcheckreceiver
