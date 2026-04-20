@@ -22,7 +22,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -189,6 +189,9 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 			}
 		}
 		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			if k == "name" || k == "version" || k == "schema_url" {
+				return true
+			}
 			key, err := labelNamer.Build("otel_scope_" + k)
 			if err == nil {
 				l[key] = v.AsString()
@@ -197,10 +200,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 		})
 	}
 
-	for i := 0; i < len(extras); i += 2 {
-		if i+1 >= len(extras) {
-			break
-		}
+	for i := 0; i+1 < len(extras); i += 2 {
 		_, found := l[extras[i]]
 		if found && logOnOverwrite {
 			log.Println("label " + extras[i] + " is overwritten. Check if Prometheus reserved labels are used.")
@@ -487,9 +487,7 @@ func createLabels(name string, baseLabels []prompb.Label, extras ...string) []pr
 	labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
 	copy(labels, baseLabels)
 
-	n := len(extras)
-	n -= n % 2
-	for extrasIdx := 0; extrasIdx < n; extrasIdx += 2 {
+	for extrasIdx := 0; extrasIdx+1 < len(extras); extrasIdx += 2 {
 		labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
 	}
 
