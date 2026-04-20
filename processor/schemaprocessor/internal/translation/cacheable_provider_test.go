@@ -68,7 +68,7 @@ func TestCacheableProviderCounters(t *testing.T) {
 			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(testTel).TelemetrySettings)
 			require.NoError(t, err)
 
-			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5).(*CacheableProvider)
+			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5)
 			cp.telemetryBuilder = tb
 
 			for _, key := range tt.retrievals {

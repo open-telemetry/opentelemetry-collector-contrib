@@ -38,7 +38,7 @@ type CacheableProvider struct {
 // NewCacheableProvider creates a new CacheableProvider.
 // The cooldown parameter is the time to wait before retrying a failed call.
 // The limit parameter is the number of failed calls to allow before setting the cooldown period.
-func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) Provider {
+func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) *CacheableProvider {
 	return &CacheableProvider{
 		provider: provider,
 		// TODO make cache configurable

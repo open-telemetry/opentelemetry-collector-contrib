@@ -74,7 +74,7 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, telemetryBuilder *me
 
 // newCacheableProvider wraps p with a CacheableProvider wired to the manager's telemetry.
 func (m *manager) newCacheableProvider(p Provider) Provider {
-	cp := NewCacheableProvider(p, 5*time.Minute, 5).(*CacheableProvider)
+	cp := NewCacheableProvider(p, 5*time.Minute, 5)
 	cp.telemetryBuilder = m.telemetryBuilder
 	return cp
 }
