@@ -3026,6 +3026,16 @@ func TestStatus(t *testing.T) {
 				Transport: transport,
 			}
 
+			// Wait for server to be ready before starting test steps
+			require.Eventually(t, func() bool {
+				resp, err := client.Get(ts.URL)
+				if err != nil {
+					return false
+				}
+				resp.Body.Close()
+				return true
+			}, time.Second, 10*time.Millisecond, "server failed to become ready")
+
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
 					ts.step()

@@ -1,9 +1,0 @@
-change_type: 'deprecation'
-
-component: receiver/file_log
-
-note: Rename `filelog` receiver to `file_log` with deprecated alias `filelog`
-
-issues: [45339]
-
-change_logs: [user]

@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	dtypes "github.com/docker/docker/api/types"
-	ctypes "github.com/docker/docker/api/types/container"
+	ctypes "github.com/moby/moby/api/types/container"
+	docker "github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -119,10 +119,8 @@ func TestFetchingTimeouts(t *testing.T) {
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		t.Context(),
 		Container{
-			ContainerJSON: &ctypes.InspectResponse{
-				ContainerJSONBase: &ctypes.ContainerJSONBase{
-					ID: "notARealContainerId",
-				},
+			InspectResponse: &ctypes.InspectResponse{
+				ID: "notARealContainerId",
 			},
 		},
 	)
@@ -158,15 +156,13 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	assert.NoError(t, err)
 
 	dc := &Container{
-		ContainerJSON: &ctypes.InspectResponse{
-			ContainerJSONBase: &ctypes.ContainerJSONBase{
-				ID: "notARealContainerId",
-			},
+		InspectResponse: &ctypes.InspectResponse{
+			ID: "notARealContainerId",
 		},
 	}
 
 	statsJSON, err := cli.toStatsJSON(
-		ctypes.StatsResponseReader{
+		docker.ContainerStatsResult{
 			Body: io.NopCloser(strings.NewReader("")),
 		}, dc,
 	)
@@ -174,7 +170,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	assert.Equal(t, io.EOF, err)
 
 	statsJSON, err = cli.toStatsJSON(
-		ctypes.StatsResponseReader{
+		docker.ContainerStatsResult{
 			Body: io.NopCloser(strings.NewReader("{\"Networks\": 123}")),
 		}, dc,
 	)
@@ -197,7 +193,7 @@ func TestFetchContainerStatsAsJSONWithSlowResponse(t *testing.T) {
 	require.NoError(t, err)
 
 	stats, err := cli.FetchContainerStatsAsJSON(t.Context(), Container{
-		ContainerJSON: &ctypes.InspectResponse{ContainerJSONBase: &ctypes.ContainerJSONBase{ID: "test"}},
+		InspectResponse: &ctypes.InspectResponse{ID: "test"},
 	})
 	require.NoError(t, err, "should not fail with context canceled")
 	require.NotNil(t, stats)
@@ -375,22 +371,28 @@ func portableEndpoint(addr string) string {
 }
 
 func TestAPIVersionNegotiation(t *testing.T) {
-	listener, addr := testListener(t)
-	defer func() {
-		assert.NoError(t, listener.Close())
-	}()
+	// moby/moby/client removed NegotiateAPIVersionPing, so version negotiation
+	// can only happen via a real Ping call. We need a test server for that.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("API-Version", "1.45")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer srv.Close()
 
 	config := &Config{
-		Endpoint:         portableEndpoint(addr),
-		Timeout:          50 * time.Millisecond,
+		Endpoint:         srv.URL,
+		Timeout:          5 * time.Second,
 		DockerAPIVersion: "", // empty triggers auto-negotiation
 	}
 
 	cli, err := NewDockerClient(config, zap.NewNop())
-	assert.NotNil(t, cli)
-	assert.NoError(t, err)
-	// Simulate a daemon ping response with API version "1.45".
-	cli.client.NegotiateAPIVersionPing(dtypes.Ping{APIVersion: "1.45"})
+	require.NoError(t, err)
+	require.NotNil(t, cli)
+
+	// Trigger version negotiation via Ping.
+	_, err = cli.client.Ping(t.Context(), docker.PingOptions{NegotiateAPIVersion: true})
+	require.NoError(t, err)
 	assert.Equal(t, "1.45", cli.client.ClientVersion())
 }
 

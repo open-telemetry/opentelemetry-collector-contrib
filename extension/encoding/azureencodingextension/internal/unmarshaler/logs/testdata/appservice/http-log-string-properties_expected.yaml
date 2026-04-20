@@ -1,0 +1,58 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/AZURE-RESOURCE-GROUP-NAME/PROVIDERS/MICROSOFT.WEB/SITES/AZURE-APP-SERVICE-NAME1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: AppServiceHTTPLogs
+              - key: client.address
+                value:
+                  stringValue: 000.00.00.000
+              - key: server.address
+                value:
+                  stringValue: hostname
+              - key: server.port
+                value:
+                  intValue: "80"
+              - key: http.request.size
+                value:
+                  intValue: "1839"
+              - key: http.request.header.host
+                value:
+                  stringValue: host.domain.com
+              - key: http.request.method
+                value:
+                  stringValue: POST
+              - key: url.path
+                value:
+                  stringValue: /connect/token
+              - key: http.response.size
+                value:
+                  intValue: "1330"
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: azure.request.duration
+                value:
+                  doubleValue: 5
+            body:
+              stringValue: Success
+            timeUnixNano: "1775577981625081000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.appservice
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

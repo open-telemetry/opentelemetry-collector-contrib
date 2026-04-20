@@ -15,7 +15,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -270,7 +269,7 @@ func (ci *ContainerInfo) MappedPort(t *testing.T, port string) string {
 
 func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName, port string) string {
 	c := ci.container(t, containerName)
-	p, err := c.MappedPort(t.Context(), nat.Port(port))
+	p, err := c.MappedPort(t.Context(), port)
 	require.NoErrorf(t, err, "get port %q for container %q: %v", port, containerName, err)
 	return p.Port()
 }
