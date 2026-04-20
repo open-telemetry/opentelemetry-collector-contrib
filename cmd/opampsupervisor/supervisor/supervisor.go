@@ -1558,7 +1558,7 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 		}
 	}
 
-	if err = s.loadFallbackExtraConfigs(k); err != nil {
+	if err := s.loadFallbackExtraConfigs(k); err != nil {
 		return false, err
 	}
 
