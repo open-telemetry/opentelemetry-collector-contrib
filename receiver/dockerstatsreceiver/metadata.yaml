@@ -19,7 +19,7 @@ status:
 
 reaggregation_enabled: true
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 tests:
   goleak:
