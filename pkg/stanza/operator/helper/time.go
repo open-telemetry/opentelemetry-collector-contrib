@@ -42,10 +42,10 @@ func NewTimeParser() TimeParser {
 
 // TimeParser is a helper that parses time onto an entry.
 type TimeParser struct {
-	ParseFrom   *entry.Field      `mapstructure:"parse_from"`
-	Layout      string            `mapstructure:"layout"`
-	LayoutType  string            `mapstructure:"layout_type"`
-	Location    string            `mapstructure:"location"`
+	ParseFrom         *entry.Field      `mapstructure:"parse_from"`
+	Layout            string            `mapstructure:"layout"`
+	LayoutType        string            `mapstructure:"layout_type"`
+	Location          string            `mapstructure:"location"`
 	TimeZoneLocations map[string]string `mapstructure:"time_zone_locations"`
 
 	location    *time.Location
@@ -115,7 +115,7 @@ func (t *TimeParser) Validate() error {
 		if err := t.setLocation(); err != nil {
 			return fmt.Errorf("invalid 'location': %w", err)
 		}
-		
+
 		if len(t.TimeZoneLocations) > 0 && !strings.Contains(t.Layout, "MST") {
 			return fmt.Errorf("'time_zone_locations' requires the layout to contain a timezone abbreviation directive (%%Z for strptime / MST for gotime), but layout %q has none", t.Layout)
 		}

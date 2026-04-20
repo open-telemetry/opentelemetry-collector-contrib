@@ -589,8 +589,8 @@ func TestTimeZoneLocations(t *testing.T) {
 	}{
 		{
 			// IST not in time_zone_locations → falls back to location (Asia/Kolkata)
-			name:   "ist-fallback-to-location",
-			sample: "Wed Aug 27 15:08:58 IST 2025",
+			name:     "ist-fallback-to-location",
+			sample:   "Wed Aug 27 15:08:58 IST 2025",
 			location: "Asia/Kolkata",
 			timeZoneLocations: map[string]string{
 				"PDT":  "America/Los_Angeles",
@@ -600,8 +600,8 @@ func TestTimeZoneLocations(t *testing.T) {
 		},
 		{
 			// PDT resolved via time_zone_locations → America/Los_Angeles
-			name:   "pdt-via-time-zone-locations",
-			sample: "Wed Aug 20 14:08:48 PDT 2025",
+			name:     "pdt-via-time-zone-locations",
+			sample:   "Wed Aug 20 14:08:48 PDT 2025",
 			location: "Asia/Kolkata",
 			timeZoneLocations: map[string]string{
 				"PDT":  "America/Los_Angeles",
@@ -613,8 +613,8 @@ func TestTimeZoneLocations(t *testing.T) {
 			// NZST resolved via time_zone_locations → Pacific/Auckland
 			// Use a NZ winter date (July) where NZST (+12:00) is the active offset,
 			// so the expected time and location are unambiguous.
-			name:   "nzst-via-time-zone-locations",
-			sample: "Wed Jul 16 10:00:00 NZST 2025",
+			name:     "nzst-via-time-zone-locations",
+			sample:   "Wed Jul 16 10:00:00 NZST 2025",
 			location: "Asia/Kolkata",
 			timeZoneLocations: map[string]string{
 				"PDT":  "America/Los_Angeles",
