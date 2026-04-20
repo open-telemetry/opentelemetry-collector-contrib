@@ -8,6 +8,7 @@ import (
 	"errors"
 	"math"
 	"runtime"
+	"slices"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -67,9 +68,7 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 	ltp.set.Logger.Info("Stopping logs transform processor")
 	// We call the shutdown functions in reverse order, so that the last thing we started
 	// is stopped first.
-	for i := len(ltp.shutdownFns) - 1; i >= 0; i-- {
-		fn := ltp.shutdownFns[i]
-
+	for _, fn := range slices.Backward(ltp.shutdownFns) {
 		if err := fn(ctx); err != nil {
 			return err
 		}
