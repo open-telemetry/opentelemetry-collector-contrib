@@ -54,5 +54,5 @@ FROM sys.dm_exec_requests r
 INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
 INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
 CROSS APPLY sys.dm_exec_sql_text(r.plan_handle) AS o
-WHERE ISNULL(s.program_name, N'') <> N'otel-collector'
+WHERE o.TEXT NOT LIKE N'/* otel-collector */%'
 	AND r.session_id != @@SPID;

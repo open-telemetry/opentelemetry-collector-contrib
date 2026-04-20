@@ -238,50 +238,6 @@ func TestFactory(t *testing.T) {
 	}
 }
 
-func TestWithSQLServerApplicationName(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want string
-	}{
-		{
-			name: "semicolon DSN appends app name",
-			in:   "server=host;user id=u;password=p;port=1433",
-			want: "server=host;user id=u;password=p;port=1433;app name=otel-collector",
-		},
-		{
-			name: "trim trailing semicolon before append",
-			in:   "server=host;user id=u;",
-			want: "server=host;user id=u;app name=otel-collector",
-		},
-		{
-			name: "sqlserver URL with query",
-			in:   "sqlserver://u:p@host:1433?database=db",
-			want: "sqlserver://u:p@host:1433?database=db&app+name=otel-collector",
-		},
-		{
-			name: "sqlserver URL without query",
-			in:   "sqlserver://u:p@host:1433",
-			want: "sqlserver://u:p@host:1433?app+name=otel-collector",
-		},
-		{
-			name: "unchanged when app name already set",
-			in:   "server=host;app name=custom;user id=u",
-			want: "server=host;app name=custom;user id=u",
-		},
-		{
-			name: "unchanged when application name already set",
-			in:   "server=host;application name=custom;user id=u",
-			want: "server=host;application name=custom;user id=u",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, withSQLServerApplicationName(tt.in))
-		})
-	}
-}
-
 func TestNewCache(t *testing.T) {
 	var cache *lru.Cache[string, int64]
 	// even when size is less than 0, cache should be created with size 1.

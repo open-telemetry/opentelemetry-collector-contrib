@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/sqlserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Exclude collector's own session from Query Sample collection to prevent feedback loop.
+note: Exclude collector's own queries from Query Sample collection to prevent feedback loop.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47332]
@@ -16,9 +16,9 @@ issues: [47332]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Sets SQL Server client application name to otel-collector on receiver connections, pins the
-  database/sql pool to a single session so that name applies consistently, and filters Query Sample
-  collection with sys.dm_exec_sessions.program_name (and @@SPID) instead of matching SQL text.
+  Adds a /* otel-collector */ comment prefix to the Query Sample SQL template and filters it out
+  via a WHERE clause on sys.dm_exec_sql_text. Also excludes the current session via @@SPID.
+  Top Query collection is intentionally left unfiltered so users can see the monitoring cost.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
