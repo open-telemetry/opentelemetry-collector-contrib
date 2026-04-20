@@ -79,6 +79,8 @@ type S3Config struct {
 	// Encodings defines multiple encoding entries for S3 path-based routing (multi-format mode).
 	// Each entry maps a path_pattern prefix to an encoding extension.
 	// Mutually exclusive with sharedConfig.Encoding.
+	//
+	// Only supported for logs signal type. Metrics receivers reject configs that set this field.
 	Encodings []S3Encoding `mapstructure:"encodings"`
 }
 

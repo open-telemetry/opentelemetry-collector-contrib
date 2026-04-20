@@ -312,6 +312,10 @@ func newMetricsHandler(
 	s3Provider internal.S3Provider,
 ) (handlerProvider, error) {
 	logger := set.Logger
+	// Multi-format routing via 's3.encodings' is only supported for logs.
+	if len(cfg.S3.Encodings) > 0 {
+		return nil, errors.New("'s3.encodings' is only supported for the logs signal type; use 's3.encoding' for metrics")
+	}
 	extensionID := defaultMetricsEncodingExtension
 	// Note: for metrics, we currently support S3 trigger only.
 	if cfg.S3.Encoding != "" {

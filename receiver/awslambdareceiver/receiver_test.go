@@ -632,6 +632,28 @@ func TestBuildS3LogsRouter_RawPassthrough(t *testing.T) {
 	assert.NotNil(t, decoder)
 }
 
+func TestNewMetricsHandler_EncodingsNotSupported(t *testing.T) {
+	// Multi-format routing via 's3.encodings' is logs-only. Verify that the metrics handler
+	// rejects configs that set this field.
+	cfg := &Config{
+		S3: S3Config{
+			Encodings: []S3Encoding{{Name: "cloudwatch-metrics", PathPattern: "*"}},
+		},
+	}
+
+	ctr := gomock.NewController(t)
+	s3Provider := internal.NewMockS3Provider(ctr)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	host := componenttest.NewNopHost()
+	sink := &consumertest.MetricsSink{}
+
+	hp, err := newMetricsHandler(t.Context(), cfg, settings, host, sink, s3Provider)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "'s3.encodings' is only supported for the logs signal type")
+	assert.Nil(t, hp)
+}
+
 type mockExtensionWithPLogUnmarshaler struct {
 	mockExtension    // Embed the base mock implementation.
 	plog.Unmarshaler // Add the unmarshaler interface when needed.
