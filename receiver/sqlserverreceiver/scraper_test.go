@@ -823,11 +823,10 @@ func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string
 	}
 }
 
-func buildIdleBlockerRow(sessionID, blockingStartTime string) sqlquery.StringMap {
+func buildIdleBlockerRow(sessionID string) sqlquery.StringMap {
 	row := buildQuerySampleRow(sessionID, "0", "IDLE_BLOCKER", "SELECT 1")
 	row["session_status"] = "sleeping"
 	row["request_status"] = ""
-	row["blocking_start_time"] = blockingStartTime
 	return row
 }
 
@@ -836,7 +835,7 @@ func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
 	scraper.db = &sql.DB{}
 
 	mainRows := []sqlquery.StringMap{buildQuerySampleRow("60", "77", "SELECT", "SELECT 2")}
-	idleRows := []sqlquery.StringMap{buildIdleBlockerRow("77", "2025-02-12T16:37:53.000+08:00")}
+	idleRows := []sqlquery.StringMap{buildIdleBlockerRow("77")}
 
 	idleQueryCalls := 0
 	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
@@ -844,8 +843,12 @@ func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
 	}}
 	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
 		assert.Equal(t, getSQLServerIdleBlockingSessionsQuery(), query)
-		return queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
 			idleQueryCalls++
+			assert.Equal(t, []any{
+				sql.Named("top", scraper.config.MaxRowsPerQuery),
+				sql.Named("ids", "77"),
+			}, args)
 			return idleRows, nil
 		}}
 	}
@@ -865,6 +868,8 @@ func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
 			sessionID, hasSessionID := attrs.Get("sqlserver.session_id")
 			assert.True(t, hasSessionID)
 			assert.Equal(t, int64(77), sessionID.Int())
+			_, hasBlockingStartTime := attrs.Get("sqlserver.blocking.start_time")
+			assert.False(t, hasBlockingStartTime)
 		}
 	}
 	assert.True(t, foundIdleBlocker)
@@ -907,9 +912,14 @@ func TestRecordDatabaseSampleQueryIdleBlockerQueryFailureDoesNotFailScrape(t *te
 	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
 		return mainRows, nil
 	}}
-	scraper.clientProviderFunc = func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
-		return queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+		assert.Equal(t, getSQLServerIdleBlockingSessionsQuery(), query)
+		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
 			idleQueryCalls++
+			assert.Equal(t, []any{
+				sql.Named("top", scraper.config.MaxRowsPerQuery),
+				sql.Named("ids", "77"),
+			}, args)
 			return nil, errors.New("idle blocker query failed")
 		}}
 	}

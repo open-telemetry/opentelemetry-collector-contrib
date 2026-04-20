@@ -1,13 +1,3 @@
-WITH blocking_session_ids AS (
-  SELECT DISTINCT r.blocking_session_id
-  FROM sys.dm_exec_requests r
-  WHERE r.blocking_session_id > 0
-    AND NOT EXISTS (
-      SELECT 1
-      FROM sys.dm_exec_requests ar
-      WHERE ar.session_id = r.blocking_session_id
-    )
-)
 SELECT TOP(@top)
   REPLACE(@@SERVERNAME,'\\',':') AS [sql_instance],
   HOST_NAME() AS [computer_name],
@@ -22,21 +12,7 @@ SELECT TOP(@top)
   'IDLE_BLOCKER' AS command,
   ISNULL(o.TEXT, '') AS statement_text,
   CAST(0 AS SMALLINT) AS blocking_session_id,
-  (
-    SELECT TOP (1)
-      CONVERT(
-        NVARCHAR,
-        TODATETIMEOFFSET(
-          DATEADD(MILLISECOND, -wt.wait_duration_ms, SYSDATETIME()),
-          DATEPART(TZOFFSET, SYSDATETIMEOFFSET())
-        ),
-        126
-      )
-    FROM sys.dm_exec_requests br
-    INNER JOIN sys.dm_os_waiting_tasks wt ON wt.session_id = br.session_id
-    WHERE br.blocking_session_id = s.session_id
-    ORDER BY wt.wait_duration_ms DESC
-  ) AS blocking_start_time,
+  '' AS blocking_start_time,
   '' AS wait_type,
   CAST(0 AS INT) AS wait_time,
   '' AS wait_resource,
@@ -59,10 +35,8 @@ SELECT TOP(@top)
   s.login_name AS username,
   '' AS procedure_id,
   '' AS procedure_name
-FROM blocking_session_ids bsi
-INNER JOIN sys.dm_exec_sessions s ON bsi.blocking_session_id = s.session_id
+FROM sys.dm_exec_sessions s
 LEFT JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
 OUTER APPLY sys.dm_exec_sql_text(c.most_recent_sql_handle) AS o
-WHERE s.status = 'sleeping';
-
-
+WHERE s.status = 'sleeping'
+  AND CHARINDEX(',' + CONVERT(VARCHAR(20), s.session_id) + ',', ',' + @ids + ',') > 0;

@@ -149,3 +149,12 @@ func TestGetSQLServerIdleBlockingSessionsQuery(t *testing.T) {
 	actual := strings.ReplaceAll(getSQLServerIdleBlockingSessionsQuery(), "\r\n", "\n")
 	require.Equal(t, expected, actual)
 }
+
+func TestFormatSQLServerSessionIDsParam(t *testing.T) {
+	actual := formatSQLServerSessionIDsParam(map[int64]struct{}{
+		91: {},
+		60: {},
+		77: {},
+	})
+	require.Equal(t, "60,77,91", actual)
+}

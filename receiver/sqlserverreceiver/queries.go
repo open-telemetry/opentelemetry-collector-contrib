@@ -6,6 +6,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	_ "embed"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -406,6 +407,22 @@ var sqlServerIdleBlockingQuerySamples string
 
 func getSQLServerIdleBlockingSessionsQuery() string {
 	return sqlServerIdleBlockingQuerySamples
+}
+
+func formatSQLServerSessionIDsParam(sessionIDs map[int64]struct{}) string {
+	idValues := make([]int64, 0, len(sessionIDs))
+	for sessionID := range sessionIDs {
+		idValues = append(idValues, sessionID)
+	}
+	sort.Slice(idValues, func(i, j int) bool {
+		return idValues[i] < idValues[j]
+	})
+
+	filterParts := make([]string, 0, len(idValues))
+	for _, sessionID := range idValues {
+		filterParts = append(filterParts, fmt.Sprintf("%d", sessionID))
+	}
+	return strings.Join(filterParts, ",")
 }
 
 // Conditional check based on Azure SQL DB v/s the rest aka (Azure SQL Managed instance OR On-prem SQL Server)

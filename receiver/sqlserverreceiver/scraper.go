@@ -1152,6 +1152,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		idleRows, idleErr := idleBlockingClient.QueryRows(
 			ctx,
 			sql.Named("top", s.config.MaxRowsPerQuery),
+			sql.Named("ids", formatSQLServerSessionIDsParam(missingBlockingSessionIDs)),
 		)
 		if idleErr != nil {
 			s.logger.Warn("problems encountered getting idle blocker log rows", zap.Error(idleErr))
