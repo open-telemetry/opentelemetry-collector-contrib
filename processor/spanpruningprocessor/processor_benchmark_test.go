@@ -132,7 +132,7 @@ func BenchmarkExecuteAggregations(b *testing.B) {
 		plan := proc.buildAggregationPlan(groups)
 
 		b.StartTimer()
-		proc.executeAggregations(plan)
+		proc.executeAggregations(plan, tree)
 		b.StopTimer()
 	}
 }

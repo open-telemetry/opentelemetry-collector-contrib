@@ -144,7 +144,7 @@ func (p *spanPruningProcessor) processTrace(ctx context.Context, spans []spanInf
 	plan := p.buildAggregationPlan(aggregationGroups)
 
 	// Phase 3: Execute aggregations (top-down) and record pruned spans
-	prunedCount := p.executeAggregations(plan)
+	prunedCount := p.executeAggregations(plan, tree)
 
 	// Record telemetry after aggregation is complete
 	p.telemetryBuilder.ProcessorSpanpruningSpansPruned.Add(ctx, int64(prunedCount))
