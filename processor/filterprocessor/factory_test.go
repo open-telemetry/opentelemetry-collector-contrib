@@ -47,10 +47,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, false)
+		_ = featuregate.GlobalRegistry().Set(metadata.ProcessorFilterDefaultErrorModeIgnoreFeatureGate.ID(), false)
 	})
 
-	err := featuregate.GlobalRegistry().Set(defaultErrorModeIgnoreGateID, true)
+	err := featuregate.GlobalRegistry().Set(metadata.ProcessorFilterDefaultErrorModeIgnoreFeatureGate.ID(), true)
 	require.NoError(t, err)
 
 	cfg = factory.CreateDefaultConfig()
