@@ -623,7 +623,7 @@ func TestTimeZoneLocations(t *testing.T) {
 			expected: time.Date(2025, time.July, 16, 10, 0, 0, 0, auckland),
 		},
 		{
-			// no time_zone_locations configured — existing single-location behaviour unchanged
+			// no time_zone_locations configured — existing single-location behavior unchanged
 			name:     "single-location-no-map",
 			sample:   "Wed Aug 27 15:08:58 IST 2025",
 			location: "Asia/Kolkata",

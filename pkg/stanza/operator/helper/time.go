@@ -46,10 +46,10 @@ type TimeParser struct {
 	Layout            string            `mapstructure:"layout"`
 	LayoutType        string            `mapstructure:"layout_type"`
 	Location          string            `mapstructure:"location"`
-	TimeZoneLocations map[string]string `mapstructure:"time_zone_locations"`
+	TimeZoneLocations map[string]string `mapstructure:"time_zone_locations"` // optional: abbreviation → IANA location name
 
 	location    *time.Location
-	locationMap map[string]*time.Location
+	locationMap map[string]*time.Location // compiled from TimeZoneLocations at Validate() time
 }
 
 // Unmarshal starting from default settings
@@ -125,17 +125,18 @@ func (t *TimeParser) Validate() error {
 }
 
 func (t *TimeParser) setLocation() error {
-	if t.Location != "" {
+	switch {
+	case t.Location != "":
 		// If "location" is specified, it must be in the local timezone database
 		loc, err := time.LoadLocation(t.Location)
 		if err != nil {
 			return fmt.Errorf("failed to load location %s: %w", t.Location, err)
 		}
 		t.location = loc
-	} else if strings.HasSuffix(t.Layout, "Z") {
-		// If a timestamp ends with 'Z', it should be interpretted at Zulu (UTC) time
+	case strings.HasSuffix(t.Layout, "Z"):
+		// If a timestamp ends with 'Z', it should be interpreted at Zulu (UTC) time
 		t.location = time.UTC
-	} else {
+	default:
 		t.location = time.Local
 	}
 
