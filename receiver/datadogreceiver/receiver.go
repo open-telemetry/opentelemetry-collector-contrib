@@ -258,11 +258,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 			)
 		}
 
-		ddr.wg.Add(1)
-		go func() {
-			defer ddr.wg.Done()
-			ddr.runIdleSeriesCleanup()
-		}()
+		ddr.wg.Go(ddr.runIdleSeriesCleanup)
 	}
 
 	return nil
