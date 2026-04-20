@@ -169,7 +169,7 @@ components:
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
+        - host_metrics
         - http_check
         - iis
         - influxdb
@@ -232,7 +232,7 @@ components:
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
         - yang_grpc

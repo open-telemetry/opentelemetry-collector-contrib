@@ -4,24 +4,24 @@ go 1.25.0
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0
-	cloud.google.com/go/storage v1.62.0
+	cloud.google.com/go/storage v1.62.1
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.18.5
 	github.com/lestrrat-go/strftime v1.1.1
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/collector/component v1.55.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/component/componenttest v0.149.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/config/configcompression v1.55.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/confmap v1.55.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/confmap/xconfmap v0.149.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/consumer v1.55.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/exporter v1.55.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/exporter/xexporter v0.149.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/extension v1.55.1-0.20260409104450-d686cf9058ce
-	go.opentelemetry.io/collector/pdata v1.55.1-0.20260409104450-d686cf9058ce
+	go.opentelemetry.io/collector/component v1.56.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/component/componenttest v0.150.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/config/configcompression v1.56.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/confmap v1.56.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/confmap/xconfmap v0.150.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/consumer v1.56.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/exporter v1.56.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/exporter/xexporter v0.150.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/extension v1.56.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/pdata v1.56.1-0.20260415114935-307e3abdbae9
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
-	google.golang.org/api v0.275.0
+	google.golang.org/api v0.276.0
 )
 
 require (
@@ -29,7 +29,7 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.20.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
-	cloud.google.com/go/iam v1.6.0 // indirect
+	cloud.google.com/go/iam v1.7.0 // indirect
 	cloud.google.com/go/monitoring v1.24.3 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.31.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0 // indirect
@@ -61,11 +61,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.149.1-0.20260409104450-d686cf9058ce // indirect
-	go.opentelemetry.io/collector/featuregate v1.55.1-0.20260409104450-d686cf9058ce // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.149.1-0.20260409104450-d686cf9058ce // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.149.1-0.20260409104450-d686cf9058ce // indirect
-	go.opentelemetry.io/collector/pipeline v1.55.1-0.20260409104450-d686cf9058ce // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.150.1-0.20260415114935-307e3abdbae9 // indirect
+	go.opentelemetry.io/collector/featuregate v1.56.1-0.20260415114935-307e3abdbae9 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.150.1-0.20260415114935-307e3abdbae9 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.150.1-0.20260415114935-307e3abdbae9 // indirect
+	go.opentelemetry.io/collector/pipeline v1.56.1-0.20260415114935-307e3abdbae9 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
@@ -84,7 +84,7 @@ require (
 	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260401001100-f93e5f3e9f0f // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260401024825-9d38bb4040a9 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260401024825-9d38bb4040a9 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect

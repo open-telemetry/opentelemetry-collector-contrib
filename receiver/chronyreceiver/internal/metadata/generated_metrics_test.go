@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -37,6 +38,11 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetAll,
 		},
 		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
+		},
+		{
 			name:        "none_set",
 			metricsSet:  testDataSetNone,
 			resAttrsSet: testDataSetNone,
@@ -51,15 +57,26 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["NtpFrequencyOffset"] = mb.metricNtpFrequencyOffset.config.AggregationStrategy
+			aggMap["NtpTimeCorrection"] = mb.metricNtpTimeCorrection.config.AggregationStrategy
+			aggMap["NtpTimeLastOffset"] = mb.metricNtpTimeLastOffset.config.AggregationStrategy
+			aggMap["NtpTimeRmsOffset"] = mb.metricNtpTimeRmsOffset.config.AggregationStrategy
+			aggMap["NtpTimeRootDelay"] = mb.metricNtpTimeRootDelay.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
 			mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordNtpFrequencyOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -71,19 +88,38 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordNtpTimeCorrectionDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordNtpTimeLastOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+			}
 
 			allMetricsCount++
 			mb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordNtpTimeRmsOffsetDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+			}
 
 			allMetricsCount++
 			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatusNormal)
+			if tt.name == "reaggregate_set" {
+				mb.RecordNtpTimeRootDelayDataPoint(ts, 3, AttributeLeapStatusInsertSecond)
+			}
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricNtpFrequencyOffset.aggDataPoints)
+				assert.Empty(t, mb.metricNtpTimeCorrection.aggDataPoints)
+				assert.Empty(t, mb.metricNtpTimeLastOffset.aggDataPoints)
+				assert.Empty(t, mb.metricNtpTimeRmsOffset.aggDataPoints)
+				assert.Empty(t, mb.metricNtpTimeRootDelay.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -111,20 +147,45 @@ func TestMetricsBuilder(t *testing.T) {
 			for _, mi := range allMetricsList {
 				switch mi.Name() {
 				case "ntp.frequency.offset":
-					assert.False(t, validatedMetrics["ntp.frequency.offset"], "Found a duplicate in the metrics slice: ntp.frequency.offset")
-					validatedMetrics["ntp.frequency.offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.", mi.Description())
-					assert.Equal(t, "ppm", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
-					assert.True(t, ok)
-					assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ntp.frequency.offset"], "Found a duplicate in the metrics slice: ntp.frequency.offset")
+						validatedMetrics["ntp.frequency.offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.", mi.Description())
+						assert.Equal(t, "ppm", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
+						assert.True(t, ok)
+						assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["ntp.frequency.offset"], "Found a duplicate in the metrics slice: ntp.frequency.offset")
+						validatedMetrics["ntp.frequency.offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.", mi.Description())
+						assert.Equal(t, "ppm", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["ntp.frequency.offset"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("leap.status")
+						assert.False(t, ok)
+					}
 				case "ntp.skew":
 					assert.False(t, validatedMetrics["ntp.skew"], "Found a duplicate in the metrics slice: ntp.skew")
 					validatedMetrics["ntp.skew"] = true
@@ -150,65 +211,165 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "ntp.time.correction":
-					assert.False(t, validatedMetrics["ntp.time.correction"], "Found a duplicate in the metrics slice: ntp.time.correction")
-					validatedMetrics["ntp.time.correction"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of seconds difference between the system's clock and the reference clock", mi.Description())
-					assert.Equal(t, "seconds", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
-					assert.True(t, ok)
-					assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ntp.time.correction"], "Found a duplicate in the metrics slice: ntp.time.correction")
+						validatedMetrics["ntp.time.correction"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of seconds difference between the system's clock and the reference clock", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
+						assert.True(t, ok)
+						assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["ntp.time.correction"], "Found a duplicate in the metrics slice: ntp.time.correction")
+						validatedMetrics["ntp.time.correction"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of seconds difference between the system's clock and the reference clock", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["ntp.time.correction"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("leap.status")
+						assert.False(t, ok)
+					}
 				case "ntp.time.last_offset":
-					assert.False(t, validatedMetrics["ntp.time.last_offset"], "Found a duplicate in the metrics slice: ntp.time.last_offset")
-					validatedMetrics["ntp.time.last_offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The estimated local offset on the last clock update", mi.Description())
-					assert.Equal(t, "seconds", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
-					assert.True(t, ok)
-					assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ntp.time.last_offset"], "Found a duplicate in the metrics slice: ntp.time.last_offset")
+						validatedMetrics["ntp.time.last_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The estimated local offset on the last clock update", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
+						assert.True(t, ok)
+						assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["ntp.time.last_offset"], "Found a duplicate in the metrics slice: ntp.time.last_offset")
+						validatedMetrics["ntp.time.last_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The estimated local offset on the last clock update", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["ntp.time.last_offset"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("leap.status")
+						assert.False(t, ok)
+					}
 				case "ntp.time.rms_offset":
-					assert.False(t, validatedMetrics["ntp.time.rms_offset"], "Found a duplicate in the metrics slice: ntp.time.rms_offset")
-					validatedMetrics["ntp.time.rms_offset"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "the long term average of the offset value", mi.Description())
-					assert.Equal(t, "seconds", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
-					assert.True(t, ok)
-					assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ntp.time.rms_offset"], "Found a duplicate in the metrics slice: ntp.time.rms_offset")
+						validatedMetrics["ntp.time.rms_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "the long term average of the offset value", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
+						assert.True(t, ok)
+						assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["ntp.time.rms_offset"], "Found a duplicate in the metrics slice: ntp.time.rms_offset")
+						validatedMetrics["ntp.time.rms_offset"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "the long term average of the offset value", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["ntp.time.rms_offset"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("leap.status")
+						assert.False(t, ok)
+					}
 				case "ntp.time.root_delay":
-					assert.False(t, validatedMetrics["ntp.time.root_delay"], "Found a duplicate in the metrics slice: ntp.time.root_delay")
-					validatedMetrics["ntp.time.root_delay"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.", mi.Description())
-					assert.Equal(t, "seconds", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
-					assert.True(t, ok)
-					assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["ntp.time.root_delay"], "Found a duplicate in the metrics slice: ntp.time.root_delay")
+						validatedMetrics["ntp.time.root_delay"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						leapStatusAttrVal, ok := dp.Attributes().Get("leap.status")
+						assert.True(t, ok)
+						assert.Equal(t, "normal", leapStatusAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["ntp.time.root_delay"], "Found a duplicate in the metrics slice: ntp.time.root_delay")
+						validatedMetrics["ntp.time.root_delay"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.", mi.Description())
+						assert.Equal(t, "seconds", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["ntp.time.root_delay"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("leap.status")
+						assert.False(t, ok)
+					}
 				}
 			}
 		})
