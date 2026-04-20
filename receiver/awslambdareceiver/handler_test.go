@@ -36,6 +36,14 @@ import (
 
 const testDataDirectory = "testdata"
 
+// fixedLogsDecoder wraps a single LogsDecoderFactory in the getDecoder signature
+// expected by newS3LogsHandler. Helper for tests using a fixed decoder.
+func fixedLogsDecoder(factory encoding.LogsDecoderFactory) func(string) (encoding.LogsDecoderFactory, string, error) {
+	return func(string) (encoding.LogsDecoderFactory, string, error) {
+		return factory, "", nil
+	}
+}
+
 func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 	t.Parallel()
 
@@ -225,7 +233,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
 				AnyTimes()
 
-			handler := newS3LogsHandler(s3Service, zap.NewNop(), test.extension, test.eventConsumer)
+			handler := newS3LogsHandler(s3Service, zap.NewNop(), fixedLogsDecoder(test.extension), test.eventConsumer)
 
 			var event json.RawMessage
 			event, err := json.Marshal(test.s3Event)
@@ -510,7 +518,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 				Return(io.NopCloser(bytes.NewReader([]byte("object content"))), nil).
 				Times(1)
 
-			handler := newS3LogsHandler(s3Service, zap.NewNop(), &customLogUnmarshaler{}, &noOpLogsConsumer{err: test.consumerErr})
+			handler := newS3LogsHandler(s3Service, zap.NewNop(), fixedLogsDecoder(&customLogUnmarshaler{}), &noOpLogsConsumer{err: test.consumerErr})
 
 			event, err := json.Marshal(mockEvent)
 			require.NoError(t, err)
@@ -807,7 +815,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 				AnyTimes()
 
 			router := newLogsDecoderRouter(test.encodings, test.decoders)
-			handler := newMultiFormatS3LogsHandler(s3Service, zap.NewNop(), router, &noOpLogsConsumer{})
+			handler := newS3LogsHandler(s3Service, zap.NewNop(), router.GetDecoder, &noOpLogsConsumer{})
 
 			event, err := json.Marshal(test.s3Event)
 			require.NoError(t, err)

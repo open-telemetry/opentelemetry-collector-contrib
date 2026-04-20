@@ -571,7 +571,9 @@ func TestS3MultiEncodingConfig_Validate(t *testing.T) {
 }
 
 func TestNewLogsHandler_MultiEncodingS3_Branch(t *testing.T) {
-	// Verify that newLogsHandler uses the multi-format branch when cfg.S3.Encodings is non-empty.
+	// Verify that newLogsHandler succeeds when cfg.S3.Encodings is non-empty (multi-format
+	// path builds a router). Both branches produce *s3Handler after the handler unification,
+	// so the test just verifies construction succeeds and the S3 handler is registered.
 	cfg := &Config{
 		S3: S3Config{
 			Encodings: []S3Encoding{
@@ -596,11 +598,9 @@ func TestNewLogsHandler_MultiEncodingS3_Branch(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, hp)
 
-	// The registered handler must be the multi-format variant.
 	handler, err := hp.getHandler(s3Event)
 	require.NoError(t, err)
-	_, ok := handler.(*multiFormatS3LogsHandler)
-	require.True(t, ok, "expected *multiFormatS3LogsHandler, got %T", handler)
+	require.NotNil(t, handler)
 }
 
 func TestBuildS3LogsRouter_RawPassthrough(t *testing.T) {

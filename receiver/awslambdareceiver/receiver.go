@@ -236,13 +236,15 @@ func newLogsHandler(
 
 	registry := make(handlerRegistry)
 
-	// S3: multi-encoding or single-encoding
+	// S3: multi-encoding or single-encoding. Both paths resolve to newS3LogsHandler,
+	// which accepts a per-event getDecoder function.
+	var getLogsDecoder func(objectKey string) (encoding.LogsDecoderFactory, string, error)
 	if len(cfg.S3.Encodings) > 0 {
 		s3Router, buildErr := buildS3LogsRouter(host, cfg.S3, logger)
 		if buildErr != nil {
 			return nil, fmt.Errorf("failed to build S3 multi-encoding router: %w", buildErr)
 		}
-		registry[s3Event] = newMultiFormatS3LogsHandler(s3Service, logger, s3Router, next)
+		getLogsDecoder = s3Router.GetDecoder
 	} else {
 		s3LogsDecoder := internal.NewDefaultS3LogsDecoder()
 		if cfg.S3.Encoding != "" {
@@ -252,8 +254,12 @@ func newLogsHandler(
 				return nil, err
 			}
 		}
-		registry[s3Event] = newS3LogsHandler(s3Service, logger, s3LogsDecoder, next)
+		encodingName := cfg.S3.Encoding
+		getLogsDecoder = func(_ string) (encoding.LogsDecoderFactory, string, error) {
+			return s3LogsDecoder, encodingName, nil
+		}
 	}
+	registry[s3Event] = newS3LogsHandler(s3Service, logger, getLogsDecoder, next)
 
 	// CloudWatch: single-encoding path unchanged in this PR.
 	cwDecoder := internal.NewDefaultCWLogsDecoder()
