@@ -1558,8 +1558,8 @@ func (s *Supervisor) composeFallbackConfig() (configChanged bool, err error) {
 		}
 	}
 
-	if err := s.loadFallbackExtraConfigs(k); err != nil {
-		return false, err
+	if extraCfgErr := s.loadFallbackExtraConfigs(k); extraCfgErr != nil {
+		return false, extraCfgErr
 	}
 
 	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
