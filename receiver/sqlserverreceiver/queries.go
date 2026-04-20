@@ -6,7 +6,7 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	_ "embed"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -414,9 +414,7 @@ func formatSQLServerSessionIDsParam(sessionIDs map[int64]struct{}) string {
 	for sessionID := range sessionIDs {
 		idValues = append(idValues, sessionID)
 	}
-	sort.Slice(idValues, func(i, j int) bool {
-		return idValues[i] < idValues[j]
-	})
+	slices.Sort(idValues)
 
 	filterParts := make([]string, 0, len(idValues))
 	for _, sessionID := range idValues {
