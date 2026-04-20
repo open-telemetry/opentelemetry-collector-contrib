@@ -139,9 +139,6 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: exporter/googlecloudexporter/
-      - linters:
-          - forbidigo
         path: exporter/prometheusremotewriteexporter/
       - linters:
           - forbidigo
@@ -161,9 +158,6 @@ linters:
       - linters:
           - forbidigo
         path: pkg/translator/prometheus/
-      - linters:
-          - forbidigo
-        path: processor/tailsamplingprocessor/
       - linters:
           - forbidigo
         path: receiver/awscontainerinsightreceiver/
