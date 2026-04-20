@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -119,6 +120,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeNetworkIo: MetricConfig{
 						Enabled: true,
 					},
+					K8sNodeSystemContainerCPUTime: MetricConfig{
+						Enabled: true,
+					},
+					K8sNodeSystemContainerCPUUsage: MetricConfig{
+						Enabled: true,
+					},
+					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
+						Enabled: true,
+					},
 					K8sNodeUptime: MetricConfig{
 						Enabled: true,
 					},
@@ -211,6 +221,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerName:             ResourceAttributeConfig{Enabled: true},
 					K8sNamespaceName:             ResourceAttributeConfig{Enabled: true},
 					K8sNodeName:                  ResourceAttributeConfig{Enabled: true},
+					K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: true},
 					K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: true},
 					K8sPodName:                   ResourceAttributeConfig{Enabled: true},
 					K8sPodUID:                    ResourceAttributeConfig{Enabled: true},
@@ -317,6 +328,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeNetworkIo: MetricConfig{
 						Enabled: false,
 					},
+					K8sNodeSystemContainerCPUTime: MetricConfig{
+						Enabled: false,
+					},
+					K8sNodeSystemContainerCPUUsage: MetricConfig{
+						Enabled: false,
+					},
+					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
+						Enabled: false,
+					},
 					K8sNodeUptime: MetricConfig{
 						Enabled: false,
 					},
@@ -409,6 +429,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerName:             ResourceAttributeConfig{Enabled: false},
 					K8sNamespaceName:             ResourceAttributeConfig{Enabled: false},
 					K8sNodeName:                  ResourceAttributeConfig{Enabled: false},
+					K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: false},
 					K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: false},
 					K8sPodName:                   ResourceAttributeConfig{Enabled: false},
 					K8sPodUID:                    ResourceAttributeConfig{Enabled: false},
@@ -459,6 +480,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sContainerName:             ResourceAttributeConfig{Enabled: true},
 				K8sNamespaceName:             ResourceAttributeConfig{Enabled: true},
 				K8sNodeName:                  ResourceAttributeConfig{Enabled: true},
+				K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: true},
 				K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: true},
 				K8sPodName:                   ResourceAttributeConfig{Enabled: true},
 				K8sPodUID:                    ResourceAttributeConfig{Enabled: true},
@@ -479,6 +501,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sContainerName:             ResourceAttributeConfig{Enabled: false},
 				K8sNamespaceName:             ResourceAttributeConfig{Enabled: false},
 				K8sNodeName:                  ResourceAttributeConfig{Enabled: false},
+				K8sNodeSystemContainerName:   ResourceAttributeConfig{Enabled: false},
 				K8sPersistentvolumeclaimName: ResourceAttributeConfig{Enabled: false},
 				K8sPodName:                   ResourceAttributeConfig{Enabled: false},
 				K8sPodUID:                    ResourceAttributeConfig{Enabled: false},
