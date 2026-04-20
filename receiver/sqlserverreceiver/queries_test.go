@@ -142,7 +142,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 }
 
 func TestGetSQLServerIdleBlockingSessionsQuery(t *testing.T) {
-	expectedBytes, err := os.ReadFile(path.Join("./testdata", "testIdleBlockingQuerySampleQuery.txt"))
+	expectedBytes, err := os.ReadFile(path.Join("./testdata", "testIdleBlockerQuerySampleQuery.txt"))
 	require.NoError(t, err)
 
 	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")

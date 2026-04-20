@@ -402,7 +402,7 @@ func getSQLServerQuerySamplesQuery() string {
 	return sqlServerQuerySamples
 }
 
-//go:embed templates/sqlServerIdleBlockingQuerySample.tmpl
+//go:embed templates/sqlServerIdleBlockerQuerySample.tmpl
 var sqlServerIdleBlockingQuerySamples string
 
 func getSQLServerIdleBlockingSessionsQuery() string {

@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -842,12 +843,12 @@ func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
 		return mainRows, nil
 	}}
 	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
-		assert.Equal(t, getSQLServerIdleBlockingSessionsQuery(), query)
+		expectedQuery := fmt.Sprintf(getSQLServerIdleBlockingSessionsQuery(), "77")
+		assert.Equal(t, expectedQuery, query)
 		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
 			idleQueryCalls++
 			assert.Equal(t, []any{
 				sql.Named("top", scraper.config.MaxRowsPerQuery),
-				sql.Named("ids", "77"),
 			}, args)
 			return idleRows, nil
 		}}
@@ -913,12 +914,12 @@ func TestRecordDatabaseSampleQueryIdleBlockerQueryFailureDoesNotFailScrape(t *te
 		return mainRows, nil
 	}}
 	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
-		assert.Equal(t, getSQLServerIdleBlockingSessionsQuery(), query)
+		expectedQuery := fmt.Sprintf(getSQLServerIdleBlockingSessionsQuery(), "77")
+		assert.Equal(t, expectedQuery, query)
 		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
 			idleQueryCalls++
 			assert.Equal(t, []any{
 				sql.Named("top", scraper.config.MaxRowsPerQuery),
-				sql.Named("ids", "77"),
 			}, args)
 			return nil, errors.New("idle blocker query failed")
 		}}

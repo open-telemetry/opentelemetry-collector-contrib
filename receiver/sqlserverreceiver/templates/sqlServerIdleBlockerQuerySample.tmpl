@@ -38,5 +38,5 @@ SELECT TOP(@top)
 FROM sys.dm_exec_sessions s
 LEFT JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
 OUTER APPLY sys.dm_exec_sql_text(c.most_recent_sql_handle) AS o
-WHERE s.status = 'sleeping'
-  AND CHARINDEX(',' + CONVERT(VARCHAR(20), s.session_id) + ',', ',' + @ids + ',') > 0;
+WHERE s.session_id IN (%s);
+
