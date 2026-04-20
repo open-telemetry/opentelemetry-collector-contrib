@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
@@ -42,6 +43,9 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 	assert.Equal(t, "us-west-2a", fetchResp.AvailabilityZone)
 	assert.Equal(t, "1", fetchResp.Revision)
 	assert.Len(t, fetchResp.Containers, 3)
+	require.NotNil(t, fetchResp.EphemeralStorageMetrics)
+	assert.Equal(t, int64(500), fetchResp.EphemeralStorageMetrics.Utilized)
+	assert.Equal(t, int64(21000), fetchResp.EphemeralStorageMetrics.Reserved)
 }
 
 func Test_ecsMetadata_fetchContainer(t *testing.T) {

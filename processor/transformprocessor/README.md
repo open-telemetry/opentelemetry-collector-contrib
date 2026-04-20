@@ -43,7 +43,7 @@ Each statement can access and transform telemetry using functions, and allows th
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements: []
+  <trace|metric|log|profile>_statements: []
 ```
 
 The Transform Processor's primary configuration section is broken down by signal (traces, metrics, logs, and profiles)
@@ -88,7 +88,7 @@ Format:
 ```yaml
 transform:
   error_mode: ignore
-  <trace|metric|log>_statements:
+  <trace|metric|log|profile>_statements:
     - string
     - string
     - string
@@ -261,6 +261,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [extract_count_metric](#extract_count_metric)
+- [extract_percentile_metric](#extract_percentile_metric)
 - [extract_sum_metric](#extract_sum_metric)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
@@ -330,6 +331,35 @@ Examples:
 - `extract_count_metric(true, ".count")`
 
 - `extract_count_metric(false, ".count")`
+
+### extract_percentile_metric
+
+> [!NOTE]  
+> This function supports Histograms and ExponentialHistograms.
+
+`extract_percentile_metric(percentile, Optional[suffix])`
+
+The `extract_percentile_metric` function creates a new Gauge metric from a Histogram or ExponentialHistogram by calculating the specified percentile value from the bucket counts. A metric will only be created if there is at least one data point.
+
+`percentile` is a float64 value greater than 0 and less than 100 representing the desired percentile to extract (e.g., 50 for median, 95 for p95, 99 for p99).
+
+`suffix` is an optional string that defines the suffix for the metric name. By default, it is set to `_p{percentile}` (e.g., `_p50`, `_p95`, `_p99`).
+
+For backward compatibility, this default does not follow the [semantic naming conventions](https://opentelemetry.io/docs/specs/semconv/general/naming/#general-naming-considerations) and should ideally be `.p{percentile}` (e.g., `.p50`, `.p95`, `.p99`) instead. This default is expected to change in a future release.
+
+The name for the new metric will be `<original metric name><suffix>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `unit`.
+
+For Histograms, the function uses linear interpolation within buckets to estimate the percentile value. Since the lowest bucket has no finite lower bound (`-Inf`), the function uses the data point's `Min` value when available. If `Min` is not set and the upper bound of that bucket is non-negative, the lower bound is assumed to be `0`. Similarly, if the percentile falls in the last bucket (`+Inf` upper bound), the data point's `Max` value is used for interpolation when available. For ExponentialHistograms, it uses logarithmic interpolation appropriate for the exponential bucket structure.
+
+The new metric that is created will be passed to all subsequent statements in the metrics statements list.
+
+Examples:
+
+- `extract_percentile_metric(50.0)` - Extract median (p50) with default suffix `_p50`
+
+- `extract_percentile_metric(95.0, "_p95_custom")` - Extract p95 with custom suffix `_p95_custom`
+
+- `extract_percentile_metric(99.9) where metric.name == "http.server.duration"` - Extract p99.9 only for specific metrics
 
 ### extract_sum_metric
 
@@ -671,7 +701,7 @@ The primary use case of the `set_semconv_span_name()` function is to address hig
 
 Parameters:
 
-* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. `1.37.0` is currently the only supported version.
+* `semconvVersion` is the version of the Semantic Conventions used to generate the `span.name`, older semconv attributes are supported. Versions `1.37.0` to `1.40.0` are supported.
 * `originalSpanNameAttribute` is the optional name of the attribute used to copy the original `span.name` if different from the name derived from semantic conventions.
 
 Sanitization examples:
@@ -686,7 +716,7 @@ Sanitization examples:
            http.route: /api/v1/users/{id}
            url.path: /api/v1/users/123
         ```
-   * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+   * Span name after applying `set_semconv_span_name("1.40.0")`: `GET /api/v1/users/{id}`
    * No loss of information on `span.name` occurs because the recommended attribute `http.route` is present.
 * Span with high-cardinality name lacking recommended semantic convention attribute `http.route`
     * Incoming span:
@@ -697,7 +727,7 @@ Sanitization examples:
             http.request.method: GET
             url.path: /api/v1/users/123
          ```
-    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET`
+    * Span name after applying `set_semconv_span_name("1.40.0")`: `GET`
     * Loss of information on `span.name` occurs because the recommended attribute `http.route` is missing.
     Note that this loss of information is mitigated if the instrumentation produced attributes that contain the URL path like `url.path` or `url.full`.
 * Compliant span name is unchanged
@@ -710,25 +740,26 @@ Sanitization examples:
             http.route: /api/v1/users/{id}
             url.path: /api/v1/users/123
          ```
-    * Span name after applying `set_semconv_span_name("1.37.0")`: `GET /api/v1/users/{id}`
+    * Span name after applying `set_semconv_span_name("1.40.0")`: `GET /api/v1/users/{id}`
 
 
-Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.37.0 semantic conventions:
+Backward compatibility: `set_semconv_span_name` will map the following attributes to their equivalents per the v1.39.0 semantic conventions:
 
-| v1.37.0 Attribute     | Older attribute        |
-|-----------------------|------------------------|
-| `http.request.method` | `http.method`          |
-| `rpc.method`          | `rpc.grpc.method`      |
-| `rpc.service`         | `rpc.grpc.service`     |
-| `db.system.name`      | `db.system`            |
-| `db.operation.name`   | `db.operation`         |
-| `db.collection.name`  | `db.name`              |
+| v1.40.0 Attribute     | Older attribute    |
+|-----------------------|--------------------|
+| `http.request.method` | `http.method`      |
+| `rpc.method`          | `rpc.grpc.method`  |
+| `rpc.service`         | `rpc.grpc.service` |
+| `rpc.system.name`     | `rpc.system`       |
+| `db.system.name`      | `db.system`        |
+| `db.operation.name`   | `db.operation`     |
+| `db.collection.name`  | `db.name`          |
 
 Examples:
 
-- `set_semconv_span_name("1.37.0")`
+- `set_semconv_span_name("1.40.0")`
 
-- `set_semconv_span_name("1.37.0", "original_span_name")`
+- `set_semconv_span_name("1.40.0", "original_span_name")`
 
 ## Examples
 
@@ -882,7 +913,7 @@ view into how OTTL views the underlying data.
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     start_at: beginning
     include: [ test.log ]
 
@@ -905,7 +936,7 @@ service:
   pipelines:
     logs:
       receivers:
-        - filelog
+        - file_log
       processors:
         - transform
       exporters:

@@ -22,7 +22,7 @@ components:
         - awskinesis
         - awss3
         - awsxray
-        - azureblob
+        - azure_blob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
@@ -35,9 +35,9 @@ components:
         - elasticsearch
         - faro
         - file
+        - google_cloud_storage
         - googlecloud
         - googlecloudpubsub
-        - googlecloudstorage
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
@@ -52,7 +52,6 @@ components:
         - prometheusremotewrite
         - pulsar
         - rabbitmq
-        - sapm
         - sentry
         - signalfx
         - splunk_hec
@@ -65,20 +64,21 @@ components:
     extension:
         - ack
         - asapclient
+        - aws_logs_encoding
         - awscloudwatchmetricstreams_encoding
-        - awslogs_encoding
         - awsproxy
-        - azureauth
+        - azure_auth
+        - azure_encoding
         - basicauth
         - bearertokenauth
-        - cgroupruntime
+        - cgroup_runtime
         - datadog
         - db_storage
         - docker_observer
         - ecs_observer
         - file_storage
+        - google_cloud_logentry_encoding
         - googleclientauth
-        - googlecloudlogentry_encoding
         - headers_setter
         - health_check
         - host_observer
@@ -112,8 +112,8 @@ components:
         - isolationforest
         - k8s_attributes
         - logdedup
+        - metric_start_time
         - metricsgeneration
-        - metricstarttime
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -121,6 +121,7 @@ components:
         - resource
         - resourcedetection
         - span
+        - spanpruning
         - sumologic
         - tail_sampling
         - transform
@@ -139,13 +140,15 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awslambda
         - awss3
         - awsxray
+        - azure_blob
         - azure_event_hub
-        - azureblob
-        - azuremonitor
+        - azure_monitor
         - carbon
         - chrony
+        - cisco_os
         - cloudflare
         - cloudfoundry
         - collectd
@@ -156,7 +159,7 @@ components:
         - envoyals
         - expvar
         - faro
-        - filelog
+        - file_log
         - filestats
         - flinkmetrics
         - fluentforward
@@ -166,8 +169,8 @@ components:
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - iis
         - influxdb
         - jaeger
@@ -181,12 +184,12 @@ components:
         - kubeletstats
         - libhoney
         - loki
-        - macosunifiedlogging
+        - macos_unified_logging
         - memcached
         - mongodb
         - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
@@ -196,9 +199,10 @@ components:
         - otlpjsonfile
         - podman_stats
         - postgresql
+        - pprof
         - prometheus
+        - prometheus_remote_write
         - prometheus_simple
-        - prometheusremotewrite
         - pulsar
         - purefa
         - purefb
@@ -221,16 +225,17 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
-        - tlscheck
-        - udplog
+        - tls_check
+        - udp_log
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
+        - yang_grpc
         - zipkin
         - zookeeper
     scraper:

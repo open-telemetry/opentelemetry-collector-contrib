@@ -77,15 +77,91 @@ func TestLoadConfig(t *testing.T) {
 					Topic:    "spans",
 					Encoding: "otlp_proto",
 				},
-				Topic:                                "spans",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
 				PartitionLogsByTraceID:               false,
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				}),
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
+			id: component.NewIDWithName(metadata.Type, "round_robin_partitioner"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: (RecordPartitionerConfig{
+					RoundRobin: &struct{}{},
+				}),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "least_backup_partitioner"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: (RecordPartitionerConfig{
+					LeastBackup: &struct{}{},
+				}),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sticky_key_partitioner"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				}),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sticky_key_partitioner_murmur2"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "murmur2",
+					},
+				}),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "per_signal_topic"),
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
@@ -93,7 +169,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:     configkafka.NewDefaultClientConfig(),
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
-					Topic:                "legacy_topic",
+					Topic:                "per_signal_topic",
 					Encoding:             "otlp_proto",
 					TopicFromMetadataKey: "metadata_key",
 				},
@@ -102,18 +178,25 @@ func TestLoadConfig(t *testing.T) {
 					Encoding: "otlp_proto",
 				},
 				Traces: SignalConfig{
-					Topic:    "legacy_topic",
+					Topic:    "per_signal_topic",
 					Encoding: "otlp_proto",
 				},
 				Profiles: SignalConfig{
-					Topic:    "legacy_topic",
+					Topic:    "per_signal_topic",
 					Encoding: "otlp_proto",
 				},
-				Topic: "legacy_topic",
+				IncludeMetadataKeys: []string{
+					"metadata_key",
+				},
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				}),
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
+			id: component.NewIDWithName(metadata.Type, "per_signal_encoding"),
 			expected: &Config{
 				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
@@ -122,7 +205,7 @@ func TestLoadConfig(t *testing.T) {
 				Producer:         configkafka.NewDefaultProducerConfig(),
 				Logs: SignalConfig{
 					Topic:    "otlp_logs",
-					Encoding: "legacy_encoding",
+					Encoding: "per_signal_encoding",
 				},
 				Metrics: SignalConfig{
 					Topic:    "otlp_metrics",
@@ -130,13 +213,65 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Traces: SignalConfig{
 					Topic:    "otlp_spans",
-					Encoding: "legacy_encoding",
+					Encoding: "per_signal_encoding",
 				},
 				Profiles: SignalConfig{
 					Topic:    "otlp_profiles",
-					Encoding: "legacy_encoding",
+					Encoding: "per_signal_encoding",
 				},
-				Encoding: "legacy_encoding",
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				}),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metadata_batch_valid"),
+			expected: &Config{
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(func() exporterhelper.QueueBatchConfig {
+					queue := exporterhelper.NewDefaultQueueConfig()
+					queue.Batch = configoptional.Some(func() exporterhelper.BatchConfig {
+						batch := exporterhelper.BatchConfig{
+							Sizer: exporterhelper.RequestSizerTypeBytes,
+						}
+						batch.FlushTimeout = 200 * time.Millisecond
+						batch.MinSize = 8192
+						batch.Partition.MetadataKeys = []string{"metadata_key", "another_key", "kafka_topic"}
+						return batch
+					}())
+					return queue
+				}()),
+				ClientConfig: configkafka.NewDefaultClientConfig(),
+				Producer:     configkafka.NewDefaultProducerConfig(),
+				Logs: SignalConfig{
+					Topic:                "otlp_logs",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
+				},
+				Metrics: SignalConfig{
+					Topic:                "otlp_metrics",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
+				},
+				Traces: SignalConfig{
+					Topic:                "otlp_spans",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
+				},
+				Profiles: SignalConfig{
+					Topic:                "otlp_profiles",
+					TopicFromMetadataKey: "kafka_topic",
+					Encoding:             "otlp_proto",
+				},
+				IncludeMetadataKeys: []string{"metadata_key"},
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				}),
 			},
 		},
 	}
@@ -160,12 +295,37 @@ func TestLoadConfigFailed(t *testing.T) {
 
 	tests := []struct {
 		id            component.ID
-		expectedError error
+		errorContains string
 		configFile    string
 	}{
 		{
 			id:            component.NewIDWithName(metadata.Type, ""),
-			expectedError: errLogsPartitionExclusive,
+			errorContains: errLogsPartitionExclusive.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, ""),
+			errorContains: `logs::topic_from_metadata_key: topic_from_metadata_key must be present in sending_queue::batch::partition::metadata_keys`,
+			configFile:    "config-topic-from-metadata-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "missing_batch_partitioner_keys"),
+			errorContains: errBatchPartitionMetadataKeysRequired.Error(),
+			configFile:    "config-batch-partition-validation-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "not_superset_batch_partitioner_keys"),
+			errorContains: `sending_queue::batch::partition::metadata_keys must include all include_metadata_keys values: missing "required_key" from sending_queue::batch::partition::metadata_keys=[metadata_key]`,
+			configFile:    "config-batch-partition-validation-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "multiple_partitioner"),
+			errorContains: errRecordPartitionerMultipleSet.Error(),
+			configFile:    "config-partitioning-failed.yaml",
+		},
+		{
+			id:            component.NewIDWithName(metadata.Type, "invalid_sticky_key_hasher"),
+			errorContains: `sticky_key: unknown hasher "invalid_hasher", valid values are "sarama_compat", "murmur2"`,
 			configFile:    "config-partitioning-failed.yaml",
 		},
 	}
@@ -181,7 +341,8 @@ func TestLoadConfigFailed(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedError)
+			err = xconfmap.Validate(cfg)
+			assert.ErrorContains(t, err, tt.errorContains)
 		})
 	}
 }

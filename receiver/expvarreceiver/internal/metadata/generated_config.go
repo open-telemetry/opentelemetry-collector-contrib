@@ -6,13 +6,513 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
+// ProcessRuntimeMemstatsBuckHashSysMetricConfig provides config for the process.runtime.memstats.buck_hash_sys metric.
+type ProcessRuntimeMemstatsBuckHashSysMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *ProcessRuntimeMemstatsBuckHashSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsFreesMetricConfig provides config for the process.runtime.memstats.frees metric.
+type ProcessRuntimeMemstatsFreesMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsFreesMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsGcCPUFractionMetricConfig provides config for the process.runtime.memstats.gc_cpu_fraction metric.
+type ProcessRuntimeMemstatsGcCPUFractionMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsGcCPUFractionMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsGcSysMetricConfig provides config for the process.runtime.memstats.gc_sys metric.
+type ProcessRuntimeMemstatsGcSysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsGcSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsHeapAllocMetricConfig provides config for the process.runtime.memstats.heap_alloc metric.
+type ProcessRuntimeMemstatsHeapAllocMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsHeapAllocMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsHeapIdleMetricConfig provides config for the process.runtime.memstats.heap_idle metric.
+type ProcessRuntimeMemstatsHeapIdleMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsHeapIdleMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsHeapInuseMetricConfig provides config for the process.runtime.memstats.heap_inuse metric.
+type ProcessRuntimeMemstatsHeapInuseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsHeapInuseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsHeapObjectsMetricConfig provides config for the process.runtime.memstats.heap_objects metric.
+type ProcessRuntimeMemstatsHeapObjectsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsHeapObjectsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsHeapReleasedMetricConfig provides config for the process.runtime.memstats.heap_released metric.
+type ProcessRuntimeMemstatsHeapReleasedMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsHeapReleasedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsHeapSysMetricConfig provides config for the process.runtime.memstats.heap_sys metric.
+type ProcessRuntimeMemstatsHeapSysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsHeapSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsLastPauseMetricConfig provides config for the process.runtime.memstats.last_pause metric.
+type ProcessRuntimeMemstatsLastPauseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsLastPauseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsLookupsMetricConfig provides config for the process.runtime.memstats.lookups metric.
+type ProcessRuntimeMemstatsLookupsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsLookupsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsMallocsMetricConfig provides config for the process.runtime.memstats.mallocs metric.
+type ProcessRuntimeMemstatsMallocsMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsMallocsMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsMcacheInuseMetricConfig provides config for the process.runtime.memstats.mcache_inuse metric.
+type ProcessRuntimeMemstatsMcacheInuseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsMcacheInuseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsMcacheSysMetricConfig provides config for the process.runtime.memstats.mcache_sys metric.
+type ProcessRuntimeMemstatsMcacheSysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsMcacheSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsMspanInuseMetricConfig provides config for the process.runtime.memstats.mspan_inuse metric.
+type ProcessRuntimeMemstatsMspanInuseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsMspanInuseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsMspanSysMetricConfig provides config for the process.runtime.memstats.mspan_sys metric.
+type ProcessRuntimeMemstatsMspanSysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsMspanSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsNextGcMetricConfig provides config for the process.runtime.memstats.next_gc metric.
+type ProcessRuntimeMemstatsNextGcMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsNextGcMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsNumForcedGcMetricConfig provides config for the process.runtime.memstats.num_forced_gc metric.
+type ProcessRuntimeMemstatsNumForcedGcMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsNumForcedGcMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsNumGcMetricConfig provides config for the process.runtime.memstats.num_gc metric.
+type ProcessRuntimeMemstatsNumGcMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsNumGcMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsOtherSysMetricConfig provides config for the process.runtime.memstats.other_sys metric.
+type ProcessRuntimeMemstatsOtherSysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsOtherSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsPauseTotalMetricConfig provides config for the process.runtime.memstats.pause_total metric.
+type ProcessRuntimeMemstatsPauseTotalMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsPauseTotalMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsStackInuseMetricConfig provides config for the process.runtime.memstats.stack_inuse metric.
+type ProcessRuntimeMemstatsStackInuseMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsStackInuseMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsStackSysMetricConfig provides config for the process.runtime.memstats.stack_sys metric.
+type ProcessRuntimeMemstatsStackSysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsStackSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsSysMetricConfig provides config for the process.runtime.memstats.sys metric.
+type ProcessRuntimeMemstatsSysMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsSysMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ProcessRuntimeMemstatsTotalAllocMetricConfig provides config for the process.runtime.memstats.total_alloc metric.
+type ProcessRuntimeMemstatsTotalAllocMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ProcessRuntimeMemstatsTotalAllocMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -28,112 +528,112 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for expvar metrics.
 type MetricsConfig struct {
-	ProcessRuntimeMemstatsBuckHashSys   MetricConfig `mapstructure:"process.runtime.memstats.buck_hash_sys"`
-	ProcessRuntimeMemstatsFrees         MetricConfig `mapstructure:"process.runtime.memstats.frees"`
-	ProcessRuntimeMemstatsGcCPUFraction MetricConfig `mapstructure:"process.runtime.memstats.gc_cpu_fraction"`
-	ProcessRuntimeMemstatsGcSys         MetricConfig `mapstructure:"process.runtime.memstats.gc_sys"`
-	ProcessRuntimeMemstatsHeapAlloc     MetricConfig `mapstructure:"process.runtime.memstats.heap_alloc"`
-	ProcessRuntimeMemstatsHeapIdle      MetricConfig `mapstructure:"process.runtime.memstats.heap_idle"`
-	ProcessRuntimeMemstatsHeapInuse     MetricConfig `mapstructure:"process.runtime.memstats.heap_inuse"`
-	ProcessRuntimeMemstatsHeapObjects   MetricConfig `mapstructure:"process.runtime.memstats.heap_objects"`
-	ProcessRuntimeMemstatsHeapReleased  MetricConfig `mapstructure:"process.runtime.memstats.heap_released"`
-	ProcessRuntimeMemstatsHeapSys       MetricConfig `mapstructure:"process.runtime.memstats.heap_sys"`
-	ProcessRuntimeMemstatsLastPause     MetricConfig `mapstructure:"process.runtime.memstats.last_pause"`
-	ProcessRuntimeMemstatsLookups       MetricConfig `mapstructure:"process.runtime.memstats.lookups"`
-	ProcessRuntimeMemstatsMallocs       MetricConfig `mapstructure:"process.runtime.memstats.mallocs"`
-	ProcessRuntimeMemstatsMcacheInuse   MetricConfig `mapstructure:"process.runtime.memstats.mcache_inuse"`
-	ProcessRuntimeMemstatsMcacheSys     MetricConfig `mapstructure:"process.runtime.memstats.mcache_sys"`
-	ProcessRuntimeMemstatsMspanInuse    MetricConfig `mapstructure:"process.runtime.memstats.mspan_inuse"`
-	ProcessRuntimeMemstatsMspanSys      MetricConfig `mapstructure:"process.runtime.memstats.mspan_sys"`
-	ProcessRuntimeMemstatsNextGc        MetricConfig `mapstructure:"process.runtime.memstats.next_gc"`
-	ProcessRuntimeMemstatsNumForcedGc   MetricConfig `mapstructure:"process.runtime.memstats.num_forced_gc"`
-	ProcessRuntimeMemstatsNumGc         MetricConfig `mapstructure:"process.runtime.memstats.num_gc"`
-	ProcessRuntimeMemstatsOtherSys      MetricConfig `mapstructure:"process.runtime.memstats.other_sys"`
-	ProcessRuntimeMemstatsPauseTotal    MetricConfig `mapstructure:"process.runtime.memstats.pause_total"`
-	ProcessRuntimeMemstatsStackInuse    MetricConfig `mapstructure:"process.runtime.memstats.stack_inuse"`
-	ProcessRuntimeMemstatsStackSys      MetricConfig `mapstructure:"process.runtime.memstats.stack_sys"`
-	ProcessRuntimeMemstatsSys           MetricConfig `mapstructure:"process.runtime.memstats.sys"`
-	ProcessRuntimeMemstatsTotalAlloc    MetricConfig `mapstructure:"process.runtime.memstats.total_alloc"`
+	ProcessRuntimeMemstatsBuckHashSys   ProcessRuntimeMemstatsBuckHashSysMetricConfig   `mapstructure:"process.runtime.memstats.buck_hash_sys"`
+	ProcessRuntimeMemstatsFrees         ProcessRuntimeMemstatsFreesMetricConfig         `mapstructure:"process.runtime.memstats.frees"`
+	ProcessRuntimeMemstatsGcCPUFraction ProcessRuntimeMemstatsGcCPUFractionMetricConfig `mapstructure:"process.runtime.memstats.gc_cpu_fraction"`
+	ProcessRuntimeMemstatsGcSys         ProcessRuntimeMemstatsGcSysMetricConfig         `mapstructure:"process.runtime.memstats.gc_sys"`
+	ProcessRuntimeMemstatsHeapAlloc     ProcessRuntimeMemstatsHeapAllocMetricConfig     `mapstructure:"process.runtime.memstats.heap_alloc"`
+	ProcessRuntimeMemstatsHeapIdle      ProcessRuntimeMemstatsHeapIdleMetricConfig      `mapstructure:"process.runtime.memstats.heap_idle"`
+	ProcessRuntimeMemstatsHeapInuse     ProcessRuntimeMemstatsHeapInuseMetricConfig     `mapstructure:"process.runtime.memstats.heap_inuse"`
+	ProcessRuntimeMemstatsHeapObjects   ProcessRuntimeMemstatsHeapObjectsMetricConfig   `mapstructure:"process.runtime.memstats.heap_objects"`
+	ProcessRuntimeMemstatsHeapReleased  ProcessRuntimeMemstatsHeapReleasedMetricConfig  `mapstructure:"process.runtime.memstats.heap_released"`
+	ProcessRuntimeMemstatsHeapSys       ProcessRuntimeMemstatsHeapSysMetricConfig       `mapstructure:"process.runtime.memstats.heap_sys"`
+	ProcessRuntimeMemstatsLastPause     ProcessRuntimeMemstatsLastPauseMetricConfig     `mapstructure:"process.runtime.memstats.last_pause"`
+	ProcessRuntimeMemstatsLookups       ProcessRuntimeMemstatsLookupsMetricConfig       `mapstructure:"process.runtime.memstats.lookups"`
+	ProcessRuntimeMemstatsMallocs       ProcessRuntimeMemstatsMallocsMetricConfig       `mapstructure:"process.runtime.memstats.mallocs"`
+	ProcessRuntimeMemstatsMcacheInuse   ProcessRuntimeMemstatsMcacheInuseMetricConfig   `mapstructure:"process.runtime.memstats.mcache_inuse"`
+	ProcessRuntimeMemstatsMcacheSys     ProcessRuntimeMemstatsMcacheSysMetricConfig     `mapstructure:"process.runtime.memstats.mcache_sys"`
+	ProcessRuntimeMemstatsMspanInuse    ProcessRuntimeMemstatsMspanInuseMetricConfig    `mapstructure:"process.runtime.memstats.mspan_inuse"`
+	ProcessRuntimeMemstatsMspanSys      ProcessRuntimeMemstatsMspanSysMetricConfig      `mapstructure:"process.runtime.memstats.mspan_sys"`
+	ProcessRuntimeMemstatsNextGc        ProcessRuntimeMemstatsNextGcMetricConfig        `mapstructure:"process.runtime.memstats.next_gc"`
+	ProcessRuntimeMemstatsNumForcedGc   ProcessRuntimeMemstatsNumForcedGcMetricConfig   `mapstructure:"process.runtime.memstats.num_forced_gc"`
+	ProcessRuntimeMemstatsNumGc         ProcessRuntimeMemstatsNumGcMetricConfig         `mapstructure:"process.runtime.memstats.num_gc"`
+	ProcessRuntimeMemstatsOtherSys      ProcessRuntimeMemstatsOtherSysMetricConfig      `mapstructure:"process.runtime.memstats.other_sys"`
+	ProcessRuntimeMemstatsPauseTotal    ProcessRuntimeMemstatsPauseTotalMetricConfig    `mapstructure:"process.runtime.memstats.pause_total"`
+	ProcessRuntimeMemstatsStackInuse    ProcessRuntimeMemstatsStackInuseMetricConfig    `mapstructure:"process.runtime.memstats.stack_inuse"`
+	ProcessRuntimeMemstatsStackSys      ProcessRuntimeMemstatsStackSysMetricConfig      `mapstructure:"process.runtime.memstats.stack_sys"`
+	ProcessRuntimeMemstatsSys           ProcessRuntimeMemstatsSysMetricConfig           `mapstructure:"process.runtime.memstats.sys"`
+	ProcessRuntimeMemstatsTotalAlloc    ProcessRuntimeMemstatsTotalAllocMetricConfig    `mapstructure:"process.runtime.memstats.total_alloc"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		ProcessRuntimeMemstatsBuckHashSys: MetricConfig{
+		ProcessRuntimeMemstatsBuckHashSys: ProcessRuntimeMemstatsBuckHashSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsFrees: MetricConfig{
+		ProcessRuntimeMemstatsFrees: ProcessRuntimeMemstatsFreesMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsGcCPUFraction: MetricConfig{
+		ProcessRuntimeMemstatsGcCPUFraction: ProcessRuntimeMemstatsGcCPUFractionMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsGcSys: MetricConfig{
+		ProcessRuntimeMemstatsGcSys: ProcessRuntimeMemstatsGcSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsHeapAlloc: MetricConfig{
+		ProcessRuntimeMemstatsHeapAlloc: ProcessRuntimeMemstatsHeapAllocMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsHeapIdle: MetricConfig{
+		ProcessRuntimeMemstatsHeapIdle: ProcessRuntimeMemstatsHeapIdleMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsHeapInuse: MetricConfig{
+		ProcessRuntimeMemstatsHeapInuse: ProcessRuntimeMemstatsHeapInuseMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsHeapObjects: MetricConfig{
+		ProcessRuntimeMemstatsHeapObjects: ProcessRuntimeMemstatsHeapObjectsMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsHeapReleased: MetricConfig{
+		ProcessRuntimeMemstatsHeapReleased: ProcessRuntimeMemstatsHeapReleasedMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsHeapSys: MetricConfig{
+		ProcessRuntimeMemstatsHeapSys: ProcessRuntimeMemstatsHeapSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsLastPause: MetricConfig{
+		ProcessRuntimeMemstatsLastPause: ProcessRuntimeMemstatsLastPauseMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsLookups: MetricConfig{
+		ProcessRuntimeMemstatsLookups: ProcessRuntimeMemstatsLookupsMetricConfig{
 			Enabled: false,
 		},
-		ProcessRuntimeMemstatsMallocs: MetricConfig{
+		ProcessRuntimeMemstatsMallocs: ProcessRuntimeMemstatsMallocsMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsMcacheInuse: MetricConfig{
+		ProcessRuntimeMemstatsMcacheInuse: ProcessRuntimeMemstatsMcacheInuseMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsMcacheSys: MetricConfig{
+		ProcessRuntimeMemstatsMcacheSys: ProcessRuntimeMemstatsMcacheSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsMspanInuse: MetricConfig{
+		ProcessRuntimeMemstatsMspanInuse: ProcessRuntimeMemstatsMspanInuseMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsMspanSys: MetricConfig{
+		ProcessRuntimeMemstatsMspanSys: ProcessRuntimeMemstatsMspanSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsNextGc: MetricConfig{
+		ProcessRuntimeMemstatsNextGc: ProcessRuntimeMemstatsNextGcMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsNumForcedGc: MetricConfig{
+		ProcessRuntimeMemstatsNumForcedGc: ProcessRuntimeMemstatsNumForcedGcMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsNumGc: MetricConfig{
+		ProcessRuntimeMemstatsNumGc: ProcessRuntimeMemstatsNumGcMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsOtherSys: MetricConfig{
+		ProcessRuntimeMemstatsOtherSys: ProcessRuntimeMemstatsOtherSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsPauseTotal: MetricConfig{
+		ProcessRuntimeMemstatsPauseTotal: ProcessRuntimeMemstatsPauseTotalMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsStackInuse: MetricConfig{
+		ProcessRuntimeMemstatsStackInuse: ProcessRuntimeMemstatsStackInuseMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsStackSys: MetricConfig{
+		ProcessRuntimeMemstatsStackSys: ProcessRuntimeMemstatsStackSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsSys: MetricConfig{
+		ProcessRuntimeMemstatsSys: ProcessRuntimeMemstatsSysMetricConfig{
 			Enabled: true,
 		},
-		ProcessRuntimeMemstatsTotalAlloc: MetricConfig{
+		ProcessRuntimeMemstatsTotalAlloc: ProcessRuntimeMemstatsTotalAllocMetricConfig{
 			Enabled: false,
 		},
 	}

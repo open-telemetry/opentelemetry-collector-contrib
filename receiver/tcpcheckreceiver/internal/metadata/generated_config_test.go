@@ -26,9 +26,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					TcpcheckDuration: MetricConfig{Enabled: true},
-					TcpcheckError:    MetricConfig{Enabled: true},
-					TcpcheckStatus:   MetricConfig{Enabled: true},
+					TcpcheckDuration: TcpcheckDurationMetricConfig{
+						Enabled: true,
+					},
+					TcpcheckError: TcpcheckErrorMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []TcpcheckErrorMetricAttributeKey{TcpcheckErrorMetricAttributeKeyTcpcheckEndpoint, TcpcheckErrorMetricAttributeKeyErrorCode},
+					},
+					TcpcheckStatus: TcpcheckStatusMetricConfig{
+						Enabled: true,
+					},
 				},
 			},
 		},
@@ -36,9 +44,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					TcpcheckDuration: MetricConfig{Enabled: false},
-					TcpcheckError:    MetricConfig{Enabled: false},
-					TcpcheckStatus:   MetricConfig{Enabled: false},
+					TcpcheckDuration: TcpcheckDurationMetricConfig{
+						Enabled: false,
+					},
+					TcpcheckError: TcpcheckErrorMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []TcpcheckErrorMetricAttributeKey{TcpcheckErrorMetricAttributeKeyTcpcheckEndpoint, TcpcheckErrorMetricAttributeKeyErrorCode},
+					},
+					TcpcheckStatus: TcpcheckStatusMetricConfig{
+						Enabled: false,
+					},
 				},
 			},
 		},
@@ -46,7 +62,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(TcpcheckDurationMetricConfig{}, TcpcheckErrorMetricConfig{}, TcpcheckStatusMetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

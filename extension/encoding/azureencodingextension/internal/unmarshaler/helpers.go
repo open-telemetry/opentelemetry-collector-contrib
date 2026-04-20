@@ -17,7 +17,7 @@ import (
 
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 type RecordsBatchFormat int
@@ -33,9 +33,9 @@ const (
 // JSON Path expressions that matches specific wrapper format
 const (
 	// As exported to Azure Event Hub, e.g. `{"records": [ {...}, {...} ]}`
-	JSONPathEventHubLogRecords = "$.records[*]"
+	JSONPathEventHubRecords = "$.records[*]"
 	// As exported to Azure Blob Storage, e.g. `[ {...}, {...} ]`
-	JSONPathBlobStorageLogRecords = "$[*]"
+	JSONPathBlobStorageRecords = "$[*]"
 )
 
 // Commonly used attributes non-SemConv attributes across all telemetry signals
@@ -276,6 +276,13 @@ func AttrPutURLParsed(attrs pcommon.Map, uri string) {
 func AttrPutHostPortIf(attrs pcommon.Map, addrKey, portKey, value string) {
 	if value == "" {
 		// Nothing to do here
+		return
+	}
+
+	// Do not store "unspecified" address for both IPv4 and IPv6,
+	// including cases when it contains "unspecified" port
+	// as it doesn't provide any valuable information
+	if value == "0.0.0.0" || value == "::" || value == "0.0.0.0:0" || value == "[::]:0" {
 		return
 	}
 

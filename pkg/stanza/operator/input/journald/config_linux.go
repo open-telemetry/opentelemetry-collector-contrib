@@ -95,6 +95,8 @@ func (c Config) buildArgs() ([]string, error) {
 
 	if c.StartAt == "beginning" {
 		args = append(args, "--no-tail")
+	} else {
+		args = append(args, "--lines=0")
 	}
 
 	for _, unit := range c.Units {

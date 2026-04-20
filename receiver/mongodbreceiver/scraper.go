@@ -16,7 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -31,14 +30,6 @@ var (
 
 	// otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation.
 	otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
-
-	_ = featuregate.GlobalRegistry().MustRegister(
-		"receiver.mongodb.removeDatabaseAttr",
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("Remove duplicate database name attribute"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24972"),
-		featuregate.WithRegisterFromVersion("v0.90.0"),
-		featuregate.WithRegisterToVersion("v0.104.0"))
 )
 
 // generateInstanceID generates a deterministic UUID v5 from server address and port.

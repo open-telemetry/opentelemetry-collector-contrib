@@ -8,7 +8,6 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
-	"math/rand/v2"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -23,10 +22,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
-
-func randPort() int {
-	return rand.IntN(999) + 9000
-}
 
 func getContainer(req testcontainers.ContainerRequest) (testcontainers.Container, error) {
 	if err := req.Validate(); err != nil {
@@ -65,11 +60,6 @@ func (*stdoutLogConsumer) Accept(l testcontainers.Log) {
 }
 
 func createClickhouseContainer(image string) (testcontainers.Container, *clickhouseEnv, error) {
-	port := randPort()
-	httpPort := port + 1
-	tlsPort := port + 2
-	httpsPort := port + 3
-
 	_, b, _, _ := runtime.Caller(0)
 	basePath := filepath.Dir(b)
 
@@ -85,10 +75,10 @@ func createClickhouseContainer(image string) (testcontainers.Container, *clickho
 	req := testcontainers.ContainerRequest{
 		Image: image,
 		ExposedPorts: []string{
-			fmt.Sprintf("%d:9000", port),
-			fmt.Sprintf("%d:8123", httpPort),
-			fmt.Sprintf("%d:9440", tlsPort),
-			fmt.Sprintf("%d:8443", httpsPort),
+			"9000/tcp",
+			"8123/tcp",
+			"9440/tcp",
+			"8443/tcp",
 		},
 		Files: []testcontainers.ContainerFile{
 			fileMount("clickhouse-config.xml", "/etc/clickhouse-server/config.d/otel.xml"),
@@ -115,11 +105,28 @@ func createClickhouseContainer(image string) (testcontainers.Container, *clickho
 		return nil, nil, fmt.Errorf("failed to read container host address: %w", err)
 	}
 
+	nativePort, err := c.MappedPort(context.Background(), "9000")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get mapped port 9000: %w", err)
+	}
+	httpPort, err := c.MappedPort(context.Background(), "8123")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get mapped port 8123: %w", err)
+	}
+	tlsPort, err := c.MappedPort(context.Background(), "9440")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get mapped port 9440: %w", err)
+	}
+	httpsPort, err := c.MappedPort(context.Background(), "8443")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get mapped port 8443: %w", err)
+	}
+
 	env := clickhouseEnv{
-		NativeEndpoint:       fmt.Sprintf("tcp://%s:%d?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, port),
-		HTTPEndpoint:         fmt.Sprintf("http://%s:%d?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, httpPort),
-		SecureNativeEndpoint: fmt.Sprintf("tcp://%s:%d?username=secure_default&enable_json_type=1&database=otel_int_test", host, tlsPort),
-		HTTPSEndpoint:        fmt.Sprintf("https://%s:%d?username=secure_default&enable_json_type=1&database=otel_int_test", host, httpsPort),
+		NativeEndpoint:       fmt.Sprintf("tcp://%s:%s?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, nativePort.Port()),
+		HTTPEndpoint:         fmt.Sprintf("http://%s:%s?username=default&password=otel&enable_json_type=1&database=otel_int_test", host, httpPort.Port()),
+		SecureNativeEndpoint: fmt.Sprintf("tcp://%s:%s?username=secure_default&enable_json_type=1&database=otel_int_test", host, tlsPort.Port()),
+		HTTPSEndpoint:        fmt.Sprintf("https://%s:%s?username=secure_default&enable_json_type=1&database=otel_int_test", host, httpsPort.Port()),
 	}
 
 	return c, &env, nil
@@ -224,6 +231,8 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 	t.Run("TestLogsJSONExporterSchemaFeatures", testProtocolsMapBody(testLogsJSONExporterSchemaFeatures))
 	t.Run("TestTracesJSONExporter", testProtocols(testTracesJSONExporter, false))
 	t.Run("TestTracesJSONExporterSchemaFeatures", testProtocols(testTracesJSONExporterSchemaFeatures, false))
+	t.Run("TestLogsCombinedExporter", testProtocolsMapBody(testLogsCombinedExporter))
+	t.Run("TestTracesCombinedExporter", testProtocols(testTracesCombinedExporter, false))
 
 	t.Run("TestCertAuth", testProtocols(func(t *testing.T, dsn string) {
 		applyTLS := func(config *Config) {

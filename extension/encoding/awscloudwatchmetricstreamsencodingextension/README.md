@@ -9,7 +9,7 @@ This extension unmarshalls metrics encoded in formats produced by [Amazon CloudW
 | Stability     | [alpha]  |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fawscloudwatchmetricstreamsencoding%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fawscloudwatchmetricstreamsencoding) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fawscloudwatchmetricstreamsencoding%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fawscloudwatchmetricstreamsencoding) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@axw](https://www.github.com/axw), [@constanca-m](https://www.github.com/constanca-m), [@Kavindu-Dodan](https://www.github.com/Kavindu-Dodan) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -34,10 +34,12 @@ extensions:
 
 ## Streaming Support
 
-The table below summarizes offset tracking details for each format.
+The table below summarizes offset tracking details for each format,
 
 | CloudWatch Metrics format | Offset Tracking |
 |---------------------------|-----------------|
+| Opentelemetry             | Bytes processed |
+| JSON                      | Bytes processed |
 
 ## Supported Statistics (JSON format)
 

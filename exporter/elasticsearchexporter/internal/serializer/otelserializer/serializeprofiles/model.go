@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // EcsVersionString is the value for the `ecs.version` metrics field.
@@ -111,7 +111,7 @@ func (h HostResourceData) MarshalJSON() ([]byte, error) {
 	}
 
 	// Marshal the combined map into JSON
-	return json.MarshalIndent(combinedData, "", "  ")
+	return json.Marshal(combinedData)
 }
 
 // Script written in Painless that will both create a new document (if DocID does not exist),

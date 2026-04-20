@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package datadogexporter
 
 import (
@@ -143,6 +145,15 @@ func TestNewExporter_Serializer(t *testing.T) {
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
+	prevDisableVal := featuregates.DisableMetricRemappingFeatureGate.IsEnabled()
+	prevVal := featuregates.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.DisableMetricRemappingFeatureGate.ID(), prevDisableVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set(featuregates.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+	}()
+
 	attrs := map[string]string{
 		"deployment.environment": "dev",
 		"custom_attribute":       "custom_value",

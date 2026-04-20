@@ -8,8 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -22,12 +24,13 @@ var receivers = sharedcomponent.NewSharedComponents()
 
 // NewFactory creates a factory for receiver creator.
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability),
 	)
 }
 
@@ -111,5 +114,18 @@ func createTracesReceiver(
 		return newReceiverCreator(params, cfg.(*Config))
 	})
 	r.Component.(*receiverCreator).nextTracesConsumer = consumer
+	return r, nil
+}
+
+func createProfilesReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	cfg component.Config,
+	consumer xconsumer.Profiles,
+) (xreceiver.Profiles, error) {
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newReceiverCreator(params, cfg.(*Config))
+	})
+	r.Component.(*receiverCreator).nextProfilesConsumer = consumer
 	return r, nil
 }

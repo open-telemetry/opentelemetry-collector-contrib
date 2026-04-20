@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"strings"
@@ -16,13 +17,12 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
@@ -30,17 +30,8 @@ import (
 )
 
 const (
-	readmeURL            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
-	separateSchemaAttrID = "receiver.postgresql.separateSchemaAttr"
-
+	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
-)
-
-var separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
-	separateSchemaAttrID,
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
 )
 
 type postgreSQLScraper struct {
@@ -52,10 +43,11 @@ type postgreSQLScraper struct {
 	excludes      map[string]struct{}
 	cache         *lru.Cache[string, float64]
 	// if enabled, uses a separated attribute for the schema
-	separateSchemaAttr   bool
-	queryPlanCache       *expirable.LRU[string, string]
-	newestQueryTimestamp float64
-	serviceInstanceID    string
+	separateSchemaAttr     bool
+	queryPlanCache         *expirable.LRU[string, string]
+	newestQueryTimestamp   float64
+	serviceInstanceID      string
+	lastExecutionTimestamp time.Time
 }
 
 type errsMux struct {
@@ -92,11 +84,11 @@ func newPostgreSQLScraper(
 	for _, db := range config.ExcludeDatabases {
 		excludes[db] = struct{}{}
 	}
-	separateSchemaAttr := separateSchemaAttrGate.IsEnabled()
+	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
 
 	if !separateSchemaAttr {
 		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", separateSchemaAttrID, readmeURL),
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.ID(), readmeURL),
 		)
 	}
 
@@ -200,13 +192,33 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
 }
 
-func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64) (plog.Logs, error) {
+func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery, topNQuery, maxExplainEachInterval int64, collectionInterval time.Duration) (plog.Logs, error) {
 	var errs errsMux
+	currentCollectionTime := time.Now()
 
-	p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger)
+	if p.isCollectionDue(currentCollectionTime, collectionInterval) {
+		p.collectTopQuery(ctx, p.clientFactory, maxRowsPerQuery, topNQuery, maxExplainEachInterval, &errs, p.logger, currentCollectionTime)
+		p.lastExecutionTimestamp = currentCollectionTime
+	}
 
 	rb := p.setupResourceBuilder(p.lb.NewResourceBuilder(), "", "", "", "")
 	return p.lb.Emit(metadata.WithLogsResource(rb.Emit())), nil
+}
+
+func (p *postgreSQLScraper) isCollectionDue(collectionTime time.Time, interval time.Duration) bool {
+	if p.lastExecutionTimestamp.IsZero() {
+		// This is the first collection
+		return true
+	}
+
+	if time.Duration(math.Ceil(collectionTime.Sub(p.lastExecutionTimestamp).Seconds()))*time.Second >= interval {
+		return true
+	}
+
+	p.logger.Debug("Skipping the collection of top queries because collection interval has not yet elapsed." +
+		"last collection time: " + p.lastExecutionTimestamp.String() + ", current collection time: " + collectionTime.String() +
+		", collection interval: " + interval.String())
+	return false
 }
 
 func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, limit int64, mux *errsMux, logger *zap.Logger) {
@@ -247,8 +259,8 @@ func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient cl
 	}
 }
 
-func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger) {
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, clientFactory postgreSQLClientFactory, limit, topNQuery, maxExplainEachInterval int64, mux *errsMux, logger *zap.Logger, collectionTime time.Time) {
+	timestamp := pcommon.NewTimestampFromTime(collectionTime)
 
 	defaultDbClient, err := clientFactory.getClient(defaultPostgreSQLDatabase)
 	if err != nil {
@@ -618,7 +630,7 @@ func (p *postgreSQLScraper) collectReplicationStats(
 		if rs.pendingBytes >= 0 {
 			p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
 		}
-		if preciseLagMetricsFg.IsEnabled() {
+		if metadata.PostgresqlreceiverPreciselagmetricsFeatureGate.IsEnabled() {
 			if rs.writeLag >= 0 {
 				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
 			}

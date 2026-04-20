@@ -1,8 +1,8 @@
-awslambda/awslogs_encoding:
+awslambda/aws_logs_encoding:
   s3:
-    encoding: awslogs_encoding
+    encoding: aws_logs_encoding
   cloudwatch:
-    encoding: awslogs_encoding
+    encoding: aws_logs_encoding
 
 awslambda/json_log_encoding:
   s3:

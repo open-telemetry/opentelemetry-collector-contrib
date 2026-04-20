@@ -14,7 +14,7 @@ import (
 	"github.com/google/pprof/profile"
 	"github.com/zeebo/xxh3"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // errNotFound is returned if something requested is not available
@@ -63,6 +63,8 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			m.MemoryLimit(),
 			m.FileOffset(),
 			getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
+			src.Dictionary(),
+			m,
 		)
 	}
 
@@ -78,11 +80,23 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		si := s.StackIndex()
 		stack := src.Dictionary().StackTable().At(int(si))
 
+		// By convention, pprof uses the last sample type as default, while OTel Profiles
+		// uses the first profile as default. Therefore, swap first and last.
 		for i := range numProfiles {
-			if sp.At(0).Profiles().At(i).Samples().At(sampleIdx).Values().Len() != 1 {
+			// Swap first and last: first OTel profile becomes last pprof sample type
+			var mappedIdx int
+			switch i {
+			case 0:
+				mappedIdx = numProfiles - 1
+			case numProfiles - 1:
+				mappedIdx = 0
+			default:
+				mappedIdx = i
+			}
+			if sp.At(0).Profiles().At(mappedIdx).Samples().At(sampleIdx).Values().Len() != 1 {
 				return nil, errors.New("invalid number of values per sample")
 			}
-			pprofSample.Value = append(pprofSample.Value, pprofiles.At(i).Samples().At(sampleIdx).Values().At(0))
+			pprofSample.Value = append(pprofSample.Value, pprofiles.At(mappedIdx).Samples().At(sampleIdx).Values().At(0))
 		}
 
 		for _, li := range stack.LocationIndices().All() {
@@ -96,6 +110,8 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 					m.MemoryLimit(),
 					m.FileOffset(),
 					getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
+					src.Dictionary(),
+					m,
 				)
 			}
 
@@ -117,7 +133,7 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			}
 
 			pprofSample.Location = append(pprofSample.Location,
-				populateLocation(dst, locationMap, locMapping, loc.Address(), lines))
+				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc))
 		}
 
 		// pprof.Sample.label is skipped for the moment.
@@ -125,16 +141,27 @@ func convertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 	}
 
 	// Set pprof values that should be common across all profiles.
+	// By convention, pprof uses the last sample type as default, while OTel Profiles
+	// uses the first profile as default. Therefore, swap first and last.
 	for i := range numProfiles {
+		// Swap first and last: first OTel profile becomes last pprof sample type
+		var mappedIdx int
+		switch i {
+		case 0:
+			mappedIdx = numProfiles - 1
+		case numProfiles - 1:
+			mappedIdx = 0
+		default:
+			mappedIdx = i
+		}
 		dst.SampleType = append(dst.SampleType, &profile.ValueType{
-			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().TypeStrindex())),
-			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(i).SampleType().UnitStrindex())),
+			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().TypeStrindex())),
+			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().UnitStrindex())),
 		})
 	}
 
 	var commentStrs []string
-	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary(),
-		string(semconv.PprofProfileCommentKey))
+	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary())
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
@@ -196,11 +223,29 @@ func getAttributeString(dic pprofile.ProfilesDictionary, key string) (string, er
 	return "", fmt.Errorf("attribute with key '%s': %w", key, errNotFound)
 }
 
-// getAttributeStringWithPrefix walks the attribute_table and returns a string array
-// for all keys that start with the given prefix.
+// getAttributeBool walks the attribute_table for the given indices and returns the bool value
+// for the given key.
 // It returns errNotFound if the key can not be found in attribute_table.
-func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary, keyprefix string) ([]string, error) {
+func getAttributeBool(dic pprofile.ProfilesDictionary, attrIndices []int32, key string) (bool, error) {
+	for _, idx := range attrIndices {
+		if idx == 0 || int(idx) >= dic.AttributeTable().Len() {
+			continue
+		}
+		attr := dic.AttributeTable().At(int(idx))
+		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		if attrKey == key {
+			return attr.Value().Bool(), nil
+		}
+	}
+	return false, fmt.Errorf("attribute with key '%s': %w", key, errNotFound)
+}
+
+// getAttributeStringWithPrefix walks the attribute_table and returns a string array
+// for all keys that start with the prefix pprof.profile.comment.
+// It returns errNotFound if the key can not be found in attribute_table.
+func getAttributeStringWithPrefix(dic pprofile.ProfilesDictionary) ([]string, error) {
 	tmp := make(map[int]string)
+	keyprefix := string(semconv.PprofProfileCommentKey)
 
 	for _, attr := range dic.AttributeTable().All() {
 		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
@@ -291,7 +336,7 @@ func getMappingHash(start, limit, offset uint64, file string) uint64 {
 
 // populateMapping helps to populate deduplicated mappings.
 func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mapping,
-	start, limit, offset uint64, fileName string,
+	start, limit, offset uint64, fileName string, dic pprofile.ProfilesDictionary, m pprofile.Mapping,
 ) *profile.Mapping {
 	mHash := getMappingHash(start, limit, offset, fileName)
 	if existingMapping, ok := mappingMap[mHash]; ok {
@@ -304,6 +349,43 @@ func populateMapping(dst *profile.Profile, mappingMap map[uint64]*profile.Mappin
 		Limit:  limit,
 		Offset: offset,
 		File:   fileName,
+	}
+
+	// Extract mapping attributes from the OTel profile
+	var attrIndices []int32
+	for _, idx := range m.AttributeIndices().All() {
+		attrIndices = append(attrIndices, idx)
+	}
+
+	// Extract BuildID from attributes
+	for _, idx := range attrIndices {
+		if idx == 0 || int(idx) >= dic.AttributeTable().Len() {
+			continue
+		}
+		attr := dic.AttributeTable().At(int(idx))
+		attrKey := getStringFromIdx(dic, int(attr.KeyStrindex()))
+		if attrKey == string(semconv.ProcessExecutableBuildIDGNUKey) {
+			pprofM.BuildID = attr.Value().AsString()
+			break
+		}
+	}
+
+	// Extract boolean mapping flags
+	hasFunctions, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFunctionsKey))
+	if err == nil {
+		pprofM.HasFunctions = hasFunctions
+	}
+	hasFilenames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasFilenamesKey))
+	if err == nil {
+		pprofM.HasFilenames = hasFilenames
+	}
+	hasLineNumbers, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasLineNumbersKey))
+	if err == nil {
+		pprofM.HasLineNumbers = hasLineNumbers
+	}
+	hasInlineFrames, err := getAttributeBool(dic, attrIndices, string(semconv.PprofMappingHasInlineFramesKey))
+	if err == nil {
+		pprofM.HasInlineFrames = hasInlineFrames
 	}
 
 	dst.Mapping = append(dst.Mapping, pprofM)
@@ -332,7 +414,7 @@ func getLocationHash(m *profile.Mapping, addr uint64, lines []profile.Line) uint
 
 // populateLocation helps to populate deduplicated locations.
 func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Location,
-	m *profile.Mapping, addr uint64, lines []profile.Line,
+	m *profile.Mapping, addr uint64, lines []profile.Line, dic pprofile.ProfilesDictionary, loc pprofile.Location,
 ) *profile.Location {
 	lHash := getLocationHash(m, addr, lines)
 	if existingLocation, ok := locationMap[lHash]; ok {
@@ -344,6 +426,18 @@ func populateLocation(dst *profile.Profile, locationMap map[uint64]*profile.Loca
 		Mapping: m,
 		Address: addr,
 		Line:    lines,
+	}
+
+	// Extract location attributes from the OTel profile
+	var attrIndices []int32
+	for _, idx := range loc.AttributeIndices().All() {
+		attrIndices = append(attrIndices, idx)
+	}
+
+	// Extract IsFolded from attributes
+	isFolded, err := getAttributeBool(dic, attrIndices, string(semconv.PprofLocationIsFoldedKey))
+	if err == nil {
+		pprofL.IsFolded = isFolded
 	}
 
 	dst.Location = append(dst.Location, pprofL)
