@@ -417,6 +417,15 @@ func TestConfig(t *testing.T) {
 				qbCfg.Sizer = exporterhelper.RequestSizerTypeBytes
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "suppress_conflict_errors"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.SuppressConflictErrors = true
+			}),
+		},
 	}
 
 	for _, tt := range tests {
