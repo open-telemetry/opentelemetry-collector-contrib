@@ -139,9 +139,6 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: exporter/googlecloudexporter/
-      - linters:
-          - forbidigo
         path: exporter/prometheusremotewriteexporter/
       - linters:
           - forbidigo
