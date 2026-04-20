@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/consumer v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/consumer/consumertest v0.150.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/collector/extension/xextension v0.149.1-0.20260409104450-d686cf9058ce
+	go.opentelemetry.io/collector/extension/xextension v0.150.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/filter v0.150.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/pdata v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/receiver v1.56.1-0.20260415114935-307e3abdbae9
