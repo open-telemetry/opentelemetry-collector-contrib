@@ -74,51 +74,70 @@ type scopeInfo struct {
 	Name       string
 	Version    string
 	SchemaURL  string
-	extraAttrs [][2]string // scope attributes with the "otel_scope_" prefix stripped
+	scopeAttrs []attribute // scope attributes with the "otel_scope_" prefix stripped
+}
+
+// attribute is a simple key-value pair for scope attributes.
+type attribute struct {
+	Key   string
+	Value string
 }
 
 func (si scopeInfo) key() string {
 	const sep = "\xff"
-	parts := make([]string, 0, 3+len(si.extraAttrs))
+	parts := make([]string, 0, 3+len(si.scopeAttrs))
 	parts = append(parts, si.Name, si.Version, si.SchemaURL)
-	for _, kv := range si.extraAttrs {
-		parts = append(parts, kv[0]+sep+kv[1])
+	for _, kv := range si.scopeAttrs {
+		parts = append(parts, kv.Key+sep+kv.Value)
 	}
 	return strings.Join(parts, sep)
 }
 
-// metricIdentity uniquely identifies a metric per the OTLP data model.
-// Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
+// metricIdentity contains all the components that uniquely identify a metric
+// according to the OpenTelemetry Protocol data model.
+// The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
 type metricIdentity struct {
-	ResourceID string
-	ScopeKey   string
-	MetricName string
-	Unit       string
-	Type       writev2.Metadata_MetricType
+	ResourceID   string
+	ScopeName    string
+	ScopeVersion string
+	ScopeSchemaURL string
+	ScopeAttrs   []attribute
+	MetricName   string
+	Unit         string
+	Type         writev2.Metadata_MetricType
 }
 
+// createMetricIdentity creates a metricIdentity struct from the required components
 func createMetricIdentity(resourceID string, si scopeInfo, metricName, unit string, metricType writev2.Metadata_MetricType) metricIdentity {
 	return metricIdentity{
-		ResourceID: resourceID,
-		ScopeKey:   si.key(),
-		MetricName: metricName,
-		Unit:       unit,
-		Type:       metricType,
+		ResourceID:     resourceID,
+		ScopeName:      si.Name,
+		ScopeVersion:   si.Version,
+		ScopeSchemaURL: si.SchemaURL,
+		ScopeAttrs:     si.scopeAttrs,
+		MetricName:     metricName,
+		Unit:           unit,
+		Type:           metricType,
 	}
 }
 
+// Hash generates a unique hash for the metric identity
 func (mi metricIdentity) Hash() uint64 {
 	const separator = "\xff"
 
-	combined := strings.Join([]string{
+	parts := []string{
 		mi.ResourceID,
-		mi.ScopeKey,
+		mi.ScopeName,
+		mi.ScopeVersion,
+		mi.ScopeSchemaURL,
 		mi.MetricName,
 		mi.Unit,
 		fmt.Sprintf("%d", mi.Type),
-	}, separator)
-
-	return xxhash.Sum64String(combined)
+	}
+	for _, kv := range mi.ScopeAttrs {
+		parts = append(parts, kv.Key+separator+kv.Value)
+	}
+	return xxhash.Sum64String(strings.Join(parts, separator))
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -798,6 +817,7 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 // extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
+	// job, instance and metric name will always become labels
 	attrs.EnsureCapacity(ls.Len() - 3)
 	ls.Range(func(l labels.Label) {
 		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
@@ -831,7 +851,7 @@ func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) sco
 			si.SchemaURL = l.Value
 		default:
 			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok {
-				si.extraAttrs = append(si.extraAttrs, [2]string{attrKey, l.Value})
+				si.scopeAttrs = append(si.scopeAttrs, attribute{Key: attrKey, Value: l.Value})
 			}
 		}
 	})
@@ -843,12 +863,12 @@ func scopeMatchesInfo(sm pmetric.ScopeMetrics, si scopeInfo) bool {
 	if sm.Scope().Name() != si.Name || sm.Scope().Version() != si.Version || sm.SchemaUrl() != si.SchemaURL {
 		return false
 	}
-	if sm.Scope().Attributes().Len() != len(si.extraAttrs) {
+	if sm.Scope().Attributes().Len() != len(si.scopeAttrs) {
 		return false
 	}
-	for _, kv := range si.extraAttrs {
-		v, ok := sm.Scope().Attributes().Get(kv[0])
-		if !ok || v.Str() != kv[1] {
+	for _, kv := range si.scopeAttrs {
+		v, ok := sm.Scope().Attributes().Get(kv.Key)
+		if !ok || v.Str() != kv.Value {
 			return false
 		}
 	}
@@ -859,8 +879,8 @@ func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
 	sm.Scope().SetName(si.Name)
 	sm.Scope().SetVersion(si.Version)
 	sm.SetSchemaUrl(si.SchemaURL)
-	for _, kv := range si.extraAttrs {
-		sm.Scope().Attributes().PutStr(kv[0], kv[1])
+	for _, kv := range si.scopeAttrs {
+		sm.Scope().Attributes().PutStr(kv.Key, kv.Value)
 	}
 }
 
