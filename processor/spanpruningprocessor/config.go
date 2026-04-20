@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gobwas/glob"
 	"go.opentelemetry.io/collector/component"
@@ -40,6 +41,10 @@ type Config struct {
 	// are added to summary spans.
 	// Default: "aggregation."
 	AggregationAttributePrefix string `mapstructure:"aggregation_attribute_prefix"`
+
+	// AggregationHistogramBuckets lists cumulative histogram bucket upper bounds
+	// for latency tracking on aggregated spans. Empty slice disables histograms.
+	AggregationHistogramBuckets []time.Duration `mapstructure:"aggregation_histogram_buckets"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -72,6 +77,16 @@ func (cfg *Config) Validate() error {
 		_, err := glob.Compile(pattern)
 		if err != nil {
 			return fmt.Errorf("invalid glob pattern at group_by_attributes[%d]: %q: %w", i, pattern, err)
+		}
+	}
+
+	// Validate histogram buckets
+	for i, bucket := range cfg.AggregationHistogramBuckets {
+		if bucket <= 0 {
+			return errors.New("histogram bucket values must be positive")
+		}
+		if i > 0 && bucket <= cfg.AggregationHistogramBuckets[i-1] {
+			return errors.New("histogram buckets must be sorted in ascending order")
 		}
 	}
 

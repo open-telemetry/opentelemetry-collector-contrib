@@ -80,7 +80,7 @@ func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
 
 func testTransactionUpdateMetadataDoesNothing(t *testing.T) {
 	tr := newTransaction(scrapeCtx, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	_, err := tr.UpdateMetadata(0, labels.New(), metadata.Metadata{})
+	_, err := tr.updateMetadata(0, labels.New(), metadata.Metadata{})
 	assert.NoError(t, err)
 }
 
@@ -91,7 +91,7 @@ func TestTransactionAppendNoTarget(t *testing.T) {
 func testTransactionAppendNoTarget(t *testing.T) {
 	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
 	tr := newTransaction(scrapeCtx, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	_, err := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0)
+	_, err := tr.Append(0, badLabels, 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.Error(t, err)
 }
 
@@ -105,7 +105,7 @@ func testTransactionAppendNoMetricName(t *testing.T) {
 		model.JobLabel:      "test2",
 	})
 	tr := newTransaction(scrapeCtx, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
-	_, err := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0)
+	_, err := tr.Append(0, jobNotFoundLb, 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.ErrorIs(t, err, errMetricNameNotFound)
 	assert.ErrorIs(t, tr.Commit(), errNoDataToBuild)
 }
@@ -120,7 +120,7 @@ func testTransactionAppendEmptyMetricName(t *testing.T) {
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test2",
 		model.MetricNameLabel: "",
-	}), time.Now().Unix()*1000, 1.0)
+	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.ErrorIs(t, err, errMetricNameNotFound)
 }
 
@@ -135,13 +135,13 @@ func testTransactionAppendResource(t *testing.T) {
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
-	}), time.Now().Unix()*1000, 1.0)
+	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 	_, err = tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: startTimeMetricName,
-	}), time.Now().UnixMilli(), 1.0)
+	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
 	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
@@ -162,13 +162,13 @@ func testTransactionAppendMultipleResources(t *testing.T) {
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test-1",
 		model.MetricNameLabel: "counter_test",
-	}), time.Now().Unix()*1000, 1.0)
+	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 	_, err = tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test-2",
 		model.MetricNameLabel: startTimeMetricName,
-	}), time.Now().UnixMilli(), 1.0)
+	}), 0, time.Now().UnixMilli(), 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
 
@@ -209,7 +209,7 @@ func testReceiverVersionAndNameAreAttached(t *testing.T) {
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
-	}), time.Now().Unix()*1000, 1.0)
+	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
 
@@ -242,7 +242,7 @@ func testTransactionAppendDuplicateLabels(t *testing.T) {
 		"z", "9",
 	)
 
-	_, err := tr.Append(0, dupLabels, 1917, 1.0)
+	_, err := tr.Append(0, dupLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
@@ -271,7 +271,7 @@ func testTransactionAppendHistogramNoLe(t *testing.T) {
 		model.MetricNameLabel, "hist_test_bucket",
 	)
 
-	_, err := tr.Append(0, goodLabels, 1917, 1.0)
+	_, err := tr.Append(0, goodLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
@@ -305,7 +305,7 @@ func testTransactionAppendSummaryNoQuantile(t *testing.T) {
 		model.MetricNameLabel, "summary_test",
 	)
 
-	_, err := tr.Append(0, goodLabels, 1917, 1.0)
+	_, err := tr.Append(0, goodLabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
@@ -338,7 +338,7 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
-	}), time.Now().Unix()*1000, 1.0)
+	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 
 	// summary without quantiles, should be ignored
@@ -348,7 +348,7 @@ func testTransactionAppendValidAndInvalid(t *testing.T) {
 		model.MetricNameLabel, "summary_test",
 	)
 
-	_, err = tr.Append(0, summarylabels, 1917, 1.0)
+	_, err = tr.Append(0, summarylabels, 0, 1917, 1.0, nil, nil, storage.AOptions{})
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, observedLogs.Len())
@@ -391,7 +391,7 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.MetricNameLabel: "counter_test",
-	}), time.Now().Unix()*1000, 1.0)
+	}), 0, time.Now().Unix()*1000, 1.0, nil, nil, storage.AOptions{})
 	assert.NoError(t, err)
 }
 
@@ -408,7 +408,7 @@ func testAppendExemplarWithNoMetricName(t *testing.T) {
 		model.JobLabel, "test",
 	)
 
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errMetricNameNotFound, err)
 }
 
@@ -425,7 +425,7 @@ func testAppendExemplarWithEmptyMetricName(t *testing.T) {
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
 	)
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errMetricNameNotFound, err)
 }
 
@@ -444,7 +444,7 @@ func testAppendExemplarWithDuplicateLabels(t *testing.T) {
 		"a", "b",
 		"a", "c",
 	)
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
 	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
@@ -462,7 +462,7 @@ func testAppendExemplarWithoutAddingMetric(t *testing.T) {
 		model.MetricNameLabel, "counter_test",
 		"a", "b",
 	)
-	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels, exemplar.Exemplar{Value: 0})
 	assert.NoError(t, err)
 }
 
@@ -474,7 +474,7 @@ func testAppendExemplarWithNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendExemplar(0, labels.EmptyLabels(), exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels.EmptyLabels(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
@@ -486,7 +486,7 @@ func testAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendExemplar(0, labels.FromStrings(), exemplar.Exemplar{Value: 0})
+	err := tr.appendExemplar(labels.FromStrings(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
@@ -494,7 +494,7 @@ func TestAppendSTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(), 0, 100)
+	_, err := tr.appendSTZeroSample(labels.FromStrings(), 0, 50)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -502,7 +502,7 @@ func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
+	_, err := tr.appendHistogramSTZeroSample(labels.FromStrings(), 0, 50, tsdbutil.GenerateTestHistogram(1), nil)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
 }
 
@@ -510,7 +510,7 @@ func TestAppendSTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendSTZeroSample(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -524,7 +524,7 @@ func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendHistogramSTZeroSample(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
@@ -538,7 +538,7 @@ func TestAppendSTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendSTZeroSample(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -550,7 +550,7 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
 
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendHistogramSTZeroSample(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "",
@@ -564,14 +564,14 @@ func TestAppendSTZeroSample(t *testing.T) {
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendSTZeroSample(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
 	), atMs, ctMs)
 	assert.NoError(t, err)
 
-	_, err = tr.Append(0, labels.FromStrings(
+	_, err = tr.append(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
@@ -598,14 +598,14 @@ func TestAppendHistogramCTZeroSample(t *testing.T) {
 
 	var atMs, ctMs int64
 	atMs, ctMs = 200, 100
-	_, err := tr.AppendHistogramSTZeroSample(0, labels.FromStrings(
+	_, err := tr.appendHistogramSTZeroSample(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
-	), atMs, ctMs, nil, nil)
+	), atMs, ctMs, nil, tsdbutil.GenerateTestFloatHistogram(1))
 	assert.NoError(t, err)
 
-	_, err = tr.AppendHistogram(0, labels.FromStrings(
+	_, err = tr.appendHistogram(labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
@@ -642,11 +642,11 @@ func TestAppendHistogramReturnsStableSeriesRef(t *testing.T) {
 		"foo", "baz",
 	)
 
-	refA, err := tr.AppendHistogram(0, lsA, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	refA, err := tr.Append(0, lsA, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 	require.Equal(t, storage.SeriesRef(lsA.Hash()), refA)
 
-	refB, err := tr.AppendHistogram(0, lsB, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	refB, err := tr.Append(0, lsB, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 	require.Equal(t, storage.SeriesRef(lsB.Hash()), refB)
 	require.NotEqual(t, refA, refB)
@@ -668,14 +668,14 @@ func TestAppendHistogramStableSeriesRefEnablesSeriesDisappearanceTracking(t *tes
 
 	// Scrape #1: both series are present.
 	tr1 := newTxn(t, false)
-	refA1, err := tr1.AppendHistogram(0, lsA, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	refA1, err := tr1.Append(0, lsA, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
-	refB1, err := tr1.AppendHistogram(0, lsB, ts, tsdbutil.GenerateTestHistogram(1), nil)
+	refB1, err := tr1.Append(0, lsB, 0, ts, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 
 	// Scrape #2: only series A is present.
 	tr2 := newTxn(t, false)
-	refA2, err := tr2.AppendHistogram(0, lsA, ts+interval, tsdbutil.GenerateTestHistogram(1), nil)
+	refA2, err := tr2.Append(0, lsA, 0, ts+interval, 0, tsdbutil.GenerateTestHistogram(1), nil, storage.AOptions{})
 	require.NoError(t, err)
 
 	prev := map[storage.SeriesRef]struct{}{refA1: {}, refB1: {}}
@@ -1904,21 +1904,10 @@ func (tt buildTestData) run(t *testing.T) {
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st
-			var err error
-			switch {
-			case pt.fh != nil:
-				_, err = tr.AppendHistogram(0, pt.lb, pt.t, nil, pt.fh)
-			case pt.h != nil:
-				_, err = tr.AppendHistogram(0, pt.lb, pt.t, pt.h, nil)
-			default:
-				_, err = tr.Append(0, pt.lb, pt.t, pt.v)
-			}
+			_, err := tr.Append(0, pt.lb, 0, pt.t, pt.v, pt.h, pt.fh, storage.AOptions{
+				Exemplars: pt.exemplars,
+			})
 			assert.NoError(t, err)
-
-			for _, e := range pt.exemplars {
-				_, err := tr.AppendExemplar(0, pt.lb, e)
-				assert.NoError(t, err)
-			}
 		}
 		assert.NoError(t, tr.Commit())
 		mds := sink.AllMetrics()
@@ -2016,7 +2005,7 @@ func TestDetectAndStoreNativeHistogramStaleness_NonHistogramReturnsFalse(t *test
 	})
 
 	rk := resourceKey{job: "job-a", instance: "localhost:1234"}
-	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), &rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
+	ok := tr.detectAndStoreNativeHistogramStaleness(time.Now().UnixMilli(), rk, emptyScopeID, "foo", labels.FromMap(map[string]string{
 		string(model.MetricNameLabel): "foo",
 	}))
 	require.False(t, ok, "expected false when metadata type != histogram")
@@ -2133,4 +2122,163 @@ func newTxn(t *testing.T, useMetadata bool) *transaction {
 	// quiet logger
 	settings.Logger = zap.NewNop()
 	return newTransaction(ctx, sink, labels.EmptyLabels(), settings, newObs(t), false, useMetadata)
+}
+
+// ---- Append tests ----
+//
+// These tests validate the V2 append surface used by Prometheus:
+// transaction.Append(...).
+//
+// Some tests in this file still call transaction methods directly because they
+// validate method-specific behavior that is not exposed as independent calls in
+// the V2 interface (for example, direct AppendExemplar/STZero contract checks).
+
+func TestTransactionAppend(t *testing.T) {
+	type testCase struct {
+		name               string
+		stMs               int64
+		atMs               int64
+		val                float64
+		h                  *histogram.Histogram
+		fh                 *histogram.FloatHistogram
+		opts               storage.AOptions
+		labels             labels.Labels
+		expectedMetricType pmetric.MetricType
+		expectedExemplars  int
+		expectedScope      string
+		expectedVersion    string
+	}
+
+	tests := []testCase{
+		{
+			name:               "counter with exemplars",
+			stMs:               1,
+			atMs:               ts,
+			val:                42.0,
+			expectedMetricType: pmetric.MetricTypeSum,
+			labels: labels.FromStrings(
+				model.InstanceLabel, "localhost:8080",
+				model.JobLabel, "test",
+				model.MetricNameLabel, "counter_test",
+			),
+			opts: storage.AOptions{
+				Exemplars: []exemplar.Exemplar{
+					{
+						Labels: labels.FromStrings("key", "value"),
+						Value:  1.0,
+						Ts:     ts,
+					},
+				},
+			},
+			expectedExemplars: 1,
+		},
+		{
+			name: "float histogram",
+			stMs: 1,
+			atMs: ts,
+			fh:   tsdbutil.GenerateTestFloatHistogram(1),
+			opts: storage.AOptions{},
+			labels: labels.FromStrings(
+				model.InstanceLabel, "localhost:8080",
+				model.JobLabel, "test",
+				model.MetricNameLabel, "hist_test",
+			),
+			expectedMetricType: pmetric.MetricTypeExponentialHistogram,
+			expectedExemplars:  0,
+		},
+		{
+			name:               "histogram",
+			stMs:               1,
+			atMs:               ts,
+			h:                  tsdbutil.GenerateTestHistogram(1),
+			opts:               storage.AOptions{},
+			expectedMetricType: pmetric.MetricTypeExponentialHistogram,
+			labels: labels.FromStrings(
+				model.InstanceLabel, "localhost:8080",
+				model.JobLabel, "test",
+				model.MetricNameLabel, "hist_test",
+			),
+			expectedExemplars: 0,
+		},
+		{
+			name:               "counter with scope name and version",
+			stMs:               1,
+			atMs:               ts,
+			val:                10.0,
+			opts:               storage.AOptions{},
+			expectedMetricType: pmetric.MetricTypeSum,
+			labels: labels.FromStrings(
+				model.InstanceLabel, "localhost:8080",
+				model.JobLabel, "test",
+				model.MetricNameLabel, "counter_test",
+				prometheus.ScopeNameLabelKey, "my.scope",
+				prometheus.ScopeVersionLabelKey, "v1.2.3",
+			),
+			expectedScope:   "my.scope",
+			expectedVersion: "v1.2.3",
+		},
+		{
+			name: "histogram with scope name and version",
+			stMs: 1,
+			atMs: ts,
+			h:    tsdbutil.GenerateTestHistogram(1),
+			opts: storage.AOptions{},
+			labels: labels.FromStrings(
+				model.InstanceLabel, "localhost:8080",
+				model.JobLabel, "test",
+				model.MetricNameLabel, "hist_test",
+				prometheus.ScopeNameLabelKey, "my.scope",
+				prometheus.ScopeVersionLabelKey, "v1.2.3",
+			),
+			expectedScope:      "my.scope",
+			expectedVersion:    "v1.2.3",
+			expectedMetricType: pmetric.MetricTypeExponentialHistogram,
+			expectedExemplars:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(consumertest.MetricsSink)
+			txn := newTransaction(scrapeCtx, sink, labels.EmptyLabels(), receivertest.NewNopSettings(receivertest.NopType), nopObsRecv(t), false, true)
+			ref, err := txn.Append(0, tt.labels, tt.stMs, tt.atMs, tt.val, tt.h, tt.fh, tt.opts)
+			require.NoError(t, err)
+			assert.NotZero(t, ref)
+
+			require.NoError(t, txn.Commit())
+			mds := sink.AllMetrics()
+			require.Len(t, mds, 1)
+			md := mds[0]
+			sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
+			require.Equal(t, tt.expectedMetricType, sm.Metrics().At(0).Type())
+			if tt.expectedScope != "" {
+				require.Equal(t, tt.expectedScope, sm.Scope().Name())
+			}
+			if tt.expectedVersion != "" {
+				require.Equal(t, tt.expectedVersion, sm.Scope().Version())
+			}
+			switch tt.expectedMetricType {
+			case pmetric.MetricTypeSum:
+				dp := sm.Metrics().At(0).Sum().DataPoints().At(0)
+				require.Equal(t, tt.val, dp.DoubleValue())
+				if tt.expectedExemplars > 0 {
+					require.Equal(t, tt.expectedExemplars, dp.Exemplars().Len())
+				}
+				require.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(tt.stMs)), dp.StartTimestamp())
+			case pmetric.MetricTypeExponentialHistogram:
+				dp := sm.Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
+				expectedSum := func() float64 {
+					if tt.h != nil {
+						return tt.h.Sum
+					}
+					return tt.fh.Sum
+				}()
+				require.Equal(t, expectedSum, dp.Sum())
+				if tt.expectedExemplars > 0 {
+					require.Equal(t, tt.expectedExemplars, dp.Exemplars().Len())
+				}
+				require.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(tt.stMs)), dp.StartTimestamp())
+			}
+		})
+	}
 }

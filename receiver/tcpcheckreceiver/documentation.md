@@ -24,7 +24,7 @@ Measures the duration of TCP connection.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| tcpcheck.endpoint | TCP endpoint | Any Str | Recommended | - |
+| tcpcheck.endpoint | TCP endpoint | Any Str | Required | - |
 
 ### tcpcheck.error
 
@@ -38,7 +38,7 @@ Records errors occurring during TCP check.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| tcpcheck.endpoint | TCP endpoint | Any Str | Recommended | - |
+| tcpcheck.endpoint | TCP endpoint | Any Str | Required | - |
 | error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error`` | Recommended | - |
 
 ### tcpcheck.status
@@ -53,4 +53,4 @@ Records errors occurring during TCP check.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| tcpcheck.endpoint | TCP endpoint | Any Str | Recommended | - |
+| tcpcheck.endpoint | TCP endpoint | Any Str | Required | - |

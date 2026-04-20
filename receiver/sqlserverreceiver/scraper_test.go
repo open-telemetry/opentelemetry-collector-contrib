@@ -15,9 +15,11 @@ import (
 	"sort"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -340,6 +342,63 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 	return metrics, nil
 }
 
+func TestParseWaitResource(t *testing.T) {
+	testCases := map[string]struct {
+		input        string
+		expectedType string
+		expectedID   string
+	}{
+		"empty": {
+			input:        "",
+			expectedType: "",
+			expectedID:   "",
+		},
+		"invalid": {
+			input:        "not-a-wait-resource",
+			expectedType: "",
+			expectedID:   "",
+		},
+		"key": {
+			input:        "KEY: 5:72057594043359232 (abc)",
+			expectedType: "KEY",
+			expectedID:   "72057594043359232",
+		},
+		"page": {
+			input:        "PAGE: 7:1:232",
+			expectedType: "PAGE",
+			expectedID:   "1:232",
+		},
+		"rid": {
+			input:        "RID: 7:1:232:3",
+			expectedType: "RID",
+			expectedID:   "1:232:3",
+		},
+		"object": {
+			input:        "OBJECT: 9:245575913:0",
+			expectedType: "OBJECT",
+			expectedID:   "245575913:0",
+		},
+		"database": {
+			input:        "DATABASE: 5",
+			expectedType: "DATABASE",
+			expectedID:   "5",
+		},
+		"file": {
+			input:        "FILE: 5:2",
+			expectedType: "FILE",
+			expectedID:   "2",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			resourceType, resourceID := parseWaitResource(tc.input)
+			assert.Equal(t, tc.expectedType, resourceType)
+			assert.Equal(t, tc.expectedID, resourceID)
+		})
+	}
+}
+
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
 	var err error
@@ -655,14 +714,39 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
+			logRecord := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			blockingSessionIDAttr, ok := logRecord.Attributes().Get("sqlserver.blocking_session_id")
+			assert.True(t, ok)
+			blockingStartTimeAttr, hasBlockingStartTime := logRecord.Attributes().Get("sqlserver.blocking.start_time")
+			assert.Equal(t, blockingSessionIDAttr.Int() > 0, hasBlockingStartTime)
+			if hasBlockingStartTime {
+				_, parseErr := time.Parse(time.RFC3339, blockingStartTimeAttr.Str())
+				assert.NoError(t, parseErr)
+			}
+
 			// Uncomment line below to re-generate expected logs.
 			// golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)
+			removeAttributeFromAllLogRecords(expectedLogs, "sqlserver.blocking.start_time")
+			removeAttributeFromAllLogRecords(actualLogs, "sqlserver.blocking.start_time")
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-			assert.Equal(t, "db.server.query_sample", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
+			assert.Equal(t, "db.server.query_sample", logRecord.EventName())
 			assert.NoError(t, errs)
 		})
+	}
+}
+
+func removeAttributeFromAllLogRecords(logs plog.Logs, key string) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				logRecords.At(k).Attributes().Remove(key)
+			}
+		}
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -27,15 +28,6 @@ import (
 // It is a variable to allow mocking in tests.
 var getDomainControllersRemoteConfig = discovery.GetJoinedDomainControllersRemoteConfig
 
-// newFactoryAdapter creates a factory for windowseventlog receiver
-func newFactoryAdapter() receiver.Factory {
-	return receiver.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-	)
-}
-
 // createLogsReceiver creates a logs receiver with SID enrichment support
 func createLogsReceiver(
 	ctx context.Context,
@@ -44,7 +36,6 @@ func createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
 	receiverCfg := cfg.(*WindowsLogConfig)
-
 	// Create SID cache if enabled
 	var cache sidcache.Cache
 	if receiverCfg.ResolveSIDs.Enabled {
@@ -67,7 +58,7 @@ func createLogsReceiver(
 	// Wrap the consumer with SID enrichment
 	enrichedConsumer := newSIDEnrichingConsumer(nextConsumer, cache, set.Logger)
 
-	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability)
+	stanzaFactory := adapter.NewFactory(receiverType{}, metadata.LogsStability, xreceiver.WithDeprecatedTypeAlias(metadata.DeprecatedType))
 
 	if metadata.DomainControllersAutodiscoveryFeatureGate.IsEnabled() && receiverCfg.DiscoverDomainControllers {
 		remoteConfigs, err := getDomainControllersRemoteConfig(set.Logger, receiverCfg.InputConfig.Remote.Username, receiverCfg.InputConfig.Remote.Password)

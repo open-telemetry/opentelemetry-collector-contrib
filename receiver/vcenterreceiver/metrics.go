@@ -258,6 +258,9 @@ func (v *vcenterMetricScraper) recordVMStats(
 	vm *mo.VirtualMachine,
 	hs *mo.HostSystem,
 ) {
+	if vm.Summary.Storage == nil || vm.Config == nil || hs == nil || hs.Summary.Hardware == nil {
+		return
+	}
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted
 

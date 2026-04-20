@@ -213,29 +213,11 @@ func TestProxyIsUsedForNonExcludedHosts(t *testing.T) {
 	transport, ok := client.Transport.(*http.Transport)
 	require.True(t, ok)
 
-	req, err := http.NewRequest(http.MethodGet, "https://example.com/something", http.NoBody)
-	require.NoError(t, err)
-
-	proxyURL, err := transport.Proxy(req)
-	assert.NoError(t, err)
-	assert.NotNil(t, proxyURL)
-	assert.Equal(t, "http://mitmproxy:8080", proxyURL.String())
-}
-
-func TestExplicitProxyAddressStillWorks(t *testing.T) {
-	t.Setenv("HTTPS_PROXY", "http://env.proxy:8080")
-	logger := zap.NewNop()
-	client, err := newHTTPClient(logger, 8, 30, false, "http://explicit.proxy:9090")
-	require.NoError(t, err)
-
-	transport, ok := client.Transport.(*http.Transport)
-	require.True(t, ok)
-
 	req, err := http.NewRequest(http.MethodGet, "https://example.com/", http.NoBody)
 	require.NoError(t, err)
 
 	proxyURL, err := transport.Proxy(req)
 	assert.NoError(t, err)
-	assert.NotNil(t, proxyURL)
-	assert.Equal(t, "http://explicit.proxy:9090", proxyURL.String())
+	assert.NotNil(t, proxyURL, "Proxy should be used for hosts NOT in NO_PROXY")
+	assert.Equal(t, "http://mitmproxy:8080", proxyURL.String())
 }

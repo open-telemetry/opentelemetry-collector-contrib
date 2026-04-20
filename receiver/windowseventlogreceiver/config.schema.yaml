@@ -14,7 +14,7 @@ $defs:
       enabled:
         description: Enabled controls whether SID resolution is active
         type: boolean
-description: WindowsLogConfig defines configuration for the windowseventlog receiver
+description: WindowsLogConfig defines configuration for the Windows Event Log receiver.
 type: object
 properties:
   discover_domain_controllers:

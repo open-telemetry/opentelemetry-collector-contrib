@@ -40,6 +40,10 @@ resourceMetrics:
                   timeUnixNano: "1681808580000000000"
             name: cputime_average
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.web
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version
   - resource:
@@ -83,5 +87,9 @@ resourceMetrics:
                   timeUnixNano: "1681808640000000000"
             name: cputime5m_average
         scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.web
           name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
           version: test-version

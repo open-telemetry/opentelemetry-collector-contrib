@@ -44,7 +44,7 @@ jobs:
           GOOS=linux GOARCH=s390x make telemetrygen
           cp bin/telemetrygen_* cmd/telemetrygen/
       - name: Build telemetrygen
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: cmd/telemetrygen
           push: false
@@ -81,7 +81,7 @@ jobs:
           GOOS=linux GOARCH=s390x make telemetrygen
           cp bin/telemetrygen_* cmd/telemetrygen/
       - name: Push telemetrygen to Github packages
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: cmd/telemetrygen
           push: true
@@ -121,7 +121,7 @@ jobs:
           GOOS=linux GOARCH=s390x make telemetrygen
           cp bin/telemetrygen_* cmd/telemetrygen/
       - name: Push telemetrygen to Github packages
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
         with:
           context: cmd/telemetrygen
           push: true

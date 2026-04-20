@@ -37,7 +37,7 @@ componentOverrides:
     configName: 'TCPLogConfig'
   receiver/udp_log:
     configName: 'UDPLogConfig'
-  receiver/windowseventlog:
+  receiver/windows_event_log:
     configName: 'WindowsLogConfig'
   connector/signaltometrics:
     configName: 'config.Config'

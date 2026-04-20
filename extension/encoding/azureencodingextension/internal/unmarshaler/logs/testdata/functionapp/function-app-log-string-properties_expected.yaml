@@ -1,0 +1,63 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/AZURE-RESOURCE-GROUP-NAME/PROVIDERS/MICROSOFT.WEB/SITES/AZURE-FUNCTION-APP-NAME1
+        - key: cloud.region
+          value:
+            stringValue: eastus2
+        - key: service.name
+          value:
+            stringValue: AZURE-FUNCTION-APP-NAME1
+        - key: service.instance.id
+          value:
+            stringValue: d00e000e00c000c0000000000b0c00000000000cca00d0dc0d0a0fb00cba00f
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: FunctionAppLogs
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Web/sites/functions/log
+              - key: faas.invoked_provider
+                value:
+                  stringValue: azure
+              - key: azure.event.name
+                value:
+                  stringValue: ReceiveMessageStart
+              - key: azure.event.id
+                value:
+                  intValue: "7"
+              - key: faas.name
+                value:
+                  stringValue: AZURE-FUNCTION-APP-NAME1/
+              - key: host.id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000000
+              - key: host.image.version
+                value:
+                  stringValue: 4.1047.100.3
+              - key: process.pid
+                value:
+                  intValue: "9"
+            body:
+              stringValue: conversation_twilio_queue-00000000-0000-0000-0000-000000000000-Receiver:ReceiveBatchAsyncstart.MessageCount=1
+            severityNumber: 9
+            severityText: Informational
+            timeUnixNano: "1775578016000000000"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.function_app
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

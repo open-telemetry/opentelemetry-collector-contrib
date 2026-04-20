@@ -129,9 +129,9 @@ The following settings can be optionally configured:
 - `message_marking`:
   - `after`: (default = false) If true, the messages are marked after the pipeline execution
   - `on_error`: (default = false) If false, only the successfully processed messages are marked. This applies to non-permanent errors.
-    **Note: this can block the entire partition in case a message processing returns a non-permanent error**
+    **Note: when `error_backoff` is enabled, the failed record is automatically retried on the next poll cycle once all retries are exhausted. Without `error_backoff`, the partition remains paused until a rebalance occurs.**
   - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
-    **Note: this can block the entire partition in case a message processing returns a permanent error**
+    **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.

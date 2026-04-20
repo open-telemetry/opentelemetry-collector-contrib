@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -28,6 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 					Transport: "tcp",
 					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 				},
+				KeepAlivesEnabled: true,
 			},
 			Path: "/",
 		},
@@ -37,6 +39,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 					Transport: "tcp",
 					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
 				},
+				KeepAlivesEnabled: true,
 			},
 			Status: healthcheck.PathConfig{
 				Enabled: true,
@@ -53,6 +56,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 					Endpoint:  testutil.EndpointForPort(healthcheck.DefaultGRPCPort),
 					Transport: "tcp",
 				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 			},
 		},
 	}, cfg)

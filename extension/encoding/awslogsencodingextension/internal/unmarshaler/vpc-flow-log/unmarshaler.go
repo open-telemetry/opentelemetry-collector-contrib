@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -29,7 +29,9 @@ import (
 
 var (
 	supportedVPCFlowLogFileFormat = []string{constants.FileFormatPlainText, constants.FileFormatParquet}
-	defaultFormat                 = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	defaultVPCFormat              = []string{"version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "action", "log-status"}
+	// Default TGW format is version 2 with resource-type field
+	defaultTGWFormat = []string{"version", "resource-type", "account-id", "tgw-id", "tgw-attachment-id", "tgw-src-vpc-id", "tgw-dst-vpc-id", "tgw-src-subnet-id", "tgw-dst-subnet-id", "tgw-src-eni", "tgw-dst-eni", "tgw-src-az-id", "tgw-dst-az-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes", "start", "end", "log-status"}
 )
 
 var _ unmarshaler.StreamingLogsUnmarshaler = (*VPCFlowLogUnmarshaler)(nil)
@@ -66,7 +68,6 @@ func NewVPCFlowLogUnmarshaler(
 	logger *zap.Logger,
 	vpcFlowStartISO8601FormatEnabled bool,
 ) (*VPCFlowLogUnmarshaler, error) {
-	cfg.parsedFormat = defaultFormat
 	if cfg.Format != "" {
 		cfg.parsedFormat = strings.Fields(cfg.Format)
 		logger.Debug("Using custom format for VPC flow log unmarshaling", zap.Strings("fields", cfg.parsedFormat))
@@ -276,6 +277,22 @@ func (v *VPCFlowLogUnmarshaler) fromCloudWatch(fields []string, reader *bufio.Re
 	resourceAttrs.PutStr(string(conventions.AWSLogGroupNamesKey), cwLog.LogGroup)
 	resourceAttrs.PutStr(string(conventions.AWSLogStreamNamesKey), cwLog.LogStream)
 
+	if fields == nil {
+		// No format specified, so we assume the default format. The default format is different
+		// for Transit Gateway and plain VPC flow logs, so we need to inspect the log message.
+		if len(cwLog.LogEvents) > 0 {
+			// The 2nd field is "TransitGateway" for TGW logs (resource-type field)
+			_, rest, ok := strings.Cut(cwLog.LogEvents[0].Message, " ")
+			if ok && strings.HasPrefix(rest, "TransitGateway ") {
+				fields = defaultTGWFormat
+				v.logger.Debug("Detected TGW flow log format for CloudWatch stream")
+			} else {
+				fields = defaultVPCFormat
+			}
+			v.cfg.parsedFormat = fields
+		}
+	}
+
 	for _, event := range cwLog.LogEvents {
 		err := v.addToLogs(resourceLogs, scopeLogs, fields, event.Message)
 		if err != nil {
@@ -444,6 +461,30 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 	case "interface-id":
 		// TODO Replace with conventions variable once it becomes available
 		record.Attributes().PutStr("network.interface.name", value)
+	case "tgw-id":
+		record.Attributes().PutStr("aws.tgw.id", value)
+	case "tgw-attachment-id":
+		record.Attributes().PutStr("aws.tgw.attachment.id", value)
+	case "tgw-src-vpc-id":
+		record.Attributes().PutStr("aws.tgw.source.vpc.id", value)
+	case "tgw-dst-vpc-id":
+		record.Attributes().PutStr("aws.tgw.destination.vpc.id", value)
+	case "tgw-src-subnet-id":
+		record.Attributes().PutStr("aws.tgw.source.vpc.subnet.id", value)
+	case "tgw-dst-subnet-id":
+		record.Attributes().PutStr("aws.tgw.destination.vpc.subnet.id", value)
+	case "tgw-src-eni":
+		record.Attributes().PutStr("aws.tgw.source.eni.id", value)
+	case "tgw-dst-eni":
+		record.Attributes().PutStr("aws.tgw.destination.eni.id", value)
+	case "tgw-src-az-id":
+		record.Attributes().PutStr("aws.tgw.source.az.id", value)
+	case "tgw-dst-az-id":
+		record.Attributes().PutStr("aws.tgw.destination.az.id", value)
+	case "tgw-pair-attachment-id":
+		record.Attributes().PutStr("aws.tgw.attachment.pair.id", value)
+	case "resource-type":
+		// Skip - used for detection only, already captured in encoding.format
 	case "srcport":
 		if err := addNumber(field, value, string(conventions.SourcePortKey)); err != nil {
 			return false, err
@@ -485,6 +526,22 @@ func (v *VPCFlowLogUnmarshaler) handleField(
 		}
 	case "bytes":
 		if err := addNumber(field, value, "aws.vpc.flow.bytes"); err != nil {
+			return false, err
+		}
+	case "packets-lost-no-route":
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_no_route"); err != nil {
+			return false, err
+		}
+	case "packets-lost-blackhole":
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_blackhole"); err != nil {
+			return false, err
+		}
+	case "packets-lost-mtu-exceeded":
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_mtu_exceeded"); err != nil {
+			return false, err
+		}
+	case "packets-lost-ttl-expired":
+		if err := addNumber(field, value, "aws.vpc.flow.packets_lost_ttl_expired"); err != nil {
 			return false, err
 		}
 	case "start":

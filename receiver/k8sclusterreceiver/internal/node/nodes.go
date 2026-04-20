@@ -16,7 +16,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
@@ -145,7 +144,10 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 }
 
 func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
-	meta := maps.MergeStringMaps(map[string]string{}, node.Labels)
+	meta := map[string]string{}
+	for k, v := range node.Labels {
+		meta[fmt.Sprintf("k8s.node.label.%s", k)] = v
+	}
 
 	meta[string(conventions.K8SNodeNameKey)] = node.Name
 	meta[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)

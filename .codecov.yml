@@ -461,6 +461,10 @@ component_management:
     name: processor_dnslookup
     paths:
     - processor/dnslookupprocessor/**
+  - component_id: processor_drain
+    name: processor_drain
+    paths:
+    - processor/drainprocessor/**
   - component_id: processor_filter
     name: processor_filter
     paths:

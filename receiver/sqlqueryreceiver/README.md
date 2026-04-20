@@ -82,6 +82,7 @@ Additionally, each `query` section supports the following properties:
   See the below section [Tracking processed results](#tracking-processed-results).
 - `tracking_start_value` (optional, default `""`) Applies only to logs. In case of a parameterized query, defines the initial value for the parameter.
   See the below section [Tracking processed results](#tracking-processed-results).
+- `ignore_null_values` (optional, default `false`) When set to `true`, suppresses warning logs about NULL values encountered in query result columns. This is useful when queries return NULL in columns that are not referenced in the metric or log configuration.
 - `attribute_columns`(optional): a list of column names in the returned dataset used to set attributes on the signal.
   These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 
@@ -314,8 +315,8 @@ This produces three separate metrics (`pgbouncer.lists.pools`, `pgbouncer.lists.
 
 #### NULL values
 
-Avoid queries that produce any NULL values. If a query produces a NULL value, a warning will be logged. Furthermore,
-if a configuration references the column that produces a NULL value, an additional error will be logged. However, in
+If a query produces a NULL value, a warning will be logged unless `ignore_null_values` is set to true. Furthermore,
+if a configuration references the column that produces a NULL value, an error will always be logged. However, in
 either case, the receiver will continue to operate.
 
 #### Oracle DB Driver Example

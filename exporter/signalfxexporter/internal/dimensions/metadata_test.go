@@ -13,8 +13,9 @@ import (
 
 func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	type args struct {
-		defaults map[string]string
-		metadata metadata.MetadataUpdate
+		defaults            map[string]string
+		metadata            metadata.MetadataUpdate
+		stripK8sLabelPrefix bool
 	}
 	tests := []struct {
 		name string
@@ -115,6 +116,63 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 					"ta.g1": true,
 					"ta/g2": false,
 				},
+			},
+		},
+		{
+			"Test k8s resource label prefix is stripped",
+			args{
+				stripK8sLabelPrefix: true,
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "k8s.pod.uid",
+					ResourceID:    "pod-123",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.pod.label.app":                          "my-app",
+							"k8s.node.label.topology.kubernetes.io/zone": "",
+							"k8s.deployment.label.version":               "v1",
+						},
+						MetadataToRemove: map[string]string{
+							"k8s.pod.label.old-label": "old-value",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "k8s.pod.uid",
+				Value: "pod-123",
+				Properties: getMapToPointers(map[string]string{
+					"app":       "my-app",
+					"version":   "v1",
+					"old-label": "",
+				}),
+				Tags: map[string]bool{
+					"topology.kubernetes.io/zone": true,
+				},
+			},
+		},
+		{
+			"Test k8s service label prefix is NOT stripped even when stripK8sLabelPrefix is true",
+			args{
+				stripK8sLabelPrefix: true,
+				metadata: metadata.MetadataUpdate{
+					ResourceIDKey: "k8s.service.uid",
+					ResourceID:    "svc-123",
+					MetadataDelta: metadata.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"k8s.service.label.app":     "my-app",
+							"k8s.service.label.version": "v1",
+						},
+					},
+				},
+			},
+			&DimensionUpdate{
+				Name:  "k8s.service.uid",
+				Value: "svc-123",
+				Properties: getMapToPointers(map[string]string{
+					"k8s.service.label.app":     "my-app",
+					"k8s.service.label.version": "v1",
+				}),
+				Tags: map[string]bool{},
 			},
 		},
 		{
@@ -269,7 +327,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, "-_."))
+			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.defaults, tt.args.metadata, "-_.", tt.args.stripK8sLabelPrefix))
 		})
 	}
 }

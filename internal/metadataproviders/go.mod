@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/moby/moby/api v1.54.1
 	github.com/moby/moby/client v0.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.149.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.150.0
 	github.com/shirou/gopsutil/v4 v4.26.3
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.43.0

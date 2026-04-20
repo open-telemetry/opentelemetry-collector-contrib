@@ -200,6 +200,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/dnslookup
+      - processor/drain
       - processor/filter
       - processor/geoip
       - processor/groupbyattrs

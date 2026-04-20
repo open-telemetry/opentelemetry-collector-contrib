@@ -597,7 +597,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 func setMetric(scope pmetric.ScopeMetrics, metricName, unit, description string) pmetric.Metric {
 	metric := scope.Metrics().AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetUnit(unit)
+	metric.SetUnit(prometheus.UnitWordToUCUM(unit))
 	metric.SetDescription(description)
 	return metric
 }

@@ -1,6 +1,0 @@
-change_type: enhancement
-component: processor/transform
-note: Add feature gate `processor.transform.defaultErrorModeIgnore` to change default error_mode to ignore
-issues: [47231]
-subtext:
-change_logs: []

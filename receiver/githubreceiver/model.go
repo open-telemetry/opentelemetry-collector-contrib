@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/go-github/v84/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // model.go contains custom attributes that complement the standardized attributes

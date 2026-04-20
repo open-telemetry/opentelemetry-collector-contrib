@@ -18,6 +18,8 @@ $defs:
       send_delay:
         type: string
         format: duration
+      strip_k8s_label_prefix:
+        type: boolean
       timeout:
         type: string
         format: duration

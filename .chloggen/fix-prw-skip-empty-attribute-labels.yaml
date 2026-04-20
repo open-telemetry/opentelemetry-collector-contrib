@@ -1,0 +1,13 @@
+change_type: bug_fix
+
+component: exporter/prometheusremotewrite
+
+note: Skip attributes with empty string values when converting OTLP metrics to Prometheus labels.
+
+issues: [47326]
+
+subtext: |
+  Attributes and resource attributes with empty string values are now excluded 
+  from Prometheus label conversion, preventing empty labels from being created.
+
+change_logs: [user]

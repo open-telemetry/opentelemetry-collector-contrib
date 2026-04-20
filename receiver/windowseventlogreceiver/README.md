@@ -81,6 +81,14 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 Configuration:
 ```yaml
 receivers:
+    windows_event_log:
+        channel: application
+```
+
+The deprecated component type `windowseventlog` is still accepted:
+
+```yaml
+receivers:
     windowseventlog:
         channel: application
 ```
@@ -171,7 +179,7 @@ If collection of the local event log is desired, a separate receiver needs to be
 Single server configuration:
 ```yaml
 receivers:
-    windowseventlog:
+    windows_event_log:
         channel: application
         remote:
             server:   "remote-server"
@@ -188,7 +196,7 @@ The following example only forwards logs from the `Application` from `foo` or `b
 
 ```yaml
 receivers:
-  windowseventlog/query:
+  windows_event_log/query:
     query: |
       <QueryList>
         <Query Id="0">
@@ -212,7 +220,7 @@ Windows Event Logs often contain Security Identifiers (SIDs) instead of readable
 **Configuration:**
 ```yaml
 receivers:
-  windowseventlog:
+  windows_event_log:
     channel: Security
     resolve_sids:
       enabled: true        # Enable SID resolution

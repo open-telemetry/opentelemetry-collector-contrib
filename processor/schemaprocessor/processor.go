@@ -95,7 +95,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 		resourceSchemaURL := rMetric.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
-			tr, err := t.manager.RequestTranslation(context.Background(), resourceSchemaURL)
+			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
 				return md, err

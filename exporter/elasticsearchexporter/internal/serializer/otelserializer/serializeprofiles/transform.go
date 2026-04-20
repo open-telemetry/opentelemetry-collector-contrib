@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
 
 // Transform transforms a [pprofile.Profile] into our own
@@ -453,7 +454,7 @@ func executables(dic pprofile.ProfilesDictionary, mappings pprofile.MappingSlice
 func stackTraceID(frames []StackFrame) (string, error) {
 	var buf [24]byte
 	h := fnv.New128a()
-	for i := len(frames) - 1; i >= 0; i-- { // reverse ordered frames, done in stackFrames()
+	for i := range slices.Backward(frames) { // reverse ordered frames, done in stackFrames()
 		fID, err := newFrameIDFromString(frames[i].DocID)
 		if err != nil {
 			return "", fmt.Errorf("failed to create frameID from string: %w", err)

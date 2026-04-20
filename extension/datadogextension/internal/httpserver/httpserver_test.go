@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
@@ -57,6 +57,7 @@ func TestServerStart(t *testing.T) {
 					"test-hostname",
 					"test-uuid",
 					payload.OtelCollector{},
+					componenttest.NewNopTelemetrySettings(),
 				)
 				return s, logs
 			},
@@ -67,7 +68,7 @@ func TestServerStart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s, logs := tt.setupServer()
-			s.Start()
+			require.NoError(t, s.Start(t.Context(), componenttest.NewNopHost()))
 
 			// Verify the logs
 			for _, expectedLog := range tt.expectedLogs {
@@ -182,6 +183,7 @@ func TestPrepareAndSendFleetAutomationPayloads(t *testing.T) {
 				"test-hostname",
 				"test-uuid",
 				payload.OtelCollector{},
+				componenttest.NewNopTelemetrySettings(),
 			)
 			ocPayload, err := s.SendPayload()
 			if tt.expectedError != "" {
@@ -421,13 +423,13 @@ func TestServerStop(t *testing.T) {
 		simulateSlowStop bool
 	}{
 		{
-			name: "Stop with nil server - should be no-op",
+			name: "Stop with nil listenClose - should be no-op",
 			setupServer: func() (*Server, *observer.ObservedLogs) {
 				core, logs := observer.New(zapcore.InfoLevel)
 				logger := zap.New(core)
 				return &Server{
-					logger: logger,
-					server: nil, // nil server
+					logger:      logger,
+					listenClose: nil, // nil listenClose
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
@@ -448,14 +450,13 @@ func TestServerStop(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				})
 				server := &http.Server{
-					Addr:              "127.0.0.1:0", // Use any available port
 					Handler:           mux,
 					ReadHeaderTimeout: 10 * time.Millisecond,
 				}
 
 				return &Server{
-					logger: logger,
-					server: server,
+					logger:      logger,
+					listenClose: server.Shutdown,
 				}, logs
 			},
 			contextSetup: func() (context.Context, context.CancelFunc) {
@@ -472,22 +473,8 @@ func TestServerStop(t *testing.T) {
 			ctx, cancel := tt.contextSetup()
 			defer cancel()
 
-			if srv.server != nil && srv.server.Addr != "" {
-				listener, err := net.Listen("tcp", srv.server.Addr)
-				require.NoError(t, err)
-				go func() {
-					if err := srv.server.Serve(listener); err != nil && err != http.ErrServerClosed {
-						t.Logf("Unexpected server error: %v", err)
-					}
-				}()
-
-				if tt.simulateSlowStop {
-					cancel()
-					resp, err := http.Get("http://" + srv.server.Addr + "/block")
-					if err == nil {
-						_ = resp.Body.Close()
-					}
-				}
+			if tt.simulateSlowStop {
+				cancel()
 			}
 
 			start := time.Now()
@@ -536,13 +523,13 @@ func TestServerStopChannelBehavior(t *testing.T) {
 	}
 
 	srv := &Server{
-		logger: logger,
-		server: server,
+		logger:      logger,
+		listenClose: server.Shutdown,
 	}
 
 	// Start the server
 	go func() {
-		if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			t.Errorf("Unexpected server error: %v", err)
 		}
 	}()
@@ -594,13 +581,13 @@ func TestServerStopConcurrency(t *testing.T) {
 	}
 
 	srv := &Server{
-		logger: logger,
-		server: server,
+		logger:      logger,
+		listenClose: server.Shutdown,
 	}
 
 	// Start the server
 	go func() {
-		if err := srv.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			t.Logf("Unexpected server error: %v", err)
 		}
 	}()
@@ -668,7 +655,7 @@ func TestServer_SendPayload(t *testing.T) {
 		return nil
 	}
 
-	server := NewServer(logger, serializer, config, "host", "uuid", pl)
+	server := NewServer(logger, serializer, config, "host", "uuid", pl, componenttest.NewNopTelemetrySettings())
 
 	result, err := server.SendPayload()
 	assert.NoError(t, err)
@@ -694,7 +681,7 @@ func TestServer_SendPayload_ForwarderNotStarted(t *testing.T) {
 	pl := payload.OtelCollector{}
 	serializer := &mockSerializer{state: 0} // 0 != defaultforwarder.Started
 
-	server := NewServer(logger, serializer, config, "host", "uuid", pl)
+	server := NewServer(logger, serializer, config, "host", "uuid", pl, componenttest.NewNopTelemetrySettings())
 
 	result, err := server.SendPayload()
 	assert.Error(t, err)
@@ -761,6 +748,7 @@ func TestNewServerErrorPaths(t *testing.T) {
 			"test-hostname",
 			"test-uuid",
 			payload.OtelCollector{},
+			componenttest.NewNopTelemetrySettings(),
 		)
 
 		// Stop should not panic even if server was never started
@@ -769,17 +757,17 @@ func TestNewServerErrorPaths(t *testing.T) {
 		})
 	})
 
-	t.Run("Stop server with nil server", func(t *testing.T) {
+	t.Run("Stop server with nil listenClose", func(t *testing.T) {
 		core, _ := observer.New(zapcore.InfoLevel)
 		logger := zap.New(core)
 
-		// Create a server instance with nil server field
+		// Create a server instance with nil listenClose field
 		s := &Server{
-			logger: logger,
-			server: nil,
+			logger:      logger,
+			listenClose: nil,
 		}
 
-		// Stop should not panic with nil server
+		// Stop should not panic with nil listenClose
 		assert.NotPanics(t, func() {
 			s.Stop(t.Context())
 		})

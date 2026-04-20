@@ -1,5 +1,6 @@
 display_name: TCP Check Receiver
 type: tcpcheck
+reaggregation_enabled: true
 
 description: This receiver creates stats by connecting to a TCP server.
 
@@ -16,10 +17,12 @@ resource_attributes:
 attributes:
   error.code:
     description: Error code recorded during check
+    requirement_level: recommended
     type: string
     enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error]
   tcpcheck.endpoint:
     description: TCP endpoint
+    requirement_level: required
     type: string
 
 metrics:

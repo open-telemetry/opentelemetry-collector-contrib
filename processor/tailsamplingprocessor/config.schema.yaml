@@ -459,3 +459,8 @@ properties:
   sampling_strategy:
     description: SamplingStrategy controls how/when sampling decisions are made. "trace-complete" (default) evaluates accumulated trace data on timer handling. "span-ingest" evaluates each incoming batch on ingest; terminal outcomes finalize immediately, and non-terminal traces are finalized on cleanup.
     type: string
+  tail_storage:
+    description: TailStorageID specifies an optional tail storage extension to use for buffering spans. If not set, in-memory tail storage is used. It is behind feature gate `processor.tailsamplingprocessor.tailstorageextension`.
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID

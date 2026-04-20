@@ -5,10 +5,17 @@ package config
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
 )
+
+func TestSetDefaults_Timeout(t *testing.T) {
+	cfg := &Config{}
+	cfg.SetDefaults()
+	assert.Equal(t, 10*time.Second, cfg.Timeout)
+}
 
 func TestKeyValueSet(t *testing.T) {
 	tests := []struct {
