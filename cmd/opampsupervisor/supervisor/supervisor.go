@@ -44,7 +44,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -1449,7 +1449,6 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 	}
 
 	// Check if supervisor's merged config is changed.
-
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
 		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
@@ -1457,9 +1456,29 @@ func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteCo
 
 	configChanged = false
 
-	oldConfigState := s.cfgState.Swap(newConfigState)
-	if oldConfigState == nil || !oldConfigState.(*configState).equal(newConfigState) {
+	oldConfigStateInterface := s.cfgState.Load()
+	var oldConfigState *configState
+	if oldConfigStateInterface != nil {
+		oldConfigState = oldConfigStateInterface.(*configState)
+	}
+
+	if oldConfigState == nil || !oldConfigState.equal(newConfigState) {
 		s.telemetrySettings.Logger.Debug("Merged config changed.")
+
+		// Validate BEFORE storing to prevent race condition where other goroutines read invalid config
+		if s.config.Agent.ValidateConfig && !newConfigState.configMapIsEmpty {
+			if err := s.validateConfig(newConfigState.mergedConfig); err != nil {
+				s.telemetrySettings.Logger.Warn(
+					"New configuration failed validation, keeping previous config. "+
+						"Note: Validation may fail for valid configs if resources (e.g., ports) are temporarily unavailable.",
+					zap.Error(err),
+				)
+				return false, fmt.Errorf("configuration validation failed: %w", err)
+			}
+		}
+
+		// Only store after successful validation (or if validation is disabled/skipped)
+		s.cfgState.Store(newConfigState)
 		configChanged = true
 	}
 
@@ -1740,6 +1759,46 @@ func (s *Supervisor) writeAgentConfig() error {
 	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
 		return err
 	}
+	return nil
+}
+
+// validateConfig validates a configuration string without storing it in cfgState.
+// This prevents race conditions where other goroutines might read invalid config during validation.
+// Returns an error if validation fails.
+func (s *Supervisor) validateConfig(configContent string) error {
+	if s.commander == nil {
+		s.telemetrySettings.Logger.Debug("Skipping config validation: commander not initialized")
+		return nil
+	}
+
+	// Write config to a temporary file for validation
+	tempFile, err := os.CreateTemp(s.config.Storage.Directory, "validate-config-*.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to create temp config file for validation: %w", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	if _, err := tempFile.WriteString(configContent); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("failed to write temp config file for validation: %w", err)
+	}
+
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp config file: %w", err)
+	}
+
+	parentCtx := s.runCtx
+	if parentCtx == nil {
+		parentCtx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
+	defer cancel()
+
+	if err := s.commander.ValidateConfig(ctx, tempFile.Name()); err != nil {
+		return fmt.Errorf("configuration validation failed: %w", err)
+	}
+
+	s.telemetrySettings.Logger.Debug("Configuration validation succeeded")
 	return nil
 }
 

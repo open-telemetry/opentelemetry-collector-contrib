@@ -54,7 +54,7 @@ func sanitizeFloat(value float64) any {
 
 func MetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, logger *zap.Logger, mapping HecToOtelAttrs, source, sourceType, index string) []*Event {
 	host := unknownHostName
-	commonFields := map[string]any{}
+	commonFields := make(map[string]any, res.Attributes().Len())
 
 	for k, v := range res.Attributes().All() {
 		switch k {
@@ -215,7 +215,7 @@ func MetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, logger *zap.Log
 
 func createEvent(timestamp pcommon.Timestamp, host, source, sourceType, index string, fields map[string]any) *Event {
 	return &Event{
-		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
+		Time:       nanoToEpochSeconds(timestamp),
 		Host:       host,
 		Source:     source,
 		SourceType: sourceType,
@@ -259,10 +259,6 @@ func cloneMapWithSelector(fields map[string]any, selector func(string) bool) map
 		}
 	}
 	return newFields
-}
-
-func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) float64 {
-	return math.Round(float64(ts)/1e6) / 1e3
 }
 
 func float64ToDimValue(f float64) string {

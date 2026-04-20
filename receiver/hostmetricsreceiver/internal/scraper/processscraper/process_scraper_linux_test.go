@@ -189,8 +189,11 @@ func metricsConfigAllEnabled() metadata.MetricsConfig {
 	v := reflect.ValueOf(&cfg).Elem()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
-		if field.Type() == reflect.TypeFor[metadata.MetricConfig]() {
-			field.FieldByName("Enabled").SetBool(true)
+		if field.Kind() == reflect.Struct {
+			enabledField := field.FieldByName("Enabled")
+			if enabledField.IsValid() && enabledField.CanSet() {
+				enabledField.SetBool(true)
+			}
 		}
 	}
 	return cfg
