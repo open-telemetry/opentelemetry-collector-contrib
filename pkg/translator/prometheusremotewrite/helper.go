@@ -136,7 +136,11 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 	// (as they get mapped to other Prometheus labels)?
 	for key, value := range attributes.All() {
 		if !slices.Contains(ignoreAttrs, key) {
-			labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
+			strVal := value.AsString()
+			if strVal == "" {
+				continue
+			}
+			labels = append(labels, prompb.Label{Name: key, Value: strVal})
 		}
 	}
 	sort.Stable(ByLabelName(labels))
@@ -159,14 +163,19 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, scope p
 	// Map service.name + service.namespace to job
 	if haveServiceName {
 		val := serviceName.AsString()
-		if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
-			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+		if val != "" {
+			if serviceNamespace, ok := resourceAttrs.Get(string(conventions.ServiceNamespaceKey)); ok {
+				val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+			}
+			l[model.JobLabel] = val
 		}
-		l[model.JobLabel] = val
 	}
 	// Map service.instance.id to instance
 	if haveInstanceID {
-		l[model.InstanceLabel] = instance.AsString()
+		val := instance.AsString()
+		if val != "" {
+			l[model.InstanceLabel] = val
+		}
 	}
 	for key, value := range externalLabels {
 		// External labels have already been sanitized

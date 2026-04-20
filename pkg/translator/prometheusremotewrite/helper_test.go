@@ -385,6 +385,35 @@ func Test_createLabelSet(t *testing.T) {
 			want:                        getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
 			underscoreLabelSanitization: true,
 		},
+		{
+			name: "empty_attribute_value_excluded",
+			resource: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("resource.attr", "")
+				return res
+			}(),
+			orig: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr(label11, value11)
+				m.PutStr(label12, "")
+				return m
+			}(),
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31},
+			want:           getPromLabels(label11, value11, label31, value31),
+		},
+		{
+			name: "empty_service_name_excluded",
+			resource: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("service.name", "")
+				res.Attributes().PutStr("service.instance.id", "")
+				return res
+			}(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			want:           getPromLabels(label11, value11, label12, value12),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
