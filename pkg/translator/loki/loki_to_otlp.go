@@ -22,6 +22,7 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 	if len(pushRequest.Streams) == 0 {
 		return logs, nil
 	}
+	promParser := promql_parser.NewParser(promql_parser.Options{})
 	rls := logs.ResourceLogs().AppendEmpty()
 	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 
@@ -35,7 +36,7 @@ func PushRequestToLogs(pushRequest *push.PushRequest, keepTimestamp bool) (plog.
 		// Get stream labels
 		// Stream contains labels in string format: `{label1="value1", label2="value2"}`
 		// Here we parse such a string into labels.Labels
-		ls, err := promql_parser.ParseMetric(stream.Labels)
+		ls, err := promParser.ParseMetric(stream.Labels)
 		if err != nil {
 			lastErr = err
 			errNumber++

@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("tlscheck")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver"
+	Type           = component.MustNewType("tls_check")
+	DeprecatedType = component.MustNewType("tlscheck")
+	ScopeName      = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver"
 )
 
 const (
