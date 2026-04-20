@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -164,6 +165,42 @@ func Test_substring_error(t *testing.T) {
 			length: &ottl.StandardIntGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return int64(20), nil
+				},
+			},
+		},
+		{
+			name: "substring with start+length overflowing int64",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "123456789", nil
+				},
+			},
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(math.MaxInt64 - 2), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(10), nil
+				},
+			},
+		},
+		{
+			name: "substring with length overflowing int64 while start is in range",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return "123456789", nil
+				},
+			},
+			start: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(5), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
+					return int64(math.MaxInt64), nil
 				},
 			},
 		},
