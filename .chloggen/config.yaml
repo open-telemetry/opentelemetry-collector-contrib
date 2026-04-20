@@ -191,6 +191,7 @@ components:
     - processor/deltatorate
     - processor/digitaloceandetector
     - processor/dnslookup
+    - processor/drain
     - processor/dynatracedetector
     - processor/filter
     - processor/geoip
@@ -269,7 +270,7 @@ components:
     - receiver/googlecloudpubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
-    - receiver/hostmetrics
+    - receiver/host_metrics
     - receiver/http_check
     - receiver/huaweicloudcesreceiver
     - receiver/icmpcheckreceiver
