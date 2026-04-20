@@ -4,6 +4,9 @@
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
+	"errors"
+	"fmt"
+
 	ast10 "go.opentelemetry.io/otel/schema/v1.0/ast"
 	ast11 "go.opentelemetry.io/otel/schema/v1.1/ast"
 
@@ -30,16 +33,20 @@ type RevisionV1 struct {
 // Since VersionDef uses custom types for various definitions, it isn't possible
 // to cast those values into the primitives so each has to be processed together.
 // Generics would be handy here.
-func NewRevision(ver *Version, def ast11.VersionDef) *RevisionV1 {
+func NewRevision(ver *Version, def ast11.VersionDef) (*RevisionV1, error) {
+	spanEvents, err := newSpanEventChangeList(def.SpanEvents)
+	if err != nil {
+		return nil, fmt.Errorf("version %s span_events: %w", ver, err)
+	}
 	return &RevisionV1{
 		ver:        ver,
 		all:        newAllChangeList(def.All),
 		resources:  newResourceChangeList(def.Resources),
 		spans:      newSpanChangeList(def.Spans),
-		spanEvents: newSpanEventChangeList(def.SpanEvents),
+		spanEvents: spanEvents,
 		metrics:    newMetricChangeList(def.Metrics),
 		logs:       newLogsChangelist(def.Logs),
-	}
+	}, nil
 }
 
 func (r RevisionV1) Version() *Version {
@@ -102,7 +109,7 @@ func newMetricChangeList(metrics ast11.Metrics) *changelist.ChangeList {
 	return &changelist.ChangeList{Migrators: values}
 }
 
-func newSpanEventChangeList(spanEvents ast10.SpanEvents) *changelist.ChangeList {
+func newSpanEventChangeList(spanEvents ast10.SpanEvents) (*changelist.ChangeList, error) {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spanEvents.Changes {
 		if renamedEvent := at.RenameEvents; renamedEvent != nil {
@@ -126,10 +133,10 @@ func newSpanEventChangeList(spanEvents ast10.SpanEvents) *changelist.ChangeList 
 			spanEventAttributeChangeSet := transformer.SpanEventConditionalAttributes{MultiConditionalAttributeSet: multiConditionalAttributeSet}
 			values = append(values, spanEventAttributeChangeSet)
 		} else {
-			panic("spanEvents change must have either RenameEvents or RenameAttributes")
+			return nil, errors.New("span_events change must have either rename_events or rename_attributes")
 		}
 	}
-	return &changelist.ChangeList{Migrators: values}
+	return &changelist.ChangeList{Migrators: values}, nil
 }
 
 func newLogsChangelist(logs ast10.Logs) *changelist.ChangeList {

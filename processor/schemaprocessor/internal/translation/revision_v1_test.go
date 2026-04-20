@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	ast10 "go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.opentelemetry.io/otel/schema/v1.0/types"
 	ast11 "go.opentelemetry.io/otel/schema/v1.1/ast"
@@ -261,7 +263,8 @@ func TestNewRevisionV1(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			rev := NewRevision(tc.inVersion, tc.inDefinition)
+			rev, err := NewRevision(tc.inVersion, tc.inDefinition)
+			require.NoError(t, err)
 
 			// use go-cmp to compare tc.expect and rev and fail the test if there's a difference
 			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, transformer.SpanEventConditionalAttributes{}, migrate.MultiConditionalAttributeSet{})); diff != "" {
@@ -269,4 +272,20 @@ func TestNewRevisionV1(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewRevisionInvalidSpanEvents(t *testing.T) {
+	t.Parallel()
+
+	// A span_events change with neither rename_events nor rename_attributes set
+	// must return an error rather than panicking.
+	_, err := NewRevision(&Version{1, 0, 0}, ast11.VersionDef{
+		SpanEvents: ast10.SpanEvents{
+			Changes: []ast10.SpanEventsChange{
+				{}, // empty: neither field set
+			},
+		},
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "span_events")
 }
