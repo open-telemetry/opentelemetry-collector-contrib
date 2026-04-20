@@ -139,9 +139,6 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: exporter/googlecloudexporter/
-      - linters:
-          - forbidigo
         path: exporter/prometheusremotewriteexporter/
       - linters:
           - forbidigo
@@ -188,10 +185,6 @@ linters:
       - linters:
           - forbidigo
         path: internal/aws/proxy/
-        text: confighttp
-      - linters:
-          - forbidigo
-        path: extension/datadogextension/
         text: confighttp
       - linters:
           - forbidigo
