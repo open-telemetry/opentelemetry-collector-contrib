@@ -727,7 +727,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	// The next bucket (i_max + 1) is the +Inf overflow bucket, which is also allowed.
 	// Buckets beyond that must be dropped.
 	// See https://prometheus.io/docs/specs/native_histograms/#schema for more information.
-	overflowLimit := math.Ldexp(1024, int(histogram.Schema)) + 1
+	overflowLimit := int32(math.Ldexp(1024, int(histogram.Schema))) + 1
 	var droppedCount uint64
 
 	// The difference between float and integer histograms is that float histograms are stored as absolute counts
@@ -825,7 +825,7 @@ func hasNegativeCounts(histogram *writev2.Histogram) bool {
 
 // convertDeltaBuckets converts Prometheus native histogram spans and deltas to OpenTelemetry bucket counts
 // For integer buckets, the values are deltas between the buckets. i.e a bucket list of 1,2,-2 would correspond to a bucket count of 1,3,1
-func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice, overflowLimit float64) uint64 {
+func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
 	// The total capacity is the sum of the deltas and the offsets of the spans.
 	totalCapacity := len(deltas)
 	for _, span := range spans {
@@ -842,7 +842,7 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pco
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
 			for i := int32(0); i < span.Offset; i++ {
-				if float64(k) <= overflowLimit {
+				if k <= overflowLimit {
 					buckets.Append(uint64(0))
 				}
 				k++
@@ -852,7 +852,7 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pco
 			bucketCount += deltas[bucketIdx]
 			bucketIdx++
 
-			if float64(k) <= overflowLimit {
+			if k <= overflowLimit {
 				buckets.Append(uint64(bucketCount))
 			} else {
 				droppedCount += uint64(bucketCount)
@@ -865,7 +865,7 @@ func convertDeltaBuckets(spans []writev2.BucketSpan, deltas []int64, buckets pco
 
 // convertAbsoluteBuckets converts Prometheus native histogram spans and absolute counts to OpenTelemetry bucket counts
 // For float buckets, the values are absolute counts, and must be 0 or positive.
-func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice, overflowLimit float64) uint64 {
+func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, buckets pcommon.UInt64Slice, overflowLimit int32) uint64 {
 	// The total capacity is the sum of the counts and the offsets of the spans.
 	totalCapacity := len(counts)
 	for _, span := range spans {
@@ -881,14 +881,14 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
 			for i := int32(0); i < span.Offset; i++ {
-				if float64(k) <= overflowLimit {
+				if k <= overflowLimit {
 					buckets.Append(uint64(0))
 				}
 				k++
 			}
 		}
 		for i := uint32(0); i < span.Length; i++ {
-			if float64(k) <= overflowLimit {
+			if k <= overflowLimit {
 				buckets.Append(uint64(counts[bucketIdx]))
 			} else {
 				droppedCount += uint64(counts[bucketIdx])
