@@ -104,6 +104,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - geoip
         - groupbyattrs

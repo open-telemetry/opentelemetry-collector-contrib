@@ -6,12 +6,13 @@ To configure timestamp parsing, add a `timestamp` block in the parser's configur
 
 If a timestamp block is specified, the parser operator will perform the timestamp parsing _after_ performing its other parsing actions, but _before_ passing the entry to the specified output operator.
 
-| Field         | Default    | Description |
-| ---           | ---        | ---         |
-| `parse_from`  | required   | The [field](../types/field.md) from which the value will be parsed. |
-| `layout_type` | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
-| `layout`      | required   | The exact layout of the timestamp to be parsed. |
-| `location`    | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
+| Field                  | Default    | Description |
+| ---                    | ---        | ---         |
+| `parse_from`           | required   | The [field](../types/field.md) from which the value will be parsed. |
+| `layout_type`          | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
+| `layout`               | required   | The exact layout of the timestamp to be parsed. |
+| `location`             | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
+| `time_zone_locations`  |            | An optional map of timezone abbreviations to IANA location names (e.g. `PDT: America/Los_Angeles`). When the `%Z` directive is used and the parsed abbreviation matches a key in this map, the corresponding IANA location is used for parsing instead of `location`. This allows correct parsing of log streams that contain timestamps from multiple timezones. |
 
 ## Layout Types
 
@@ -286,6 +287,33 @@ Configuration:
 
 </td>
 </tr>
+</table>
+
+#### Parse timestamps with multiple timezone abbreviations using `time_zone_locations`
+
+Use `time_zone_locations` to correctly resolve timezone abbreviations from log streams that span multiple regions.
+
+Configuration:
+```yaml
+- type: regex_parser
+  regex: '^(?P<ts>\w{3} \w{3}\s+\d{1,2} \d{2}:\d{2}:\d{2} [A-Z]{2,5} \d{4})'
+  timestamp:
+    parse_from: attributes.ts
+    layout_type: strptime
+    layout: '%a %b %d %H:%M:%S %Z %Y'
+    location: Asia/Kolkata
+    time_zone_locations:
+      PDT: America/Los_Angeles
+      NZST: Pacific/Auckland
+```
+
+With this configuration, log lines using `IST` are parsed with `Asia/Kolkata` (the `location` fallback), while `PDT` and `NZST` are resolved to their respective IANA zones.
+
+<table>
+<tr><td> Input entry (body) </td> <td> Parsed timestamp </td></tr>
+<tr><td><code>Wed Aug 27 15:08:58 IST 2025</code></td><td><code>2025-08-27T15:08:58+05:30</code></td></tr>
+<tr><td><code>Wed Aug 20 14:08:48 PDT 2025</code></td><td><code>2025-08-20T14:08:48-07:00</code></td></tr>
+<tr><td><code>Mon Jan 15 10:00:00 NZST 2025</code></td><td><code>2025-01-15T10:00:00+12:00</code></td></tr>
 </table>
 
 #### Parse a timestamp using an `epoch` layout
