@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -98,6 +99,29 @@ func TestWithFileMountPath(t *testing.T) {
 	assert.Equal(t, sockDir, filepath.Dir(cl.localAddr), "Must be placed in the specified directory")
 }
 
+type localAddrGeneratorSetter interface {
+	setLocalAddrGenerator(func(string) (string, error))
+}
+
+func TestNewReturnsErrorWhenSocketNameGenerationFails(t *testing.T) {
+	t.Parallel()
+
+	sockDir := t.TempDir()
+	wantErr := errors.New("entropy unavailable")
+
+	_, err := New("unix://"+sockDir, 10*time.Second,
+		WithFileMountPath(sockDir),
+		func(c *client) {
+			setter, ok := any(c).(localAddrGeneratorSetter)
+			require.True(t, ok, "client must allow test override of local socket name generation")
+			setter.setLocalAddrGenerator(func(string) (string, error) {
+				return "", wantErr
+			})
+		},
+	)
+	require.ErrorIs(t, err, wantErr)
+}
+
 func newTrackingPayload(t *testing.T) []byte {
 	t.Helper()
 	type response struct {
@@ -129,7 +153,7 @@ func newTrackingPayload(t *testing.T) []byte {
 	return buf
 }
 
-func TestLocalAddrSocketCleanup(t *testing.T) {
+func TestCloseRemovesGeneratedSocket(t *testing.T) {
 	t.Parallel()
 
 	if runtime.GOOS == "windows" {
@@ -168,9 +192,9 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 	// Call Close to trigger cleanup
 	require.NoError(t, c.Close(), "Must not error closing client")
 
-	// Verify socket file cleaned up after close
+	// Verify the generated socket file is cleaned up after close.
 	_, err = os.Stat(expectedAddr)
-	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after Close")
+	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove generated socket after Close")
 }
 
 func TestWithFileMountPathDoesNotRemoveExistingSockets(t *testing.T) {

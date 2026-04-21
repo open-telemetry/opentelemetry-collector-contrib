@@ -39,10 +39,12 @@ type ClientOption func(c *client)
 // The reason for the partial rewrite is that the original
 // client uses logrus' global instance within the main code path.
 type client struct {
-	proto, addr string
-	localAddr   string
-	timeout     time.Duration
-	dialer      func(ctx context.Context, network, addr string) (net.Conn, error)
+	proto, addr   string
+	fileMountPath string
+	localAddr     string
+	timeout       time.Duration
+	dialer        func(ctx context.Context, network, addr string) (net.Conn, error)
+	newLocalAddr  func(dir string) (string, error)
 
 	conn net.Conn
 }
@@ -52,9 +54,7 @@ type client struct {
 // and chronyd run in separate network namespaces sharing a filesystem volume.
 func WithFileMountPath(dir string) ClientOption {
 	return func(c *client) {
-		b := make([]byte, 4)
-		_, _ = rand.Read(b)
-		c.localAddr = filepath.Join(dir, fmt.Sprintf("otel-chrony-%x.sock", b))
+		c.fileMountPath = dir
 	}
 }
 
@@ -72,6 +72,16 @@ func New(addr string, timeout time.Duration, opts ...ClientOption) (Client, erro
 	}
 	for _, opt := range opts {
 		opt(c)
+	}
+
+	if c.fileMountPath != "" {
+		if c.newLocalAddr == nil {
+			c.newLocalAddr = generateLocalAddr
+		}
+		c.localAddr, err = c.newLocalAddr(c.fileMountPath)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.dialer == nil {
@@ -140,4 +150,16 @@ func (c *client) getContext(ctx context.Context) (context.Context, context.Cance
 	}
 
 	return context.WithTimeout(ctx, c.timeout)
+}
+
+func generateLocalAddr(dir string) (string, error) {
+	b := make([]byte, 4)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate local socket name: %w", err)
+	}
+	return filepath.Join(dir, fmt.Sprintf("otel-chrony-%x.sock", b)), nil
+}
+
+func (c *client) setLocalAddrGenerator(fn func(string) (string, error)) {
+	c.newLocalAddr = fn
 }
