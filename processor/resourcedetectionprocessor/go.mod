@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/hetznercloud/hcloud-go/v2 v2.37.0
 	github.com/linode/go-metadata v0.2.4
-	github.com/moby/moby/api v1.54.1
+	github.com/moby/moby/api v1.54.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.150.0
