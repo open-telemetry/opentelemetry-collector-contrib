@@ -26,6 +26,7 @@ The following is example configuration
 ```yaml
   k8sobjects:
     auth_type: serviceAccount
+    storage: file_storage
     k8s_leader_elector: k8s_leader_elector
     objects:
       - name: pods
@@ -59,7 +60,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
 - `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
-- `resource_version` allows watch resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
+- `resource_version`: allows watching resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
 - `exclude_namespaces`: allows excluding namespaces from being watched/pulled, (NOTE: if a new namespace that matches the regex is added, the collector will need to be restarted)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
@@ -69,6 +70,11 @@ this case, it will select `v1` by default.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs when watching or polling many resources simultaneously.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
+- `storage` (default: none): specifies the storage extension to use for persisting resourceVersions. When configured, the receiver automatically persists the resourceVersion after processing each event for all watch-mode objects. On restart, each watch-mode object resumes from its persisted resourceVersion, preventing duplicate events. Pull-mode objects are unaffected.
+  > **Important storage considerations:**
+  > - **Local or node-pinned volumes** (`hostPath`, local PV): the collector pod becomes tied to a specific node. If that node fails or the pod is rescheduled elsewhere, the persisted data will not be accessible and persistence will not work correctly.
+  > - **Network-attached volumes** (`ReadWriteMany`): the volume is accessible from any node, so the collector pod can be freely rescheduled or fail over to a different node while still resuming from the correct resourceVersion. This is the recommended approach, especially when used with `k8s_leader_elector`.
+  > - **Block volumes** (`ReadWriteOnce`): supported for single-replica deployments where restarts are graceful. Not recommended with leader election across multiple nodes, as Kubernetes may take 30–90 seconds to detach and reattach the volume after a node failure.
 
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
@@ -112,13 +118,20 @@ metadata:
     app: otelcontribcol
 data:
   config.yaml: |
+    extensions:
+      file_storage:
+        directory: /var/lib/otelcol/storage
+
     receivers:
       k8sobjects:
+        auth_type: serviceAccount
+        storage: file_storage
         objects:
           - name: pods
             mode: pull
           - name: events
             mode: watch
+
     exporters:
       otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
@@ -126,6 +139,7 @@ data:
           insecure: true
 
     service:
+      extensions: [file_storage]
       pipelines:
         logs:
           receivers: [k8sobjects]
@@ -213,6 +227,17 @@ Note: This receiver must be deployed as one replica, otherwise it'll be producin
 
 ```bash
 <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: otelcontribcol-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -239,11 +264,16 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/config
+        - name: storage
+          mountPath: /var/lib/otelcol/storage
         imagePullPolicy: IfNotPresent
       volumes:
         - name: config
           configMap:
             name: otelcontribcol
+        - name: storage
+          persistentVolumeClaim:
+            claimName: otelcontribcol-storage
 EOF
 ```
 
