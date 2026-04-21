@@ -4173,6 +4173,51 @@ func TestExtractDeploymentNameFromReplicaSet(t *testing.T) {
 	}
 }
 
+func TestExtractCronJobNameFromJobOwner(t *testing.T) {
+	c, _ := newTestClient(t)
+
+	const jobName = "ab-12345678"
+	const suffixMinutes int64 = 12345678
+	ref := meta_v1.OwnerReference{Name: jobName}
+
+	t.Run("match_when_pod_time_aligns_with_suffix", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix(suffixMinutes*60, 0)),
+			},
+		}
+		assert.Equal(t, "ab", c.extractCronJobNameFromJobOwner(ref, pod))
+	})
+
+	t.Run("match_within_skew_boundary", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix((suffixMinutes+cronJobSuffixTimeSkewMinutes)*60, 0)),
+			},
+		}
+		assert.Equal(t, "ab", c.extractCronJobNameFromJobOwner(ref, pod))
+	})
+
+	t.Run("no_match_beyond_skew", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix((suffixMinutes+cronJobSuffixTimeSkewMinutes+1)*60, 0)),
+			},
+		}
+		assert.Equal(t, "", c.extractCronJobNameFromJobOwner(ref, pod))
+	})
+
+	t.Run("no_match_invalid_job_name_shape", func(t *testing.T) {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				CreationTimestamp: meta_v1.NewTime(time.Unix(suffixMinutes*60, 0)),
+			},
+		}
+		badRef := meta_v1.OwnerReference{Name: "notenoughdigits"}
+		assert.Equal(t, "", c.extractCronJobNameFromJobOwner(badRef, pod))
+	})
+}
+
 // trackableInformer is a mock informer that tracks if Run has been called.
 type trackableInformer struct {
 	cache.SharedInformer
@@ -4230,6 +4275,15 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			rules:     ExtractionRules{DeploymentName: true, DeploymentUID: true, DeploymentNameFromReplicaSet: true},
 			expectRun: true,
 		},
+		{
+			name: "start informer if deployment labels are extracted",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{Name: "l1", Key: "app", From: MetadataFromDeployment},
+				},
+			},
+			expectRun: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -4251,8 +4305,13 @@ func TestReplicaSetInformerConditionalStart(t *testing.T) {
 			// Allow time for the informer goroutine to start
 			time.Sleep(100 * time.Millisecond)
 
-			informer := wc.replicasetInformer.(*trackableInformer)
-			assert.Equal(t, tt.expectRun, informer.hasRun())
+			if tt.expectRun {
+				require.NotNil(t, wc.replicasetInformer)
+				informer := wc.replicasetInformer.(*trackableInformer)
+				assert.True(t, informer.hasRun())
+			} else {
+				assert.Nil(t, wc.replicasetInformer)
+			}
 		})
 	}
 }

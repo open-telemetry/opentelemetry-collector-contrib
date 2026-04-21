@@ -6,8 +6,3 @@ rules:
   - apiGroups: [""]
     resources: ["pods", "nodes", "namespaces"]
     verbs: ["get", "watch", "list"]
-  # Deployments: collector extracts annotations from Deployment objects (from: deployment).
-  # ReplicaSets: the ReplicaSet informer links pods to deployments (ReplicaSet owner refs); required for that path.
-  - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets"]
-    verbs: ["get", "watch", "list"]

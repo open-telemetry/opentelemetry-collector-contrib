@@ -656,8 +656,9 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 	}
 }
 
-// TestE2E_ClusterRBACHeuristic is a smaller version of TestE2E_ClusterRBAC that removes k8s.deployment.uid and k8s.cronjob.uid,
-// to ensure that when deployment and cronjob informers are not started, the name extraction is done correctly by heuristics
+// TestE2E_ClusterRBACHeuristic is a smaller version of TestE2E_ClusterRBAC that removes k8s.deployment.uid, k8s.cronjob.uid,
+// and deployment labels and annotations extraction. This test checks that for cases where the deployment and cronjob informers
+// are not started, the name extraction is done correctly by heuristics.
 func TestE2E_ClusterRBACHeuristic(t *testing.T) {
 	testDir := filepath.Join("testdata", "e2e", "clusterrbac_heuristic")
 

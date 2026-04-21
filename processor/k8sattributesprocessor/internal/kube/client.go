@@ -105,9 +105,16 @@ var cronJobRegex = regexp.MustCompile(`^(.*)-(\d{8})$`)
 // cronJobSuffixTimeSkewMinutes is the maximum allowed difference
 // in minutes between pod creation time and the timestamp suffix
 // in the job name (created by cronjob)
-// If the suffix falls outside of the range, it assumed that it's not a cronjob
-// (i.e. the suffix it humand generated, like a date 20260407)
-const cronJobSuffixTimeSkewMinutes int64 = 59
+// If the suffix falls outside of the range, it is assumed that it's not a cronjob
+// (i.e. the suffix is human generated, like a date 20260407)
+const cronJobSuffixTimeSkewMinutes int64 = 60 * 24 // 1 day
+
+// podTemplateHashLabel contains the label that K8s Deployment
+// controller adds to ReplicaSets to ensure that child ReplicaSets
+// do not overlap. ReplicaSet name is constructed as [deployment-name]-[podTemplateHash]
+// K8s doc ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#pod-template-hash-label
+// K8s code ref: https://github.com/kubernetes/kubernetes/blob/b31119d205a839aab40b2d819a58d4fabacd9b47/pkg/controller/deployment/sync.go#L207
+const podTemplateHashLabel = "pod-template-hash"
 
 var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
@@ -212,8 +219,16 @@ func New(
 
 	c.namespaceInformer = informersFactory.newNamespaceInformer(c.kc)
 
-	// If deployment labels or annotations are extracted, rs informer is needed to link pods to deployments.
-	if (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) || rules.DeploymentUID || c.extractDeploymentLabelsAnnotations() {
+	// Enable the ReplicaSet informer when any of the following applies:
+	//   1) DeploymentName is enabled and DeploymentNameFromReplicaSet flag is false
+	//   2) DeploymentUID is enabled
+	//   3) Deployment labels or annotations are configured for extraction — those fields live on the Deployment
+	//      resource, so we must associate Pods with Deployments through ReplicaSets first.
+	needReplicaSetInformer := (c.Rules.DeploymentName && !c.Rules.DeploymentNameFromReplicaSet) ||
+		c.Rules.DeploymentUID ||
+		c.extractDeploymentLabelsAnnotations()
+
+	if needReplicaSetInformer {
 		if informersFactory.newReplicaSetInformer == nil {
 			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
@@ -920,12 +935,15 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 				if c.Rules.DeploymentName || c.Rules.ServiceName {
 					var deploymentName string
+					// Attempt to use the ReplicaSet informer when it is running (e.g. DeploymentUID,
+					// deployment_name_from_replicaset: false, or from: deployment label/annotation extraction).
+					// Otherwise fall back to heuristics using the ReplicaSet name and pod-template-hash label.
 					if replicaset, ok := c.GetReplicaSet(string(ref.UID)); ok {
 						deploymentName = replicaset.Deployment.Name
 						c.logger.Debug("Used ReplicaSet Informer to get deployment name", zap.String("replicaSetName", replicaset.Name), zap.String("deploymentName", replicaset.Deployment.Name))
 					} else {
 						// Will be blank if not a ReplicaSet managed by a Deployment
-						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels["pod-template-hash"])
+						deploymentName = extractDeploymentNameFromReplicaSet(ref.Name, pod.Labels[podTemplateHashLabel])
 						c.logger.Debug("used heuristics for deployment name", zap.String("replicaSetName", ref.Name), zap.String("deploymentName", deploymentName))
 					}
 
@@ -979,6 +997,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
 					var cronjobName string
+					// Attempt to use the Job informer when it is running (e.g. k8s.cronjob.uid or from: job
+					// label/annotation extraction). Otherwise fall back to heuristics on the Job name suffix.
 					if job, ok := c.GetJob(string(ref.UID)); ok {
 						cronjobName = job.CronJob.Name
 						c.logger.Debug("used CronJob informer to get CronJob name", zap.String("cronjob", cronjobName))
