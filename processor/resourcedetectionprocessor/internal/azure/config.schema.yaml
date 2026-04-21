@@ -1,0 +1,9 @@
+type: object
+properties:
+  resource_attributes:
+    $ref: ./internal/metadata.resource_attributes_config
+  tags:
+    description: Tags is a list of regex's to match azure instance tag keys that users want to add as resource attributes to processed data
+    type: array
+    items:
+      type: string

@@ -1,0 +1,35 @@
+{
+   "resourceMetrics":[
+      {
+         "resource":{
+            
+         },
+         "scopeMetrics":[
+            {
+               "scope":{
+                  
+               },
+               "metrics":[
+                  {
+                     "name":"dd.internal.stats.payload",
+                     "sum":{
+                        "dataPoints":[
+                           {
+                              "attributes":[
+                                 {
+                                    "key":"dd.internal.stats.payload",
+                                    "value":{
+                                       "bytesValue":"CglfX3Vuc2V0X18SBG5vbmUangIKCV9fdW5zZXRfXxIEbm9uZSKKAgiAsImD64z+pxgQgMivoCUaewoMdGVsZW1ldHJ5Z2VuEhN0ZWxlbWV0cnlnZW4uY2xpZW50GgdsZXRzLWdvKgRodHRwOOzrFEigja+8nAFSHAoJCf1KgVq/UvA/Eg0SCAAAAACw1xRBGJIJGgBaDwoJCf1KgVq/UvA/EgAaAGjs6xR6BmNsaWVudIgBARp7Cgx0ZWxlbWV0cnlnZW4SE3RlbGVtZXRyeWdlbi5zZXJ2ZXIaDG9rZXktZG9rZXktMCoDd2ViONgBSMDK1QxSHAoJCf1KgVq/UvA/Eg0SCAAAAAAAAGtAGJIJGgBaDwoJCf1KgVq/UvA/EgAaAGjYAXoGc2VydmVyiAEC"
+                                    }
+                                 }
+                              ]
+                           }
+                        ]
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

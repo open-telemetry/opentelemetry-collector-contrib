@@ -1,0 +1,19 @@
+display_name: TCP Log Receiver
+type: tcp_log
+deprecated_type: tcplog
+
+description: The TCP Log Receiver receives logs over TCP.
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [VihasMakwana]
+    emeritus: [djaglowski]
+    seeking_new: true
+
+tests:
+  config:
+    listen_address: "localhost:0"

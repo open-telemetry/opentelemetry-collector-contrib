@@ -1,0 +1,436 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package parser
+
+import (
+	"testing"
+	"time"
+
+	"github.com/lightstep/go-expohisto/structure"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+)
+
+func TestBuildCounterMetric(t *testing.T) {
+	metricDescription := statsDMetricDescription{
+		name:  "testCounter",
+		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
+	}
+
+	tests := []struct {
+		name        string
+		counterType protocol.CounterType
+		checkValue  func(t *testing.T, dp pmetric.NumberDataPoint)
+	}{
+		{
+			name:        "int",
+			counterType: protocol.CounterTypeInt,
+			checkValue: func(t *testing.T, dp pmetric.NumberDataPoint) {
+				assert.Equal(t, int64(32), dp.IntValue())
+			},
+		},
+		{
+			name:        "float",
+			counterType: protocol.CounterTypeFloat,
+			checkValue: func(t *testing.T, dp pmetric.NumberDataPoint) {
+				assert.Equal(t, 32.0, dp.DoubleValue())
+			},
+		},
+		{
+			name:        "stochastic_int",
+			counterType: protocol.CounterTypeStochasticInt,
+			checkValue: func(t *testing.T, dp pmetric.NumberDataPoint) {
+				// Whole number input, so stochasticRound(32.0) == 32 deterministically
+				assert.Equal(t, int64(32), dp.IntValue())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsedMetric := statsDMetric{
+				description: metricDescription,
+				asFloat:     32,
+				unit:        "meter",
+			}
+			isMonotonicCounter := false
+			metric := buildCounterMetric(parsedMetric, isMonotonicCounter, tt.counterType)
+
+			m := metric.Metrics().At(0)
+			assert.Equal(t, "testCounter", m.Name())
+			assert.Equal(t, "meter", m.Unit())
+			assert.Equal(t, pmetric.AggregationTemporalityDelta, m.Sum().AggregationTemporality())
+			assert.Equal(t, isMonotonicCounter, m.Sum().IsMonotonic())
+
+			dp := m.Sum().DataPoints().At(0)
+			val, ok := dp.Attributes().Get("mykey")
+			assert.True(t, ok)
+			assert.Equal(t, "myvalue", val.Str())
+			tt.checkValue(t, dp)
+		})
+	}
+}
+
+func TestBuildCounterMetricWithFractionalValue(t *testing.T) {
+	metricDescription := statsDMetricDescription{
+		name:  "testFractionalCounter",
+		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
+	}
+
+	tests := []struct {
+		name          string
+		asFloat       float64
+		expectedValue float64
+		sampleRate    float64
+	}{
+		{
+			name:          "small_fraction",
+			asFloat:       0.01,
+			expectedValue: 0.01, // Now preserves the fractional value
+			sampleRate:    0,
+		},
+		{
+			name:          "large_fraction",
+			asFloat:       0.9,
+			expectedValue: 0.9, // Now preserves the fractional value
+			sampleRate:    0,
+		},
+		{
+			name:          "fraction_with_sample_rate",
+			asFloat:       0.5,
+			expectedValue: 5.0, // When adjusted by sample rate (0.1), value becomes 5.0
+			sampleRate:    0.1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsedMetric := statsDMetric{
+				description: metricDescription,
+				asFloat:     tt.asFloat,
+				sampleRate:  tt.sampleRate,
+			}
+
+			isMonotonicCounter := false
+			metric := buildCounterMetric(parsedMetric, isMonotonicCounter, protocol.CounterTypeFloat)
+
+			// Verify the actual float64 value after conversion
+			actualValue := metric.Metrics().At(0).Sum().DataPoints().At(0).DoubleValue()
+			assert.Equal(t, tt.expectedValue, actualValue, "Expected fractional value %v to convert to %v", tt.asFloat, tt.expectedValue)
+		})
+	}
+
+	// Test stochastic_int with fractional values: result should be floor or floor+1
+	t.Run("stochastic_int_fractional", func(t *testing.T) {
+		parsedMetric := statsDMetric{
+			description: metricDescription,
+			asFloat:     0.7,
+		}
+		metric := buildCounterMetric(parsedMetric, false, protocol.CounterTypeStochasticInt)
+		val := metric.Metrics().At(0).Sum().DataPoints().At(0).IntValue()
+		assert.True(t, val == 0 || val == 1,
+			"stochastic round of 0.7 should produce 0 or 1, got %d", val)
+	})
+
+	t.Run("stochastic_int_with_sample_rate", func(t *testing.T) {
+		parsedMetric := statsDMetric{
+			description: metricDescription,
+			asFloat:     0.5,
+			sampleRate:  0.1,
+		}
+		// counterValue() = 0.5 / 0.1 = 5.0, whole number so deterministic
+		metric := buildCounterMetric(parsedMetric, false, protocol.CounterTypeStochasticInt)
+		val := metric.Metrics().At(0).Sum().DataPoints().At(0).IntValue()
+		assert.Equal(t, int64(5), val)
+	})
+}
+
+func TestSetTimestampsForCounterMetric(t *testing.T) {
+	timeNow := time.Now()
+	lastUpdateInterval := timeNow.Add(-1 * time.Minute)
+
+	parsedMetric := statsDMetric{}
+	isMonotonicCounter := false
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, protocol.CounterTypeInt)
+	setTimestampsForCounterMetric(metric, lastUpdateInterval, timeNow)
+
+	expectedMetrics := pmetric.NewScopeMetrics()
+	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
+	expectedMetric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastUpdateInterval))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	assert.Equal(t,
+		metric.Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
+		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
+	)
+	assert.Equal(t,
+		metric.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
+		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
+	)
+}
+
+func TestBuildGaugeMetric(t *testing.T) {
+	timeNow := time.Now()
+	metricDescription := statsDMetricDescription{
+		name: "testGauge",
+		attrs: attribute.NewSet(
+			attribute.String("mykey", "myvalue"),
+			attribute.String("mykey2", "myvalue2"),
+		),
+	}
+	parsedMetric := statsDMetric{
+		description: metricDescription,
+		asFloat:     32.3,
+		unit:        "meter",
+	}
+	metric := buildGaugeMetric(parsedMetric, timeNow)
+	expectedMetrics := pmetric.NewScopeMetrics()
+	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
+	expectedMetric.SetName("testGauge")
+	expectedMetric.SetUnit("meter")
+	dp := expectedMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(32.3)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	dp.Attributes().PutStr("mykey", "myvalue")
+	dp.Attributes().PutStr("mykey2", "myvalue2")
+	assert.Equal(t, expectedMetrics, metric)
+}
+
+func TestBuildSummaryMetricUnsampled(t *testing.T) {
+	timeNow := time.Now()
+
+	unsampledMetric := summaryMetric{
+		points:  []float64{1, 2, 4, 6, 5, 3},
+		weights: []float64{1, 1, 1, 1, 1, 1},
+	}
+
+	attrs := attribute.NewSet(
+		attribute.String("mykey", "myvalue"),
+		attribute.String("mykey2", "myvalue2"),
+	)
+
+	desc := statsDMetricDescription{
+		name:       "testSummary",
+		metricType: HistogramType,
+		attrs:      attrs,
+	}
+
+	metric := pmetric.NewScopeMetrics()
+	buildSummaryMetric(desc, unsampledMetric, timeNow.Add(-time.Minute), timeNow, statsDDefaultPercentiles, metric)
+
+	expectedMetric := pmetric.NewScopeMetrics()
+	m := expectedMetric.Metrics().AppendEmpty()
+	m.SetName("testSummary")
+	dp := m.SetEmptySummary().DataPoints().AppendEmpty()
+	dp.SetSum(21)
+	dp.SetCount(6)
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	for _, kv := range desc.attrs.ToSlice() {
+		dp.Attributes().PutStr(string(kv.Key), kv.Value.AsString())
+	}
+	quantile := []float64{0, 10, 50, 90, 95, 100}
+	value := []float64{1, 1, 3, 6, 6, 6}
+	for int, v := range quantile {
+		eachQuantile := dp.QuantileValues().AppendEmpty()
+		eachQuantile.SetQuantile(v / 100)
+		eachQuantileValue := value[int]
+		eachQuantile.SetValue(eachQuantileValue)
+	}
+
+	assert.Equal(t, expectedMetric, metric)
+}
+
+func TestBuildSummaryMetricSampled(t *testing.T) {
+	timeNow := time.Now()
+
+	type testCase struct {
+		points      []float64
+		weights     []float64
+		count       uint64
+		sum         float64
+		percentiles []float64
+		values      []float64
+	}
+
+	for _, test := range []testCase{
+		{
+			points:      []float64{1, 2, 3},
+			weights:     []float64{100, 1, 100},
+			count:       201,
+			sum:         402,
+			percentiles: []float64{0, 1, 49, 50, 51, 99, 100},
+			values:      []float64{1, 1, 1, 2, 3, 3, 3},
+		},
+		{
+			points:      []float64{1, 2},
+			weights:     []float64{99, 1},
+			count:       100,
+			sum:         101,
+			percentiles: []float64{0, 98, 99, 100},
+			values:      []float64{1, 1, 1, 2},
+		},
+		{
+			points:      []float64{0, 1, 2, 3, 4, 5},
+			weights:     []float64{1, 9, 40, 40, 5, 5},
+			count:       100,
+			sum:         254,
+			percentiles: statsDDefaultPercentiles,
+			values:      []float64{0, 1, 2, 3, 4, 5},
+		},
+	} {
+		sampledMetric := summaryMetric{
+			points:  test.points,
+			weights: test.weights,
+		}
+
+		attrs := attribute.NewSet(
+			attribute.String("mykey", "myvalue"),
+			attribute.String("mykey2", "myvalue2"),
+		)
+
+		desc := statsDMetricDescription{
+			name:       "testSummary",
+			metricType: HistogramType,
+			attrs:      attrs,
+		}
+
+		metric := pmetric.NewScopeMetrics()
+		buildSummaryMetric(desc, sampledMetric, timeNow.Add(-time.Minute), timeNow, test.percentiles, metric)
+
+		expectedMetric := pmetric.NewScopeMetrics()
+		m := expectedMetric.Metrics().AppendEmpty()
+		m.SetName("testSummary")
+		dp := m.SetEmptySummary().DataPoints().AppendEmpty()
+
+		dp.SetSum(test.sum)
+		dp.SetCount(test.count)
+
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+		for _, kv := range desc.attrs.ToSlice() {
+			dp.Attributes().PutStr(string(kv.Key), kv.Value.AsString())
+		}
+		for i := range test.percentiles {
+			eachQuantile := dp.QuantileValues().AppendEmpty()
+			eachQuantile.SetQuantile(test.percentiles[i] / 100)
+			eachQuantile.SetValue(test.values[i])
+		}
+
+		assert.Equal(t, expectedMetric, metric)
+	}
+}
+
+func TestBuildHistogramMetricWithExplicitBucket(t *testing.T) {
+	timeNow := time.Now()
+	startTime := timeNow.Add(-5 * time.Second)
+
+	attrs := attribute.NewSet(
+		attribute.String("mykey", "myvalue"),
+		attribute.String("mykey2", "myvalue2"),
+	)
+
+	desc := statsDMetricDescription{
+		name:       "testHistogram",
+		metricType: HistogramType,
+		attrs:      attrs,
+	}
+	eb := new(explicitBucket)
+	eb.Init([]float64{0.1, 0.5, 1})
+	eb.UpdateByIncr(0.05, 1)
+	eb.UpdateByIncr(0.64, 2)
+	eb.UpdateByIncr(1.01, 3)
+	eb.UpdateByIncr(.01, 4)
+
+	histMetric := histogramMetric{
+		explicitBucket: eb,
+	}
+
+	ilm := pmetric.NewScopeMetrics()
+
+	buildHistogramMetric(desc, histMetric, startTime, timeNow, ilm)
+
+	r := require.New(t)
+	r.NotNil(ilm.Metrics())
+	r.Equal("testHistogram", ilm.Metrics().At(0).Name())
+
+	hist := ilm.Metrics().At(0).Histogram()
+	r.NotNil(hist)
+	r.Equal(1, hist.DataPoints().Len())
+	r.Equal(pmetric.AggregationTemporalityDelta, hist.AggregationTemporality())
+
+	datapoint := hist.DataPoints().At(0)
+	r.Equal(uint64(10), datapoint.Count())
+	r.Equal(4.4, datapoint.Sum())
+	r.Equal(0.01, datapoint.Min())
+	r.Equal(1.01, datapoint.Max())
+	val, _ := datapoint.Attributes().Get("mykey")
+	r.Equal("myvalue", val.Str())
+	val, _ = datapoint.Attributes().Get("mykey2")
+	r.Equal("myvalue2", val.Str())
+	r.Equal([]float64{0.1, 0.5, 1}, datapoint.ExplicitBounds().AsRaw())
+	r.Equal([]uint64{5, 0, 2, 3}, datapoint.BucketCounts().AsRaw())
+}
+
+func TestBuildHistogramMetricWithExpoHisto(t *testing.T) {
+	timeNow := time.Now()
+	startTime := timeNow.Add(-5 * time.Second)
+
+	attrs := attribute.NewSet(
+		attribute.String("mykey", "myvalue"),
+		attribute.String("mykey2", "myvalue2"),
+	)
+
+	desc := statsDMetricDescription{
+		name:       "testHistogram",
+		metricType: HistogramType,
+		attrs:      attrs,
+	}
+
+	agg := new(histogramStructure)
+	cfg := structure.NewConfig(structure.WithMaxSize(10))
+	agg.Init(cfg)
+	agg.UpdateByIncr(2, 2)
+	agg.UpdateByIncr(2, 1)
+	agg.UpdateByIncr(2, 4)
+	agg.UpdateByIncr(1, 1)
+	agg.UpdateByIncr(8, 3)
+	agg.UpdateByIncr(0.5, 8)
+	agg.UpdateByIncr(-5, 8)
+
+	histMetric := histogramMetric{
+		agg: agg,
+	}
+
+	ilm := pmetric.NewScopeMetrics()
+
+	buildHistogramMetric(desc, histMetric, startTime, timeNow, ilm)
+
+	require.NotNil(t, ilm.Metrics())
+	require.Equal(t, "testHistogram", ilm.Metrics().At(0).Name())
+
+	hist := ilm.Metrics().At(0).ExponentialHistogram()
+	require.NotNil(t, hist)
+	require.Equal(t, 1, hist.DataPoints().Len())
+	require.Equal(t, pmetric.AggregationTemporalityDelta, hist.AggregationTemporality())
+
+	datapoint := hist.DataPoints().At(0)
+	require.Equal(t, uint64(27), datapoint.Count())
+	require.Equal(t, int32(1), datapoint.Scale())
+	require.Equal(t, 3.0, datapoint.Sum())
+	require.Equal(t, int32(-3), datapoint.Positive().Offset())
+	require.Equal(t, int32(4), datapoint.Negative().Offset())
+	require.Equal(t, -5.0, datapoint.Min())
+	require.Equal(t, 8.0, datapoint.Max())
+	val, _ := datapoint.Attributes().Get("mykey")
+	require.Equal(t, "myvalue", val.Str())
+	val, _ = datapoint.Attributes().Get("mykey2")
+	require.Equal(t, "myvalue2", val.Str())
+}

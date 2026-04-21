@@ -1,0 +1,20 @@
+display_name: Google Client Auth Extension
+type: googleclientauth
+
+description: This extension provides Google OAuth2 Client Credentials and Metadata for gRPC and http based exporters.
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [dashpole, aabmass, braydonk, jsuereth, psx95, ridwanmsharif]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

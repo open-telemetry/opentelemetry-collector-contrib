@@ -1,0 +1,267 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package parser // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/parser"
+
+import (
+	"math"
+	"math/rand/v2"
+	"sort"
+	"time"
+
+	"github.com/lightstep/go-expohisto/structure"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"gonum.org/v1/gonum/stat"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+)
+
+var statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
+
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, counterType protocol.CounterType) pmetric.ScopeMetrics {
+	ilm := pmetric.NewScopeMetrics()
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(parsedMetric.description.name)
+	if parsedMetric.unit != "" {
+		nm.SetUnit(parsedMetric.unit)
+	}
+
+	nm.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	nm.Sum().SetIsMonotonic(isMonotonicCounter)
+
+	dp := nm.Sum().DataPoints().AppendEmpty()
+	setCounterValue(dp, parsedMetric.counterValue(), counterType)
+	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	if parsedMetric.timestamp != 0 {
+		dp.SetTimestamp(pcommon.Timestamp(parsedMetric.timestamp))
+	}
+
+	return ilm
+}
+
+// setCounterValue sets the counter data point value based on the configured counter type.
+func setCounterValue(dp pmetric.NumberDataPoint, value float64, counterType protocol.CounterType) {
+	switch counterType {
+	case protocol.CounterTypeFloat:
+		dp.SetDoubleValue(value)
+	case protocol.CounterTypeStochasticInt:
+		dp.SetIntValue(stochasticRound(value))
+	default: // protocol.CounterTypeInt or empty (default)
+		dp.SetIntValue(int64(value))
+	}
+}
+
+// aggregateCounterValue adds the value to an existing counter data point.
+func aggregateCounterValue(dp pmetric.NumberDataPoint, value float64, counterType protocol.CounterType) {
+	switch counterType {
+	case protocol.CounterTypeFloat:
+		dp.SetDoubleValue(dp.DoubleValue() + value)
+	case protocol.CounterTypeStochasticInt:
+		dp.SetIntValue(dp.IntValue() + stochasticRound(value))
+	default: // protocol.CounterTypeInt or empty (default)
+		dp.SetIntValue(dp.IntValue() + int64(value))
+	}
+}
+
+// stochasticRound performs probabilistic rounding where the probability of rounding
+// up equals the fractional part. This maintains integer type while being statistically
+// accurate over time.
+func stochasticRound(value float64) int64 {
+	floor := math.Floor(value)
+	fraction := value - floor
+	if rand.Float64() < fraction {
+		return int64(floor) + 1
+	}
+	return int64(floor)
+}
+
+func setTimestampsForCounterMetric(ilm pmetric.ScopeMetrics, startTime, timeNow time.Time) {
+	dp := ilm.Metrics().At(0).Sum().DataPoints().At(0)
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+
+	if dp.Timestamp() == 0 {
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	}
+}
+
+func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.ScopeMetrics {
+	ilm := pmetric.NewScopeMetrics()
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(parsedMetric.description.name)
+	if parsedMetric.unit != "" {
+		nm.SetUnit(parsedMetric.unit)
+	}
+	dp := nm.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(parsedMetric.gaugeValue())
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	return ilm
+}
+
+func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pmetric.ScopeMetrics) {
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	dp := nm.SetEmptySummary().DataPoints().AppendEmpty()
+
+	count := float64(0)
+	sum := float64(0)
+	for i := range summary.points {
+		c := summary.weights[i]
+		count += c
+		sum += summary.points[i] * c
+	}
+
+	// Note: count is rounded here, see note in counterValue().
+	dp.SetCount(uint64(count))
+	dp.SetSum(sum)
+
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	sort.Sort(dualSorter{summary.points, summary.weights})
+
+	for _, pct := range percentiles {
+		eachQuantile := dp.QuantileValues().AppendEmpty()
+		eachQuantile.SetQuantile(pct / 100)
+		eachQuantile.SetValue(stat.Quantile(pct/100, stat.Empirical, summary.points, summary.weights))
+	}
+}
+
+func buildExplicitBucketHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	h := nm.SetEmptyHistogram()
+	h.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := h.DataPoints().AppendEmpty()
+	eb := histogram.explicitBucket
+
+	dp.SetCount(eb.count)
+	dp.SetSum(eb.sum)
+	if eb.count != 0 {
+		dp.SetMin(histogram.explicitBucket.min)
+		dp.SetMax(histogram.explicitBucket.max)
+	}
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	dp.ExplicitBounds().FromRaw(eb.buckets)
+	// +1 to give space for the +Inf bucket
+	cumulativeCounts := make([]uint64, len(eb.buckets)+1)
+
+	for i, bound := range eb.buckets {
+		cumulativeCounts[i] = uint64(eb.bucketMap[bound])
+	}
+	cumulativeCounts[len(eb.buckets)] = eb.infCount
+	dp.BucketCounts().FromRaw(cumulativeCounts)
+}
+
+func buildExponentialBucketHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	expo := nm.SetEmptyExponentialHistogram()
+	expo.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	dp := expo.DataPoints().AppendEmpty()
+	agg := histogram.agg
+
+	dp.SetCount(agg.Count())
+	dp.SetSum(agg.Sum())
+	if agg.Count() != 0 {
+		dp.SetMin(agg.Min())
+		dp.SetMax(agg.Max())
+	}
+
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	dp.SetZeroCount(agg.ZeroCount())
+	dp.SetScale(agg.Scale())
+
+	for _, half := range []struct {
+		inFunc  func() *structure.Buckets
+		outFunc func() pmetric.ExponentialHistogramDataPointBuckets
+	}{
+		{agg.Positive, dp.Positive},
+		{agg.Negative, dp.Negative},
+	} {
+		in := half.inFunc()
+		out := half.outFunc()
+		out.SetOffset(in.Offset())
+
+		out.BucketCounts().EnsureCapacity(int(in.Len()))
+
+		for i := uint32(0); i < in.Len(); i++ {
+			out.BucketCounts().Append(in.At(i))
+		}
+	}
+}
+
+func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+	if histogram.explicitBucket != nil {
+		buildExplicitBucketHistogramMetric(desc, histogram, startTime, timeNow, ilm)
+	} else {
+		buildExponentialBucketHistogramMetric(desc, histogram, startTime, timeNow, ilm)
+	}
+}
+
+func (s statsDMetric) counterValue() float64 {
+	x := s.asFloat
+	// Note statsD counters are traditionally represented as integers, but
+	// we'll preserve the floating point precision to avoid truncating
+	// fractional values to zero.
+	if 0 < s.sampleRate && s.sampleRate < 1 {
+		x /= s.sampleRate
+	}
+	return x
+}
+
+func (s statsDMetric) gaugeValue() float64 {
+	// sampleRate does not have effect for gauge points.
+	return s.asFloat
+}
+
+func (s statsDMetric) sampleValue() sampleValue {
+	count := 1.0
+	if 0 < s.sampleRate && s.sampleRate < 1 {
+		count /= s.sampleRate
+	}
+	return sampleValue{
+		value: s.asFloat,
+		count: count,
+	}
+}
+
+type dualSorter struct {
+	values, weights []float64
+}
+
+func (d dualSorter) Len() int {
+	return len(d.values)
+}
+
+func (d dualSorter) Swap(i, j int) {
+	d.values[i], d.values[j] = d.values[j], d.values[i]
+	d.weights[i], d.weights[j] = d.weights[j], d.weights[i]
+}
+
+func (d dualSorter) Less(i, j int) bool {
+	return d.values[i] < d.values[j]
+}

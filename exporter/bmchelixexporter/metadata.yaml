@@ -1,0 +1,10 @@
+type: bmchelix
+display_name: BMC Helix Exporter
+
+status:
+  class: exporter
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [bertysentry, NassimBtk, MovieStoreGuy]

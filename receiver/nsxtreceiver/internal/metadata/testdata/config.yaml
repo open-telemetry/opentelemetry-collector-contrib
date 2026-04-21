@@ -1,0 +1,87 @@
+default:
+all_set:
+  metrics:
+    nsxt.node.cpu.utilization:
+      enabled: true
+    nsxt.node.filesystem.usage:
+      enabled: true
+    nsxt.node.filesystem.utilization:
+      enabled: true
+    nsxt.node.memory.cache.usage:
+      enabled: true
+    nsxt.node.memory.usage:
+      enabled: true
+    nsxt.node.network.io:
+      enabled: true
+    nsxt.node.network.packet.count:
+      enabled: true
+  resource_attributes:
+    device.id:
+      enabled: true
+    nsxt.node.id:
+      enabled: true
+    nsxt.node.name:
+      enabled: true
+    nsxt.node.type:
+      enabled: true
+none_set:
+  metrics:
+    nsxt.node.cpu.utilization:
+      enabled: false
+    nsxt.node.filesystem.usage:
+      enabled: false
+    nsxt.node.filesystem.utilization:
+      enabled: false
+    nsxt.node.memory.cache.usage:
+      enabled: false
+    nsxt.node.memory.usage:
+      enabled: false
+    nsxt.node.network.io:
+      enabled: false
+    nsxt.node.network.packet.count:
+      enabled: false
+  resource_attributes:
+    device.id:
+      enabled: false
+    nsxt.node.id:
+      enabled: false
+    nsxt.node.name:
+      enabled: false
+    nsxt.node.type:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    device.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    nsxt.node.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    nsxt.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    nsxt.node.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    device.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "device.id-val"
+    nsxt.node.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "nsxt.node.id-val"
+    nsxt.node.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "nsxt.node.name-val"
+    nsxt.node.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "nsxt.node.type-val"

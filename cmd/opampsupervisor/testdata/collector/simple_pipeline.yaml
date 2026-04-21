@@ -1,0 +1,22 @@
+receivers:
+  file_log:
+    include: [{{.inputLogFile}}]
+    start_at: "beginning"
+
+exporters:
+  file:
+    path: {{.outputLogFile}}
+
+extensions:
+  health_check:
+    endpoint: "localhost:13133"
+
+service:
+  extensions: [health_check]
+  pipelines:
+    logs:
+      receivers: [file_log]
+      exporters: [file]
+  telemetry:
+    logs:
+      level: debug

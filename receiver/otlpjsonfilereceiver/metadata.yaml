@@ -1,0 +1,23 @@
+display_name: OTLP JSON File Receiver
+type: otlpjsonfile
+
+description: |
+  This receiver will read pipeline data from JSON files. The data is written in
+  [Protobuf JSON
+    encoding](https://developers.google.com/protocol-buffers/docs/proto3#json)
+  using [OpenTelemetry
+  protocol](https://github.com/open-telemetry/opentelemetry-proto).
+
+status:
+  class: receiver
+  stability:
+    alpha: [traces, metrics, logs]
+    development: [profiles]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]
+    seeking_new: true
+tests:
+  config:
+    include:
+      - "/tmp/*.log"

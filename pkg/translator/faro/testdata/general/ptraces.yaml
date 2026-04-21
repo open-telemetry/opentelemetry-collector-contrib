@@ -1,0 +1,85 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: testapp
+        - key: telemetry.sdk.language
+          value:
+            stringValue: webjs
+        - key: telemetry.sdk.name
+          value:
+            stringValue: opentelemetry
+        - key: telemetry.sdk.version
+          value:
+            stringValue: 1.21.0
+        - key: service.version
+          value:
+            stringValue: abcdefg
+        - key: deployment.environment
+          value:
+            stringValue: production
+        - key: service.namespace
+          value:
+            stringValue: testnamespace
+    scopeSpans:
+      - scope:
+          name: '@opentelemetry/instrumentation-fetch'
+          version: 0.48.0
+        spans:
+          - attributes:
+              - key: component
+                value:
+                  stringValue: fetch
+              - key: http.method
+                value:
+                  stringValue: GET
+              - key: http.url
+                value:
+                  stringValue: http://localhost:5173/
+              - key: session_id
+                value:
+                  stringValue: cD3am6QTPa
+              - key: http.status_code
+                value:
+                  intValue: "200"
+              - key: http.status_text
+                value:
+                  stringValue: OK
+              - key: http.host
+                value:
+                  stringValue: localhost:5173
+              - key: http.scheme
+                value:
+                  stringValue: http
+              - key: http.user_agent
+                value:
+                  stringValue: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:128.0) Gecko/20100101 Firefox/128.0
+              - key: http.response_content_length
+                value:
+                  intValue: "2819"
+            endTimeUnixNano: "1718700770800000000"
+            events:
+              - name: fetchStart
+                timeUnixNano: "1718700770771000000"
+              - name: domainLookupStart
+                timeUnixNano: "1718700770775000000"
+              - name: domainLookupEnd
+                timeUnixNano: "1718700770775000000"
+              - name: connectStart
+                timeUnixNano: "1718700770775000000"
+              - name: connectEnd
+                timeUnixNano: "1718700770775000000"
+              - name: requestStart
+                timeUnixNano: "1718700770775000000"
+              - name: responseStart
+                timeUnixNano: "1718700770797000000"
+              - name: responseEnd
+                timeUnixNano: "1718700770797000000"
+            kind: 3
+            name: HTTP GET
+            parentSpanId: ""
+            spanId: f71b2cc42962650f
+            startTimeUnixNano: "1718700770771000000"
+            status: {}
+            traceId: bac44bf5d6d040fc5fdf9bc22442c6f2

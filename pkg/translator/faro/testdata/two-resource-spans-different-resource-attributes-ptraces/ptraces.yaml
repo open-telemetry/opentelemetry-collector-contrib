@@ -1,0 +1,37 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: testapp
+    scopeSpans:
+      - scope:
+          name: '@opentelemetry/instrumentation-fetch'
+          version: 0.48.0
+        spans:
+          - endTimeUnixNano: "1718700770800000000"
+            kind: 3
+            name: HTTP GET
+            parentSpanId: ""
+            spanId: f71b2cc42962650f
+            startTimeUnixNano: "1718700770771000000"
+            status: {}
+            traceId: bac44bf5d6d040fc5fdf9bc22442c6f2
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: testapp-second
+    scopeSpans:
+      - scope:
+          name: '@opentelemetry/instrumentation-fetch'
+          version: 0.48.0
+        spans:
+          - endTimeUnixNano: "1718700770800000000"
+            kind: 3
+            name: HTTP GET
+            parentSpanId: ""
+            spanId: f71b2cc42962650f
+            startTimeUnixNano: "1718700770771000000"
+            status: {}
+            traceId: bac44bf5d6d040fc5fdf9bc22442c6f2

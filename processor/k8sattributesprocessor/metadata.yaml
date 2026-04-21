@@ -1,0 +1,649 @@
+display_name: Kubernetes Attributes Processor
+type: k8s_attributes
+deprecated_type: k8sattributes
+
+description: |
+  The Kubernetes Attributes Processor allows adding k8s metadata to resource attributes for spans, metrics and logs.
+
+status:
+  class: processor
+  stability:
+    beta: [logs, metrics, traces]
+    development: [profiles]
+  distributions: [contrib, k8s]
+  warnings: [Memory consumption, Other]
+  codeowners:
+    active: [dmitryax, fatsheep9146, TylerHelmuth, ChrsMark, odubajDT]
+    emeritus: [rmfitzpatrick]
+# resource attributes are exposed through a different configuration interface (extract::metadata).
+resource_attributes:
+  container.id:
+    description: Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count.
+    type: string
+    enabled: false
+  container.image.name:
+    description: Name of the image the container was built on. Requires container.id or k8s.container.name.
+    type: string
+    enabled: true
+  container.image.repo_digests:
+    description: Repo digests of the container image as provided by the container runtime.
+    type: slice
+    enabled: false
+  container.image.tag:
+    description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. Deprecated, use container.image.tags instead.
+    type: string
+    enabled: true
+  container.image.tags:
+    description: Container image tags. Requires container.id or k8s.container.name.
+    type: slice
+    enabled: true
+  k8s.cluster.uid:
+    description: Gives cluster uid identified with kube-system namespace
+    type: string
+    enabled: false
+  k8s.container.name:
+    description: The name of the Container in a Pod template. Requires container.id.
+    type: string
+    enabled: false
+  k8s.cronjob.name:
+    description: The name of the CronJob.
+    type: string
+    enabled: false
+  k8s.cronjob.uid:
+    description: The uid of the CronJob.
+    type: string
+    enabled: false
+  k8s.daemonset.name:
+    description: The name of the DaemonSet.
+    type: string
+    enabled: false
+  k8s.daemonset.uid:
+    description: The UID of the DaemonSet.
+    type: string
+    enabled: false
+  k8s.deployment.name:
+    description: The name of the Deployment.
+    type: string
+    enabled: true
+  k8s.deployment.uid:
+    description: The UID of the Deployment.
+    type: string
+    enabled: false
+  k8s.job.name:
+    description: The name of the Job.
+    type: string
+    enabled: false
+  k8s.job.uid:
+    description: The UID of the Job.
+    type: string
+    enabled: false
+  k8s.namespace.name:
+    description: The name of the namespace that the pod is running in.
+    type: string
+    enabled: true
+  k8s.node.name:
+    description: The name of the Node.
+    type: string
+    enabled: true
+  k8s.node.uid:
+    description: The UID of the Node.
+    type: string
+    enabled: false
+  k8s.pod.hostname:
+    description: The hostname of the Pod.
+    type: string
+    enabled: false
+  k8s.pod.ip:
+    description: The IP address of the Pod.
+    type: string
+    enabled: false
+  k8s.pod.name:
+    description: The name of the Pod.
+    type: string
+    enabled: true
+  k8s.pod.start_time:
+    description: The start time of the Pod.
+    type: string
+    enabled: true
+  k8s.pod.uid:
+    description: The UID of the Pod.
+    type: string
+    enabled: true
+  k8s.replicaset.name:
+    description: The name of the ReplicaSet.
+    type: string
+    enabled: false
+  k8s.replicaset.uid:
+    description: The UID of the ReplicaSet.
+    type: string
+    enabled: false
+  k8s.statefulset.name:
+    description: The name of the StatefulSet.
+    type: string
+    enabled: false
+  k8s.statefulset.uid:
+    description: The UID of the StatefulSet.
+    type: string
+    enabled: false
+  service.instance.id:
+    description: The instance ID of the service.
+    type: string
+    enabled: false
+
+  service.name:
+    description: The name of the service.
+    type: string
+    enabled: false
+  service.namespace:
+    description: The namespace of the service.
+    type: string
+    enabled: false
+  service.version:
+    description: The version of the service.
+    type: string
+    enabled: false
+
+feature_gates:
+  - id: k8sattr.labelsAnnotationsSingular.allow
+    stage: deprecated
+    description: >-
+      When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural
+    from_version: v0.125.0
+    to_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39774
+  - id: processor.k8sattributes.DontEmitV0K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, semconv legacy attributes are disabled.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.EmitV1K8sConventions
+    stage: alpha
+    description: >-
+      When enabled, semconv stable attributes are enabled.
+    from_version: v0.145.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.telemetry.disableOldFormatMetrics
+    stage: alpha
+    description: >-
+      When enabled, old formatted internal telemetry metrics are disabled.
+    from_version: v0.146.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871
+  - id: processor.k8sattributes.telemetry.enableNewFormatMetrics
+    stage: alpha
+    description: >-
+      When enabled, new formatted internal telemetry metrics are enabled.
+    from_version: v0.146.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45871
+
+tests:
+  config:
+  skip_lifecycle: true
+  goleak:
+    skip: true
+
+attributes:
+  otelcol.signal:
+    description: The signal type the telemetry metric is associated with
+    type: string
+    enum:
+      - metrics
+      - traces
+      - logs
+      - profiles
+  pod_identifier:
+    description: The pod identifier value(s) used for the association attempt
+    type: string
+  status:
+    description: The status of the pod association operation
+    type: string
+    enum:
+      - success
+      - error
+
+telemetry:
+  metrics:
+    k8s.pod.association:
+      prefix: otelcol.
+      enabled: false
+      description: Number of pod associations' evaluations
+      stability: development
+      unit: "{resources}"
+      attributes: [status, pod_identifier, otelcol.signal]
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.daemonset.added:
+      prefix: otelcol.
+      enabled: false
+      description: Number of daemonset add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.daemonset.deleted:
+      prefix: otelcol.
+      enabled: false
+      description: Number of daemonset delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.daemonset.updated:
+      prefix: otelcol.
+      enabled: false
+      description: Number of daemonset update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.deployment.added:
+      prefix: otelcol.
+      enabled: false
+      description: Number of deployment add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.deployment.deleted:
+      prefix: otelcol.
+      enabled: false
+      description: Number of deployment delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.deployment.updated:
+      prefix: otelcol.
+      enabled: false
+      description: Number of deployment update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.job.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of job add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.job.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of job delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.job.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of job update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.namespace.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of namespace add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.namespace.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of namespace delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.namespace.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of namespace update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.node.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of node add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.node.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of node delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.node.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of node update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.pod.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of pod add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.pod.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of pod delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.pod.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of pod update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.pod_cache.size:
+      prefix: otelcol.
+      enabled: true
+      description: Size of cache table containing pod info
+      stability: development
+      unit: "1"
+      gauge:
+        value_type: int
+    k8s.watcher.replicaset.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of ReplicaSet add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.replicaset.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of ReplicaSet delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.replicaset.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of ReplicaSet update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.statefulset.added:
+      prefix: otelcol.
+      enabled: true
+      description: Number of statefulset add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.statefulset.deleted:
+      prefix: otelcol.
+      enabled: true
+      description: Number of statefulset delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    k8s.watcher.statefulset.updated:
+      prefix: otelcol.
+      enabled: true
+      description: Number of statefulset update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_daemonset_added:
+      enabled: false
+      description: Number of daemonset add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_daemonset_deleted:
+      enabled: false
+      description: Number of daemonset delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_daemonset_updated:
+      enabled: false
+      description: Number of daemonset update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_deployment_added:
+      enabled: false
+      description: Number of deployment add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_deployment_deleted:
+      enabled: false
+      description: Number of deployment delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_deployment_updated:
+      enabled: false
+      description: Number of deployment update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_ip_lookup_miss:
+      enabled: true
+      description: "[DEPRECATED] Number of times pod by IP lookup failed"
+      deprecated:
+        since: 0.146.0
+        note: "Use otelcol.k8s.pod.association instead"
+      stability: deprecated
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_job_added:
+      enabled: false
+      description: Number of job add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_job_deleted:
+      enabled: false
+      description: Number of job delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_job_updated:
+      enabled: false
+      description: Number of job update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_namespace_added:
+      enabled: true
+      description: Number of namespace add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_namespace_deleted:
+      enabled: true
+      description: Number of namespace delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_namespace_updated:
+      enabled: true
+      description: Number of namespace update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_node_added:
+      enabled: true
+      description: Number of node add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_node_deleted:
+      enabled: true
+      description: Number of node delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_node_updated:
+      enabled: true
+      description: Number of node update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_pod_added:
+      enabled: true
+      description: Number of pod add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_pod_deleted:
+      enabled: true
+      description: Number of pod delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_pod_table_size:
+      enabled: true
+      description: Size of table containing pod info
+      stability: development
+      unit: "1"
+      gauge:
+        value_type: int
+    otelsvc_k8s_pod_updated:
+      enabled: true
+      description: Number of pod update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_replicaset_added:
+      enabled: true
+      description: Number of ReplicaSet add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_replicaset_deleted:
+      enabled: true
+      description: Number of ReplicaSet delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_replicaset_updated:
+      enabled: true
+      description: Number of ReplicaSet update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_statefulset_added:
+      enabled: false
+      description: Number of statefulset add events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_statefulset_deleted:
+      enabled: false
+      description: Number of statefulset delete events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    otelsvc_k8s_statefulset_updated:
+      enabled: false
+      description: Number of statefulset update events received
+      stability: development
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true

@@ -1,0 +1,21 @@
+{
+  "records": [
+    {
+      "time": "2024-04-24T12:06:12.0000000Z",
+      "resourceId": "/SUBSCRIPTIONS/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/RESOURCEGROUPS/MYRESOURCEGROUP/PROVIDERS/MICROSOFT.WEB/SITES/MY-DEMO-APP",
+      "category": "AppServiceIPSecAuditLogs",
+      "operationName": "Authorization",
+      "properties": {
+        "Result": "Denied",
+        "CsHost": "test.azurewebsites.net",
+        "ServiceEndpoint": "False",
+        "CIp": "42.42.42.42:12345",
+        "XForwardedFor": "FORWARDED_FOR",
+        "XForwardedHost": "FORWARDED_HOST",
+        "XAzureFDID": "FDID",
+        "XFDHealthProbe": "HEALTH_PROBE",
+        "Details": "Denied by 0.0.0.0/0 rule."
+      }
+    }
+  ]
+}

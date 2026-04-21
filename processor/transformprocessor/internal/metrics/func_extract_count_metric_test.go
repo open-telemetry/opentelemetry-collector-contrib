@@ -1,0 +1,195 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package metrics
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+)
+
+func Test_extractCountMetric(t *testing.T) {
+	tests := []histogramTestCase{
+		{
+			name:         "histogram (non-monotonic)",
+			input:        getTestHistogramMetric(),
+			monotonicity: false,
+			want: func(metrics pmetric.MetricSlice) {
+				histogramMetric := getTestHistogramMetric()
+				histogramMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetUnit("1")
+				countMetric.SetEmptySum()
+				countMetric.Sum().SetAggregationTemporality(histogramMetric.Histogram().AggregationTemporality())
+				countMetric.Sum().SetIsMonotonic(false)
+
+				countMetric.SetName(histogramMetric.Name() + "_count")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(histogramMetric.Histogram().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "histogram (monotonic)",
+			input:        getTestHistogramMetric(),
+			monotonicity: true,
+			want: func(metrics pmetric.MetricSlice) {
+				histogramMetric := getTestHistogramMetric()
+				histogramMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetUnit("1")
+				countMetric.SetEmptySum()
+				countMetric.Sum().SetAggregationTemporality(histogramMetric.Histogram().AggregationTemporality())
+				countMetric.Sum().SetIsMonotonic(true)
+
+				countMetric.SetName(histogramMetric.Name() + "_count")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(histogramMetric.Histogram().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "exponential histogram (non-monotonic)",
+			input:        getTestExponentialHistogramMetric(),
+			monotonicity: false,
+			want: func(metrics pmetric.MetricSlice) {
+				expHistogramMetric := getTestExponentialHistogramMetric()
+				expHistogramMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetUnit("1")
+				countMetric.SetEmptySum()
+				countMetric.Sum().SetAggregationTemporality(expHistogramMetric.ExponentialHistogram().AggregationTemporality())
+				countMetric.Sum().SetIsMonotonic(false)
+
+				countMetric.SetName(expHistogramMetric.Name() + "_count")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(expHistogramMetric.ExponentialHistogram().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "exponential histogram (monotonic)",
+			input:        getTestExponentialHistogramMetric(),
+			monotonicity: true,
+			want: func(metrics pmetric.MetricSlice) {
+				expHistogramMetric := getTestExponentialHistogramMetric()
+				expHistogramMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
+				countMetric.Sum().SetAggregationTemporality(expHistogramMetric.ExponentialHistogram().AggregationTemporality())
+				countMetric.Sum().SetIsMonotonic(true)
+
+				countMetric.SetName(expHistogramMetric.Name() + "_count")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(expHistogramMetric.ExponentialHistogram().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "summary (non-monotonic)",
+			input:        getTestSummaryMetric(),
+			monotonicity: false,
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
+				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				countMetric.Sum().SetIsMonotonic(false)
+
+				countMetric.SetName("summary_metric_count")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(summaryMetric.Summary().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "summary (monotonic)",
+			input:        getTestSummaryMetric(),
+			monotonicity: true,
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
+				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				countMetric.Sum().SetIsMonotonic(true)
+
+				countMetric.SetName("summary_metric_count")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(summaryMetric.Summary().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "summary custom suffix",
+			input:        getTestSummaryMetric(),
+			monotonicity: true,
+			suffix:       ottl.NewTestingOptional("_custom_suf"),
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+				countMetric := metrics.AppendEmpty()
+				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
+				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				countMetric.Sum().SetIsMonotonic(true)
+
+				countMetric.SetName("summary_metric_custom_suf")
+				dp := countMetric.Sum().DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(summaryMetric.Summary().DataPoints().At(0).Count()))
+
+				attrs := getTestAttributes()
+				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name:         "gauge (error)",
+			input:        getTestGaugeMetric(),
+			monotonicity: false,
+			wantErr:      errors.New("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got Gauge"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sMetrics := pmetric.NewScopeMetrics()
+			tt.input.CopyTo(sMetrics.Metrics().AppendEmpty())
+
+			evaluate, err := extractCountMetric(tt.monotonicity, tt.suffix)
+			require.NoError(t, err)
+
+			tCtx := ottlmetric.NewTransformContextPtr(pmetric.NewResourceMetrics(), sMetrics, tt.input)
+			defer tCtx.Close()
+			_, err = evaluate(t.Context(), tCtx)
+			assert.Equal(t, tt.wantErr, err)
+
+			if tt.want != nil {
+				expected := pmetric.NewMetricSlice()
+				tt.want(expected)
+				assert.Equal(t, expected, sMetrics.Metrics())
+			}
+		})
+	}
+}

@@ -1,0 +1,5 @@
+# The following demonstrates how to enable protocols with defaults.
+envoyals/defaults:
+
+envoyals/custom:
+  endpoint: localhost:4600

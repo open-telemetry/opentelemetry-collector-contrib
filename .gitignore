@@ -1,0 +1,52 @@
+local/
+vendor/
+
+# Dev Container
+/.devcontainer/
+
+# GoLand IDEA
+/.idea/
+*.iml
+
+# VS Code
+.vscode
+*.code-workspace
+
+# Cursor
+.cursor
+
+# Project IDX
+.idx/
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+.tools/
+
+# Emacs
+*~
+\#*\#
+
+# Miscellaneous files
+*.sw[op]
+*.DS_Store
+__debug_bin*
+
+# Coverage
+coverage/*
+*-coverage.txt
+integration-coverage.html
+internal/tools/testresults/*
+
+# Wix
+*.wixobj
+*.wixpdb
+
+go.work*
+
+/result

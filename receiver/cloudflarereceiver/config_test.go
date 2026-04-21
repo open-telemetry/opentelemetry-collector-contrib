@@ -1,0 +1,199 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
+
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
+)
+
+func TestValidate(t *testing.T) {
+	cases := []struct {
+		name        string
+		config      Config
+		expectedErr string
+	}{
+		{
+			name: "Valid config",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+				},
+			},
+		},
+		{
+			name: "Valid config with tls",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
+							CertFile: "some_cert_file",
+							KeyFile:  "some_key_file",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "missing endpoint",
+			config: Config{
+				Logs: LogsConfig{},
+			},
+			expectedErr: errNoEndpoint.Error(),
+		},
+		{
+			name: "Invalid endpoint",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint: "9999",
+				},
+			},
+			expectedErr: "failed to split endpoint into 'host:port' pair",
+		},
+		{
+			name: "TLS config missing key",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
+							CertFile: "some_cert_file",
+						},
+					},
+				},
+			},
+			expectedErr: errNoKey.Error(),
+		},
+		{
+			name: "TLS config missing cert",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
+							KeyFile: "some_key_file",
+						},
+					},
+				},
+			},
+			expectedErr: errNoCert.Error(),
+		},
+		{
+			name: "invalid timestamp_format",
+			config: Config{
+				Logs: LogsConfig{
+					Endpoint:        "0.0.0.0:9999",
+					TimestampFormat: "bad",
+				},
+			},
+			expectedErr: "invalid timestamp_format \"bad\"",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.config.Validate()
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name: "default_config_sets_max_request_body_size",
+			config: &Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:9999",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "zero_max_request_body_size_gets_default",
+			config: &Config{
+				Logs: LogsConfig{
+					Endpoint:           "0.0.0.0:9999",
+					MaxRequestBodySize: 0,
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, int64(20*1024*1024), tt.config.Logs.MaxRequestBodySize)
+			}
+		})
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	cases := []struct {
+		name           string
+		expectedConfig component.Config
+	}{
+		{
+			name: "",
+			expectedConfig: &Config{
+				Logs: LogsConfig{
+					Endpoint: "0.0.0.0:12345",
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
+							CertFile: "some_cert_file",
+							KeyFile:  "some_key_file",
+						},
+					},
+					Secret:          "1234567890abcdef1234567890abcdef",
+					TimestampField:  "EdgeStartTimestamp",
+					TimestampFormat: "rfc3339",
+					Separator:       ".",
+					Attributes: map[string]string{
+						"ClientIP":         "http_request.client_ip",
+						"ClientRequestURI": "http_request.uri",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			loaded, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
+			require.NoError(t, err)
+			require.NoError(t, loaded.Unmarshal(cfg))
+			require.Equal(t, tc.expectedConfig, cfg)
+			require.NoError(t, xconfmap.Validate(cfg))
+		})
+	}
+}

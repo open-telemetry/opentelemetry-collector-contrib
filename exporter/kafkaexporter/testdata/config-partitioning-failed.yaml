@@ -1,0 +1,58 @@
+kafka:
+  logs:
+    topic: spans
+  metrics:
+    topic: spans
+  traces:
+    topic: spans
+  profiles:
+    topic: spans
+  brokers:
+    - "foo:123"
+    - "bar:456"
+  producer:
+    max_message_bytes: 10000000
+    required_acks: -1 # WaitForAll
+  timeout: 10s
+  partition_traces_by_id: true
+  partition_metrics_by_resource_attributes: true
+  partition_logs_by_resource_attributes: true
+  partition_logs_by_trace_id: true
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    max_interval: 60s
+    max_elapsed_time: 10m
+kafka/per_signal_topic:
+  logs:
+    topic: per_signal_topic
+  metrics:
+    topic: metrics_topic
+  traces:
+    topic: per_signal_topic
+  profiles:
+    topic: per_signal_topic
+kafka/per_signal_encoding:
+  logs:
+    encoding: per_signal_encoding
+  metrics:
+    encoding: metrics_encoding
+  traces:
+    encoding: per_signal_encoding
+  profiles:
+    encoding: per_signal_encoding
+kafka/multiple_partitioner:
+  record_partitioner:
+    round_robin: {}
+    least_backup: {}
+kafka/extension_not_set:
+  record_partitioner:
+    extension: ""
+kafka/invalid_sticky_key_hasher:
+  record_partitioner:
+    sticky_key:
+      hasher: invalid_hasher

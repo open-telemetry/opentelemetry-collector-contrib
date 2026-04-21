@@ -1,0 +1,76 @@
+default:
+all_set:
+  metrics:
+    riak.memory.limit:
+      enabled: true
+    riak.node.operation.count:
+      enabled: true
+      attributes: ["request"]
+    riak.node.operation.time.mean:
+      enabled: true
+      attributes: ["request"]
+    riak.node.read_repair.count:
+      enabled: true
+    riak.vnode.index.operation.count:
+      enabled: true
+      attributes: ["operation"]
+    riak.vnode.operation.count:
+      enabled: true
+      attributes: ["request"]
+  resource_attributes:
+    riak.node.name:
+      enabled: true
+reaggregate_set:
+  metrics:
+    riak.memory.limit:
+      enabled: true
+    riak.node.operation.count:
+      enabled: true
+      attributes: []
+    riak.node.operation.time.mean:
+      enabled: true
+      attributes: []
+    riak.node.read_repair.count:
+      enabled: true
+    riak.vnode.index.operation.count:
+      enabled: true
+      attributes: []
+    riak.vnode.operation.count:
+      enabled: true
+      attributes: []
+  resource_attributes:
+    riak.node.name:
+      enabled: true
+none_set:
+  metrics:
+    riak.memory.limit:
+      enabled: false
+    riak.node.operation.count:
+      enabled: false
+      attributes: ["request"]
+    riak.node.operation.time.mean:
+      enabled: false
+      attributes: ["request"]
+    riak.node.read_repair.count:
+      enabled: false
+    riak.vnode.index.operation.count:
+      enabled: false
+      attributes: ["operation"]
+    riak.vnode.operation.count:
+      enabled: false
+      attributes: ["request"]
+  resource_attributes:
+    riak.node.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    riak.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    riak.node.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "riak.node.name-val"

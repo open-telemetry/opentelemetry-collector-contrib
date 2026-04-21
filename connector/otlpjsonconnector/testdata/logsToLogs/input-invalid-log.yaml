@@ -1,0 +1,11 @@
+# Error: readLog.traceId: parse trace_id:invalid length for ID, error found in #10 byte
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+            body:
+              stringValue: '{"resourceLogs":[{"resource":{"attributes":[{"key":"resource-attr","value":{"stringValue":"resource-attr-val-1"}}]},"scopeLogs":[{"scope":{},"logRecords":[{"timeUnixNano":"1581452773000000789","severityNumber":9,"severityText":"Info","body":{"stringValue":"This is a log message"},"attributes":[{"key":"app","value":{"stringValue":"server"}},{"key":"instance_num","value":{"intValue":"1"}}],"droppedAttributesCount":1,"traceId":"inmyB8/qrDAAP6cV5ZFR9A==","spanId":"0102040800000000"}]}]}]}'
+            spanId: ""
+            traceId: ""
+        scope: {}
