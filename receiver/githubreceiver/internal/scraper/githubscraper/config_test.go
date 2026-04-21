@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
@@ -27,6 +29,16 @@ func TestConfig(t *testing.T) {
 		ClientConfig:         clientConfig,
 		ConcurrencyLimit:     50,
 		MergedPRLookbackDays: 30,
+		RetryConfig: RetryConfig{
+			BackOffConfig: configretry.BackOffConfig{
+				Enabled:             true,
+				InitialInterval:     1 * time.Second,
+				RandomizationFactor: backoff.DefaultRandomizationFactor,
+				Multiplier:          backoff.DefaultMultiplier,
+				MaxInterval:         30 * time.Second,
+			},
+			MaxRetries: 10,
+		},
 	}
 
 	assert.Equal(t, expectedConfig, defaultConfig)
@@ -82,6 +94,26 @@ func TestConfigValidate(t *testing.T) {
 				MergedPRLookbackDays: -5,
 			},
 			wantErr: true,
+		},
+		{
+			name: "invalid config with negative max retries",
+			config: Config{
+				ConcurrencyLimit: 50,
+				RetryConfig: RetryConfig{
+					MaxRetries: -1,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid config with zero max retries (unlimited via time/context)",
+			config: Config{
+				ConcurrencyLimit: 50,
+				RetryConfig: RetryConfig{
+					MaxRetries: 0,
+				},
+			},
+			wantErr: false,
 		},
 	}
 
