@@ -6,7 +6,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fazureauth%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fazureauth) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fazureauth%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fazureauth) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_azureauth)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_azureauth&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://www.github.com/constanca-m) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@constanca-m](https://github.com/constanca-m) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -17,7 +17,7 @@ This extension can be used in two directions:
 - **In exporters (outbound):** attaches the collector's Azure identity as a bearer token to outgoing requests.
 - **In receivers (inbound):** when wired as an `extensionauth.Server` (for example, `protocols.http.auth.authenticator: azure_auth`), validates incoming bearer tokens as OIDC JWTs against a configured issuer and audience. Requires the `server` block (see [Inbound JWT validation](#inbound-jwt-validation)).
 
-> **Security advisory:** Versions `v0.124.0` through `v0.150.0` contain a server-side authentication bypass ([GHSA-pjv4-3c63-699f](https://github.com/open-telemetry/opentelemetry-collector-contrib/security/advisories/GHSA-pjv4-3c63-699f)). Do not use `azure_auth` under a receiver `auth:` block on those versions. The outbound exporter usage is unaffected.
+> **Security advisory:** Versions `v0.124.0` through `v0.150.0` contain a server-side authentication bypass (`GHSA-pjv4-3c63-699f`). Do not use `azure_auth` under a receiver `auth:` block on those versions. The outbound exporter usage is unaffected.
 
 Additionally, the extension also implements `azcore.TokenCredential` so that Azure components can get the token by running the function `GetToken`. If the component supports HTTP client, then this should not be necessary, as the token will be placed in the authorization header.
 

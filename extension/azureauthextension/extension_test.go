@@ -145,7 +145,7 @@ func TestStart(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			a := &authenticator{server: tc.server}
-			err := a.Start(context.Background(), nil)
+			err := a.Start(t.Context(), nil)
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
 				return
