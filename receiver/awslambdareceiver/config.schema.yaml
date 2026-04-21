@@ -1,19 +1,42 @@
+$defs:
+  s_3_config:
+    description: S3Config defines configuration options for the S3 Lambda trigger. It supersedes the sharedConfig for the s3 key. sharedConfig is embedded with mapstructure:",squash" so the "encoding" key remains at the top level of the s3 block in YAML — fully backwards-compatible.
+    type: object
+    properties:
+      encoding:
+        description: Encoding defines the encoding to decode incoming Lambda invocation data.
+        type: string
+      encodings:
+        description: Encodings defines multiple encoding entries for S3 path-based routing (multi-format mode). Each entry maps a path_pattern prefix to an encoding extension. Mutually exclusive with sharedConfig.Encoding. Only supported for logs signal type. Metrics receivers reject configs that set this field.
+        type: array
+        items:
+          $ref: s_3_encoding
+  s_3_encoding:
+    description: S3Encoding defines one entry in the S3 multi-encoding routing table.
+    type: object
+    properties:
+      encoding:
+        description: Encoding is the extension ID for decoding (e.g. "awslogs_encoding/vpcflow"). If empty, content is passed through as-is using the built-in raw decoder.
+        type: string
+      name:
+        description: Name identifies the encoding. For known names (vpcflow, cloudtrail, elbaccess, waf, networkfirewall) the default path_pattern is applied automatically.
+        type: string
+      path_pattern:
+        description: 'PathPattern is matched as a prefix against the S3 object key. "*" matches exactly one path segment. Example: "AWSLogs/*/vpcflowlogs" If empty, the default pattern for a known Name is used.'
+        type: string
+description: Config is the top-level configuration for the awslambda receiver.
 type: object
 properties:
   cloudwatch:
-    description: CloudWatch defines configuration options for CloudWatch Lambda trigger.
+    description: CloudWatch defines configuration for the CloudWatch Logs Lambda trigger.
     type: object
     properties:
       encoding:
-        description: Encoding defines the encoding to decode incoming Lambda invocation data. This extension is expected to further process content of the events that are extracted from Lambda trigger. If receiving data is in different formats(ex:- a mix of VPC flow logs, CloudTrail logs), receiver is recommended to have separate Lambda functions with specific extension configurations.
+        description: Encoding defines the encoding to decode incoming Lambda invocation data.
         type: string
   failure_bucket_arn:
-    description: FailureBucketARN is the ARN of receiver deployment Lambda's error destination.
+    description: FailureBucketARN is the ARN of the S3 bucket used to store failed Lambda event records.
     type: string
   s3:
-    description: S3 defines configuration options for S3 Lambda trigger.
-    type: object
-    properties:
-      encoding:
-        description: Encoding defines the encoding to decode incoming Lambda invocation data. This extension is expected to further process content of the events that are extracted from Lambda trigger. If receiving data is in different formats(ex:- a mix of VPC flow logs, CloudTrail logs), receiver is recommended to have separate Lambda functions with specific extension configurations.
-        type: string
+    description: S3 defines configuration for the S3 Lambda trigger.
+    $ref: s_3_config
