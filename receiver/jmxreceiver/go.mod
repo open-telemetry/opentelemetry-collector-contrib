@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxrec
 go 1.25.0
 
 require (
-	github.com/moby/moby/api v1.54.1
+	github.com/moby/moby/api v1.54.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.150.0
