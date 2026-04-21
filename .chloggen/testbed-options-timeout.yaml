@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/testbed
+component: testbed
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Add functional options support to `NewOTLPTraceDataSender`, `NewOTLPMetricDataSender`, and `NewOTLPLogsDataSender`, with a `WithTimeout` option to override the exporter's default per-send timeout.
