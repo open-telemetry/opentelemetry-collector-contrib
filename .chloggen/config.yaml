@@ -191,6 +191,7 @@ components:
     - processor/deltatorate
     - processor/digitaloceandetector
     - processor/dnslookup
+    - processor/drain
     - processor/dynatracedetector
     - processor/filter
     - processor/geoip
