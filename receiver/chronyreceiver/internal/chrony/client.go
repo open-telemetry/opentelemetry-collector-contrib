@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/facebook/time/ntp/chrony"
@@ -157,7 +158,11 @@ func generateLocalAddr(dir string) (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("generate local socket name: %w", err)
 	}
-	return filepath.Join(dir, fmt.Sprintf("otel-chrony-%x.sock", b)), nil
+	localAddr := filepath.Join(dir, fmt.Sprintf("otel-chrony-%x.sock", b))
+	if len(localAddr) >= len(syscall.RawSockaddrUnix{}.Path) {
+		return "", fmt.Errorf("file_mount_path %q produces a unix socket path %q that exceeds the platform limit of %d bytes", dir, localAddr, len(syscall.RawSockaddrUnix{}.Path)-1)
+	}
+	return localAddr, nil
 }
 
 func (c *client) setLocalAddrGenerator(fn func(string) (string, error)) {

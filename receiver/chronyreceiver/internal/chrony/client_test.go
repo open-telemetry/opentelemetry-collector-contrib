@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -84,10 +85,21 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func newShortSocketDir(t *testing.T) string {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		return t.TempDir()
+	}
+	dir, err := os.MkdirTemp("/tmp", "chrony-")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(dir) })
+	return dir
+}
+
 func TestWithFileMountPath(t *testing.T) {
 	t.Parallel()
 
-	sockDir := t.TempDir()
+	sockDir := newShortSocketDir(t)
 
 	c, err := New("unix://"+sockDir, 10*time.Second, WithFileMountPath(sockDir))
 	require.NoError(t, err, "Must not error when creating client")
@@ -120,6 +132,21 @@ func TestNewReturnsErrorWhenSocketNameGenerationFails(t *testing.T) {
 		},
 	)
 	require.ErrorIs(t, err, wantErr)
+}
+
+func TestNewRejectsTooLongFileMountPath(t *testing.T) {
+	t.Parallel()
+
+	endpoint := t.TempDir()
+	fileMountPath := t.TempDir()
+	for len(filepath.Join(fileMountPath, "otel-chrony-deadbeef.sock")) < len(syscall.RawSockaddrUnix{}.Path) {
+		fileMountPath = filepath.Join(fileMountPath, "1234567890")
+	}
+	require.NoError(t, os.MkdirAll(fileMountPath, 0o755))
+
+	_, err := New("unix://"+endpoint, 10*time.Second, WithFileMountPath(fileMountPath))
+	require.Error(t, err, "Must reject file_mount_path values that exceed platform socket path limits")
+	assert.Contains(t, err.Error(), "file_mount_path")
 }
 
 func newTrackingPayload(t *testing.T) []byte {
@@ -160,7 +187,7 @@ func TestCloseRemovesGeneratedSocket(t *testing.T) {
 		t.Skip("skipping UDS test on windows")
 	}
 
-	sockDir := t.TempDir()
+	sockDir := newShortSocketDir(t)
 
 	tracking := newTrackingPayload(t)
 
@@ -204,10 +231,7 @@ func TestWithFileMountPathDoesNotRemoveExistingSockets(t *testing.T) {
 		t.Skip("skipping UDS test on windows")
 	}
 
-	// Use a short temp path to stay within the Unix socket name limit (~104 bytes on macOS).
-	sockDir, err := os.MkdirTemp("/tmp", "chrony-")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(sockDir) })
+	sockDir := newShortSocketDir(t)
 
 	// Simulate another receiver already listening on a matching socket path.
 	peerPath := filepath.Join(sockDir, "otel-chrony-peer.sock")
@@ -232,7 +256,7 @@ func TestDialErrorCleansUpLocalSocket(t *testing.T) {
 		t.Skip("skipping UDS test on windows")
 	}
 
-	sockDir := t.TempDir()
+	sockDir := newShortSocketDir(t)
 	tracking := newTrackingPayload(t)
 	attempts := 0
 
