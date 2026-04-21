@@ -4218,7 +4218,7 @@ func TestExtractCronJobNameFromJobOwner(t *testing.T) {
 				CreationTimestamp: meta_v1.NewTime(time.Unix((suffixMinutes+cronJobSuffixTimeSkewMinutes+1)*60, 0)),
 			},
 		}
-		assert.Equal(t, "", c.extractCronJobNameFromJobOwner(ref, pod))
+		assert.Empty(t, c.extractCronJobNameFromJobOwner(ref, pod))
 	})
 
 	t.Run("no_match_invalid_job_name_shape", func(t *testing.T) {
@@ -4228,7 +4228,7 @@ func TestExtractCronJobNameFromJobOwner(t *testing.T) {
 			},
 		}
 		badRef := meta_v1.OwnerReference{Name: "notenoughdigits"}
-		assert.Equal(t, "", c.extractCronJobNameFromJobOwner(badRef, pod))
+		assert.Empty(t, c.extractCronJobNameFromJobOwner(badRef, pod))
 	})
 }
 

@@ -2040,7 +2040,7 @@ func (c *WatchClient) extractCronJobNameFromJobOwner(ref meta_v1.OwnerReference,
 }
 
 // extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name
-func extractDeploymentNameFromReplicaSet(replicasetName string, podTemplateHash string) string {
+func extractDeploymentNameFromReplicaSet(replicasetName, podTemplateHash string) string {
 	// TemplateHash Empty means it's not a ReplicaSet managed by a Deployment
 	if replicasetName == "" || podTemplateHash == "" || !strings.HasSuffix(replicasetName, "-"+podTemplateHash) {
 		return ""
