@@ -52,29 +52,9 @@ type client struct {
 // and chronyd run in separate network namespaces sharing a filesystem volume.
 func WithFileMountPath(dir string) ClientOption {
 	return func(c *client) {
-		cleanupStaleSockets(dir)
 		b := make([]byte, 4)
 		_, _ = rand.Read(b)
 		c.localAddr = filepath.Join(dir, fmt.Sprintf("otel-chrony-%x.sock", b))
-	}
-}
-
-// cleanupStaleSockets removes leftover otel-chrony-*.sock files from a
-// previous collector run that did not shut down cleanly. Only Unix socket
-// files are removed; regular files are left untouched.
-func cleanupStaleSockets(dir string) {
-	matches, err := filepath.Glob(filepath.Join(dir, "otel-chrony-*.sock"))
-	if err != nil {
-		return
-	}
-	for _, path := range matches {
-		fi, err := os.Lstat(path)
-		if err != nil {
-			continue
-		}
-		if fi.Mode().Type()&os.ModeSocket != 0 {
-			_ = os.Remove(path)
-		}
 	}
 }
 

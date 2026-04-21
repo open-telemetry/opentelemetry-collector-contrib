@@ -93,7 +93,7 @@ func TestWithFileMountPath(t *testing.T) {
 
 	cl, ok := c.(*client)
 	require.True(t, ok, "Must be a *client")
-	
+
 	assert.Contains(t, cl.localAddr, "otel-chrony-")
 	assert.Equal(t, sockDir, filepath.Dir(cl.localAddr), "Must be placed in the specified directory")
 }
@@ -173,7 +173,7 @@ func TestLocalAddrSocketCleanup(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after Close")
 }
 
-func TestStaleSocketCleanup(t *testing.T) {
+func TestWithFileMountPathDoesNotRemoveExistingSockets(t *testing.T) {
 	t.Parallel()
 
 	if runtime.GOOS == "windows" {
@@ -185,25 +185,20 @@ func TestStaleSocketCleanup(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { os.RemoveAll(sockDir) })
 
-	// Create a real Unix socket to simulate a stale leftover.
-	stalePath := filepath.Join(sockDir, "otel-chrony-deadbeef.sock")
-	l, err := net.Listen("unix", stalePath)
+	// Simulate another receiver already listening on a matching socket path.
+	peerPath := filepath.Join(sockDir, "otel-chrony-peer.sock")
+	listener, err := net.Listen("unix", peerPath)
 	require.NoError(t, err)
-	require.NoError(t, l.Close()) // close listener but leave the socket file
+	t.Cleanup(func() {
+		require.NoError(t, listener.Close())
+	})
 
-	// Also create a regular file with a matching name that must NOT be deleted.
-	regularPath := filepath.Join(sockDir, "otel-chrony-cafebabe.sock")
-	require.NoError(t, os.WriteFile(regularPath, []byte("keep"), 0o600))
-
-	// Creating a client with WithFileMountPath should clean up the stale socket.
+	// Creating a second client must not delete another receiver's socket.
 	_, err = New("unix://"+sockDir, 10*time.Second, WithFileMountPath(sockDir))
 	require.NoError(t, err)
 
-	_, err = os.Stat(stalePath)
-	assert.ErrorIs(t, err, os.ErrNotExist, "Stale socket must be removed on startup")
-
-	_, err = os.Stat(regularPath)
-	assert.NoError(t, err, "Regular file must not be removed")
+	_, err = os.Stat(peerPath)
+	assert.NoError(t, err, "Existing receiver socket must not be removed on startup")
 }
 
 func TestGettingTrackingData(t *testing.T) {
