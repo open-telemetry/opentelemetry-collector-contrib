@@ -77,7 +77,7 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
+func (ltp *logsTransformProcessor) Start(_ context.Context, _ component.Host) error {
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
 	ltp.fromConverter = adapter.NewFromPdataConverter(ltp.set, wkrCount)
 
@@ -94,7 +94,17 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	if err != nil {
 		return err
 	}
-	ltp.startConverterLoop(ctx)
+	// component.Start documents that any long-running operation must not
+	// use the context passed to Start (the collector cancels it shortly
+	// after Start returns). The converter loop is exactly such a long-
+	// running goroutine, so derive a dedicated context that is cancelled
+	// by the shutdown path instead (#31140).
+	loopCtx, loopCancel := context.WithCancel(context.Background())
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
+		loopCancel()
+		return nil
+	})
+	ltp.startConverterLoop(loopCtx)
 	ltp.startFromConverter()
 
 	return nil
