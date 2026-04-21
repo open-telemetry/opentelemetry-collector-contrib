@@ -289,6 +289,80 @@ service:
 
 Similar to the first example, this configuration is for collecting ELB access logs stored in S3.
 
+### Multi-Format S3 Configuration (encodings)
+
+The `encodings` field enables routing different S3 object key patterns to different decoders within
+a single Lambda deployment. This is useful when a Lambda function receives events from:
+
+- **A single S3 bucket that stores multiple log types** — for example, VPC Flow Logs and CloudTrail
+  logs written to the same bucket under different key prefixes.
+- **Multiple S3 buckets with different log types** — for example, one bucket for VPC Flow Logs and
+  another for WAF logs, both configured to trigger the same Lambda function.
+
+`encoding` (single, top-level) and `encodings` (list) are mutually exclusive — use one or the other.
+
+Each entry in `encodings` supports three fields:
+
+| Field          | Required | Description |
+|----------------|----------|-------------|
+| `name`         | yes      | Unique identifier for this entry. For known names (`vpcflow`, `cloudtrail`, etc.) the default `path_pattern` is applied automatically. |
+| `encoding`     | no       | Extension ID of the decoder (e.g. `awslogs_encoding/vpcflow`). Omit to pass content through as raw bytes using the built-in default decoder. |
+| `path_pattern` | no*      | Prefix pattern matched against the S3 object key. `*` matches one path segment. Omit to use the built-in default for known names. Use `"*"` as a catch-all. |
+
+\* May be omitted only for built-in known names. For any other name, `path_pattern` must be set explicitly (use `"*"` for a catch-all).
+
+Each entry in `encodings` is evaluated in order of pattern specificity (more-specific patterns are
+matched first; `"*"` catch-all is matched last). Users may list entries in any order.
+
+#### Combining encodings with extensions
+
+The `encoding` field references a collector extension by its component ID. Each referenced
+extension must be declared in the `extensions:` block and listed under `service.extensions`.
+
+The following example decodes VPC Flow Logs and CloudTrail events into structured log records,
+and forwards anything else as raw bytes via the catch-all entry:
+
+```yaml
+extensions:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+    vpcflow:
+      file_format: plain-text
+  awslogs_encoding/cloudtrail:
+    format: cloudtrail
+
+receivers:
+  awslambda:
+    s3:
+      encodings:
+        - name: vpcflow
+          encoding: awslogs_encoding/vpcflow     # decode VPC Flow Log fields into structured records
+        - name: cloudtrail
+          encoding: awslogs_encoding/cloudtrail  # decode CloudTrail JSON events into structured records
+          path_pattern: "myorg/*/CloudTrail"     # optional: override default (AWSLogs/*/CloudTrail); omit to use the default
+        - name: catchall
+          path_pattern: "*"                      # forward anything else as raw bytes
+
+```
+
+#### Built-in default path patterns
+
+The following well-known names have built-in default path patterns. When `path_pattern` is omitted
+for these names, the receiver uses the corresponding default.
+
+| Name              | Default path pattern                    |
+|-------------------|-----------------------------------------|
+| `vpcflow`         | `AWSLogs/*/vpcflowlogs`                 |
+| `cloudtrail`      | `AWSLogs/*/CloudTrail`                  |
+| `elbaccess`       | `AWSLogs/*/elasticloadbalancing`        |
+| `waf`             | `AWSLogs/*/WAFLogs`                     |
+| `networkfirewall` | `AWSLogs/*/network-firewall`            |
+
+In the default patterns `*` matches exactly one path segment (the AWS account ID in standard AWS
+log paths).
+
+For any name not listed above, `path_pattern` must be specified explicitly.
+
 ### Example 3: CloudWatch Logs using CloudWatch Subscription Filters
 
 ```yaml

@@ -36,6 +36,14 @@ import (
 
 const testDataDirectory = "testdata"
 
+// fixedLogsDecoder wraps a single LogsDecoderFactory in the getDecoder signature
+// expected by newS3LogsHandler. Helper for tests using a fixed decoder.
+func fixedLogsDecoder(factory encoding.LogsDecoderFactory) func(string) (encoding.LogsDecoderFactory, string, error) {
+	return func(string) (encoding.LogsDecoderFactory, string, error) {
+		return factory, "", nil
+	}
+}
+
 func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 	t.Parallel()
 
@@ -225,7 +233,7 @@ func TestProcessLambdaEvent_S3LogNotification(t *testing.T) {
 				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
 				AnyTimes()
 
-			handler := newS3LogsHandler(s3Service, zap.NewNop(), test.extension, test.eventConsumer)
+			handler := newS3LogsHandler(s3Service, zap.NewNop(), fixedLogsDecoder(test.extension), test.eventConsumer)
 
 			var event json.RawMessage
 			event, err := json.Marshal(test.s3Event)
@@ -307,18 +315,12 @@ func TestS3HandlerParseEvent(t *testing.T) {
 		},
 	}
 
-	ctr := gomock.NewController(t)
-	s3Service := internal.NewMockS3Service(ctr)
-	s3Service.EXPECT().ReadObject(gomock.Any(), gomock.Any(), gomock.Any()).Return([]byte("S3 content"), nil).AnyTimes()
-
-	handler := newS3LogsHandler(s3Service, zap.NewNop(), &customLogUnmarshaler{}, &noOpLogsConsumer{})
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			marshal, err := json.Marshal(test.input)
 			require.NoError(t, err)
 
-			event, err := handler.parseEvent(marshal)
+			event, err := parseS3Event(marshal)
 
 			if test.isError {
 				require.Error(t, err)
@@ -516,7 +518,7 @@ func TestConsumerErrorHandling(t *testing.T) {
 				Return(io.NopCloser(bytes.NewReader([]byte("object content"))), nil).
 				Times(1)
 
-			handler := newS3LogsHandler(s3Service, zap.NewNop(), &customLogUnmarshaler{}, &noOpLogsConsumer{err: test.consumerErr})
+			handler := newS3LogsHandler(s3Service, zap.NewNop(), fixedLogsDecoder(&customLogUnmarshaler{}), &noOpLogsConsumer{err: test.consumerErr})
 
 			event, err := json.Marshal(mockEvent)
 			require.NoError(t, err)
@@ -654,6 +656,178 @@ func (n *mockPlogEventHandler) handlerType() eventType {
 func (n *mockPlogEventHandler) handle(context.Context, json.RawMessage) error {
 	n.handleCount++
 	return nil
+}
+
+func TestMultiFormatS3LogsHandler(t *testing.T) {
+	t.Parallel()
+
+	type s3Content struct {
+		bucketName string
+		objectKey  string
+		data       []byte
+	}
+
+	tests := []struct {
+		name          string
+		s3Event       events.S3Event
+		s3MockContent s3Content
+		encodings     []S3Encoding
+		decoders      map[string]encoding.LogsDecoderFactory
+		expectedErr   string
+	}{
+		{
+			name: "routes VPC flow log to correct decoder",
+			s3Event: events.S3Event{Records: []events.S3EventRecord{{
+				EventSource: "aws:s3",
+				AWSRegion:   "us-east-1",
+				EventTime:   time.Unix(1764625361, 0),
+				S3: events.S3Entity{
+					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+					Object: events.S3Object{
+						Key:           "AWSLogs/123/vpcflowlogs/us-east-1/file.log.gz",
+						URLDecodedKey: "AWSLogs/123/vpcflowlogs/us-east-1/file.log.gz",
+						Size:          10,
+					},
+				},
+			}}},
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "AWSLogs/123/vpcflowlogs/us-east-1/file.log.gz",
+				data:       []byte("vpc flow log data"),
+			},
+			encodings: []S3Encoding{
+				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
+				{Name: "cloudtrail", Encoding: "awslogs_encoding/ct"},
+			},
+			decoders: map[string]encoding.LogsDecoderFactory{
+				"vpcflow":    &customLogUnmarshaler{},
+				"cloudtrail": &customLogUnmarshaler{},
+			},
+		},
+		{
+			name: "routes CloudTrail to correct decoder",
+			s3Event: events.S3Event{Records: []events.S3EventRecord{{
+				EventSource: "aws:s3",
+				AWSRegion:   "us-east-1",
+				EventTime:   time.Unix(1764625361, 0),
+				S3: events.S3Entity{
+					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+					Object: events.S3Object{
+						Key:           "AWSLogs/123/CloudTrail/us-east-1/file.json.gz",
+						URLDecodedKey: "AWSLogs/123/CloudTrail/us-east-1/file.json.gz",
+						Size:          10,
+					},
+				},
+			}}},
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "AWSLogs/123/CloudTrail/us-east-1/file.json.gz",
+				data:       []byte("cloudtrail data"),
+			},
+			encodings: []S3Encoding{
+				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
+				{Name: "cloudtrail", Encoding: "awslogs_encoding/ct"},
+			},
+			decoders: map[string]encoding.LogsDecoderFactory{
+				"vpcflow":    &customLogUnmarshaler{},
+				"cloudtrail": &customLogUnmarshaler{},
+			},
+		},
+		{
+			name: "no matching pattern returns error",
+			s3Event: events.S3Event{Records: []events.S3EventRecord{{
+				EventSource: "aws:s3",
+				S3: events.S3Entity{
+					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+					Object: events.S3Object{
+						Key:           "unknown/path/file.log",
+						URLDecodedKey: "unknown/path/file.log",
+						Size:          10,
+					},
+				},
+			}}},
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "unknown/path/file.log",
+				data:       []byte("some data"),
+			},
+			encodings: []S3Encoding{{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"}},
+			decoders: map[string]encoding.LogsDecoderFactory{
+				"vpcflow": &customLogUnmarshaler{},
+			},
+			expectedErr: "no encoding matches S3 object key",
+		},
+		{
+			name: "catch-all routes unmatched object to default decoder",
+			s3Event: events.S3Event{Records: []events.S3EventRecord{{
+				EventSource: "aws:s3",
+				AWSRegion:   "us-east-1",
+				EventTime:   time.Unix(1764625361, 0),
+				S3: events.S3Entity{
+					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+					Object: events.S3Object{
+						Key:           "random/path/file.log",
+						URLDecodedKey: "random/path/file.log",
+						Size:          10,
+					},
+				},
+			}}},
+			s3MockContent: s3Content{
+				bucketName: "test-bucket",
+				objectKey:  "random/path/file.log",
+				data:       []byte("random data"),
+			},
+			encodings: []S3Encoding{
+				{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
+				{Name: "catchall", PathPattern: "*"},
+			},
+			decoders: map[string]encoding.LogsDecoderFactory{
+				"vpcflow":  &customLogUnmarshaler{},
+				"catchall": internal.NewDefaultS3LogsDecoder(),
+			},
+		},
+		{
+			name: "skips empty object",
+			s3Event: events.S3Event{Records: []events.S3EventRecord{{
+				EventSource: "aws:s3",
+				S3: events.S3Entity{
+					Bucket: events.S3Bucket{Name: "test-bucket", Arn: "arn:aws:s3:::test-bucket"},
+					Object: events.S3Object{
+						Key:           "AWSLogs/123/vpcflowlogs/file.log",
+						URLDecodedKey: "AWSLogs/123/vpcflowlogs/file.log",
+						Size:          0,
+					},
+				},
+			}}},
+			s3MockContent: s3Content{bucketName: "test-bucket", objectKey: "AWSLogs/123/vpcflowlogs/file.log"},
+			encodings:     []S3Encoding{{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"}},
+			decoders:      map[string]encoding.LogsDecoderFactory{"vpcflow": &customLogUnmarshaler{}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctr := gomock.NewController(t)
+			s3Service := internal.NewMockS3Service(ctr)
+			s3Service.EXPECT().
+				GetReader(gomock.Any(), test.s3MockContent.bucketName, test.s3MockContent.objectKey).
+				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
+				AnyTimes()
+
+			router := newLogsDecoderRouter(test.encodings, test.decoders)
+			handler := newS3LogsHandler(s3Service, zap.NewNop(), router.GetDecoder, &noOpLogsConsumer{})
+
+			event, err := json.Marshal(test.s3Event)
+			require.NoError(t, err)
+
+			errP := handler.handle(t.Context(), event)
+			if test.expectedErr != "" {
+				require.ErrorContains(t, errP, test.expectedErr)
+			} else {
+				require.NoError(t, errP)
+			}
+		})
+	}
 }
 
 func loadCompressedData(t *testing.T, file string) string {

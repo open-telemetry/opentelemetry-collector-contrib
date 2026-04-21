@@ -11,9 +11,11 @@ import (
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -206,9 +208,7 @@ func TestStartRequiresLambdaEnvironment(t *testing.T) {
 
 func TestProcessLambdaEvent(t *testing.T) {
 	commonCfg := Config{
-		S3: sharedConfig{
-			Encoding: "awslogs",
-		},
+		S3: S3Config{sharedConfig: sharedConfig{Encoding: "awslogs"}},
 	}
 
 	commonLogger := zap.NewNop()
@@ -552,6 +552,106 @@ func TestHandleCustomTrigger(t *testing.T) {
 			require.Equal(t, tt.expectHandleCount, mockHandler.handleCount)
 		})
 	}
+}
+
+func TestS3MultiEncodingConfig_Validate(t *testing.T) {
+	// Verify that a config with S3 Encodings (all raw passthrough, no extension needed)
+	// passes validation and has the expected number of entries.
+	cfg := &Config{
+		S3: S3Config{
+			Encodings: []S3Encoding{
+				{Name: "vpcflow"}, // raw passthrough, no extension needed
+				{Name: "catchall", PathPattern: "*"},
+			},
+		},
+		CloudWatch: sharedConfig{},
+	}
+	require.NoError(t, cfg.Validate())
+	require.Len(t, cfg.S3.Encodings, 2)
+}
+
+func TestNewLogsHandler_MultiEncodingS3_Branch(t *testing.T) {
+	// Verify that newLogsHandler succeeds when cfg.S3.Encodings is non-empty (multi-format
+	// path builds a router). Both branches produce *s3Handler after the handler unification,
+	// so the test just verifies construction succeeds and the S3 handler is registered.
+	cfg := &Config{
+		S3: S3Config{
+			Encodings: []S3Encoding{
+				{Name: "vpcflow"},                    // raw passthrough, uses default decoder
+				{Name: "catchall", PathPattern: "*"}, // catch-all, uses default decoder
+			},
+		},
+		CloudWatch: sharedConfig{},
+	}
+	require.NoError(t, cfg.Validate())
+
+	ctr := gomock.NewController(t)
+	s3Service := internal.NewMockS3Service(ctr)
+	s3Provider := internal.NewMockS3Provider(ctr)
+	s3Provider.EXPECT().GetService(gomock.Any()).Return(s3Service, nil)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	host := componenttest.NewNopHost() // no extensions needed — all raw passthrough
+	sink := &consumertest.LogsSink{}
+
+	hp, err := newLogsHandler(t.Context(), cfg, settings, host, sink, s3Provider)
+	require.NoError(t, err)
+	require.NotNil(t, hp)
+
+	handler, err := hp.getHandler(s3Event)
+	require.NoError(t, err)
+	require.NotNil(t, handler)
+}
+
+func TestBuildS3LogsRouter_RawPassthrough(t *testing.T) {
+	// Verify that buildS3LogsRouter succeeds when all encodings are raw passthrough
+	// (no extension references), and the resulting router routes correctly.
+	cfg := S3Config{
+		Encodings: []S3Encoding{
+			{Name: "vpcflow"},                    // default pattern, no encoding = raw
+			{Name: "catchall", PathPattern: "*"}, // catch-all, no encoding = raw
+		},
+	}
+
+	// Use a nop host — no extensions needed since all entries are raw passthrough.
+	host := componenttest.NewNopHost()
+	router, err := buildS3LogsRouter(host, cfg, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, router)
+
+	// VPC flow log key should match the vpcflow entry.
+	decoder, name, err := router.GetDecoder("AWSLogs/123/vpcflowlogs/us-east-1/file.log.gz")
+	require.NoError(t, err)
+	assert.Equal(t, "vpcflow", name)
+	assert.NotNil(t, decoder)
+
+	// Random key should fall through to catch-all.
+	decoder, name, err = router.GetDecoder("random/path/file.log")
+	require.NoError(t, err)
+	assert.Equal(t, "catchall", name)
+	assert.NotNil(t, decoder)
+}
+
+func TestNewMetricsHandler_EncodingsNotSupported(t *testing.T) {
+	// Multi-format routing via 's3.encodings' is logs-only. Verify that the metrics handler
+	// rejects configs that set this field.
+	cfg := &Config{
+		S3: S3Config{
+			Encodings: []S3Encoding{{Name: "cloudwatch-metrics", PathPattern: "*"}},
+		},
+	}
+
+	ctr := gomock.NewController(t)
+	s3Provider := internal.NewMockS3Provider(ctr)
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	host := componenttest.NewNopHost()
+	sink := &consumertest.MetricsSink{}
+
+	hp, err := newMetricsHandler(t.Context(), cfg, settings, host, sink, s3Provider)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "'s3.encodings' is only supported for the logs signal type")
+	assert.Nil(t, hp)
 }
 
 type mockExtensionWithPLogUnmarshaler struct {
