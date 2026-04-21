@@ -94,7 +94,7 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	if c.conn == nil {
 		sock, err := c.dialer(ctx, c.proto, c.addr)
 		if err != nil {
-			return nil, err
+			return nil, errors.Join(err, c.Close())
 		}
 		c.conn = sock
 	}

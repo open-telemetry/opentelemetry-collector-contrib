@@ -201,6 +201,50 @@ func TestWithFileMountPathDoesNotRemoveExistingSockets(t *testing.T) {
 	assert.NoError(t, err, "Existing receiver socket must not be removed on startup")
 }
 
+func TestDialErrorCleansUpLocalSocket(t *testing.T) {
+	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping UDS test on windows")
+	}
+
+	sockDir := t.TempDir()
+	tracking := newTrackingPayload(t)
+	attempts := 0
+
+	chronyClient, err := New("unix://"+sockDir, 10*time.Second,
+		WithFileMountPath(sockDir),
+		func(c *client) {
+			c.dialer = func(context.Context, string, string) (net.Conn, error) {
+				attempts++
+				if attempts == 1 {
+					require.NoError(t, os.WriteFile(c.localAddr, []byte(""), 0o600))
+					return nil, os.ErrPermission
+				}
+				return newMockConn(t,
+					nil,
+					func(conn net.Conn) error {
+						_, writeErr := conn.Write(tracking)
+						return writeErr
+					},
+				), nil
+			}
+		},
+	)
+	require.NoError(t, err, "Must not error when creating client")
+
+	_, err = chronyClient.GetTrackingData(t.Context())
+	assert.ErrorIs(t, err, os.ErrPermission, "Must return the dial error")
+
+	cl := chronyClient.(*client)
+	_, err = os.Stat(cl.localAddr)
+	require.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after dial error")
+
+	_, err = chronyClient.GetTrackingData(t.Context())
+	require.NoError(t, err, "Must recover on the next dial attempt")
+	assert.Equal(t, 2, attempts, "Must retry dialing after cleanup")
+}
+
 func TestGettingTrackingData(t *testing.T) {
 	t.Parallel()
 
