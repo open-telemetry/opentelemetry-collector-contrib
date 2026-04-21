@@ -6,7 +6,6 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/obfuscate"
@@ -62,7 +61,11 @@ func (o *obfuscator) obfuscateXMLPlan(rawPlan string) (string, error) {
 						}
 						val, err := o.obfuscateSQLString(elem.Attr[i].Value)
 						if err != nil {
-							fmt.Println("Unable to obfuscate SQL statement in query plan, skipping: " + elem.Attr[i].Value)
+							// Drop the whole plan on obfuscation failure so
+							// we never return (or log) the raw attribute
+							// value. Previously the function additionally
+							// wrote the unobfuscated SQL to stdout via
+							// fmt.Println (#47692).
 							return "", nil
 						}
 						elem.Attr[i].Value = val
