@@ -38,9 +38,18 @@ func (m *mockS3ClientSQS) GetObject(ctx context.Context, params *s3.GetObjectInp
 	if !ok {
 		return nil, errors.New("unexpected type for mock GetObject content")
 	}
+
 	return &s3.GetObjectOutput{
 		Body: io.NopCloser(strings.NewReader(string(content))),
 	}, args.Error(1)
+}
+
+func (m *mockS3ClientSQS) GetObjectTagging(ctx context.Context, params *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {
+	args := m.Called(ctx, params)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*s3.GetObjectTaggingOutput), args.Error(1)
 }
 
 func (m *mockS3ClientSQS) PutObjectTagging(ctx context.Context, params *s3.PutObjectTaggingInput, _ ...func(*s3.Options)) (*s3.PutObjectTaggingOutput, error) {
@@ -819,6 +828,173 @@ func TestS3SQSReader_ReadAllErrorHandling(t *testing.T) {
 		// Callback never called because there is no object to process
 		assert.False(t, callbackCalled, "Callback should have been called")
 	})
+	t.Run("deletes message if object is not found and skip tagged objects is enabled", func(t *testing.T) {
+		mockSQS := new(mockSQSClient)
+		mockS3 := new(mockS3ClientSQS)
+
+		s3Event := s3EventNotification{
+			Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{Name: "test-bucket"},
+						Object: s3ObjectData{Key: "test-key"},
+					},
+				},
+			},
+		}
+
+		s3EventJSON, err := json.Marshal(s3Event)
+		require.NoError(t, err)
+
+		receiptHandle := "test-receipt-handle"
+
+		// S3 returns object not found
+		mockS3.On("GetObjectTagging", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectTaggingInput) bool {
+			return *input.Bucket == "test-bucket" && *input.Key == "test-key"
+		})).Return((*s3.GetObjectTaggingOutput)(nil), &s3types.NoSuchKey{Message: aws.String("The specified key does not exist.")})
+
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
+			return *input.QueueUrl == "test-queue-url"
+		})).Return(&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{
+				{
+					Body:          aws.String(string(s3EventJSON)),
+					ReceiptHandle: &receiptHandle,
+				},
+			},
+		}, nil).Once()
+
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			(*sqs.ReceiveMessageOutput)(nil), context.DeadlineExceeded,
+		)
+
+		// Message should be deleted
+		mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+			return *input.QueueUrl == "test-queue-url" && *input.ReceiptHandle == "test-receipt-handle"
+		})).Return(&sqs.DeleteMessageOutput{}, nil)
+
+		reader := &s3SQSNotificationReader{
+			logger:                     zap.NewNop(),
+			s3Client:                   mockS3,
+			sqsClient:                  mockSQS,
+			queueURL:                   "test-queue-url",
+			s3Bucket:                   "test-bucket",
+			s3Prefix:                   "",
+			maxNumberOfMessages:        10,
+			waitTimeSeconds:            20,
+			tagObjectAfterIngestion:    true, // Enable deletion
+			skipIngestingTaggedObjects: true,
+		}
+
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+		defer cancel()
+
+		callbackCalled := false
+		err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, _ string, _ []byte) error {
+			callbackCalled = true
+			return nil
+		})
+
+		// Context deadline exceeded is expected
+		assert.Equal(t, context.DeadlineExceeded, err)
+
+		mockSQS.AssertExpectations(t)
+		mockS3.AssertExpectations(t)
+
+		// Callback never called because there is no object to process
+		assert.False(t, callbackCalled, "Callback should have been called")
+	})
+
+	t.Run("does not delete message if tags cannot be fetched", func(t *testing.T) {
+		mockS3 := new(mockS3ClientSQS)
+		mockSQS := new(mockSQSClient)
+
+		reader := &s3SQSNotificationReader{
+			logger:                     logger,
+			s3Client:                   mockS3,
+			sqsClient:                  mockSQS,
+			queueURL:                   cfg.SQS.QueueURL,
+			s3Bucket:                   cfg.S3Downloader.S3Bucket,
+			s3Prefix:                   cfg.S3Downloader.S3Prefix,
+			maxNumberOfMessages:        10,
+			waitTimeSeconds:            20,
+			tagObjectAfterIngestion:    true,
+			skipIngestingTaggedObjects: true,
+		}
+
+		// Create S3 event notification
+		s3Event := s3EventNotification{
+			Records: []s3EventRecord{
+				{
+					EventSource: "aws:s3",
+					EventName:   "ObjectCreated:Put",
+					S3: s3Data{
+						Bucket: s3BucketData{
+							Name: "test-bucket",
+						},
+						Object: s3ObjectData{
+							Key: "test-key-with-tags",
+						},
+					},
+				},
+			},
+		}
+
+		eventJSON, err := json.Marshal(s3Event)
+		require.NoError(t, err)
+
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{
+					{
+						Body:          aws.String(string(eventJSON)),
+						ReceiptHandle: aws.String("test-receipt-handle"),
+					},
+				},
+			},
+			nil,
+		).Once()
+
+		// After processing one message, return empty results to exit the loop
+		mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+			&sqs.ReceiveMessageOutput{
+				Messages: []types.Message{},
+			},
+			nil,
+		)
+
+		mockS3.On("GetObjectTagging", mock.Anything, &s3.GetObjectTaggingInput{
+			Bucket: aws.String("test-bucket"),
+			Key:    aws.String("test-key-with-tags"),
+		}).Return(
+			nil,
+			errors.New("failed to get object tags"),
+		)
+		// NOTE: DeleteMessage should NOT be called when fetching tags fails
+		// The message should remain in the queue for retry.
+
+		ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+		defer cancel()
+
+		callbackCalled := false
+		err = reader.readAll(ctx, "test-telemetry", func(context.Context, string, []byte) error {
+			callbackCalled = true
+			return nil
+		})
+
+		// Context timeout is expected since readAll runs until context is done
+		assert.Equal(t, context.DeadlineExceeded, err)
+		assert.False(t, callbackCalled, "Callback should have not have been called due to GetObjectTagging error")
+
+		mockS3.AssertExpectations(t)
+		mockSQS.AssertExpectations(t)
+		// Verify DeleteMessage was never called - message should remain for retry.
+		mockSQS.AssertNotCalled(t, "DeleteMessage", mock.Anything, mock.Anything)
+		mockS3.AssertNotCalled(t, "GetObject", mock.Anything, mock.Anything)
+		mockS3.AssertNotCalled(t, "PutObjectTagging", mock.Anything, mock.Anything)
+	})
 }
 
 func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
@@ -980,7 +1156,7 @@ func TestS3SQSReader_ReadAllWithPrefix(t *testing.T) {
 	assert.Equal(t, []byte("second-matching-content"), processedKeys["logs/matched-key-2"])
 }
 
-func TestS3SQSReader_Tag(t *testing.T) {
+func TestS3SQSReader_PutTag(t *testing.T) {
 	testCases := []struct {
 		name                  string
 		s3Records             []s3EventRecord
@@ -1276,4 +1452,197 @@ func TestS3SQSReader_ReadAllDirectS3TestEvent(t *testing.T) {
 	// Verify all expectations (proves DeleteMessage was actually triggered)
 	mockS3.AssertExpectations(t)
 	mockSQS.AssertExpectations(t)
+}
+
+func TestS3SQSReader_ReadAll_SkipTagged(t *testing.T) {
+	logger := zap.NewNop()
+	cfg := &Config{
+		S3Downloader: S3DownloaderConfig{
+			S3Bucket: "test-bucket",
+			Region:   "us-east-1",
+		},
+		SQS: &SQSConfig{
+			QueueURL: "https://sqs.us-east-1.amazonaws.com/123456789012/test-queue",
+			Region:   "us-east-1",
+		},
+	}
+
+	mockS3 := new(mockS3ClientSQS)
+	mockSQS := new(mockSQSClient)
+
+	reader := &s3SQSNotificationReader{
+		logger:                     logger,
+		s3Client:                   mockS3,
+		sqsClient:                  mockSQS,
+		queueURL:                   cfg.SQS.QueueURL,
+		s3Bucket:                   cfg.S3Downloader.S3Bucket,
+		s3Prefix:                   cfg.S3Downloader.S3Prefix,
+		maxNumberOfMessages:        10,
+		waitTimeSeconds:            20,
+		skipIngestingTaggedObjects: true,
+	}
+
+	s3Event := s3EventNotification{
+		Records: []s3EventRecord{
+			{
+				EventSource: "aws:s3",
+				EventName:   "ObjectCreated:Put",
+				S3: s3Data{
+					Bucket: s3BucketData{
+						Name: "test-bucket",
+					},
+					Object: s3ObjectData{
+						Key: "test-key",
+					},
+				},
+			},
+			{
+				EventSource: "aws:s3",
+				EventName:   "ObjectCreated:Put",
+				S3: s3Data{
+					Bucket: s3BucketData{
+						Name: "test-bucket",
+					},
+					Object: s3ObjectData{
+						Key: "test-key-2",
+					},
+				},
+			},
+			{
+				EventSource: "aws:s3",
+				EventName:   "ObjectCreated:Put",
+				S3: s3Data{
+					Bucket: s3BucketData{
+						Name: "test-bucket",
+					},
+					Object: s3ObjectData{
+						Key: "test-key-3",
+					},
+				},
+			},
+		},
+	}
+
+	eventJSON, err := json.Marshal(s3Event)
+	require.NoError(t, err)
+
+	snsNotification := snsMessage{
+		Type:    "Notification",
+		Message: string(eventJSON),
+	}
+
+	snsJSON, err := json.Marshal(snsNotification)
+	require.NoError(t, err)
+
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.MatchedBy(func(input *sqs.ReceiveMessageInput) bool {
+		return *input.QueueUrl == cfg.SQS.QueueURL &&
+			input.MaxNumberOfMessages == 10 &&
+			input.WaitTimeSeconds == 20
+	})).Return(
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{
+				{
+					Body:          aws.String(string(snsJSON)),
+					ReceiptHandle: aws.String("test-receipt-handle"),
+				},
+			},
+		},
+		nil,
+	).Once()
+
+	// After processing one message, return empty results to exit the loop
+	mockSQS.On("ReceiveMessage", mock.Anything, mock.Anything).Return(
+		&sqs.ReceiveMessageOutput{
+			Messages: []types.Message{},
+		},
+		nil,
+	)
+
+	// First key is already tagged, so it won't be fetched
+	mockS3.On("GetObjectTagging", mock.Anything, &s3.GetObjectTaggingInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("test-key"),
+	}).Return(
+		&s3.GetObjectTaggingOutput{
+			TagSet: []s3types.Tag{{Key: aws.String(ingestedTag), Value: aws.String(ingestedStatus)}},
+		},
+		nil,
+	)
+
+	mockS3.On("GetObjectTagging", mock.Anything, &s3.GetObjectTaggingInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("test-key-2"),
+	}).Return(
+		&s3.GetObjectTaggingOutput{
+			TagSet: []s3types.Tag{},
+		},
+		nil,
+	)
+	mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("test-key-2"),
+	}).Return(
+		[]byte("test-content-2"),
+		nil,
+	)
+
+	// last key has a tag, but not set by the receiver
+	mockS3.On("GetObjectTagging", mock.Anything, &s3.GetObjectTaggingInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("test-key-3"),
+	}).Return(
+		&s3.GetObjectTaggingOutput{
+			TagSet: []s3types.Tag{{Key: aws.String("env"), Value: aws.String("dev")}},
+		},
+		nil,
+	)
+	mockS3.On("GetObject", mock.Anything, &s3.GetObjectInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("test-key-3"),
+	}).Return(
+		[]byte("test-content-3"),
+		nil,
+	)
+
+	mockSQS.On("DeleteMessage", mock.Anything, mock.MatchedBy(func(input *sqs.DeleteMessageInput) bool {
+		return *input.QueueUrl == cfg.SQS.QueueURL &&
+			*input.ReceiptHandle == "test-receipt-handle"
+	})).Return(
+		&sqs.DeleteMessageOutput{},
+		nil,
+	)
+
+	// Run test with callback
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
+	defer cancel()
+
+	var callbackCallCount int
+	var receivedKeys []string
+	var receivedContents [][]byte
+
+	err = reader.readAll(ctx, "test-telemetry", func(_ context.Context, key string, content []byte) error {
+		callbackCallCount++
+		receivedKeys = append(receivedKeys, key)
+		receivedContents = append(receivedContents, content)
+		return nil
+	})
+
+	// Context cancellation is expected
+	assert.Error(t, err)
+	assert.Equal(t, context.DeadlineExceeded, err)
+
+	// Verify callback was called with correct data
+	assert.Equal(t, 2, callbackCallCount)
+	assert.Equal(t, "test-key-2", receivedKeys[0])
+	assert.Equal(t, "test-key-3", receivedKeys[1])
+	assert.Equal(t, []byte("test-content-2"), receivedContents[0])
+	assert.Equal(t, []byte("test-content-3"), receivedContents[1])
+
+	// Verify all expectations
+	mockS3.AssertExpectations(t)
+	mockSQS.AssertExpectations(t)
+	mockS3.AssertNotCalled(t, "GetObject", mock.Anything, &s3.GetObjectTaggingInput{
+		Bucket: aws.String("test-bucket"),
+		Key:    aws.String("test-key"),
+	})
 }

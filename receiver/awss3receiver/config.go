@@ -27,6 +27,7 @@ type S3DownloaderConfig struct {
 	EndpointPartitionID            string `mapstructure:"endpoint_partition_id"`
 	S3ForcePathStyle               bool   `mapstructure:"s3_force_path_style"`
 	TagObjectAfterIngestion        bool   `mapstructure:"tag_object_after_ingestion"`
+	SkipIngestingTaggedObjects     bool   `mapstructure:"skip_ingesting_tagged_objects"`
 }
 
 // SQSConfig holds SQS queue configuration for receiving object change notifications.
