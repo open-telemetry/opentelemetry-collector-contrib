@@ -6,10 +6,11 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 func TestExtractNodeIDByNodeName(t *testing.T) {
