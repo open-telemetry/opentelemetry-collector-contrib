@@ -5,6 +5,7 @@ package azureauthextension
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"testing"
@@ -97,8 +98,10 @@ func TestAuthenticate(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		headers     map[string][]string
-		expectedErr string
+		headers      map[string][]string
+		withVerifier bool
+		verifierErr  error
+		expectedErr  string
 	}{
 		"missing_authorization_header": {
 			headers: map[string][]string{
@@ -106,49 +109,49 @@ func TestAuthenticate(t *testing.T) {
 			},
 			expectedErr: `missing "Authorization" header`,
 		},
-		"missing_host_header": {
-			headers: map[string][]string{
-				"Authorization": {"Bearer token"},
-			},
-			expectedErr: `missing "Host" header`,
-		},
 		"invalid_authorization_format": {
 			headers: map[string][]string{
 				"Authorization": {"Invalid authorization format"},
-				"Host":          {"Host"},
 			},
 			expectedErr: "authorization header does not follow expected format",
 		},
 		"invalid_schema": {
 			headers: map[string][]string{
 				"Authorization": {"Invalid schema"},
-				"Host":          {"Host"},
 			},
 			expectedErr: `expected "Bearer" as schema, got "Invalid"`,
+		},
+		"missing_server_auth_config": {
+			headers: map[string][]string{
+				"Authorization": {"Bearer token"},
+			},
+			expectedErr: errServerAuthConfigRequired.Error(),
 		},
 		"invalid_token": {
 			headers: map[string][]string{
 				"Authorization": {"Bearer invalid"},
-				"Host":          {"Host"},
 			},
-			expectedErr: `unauthorized: invalid token`,
+			withVerifier: true,
+			verifierErr:  errors.New("invalid token"),
+			expectedErr:  "unauthorized: invalid token",
 		},
 		"valid_authenticate": {
 			headers: map[string][]string{
 				"Authorization": {"Bearer test"},
-				"Host":          {"Host"},
 			},
+			withVerifier: true,
 		},
-	}
-
-	m := mockTokenCredential{}
-	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
-	auth := authenticator{
-		credential: &m,
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			auth := authenticator{}
+			if test.withVerifier {
+				verifier := mockTokenVerifier{}
+				verifier.On("Verify", mock.Anything, mock.Anything).Return(test.verifierErr)
+				auth.verifier = &verifier
+			}
+
 			_, err := auth.Authenticate(t.Context(), test.headers)
 			if test.expectedErr != "" {
 				require.ErrorContains(t, err, test.expectedErr)
@@ -157,6 +160,22 @@ func TestAuthenticate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAuthenticateRejectsReplayedBearerToken(t *testing.T) {
+	t.Parallel()
+
+	verifier := mockTokenVerifier{}
+	verifier.On("Verify", mock.Anything, "token-for-vault").Return(errors.New("audience mismatch"))
+
+	auth := authenticator{
+		verifier: &verifier,
+	}
+
+	_, err := auth.Authenticate(t.Context(), map[string][]string{
+		"Authorization": {"Bearer token-for-vault"},
+	})
+	require.ErrorContains(t, err, "unauthorized: invalid token")
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -240,4 +259,13 @@ var _ http.RoundTripper = (*mockRoundTripper)(nil)
 func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	args := m.Called(req)
 	return args.Get(0).(*http.Response), args.Error(1)
+}
+
+type mockTokenVerifier struct {
+	mock.Mock
+}
+
+func (m *mockTokenVerifier) Verify(ctx context.Context, rawToken string) error {
+	args := m.Called(ctx, rawToken)
+	return args.Error(0)
 }

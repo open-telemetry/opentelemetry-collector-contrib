@@ -40,6 +40,24 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "valid_server_auth"),
+			expected: &Config{
+				UseDefault: true,
+				Server: configoptional.Some(Server{
+					IssuerURL: "https://login.microsoftonline.com/test/v2.0",
+					Audience:  "api://collector-ingest",
+				}),
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "server_auth_empty_issuer"),
+			expectedErr: errEmptyServerIssuerURL.Error(),
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "server_auth_empty_audience"),
+			expectedErr: errEmptyServerAudience.Error(),
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "valid_service_principal_secret"),
 			expected: &Config{
 				ServicePrincipal: configoptional.Some(ServicePrincipal{
