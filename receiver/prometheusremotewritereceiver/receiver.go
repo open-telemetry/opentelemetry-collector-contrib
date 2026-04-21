@@ -85,7 +85,8 @@ type attribute struct {
 
 func (si scopeInfo) key() string {
 	const sep = "\xff"
-	parts := make([]string, 0, 3+len(si.scopeAttrs))
+	const fixedFields = 3 // Name, Version, SchemaURL
+	parts := make([]string, 0, fixedFields+len(si.scopeAttrs))
 	parts = append(parts, si.Name, si.Version, si.SchemaURL)
 	for _, kv := range si.scopeAttrs {
 		parts = append(parts, kv.Key+sep+kv.Value)
@@ -108,7 +109,7 @@ type metricIdentity struct {
 }
 
 // createMetricIdentity creates a metricIdentity struct from the required components
-func createMetricIdentity(resourceID string, si scopeInfo, metricName, unit string, metricType writev2.Metadata_MetricType) metricIdentity {
+func createMetricIdentity(resourceID, metricName, unit string, si scopeInfo, metricType writev2.Metadata_MetricType) metricIdentity {
 	return metricIdentity{
 		ResourceID:     resourceID,
 		ScopeName:      si.Name,
@@ -407,9 +408,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		resourceID := identity.OfResource(rm.Resource())
 		metricID := createMetricIdentity(
 			resourceID.String(), // Resource identity
-			si,                  // Scope info
 			metricName,          // Metric name
 			unit,                // Unit
+			si,                  // Scope info
 			ts.Metadata.Type,    // Metric type
 		)
 
