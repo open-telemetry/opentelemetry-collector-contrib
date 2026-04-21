@@ -7,7 +7,7 @@ change_type: enhancement
 component: cmd/opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow starting the Collector with an initial fallback config until successfully connected to the OpAMP backend
+note: Allow starting the Collector with a startup fallback config until successfully connected to the OpAMP backend
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44368]
@@ -17,7 +17,7 @@ issues: [44368]
 # Use pipe (|) for multiline entries.
 subtext: |
   When there's no previous configuration state persisted in disk, the Supervisor now
-  starts with an initial fallback configuration until it can successfully connect
+  starts with a startup fallback configuration until it can successfully connect
   to the OpAMP backend. At this moment the regular configuration (indicated by
   `agent::config_files`) is restored.
   If a previous configuration state is persisted, it will be used to start the Collector.
