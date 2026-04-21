@@ -1,0 +1,7 @@
+change_type: breaking
+component: exporter/signalfx
+note: Default `api_url` and `ingest_url` values derived from `realm` now use `*.observability.splunkcloud.com` instead of `*.signalfx.com`.
+issues: [47670]
+subtext: |
+  Explicit `api_url` and `ingest_url` settings are unchanged. Update network allowlists if they targeted only `*.signalfx.com`.
+change_logs: [user]

@@ -51,8 +51,8 @@ components:
     receiver:
         - file_log
         - fluentforward
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - jaeger
         - journald
         - k8s_cluster

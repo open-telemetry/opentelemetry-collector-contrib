@@ -476,6 +476,7 @@ Available Converters:
 - [Base64Encode](#base64encode)
 - [Bool](#bool)
 - [Decode](#decode)
+- [Coalesce](#coalesce)
 - [CommunityID](#communityid)
 - [Concat](#concat)
 - [ContainsValue](#containsvalue)
@@ -649,6 +650,23 @@ Examples:
 
 
 - `Decode(resource.attributes["encoded field"], "us-ascii")`
+
+### Coalesce
+
+`Coalesce(values[])`
+
+The `Coalesce` Converter returns the first non-nil value from a list of values.
+
+`values` is a list of values. Each can be a path expression, a literal, or a nested converter call. At least one value is required.
+
+If all values are `nil`, the Converter returns `nil`.
+
+Examples:
+
+- `Coalesce([attributes["user.id"], attributes["enduser.id"], "unknown"])`
+
+
+- `Coalesce([resource.attributes["deployment.environment.name"], resource.attributes["deployment.environment"]])`
 
 ### CommunityID
 
@@ -1928,6 +1946,8 @@ Unmarshalling XML is done using the following rules:
 3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
 4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
 5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
+
+Parsing is bounded by a maximum nesting depth of 10,000 levels; deeper documents return an error.
 
 For example, the following XML document:
 ```xml

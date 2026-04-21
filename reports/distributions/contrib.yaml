@@ -104,6 +104,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - geoip
         - groupbyattrs
@@ -121,6 +122,7 @@ components:
         - resource
         - resourcedetection
         - span
+        - spanpruning
         - sumologic
         - tail_sampling
         - transform
@@ -168,8 +170,8 @@ components:
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - iis
         - influxdb
         - jaeger
@@ -188,7 +190,7 @@ components:
         - mongodb
         - mongodb_atlas
         - mysql
-        - namedpipe
+        - named_pipe
         - netflow
         - nginx
         - nsxt
@@ -224,14 +226,14 @@ components:
         - stef
         - syslog
         - systemd
+        - tcp_log
         - tcpcheck
-        - tcplog
-        - tlscheck
-        - udplog
+        - tls_check
+        - udp_log
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
         - yang_grpc
