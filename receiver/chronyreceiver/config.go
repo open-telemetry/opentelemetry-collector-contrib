@@ -28,11 +28,13 @@ type Config struct {
 	// The default value is unix:///var/run/chrony/chronyd.sock
 	Endpoint string `mapstructure:"endpoint"`
 
-	// FileMountPath is used when the collector is running within a container.
-	// This allows the receiver to configure a local socket address so they can
-	// communicate across network namespaces.
-	// It is expected that this path is a directory mounted on a volume that
-	// chronyd has access to.
+	// FileMountPath is the directory where the receiver creates a random
+	// unixgram reply socket.
+	// Use it only when the collector and chronyd run in different network
+	// namespaces but share a filesystem volume.
+	// This directory should be dedicated to chronyd and the collector.
+	// Prefer an ephemeral mount because ungraceful exits can leave stale socket
+	// files behind.
 	// When empty, Go's default abstract socket autobind is used (same-namespace only).
 	// Example: /run/chrony
 	FileMountPath string `mapstructure:"file_mount_path"`
