@@ -1,0 +1,29 @@
+type: awscloudwatchlogs
+display_name: AWS CloudWatch Logs Exporter
+
+status:
+  class: exporter
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [yaten2302]
+    emeritus: [bryan-aguilar, boostchicken, rapphil]
+    seeking_new: true
+
+tests:
+  config:
+    endpoint: http://localhost:0
+    region: local
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
+  expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"

@@ -1,0 +1,31 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Measures the duration of TCP connection.
+            name: tcpcheck.duration
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: tcpcheck.endpoint
+                      value:
+                        stringValue: 127.0.0.1:8080
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: ms
+          - description: 1 if the TCP client successfully connected, otherwise 0.
+            name: tcpcheck.status
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: tcpcheck.endpoint
+                      value:
+                        stringValue: 127.0.0.1:8080
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
+          version: latest

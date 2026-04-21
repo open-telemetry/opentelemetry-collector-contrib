@@ -1,0 +1,135 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/AAAA0A0A-BB1B-CC2C-DD3D-EEEEEE4E4E4E/RESOURCEGROUPS/RG-001/PROVIDERS/MICROSOFT.WEB/SITES/SCALEABLEWEBAPP2
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 2
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_count
+          - gauge:
+              dataPoints:
+                - asDouble: 0.284
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_total
+          - gauge:
+              dataPoints:
+                - asDouble: 0.053
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_minimum
+          - gauge:
+              dataPoints:
+                - asDouble: 0.231
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_maximum
+          - gauge:
+              dataPoints:
+                - asDouble: 0.142
+                  startTimeUnixNano: "1681808340000000000"
+                  timeUnixNano: "1681808640000000000"
+            name: cputime5m_average
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.web
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /subscriptions/aaaa0a0a-bb1b-cc2c-dd3d-eeeeee4e4e4e/resourcegroups/rg-dcrs/providers/microsoft.keyvault/vaults/dcr-vault
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: ActivityName
+                      value:
+                        stringValue: keycreate
+                    - key: ActivityType
+                      value:
+                        stringValue: key
+                  startTimeUnixNano: "1724334120000000000"
+                  timeUnixNano: "1724334180000000000"
+            name: serviceapihit_count
+            unit: Count
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: ActivityName
+                      value:
+                        stringValue: keycreate
+                    - key: ActivityType
+                      value:
+                        stringValue: key
+                  startTimeUnixNano: "1724334120000000000"
+                  timeUnixNano: "1724334180000000000"
+            name: serviceapihit_total
+            unit: Count
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: ActivityName
+                      value:
+                        stringValue: keycreate
+                    - key: ActivityType
+                      value:
+                        stringValue: key
+                  startTimeUnixNano: "1724334120000000000"
+                  timeUnixNano: "1724334180000000000"
+            name: serviceapihit_minimum
+            unit: Count
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: ActivityName
+                      value:
+                        stringValue: keycreate
+                    - key: ActivityType
+                      value:
+                        stringValue: key
+                  startTimeUnixNano: "1724334120000000000"
+                  timeUnixNano: "1724334180000000000"
+            name: serviceapihit_maximum
+            unit: Count
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: ActivityName
+                      value:
+                        stringValue: keycreate
+                    - key: ActivityType
+                      value:
+                        stringValue: key
+                  startTimeUnixNano: "1724334120000000000"
+                  timeUnixNano: "1724334180000000000"
+            name: serviceapihit_average
+            unit: Count
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.keyvault
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version

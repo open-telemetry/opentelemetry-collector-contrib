@@ -1,0 +1,48 @@
+kafka: {}
+kafka/full:
+  max_message_bytes: 1
+  required_acks: 0
+  compression: gzip
+  compression_params:
+    level: 1
+  flush_max_messages: 2
+  allow_auto_topic_creation: true
+kafka/default_compression_level:
+  max_message_bytes: 1
+  required_acks: 0
+  compression: zstd
+  flush_max_messages: 2
+kafka/snappy_compression:
+  compression: snappy
+kafka/invalid_compression_level:
+  max_message_bytes: 1
+  required_acks: 0
+  compression: gzip
+  compression_params:
+    level: -123
+  flush_max_messages: 2
+kafka/required_acks_all:
+  required_acks: all
+kafka/disable_auto_topic_creation:
+  allow_auto_topic_creation: false
+
+# Invalid configurations
+kafka/invalid_compression:
+  compression: brotli
+kafka/invalid_required_acks:
+  required_acks: 3
+kafka/flush_max_messages_zero:
+  flush_max_messages: 0
+kafka/flush_max_messages_negative:
+  flush_max_messages: -1
+kafka/max_message_bytes_negative:
+  max_message_bytes: -1000
+
+kafka/producer_linger:
+  linger: 100ms
+
+kafka/producer_linger_1s:
+  linger: 1s
+
+kafka/custom_flush_max_messages:
+  flush_max_messages: 5000

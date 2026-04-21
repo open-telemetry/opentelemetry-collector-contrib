@@ -1,0 +1,14 @@
+display_name: Remote Tap Extension
+type: remotetap
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [atoulme]
+    seeking_new: true
+
+tests:
+  config:

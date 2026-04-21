@@ -1,0 +1,3 @@
+root_path: "does/not/exist"
+scrapers:
+  cpu:

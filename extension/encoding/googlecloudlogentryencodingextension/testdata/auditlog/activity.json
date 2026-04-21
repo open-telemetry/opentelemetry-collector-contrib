@@ -1,0 +1,47 @@
+{
+    "protoPayload": {
+        "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+        "authenticationInfo": {
+            "principalEmail": "system:gcp-controller-manager"
+        },
+        "authorizationInfo": [
+            {
+                "granted": true,
+                "permission": "io.k8s.coordination.v1.leases.update",
+                "resource": "coordination.k8s.io/v1/namespaces/kube-system/leases/gcp-controller-manager"
+            }
+        ],
+        "methodName": "io.k8s.coordination.v1.leases.update",
+        "requestMetadata": {
+            "callerIp": "172.16.0.3",
+            "callerSuppliedUserAgent": "gcp-controller-manager/v0.0.0 (linux/amd64) kubernetes/$Format/leader-election"
+        },
+        "resourceName": "coordination.k8s.io/v1/namespaces/kube-system/leases/gcp-controller-manager",
+        "serviceName": "k8s.io",
+        "status": {
+            "code": 0
+        }
+    },
+    "insertId": "91515bc0-f1e8-4365-9bf5-e24ce587b653",
+    "resource": {
+        "type": "k8s_cluster",
+        "labels": {
+            "project_id": "elastic-observability",
+            "location": "us-central1-c",
+            "cluster_name": "ensemble-k8s-dkohl"
+        }
+    },
+    "timestamp": "2025-08-15T12:54:34.966334Z",
+    "labels": {
+        "authorization.k8s.io/reason": "RBAC: allowed by ClusterRoleBinding \"system:gcp-controller-manager\" of ClusterRole \"system:gcp-controller-manager\" to User \"system:gcp-controller-manager\"",
+        "authorization.k8s.io/decision": "allow"
+    },
+    "logName": "projects/elastic-observability/logs/cloudaudit.googleapis.com%2Factivity",
+    "operation": {
+        "id": "91515bc0-f1e8-4365-9bf5-e24ce587b653",
+        "producer": "k8s.io",
+        "first": true,
+        "last": true
+    },
+    "receiveTimestamp": "2025-08-15T12:54:37.402958638Z"
+}

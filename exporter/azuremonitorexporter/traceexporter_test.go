@@ -1,0 +1,164 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package azuremonitorexporter
+
+import (
+	"testing"
+
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
+)
+
+var defaultConfig = createDefaultConfig().(*Config)
+
+// Tests the export onTraceData callback with no Spans
+func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	exporter := getExporter(defaultConfig, mockTransportChannel)
+
+	traces := ptrace.NewTraces()
+
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 0)
+}
+
+// Tests the export onTraceData callback with a single Span
+func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	exporter := getExporter(defaultConfig, mockTransportChannel)
+
+	// re-use some test generation method(s) from trace_to_envelope_test
+	resource := getResource()
+	scope := getScope()
+	span := getDefaultHTTPServerSpan()
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	r := rs.Resource()
+	resource.CopyTo(r)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
+	span.CopyTo(ilss.Spans().AppendEmpty())
+
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
+}
+
+// Tests the export onTraceData callback calls exporter flush only once for 8 spans
+func TestExporterTraceDataCallbackCallFlushOnce(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	exporter := getExporter(defaultConfig, mockTransportChannel)
+
+	resource := getResource()
+	scope := getScope()
+	span := getDefaultHTTPServerSpan()
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	r := rs.Resource()
+	resource.CopyTo(r)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
+
+	span.CopyTo(ilss.Spans().AppendEmpty())
+	span.CopyTo(ilss.Spans().AppendEmpty())
+	ilss.CopyTo(rs.ScopeSpans().AppendEmpty())
+	rs.CopyTo(traces.ResourceSpans().AppendEmpty())
+
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 8)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
+}
+
+// Tests the export onTraceData callback with a single Span with SpanEvents
+func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	config := createDefaultConfig().(*Config)
+	config.SpanEventsEnabled = true
+	exporter := getExporter(config, mockTransportChannel)
+
+	// re-use some test generation method(s) from trace_to_envelope_test
+	resource := getResource()
+	scope := getScope()
+	span := getDefaultHTTPServerSpan()
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	r := rs.Resource()
+	resource.CopyTo(r)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
+
+	spanEvent1 := getSpanEvent("foo", map[string]any{"foo": "bar"})
+	spanEvent1.CopyTo(span.Events().AppendEmpty())
+
+	spanEvent2 := getSpanEvent("bar", map[string]any{"bar": "baz"})
+	spanEvent2.CopyTo(span.Events().AppendEmpty())
+
+	span.CopyTo(ilss.Spans().AppendEmpty())
+
+	assert.NoError(t, exporter.consumeTraces(t.Context(), traces))
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
+}
+
+// Tests the export onTraceData callback with a single Span that fails to produce an envelope
+func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	exporter := getExporter(defaultConfig, mockTransportChannel)
+
+	// re-use some test generation method(s) from trace_to_envelope_test
+	resource := getResource()
+	scope := getScope()
+	span := getDefaultInternalSpan()
+
+	// Make this a FaaS span, which will trigger an error, because conversion
+	// of them is currently not supported.
+	span.Attributes().PutStr("faas.trigger", "http")
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	r := rs.Resource()
+	resource.CopyTo(r)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
+	span.CopyTo(ilss.Spans().AppendEmpty())
+
+	err := exporter.consumeTraces(t.Context(), traces)
+	assert.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 0)
+}
+
+func getMockTransportChannel() *mockTransportChannel {
+	transportChannelMock := mockTransportChannel{}
+	transportChannelMock.On("Send", mock.Anything)
+	transportChannelMock.On("Flush", mock.Anything)
+	return &transportChannelMock
+}
+
+func getExporter(config *Config, transportChannel appinsights.TelemetryChannel) *azureMonitorExporter {
+	return &azureMonitorExporter{
+		config,
+		transportChannel,
+		exportertest.NewNopSettings(metadata.Type).TelemetrySettings,
+		zap.NewNop(),
+		newMetricPacker(zap.NewNop()),
+	}
+}

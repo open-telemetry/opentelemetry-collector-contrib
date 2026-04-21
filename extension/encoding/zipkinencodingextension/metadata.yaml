@@ -1,0 +1,16 @@
+display_name: Zipkin Encoding Extension
+type: zipkin_encoding
+
+description: This extension supports marshaling and unmarshalling Zipkin data representing traces.
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [MovieStoreGuy, dao-jun]
+
+tests:
+  config:

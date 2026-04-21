@@ -1,0 +1,15 @@
+kafkametrics:
+  cluster_alias: kafka-test
+  brokers: 10.10.10.10:9092
+  scrapers:
+    - brokers
+    - topics
+    - consumers
+  metadata:
+    # Set a non-default value in metadata to ensure
+    # the refresh_frequency -> refresh_interval alias
+    # does not destroy any other config.
+    full: false
+  refresh_frequency: 1
+  topic_match: test_\w+
+  group_match: test_\w+

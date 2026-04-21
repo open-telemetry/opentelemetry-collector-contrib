@@ -1,0 +1,48 @@
+healthcheckv2:
+healthcheckv2/legacyconfig:
+  endpoint: "localhost:13"
+  tls:
+    ca_file: "/path/to/ca"
+    key_file: "/path/to/key"
+    cert_file: "/path/to/cert"
+  check_collector_pipeline:
+    enabled: false
+    interval: 5m
+    exporter_failure_threshold: 5
+healthcheckv2/missingendpoint:
+  endpoint: ""
+healthcheckv2/invalidpath:
+  endpoint: "localhost:13"
+  path: "invalid"
+healthcheckv2/v2all:
+  use_v2: true
+  http:
+  grpc:
+  component_health:
+    include_permanent_errors: true
+    include_recoverable_errors: true
+    recovery_duration: 5m
+healthcheckv2/v2httpcustomized:
+  use_v2: true
+  http:
+    endpoint: "localhost:13"
+    status:
+      enabled: true
+      path: "/health"
+    config:
+      enabled: true
+      path: "/conf"
+healthcheckv2/v2httpmissingendpoint:
+  use_v2: true
+  http:
+    endpoint: ""
+healthcheckv2/v2grpccustomized:
+  use_v2: true
+  grpc:
+    endpoint: "localhost:13"
+healthcheckv2/v2grpcmissingendpoint:
+  use_v2: true
+  grpc:
+    endpoint: ""
+healthcheckv2/v2noprotocols:
+  use_v2: true

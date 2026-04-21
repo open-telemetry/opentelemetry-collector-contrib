@@ -1,0 +1,37 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Sum if ...
+            name: sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "4.1"
+                  timeUnixNano: "1678390948395244000"
+              isMonotonic: true
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Sum if ...
+            name: sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "6.1"
+                  timeUnixNano: "1678390948395279000"
+              isMonotonic: true

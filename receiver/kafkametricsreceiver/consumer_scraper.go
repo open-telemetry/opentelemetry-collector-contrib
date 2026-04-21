@@ -1,0 +1,202 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+	"sync"
+	"time"
+
+	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
+	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
+)
+
+type consumerScraper struct {
+	client       sarama.Client
+	settings     receiver.Settings
+	groupFilter  *regexp.Regexp
+	topicFilter  *regexp.Regexp
+	clusterAdmin sarama.ClusterAdmin
+	config       Config
+	mb           *metadata.MetricsBuilder
+	mu           sync.Mutex
+}
+
+func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
+	return nil
+}
+
+func (s *consumerScraper) shutdown(_ context.Context) error {
+	if s.client != nil && !s.client.Closed() {
+		return s.client.Close()
+	}
+	return nil
+}
+
+func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if s.client == nil || s.client.Closed() {
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
+		}
+		s.client = client
+	}
+
+	if s.clusterAdmin == nil {
+		admin, err := newClusterAdmin(s.client)
+		if err != nil {
+			if s.client != nil {
+				_ = s.client.Close()
+			}
+			return pmetric.Metrics{}, fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
+		}
+		s.clusterAdmin = admin
+	}
+
+	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
+	if listErr != nil {
+		return pmetric.Metrics{}, s.resetClientOnError(listErr)
+	}
+
+	var matchedGrpIDs []string
+	for grpID := range cgs {
+		if s.groupFilter.MatchString(grpID) {
+			matchedGrpIDs = append(matchedGrpIDs, grpID)
+		}
+	}
+
+	allTopics, listErr := s.clusterAdmin.ListTopics()
+	if listErr != nil {
+		return pmetric.Metrics{}, s.resetClientOnError(listErr)
+	}
+
+	matchedTopics := map[string]sarama.TopicDetail{}
+	for t, d := range allTopics {
+		if s.topicFilter.MatchString(t) {
+			matchedTopics[t] = d
+		}
+	}
+	var scrapeError error
+	// partitionIds in matchedTopics
+	topicPartitions := map[string][]int32{}
+	// currentOffset for each partition in matchedTopics
+	topicPartitionOffset := map[string]map[int32]int64{}
+	for topic := range matchedTopics {
+		topicPartitionOffset[topic] = map[int32]int64{}
+		partitions, err := s.client.Partitions(topic)
+		if err != nil {
+			scrapeError = multierr.Append(scrapeError, err)
+			continue
+		}
+		for _, p := range partitions {
+			var offset int64
+			offset, err = s.client.GetOffset(topic, p, sarama.OffsetNewest)
+			if err != nil {
+				scrapeError = multierr.Append(scrapeError, err)
+				continue
+			}
+			topicPartitions[topic] = append(topicPartitions[topic], p)
+			topicPartitionOffset[topic][p] = offset
+		}
+	}
+	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIDs)
+	if listErr != nil {
+		return pmetric.Metrics{}, s.resetClientOnError(listErr)
+	}
+
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	for _, group := range consumerGroups {
+		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(group.Members)), group.GroupId)
+
+		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
+		if err != nil {
+			scrapeError = multierr.Append(scrapeError, err)
+			continue
+		}
+
+		for topic, partitions := range groupOffsetFetchResponse.Blocks {
+			// tracking matchedTopics consumed by this group
+			// by checking if any of the blocks has an offset
+			isConsumed := false
+			for _, block := range partitions {
+				if block.Offset != -1 {
+					isConsumed = true
+					break
+				}
+			}
+			if isConsumed {
+				var lagSum int64
+				var offsetSum int64
+				for partition, block := range partitions {
+					consumerOffset := block.Offset
+					offsetSum += consumerOffset
+					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, consumerOffset, group.GroupId, topic, int64(partition))
+
+					// default -1 to indicate no lag measured.
+					var consumerLag int64 = -1
+					if partitionOffset, ok := topicPartitionOffset[topic][partition]; ok {
+						// only consider partitions with an offset
+						if block.Offset != -1 {
+							consumerLag = partitionOffset - consumerOffset
+							lagSum += consumerLag
+						}
+					}
+					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, consumerLag, group.GroupId, topic, int64(partition))
+				}
+				s.mb.RecordKafkaConsumerGroupOffsetSumDataPoint(now, offsetSum, group.GroupId, topic)
+				s.mb.RecordKafkaConsumerGroupLagSumDataPoint(now, lagSum, group.GroupId, topic)
+			}
+		}
+	}
+
+	rb := s.mb.NewResourceBuilder()
+	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
+
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeError
+}
+
+func createConsumerScraper(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
+	groupFilter, err := regexp.Compile(cfg.GroupMatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile group_match: %w", err)
+	}
+	topicFilter, err := regexp.Compile(cfg.TopicMatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
+	}
+	s := consumerScraper{
+		settings:    settings,
+		groupFilter: groupFilter,
+		topicFilter: topicFilter,
+		config:      cfg,
+	}
+	return scraper.NewMetrics(
+		s.scrape,
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
+	)
+}
+
+func (s *consumerScraper) resetClientOnError(err error) error {
+	if isRecoverableError(err) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.clusterAdmin.Close()
+		s.clusterAdmin = nil
+		return fmt.Errorf("closing client because of reconnection error %w", err)
+	}
+
+	return err
+}

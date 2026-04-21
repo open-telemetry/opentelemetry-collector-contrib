@@ -1,0 +1,3 @@
+# TYPE a histogram
+a_sum 1 # {a="b"} 0.5
+# EOF

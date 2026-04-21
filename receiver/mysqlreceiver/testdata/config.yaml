@@ -1,0 +1,14 @@
+mysql:
+  endpoint: localhost:3306
+  username: otel
+  password: ${env:MYSQL_PASSWORD}
+  database: otel
+  collection_interval: 10s
+mysql/default_tls:
+  endpoint: localhost:3306
+  username: otel
+  password: ${env:MYSQL_PASSWORD}
+  database: otel
+  collection_interval: 10s
+  tls: # specified, but use default values
+    server_name_override: localhost

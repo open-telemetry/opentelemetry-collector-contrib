@@ -1,0 +1,10 @@
+display_name: Host Observer Extension
+type: host_observer
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [MovieStoreGuy]

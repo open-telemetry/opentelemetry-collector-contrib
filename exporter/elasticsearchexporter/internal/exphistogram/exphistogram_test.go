@@ -1,0 +1,215 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package exphistogram
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
+
+func TestToTDigest(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		scale           int32
+		zeroCount       uint64
+		positiveOffset  int32
+		positiveBuckets []uint64
+		negativeOffset  int32
+		negativeBuckets []uint64
+
+		expectedCounts []int64
+		expectedValues []float64
+	}{
+		{
+			name:           "empty",
+			scale:          0,
+			expectedCounts: nil,
+			expectedValues: nil,
+		},
+		{
+			name:           "empty, scale=1",
+			scale:          1,
+			expectedCounts: nil,
+			expectedValues: nil,
+		},
+		{
+			name:           "empty, scale=-1",
+			scale:          -1,
+			expectedCounts: nil,
+			expectedValues: nil,
+		},
+		{
+			name:           "zeros",
+			scale:          0,
+			zeroCount:      1,
+			expectedCounts: []int64{1},
+			expectedValues: []float64{0},
+		},
+		{
+			name:            "scale=0",
+			scale:           0,
+			zeroCount:       1,
+			positiveBuckets: []uint64{1, 1},
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-3, -1.5, 0, 1.5, 3},
+		},
+		{
+			name:            "scale=0, no zeros",
+			scale:           0,
+			zeroCount:       0,
+			positiveBuckets: []uint64{1, 1},
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1},
+			expectedValues:  []float64{-3, -1.5, 1.5, 3},
+		},
+		{
+			name:            "scale=0, offset=1",
+			scale:           0,
+			zeroCount:       1,
+			positiveOffset:  1,
+			positiveBuckets: []uint64{1, 1},
+			negativeOffset:  1,
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-6, -3, 0, 3, 6},
+		},
+		{
+			name:            "scale=0, offset=-1",
+			scale:           0,
+			zeroCount:       1,
+			positiveOffset:  -1,
+			positiveBuckets: []uint64{1, 1},
+			negativeOffset:  -1,
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-1.5, -0.75, 0, 0.75, 1.5},
+		},
+		{
+			name:            "scale=0, different offsets",
+			scale:           0,
+			zeroCount:       1,
+			positiveOffset:  -1,
+			positiveBuckets: []uint64{1, 1},
+			negativeOffset:  1,
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-6, -3, 0, 0.75, 1.5},
+		},
+		{
+			name:            "scale=-1",
+			scale:           -1,
+			zeroCount:       1,
+			positiveBuckets: []uint64{1, 1},
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-10, -2.5, 0, 2.5, 10},
+		},
+		{
+			name:            "scale=1",
+			scale:           1,
+			zeroCount:       1,
+			positiveBuckets: []uint64{1, 1},
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			expectedValues:  []float64{-1.7071067811865475, -1.2071067811865475, 0, 1.2071067811865475, 1.7071067811865475},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dp := pmetric.NewExponentialHistogramDataPoint()
+			dp.SetScale(tc.scale)
+			dp.SetZeroCount(tc.zeroCount)
+			dp.Positive().SetOffset(tc.positiveOffset)
+			dp.Positive().BucketCounts().FromRaw(tc.positiveBuckets)
+			dp.Negative().SetOffset(tc.negativeOffset)
+			dp.Negative().BucketCounts().FromRaw(tc.negativeBuckets)
+
+			counts, values := ToTDigest(dp)
+			assert.Equal(t, tc.expectedCounts, counts)
+			assert.Equal(t, tc.expectedValues, values)
+		})
+	}
+}
+
+func TestToRaw(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		scale           int32
+		zeroCount       uint64
+		positiveOffset  int32
+		positiveBuckets []uint64
+		negativeOffset  int32
+		negativeBuckets []uint64
+
+		expectedCounts []int64
+		expectedValues []float64
+	}{
+		{
+			name:           "empty",
+			scale:          0,
+			expectedCounts: nil,
+			expectedValues: nil,
+		},
+		{
+			name:           "zeros only",
+			scale:          0,
+			zeroCount:      1,
+			expectedCounts: []int64{1},
+			expectedValues: []float64{0},
+		},
+		{
+			name:            "scale=0, uses upper boundaries",
+			scale:           0,
+			zeroCount:       1,
+			positiveBuckets: []uint64{1, 1},
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			// Negative upper bounds: -LowerBoundary(0+i, 0) for buckets iterated in reverse
+			// neg bucket 1: ub = -LowerBoundary(1, 0) = -2
+			// neg bucket 0: ub = -LowerBoundary(0, 0) = -1
+			// Positive upper bounds: LowerBoundary(0+i+1, 0)
+			// pos bucket 0: ub = LowerBoundary(1, 0) = 2
+			// pos bucket 1: ub = LowerBoundary(2, 0) = 4
+			expectedValues: []float64{-2, -1, 0, 2, 4},
+		},
+		{
+			name:            "scale=0, offset=1",
+			scale:           0,
+			zeroCount:       1,
+			positiveOffset:  1,
+			positiveBuckets: []uint64{1, 1},
+			negativeOffset:  1,
+			negativeBuckets: []uint64{1, 1},
+			expectedCounts:  []int64{1, 1, 1, 1, 1},
+			// neg bucket 1 (idx=1): ub = -LowerBoundary(1+1, 0) = -4
+			// neg bucket 0 (idx=0): ub = -LowerBoundary(1+0, 0) = -2
+			// pos bucket 0: ub = LowerBoundary(1+0+1, 0) = 4
+			// pos bucket 1: ub = LowerBoundary(1+1+1, 0) = 8
+			expectedValues: []float64{-4, -2, 0, 4, 8},
+		},
+		{
+			name:            "scale=0, zero count buckets skipped",
+			scale:           0,
+			positiveBuckets: []uint64{0, 1},
+			expectedCounts:  []int64{1},
+			expectedValues:  []float64{4},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dp := pmetric.NewExponentialHistogramDataPoint()
+			dp.SetScale(tc.scale)
+			dp.SetZeroCount(tc.zeroCount)
+			dp.Positive().SetOffset(tc.positiveOffset)
+			dp.Positive().BucketCounts().FromRaw(tc.positiveBuckets)
+			dp.Negative().SetOffset(tc.negativeOffset)
+			dp.Negative().BucketCounts().FromRaw(tc.negativeBuckets)
+
+			counts, values := ToRaw(dp)
+			assert.Equal(t, tc.expectedCounts, counts)
+			assert.Equal(t, tc.expectedValues, values)
+		})
+	}
+}

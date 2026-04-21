@@ -1,0 +1,8 @@
+jaegerremotesampling:
+  source:
+    remote:
+      endpoint: jaeger-collector:14250
+jaegerremotesampling/1:
+  source:
+    reload_interval: 1s
+    file: /etc/otelcol/sampling_strategies.json

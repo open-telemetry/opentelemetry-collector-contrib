@@ -1,0 +1,14 @@
+display_name: File Storage Extension
+type: file_storage
+
+description: The File Storage Extension can persist state to the local file system.
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [swiatekm, VihasMakwana]
+    emeritus: [djaglowski]
+    seeking_new: true

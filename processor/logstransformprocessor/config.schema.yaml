@@ -1,0 +1,4 @@
+description: Config defines configuration for Resource processor.
+type: object
+allOf:
+  - $ref: /pkg/stanza/adapter.base_config

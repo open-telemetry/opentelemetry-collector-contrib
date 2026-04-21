@@ -1,0 +1,7 @@
+Receiver	Exporter
+zipkin	otlp_grpc
+otlp	zipkin
+jaeger	zipkin
+otlp	otlp_grpc
+jaeger	otlp_grpc
+zipkin	zipkin

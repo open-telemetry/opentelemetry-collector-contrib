@@ -1,0 +1,43 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: test-node-2
+        - key: k8s.node.uid
+          value:
+            stringValue: test-node-2-uid
+        - key: k8s.kubelet.version
+          value:
+            stringValue: v1.25.3
+        - key: container.runtime.version
+          value:
+            stringValue: "1.6.9"
+        - key: container.runtime
+          value:
+            stringValue: "containerd"
+        - key: os.description
+          value:
+            stringValue: Ubuntu 22.04.1 LTS
+        - key: os.type
+          value:
+            stringValue: "linux"
+
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Amount of cpu allocatable on the node
+            gauge:
+              dataPoints:
+                - asDouble: 0.123
+            name: k8s.node.allocatable_cpu
+            unit: '{cpu}'
+          - description: Amount of memory allocatable on the node
+            gauge:
+              dataPoints:
+                - asInt: "456"
+            name: k8s.node.allocatable_memory
+            unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: latest

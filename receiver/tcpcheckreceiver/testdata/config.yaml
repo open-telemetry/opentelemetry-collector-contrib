@@ -1,0 +1,11 @@
+receivers:
+  tcpcheck:
+    collection_interval: 1m
+    initial_delay: 1s
+    targets:
+      - endpoint: "google.com:443"
+        dialer:
+          timeout: 3s
+      - endpoint: "localhost:8080"
+        dialer:
+          timeout: 5s

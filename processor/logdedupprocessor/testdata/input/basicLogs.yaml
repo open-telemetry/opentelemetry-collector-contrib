@@ -1,0 +1,38 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: one
+          value:
+            intValue: "1"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+            body:
+              stringValue: Body of the log
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069266547395000"
+            traceId: ""
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+              - key: remove_me
+                value:
+                  boolValue: false
+            body:
+              stringValue: Body of the log
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069206547395000"
+            traceId: ""
+        scope: {}

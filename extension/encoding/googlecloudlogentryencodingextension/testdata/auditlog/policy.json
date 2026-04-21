@@ -1,0 +1,64 @@
+{
+    "protoPayload": {
+        "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+        "status": {
+            "code": 7,
+            "message": "PERMISSION_DENIED",
+            "details": [
+                {
+                    "@type": "type.googleapis.com/google.rpc.PreconditionFailure",
+                    "violations": [
+                        {
+                            "type": "VPC_SERVICE_CONTROLS",
+                            "description": "ljv4RZNmza4g69MMoOXBtRrlNKRYTjjhgkadQiqlfhmDZhClaMVgjoWA"
+                        }
+                    ]
+                }
+            ]
+        },
+        "authenticationInfo": {},
+        "requestMetadata": {
+            "callerIp": "192.168.1.1",
+            "requestAttributes": {},
+            "destinationAttributes": {}
+        },
+        "serviceName": "storage.googleapis.com",
+        "methodName": "google.storage.buckets.get",
+        "resourceName": "projects/elastic-siem",
+        "metadata": {
+            "securityPolicyInfo": {
+                "servicePerimeterName": "accessPolicies/30507210272/servicePerimeters/some_service",
+                "organizationId": "614830067722"
+            },
+            "vpcServiceControlsUniqueId": "ljv4RZNmza4g69MMoOXBtRrlNKRYTjjhgkadQiqlfhmDZhClaMVgjoWA",
+            "accessLevels": [
+                "accessPolicies/30507210272/accessLevels/thingy",
+                "accessPolicies/30507210272/accessLevels/test_us"
+            ],
+            "@type": "type.googleapis.com/google.cloud.audit.VpcServiceControlAuditMetadata",
+            "ingressViolations": [
+                {
+                    "servicePerimeter": "accessPolicies/30507210272/servicePerimeters/some_service",
+                    "targetResource": "projects/elastic-siem/locations/us-central1"
+                }
+            ],
+            "violationReason": "NO_MATCHING_ACCESS_LEVEL",
+            "resourceNames": [
+                "projects/elastic-siem/locations/us-central1"
+            ]
+        }
+    },
+    "insertId": "d21cmyd7av9",
+    "resource": {
+        "type": "audited_resource",
+        "labels": {
+            "project_id": "elastic-siem",
+            "method": "google.storage.buckets.get",
+            "service": "storage.googleapis.com"
+        }
+    },
+    "timestamp": "2021-09-13T03:10:14.801613786Z",
+    "severity": "ERROR",
+    "logName": "projects/elastic-siem/logs/cloudaudit.googleapis.com%2Fpolicy",
+    "receiveTimestamp": "2021-09-13T03:10:15.410616031Z"
+}
