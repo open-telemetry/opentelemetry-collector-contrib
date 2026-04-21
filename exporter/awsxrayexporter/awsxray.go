@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/xray"
 	"github.com/aws/smithy-go"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -82,6 +83,13 @@ func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, 
 			_ = logger.Sync()
 			return nil
 		}),
+		// The exporter mutates span attributes (removes the
+		// aws.xray.inprogress attribute in makeEndTimeAndInProgress).
+		// Declare that so the collector clones the traces before fanout;
+		// otherwise a traces pipeline with multiple exporters panics with
+		// "invalid access to shared data" on the first span that carries
+		// the attribute (#46889).
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }
 
