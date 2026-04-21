@@ -285,7 +285,7 @@ func TestFromMetrics_TranslationStrategies(t *testing.T) {
 			metricFunc: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetName("test.counter")
-				m.SetUnit("by")
+				m.SetUnit("bytes")
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)

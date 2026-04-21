@@ -286,6 +286,7 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 		strategy     string
 		metricFunc   func() pmetric.Metric
 		expectedName string
+		expectedUnit string
 	}{
 		{
 			name:     "NoTranslation",
@@ -298,6 +299,7 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 				return m
 			},
 			expectedName: "test.metric-name/with_special@chars",
+			expectedUnit: "",
 		},
 		{
 			name:     "UnderscoreEscapingWithSuffixes",
@@ -312,6 +314,7 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 				return m
 			},
 			expectedName: "test_counter_bytes_total",
+			expectedUnit: "bytes",
 		},
 		{
 			name:     "UnderscoreEscapingWithoutSuffixes",
@@ -326,6 +329,7 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 				return m
 			},
 			expectedName: "test_counter",
+			expectedUnit: "bytes",
 		},
 		{
 			name:     "NoUTF8EscapingWithSuffixes",
@@ -340,6 +344,21 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 				return m
 			},
 			expectedName: "test.counter_bytes_total",
+			expectedUnit: "bytes",
+		},
+		{
+			name:     "NoTranslation_WithUTF8Unit",
+			strategy: "NoTranslation",
+			metricFunc: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("test.metric")
+				m.SetUnit("custom unit")
+				m.SetEmptyGauge()
+				m.Gauge().DataPoints().AppendEmpty().SetDoubleValue(1.23)
+				return m
+			},
+			expectedName: "test.metric",
+			expectedUnit: "custom unit",
 		},
 	}
 
@@ -363,6 +382,13 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 			symbols := symbolsTable.Symbols()
 			actualName := getMetricNameV2(t, tsFound, symbols)
 			require.Equal(t, tt.expectedName, actualName)
+
+			unitRef := tsFound.Metadata.UnitRef
+			actualUnit := ""
+			if int(unitRef) < len(symbols) {
+				actualUnit = symbols[unitRef]
+			}
+			require.Equal(t, tt.expectedUnit, actualUnit)
 		})
 	}
 }

@@ -62,7 +62,7 @@ func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
 		symbolTable: writev2.NewSymbolTable(),
 		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
 		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
-		unitNamer:   otlptranslator.UnitNamer{},
+		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
 

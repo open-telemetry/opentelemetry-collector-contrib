@@ -58,7 +58,7 @@ func OtelMetricsToMetadata(md pmetric.Metrics, settings Settings) ([]*prompb.Met
 
 	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
 	metricNamer := otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed}
-	unitNamer := otlptranslator.UnitNamer{}
+	unitNamer := otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed}
 	metadata := make([]*prompb.MetricMetadata, 0, metadataLength)
 	var errs error
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
