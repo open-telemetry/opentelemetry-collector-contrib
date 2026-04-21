@@ -203,6 +203,13 @@ attributes:
 
 telemetry:
   metrics:
+    # The metric is not in use currently.
+    # It can be used once pod_identifier attribute is properly calculated
+    # ensuring that it doesn't cause high cardinality issues.
+    # If each unique value of pod_identifier creates a new metric time series,
+    # memory grows proportionally to the number of distinct pods seen over the collector's lifetime
+    # impacting the component's performance.
+    # See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47669
     k8s.pod.association:
       prefix: otelcol.
       enabled: false
