@@ -686,6 +686,13 @@ func marshalEvent(event *translator.Event, sizeLimit uint, writer io.Writer) (er
 	defer jsonBufferPool.Put(buf)
 
 	enc := json.NewEncoder(buf)
+	// json.NewEncoder defaults to escaping HTML characters (`<`, `>`, `&`
+	// become `\u003c`, `\u003e`, `\u0026`). Splunk HEC receives the JSON
+	// verbatim, so log bodies that legitimately contain those characters
+	// reach Splunk with the escape sequences instead of the original
+	// bytes (#46545). Splunk HEC is not an HTML sink, so the encoder
+	// does not need the HTML-safety default.
+	enc.SetEscapeHTML(false)
 	if err := enc.Encode(event); err != nil {
 		return nil, err
 	}
