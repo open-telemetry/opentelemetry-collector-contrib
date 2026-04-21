@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -314,5 +315,12 @@ func (cfg *Config) clusterString() string {
 		return ""
 	}
 
-	return fmt.Sprintf("ON CLUSTER %s", cfg.ClusterName)
+	// Backtick-quote the cluster identifier so names containing
+	// dashes, spaces, or other non-alphanumeric characters are accepted
+	// by the ClickHouse parser. Previously `cluster_name: "ch-cluster"`
+	// produced `ON CLUSTER ch-cluster`, which ClickHouse rejected with a
+	// syntax error (#46946). Embedded backticks are doubled per
+	// ClickHouse's quoted-identifier escape rule.
+	escaped := strings.ReplaceAll(cfg.ClusterName, "`", "``")
+	return fmt.Sprintf("ON CLUSTER `%s`", escaped)
 }
