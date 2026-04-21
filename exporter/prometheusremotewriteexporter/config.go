@@ -59,7 +59,7 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	//
-	// Deprecated: Use TranslationStrategy instead.
+	// Deprecated: Use TranslationStrategy instead. It will be removed in v0.153.0.
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
 	// TranslationStrategy controls how OTLP metric and attribute names are translated into Prometheus metric and label names.
