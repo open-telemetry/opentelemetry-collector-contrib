@@ -1157,6 +1157,39 @@ func TestEntityBuilders(t *testing.T) {
 		assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 	})
 
+	t.Run("k8s.persistentvolume", func(t *testing.T) {
+		e := NewK8sPersistentvolumeEntity("k8s.persistentvolume.uid-val")
+		require.NotNil(t, e)
+		e.SetK8sPersistentvolumeName("k8s.persistentvolume.name-val")
+		e.SetK8sStorageclassName("k8s.storageclass.name-val")
+		e.SetK8sPersistentvolumeReclaimPolicy("Delete")
+
+		eb := mb.ForK8sPersistentvolume(e)
+		eb.RecordK8sPersistentvolumeStatusPhaseDataPoint(ts, 1, AttributeK8sPersistentvolumeStatusPhasePending)
+		eb.RecordK8sPersistentvolumeStorageCapacityDataPoint(ts, 1)
+		eb.Emit()
+		metrics := mb.Emit()
+		// All metrics for this entity are disabled by default.
+		assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+	})
+
+	t.Run("k8s.persistentvolumeclaim", func(t *testing.T) {
+		e := NewK8sPersistentvolumeclaimEntity("k8s.persistentvolumeclaim.uid-val")
+		require.NotNil(t, e)
+		e.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+		e.SetK8sNamespaceName("k8s.namespace.name-val")
+		e.SetK8sStorageclassName("k8s.storageclass.name-val")
+
+		eb := mb.ForK8sPersistentvolumeclaim(e)
+		eb.RecordK8sPersistentvolumeclaimStatusPhaseDataPoint(ts, 1, AttributeK8sPersistentvolumeclaimStatusPhasePending)
+		eb.RecordK8sPersistentvolumeclaimStorageCapacityDataPoint(ts, 1)
+		eb.RecordK8sPersistentvolumeclaimStorageRequestDataPoint(ts, 1)
+		eb.Emit()
+		metrics := mb.Emit()
+		// All metrics for this entity are disabled by default.
+		assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+	})
+
 	t.Run("k8s.hpa", func(t *testing.T) {
 		e := NewK8sHpaEntity("k8s.hpa.uid-val")
 		require.NotNil(t, e)

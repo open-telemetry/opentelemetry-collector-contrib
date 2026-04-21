@@ -409,6 +409,8 @@ func newFakeClientWithAllResources() *fake.Clientset {
 				gvkToAPIResource(gvk.ReplicationController),
 				gvkToAPIResource(gvk.ResourceQuota),
 				gvkToAPIResource(gvk.Service),
+				gvkToAPIResource(gvk.PersistentVolume),
+				gvkToAPIResource(gvk.PersistentVolumeClaim),
 			},
 		},
 		{

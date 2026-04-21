@@ -173,6 +173,27 @@ entities:
       - ref: k8s.namespace.name
       - ref: k8s.service.traffic_distribution
 
+  - type: k8s.persistentvolume
+    brief: A Kubernetes PersistentVolume object.
+    stability: development
+    identity:
+      - ref: k8s.persistentvolume.uid
+    description:
+      - ref: k8s.persistentvolume.name
+      - ref: k8s.storageclass.name
+      - ref: k8s.persistentvolume.reclaim_policy
+
+  - type: k8s.persistentvolumeclaim
+    brief: A Kubernetes PersistentVolumeClaim object.
+    stability: development
+    identity:
+      - ref: k8s.persistentvolumeclaim.uid
+    description:
+      - ref: k8s.persistentvolumeclaim.name
+    extra_attributes:
+      - ref: k8s.namespace.name
+      - ref: k8s.storageclass.name
+
   - type: k8s.hpa
     brief: A Kubernetes horizontal pod autoscaler
     stability: development
@@ -320,6 +341,35 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.persistentvolume.name:
+    description: The name of the PersistentVolume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.reclaim_policy:
+    description: The reclaim policy of the PersistentVolume.
+    type: string
+    enabled: false
+    enum:
+      - Delete
+      - Recycle
+      - Retain
+
+  k8s.persistentvolume.uid:
+    description: The UID of the PersistentVolume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.name:
+    description: The name of the PersistentVolumeClaim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.uid:
+    description: The UID of the PersistentVolumeClaim.
+    type: string
+    enabled: true
+
   k8s.pod.name:
     description: The k8s pod name.
     type: string
@@ -400,6 +450,11 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.storageclass.name:
+    description: The name of the StorageClass.
+    type: string
+    enabled: true
+
   openshift.clusterquota.name:
     description: The k8s ClusterResourceQuota name.
     type: string
@@ -447,6 +502,22 @@ attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
     type: string
+  k8s.persistentvolume.status.phase:
+    description: The phase of the PersistentVolume.
+    type: string
+    enum:
+      - Pending
+      - Available
+      - Bound
+      - Released
+      - Failed
+  k8s.persistentvolumeclaim.status.phase:
+    description: The phase of the PersistentVolumeClaim.
+    type: string
+    enum:
+      - Pending
+      - Bound
+      - Lost
   k8s.service.endpoint.address_type:
     description: The address type of the endpoint.
     type: string
@@ -733,6 +804,65 @@ metrics:
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+
+  k8s.persistentvolume.status.phase:
+    enabled: false
+    description: The current phase of the PersistentVolume (1 for the current phase, 0 for others).
+    unit: "{persistentvolume}"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes:
+      - k8s.persistentvolume.status.phase
+    entity: k8s.persistentvolume
+
+  k8s.persistentvolume.storage.capacity:
+    enabled: false
+    description: The storage capacity of the PersistentVolume.
+    unit: "By"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    entity: k8s.persistentvolume
+
+  k8s.persistentvolumeclaim.status.phase:
+    enabled: false
+    description: The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for others).
+    unit: "{persistentvolumeclaim}"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes:
+      - k8s.persistentvolumeclaim.status.phase
+    entity: k8s.persistentvolumeclaim
+
+  k8s.persistentvolumeclaim.storage.capacity:
+    enabled: false
+    description: The actual storage capacity provisioned for the PersistentVolumeClaim. Only available when bound.
+    unit: "By"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    entity: k8s.persistentvolumeclaim
+
+  k8s.persistentvolumeclaim.storage.request:
+    enabled: false
+    description: The storage requested by the PersistentVolumeClaim.
+    unit: "By"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    entity: k8s.persistentvolumeclaim
 
   k8s.pod.phase:
     enabled: true

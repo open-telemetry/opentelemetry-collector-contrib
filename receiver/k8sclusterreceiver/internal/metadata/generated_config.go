@@ -29,54 +29,59 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for k8s_cluster metrics.
 type MetricsConfig struct {
-	K8sContainerCPULimit                MetricConfig `mapstructure:"k8s.container.cpu_limit"`
-	K8sContainerCPURequest              MetricConfig `mapstructure:"k8s.container.cpu_request"`
-	K8sContainerEphemeralstorageLimit   MetricConfig `mapstructure:"k8s.container.ephemeralstorage_limit"`
-	K8sContainerEphemeralstorageRequest MetricConfig `mapstructure:"k8s.container.ephemeralstorage_request"`
-	K8sContainerMemoryLimit             MetricConfig `mapstructure:"k8s.container.memory_limit"`
-	K8sContainerMemoryRequest           MetricConfig `mapstructure:"k8s.container.memory_request"`
-	K8sContainerReady                   MetricConfig `mapstructure:"k8s.container.ready"`
-	K8sContainerRestarts                MetricConfig `mapstructure:"k8s.container.restarts"`
-	K8sContainerStatusReason            MetricConfig `mapstructure:"k8s.container.status.reason"`
-	K8sContainerStatusState             MetricConfig `mapstructure:"k8s.container.status.state"`
-	K8sContainerStorageLimit            MetricConfig `mapstructure:"k8s.container.storage_limit"`
-	K8sContainerStorageRequest          MetricConfig `mapstructure:"k8s.container.storage_request"`
-	K8sCronjobActiveJobs                MetricConfig `mapstructure:"k8s.cronjob.active_jobs"`
-	K8sDaemonsetCurrentScheduledNodes   MetricConfig `mapstructure:"k8s.daemonset.current_scheduled_nodes"`
-	K8sDaemonsetDesiredScheduledNodes   MetricConfig `mapstructure:"k8s.daemonset.desired_scheduled_nodes"`
-	K8sDaemonsetMisscheduledNodes       MetricConfig `mapstructure:"k8s.daemonset.misscheduled_nodes"`
-	K8sDaemonsetReadyNodes              MetricConfig `mapstructure:"k8s.daemonset.ready_nodes"`
-	K8sDeploymentAvailable              MetricConfig `mapstructure:"k8s.deployment.available"`
-	K8sDeploymentDesired                MetricConfig `mapstructure:"k8s.deployment.desired"`
-	K8sHpaCurrentReplicas               MetricConfig `mapstructure:"k8s.hpa.current_replicas"`
-	K8sHpaDesiredReplicas               MetricConfig `mapstructure:"k8s.hpa.desired_replicas"`
-	K8sHpaMaxReplicas                   MetricConfig `mapstructure:"k8s.hpa.max_replicas"`
-	K8sHpaMinReplicas                   MetricConfig `mapstructure:"k8s.hpa.min_replicas"`
-	K8sJobActivePods                    MetricConfig `mapstructure:"k8s.job.active_pods"`
-	K8sJobDesiredSuccessfulPods         MetricConfig `mapstructure:"k8s.job.desired_successful_pods"`
-	K8sJobFailedPods                    MetricConfig `mapstructure:"k8s.job.failed_pods"`
-	K8sJobMaxParallelPods               MetricConfig `mapstructure:"k8s.job.max_parallel_pods"`
-	K8sJobSuccessfulPods                MetricConfig `mapstructure:"k8s.job.successful_pods"`
-	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
-	K8sNodeCondition                    MetricConfig `mapstructure:"k8s.node.condition"`
-	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
-	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
-	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
-	K8sReplicasetDesired                MetricConfig `mapstructure:"k8s.replicaset.desired"`
-	K8sReplicationControllerAvailable   MetricConfig `mapstructure:"k8s.replication_controller.available"`
-	K8sReplicationControllerDesired     MetricConfig `mapstructure:"k8s.replication_controller.desired"`
-	K8sResourceQuotaHardLimit           MetricConfig `mapstructure:"k8s.resource_quota.hard_limit"`
-	K8sResourceQuotaUsed                MetricConfig `mapstructure:"k8s.resource_quota.used"`
-	K8sServiceEndpointCount             MetricConfig `mapstructure:"k8s.service.endpoint.count"`
-	K8sServiceLoadBalancerIngressCount  MetricConfig `mapstructure:"k8s.service.load_balancer.ingress.count"`
-	K8sStatefulsetCurrentPods           MetricConfig `mapstructure:"k8s.statefulset.current_pods"`
-	K8sStatefulsetDesiredPods           MetricConfig `mapstructure:"k8s.statefulset.desired_pods"`
-	K8sStatefulsetReadyPods             MetricConfig `mapstructure:"k8s.statefulset.ready_pods"`
-	K8sStatefulsetUpdatedPods           MetricConfig `mapstructure:"k8s.statefulset.updated_pods"`
-	OpenshiftAppliedclusterquotaLimit   MetricConfig `mapstructure:"openshift.appliedclusterquota.limit"`
-	OpenshiftAppliedclusterquotaUsed    MetricConfig `mapstructure:"openshift.appliedclusterquota.used"`
-	OpenshiftClusterquotaLimit          MetricConfig `mapstructure:"openshift.clusterquota.limit"`
-	OpenshiftClusterquotaUsed           MetricConfig `mapstructure:"openshift.clusterquota.used"`
+	K8sContainerCPULimit                    MetricConfig `mapstructure:"k8s.container.cpu_limit"`
+	K8sContainerCPURequest                  MetricConfig `mapstructure:"k8s.container.cpu_request"`
+	K8sContainerEphemeralstorageLimit       MetricConfig `mapstructure:"k8s.container.ephemeralstorage_limit"`
+	K8sContainerEphemeralstorageRequest     MetricConfig `mapstructure:"k8s.container.ephemeralstorage_request"`
+	K8sContainerMemoryLimit                 MetricConfig `mapstructure:"k8s.container.memory_limit"`
+	K8sContainerMemoryRequest               MetricConfig `mapstructure:"k8s.container.memory_request"`
+	K8sContainerReady                       MetricConfig `mapstructure:"k8s.container.ready"`
+	K8sContainerRestarts                    MetricConfig `mapstructure:"k8s.container.restarts"`
+	K8sContainerStatusReason                MetricConfig `mapstructure:"k8s.container.status.reason"`
+	K8sContainerStatusState                 MetricConfig `mapstructure:"k8s.container.status.state"`
+	K8sContainerStorageLimit                MetricConfig `mapstructure:"k8s.container.storage_limit"`
+	K8sContainerStorageRequest              MetricConfig `mapstructure:"k8s.container.storage_request"`
+	K8sCronjobActiveJobs                    MetricConfig `mapstructure:"k8s.cronjob.active_jobs"`
+	K8sDaemonsetCurrentScheduledNodes       MetricConfig `mapstructure:"k8s.daemonset.current_scheduled_nodes"`
+	K8sDaemonsetDesiredScheduledNodes       MetricConfig `mapstructure:"k8s.daemonset.desired_scheduled_nodes"`
+	K8sDaemonsetMisscheduledNodes           MetricConfig `mapstructure:"k8s.daemonset.misscheduled_nodes"`
+	K8sDaemonsetReadyNodes                  MetricConfig `mapstructure:"k8s.daemonset.ready_nodes"`
+	K8sDeploymentAvailable                  MetricConfig `mapstructure:"k8s.deployment.available"`
+	K8sDeploymentDesired                    MetricConfig `mapstructure:"k8s.deployment.desired"`
+	K8sHpaCurrentReplicas                   MetricConfig `mapstructure:"k8s.hpa.current_replicas"`
+	K8sHpaDesiredReplicas                   MetricConfig `mapstructure:"k8s.hpa.desired_replicas"`
+	K8sHpaMaxReplicas                       MetricConfig `mapstructure:"k8s.hpa.max_replicas"`
+	K8sHpaMinReplicas                       MetricConfig `mapstructure:"k8s.hpa.min_replicas"`
+	K8sJobActivePods                        MetricConfig `mapstructure:"k8s.job.active_pods"`
+	K8sJobDesiredSuccessfulPods             MetricConfig `mapstructure:"k8s.job.desired_successful_pods"`
+	K8sJobFailedPods                        MetricConfig `mapstructure:"k8s.job.failed_pods"`
+	K8sJobMaxParallelPods                   MetricConfig `mapstructure:"k8s.job.max_parallel_pods"`
+	K8sJobSuccessfulPods                    MetricConfig `mapstructure:"k8s.job.successful_pods"`
+	K8sNamespacePhase                       MetricConfig `mapstructure:"k8s.namespace.phase"`
+	K8sNodeCondition                        MetricConfig `mapstructure:"k8s.node.condition"`
+	K8sPersistentvolumeStatusPhase          MetricConfig `mapstructure:"k8s.persistentvolume.status.phase"`
+	K8sPersistentvolumeStorageCapacity      MetricConfig `mapstructure:"k8s.persistentvolume.storage.capacity"`
+	K8sPersistentvolumeclaimStatusPhase     MetricConfig `mapstructure:"k8s.persistentvolumeclaim.status.phase"`
+	K8sPersistentvolumeclaimStorageCapacity MetricConfig `mapstructure:"k8s.persistentvolumeclaim.storage.capacity"`
+	K8sPersistentvolumeclaimStorageRequest  MetricConfig `mapstructure:"k8s.persistentvolumeclaim.storage.request"`
+	K8sPodPhase                             MetricConfig `mapstructure:"k8s.pod.phase"`
+	K8sPodStatusReason                      MetricConfig `mapstructure:"k8s.pod.status_reason"`
+	K8sReplicasetAvailable                  MetricConfig `mapstructure:"k8s.replicaset.available"`
+	K8sReplicasetDesired                    MetricConfig `mapstructure:"k8s.replicaset.desired"`
+	K8sReplicationControllerAvailable       MetricConfig `mapstructure:"k8s.replication_controller.available"`
+	K8sReplicationControllerDesired         MetricConfig `mapstructure:"k8s.replication_controller.desired"`
+	K8sResourceQuotaHardLimit               MetricConfig `mapstructure:"k8s.resource_quota.hard_limit"`
+	K8sResourceQuotaUsed                    MetricConfig `mapstructure:"k8s.resource_quota.used"`
+	K8sServiceEndpointCount                 MetricConfig `mapstructure:"k8s.service.endpoint.count"`
+	K8sServiceLoadBalancerIngressCount      MetricConfig `mapstructure:"k8s.service.load_balancer.ingress.count"`
+	K8sStatefulsetCurrentPods               MetricConfig `mapstructure:"k8s.statefulset.current_pods"`
+	K8sStatefulsetDesiredPods               MetricConfig `mapstructure:"k8s.statefulset.desired_pods"`
+	K8sStatefulsetReadyPods                 MetricConfig `mapstructure:"k8s.statefulset.ready_pods"`
+	K8sStatefulsetUpdatedPods               MetricConfig `mapstructure:"k8s.statefulset.updated_pods"`
+	OpenshiftAppliedclusterquotaLimit       MetricConfig `mapstructure:"openshift.appliedclusterquota.limit"`
+	OpenshiftAppliedclusterquotaUsed        MetricConfig `mapstructure:"openshift.appliedclusterquota.used"`
+	OpenshiftClusterquotaLimit              MetricConfig `mapstructure:"openshift.clusterquota.limit"`
+	OpenshiftClusterquotaUsed               MetricConfig `mapstructure:"openshift.clusterquota.used"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -169,6 +174,21 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeCondition: MetricConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeStatusPhase: MetricConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeStorageCapacity: MetricConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeclaimStatusPhase: MetricConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeclaimStorageCapacity: MetricConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeclaimStorageRequest: MetricConfig{
 			Enabled: false,
 		},
 		K8sPodPhase: MetricConfig{
@@ -281,6 +301,11 @@ type ResourceAttributesConfig struct {
 	K8sNamespaceUID                        ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
 	K8sNodeName                            ResourceAttributeConfig `mapstructure:"k8s.node.name"`
 	K8sNodeUID                             ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
+	K8sPersistentvolumeName                ResourceAttributeConfig `mapstructure:"k8s.persistentvolume.name"`
+	K8sPersistentvolumeReclaimPolicy       ResourceAttributeConfig `mapstructure:"k8s.persistentvolume.reclaim_policy"`
+	K8sPersistentvolumeUID                 ResourceAttributeConfig `mapstructure:"k8s.persistentvolume.uid"`
+	K8sPersistentvolumeclaimName           ResourceAttributeConfig `mapstructure:"k8s.persistentvolumeclaim.name"`
+	K8sPersistentvolumeclaimUID            ResourceAttributeConfig `mapstructure:"k8s.persistentvolumeclaim.uid"`
 	K8sPodName                             ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
 	K8sPodQosClass                         ResourceAttributeConfig `mapstructure:"k8s.pod.qos_class"`
 	K8sPodUID                              ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
@@ -297,6 +322,7 @@ type ResourceAttributesConfig struct {
 	K8sServiceUID                          ResourceAttributeConfig `mapstructure:"k8s.service.uid"`
 	K8sStatefulsetName                     ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID                      ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
+	K8sStorageclassName                    ResourceAttributeConfig `mapstructure:"k8s.storageclass.name"`
 	OpenshiftClusterquotaName              ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID               ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
 	OsDescription                          ResourceAttributeConfig `mapstructure:"os.description"`
@@ -380,6 +406,21 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sNodeUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sPersistentvolumeName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sPersistentvolumeReclaimPolicy: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sPersistentvolumeUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sPersistentvolumeclaimName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sPersistentvolumeclaimUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		K8sPodName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -426,6 +467,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sStatefulsetUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sStorageclassName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{

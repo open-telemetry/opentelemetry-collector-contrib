@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -237,6 +238,108 @@ func TestSetupInformerForKind(t *testing.T) {
 	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Message)
 }
 
+// TestConditionalInformerSetup verifies that PV/PVC informers are only set up when their metrics
+// are enabled or when metadata exporters / entity log consumers are configured.
+func TestConditionalInformerSetup(t *testing.T) {
+	tests := []struct {
+		name           string
+		config         *Config
+		entityConsumer consumer.Logs
+		wantPV         bool
+		wantPVC        bool
+	}{
+		{
+			name:   "default_config_no_pv_pvc",
+			config: &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			wantPV: false, wantPVC: false,
+		},
+		{
+			name: "pv_phase_metric_enabled",
+			config: func() *Config {
+				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg.Metrics.K8sPersistentvolumeStatusPhase.Enabled = true
+				return cfg
+			}(),
+			wantPV: true, wantPVC: false,
+		},
+		{
+			name: "pv_capacity_metric_enabled",
+			config: func() *Config {
+				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg.Metrics.K8sPersistentvolumeStorageCapacity.Enabled = true
+				return cfg
+			}(),
+			wantPV: true, wantPVC: false,
+		},
+		{
+			name: "pvc_phase_metric_enabled",
+			config: func() *Config {
+				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg.Metrics.K8sPersistentvolumeclaimStatusPhase.Enabled = true
+				return cfg
+			}(),
+			wantPV: false, wantPVC: true,
+		},
+		{
+			name: "pvc_capacity_metric_enabled",
+			config: func() *Config {
+				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg.Metrics.K8sPersistentvolumeclaimStorageCapacity.Enabled = true
+				return cfg
+			}(),
+			wantPV: false, wantPVC: true,
+		},
+		{
+			name: "pvc_request_metric_enabled",
+			config: func() *Config {
+				cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				cfg.Metrics.K8sPersistentvolumeclaimStorageRequest.Enabled = true
+				return cfg
+			}(),
+			wantPV: false, wantPVC: true,
+		},
+		{
+			name: "metadata_exporters_configured",
+			config: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetadataExporters:    []string{"signalfx"},
+			},
+			wantPV: true, wantPVC: true,
+		},
+		{
+			name:           "entity_log_consumer_set",
+			config:         &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			entityConsumer: consumertest.NewNop(),
+			wantPV:         true, wantPVC: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rw := &resourceWatcher{
+				client:            newFakeClientWithAllResources(),
+				logger:            zap.NewNop(),
+				metadataStore:     metadata.NewStore(),
+				config:            tt.config,
+				entityLogConsumer: tt.entityConsumer,
+			}
+
+			err := rw.prepareSharedInformerFactory()
+			require.NoError(t, err)
+
+			// Get returns a map[string]cache.Store; if nil/empty, the informer wasn't set up
+			pvStores := rw.metadataStore.Get(gvk.PersistentVolume)
+			hasPV := len(pvStores) > 0
+
+			pvcStores := rw.metadataStore.Get(gvk.PersistentVolumeClaim)
+			hasPVC := len(pvcStores) > 0
+
+			assert.Equal(t, tt.wantPV, hasPV, "PV informer setup mismatch")
+			assert.Equal(t, tt.wantPVC, hasPVC, "PVC informer setup mismatch")
+		})
+	}
+}
+
 func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
@@ -321,6 +424,104 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
+}
+
+func TestSyncMetadataAndEmitEntityEventsForPV(t *testing.T) {
+	logsConsumer := new(consumertest.LogsSink)
+
+	pv := testutils.NewPersistentVolume("1")
+
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
+	rw.entityLogConsumer = logsConsumer
+
+	step1 := time.Now()
+
+	// PV is created.
+	rw.syncMetadataUpdate(nil, rw.objMetadata(pv))
+	step2 := time.Now()
+
+	// PV is deleted.
+	rw.syncMetadataUpdate(rw.objMetadata(pv), nil)
+	step3 := time.Now()
+
+	require.Equal(t, 2, logsConsumer.LogRecordCount())
+
+	// Event 1: entity_state for the PV creation
+	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected := map[string]any{
+		"otel.entity.event.type": "entity_state",
+		"otel.entity.interval":   int64(7200000),
+		"otel.entity.type":       "k8s.persistentvolume",
+		"otel.entity.id":         map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
+		"otel.entity.attributes": map[string]any{
+			"k8s.persistentvolume.name":               "test-pv-1",
+			"k8s.persistentvolume.label.foo":          "bar",
+			"k8s.persistentvolume.label.foo1":         "",
+			"k8s.persistentvolume.creation_timestamp": "0001-01-01T00:00:00Z",
+		},
+	}
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
+
+	// Event 2: entity_delete for the PV
+	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected = map[string]any{
+		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.persistentvolume",
+		"otel.entity.id":         map[string]any{"k8s.persistentvolume.uid": "test-pv-1-uid"},
+	}
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
+}
+
+func TestSyncMetadataAndEmitEntityEventsForPVC(t *testing.T) {
+	logsConsumer := new(consumertest.LogsSink)
+
+	pvc := testutils.NewPersistentVolumeClaim("1")
+
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
+	rw.entityLogConsumer = logsConsumer
+
+	step1 := time.Now()
+
+	// PVC is created.
+	rw.syncMetadataUpdate(nil, rw.objMetadata(pvc))
+	step2 := time.Now()
+
+	// PVC is deleted.
+	rw.syncMetadataUpdate(rw.objMetadata(pvc), nil)
+	step3 := time.Now()
+
+	require.Equal(t, 2, logsConsumer.LogRecordCount())
+
+	// Event 1: entity_state for the PVC creation
+	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected := map[string]any{
+		"otel.entity.event.type": "entity_state",
+		"otel.entity.interval":   int64(7200000),
+		"otel.entity.type":       "k8s.persistentvolumeclaim",
+		"otel.entity.id":         map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
+		"otel.entity.attributes": map[string]any{
+			"k8s.persistentvolumeclaim.name":               "test-pvc-1",
+			"k8s.namespace.name":                           "test-namespace",
+			"k8s.persistentvolume.name":                    "test-pv-1",
+			"k8s.persistentvolumeclaim.label.foo":          "bar",
+			"k8s.persistentvolumeclaim.label.foo1":         "",
+			"k8s.persistentvolumeclaim.creation_timestamp": "0001-01-01T00:00:00Z",
+		},
+	}
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
+
+	// Event 2: entity_delete for the PVC
+	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected = map[string]any{
+		"otel.entity.event.type": "entity_delete",
+		"otel.entity.type":       "k8s.persistentvolumeclaim",
+		"otel.entity.id":         map[string]any{"k8s.persistentvolumeclaim.uid": "test-pvc-1-uid"},
+	}
+	assert.Equal(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 }
 
 func TestObjMetadata(t *testing.T) {
@@ -599,6 +800,44 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.namespace.name":               "test-namespace",
 						"k8s.namespace.phase":              "active",
 						"k8s.namespace.creation_timestamp": time.Now().Format(time.RFC3339),
+					},
+				},
+			},
+		},
+		{
+			name:          "PersistentVolume simple case",
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewPersistentVolume("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-pv-1-uid"): {
+					EntityType:    "k8s.persistentvolume",
+					ResourceIDKey: "k8s.persistentvolume.uid",
+					ResourceID:    "test-pv-1-uid",
+					Metadata: map[string]string{
+						"k8s.persistentvolume.name":               "test-pv-1",
+						"k8s.persistentvolume.label.foo":          "bar",
+						"k8s.persistentvolume.label.foo1":         "",
+						"k8s.persistentvolume.creation_timestamp": "0001-01-01T00:00:00Z",
+					},
+				},
+			},
+		},
+		{
+			name:          "PersistentVolumeClaim simple case",
+			metadataStore: &metadata.Store{},
+			resource:      testutils.NewPersistentVolumeClaim("1"),
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-pvc-1-uid"): {
+					EntityType:    "k8s.persistentvolumeclaim",
+					ResourceIDKey: "k8s.persistentvolumeclaim.uid",
+					ResourceID:    "test-pvc-1-uid",
+					Metadata: map[string]string{
+						"k8s.persistentvolumeclaim.name":               "test-pvc-1",
+						"k8s.namespace.name":                           "test-namespace",
+						"k8s.persistentvolume.name":                    "test-pv-1",
+						"k8s.persistentvolumeclaim.label.foo":          "bar",
+						"k8s.persistentvolumeclaim.label.foo1":         "",
+						"k8s.persistentvolumeclaim.creation_timestamp": "0001-01-01T00:00:00Z",
 					},
 				},
 			},
