@@ -234,8 +234,20 @@ func handleHTTPRequestField(attributes pcommon.Map, req *httpRequest) error {
 	if req.Protocol != "" {
 		name, version, hasSlash := strings.Cut(req.Protocol, "/")
 		if !hasSlash {
-			// Short ALPN token (e.g. "h2")
-			attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(req.Protocol))
+			// Short ALPN token (RFC 7301). Map the well-known HTTP variants to
+			// "http" + numeric version so telemetry stays consistent with the
+			// "HTTP/1.1" form; unknown tokens fall back to the raw value as the
+			// protocol name with no version.
+			switch strings.ToLower(req.Protocol) {
+			case "h2", "h2c":
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+				attributes.PutStr(string(conventions.NetworkProtocolVersionKey), "2")
+			case "h3":
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), "http")
+				attributes.PutStr(string(conventions.NetworkProtocolVersionKey), "3")
+			default:
+				attributes.PutStr(string(conventions.NetworkProtocolNameKey), strings.ToLower(req.Protocol))
+			}
 		} else {
 			if name == "" || version == "" {
 				return fmt.Errorf("invalid protocol %q: name or version is missing", req.Protocol)

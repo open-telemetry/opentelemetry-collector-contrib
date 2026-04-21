@@ -112,23 +112,46 @@ func TestHandleHTTPRequestField(t *testing.T) {
 			expectsErr: "failed to parse request url",
 		},
 		{
-			// Short ALPN token — accepted as protocol name without version
-			// (regression test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45214)
-			name: "h2 protocol (no slash)",
+			// Short ALPN token — well-known HTTP variants are normalised to
+			// name="http" + numeric version so telemetry stays consistent with
+			// the HTTP/1.1 form (regression test for #45214).
+			name: "h2 protocol normalised to http/2",
 			request: &httpRequest{
 				Protocol: "h2",
 			},
 			expectsAttributes: map[string]any{
-				"network.protocol.name": "h2",
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
 			},
 		},
 		{
-			name: "h3 protocol (no slash)",
+			name: "h2c protocol normalised to http/2",
+			request: &httpRequest{
+				Protocol: "h2c",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name":    "http",
+				"network.protocol.version": "2",
+			},
+		},
+		{
+			name: "h3 protocol normalised to http/3",
 			request: &httpRequest{
 				Protocol: "h3",
 			},
 			expectsAttributes: map[string]any{
-				"network.protocol.name": "h3",
+				"network.protocol.name":    "http",
+				"network.protocol.version": "3",
+			},
+		},
+		{
+			// Non-HTTP short ALPN token falls through to the raw-name path.
+			name: "unknown short ALPN token preserved as name",
+			request: &httpRequest{
+				Protocol: "mqtt",
+			},
+			expectsAttributes: map[string]any{
+				"network.protocol.name": "mqtt",
 			},
 		},
 		{
