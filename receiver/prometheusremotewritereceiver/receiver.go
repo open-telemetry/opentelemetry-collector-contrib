@@ -727,7 +727,7 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	// The next bucket (i_max + 1) is the +Inf overflow bucket, which is also allowed.
 	// Buckets beyond that must be dropped.
 	// See https://prometheus.io/docs/specs/native_histograms/#schema for more information.
-	overflowLimit := 1024*math.Pow(2, float64(histogram.Schema)) + 1
+	overflowLimit := math.Ldexp(1024, int(histogram.Schema)) + 1
 	var droppedCount uint64
 
 	// The difference between float and integer histograms is that float histograms are stored as absolute counts
@@ -761,7 +761,14 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 	}
 
 	if droppedCount > 0 && !value.IsStaleNaN(histogram.Sum) {
-		dp.SetCount(dp.Count() - droppedCount)
+		count := dp.Count()
+		if droppedCount > count {
+			prw.settings.Logger.Info("Clamping Native Histogram count to zero due to inconsistent dropped overflow bucket count",
+				zapcore.Field{Key: "timeseries", Type: zapcore.StringType, String: ls.Get("__name__")})
+			dp.SetCount(0)
+		} else {
+			dp.SetCount(count - droppedCount)
+		}
 	}
 
 	attrs.CopyTo(dp.Attributes())
