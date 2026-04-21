@@ -10,7 +10,7 @@ This exporter supports sending logs to Google SecOps using either of the followi
 
 ## How It Works
 
-1. The exporter uses the configured credentials to authenticate with the Google Cloud services.
+1. The exporter authenticates with Google Cloud services using [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials) by default, or via a configured authenticator extension such as [googleclientauth](../../extension/googleclientauthextension/README.md).
 2. Logs are marshalled into the format expected by Google SecOps.
 3. Logs are imported into Google SecOps using the appropriate endpoint.
 
@@ -23,8 +23,7 @@ The exporter can be configured using the following fields:
 | `api`                      | string            |                               | `true`   | The API to use for sending logs. Valid values are `chronicle` and `backstory`.                                                                                  |
 | `service_endpoint`         | string            |                               | `true`   | The base service endpoint used to construct the API endpoints.                                                                                                  |
 | `customer_id`              | string            |                               | `true`   | The customer ID used for sending logs.                                                                                                                          |
-| `creds_file_path`          | string            |                               | `false`  | The file path to the Google credentials JSON file. Cannot be used with `creds`.                                                                                 |
-| `creds`                    | string            |                               | `false`  | The Google credentials JSON. Cannot be used with `creds_file_path`.                                                                                             |
+| `auth`                     | map               |                               | `false`  | Configures authentication via a collector auth extension (e.g. `googleclientauth`). If unset, Application Default Credentials are used.                         |
 | `default_log_type`         | string            |                               | `false`  | The type of log that will be sent if not overridden by `attributes["log_type"]`, `attributes["chronicle_log_type"]`, or `attributes["google_secops.log.type"]`. |
 | `validate_log_types`       | bool              | `false`                       | `false`  | Whether or not to validate the log types using an API call.                                                                                                     |
 | `raw_log_field`            | string            |                               | `false`  | The field name for raw logs. Must be a valid OTTL log record expression.                                                                                        |
@@ -50,7 +49,6 @@ google_secops:
   region: "us"
   project_number: "123456789"
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "ONEPASSWORD"
 ```
 
@@ -61,7 +59,6 @@ google_secops:
   api: "backstory"
   service_endpoint: https://malachiteingestion-pa.googleapis.com
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "WINEVTLOG"
 ```
 
@@ -72,7 +69,6 @@ google_secops:
   api: "backstory"
   service_endpoint: https://europe-malachiteingestion-pa.googleapis.com
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "WINEVTLOG"
   namespace: "production"
 ```
@@ -87,7 +83,6 @@ google_secops:
   region: "us"
   project_number: "123456789"
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "WINEVTLOG"
 ```
 
@@ -100,7 +95,6 @@ google_secops:
   region: "us"
   project_number: "123456789"
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "WINEVTLOG"
   namespace: "production"
   ingestion_labels:
@@ -109,17 +103,32 @@ google_secops:
     team: security
 ```
 
-### Configuration with Inline Credentials
+### Configuration with an Auth Extension
+
+Use the [googleclientauth](../../extension/googleclientauthextension/README.md) extension to centralize credential management across exporters.
 
 ```yaml
-google_secops:
-  api: "chronicle"
-  service_endpoint: https://us-chronicle.googleapis.com
-  region: "us"
-  project_number: "123456789"
-  customer_id: "customer-123"
-  creds: '{"type":"service_account","project_id":"my-project", ...}'
-  default_log_type: "ONEPASSWORD"
+extensions:
+  googleclientauth:
+    scopes:
+      - https://www.googleapis.com/auth/cloud-platform
+
+exporters:
+  google_secops:
+    api: "chronicle"
+    service_endpoint: https://us-chronicle.googleapis.com
+    region: "us"
+    project_number: "123456789"
+    customer_id: "customer-123"
+    default_log_type: "ONEPASSWORD"
+    auth:
+      authenticator: googleclientauth
+
+service:
+  extensions: [googleclientauth]
+  pipelines:
+    logs:
+      exporters: [google_secops]
 ```
 
 ### Configuration with Gzip Compression
@@ -131,7 +140,6 @@ google_secops:
   region: "us"
   project_number: "123456789"
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "WINEVTLOG"
   compression: "gzip"
 ```
@@ -145,7 +153,6 @@ google_secops:
   region: "us"
   project_number: "123456789"
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "WINEVTLOG"
   raw_log_field: body["raw"]
 ```
@@ -159,7 +166,6 @@ google_secops:
   region: "us"
   project_number: "123456789"
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   default_log_type: "WINEVTLOG"
   batch_request_size_limit: 2000000
   collect_agent_metrics: true
@@ -175,8 +181,9 @@ google_secops:
   region: "us"
   project_number: "123456789"
   customer_id: "customer-123"
-  creds_file_path: "/path/to/google/creds.json"
   api_version: "v1alpha"
+  auth:
+    authenticator: googleclientauth
   default_log_type: "WINEVTLOG"
   validate_log_types: true
   raw_log_field: body["raw"]

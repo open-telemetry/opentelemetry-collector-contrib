@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -54,11 +55,10 @@ type Config struct {
 	// Namespace is the namespace that will be used to send logs to Google SecOps.
 	Namespace string `mapstructure:"namespace"`
 
-	// Creds are the Google credentials JSON.
-	Creds string `mapstructure:"creds"`
-
-	// CredsFilePath is the file path to the Google credentials JSON file.
-	CredsFilePath string `mapstructure:"creds_file_path"`
+	// Auth configures authentication via a collector auth extension such as
+	// googleclientauth. If unset, the exporter relies on Application Default
+	// Credentials for authentication.
+	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth"`
 
 	// DefaultLogType is the type of log that will be sent to Google SecOps if not overridden by `attributes["log_type"]`, `attributes["chronicle_log_type"]`, or `attributes["google_secops.log.type"]`.
 	DefaultLogType string `mapstructure:"default_log_type"`
@@ -99,10 +99,6 @@ type Config struct {
 
 // Validate checks if the configuration is valid.
 func (cfg *Config) Validate() error {
-	if cfg.CredsFilePath != "" && cfg.Creds != "" {
-		return errors.New("can only specify one of creds_file_path or creds")
-	}
-
 	if cfg.ServiceEndpoint == "" {
 		return errors.New("service_endpoint is required")
 	}
