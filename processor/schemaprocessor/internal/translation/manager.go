@@ -95,12 +95,20 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 		return t, nil
 	}
 
+	// Always fetch the schema file for the higher version, since it contains the complete
+	// migration history. For upgrades (signal older than target), fetch the target URL.
+	// For downgrades (signal newer than target), fetch the signal URL.
+	fetchURL := schemaURL
+	if version.Compare(targetTranslation) == Update {
+		fetchURL = joinSchemaFamilyAndVersion(family, targetTranslation)
+	}
+
 	for _, p := range m.providers {
-		content, err := p.Retrieve(ctx, schemaURL)
+		content, err := p.Retrieve(ctx, fetchURL)
 		if err != nil {
 			m.log.Error("Failed to lookup schemaURL",
 				zap.Error(err),
-				zap.String("schemaURL", schemaURL),
+				zap.String("schemaURL", fetchURL),
 			)
 			// If we fail to retrieve the schema, we should
 			// try the next provider
