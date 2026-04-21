@@ -35,7 +35,7 @@ description: Config defines configuration for Remote Write exporter.
 type: object
 properties:
   add_metric_suffixes:
-    description: 'AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export Deprecated: Use TranslationStrategy instead.'
+    description: 'AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export Deprecated: Use TranslationStrategy instead. It will be removed in v0.153.0.'
     type: boolean
   disable_scope_info:
     description: DisableScopeInfo allows disabling the export of the scope info labels
