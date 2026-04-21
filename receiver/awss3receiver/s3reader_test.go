@@ -350,7 +350,7 @@ func Test_readTelemetryForTime_skipTaggedObjects(t *testing.T) {
 				// testKey2 should not be fetched because it has the ingested tag
 				require.Contains(t, []string{testKey1, testKey3}, *params.Key)
 				return &s3.GetObjectOutput{
-					Body:     io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
+					Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 				}, nil
 			},
 			getObjectTaggingFunc: func(_ context.Context, params *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {
@@ -878,7 +878,7 @@ func Test_readTelemetryForTime_GetTagError(t *testing.T) {
 				require.Equal(t, "bucket", *params.Bucket)
 				require.Equal(t, testKey, *params.Key)
 				return &s3.GetObjectOutput{
-					Body:     io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
+					Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 				}, nil
 			},
 			getObjectTaggingFunc: func(_ context.Context, params *s3.GetObjectTaggingInput, _ ...func(*s3.Options)) (*s3.GetObjectTaggingOutput, error) {
