@@ -15,11 +15,11 @@
 This extension can be used in two directions:
 
 - **In exporters (outbound):** attaches the collector's Azure identity as a bearer token to outgoing requests.
-- **In receivers (inbound):** validates incoming bearer tokens as OIDC JWTs against a configured issuer and audience. Requires the `server` block (see [Receiver authentication](#receiver-authentication)).
-
-Additionally, the extension also implements `azcore.TokenCredential` so that Azure components can get the token by running the function `GetToken`. If the component supports HTTP client, then this should not be necessary, as the token will be placed in the authorization header.
+- **In receivers (inbound):** when wired as an `extensionauth.Server` (for example, `protocols.http.auth.authenticator: azure_auth`), validates incoming bearer tokens as OIDC JWTs against a configured issuer and audience. Requires the `server` block (see [Inbound JWT validation](#inbound-jwt-validation)).
 
 > **Security advisory:** Versions `v0.124.0` through `v0.150.0` contain a server-side authentication bypass ([GHSA-pjv4-3c63-699f](https://github.com/open-telemetry/opentelemetry-collector-contrib/security/advisories/GHSA-pjv4-3c63-699f)). Do not use `azure_auth` under a receiver `auth:` block on those versions. The outbound exporter usage is unaffected.
+
+Additionally, the extension also implements `azcore.TokenCredential` so that Azure components can get the token by running the function `GetToken`. If the component supports HTTP client, then this should not be necessary, as the token will be placed in the authorization header.
 
 It supports 4 different types of authentication:
 
@@ -106,11 +106,23 @@ extensions:
       - https://monitor.azure.com/.default
 ```
 
-### Receiver authentication
+### Inbound JWT validation
 
-Required when referencing `azure_auth` from a receiver's `auth:` block. The extension rejects all requests on the receiver path unless `server.issuer_url` and `server.audience` are set.
+The `server` block is required only in this specific case:
 
-Incoming bearer tokens are validated as OIDC JWTs. The extension checks the signature against the issuer's JWKS and verifies `iss`, `aud`, `exp`, and `nbf`. The audience is pinned from configuration and is never derived from request headers.
+- A server protocol's `auth.authenticator` points at `azure_auth` (for example, `receivers.otlp.protocols.http.auth.authenticator: azure_auth`). This is the only path that validates inbound bearer tokens.
+
+Do not set `server` in any other case, including:
+
+- Exporter-only usage.
+- A receiver that loads `azure_auth` as an `azcore.TokenCredential` to call Azure APIs (for example, a receiver reading from Azure Blob Storage). That path does not validate incoming tokens, so `server` has no effect.
+
+When set, incoming bearer tokens are validated as OIDC JWTs: signature against the issuer's JWKS, plus `iss`, `aud`, `exp`, and `nbf`. The audience is pinned from config and never derived from request headers. Requests are rejected on any missing config or failed check.
+
+Fields:
+
+- `server.issuer_url`: Entra ID tenant discovery URL (`https://login.microsoftonline.com/<tenant-id>/v2.0`).
+- `server.audience`: `aud` value required in valid tokens (for example, `api://collector-ingest`).
 
 ```yaml
 extensions:
@@ -127,18 +139,4 @@ receivers:
         endpoint: 0.0.0.0:4318
         auth:
           authenticator: azure_auth
-
-service:
-  extensions: [azure_auth]
-  pipelines:
-    traces:
-      receivers: [otlp]
-      exporters: [debug]
 ```
-
-Configuration:
-
-- `server.issuer_url`: Entra ID tenant discovery URL (`https://login.microsoftonline.com/<tenant-id>/v2.0`).
-- `server.audience`: the `aud` value the extension requires in valid tokens. Choose a value that matches the API your clients request tokens for (for example, `api://collector-ingest`).
-
-Omit the `server` block entirely when using the extension only for exporters.

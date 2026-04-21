@@ -6,7 +6,9 @@ package azureauthextension
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -15,24 +17,227 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.uber.org/zap"
 )
 
 func TestNewAzureAuthenticator(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	ext, err := newAzureAuthenticator(cfg, zap.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, ext)
+	t.Parallel()
+
+	tests := map[string]struct {
+		cfg            *Config
+		expectedServer configServer
+		expectedScopes []string
+		expectedErr    string
+	}{
+		"use_default": {
+			cfg: &Config{UseDefault: true},
+		},
+		"managed_identity_system": {
+			cfg: &Config{Managed: configoptional.Some(ManagedIdentity{})},
+		},
+		"managed_identity_user": {
+			cfg: &Config{Managed: configoptional.Some(ManagedIdentity{ClientID: "client"})},
+		},
+		"workload_identity": {
+			cfg: &Config{Workload: configoptional.Some(WorkloadIdentity{
+				TenantID:           "tenant",
+				ClientID:           "client",
+				FederatedTokenFile: "/tmp/token",
+			})},
+		},
+		"service_principal_secret": {
+			cfg: &Config{ServicePrincipal: configoptional.Some(ServicePrincipal{
+				TenantID:     "tenant",
+				ClientID:     "client",
+				ClientSecret: "secret",
+			})},
+		},
+		"service_principal_missing_cert_file": {
+			cfg: &Config{ServicePrincipal: configoptional.Some(ServicePrincipal{
+				TenantID:              "tenant",
+				ClientID:              "client",
+				ClientCertificatePath: "/nonexistent/cert.pem",
+			})},
+			expectedErr: "could not read the certificate file",
+		},
+		"server_config_propagated": {
+			cfg: &Config{
+				UseDefault: true,
+				Server: configoptional.Some(Server{
+					IssuerURL: "https://issuer.example",
+					Audience:  "api://aud",
+				}),
+			},
+			expectedServer: configServer{
+				issuerURL: "https://issuer.example",
+				audience:  "api://aud",
+			},
+		},
+		"scopes_propagated": {
+			cfg: &Config{
+				UseDefault: true,
+				Scopes:     []string{"https://example.com/.default"},
+			},
+			expectedScopes: []string{"https://example.com/.default"},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			a, err := newAzureAuthenticator(tc.cfg, zap.NewNop())
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, a)
+			require.NotNil(t, a.credential)
+			require.Equal(t, tc.expectedServer, a.server)
+			require.Equal(t, tc.expectedScopes, a.scopes)
+		})
+	}
+}
+
+func TestStart(t *testing.T) {
+	t.Parallel()
+
+	var issuerURL string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/.well-known/openid-configuration":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `{"issuer":%q,"jwks_uri":%q,"id_token_signing_alg_values_supported":["RS256"]}`, issuerURL, issuerURL+"/jwks")
+		case "/jwks":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w, `{"keys":[]}`)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	issuerURL = srv.URL
+
+	tests := map[string]struct {
+		server         configServer
+		expectVerifier bool
+		expectedErr    string
+	}{
+		"no_server_config": {},
+		"only_issuer_set": {
+			server: configServer{issuerURL: issuerURL},
+		},
+		"only_audience_set": {
+			server: configServer{audience: "aud"},
+		},
+		"valid_discovery": {
+			server:         configServer{issuerURL: issuerURL, audience: "aud"},
+			expectVerifier: true,
+		},
+		"unreachable_issuer": {
+			server:      configServer{issuerURL: "http://127.0.0.1:1", audience: "aud"},
+			expectedErr: "failed to initialize OIDC provider",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			a := &authenticator{server: tc.server}
+			err := a.Start(context.Background(), nil)
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			if tc.expectVerifier {
+				require.NotNil(t, a.verifier)
+			} else {
+				require.Nil(t, a.verifier)
+			}
+		})
+	}
 }
 
 func TestGetToken(t *testing.T) {
-	m := mockTokenCredential{}
-	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
-	auth := authenticator{
-		credential: &m,
+	t.Parallel()
+
+	tests := map[string]struct {
+		withCredential bool
+		expectedErr    string
+	}{
+		"nil_credential": {
+			expectedErr: "credentials were not initialized",
+		},
+		"valid": {
+			withCredential: true,
+		},
 	}
-	_, err := auth.GetToken(t.Context(), policy.TokenRequestOptions{})
-	require.NoError(t, err)
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			a := authenticator{}
+			if tc.withCredential {
+				m := &mockTokenCredential{}
+				m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
+				a.credential = m
+			}
+			_, err := a.GetToken(t.Context(), policy.TokenRequestOptions{})
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestGetTokenForHost(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		scopes         []string
+		host           string
+		credentialErr  error
+		expectedScopes []string
+		expectedErr    string
+	}{
+		"host_derived_scope": {
+			host:           "management.azure.com",
+			expectedScopes: []string{"https://management.azure.com/.default"},
+		},
+		"configured_scopes_override_host": {
+			scopes:         []string{"https://custom.example/.default"},
+			host:           "management.azure.com",
+			expectedScopes: []string{"https://custom.example/.default"},
+		},
+		"credential_error": {
+			host:          "management.azure.com",
+			credentialErr: errors.New("token fetch failed"),
+			expectedErr:   "token fetch failed",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			m := &mockTokenCredential{}
+			m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "token"}, tc.credentialErr)
+
+			a := authenticator{credential: m, scopes: tc.scopes}
+			tok, err := a.getTokenForHost(t.Context(), tc.host)
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, "token", tok)
+
+			m.AssertCalled(t, "GetToken", mock.Anything, policy.TokenRequestOptions{Scopes: tc.expectedScopes})
+		})
+	}
 }
 
 func TestToken(t *testing.T) {
@@ -182,8 +387,9 @@ func TestRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		request     http.Request
-		expectedErr string
+		request       http.Request
+		credentialErr error
+		expectedErr   string
 	}{
 		"empty_host_nil_url": {
 			request: http.Request{
@@ -198,34 +404,37 @@ func TestRoundTrip(t *testing.T) {
 			},
 			expectedErr: "unexpected empty Host in request URL",
 		},
-		"valid_authorize_1": {
+		"credential_error": {
 			request: http.Request{
 				Header: make(http.Header),
-				URL: &url.URL{
-					Host: "test",
-				},
+				URL:    &url.URL{Host: "test"},
+			},
+			credentialErr: errors.New("token fetch failed"),
+			expectedErr:   "azure_auth: failed to get token",
+		},
+		"valid_authorize_from_url": {
+			request: http.Request{
+				Header: make(http.Header),
+				URL:    &url.URL{Host: "test"},
 			},
 		},
-		"valid_authorize_2": {
+		"valid_authorize_host_overrides_url": {
 			request: http.Request{
 				Header: make(http.Header),
 				Host:   "override",
-				URL: &url.URL{
-					Host: "test",
-				},
+				URL:    &url.URL{Host: "test"},
 			},
 		},
 	}
 
-	m := mockTokenCredential{}
-	m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, nil)
-	auth := authenticator{
-		credential: &m,
-	}
 	base := &mockRoundTripper{}
 	base.On("RoundTrip", mock.Anything).Return(&http.Response{StatusCode: http.StatusOK}, nil)
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			m := &mockTokenCredential{}
+			m.On("GetToken", mock.Anything, mock.Anything).Return(azcore.AccessToken{Token: "test"}, test.credentialErr)
+			auth := authenticator{credential: m}
+
 			r, err := auth.RoundTripper(base)
 			require.NoError(t, err)
 
