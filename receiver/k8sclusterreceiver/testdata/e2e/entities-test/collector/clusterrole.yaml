@@ -13,6 +13,8 @@ rules:
       - namespaces/status
       - nodes
       - nodes/spec
+      - persistentvolumes
+      - persistentvolumeclaims
       - pods
       - pods/status
       - replicationcontrollers
