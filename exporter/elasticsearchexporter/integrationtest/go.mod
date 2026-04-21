@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.25.0
 
 require (
-	github.com/elastic/go-docappender/v2 v2.14.0
+	github.com/elastic/go-docappender/v2 v2.14.1
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.150.0
