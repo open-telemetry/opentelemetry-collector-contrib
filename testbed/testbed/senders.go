@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -210,8 +211,25 @@ func (olds *otlpHTTPLogsDataSender) Start() error {
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
+// OTLPDataSenderOption is a functional option for OTLP gRPC data senders.
+type OTLPDataSenderOption interface {
+	apply(*otlpDataSender)
+}
+
+type timeoutOption struct{ timeout time.Duration }
+
+func (o timeoutOption) apply(s *otlpDataSender) { s.timeout = o.timeout }
+
+// WithTimeout overrides the exporter's default per-send timeout. WAN benchmarks
+// and slow backends need a larger value. A value of zero is ignored; the
+// exporter's default applies.
+func WithTimeout(d time.Duration) OTLPDataSenderOption {
+	return timeoutOption{timeout: d}
+}
+
 type otlpDataSender struct {
 	DataSenderBase
+	timeout time.Duration
 }
 
 func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
@@ -222,6 +240,9 @@ func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Co
 	cfg.QueueConfig = configoptional.Default(*cfg.QueueConfig.Get())
 	cfg.ClientConfig.TLS = configtls.ClientConfig{
 		Insecure: true,
+	}
+	if ods.timeout > 0 {
+		cfg.TimeoutConfig.Timeout = ods.timeout
 	}
 	return cfg
 }
@@ -246,8 +267,8 @@ type otlpTraceDataSender struct {
 }
 
 // NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces exporter.
-func NewOTLPTraceDataSender(host string, port int) TraceDataSender {
-	return &otlpTraceDataSender{
+func NewOTLPTraceDataSender(host string, port int, opts ...OTLPDataSenderOption) TraceDataSender {
+	s := &otlpTraceDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -255,6 +276,10 @@ func NewOTLPTraceDataSender(host string, port int) TraceDataSender {
 			},
 		},
 	}
+	for _, opt := range opts {
+		opt.apply(&s.otlpDataSender)
+	}
+	return s
 }
 
 func (ote *otlpTraceDataSender) Start() error {
@@ -280,8 +305,8 @@ type otlpMetricsDataSender struct {
 
 // NewOTLPMetricDataSender creates a new OTLP metric exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPMetricDataSender(host string, port int) MetricDataSender {
-	return &otlpMetricsDataSender{
+func NewOTLPMetricDataSender(host string, port int, opts ...OTLPDataSenderOption) MetricDataSender {
+	s := &otlpMetricsDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -289,6 +314,10 @@ func NewOTLPMetricDataSender(host string, port int) MetricDataSender {
 			},
 		},
 	}
+	for _, opt := range opts {
+		opt.apply(&s.otlpDataSender)
+	}
+	return s
 }
 
 func (ome *otlpMetricsDataSender) Start() error {
@@ -314,8 +343,8 @@ type otlpLogsDataSender struct {
 
 // NewOTLPLogsDataSender creates a new OTLP logs exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPLogsDataSender(host string, port int) LogDataSender {
-	return &otlpLogsDataSender{
+func NewOTLPLogsDataSender(host string, port int, opts ...OTLPDataSenderOption) LogDataSender {
+	s := &otlpLogsDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
@@ -323,6 +352,10 @@ func NewOTLPLogsDataSender(host string, port int) LogDataSender {
 			},
 		},
 	}
+	for _, opt := range opts {
+		opt.apply(&s.otlpDataSender)
+	}
+	return s
 }
 
 func (olds *otlpLogsDataSender) Start() error {
