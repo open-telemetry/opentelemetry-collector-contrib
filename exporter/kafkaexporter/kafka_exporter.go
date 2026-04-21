@@ -86,6 +86,11 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return err
 	}
 
+	partitionerOpt, err := buildPartitionerOpt(e.cfg.RecordPartitioner, host)
+	if err != nil {
+		return fmt.Errorf("failed to configure record partitioner: %w", err)
+	}
+
 	producer, err := kafka.NewFranzSyncProducer(
 		ctx,
 		host,
@@ -94,12 +99,14 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.cfg.TimeoutSettings.Timeout,
 		e.logger,
 		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
+		partitionerOpt,
 	)
 	if err != nil {
 		return err
 	}
 	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
+		e.cfg.RecordHeaders,
 		e.cfg.Producer.MaxMessageBytes,
 	)
 	return nil

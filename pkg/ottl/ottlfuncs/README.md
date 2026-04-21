@@ -1947,6 +1947,8 @@ Unmarshalling XML is done using the following rules:
 4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
 5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
 
+Parsing is bounded by a maximum nesting depth of 10,000 levels; deeper documents return an error.
+
 For example, the following XML document:
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>

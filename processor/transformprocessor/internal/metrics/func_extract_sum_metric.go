@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -34,16 +33,6 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 	}
 
 	return extractSumMetric(args.Monotonic, args.Suffix)
-}
-
-// SumCountDataPoint interface helps unify the logic for extracting data from different histogram types
-// all supported metric types' datapoints implement it
-type SumCountDataPoint interface {
-	Attributes() pcommon.Map
-	Sum() float64
-	Count() uint64
-	StartTimestamp() pcommon.Timestamp
-	Timestamp() pcommon.Timestamp
 }
 
 func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[*ottlmetric.TransformContext], error) {
@@ -100,7 +89,7 @@ func extractSumMetric(monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFu
 	}, nil
 }
 
-func addSumDataPoint(dataPoint SumCountDataPoint, destination pmetric.NumberDataPointSlice) {
+func addSumDataPoint(dataPoint sumCountDataPoint, destination pmetric.NumberDataPointSlice) {
 	newDp := destination.AppendEmpty()
 	dataPoint.Attributes().CopyTo(newDp.Attributes())
 	newDp.SetDoubleValue(dataPoint.Sum())

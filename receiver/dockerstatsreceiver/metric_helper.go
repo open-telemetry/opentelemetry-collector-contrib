@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	ctypes "github.com/docker/docker/api/types/container"
+	ctypes "github.com/moby/moby/api/types/container"
 )
 
 const nanosInASecond = 1e9

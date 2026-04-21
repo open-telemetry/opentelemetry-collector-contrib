@@ -216,6 +216,7 @@ processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
 processor/dnslookupprocessor
+processor/drainprocessor
 processor/filterprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
@@ -233,6 +234,7 @@ processor/remotetapprocessor
 processor/resourceprocessor
 processor/schemaprocessor
 processor/spanprocessor
+processor/spanpruningprocessor
 processor/sumologicprocessor
 processor/unrollprocessor
 receiver/activedirectorydsreceiver

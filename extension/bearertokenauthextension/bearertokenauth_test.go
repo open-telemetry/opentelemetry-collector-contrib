@@ -119,7 +119,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, credential)
 
-	token, err := os.ReadFile(bauth.filename)
+	token, err := os.ReadFile(cfg.Filename)
 	assert.NoError(t, err)
 
 	tokenStr := fmt.Sprintf("Bearer %s", token)
@@ -132,7 +132,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.True(t, credential.RequireTransportSecurity())
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, fmt.Appendf(nil, "%stest", token), 0o600))
+	assert.NoError(t, os.WriteFile(cfg.Filename, fmt.Appendf(nil, "%stest", token), 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(t.Context())
@@ -141,7 +141,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 
 	// change file content back
-	assert.NoError(t, os.WriteFile(bauth.filename, token, 0o600))
+	assert.NoError(t, os.WriteFile(cfg.Filename, token, 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(t.Context())
@@ -151,7 +151,6 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, bauth.Shutdown(t.Context()))
-	assert.Nil(t, bauth.shutdownCH)
 }
 
 func TestBearerTokenFileContentUpdate(t *testing.T) {
@@ -167,7 +166,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Error(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, bauth.Shutdown(t.Context())) }()
 
-	token, err := os.ReadFile(bauth.filename)
+	token, err := os.ReadFile(cfg.Filename)
 	assert.NoError(t, err)
 
 	base := &mockRoundTripper{}
@@ -182,10 +181,10 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, fmt.Appendf(nil, "%stest", token), 0o600))
+	assert.NoError(t, os.WriteFile(cfg.Filename, fmt.Appendf(nil, "%stest", token), 0o600))
 	time.Sleep(5 * time.Second)
 
-	tokenNew, err := os.ReadFile(bauth.filename)
+	tokenNew, err := os.ReadFile(cfg.Filename)
 	assert.NoError(t, err)
 
 	// check if request is updated with the new token
@@ -196,7 +195,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(tokenNew)))
 
 	// change file content back
-	assert.NoError(t, os.WriteFile(bauth.filename, token, 0o600))
+	assert.NoError(t, os.WriteFile(cfg.Filename, token, 0o600))
 	time.Sleep(5 * time.Second)
 
 	// check if request is updated with the old token
