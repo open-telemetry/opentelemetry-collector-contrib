@@ -137,7 +137,7 @@ func (ms *FileSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for filestats metrics.
+// MetricsConfig provides config for file_stats metrics.
 type MetricsConfig struct {
 	FileAtime FileAtimeMetricConfig `mapstructure:"file.atime"`
 	FileCount FileCountMetricConfig `mapstructure:"file.count"`
@@ -194,7 +194,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for filestats resource attributes.
+// ResourceAttributesConfig provides config for file_stats resource attributes.
 type ResourceAttributesConfig struct {
 	FileName ResourceAttributeConfig `mapstructure:"file.name"`
 	FilePath ResourceAttributeConfig `mapstructure:"file.path"`
@@ -211,7 +211,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for filestats metrics builder.
+// MetricsBuilderConfig is a configuration for file_stats metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
