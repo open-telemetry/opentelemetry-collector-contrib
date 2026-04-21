@@ -6,6 +6,7 @@ package ottlfuncs
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -278,6 +279,18 @@ func Test_ParseXML(t *testing.T) {
 			name:        "Invalid arguments",
 			oArgs:       nil,
 			createError: "ParseXMLFactory args must be of type *ParseXMLArguments[K]",
+		},
+		{
+			name: "Exceeds max nesting depth",
+			oArgs: &ParseXMLArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(context.Context, any) (any, error) {
+						const depth = maxElementDepth + 2
+						return strings.Repeat("<a>", depth) + strings.Repeat("</a>", depth), nil
+					},
+				},
+			},
+			parseError: "exceeded maximum XML nesting depth",
 		},
 	}
 
