@@ -67,11 +67,11 @@ using exponential backoff with jitter.
 
 The following responses are retried:
 
+- **403 Forbidden** with `Retry-After` header -- secondary rate limit
+- **429 Too Many Requests** -- primary rate limit exceeded
 - **502 Bad Gateway** -- GitHub's proxy failed to reach the backend
 - **503 Service Unavailable** -- GitHub is temporarily down for maintenance
 - **504 Gateway Timeout** -- GitHub's backend took too long to respond
-- **429 Too Many Requests** -- primary rate limit exceeded
-- **403 Forbidden** with `Retry-After` header -- secondary rate limit
 
 Plain 403 responses (permission errors) are **not** retried. Retries are
 bounded by `max_retries` (default 10) and the scrape context, stopping when
@@ -98,7 +98,7 @@ github:
 **Important**: This does not guarantee that the secondary rate limit will not be
 hit. It simply reduces the likelihood. In large repositories with lots of
 history to iterate through, the chance of hitting the secondary rate limit
-increases. If this value is too high, 504/502/403 errors will show up.
+increases. If this value is too high, 403/429/502/503/504 errors may show up.
 
 The scraper supports limiting the number of concurrent repository processing
 goroutines to reduce the likelihood of hitting GitHub's 100 concurrent secondary

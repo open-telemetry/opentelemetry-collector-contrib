@@ -14,7 +14,7 @@ import (
 )
 
 // retryRoundTripper wraps an http.RoundTripper and retries on transient GitHub
-// API errors (502, 503, 504, 429) and secondary rate limits (403 + Retry-After).
+// API errors (429, 502, 503, 504) and secondary rate limits (403 + Retry-After).
 // Retries use exponential backoff with jitter and are bounded by MaxRetries,
 // MaxElapsedTime, and the request context (cancelled when the scrape cycle ends).
 type retryRoundTripper struct {
