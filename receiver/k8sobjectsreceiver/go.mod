@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.147.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sinventory v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest v0.150.0
