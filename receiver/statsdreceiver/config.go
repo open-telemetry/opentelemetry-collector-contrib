@@ -22,6 +22,7 @@ type Config struct {
 	NetAddr                 confignet.AddrConfig `mapstructure:",squash"`
 	AggregationInterval     time.Duration        `mapstructure:"aggregation_interval"`
 	EnableIPOnlyAggregation bool                 `mapstructure:"enable_ip_only_aggregation"`
+	IgnoreHost              bool                 `mapstructure:"ignore_host"`
 	EnableMetricType        bool                 `mapstructure:"enable_metric_type"`
 	EnableSimpleTags        bool                 `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter      bool                 `mapstructure:"is_monotonic_counter"`

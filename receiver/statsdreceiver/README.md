@@ -36,6 +36,8 @@ The Following settings are optional:
 
 - `enable_ip_only_aggregation` (default value is false): Enables metric aggregation on `Client+IP` only. Normally, aggregation is performed on `Client+IP+Port`. This setting is useful when the client sends metrics from a random ports or the receiver should aggregate metrics from the same client but different ports.
 
+- `ignore_host` (default value is false): Completely ignores source IP for aggregation. All metrics with the same name, type, and tags aggregate together regardless of the sender's IP address. This is useful when you want to aggregate metrics from multiple sources into a single metric. Takes precedence over `enable_ip_only_aggregation`.
+
 - `enable_simple_tags: true`(default value is false): Enable parsing tags that do not have a value, e.g. `#mykey` instead of `#mykey:myvalue`. DogStatsD supports such tagging.
 
 - `is_monotonic_counter` (default value is false): Set all counter-type metrics the statsd receiver received as monotonic.
