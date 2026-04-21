@@ -1,0 +1,43 @@
+{
+    "protoPayload": {
+        "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+        "status": {
+            "message": "Instance Group Manager 'instance-group-1' initiated recreateInstance on instance 'projects/8560181848/zones/us-central1-a/instances/instance-group-1-p327'. Reason: Instance eligible for repair: instance should be RUNNING, but it doesn't exist."
+        },
+        "authenticationInfo": {
+            "principalEmail": "system@google.com"
+        },
+        "serviceName": "compute.googleapis.com",
+        "methodName": "compute.instances.repair.recreateInstance",
+        "resourceName": "projects/elastic-observability/zones/us-central1-a/instances/instance-group-1-p327",
+        "request": {
+            "@type": "type.googleapis.com/compute.instances.repair.recreateInstance"
+        },
+        "metadata": {
+            "instance_group_manager_name": "instance-group-1",
+            "instance_group_manager_id": "5863316087090059487"
+        }
+    },
+    "insertId": "-m6k3fkd2idw",
+    "resource": {
+        "type": "gce_instance",
+        "labels": {
+            "project_id": "elastic-observability",
+            "zone": "us-central1-a",
+            "instance_id": "0"
+        }
+    },
+    "timestamp": "2025-08-15T03:07:52.101671Z",
+    "severity": "INFO",
+    "labels": {
+        "compute.googleapis.com/root_trigger_id": "ZONE:2000/PROJECT:8560181848/FLOW:1158713090673680788"
+    },
+    "logName": "projects/elastic-observability/logs/cloudaudit.googleapis.com%2Fsystem_event",
+    "operation": {
+        "id": "repair-1755227272017-63c5eb20c7673-0a62f994-ae971b31",
+        "producer": "compute.instances.repair.recreateInstance",
+        "first": true,
+        "last": true
+    },
+    "receiveTimestamp": "2025-08-15T03:07:52.930498717Z"
+}

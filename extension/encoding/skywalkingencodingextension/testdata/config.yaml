@@ -1,0 +1,8 @@
+extensions:
+  skywalking_encoding:
+
+receivers:
+  kafka:
+    traces:
+      encoding: skywalking_encoding
+      topic: skywalking-segments

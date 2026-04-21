@@ -1,0 +1,11 @@
+display_name: Azure Authenticator Extension
+type: azure_auth
+deprecated_type: azureauth
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  codeowners:
+    active: [constanca-m]
+  distributions: [contrib]

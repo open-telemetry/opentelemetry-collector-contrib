@@ -1,0 +1,21 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: node1
+    scopeSpans:
+      - scope:
+          name: collector
+          version: v0.1.0
+        spans:
+          - attributes:
+              - key: key1
+                value:
+                  stringValue: value1
+            endTimeUnixNano: "11651379494838206400"
+            name: span1
+            parentSpanId: ""
+            spanId: fd0da883bb27cd6b
+            status: {}
+            traceId: 8c8b1765a7b0acf0b66aa4623fcb7bd5

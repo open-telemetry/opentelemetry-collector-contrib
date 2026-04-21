@@ -1,0 +1,57 @@
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: strings
+            body:
+              arrayValue:
+                values:
+                  - stringValue: value1
+                  - stringValue: value2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: ints
+            body:
+              arrayValue:
+                values:
+                  - intValue: 1
+                  - intValue: 2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: doubles
+            body:
+              arrayValue:
+                values:
+                  - doubleValue: 1.1
+                  - doubleValue: 2.2
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: bools
+            body:
+              arrayValue:
+                values:
+                  - boolValue: true
+                  - boolValue: false
+          - attributes:
+              - key: recordName
+                value:
+                  stringValue: maps
+            body:
+              arrayValue:
+                values:
+                  - kvlistValue:
+                      values:
+                        - key: foo
+                          value:
+                            stringValue: bar
+                  - kvlistValue:
+                      values:
+                        - key: hello
+                          value:
+                            stringValue: world

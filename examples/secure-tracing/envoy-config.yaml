@@ -1,0 +1,70 @@
+admin:
+  address:
+    socket_address:
+      protocol: TCP
+      address: 0.0.0.0
+      port_value: 9901
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 10000 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: collector_service }
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          require_client_certificate: true
+          common_tls_context:
+            # h2 If the listener is going to support both HTTP/2 and HTTP/1.1.
+            alpn_protocols: "h2"
+            tls_certificates:
+            - certificate_chain: 
+                filename: "/etc/envoy.crt"
+              private_key: 
+                filename: "/etc/envoy.key"
+            validation_context:
+              match_typed_subject_alt_names:
+              - san_type: URI
+                matcher:
+                  # Match tenant by two levels: group-id and tenant-id.
+                  exact: "trace-client:group-x:tenant-a"
+              trusted_ca:
+                filename: "/etc/ca.crt"
+
+  clusters:
+  - name: collector_service
+    connect_timeout: 25s
+    type: LOGICAL_DNS
+    lb_policy: ROUND_ROBIN
+    http2_protocol_options: { }
+    load_assignment:
+      cluster_name: collector_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: otel-collector
+                port_value: 55690
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext

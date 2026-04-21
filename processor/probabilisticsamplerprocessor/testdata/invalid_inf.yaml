@@ -1,0 +1,17 @@
+receivers:
+  nop:
+
+processors:
+
+  probabilistic_sampler/traces:
+    sampling_percentage: +.Inf
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ nop ]
+      processors: [ probabilistic_sampler/traces ]
+      exporters: [ nop ]

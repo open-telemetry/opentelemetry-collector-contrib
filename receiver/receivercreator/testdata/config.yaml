@@ -1,0 +1,35 @@
+receiver_creator:
+receiver_creator/1:
+  watch_observers:
+    - mock_observer
+    - mock_observer/with_name
+  receivers:
+    examplereceiver/1:
+      rule: type == "port"
+      config:
+        key: value
+      resource_attributes:
+        one: two
+    nop/1:
+      rule: type == "port"
+      config:
+        endpoint: localhost:12345
+      resource_attributes:
+        two: three
+  resource_attributes:
+    container:
+      container.key: container.value
+    pod:
+      pod.key: pod.value
+    pod.container:
+      pod.container.key: pod.container.value
+    port:
+      port.key: port.value
+    hostport:
+      hostport.key: hostport.value
+    k8s.service:
+      k8s.service.key: k8s.service.value
+    k8s.ingress:
+      k8s.ingress.key: k8s.ingress.value
+    k8s.node:
+      k8s.node.key: k8s.node.value

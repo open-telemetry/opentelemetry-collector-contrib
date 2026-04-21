@@ -1,0 +1,23 @@
+display_name: Google Cloud Monitoring Receiver
+type: googlecloudmonitoring
+
+description: |
+  The primary objective of the Google Cloud Monitoring Receiver is to gather time series metrics data from all Google
+  services and convert this data into a pipeline format that facilitates further use.
+
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [dashpole, TylerHelmuth]
+    emeritus: [abhishek-at-cloudwerx]
+
+# TODO: Update the receiver to pass the tests
+tests:
+  skip_lifecycle: true
+  config:
+  goleak:
+    skip: true

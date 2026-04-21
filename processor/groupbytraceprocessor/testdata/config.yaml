@@ -1,0 +1,3 @@
+groupbytrace/custom:
+  wait_duration: 10s
+  num_traces: 1000

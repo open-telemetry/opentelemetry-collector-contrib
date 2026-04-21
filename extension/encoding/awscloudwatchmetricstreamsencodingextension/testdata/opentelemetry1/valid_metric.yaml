@@ -1,0 +1,41 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: aws.exporter.arn
+          value:
+            stringValue: arn:aws:cloudwatch:eu-central-1:123:metric-stream/test-metric-stream
+        - key: cloud.account.id
+          value:
+            stringValue: "123"
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: eu-central-1
+    scopeMetrics:
+      - metrics:
+          - name: amazonaws.com/AWS/SQS/ApproximateNumberOfMessagesVisible
+            summary:
+              dataPoints:
+                - attributes:
+                    - key: Dimensions
+                      value:
+                        kvlistValue:
+                          values:
+                            - key: QueueName
+                              value:
+                                stringValue: test-queue
+                    - key: MetricName
+                      value:
+                        stringValue: ApproximateNumberOfMessagesVisible
+                    - key: Namespace
+                      value:
+                        stringValue: AWS/SQS
+                  count: "1"
+                  quantileValues:
+                    - {}
+                    - quantile: 1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{Count}'

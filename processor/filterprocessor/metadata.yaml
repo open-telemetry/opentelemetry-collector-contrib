@@ -1,0 +1,60 @@
+display_name: Filter Processor
+type: filter
+
+description: The Filter Processor allows dropping spans, span events, metrics, datapoints, and logs from the collector.
+
+status:
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs]
+    development: [profiles]
+  distributions: [core, contrib, k8s]
+  warnings: [Orphaned Telemetry, Other]
+  codeowners:
+    active: [TylerHelmuth, evan-bradley, edmocosta, bogdandrutu]
+    emeritus: [boostchicken]
+feature_gates:
+  - id: processor.filter.defaultErrorModeIgnore
+    description: >-
+      Changes the default error_mode of the filter processor from propagate to ignore
+    stage: alpha
+    from_version: "v0.150.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47232
+
+tests:
+  config:
+
+telemetry:
+  metrics:
+    processor_filter_datapoints.filtered:
+      enabled: true
+      description: Number of metric data points dropped by the filter processor
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_filter_logs.filtered:
+      enabled: true
+      description: Number of logs dropped by the filter processor
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_filter_profiles.filtered:
+      enabled: true
+      description: Number of profiles dropped by the filter processor
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_filter_spans.filtered:
+      enabled: true
+      description: Number of spans dropped by the filter processor
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development

@@ -1,0 +1,11 @@
+[req]
+distinguished_name = req_distinguished_name
+prompt = no
+
+[req_distinguished_name]
+C = US
+ST = CA
+L = Cupertino
+O = Example
+OU = Local Development
+CN = ca

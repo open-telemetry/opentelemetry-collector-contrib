@@ -1,0 +1,805 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package metrics
+
+import (
+	"context"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.uber.org/zap"
+	"golang.org/x/time/rate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
+	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
+)
+
+const (
+	telemetryAttrKeyOne       = "key1"
+	telemetryAttrKeyTwo       = "key2"
+	telemetryAttrValueOne     = "value1"
+	telemetryAttrValueTwo     = "value2"
+	telemetryAttrIntKeyOne    = "intKey1"
+	telemetryAttrIntValueOne  = 1
+	telemetryAttrBoolKeyOne   = "boolKey1"
+	telemetryAttrBoolValueOne = true
+)
+
+type mockExporter struct {
+	rms []*metricdata.ResourceMetrics
+}
+
+func (*mockExporter) Temporality(sdkmetric.InstrumentKind) metricdata.Temporality {
+	return metricdata.DeltaTemporality
+}
+
+func (*mockExporter) Aggregation(sdkmetric.InstrumentKind) sdkmetric.Aggregation {
+	return sdkmetric.AggregationDefault{}
+}
+
+func (m *mockExporter) Export(_ context.Context, metrics *metricdata.ResourceMetrics) error {
+	m.rms = append(m.rms, metrics)
+	return nil
+}
+
+func (*mockExporter) ForceFlush(context.Context) error {
+	return nil
+}
+
+func (mockExporter) Shutdown(context.Context) error {
+	return nil
+}
+
+func checkMetricTemporality(t *testing.T, ms metricdata.Metrics, metricType MetricType, expectedAggregationTemporality metricdata.Temporality) {
+	switch metricType {
+	case MetricTypeSum:
+		sumData, ok := ms.Data.(metricdata.Sum[int64])
+		require.True(t, ok, "expected Sum data type")
+		assert.Equal(t, expectedAggregationTemporality, sumData.Temporality)
+	case MetricTypeHistogram:
+		histogramData, ok := ms.Data.(metricdata.Histogram[int64])
+		require.True(t, ok, "expected Histogram data type")
+		assert.Equal(t, expectedAggregationTemporality, histogramData.Temporality)
+	default:
+		t.Fatalf("unsupported metric type: %v", metricType)
+	}
+}
+
+func TestFixedNumberOfMetrics(t *testing.T) {
+	// arrange
+	cfg := &Config{
+		Config: config.Config{
+			WorkerCount: 1,
+		},
+		NumMetrics: 5,
+		MetricType: MetricTypeSum,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+	time.Sleep(1 * time.Second)
+
+	// assert
+	require.Len(t, m.rms, 5)
+}
+
+func TestDurationInf(t *testing.T) {
+	cfg := &Config{
+		Config: config.Config{
+			TotalDuration: types.DurationWithInf(-1),
+		},
+		MetricType: MetricTypeSum,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// test
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
+}
+
+func TestRateOfMetrics(t *testing.T) {
+	// arrange
+	cfg := &Config{
+		Config: config.Config{
+			Rate:          10,
+			TotalDuration: types.DurationWithInf(time.Second / 2),
+			WorkerCount:   1,
+		},
+		MetricType: MetricTypeSum,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
+
+	// assert
+	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
+	assert.GreaterOrEqual(t, len(m.rms), 6, "there should have been more than 6 metrics, had %d", len(m.rms))
+	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
+	assert.LessOrEqual(t, len(m.rms), 20, "there should have been less than 20 metrics, had %d", len(m.rms))
+}
+
+func TestMetricsWithTemporality(t *testing.T) {
+	tests := []struct {
+		name                           string
+		metricType                     MetricType
+		aggregationTemporality         AggregationTemporality
+		expectedAggregationTemporality metricdata.Temporality
+	}{
+		{
+			name:                           "Sum: delta temporality",
+			metricType:                     MetricTypeSum,
+			aggregationTemporality:         AggregationTemporality(metricdata.DeltaTemporality),
+			expectedAggregationTemporality: metricdata.DeltaTemporality,
+		},
+		{
+			name:                           "Sum: cumulative temporality",
+			metricType:                     MetricTypeSum,
+			aggregationTemporality:         AggregationTemporality(metricdata.CumulativeTemporality),
+			expectedAggregationTemporality: metricdata.CumulativeTemporality,
+		},
+		{
+			name:                           "Histogram: delta temporality",
+			metricType:                     MetricTypeHistogram,
+			aggregationTemporality:         AggregationTemporality(metricdata.DeltaTemporality),
+			expectedAggregationTemporality: metricdata.DeltaTemporality,
+		},
+		{
+			name:                           "Histogram: cumulative temporality",
+			metricType:                     MetricTypeHistogram,
+			aggregationTemporality:         AggregationTemporality(metricdata.CumulativeTemporality),
+			expectedAggregationTemporality: metricdata.CumulativeTemporality,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// arrange
+			cfg := &Config{
+				Config: config.Config{
+					WorkerCount: 1,
+				},
+				NumMetrics:             1,
+				MetricName:             "test",
+				MetricType:             tt.metricType,
+				AggregationTemporality: tt.aggregationTemporality,
+			}
+			m := &mockExporter{}
+			expFunc := func() (sdkmetric.Exporter, error) {
+				return m, nil
+			}
+
+			// act
+			logger, _ := zap.NewDevelopment()
+			require.NoError(t, run(cfg, expFunc, logger))
+
+			time.Sleep(1 * time.Second)
+
+			// assert
+			require.Len(t, m.rms, 1)
+			ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+			assert.Equal(t, "test", ms.Name)
+
+			checkMetricTemporality(t, ms, tt.metricType, tt.expectedAggregationTemporality)
+		})
+	}
+}
+
+func TestUnthrottled(t *testing.T) {
+	// arrange
+	cfg := &Config{
+		Config: config.Config{
+			TotalDuration: types.DurationWithInf(1 * time.Second),
+			WorkerCount:   1,
+		},
+		MetricType: MetricTypeSum,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	// assert
+	assert.Greater(t, len(m.rms), 100, "there should have been more than 100 metrics, had %d", len(m.rms))
+}
+
+func TestSumNoTelemetryAttrs(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithNoAttributes(MetricTypeSum, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	for i := range qty {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 0, attr.Len(), "it shouldn't have attrs here")
+	}
+}
+
+func TestGaugeNoTelemetryAttrs(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithNoAttributes(MetricTypeGauge, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	for i := range qty {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 0, attr.Len(), "it shouldn't have attrs here")
+	}
+}
+
+func TestSumSingleTelemetryAttr(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithOneAttribute(MetricTypeSum, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	for i := range qty {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
+		actualValue, _ := attr.Value(telemetryAttrKeyOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
+	}
+}
+
+func TestGaugeSingleTelemetryAttr(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithOneAttribute(MetricTypeGauge, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	for i := range qty {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
+		actualValue, _ := attr.Value(telemetryAttrKeyOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
+	}
+}
+
+func TestSumMultipleTelemetryAttr(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithMultipleAttributes(MetricTypeSum, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	var actualValue attribute.Value
+	for i := range qty {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 4, attr.Len(), "it must have multiple attributes here")
+		actualValue, _ = attr.Value(telemetryAttrKeyOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be %s", telemetryAttrValueOne)
+		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
+		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be %s", telemetryAttrValueTwo)
+		actualValue, _ = attr.Value(telemetryAttrIntKeyOne)
+		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), "it should be %d", telemetryAttrIntValueOne)
+		actualValue, _ = attr.Value(telemetryAttrBoolKeyOne)
+		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), "it should be %t", telemetryAttrBoolValueOne)
+	}
+}
+
+func TestGaugeMultipleTelemetryAttr(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithMultipleAttributes(MetricTypeGauge, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	var actualValue attribute.Value
+	for i := range qty {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 4, attr.Len(), "it must have multiple attributes here")
+		actualValue, _ = attr.Value(telemetryAttrKeyOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
+		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
+		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be "+telemetryAttrValueTwo)
+		actualValue, _ = attr.Value(telemetryAttrIntKeyOne)
+		assert.Equal(t, int64(telemetryAttrIntValueOne), actualValue.AsInt64(), "it should be %d", telemetryAttrIntValueOne)
+		actualValue, _ = attr.Value(telemetryAttrBoolKeyOne)
+		assert.Equal(t, telemetryAttrBoolValueOne, actualValue.AsBool(), "it should be %t", telemetryAttrBoolValueOne)
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		wantErrMessage string
+	}{
+		{
+			name: "No duration, NumMetrics, or Continuous",
+			cfg: &Config{
+				Config: config.Config{
+					WorkerCount: 1,
+				},
+				MetricType: MetricTypeSum,
+				TraceID:    "123",
+			},
+			wantErrMessage: "either `metrics` or `duration` must be greater than 0",
+		},
+		{
+			name: "TraceID invalid",
+			cfg: &Config{
+				Config: config.Config{
+					WorkerCount: 1,
+				},
+				NumMetrics: 5,
+				MetricType: MetricTypeSum,
+				TraceID:    "123",
+			},
+			wantErrMessage: "TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'",
+		},
+		{
+			name: "SpanID invalid",
+			cfg: &Config{
+				Config: config.Config{
+					WorkerCount: 1,
+				},
+				NumMetrics: 5,
+				MetricType: MetricTypeSum,
+				TraceID:    "ae87dadd90e9935a4bc9660628efd569",
+				SpanID:     "123",
+			},
+			wantErrMessage: "SpanID must be a 16 character hex string, like: '5828fa4960140870'",
+		},
+		{
+			name: "LoadSize negative",
+			cfg: &Config{
+				Config: config.Config{
+					WorkerCount: 1,
+					LoadSize:    -1,
+				},
+				NumMetrics: 5,
+				MetricType: MetricTypeSum,
+			},
+			wantErrMessage: "load size must be non-negative, found -1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockExporter{}
+			expFunc := func() (sdkmetric.Exporter, error) {
+				return m, nil
+			}
+			logger, _ := zap.NewDevelopment()
+			require.EqualError(t, run(tt.cfg, expFunc, logger), tt.wantErrMessage)
+		})
+	}
+}
+
+func configWithNoAttributes(metric MetricType, qty int) *Config {
+	return &Config{
+		Config: config.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: nil,
+		},
+		NumMetrics: qty,
+		MetricName: "test",
+		MetricType: metric,
+	}
+}
+
+func configWithOneAttribute(metric MetricType, qty int) *Config {
+	return &Config{
+		Config: config.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: config.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
+		},
+		NumMetrics: qty,
+		MetricName: "test",
+		MetricType: metric,
+	}
+}
+
+func configWithMultipleAttributes(metric MetricType, qty int) *Config {
+	kvs := config.KeyValue{
+		telemetryAttrKeyOne:     telemetryAttrValueOne,
+		telemetryAttrKeyTwo:     telemetryAttrValueTwo,
+		telemetryAttrIntKeyOne:  telemetryAttrIntValueOne,
+		telemetryAttrBoolKeyOne: telemetryAttrBoolValueOne,
+	}
+	return &Config{
+		Config: config.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: kvs,
+		},
+		NumMetrics: qty,
+		MetricType: metric,
+	}
+}
+
+func configWithEnabledUnique(metric MetricType, qty int) *Config {
+	return &Config{
+		Config: config.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: nil,
+		},
+		EnforceUniqueTimeseries: true,
+		NumMetrics:              qty,
+		MetricName:              "test",
+		MetricType:              metric,
+	}
+}
+
+func TestTemporalityStartTimes(t *testing.T) {
+	tests := []struct {
+		name        string
+		temporality AggregationTemporality
+		checkTimes  func(t *testing.T, firstTime, secondTime time.Time)
+	}{
+		{
+			name:        "Cumulative temporality keeps same start timestamp",
+			temporality: AggregationTemporality(metricdata.CumulativeTemporality),
+			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
+				if !assert.Equal(t, firstTime, secondTime,
+					"cumulative metrics should have same start time") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
+			},
+		},
+		{
+			name:        "Delta temporality has different start timestamps",
+			temporality: AggregationTemporality(metricdata.DeltaTemporality),
+			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
+				if !assert.True(t, secondTime.After(firstTime),
+					"delta metrics should have increasing start times") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockExporter{}
+			clock := &mockClock{
+				now: time.Now(),
+			}
+
+			running := &atomic.Bool{}
+			running.Store(true)
+
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+
+			w := worker{
+				metricName:             "test_metric",
+				metricType:             MetricTypeSum,
+				aggregationTemporality: tt.temporality,
+				numMetrics:             2,
+				running:                running,
+				limitPerSecond:         rate.Inf,
+				logger:                 zap.NewNop(),
+				wg:                     wg,
+				clock:                  clock,
+			}
+
+			w.simulateMetrics(resource.Default(), m, nil, nil)
+
+			wg.Wait()
+
+			require.GreaterOrEqual(t, len(m.rms), 2, "should have at least 2 metric points")
+
+			firstMetric := m.rms[0].ScopeMetrics[0].Metrics[0]
+			secondMetric := m.rms[1].ScopeMetrics[0].Metrics[0]
+
+			firstStartTime := firstMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
+			secondStartTime := secondMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
+
+			tt.checkTimes(t, firstStartTime, secondStartTime)
+		})
+	}
+}
+
+func logTimestampDiff(t *testing.T, firstTime, secondTime time.Time) {
+	t.Logf("Timestamp debug logging:\n"+
+		"First start time:  %s\n"+
+		"Second start time: %s\n"+
+		"Difference: %v",
+		firstTime.String(),
+		secondTime.String(),
+		secondTime.Sub(firstTime))
+}
+
+func TestUniqueSumTimeseries(t *testing.T) {
+	// arrange
+	qty := 4
+	cfg := configWithEnabledUnique(MetricTypeSum, qty)
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, m.rms, qty)
+
+	rms := m.rms
+	var actualValue attribute.Value
+	var exist bool
+	for i := range qty {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 1, attr.Len(), "it must have one attribute here")
+		actualValue, exist = attr.Value(timeBoxAttributeName)
+		assert.True(t, exist, "it should have the timebox attribute")
+		assert.LessOrEqual(t, actualValue.AsInt64(), int64(4), "it should be between 0 and 4")
+	}
+}
+
+// TestBatching tests the basic batching functionality
+func TestBatching(t *testing.T) {
+	mockExp := &mockExporter{}
+	w := &worker{
+		batchSize:    3,
+		metricBuffer: make([]metricdata.ResourceMetrics, 0),
+		bufferMutex:  sync.Mutex{},
+		logger:       zap.NewNop(),
+	}
+
+	metric1 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test1"}}}}}
+	metric2 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test2"}}}}}
+	metric3 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test3"}}}}}
+
+	w.addToBuffer(metric1, mockExp)
+	w.addToBuffer(metric2, mockExp)
+
+	assert.Empty(t, mockExp.rms, "Should not export until batch size reached")
+	assert.Len(t, w.metricBuffer, 2, "Should have 2 metrics in buffer")
+
+	w.addToBuffer(metric3, mockExp)
+
+	assert.Len(t, mockExp.rms, 1, "Should have exported 1 batch")
+	assert.Empty(t, w.metricBuffer, "Buffer should be cleared after export")
+}
+
+// TestBatchSizeOne tests that batch size 1 works like direct export
+func TestBatchSizeOne(t *testing.T) {
+	mockExp := &mockExporter{}
+	w := &worker{
+		batchSize:    1,
+		metricBuffer: make([]metricdata.ResourceMetrics, 0),
+		bufferMutex:  sync.Mutex{},
+		logger:       zap.NewNop(),
+	}
+
+	metric1 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test1"}}}}}
+	metric2 := metricdata.ResourceMetrics{ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: []metricdata.Metrics{{Name: "test2"}}}}}
+
+	w.addToBuffer(metric1, mockExp)
+	w.addToBuffer(metric2, mockExp)
+
+	assert.Len(t, mockExp.rms, 2, "Should export each metric individually with batch size 1")
+	assert.Empty(t, w.metricBuffer, "Buffer should be empty after each export")
+}
+
+func TestMetricsWithLoadSize(t *testing.T) {
+	// arrange
+	cfg := &Config{
+		Config: config.Config{
+			WorkerCount: 1,
+			LoadSize:    2, // 2MB of load data
+		},
+		NumMetrics: 1,
+		MetricName: "test",
+		MetricType: MetricTypeSum,
+	}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// assert
+	require.Len(t, m.rms, 1)
+	ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+	attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+
+	// Should have 2 load attributes (load-0 and load-1) each with 1MB of data
+	assert.Equal(t, 2, attr.Len(), "should have 2 load attributes")
+
+	// Check that load attributes exist and have the expected size
+	load0Value, exists := attr.Value("load-0")
+	assert.True(t, exists, "should have load-0 attribute")
+	assert.Len(t, load0Value.AsString(), config.CharactersPerMB, "load-0 should have 1MB of data")
+
+	load1Value, exists := attr.Value("load-1")
+	assert.True(t, exists, "should have load-1 attribute")
+	assert.Len(t, load1Value.AsString(), config.CharactersPerMB, "load-1 should have 1MB of data")
+}
+
+func TestMetricsWithDefaultLoadSize(t *testing.T) {
+	// arrange
+	cfg := NewConfig()
+	cfg.NumMetrics = 1
+	cfg.MetricName = "test"
+	cfg.MetricType = MetricTypeSum
+	// LoadSize should default to 0
+
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, run(cfg, expFunc, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// assert
+	require.Len(t, m.rms, 1)
+	ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+	attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+
+	// Should have no load attributes by default (LoadSize = 0)
+	assert.Equal(t, 0, attr.Len(), "should have no load attributes by default")
+}
+
+// TestExponentialHistogramMetricGeneration tests ExponentialHistogram metric generation
+func TestExponentialHistogramMetricGeneration(t *testing.T) {
+	// arrange
+	m := &mockExporter{}
+	cfg := Config{
+		Config: config.Config{
+			WorkerCount: 1,
+		},
+		NumMetrics: 1,
+		MetricName: "test_exp_hist",
+		MetricType: MetricTypeExponentialHistogram,
+	}
+	logger := zap.NewNop()
+
+	// act
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
+	require.NoError(t, run(&cfg, expFunc, logger))
+
+	time.Sleep(100 * time.Millisecond)
+
+	// assert
+	require.Len(t, m.rms, 1)
+	ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+
+	// Verify it's an ExponentialHistogram
+	expHist, ok := ms.Data.(metricdata.ExponentialHistogram[int64])
+	require.True(t, ok, "Expected ExponentialHistogram metric type")
+
+	// Verify data point structure
+	require.Len(t, expHist.DataPoints, 1)
+	dp := expHist.DataPoints[0]
+	assert.Equal(t, "test_exp_hist", ms.Name)
+	assert.Positive(t, dp.Count)
+	assert.Positive(t, dp.Sum)
+	assert.Equal(t, 0.0, dp.ZeroThreshold)
+
+	// Verify buckets exist
+	assert.NotNil(t, dp.PositiveBucket)
+	assert.NotNil(t, dp.NegativeBucket)
+}

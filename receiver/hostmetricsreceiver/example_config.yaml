@@ -1,0 +1,31 @@
+extensions:
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+receivers:
+  host_metrics:
+    collection_interval: 1m
+    scrapers:
+      cpu:
+      load:
+      memory:
+      disk:
+      filesystem:
+      network:
+      nfs:
+      paging:
+      processes:
+      system:
+
+exporters:
+  debug:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  pipelines:
+    metrics:
+      receivers: [host_metrics]
+      exporters: [prometheus, debug]
+
+  extensions: [zpages]

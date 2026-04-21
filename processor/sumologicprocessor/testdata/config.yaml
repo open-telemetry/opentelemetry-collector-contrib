@@ -1,0 +1,98 @@
+receivers:
+  nop:
+
+processors:
+  sumologic:
+  sumologic/disabled-cloud-namespace:
+    add_cloud_namespace: false
+  sumologic/disabled-attribute-translation:
+    translate_attributes: false
+  sumologic/disabled-telegraf-attribute-translation:
+    translate_telegraf_attributes: false
+  sumologic/enabled-nesting:
+    nest_attributes:
+      enabled: true
+      separator: "!"
+      include: ["blep"]
+      exclude: ["nghu"]
+      squash_single_values: true
+  sumologic/aggregate-attributes:
+    aggregate_attributes:
+      - attribute: "attr1"
+        prefixes: ["pattern1", "pattern2", "pattern3"]
+      - attribute: "attr2"
+        prefixes: ["pattern4"]
+  sumologic/enabled-severity-number-attribute:
+    field_attributes:
+        severity_number:
+          enabled: true
+          name: "loglevel"
+  sumologic/enabled-severity-text-attribute:
+    field_attributes:
+        severity_text:
+          enabled: true
+          name: "severitytext"
+  sumologic/enabled-span-id-attribute:
+    field_attributes:
+        span_id:
+          enabled: true
+          name: "spanid"
+  sumologic/enabled-trace-id-attribute:
+    field_attributes:
+        trace_id:
+          enabled: true
+          name: "traceid"
+  sumologic/enabled-docker-metrics-translation:
+    translate_docker_metrics: true
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs/1:
+      receivers:
+      - nop
+      processors:
+      - sumologic/disabled-attribute-translation
+      exporters:
+      - nop
+
+    logs/2:
+      receivers:
+      - nop
+      processors:
+      - sumologic/aggregate-attributes
+      exporters:
+      - nop
+
+    metrics/1:
+      receivers:
+      - nop
+      processors:
+      - sumologic/disabled-cloud-namespace
+      exporters:
+      - nop
+
+    metrics/2:
+      receivers:
+      - nop
+      processors:
+      - sumologic/disabled-telegraf-attribute-translation
+      exporters:
+      - nop
+
+    metrics/3:
+      receivers:
+      - nop
+      processors:
+      - sumologic/enabled-nesting
+      exporters:
+      - nop
+
+    traces:
+      receivers:
+      - nop
+      processors:
+      - sumologic
+      exporters:
+      - nop

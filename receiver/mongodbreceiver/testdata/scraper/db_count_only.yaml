@@ -1,0 +1,23 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: mongodb-host-1
+        - key: service.instance.id
+          value:
+            stringValue: 8ab7c64b-866c-5cae-aa55-67d463988c7f
+    scopeMetrics:
+      - metrics:
+          - description: The number of existing databases.
+            name: mongodb.database.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{databases}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
+          version: latest

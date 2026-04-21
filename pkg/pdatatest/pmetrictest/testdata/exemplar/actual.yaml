@@ -1,0 +1,28 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: multi gauge
+            gauge:
+              dataPoints:
+                - asDouble: 2
+                  attributes:
+                    - key: testKey1
+                      value:
+                        stringValue: teststringvalue1
+                    - key: testKey2
+                      value:
+                        stringValue: testvalue1
+                  exemplars:
+                    - asDouble: 2
+                      filteredAttributes:
+                        - key: testKey1
+                          value:
+                            stringValue: teststringvalue1
+                      spanId: fd0da883bb27cd6b
+                      timeUnixNano: "11651379494838206464"
+                      traceId: 8c8b1765a7b0acf0b66aa4623fcb7bd5
+                  timeUnixNano: "11651379494838206464"
+            name: gauge.multi
+            unit: "1"
+        scope: {}

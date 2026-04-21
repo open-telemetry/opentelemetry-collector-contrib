@@ -1,0 +1,66 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: multi gauge
+            gauge:
+              dataPoints:
+                - asDouble: 2
+                  attributes:
+                    - key: testKey1
+                      value:
+                        stringValue: teststringvalue1
+                    - key: testKey2
+                      value:
+                        stringValue: testvalue1
+                  timeUnixNano: "11651379494838206464"
+                - asDouble: 2
+                  attributes:
+                    - key: testKey1
+                      value:
+                        stringValue: teststringvalue2
+                    - key: testKey2
+                      value:
+                        stringValue: testvalue2
+                  timeUnixNano: "11651379494838206464"
+            name: gauge.multi
+            unit: "1"
+          - description: single gauge
+            gauge:
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: testKey2
+                      value:
+                        stringValue: teststringvalue2
+                  timeUnixNano: "11651379494838206464"
+            name: gauge.single
+            unit: By
+          - description: multi sum
+            name: delta.multi
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: testKey2
+                      value:
+                        stringValue: teststringvalue2
+                  timeUnixNano: "11651379494838206464"
+                - asInt: "2"
+                  attributes:
+                    - key: testKey2
+                      value:
+                        stringValue: teststringvalue2
+                  timeUnixNano: "11651379494838206464"
+            unit: s
+          - description: single sum
+            name: cumulative.single
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 2
+                  timeUnixNano: "869965261000000001"
+              isMonotonic: true
+            unit: 1/s
+        scope: {}

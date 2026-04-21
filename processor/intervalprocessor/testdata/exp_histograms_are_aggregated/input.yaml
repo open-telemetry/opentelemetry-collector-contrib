@@ -1,0 +1,63 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.exphistogram.test
+            exponentialHistogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 50
+                  scale: 4
+                  zeroCount: 5
+                  positive:
+                    offset: 2
+                    bucketCounts: [4, 7, 9, 6, 25]
+                  negative:
+                    offset: 6
+                    bucketCounts: [2, 13, 7, 12, 4]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                # This data point is out of order
+                # The aggregator should ignore it since the first data point has a newer timestamp
+                - timeUnixNano: 20
+                  scale: 4
+                  zeroCount: 2
+                  positive:
+                    Offset: 2
+                    BucketCounts: [2, 3, 7, 4, 20]
+                  negative:
+                    offset: 7
+                    bucketCounts: [8, 3, 9, 1]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                # This one is the newest, so it should be the one stored
+                - timeUnixNano: 80
+                  scale: 4
+                  zeroCount: 5
+                  positive:
+                    offset: 2
+                    bucketCounts: [9, 12, 17, 8, 34]
+                  negative:
+                    offset: 6
+                    bucketCounts: [6, 21, 9, 19, 7]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

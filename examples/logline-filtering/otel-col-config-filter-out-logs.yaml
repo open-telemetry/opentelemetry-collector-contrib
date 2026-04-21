@@ -1,0 +1,17 @@
+receivers:
+  file_log:
+    include: [/var/log/busybox/simple.log]
+    operators:
+      - type: filter
+        expr: 'body matches "^INFO:"'
+
+service:
+  pipelines:
+    logs:
+      receivers: [file_log]
+      exporters: [otlp_grpc/custom]
+      processors: []
+
+exporters:
+  otlp_grpc/custom:
+    endpoint: http://0.0.0.0:4242

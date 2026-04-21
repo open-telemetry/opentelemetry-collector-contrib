@@ -1,0 +1,11 @@
+change_type: bug_fix
+component: processor/schema
+note: Fix panic on malformed schema span_events and inconsistent error handling across signal types
+issues: [47634]
+subtext: |
+  A panic in newSpanEventChangeList when a span_events entry had neither rename_events
+  nor rename_attributes set has been replaced with a proper error return. Error handling
+  across all signal types (logs, traces, metrics) is now consistent: any scope-level
+  translation failure returns the error immediately rather than silently continuing.
+  A context.Background() in processMetrics was also replaced with the pipeline context.
+change_logs: [user]

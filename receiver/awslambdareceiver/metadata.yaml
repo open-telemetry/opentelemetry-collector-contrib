@@ -1,0 +1,17 @@
+display_name: AWS Lambda Receiver
+type: awslambda
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [MichaelKatsoulis, Kavindu-Dodan, axw, pjanotti]
+
+tests:
+  # TODO Fix this
+  skip_lifecycle: true
+  config:
+    s3:
+      encoding: awslogs
