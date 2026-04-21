@@ -37,9 +37,9 @@ type logsReceiver struct {
 	logger            *zap.Logger
 	cfg               *LogsConfig
 	serverConfig      *confighttp.ServerConfig
+	server            *http.Server
 	consumer          consumer.Logs
 	wg                *sync.WaitGroup
-	listenClose       func(ctx context.Context) error
 	telemetrySettings component.TelemetrySettings
 	id                component.ID // ID of the receiver component
 	obsrecv           *receiverhelper.ObsReport
@@ -67,13 +67,6 @@ func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) 
 		id:                params.ID,
 	}
 
-	if recv.cfg.TLS != nil {
-		_, err := recv.cfg.TLS.LoadTLSConfig(context.Background())
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	serverConfig := confighttp.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  recv.cfg.Endpoint,
@@ -82,8 +75,8 @@ func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) 
 		ReadHeaderTimeout: 20 * time.Second,
 	}
 
-	if recv.cfg.TLS != nil {
-		serverConfig.TLS = configoptional.Some(*recv.cfg.TLS)
+	if tlsConfig := recv.cfg.TLS; tlsConfig != nil {
+		serverConfig.TLS = configoptional.Some(*tlsConfig)
 	}
 
 	recv.serverConfig = &serverConfig
@@ -97,8 +90,8 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 
 func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	l.logger.Debug("Shutting down server")
-	if l.listenClose != nil {
-		err := l.listenClose(ctx)
+	if l.server != nil {
+		err := l.server.Shutdown(ctx)
 		if err != nil {
 			return err
 		}
@@ -120,19 +113,28 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 	if err != nil {
 		return err
 	}
+	l.server = server
 
 	listener, err := l.serverConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
 
-	l.listenClose = server.Shutdown
-
 	l.wg.Go(func() {
-		l.logger.Debug(
-			"Starting Serve",
-			zap.String("address", l.serverConfig.NetAddr.Endpoint),
-		)
+		if l.serverConfig.TLS.HasValue() {
+			tlsConfig := l.serverConfig.TLS.Get()
+			l.logger.Debug(
+				"Starting ServeTLS",
+				zap.String("address", l.serverConfig.NetAddr.Endpoint),
+				zap.String("certfile", tlsConfig.CertFile),
+				zap.String("keyfile", tlsConfig.KeyFile),
+			)
+		} else {
+			l.logger.Debug(
+				"Starting Serve",
+				zap.String("address", l.serverConfig.NetAddr.Endpoint),
+			)
+		}
 
 		err := server.Serve(listener)
 
