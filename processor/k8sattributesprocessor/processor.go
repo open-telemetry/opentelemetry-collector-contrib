@@ -45,6 +45,7 @@ type kubernetesprocessor struct {
 	filters                kube.Filters
 	podAssociations        []kube.Association
 	podIgnore              kube.Excludes
+	nodeAssociations       []kube.Association
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
 }
@@ -195,6 +196,9 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		return
 	}
 
+	nodeIdentifierValue := extractNodeID(resource.Attributes(), kp.nodeAssociations)
+	kp.logger.Debug("evaluating node identifier", zap.Any("value", nodeIdentifierValue))
+
 	var pod *kube.Pod
 	var podFound bool
 	podIdentifierStr := buildPodIdentifierString(podIdentifierValue)
@@ -253,7 +257,13 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
-	nodeName := getNodeName(pod, resource.Attributes())
+	var nodeName string
+	if nodeIdentifierValue.IsNotEmpty() {
+		nodeName = nodeIdentifierValue[0].Value
+		kp.logger.Debug("node name from nodeIdentifierValue", zap.String("value", nodeName))
+	} else {
+		nodeName = getNodeName(pod, resource.Attributes())
+	}
 	if nodeName != "" {
 		attrsToAdd := kp.getAttributesForPodsNode(nodeName)
 		for key, val := range attrsToAdd {

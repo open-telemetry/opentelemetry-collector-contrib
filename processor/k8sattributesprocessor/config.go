@@ -37,6 +37,10 @@ type Config struct {
 	// and logs with Pod metadata.
 	Association []PodAssociationConfig `mapstructure:"pod_association"`
 
+	// Node Association section allows to define rules for tagging spans, metrics,
+	// and logs with Node metadata.
+	NodeAssociation []NodeAssociationConfig `mapstructure:"node_association"`
+
 	// Exclude section allows to define names of pod that should be
 	// ignored while tagging.
 	Exclude ExcludeConfig `mapstructure:"exclude"`
@@ -59,9 +63,15 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	for _, assoc := range cfg.NodeAssociation {
+		if len(assoc.Sources) > kube.NodeIdentifierMaxLength {
+			return fmt.Errorf("too many association sources. limit is %v", kube.NodeIdentifierMaxLength)
+		}
+	}
+
 	for _, f := range append(cfg.Extract.Labels, cfg.Extract.Annotations...) {
 		if f.Key != "" && f.KeyRegex != "" {
-			return fmt.Errorf("Out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", f.Key, f.KeyRegex)
+			return fmt.Errorf("out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", f.Key, f.KeyRegex)
 		}
 
 		switch f.From {
@@ -304,6 +314,17 @@ type PodAssociationConfig struct {
 	_ struct{}
 }
 
+// NodeAssociationConfig contain single rule on how to associate node metadata
+// with logs, spans and metrics
+type NodeAssociationConfig struct {
+	// List of node association sources which should be taken
+	// to identify a node
+	Sources []NodeAssociationSourceConfig `mapstructure:"sources"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // ExcludeConfig represent a list of Pods to exclude
 type ExcludeConfig struct {
 	Pods []ExcludePodConfig `mapstructure:"pods"`
@@ -327,6 +348,19 @@ type PodAssociationSourceConfig struct {
 
 	// Name represents extracted key name.
 	// e.g. ip, pod_uid, k8s.pod.ip
+	Name string `mapstructure:"name"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+type NodeAssociationSourceConfig struct {
+	// From represents the source of the association.
+	// Allowed value is only "resource_attribute".
+	From string `mapstructure:"from"`
+
+	// Name represents extracted key name.
+	// e.g. k8s.node.name, node_uid, my.custom.node.attribute
 	Name string `mapstructure:"name"`
 
 	// prevent unkeyed literal initialization
