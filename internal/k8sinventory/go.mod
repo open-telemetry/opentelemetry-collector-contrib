@@ -8,9 +8,9 @@ require (
 	go.opentelemetry.io/collector/component v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/extension/xextension v0.150.1-0.20260415114935-307e3abdbae9
 	go.uber.org/zap v1.27.1
-	k8s.io/api v0.35.3
-	k8s.io/apimachinery v0.35.3
-	k8s.io/client-go v0.35.3
+	k8s.io/api v0.35.4
+	k8s.io/apimachinery v0.35.4
+	k8s.io/client-go v0.35.4
 )
 
 require (
