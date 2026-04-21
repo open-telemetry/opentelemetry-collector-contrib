@@ -567,6 +567,118 @@ func makeTestEntry(field entry.Field, value any) *entry.Entry {
 	return e
 }
 
+func TestTimeZoneLocations(t *testing.T) {
+	kolkata, err := time.LoadLocation("Asia/Kolkata")
+	require.NoError(t, err)
+	losAngeles, err := time.LoadLocation("America/Los_Angeles")
+	require.NoError(t, err)
+	auckland, err := time.LoadLocation("Pacific/Auckland")
+	require.NoError(t, err)
+
+	// override with deterministic value
+	timeutils.Now = func() time.Time { return time.Date(2025, 8, 27, 0, 0, 0, 0, time.UTC) }
+
+	rootField := entry.NewBodyField()
+
+	testCases := []struct {
+		name              string
+		sample            string
+		location          string
+		timeZoneLocations map[string]string
+		expected          time.Time
+	}{
+		{
+			// IST not in time_zone_locations → falls back to location (Asia/Kolkata)
+			name:     "ist-fallback-to-location",
+			sample:   "Wed Aug 27 15:08:58 IST 2025",
+			location: "Asia/Kolkata",
+			timeZoneLocations: map[string]string{
+				"PDT":  "America/Los_Angeles",
+				"NZST": "Pacific/Auckland",
+			},
+			expected: time.Date(2025, time.August, 27, 15, 8, 58, 0, kolkata),
+		},
+		{
+			// PDT resolved via time_zone_locations → America/Los_Angeles
+			name:     "pdt-via-time-zone-locations",
+			sample:   "Wed Aug 20 14:08:48 PDT 2025",
+			location: "Asia/Kolkata",
+			timeZoneLocations: map[string]string{
+				"PDT":  "America/Los_Angeles",
+				"NZST": "Pacific/Auckland",
+			},
+			expected: time.Date(2025, time.August, 20, 14, 8, 48, 0, losAngeles),
+		},
+		{
+			// NZST resolved via time_zone_locations → Pacific/Auckland
+			// Use a NZ winter date (July) where NZST (+12:00) is the active offset,
+			// so the expected time and location are unambiguous.
+			name:     "nzst-via-time-zone-locations",
+			sample:   "Wed Jul 16 10:00:00 NZST 2025",
+			location: "Asia/Kolkata",
+			timeZoneLocations: map[string]string{
+				"PDT":  "America/Los_Angeles",
+				"NZST": "Pacific/Auckland",
+			},
+			expected: time.Date(2025, time.July, 16, 10, 0, 0, 0, auckland),
+		},
+		{
+			// no time_zone_locations configured — existing single-location behavior unchanged
+			name:     "single-location-no-map",
+			sample:   "Wed Aug 27 15:08:58 IST 2025",
+			location: "Asia/Kolkata",
+			expected: time.Date(2025, time.August, 27, 15, 8, 58, 0, kolkata),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			parseFrom := rootField
+			tp := &TimeParser{
+				LayoutType:        StrptimeKey,
+				Layout:            "%a %b %d %H:%M:%S %Z %Y",
+				ParseFrom:         &parseFrom,
+				Location:          tc.location,
+				TimeZoneLocations: tc.timeZoneLocations,
+			}
+			runTimeParseTest(tp, makeTestEntry(rootField, tc.sample), false, false, tc.expected)(t)
+		})
+	}
+}
+
+func TestTimeZoneLocationsErrors(t *testing.T) {
+	rootField := entry.NewBodyField()
+	parseFrom := rootField
+
+	t.Run("invalid-iana-name-in-time-zone-locations", func(t *testing.T) {
+		tp := &TimeParser{
+			LayoutType: StrptimeKey,
+			Layout:     "%a %b %d %H:%M:%S %Z %Y",
+			ParseFrom:  &parseFrom,
+			TimeZoneLocations: map[string]string{
+				"PDT": "Not/A/ValidZone",
+			},
+		}
+		err := tp.Validate()
+		require.ErrorContains(t, err, "invalid time_zone_locations entry")
+		require.ErrorContains(t, err, "Not/A/ValidZone")
+	})
+
+	t.Run("time-zone-locations-without-tz-directive", func(t *testing.T) {
+		tp := &TimeParser{
+			LayoutType: StrptimeKey,
+			Layout:     "%Y-%m-%d %H:%M:%S", // no %Z
+			ParseFrom:  &parseFrom,
+			TimeZoneLocations: map[string]string{
+				"PDT": "America/Los_Angeles",
+			},
+		}
+		err := tp.Validate()
+		require.ErrorContains(t, err, "time_zone_locations")
+		require.ErrorContains(t, err, "timezone abbreviation directive")
+	})
+}
+
 func TestSetInvalidLocation(t *testing.T) {
 	tp := NewTimeParser()
 	tp.Location = "not_a_location"
@@ -627,6 +739,18 @@ func TestUnmarshalTimeConfig(t *testing.T) {
 					from := entry.NewBodyField("from")
 					c.Time = NewTimeParser()
 					c.Time.ParseFrom = &from
+					return c
+				}(),
+			},
+			{
+				Name: "time_zone_locations",
+				Expect: func() *helpersConfig {
+					c := newHelpersConfig()
+					c.Time = NewTimeParser()
+					c.Time.TimeZoneLocations = map[string]string{
+						"PDT":  "America/Los_Angeles",
+						"NZST": "Pacific/Auckland",
+					}
 					return c
 				}(),
 			},
