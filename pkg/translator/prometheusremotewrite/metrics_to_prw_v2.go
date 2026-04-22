@@ -164,9 +164,10 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 	return allTS
 }
 
-func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) {
+func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label, metadata metadata) *writev2.TimeSeries {
 	ts := c.getOrCreateTimeSeries(lbls, metadata)
 	ts.Samples = append(ts.Samples, *sample)
+	return ts
 }
 
 // isSameMetricV2 checks if two time series are the same metric
