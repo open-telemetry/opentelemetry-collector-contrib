@@ -7,7 +7,7 @@ change_type: deprecation
 component: extension/aws_logs_encoding
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecates transparent GZip decompression in aws_logs_encoding and adds GZip decompression in awsfirehosereceiver when using aws_logs_encoding to prepare for future removal
+note: Deprecates transparent gzip decompression in aws_logs_encoding and clarifies that callers must decompress payloads before invoking the streaming decoder.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [46463]
