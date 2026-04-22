@@ -46,7 +46,7 @@ func recordUserSize(r *kgo.Record) int {
 type FranzSyncProducer struct {
 	client          *kgo.Client
 	metadataKeys    []string
-	recordHeaders   configopaque.MapList
+	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 }
 
@@ -56,10 +56,18 @@ func NewFranzSyncProducer(client *kgo.Client,
 	recordHeaders configopaque.MapList,
 	maxMessageBytes int,
 ) *FranzSyncProducer {
+	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
+	for _, pair := range recordHeaders {
+		headers = append(headers, kgo.RecordHeader{
+			Key:   pair.Name,
+			Value: []byte(string(pair.Value)),
+		})
+	}
+
 	return &FranzSyncProducer{
 		client:          client,
 		metadataKeys:    metadataKeys,
-		recordHeaders:   recordHeaders,
+		recordHeaders:   headers,
 		maxMessageBytes: maxMessageBytes,
 	}
 }
@@ -97,7 +105,7 @@ func (p *FranzSyncProducer) Close() error {
 	return nil
 }
 
-func makeFranzMessages(messages Messages, recordHeaders configopaque.MapList) []*kgo.Record {
+func makeFranzMessages(messages Messages, recordHeaders []kgo.RecordHeader) []*kgo.Record {
 	msgs := make([]*kgo.Record, 0, messages.Count)
 	for _, msg := range messages.TopicMessages {
 		for _, message := range msg.Messages {
@@ -108,11 +116,8 @@ func makeFranzMessages(messages Messages, recordHeaders configopaque.MapList) []
 			if message.Value != nil {
 				record.Value = message.Value
 			}
-			for _, pair := range recordHeaders {
-				record.Headers = append(record.Headers, kgo.RecordHeader{
-					Key:   pair.Name,
-					Value: []byte(string(pair.Value)),
-				})
+			if len(recordHeaders) > 0 {
+				record.Headers = recordHeaders
 			}
 			msgs = append(msgs, record)
 		}
