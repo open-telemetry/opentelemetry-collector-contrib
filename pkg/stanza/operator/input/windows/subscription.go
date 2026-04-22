@@ -167,6 +167,12 @@ func (s *Subscription) Read(maxReads int) ([]Event, error) {
 		return nil, nil
 	}
 
+	if errors.Is(err, ErrorEVTQueryResultStale) {
+		// The bookmark cursor was overwritten by the ring buffer.
+		// Return the sentinel; the caller (Input.readBatch) is responsible for resubscription.
+		return nil, maxReads, ErrorEVTQueryResultStale
+	}
+
 	if err != nil && !errors.Is(err, windows.ERROR_NO_MORE_ITEMS) {
 		return nil, err
 	}
