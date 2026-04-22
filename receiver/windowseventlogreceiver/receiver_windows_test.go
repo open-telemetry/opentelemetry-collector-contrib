@@ -33,7 +33,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -42,7 +42,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
@@ -61,7 +61,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 		}(),
 	}
 
-	_, err := newFactoryAdapter().CreateLogs(
+	_, err := NewFactory().CreateLogs(
 		t.Context(),
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
@@ -98,7 +98,7 @@ func BenchmarkReadWindowsEventLogger(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				// Set up the receiver and sink.
 				ctx := b.Context()
-				factory := newFactoryAdapter()
+				factory := NewFactory()
 				createSettings := receivertest.NewNopSettings(metadata.Type)
 				cfg := createTestConfig()
 				cfg.InputConfig.StartAt = "beginning"
@@ -128,7 +128,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := t.Context()
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
@@ -181,7 +181,7 @@ func TestReadWindowsEventLoggerWithQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := t.Context()
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfigWithQuery()
 	sink := new(consumertest.LogsSink)
@@ -234,7 +234,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := t.Context()
-	factory := newFactoryAdapter()
+	factory := NewFactory()
 	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfig()
 	cfg.InputConfig.Raw = true
@@ -299,7 +299,7 @@ func TestExcludeProvider(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
-			factory := newFactoryAdapter()
+			factory := NewFactory()
 			createSettings := receivertest.NewNopSettings(metadata.Type)
 			cfg := createTestConfig()
 			cfg.InputConfig.Raw = tt.raw
