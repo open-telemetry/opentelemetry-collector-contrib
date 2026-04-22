@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -150,6 +151,10 @@ func TestNewRejectsTooLongFileMountPath(t *testing.T) {
 }
 
 func newTrackingPayload(t *testing.T) []byte {
+	return newTrackingPayloadWithRefID(t, 100)
+}
+
+func newTrackingPayloadWithRefID(t *testing.T, refID uint32) []byte {
 	t.Helper()
 	type response struct {
 		ReplyHead
@@ -162,7 +167,7 @@ func newTrackingPayload(t *testing.T) []byte {
 			Reply:   replyTrackingCode,
 		},
 		replyTrackingContent: replyTrackingContent{
-			RefID: 100,
+			RefID: refID,
 			IPAddr: ipAddr{
 				IP:     [16]uint8{127, 0, 0, 1},
 				Family: ipAddrInet4,
@@ -180,7 +185,50 @@ func newTrackingPayload(t *testing.T) []byte {
 	return buf
 }
 
-func TestCloseRemovesGeneratedSocket(t *testing.T) {
+type stubAddr string
+
+func (a stubAddr) Network() string { return string(a) }
+func (a stubAddr) String() string  { return string(a) }
+
+type scriptedConn struct {
+	reads  [][]byte
+	closed bool
+}
+
+func newScriptedConn(reads ...[]byte) *scriptedConn {
+	return &scriptedConn{reads: reads}
+}
+
+func (c *scriptedConn) Read(p []byte) (int, error) {
+	if len(c.reads) == 0 {
+		return 0, io.EOF
+	}
+	next := c.reads[0]
+	c.reads = c.reads[1:]
+	return copy(p, next), nil
+}
+
+func (c *scriptedConn) Write(p []byte) (int, error) {
+	if c.closed {
+		return 0, net.ErrClosed
+	}
+	return len(p), nil
+}
+
+func (c *scriptedConn) Close() error {
+	c.closed = true
+	return nil
+}
+
+func (c *scriptedConn) LocalAddr() net.Addr             { return stubAddr("local") }
+func (c *scriptedConn) RemoteAddr() net.Addr            { return stubAddr("remote") }
+func (c *scriptedConn) SetDeadline(time.Time) error     { return nil }
+func (c *scriptedConn) SetReadDeadline(time.Time) error { return nil }
+func (c *scriptedConn) SetWriteDeadline(time.Time) error {
+	return nil
+}
+
+func TestGetTrackingDataRemovesGeneratedSocketOnSuccess(t *testing.T) {
 	t.Parallel()
 
 	if runtime.GOOS == "windows" {
@@ -216,12 +264,10 @@ func TestCloseRemovesGeneratedSocket(t *testing.T) {
 	cl := c.(*client)
 	expectedAddr := cl.localAddr
 
-	// Call Close to trigger cleanup
-	require.NoError(t, c.Close(), "Must not error closing client")
-
-	// Verify the generated socket file is cleaned up after close.
 	_, err = os.Stat(expectedAddr)
-	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove generated socket after Close")
+	assert.ErrorIs(t, err, os.ErrNotExist, "Must remove generated socket after a successful scrape")
+
+	require.NoError(t, c.Close(), "Close should remain safe and idempotent after scrape cleanup")
 }
 
 func TestWithFileMountPathDoesNotRemoveExistingSockets(t *testing.T) {
@@ -291,6 +337,43 @@ func TestDialErrorCleansUpLocalSocket(t *testing.T) {
 	_, err = chronyClient.GetTrackingData(t.Context())
 	require.NoError(t, err, "Must recover on the next dial attempt")
 	assert.Equal(t, 2, attempts, "Must retry dialing after cleanup")
+}
+
+func TestGetTrackingDataDialsFreshConnectionPerScrape(t *testing.T) {
+	t.Parallel()
+
+	firstConn := newScriptedConn(
+		newTrackingPayloadWithRefID(t, 100),
+		newTrackingPayloadWithRefID(t, 100),
+	)
+	secondConn := newScriptedConn(newTrackingPayloadWithRefID(t, 200))
+
+	dialCount := 0
+	client, err := New("udp://localhost:323", 10*time.Second, func(c *client) {
+		c.dialer = func(context.Context, string, string) (net.Conn, error) {
+			dialCount++
+			switch dialCount {
+			case 1:
+				return firstConn, nil
+			case 2:
+				return secondConn, nil
+			default:
+				return nil, fmt.Errorf("unexpected dial %d", dialCount)
+			}
+		}
+	})
+	require.NoError(t, err, "Must not error when creating client")
+
+	first, err := client.GetTrackingData(t.Context())
+	require.NoError(t, err, "Must not error when getting first tracking sample")
+	assert.Equal(t, uint32(100), first.RefID, "Must read the first connection's reply")
+
+	second, err := client.GetTrackingData(t.Context())
+	require.NoError(t, err, "Must not error when getting second tracking sample")
+	assert.Equal(t, uint32(200), second.RefID, "Must dial a fresh connection instead of reusing a stale queued reply")
+	assert.Equal(t, 2, dialCount, "Must dial once per scrape")
+	assert.True(t, firstConn.closed, "Must close the first scrape connection before the next scrape")
+	assert.True(t, secondConn.closed, "Must close the second scrape connection after the scrape completes")
 }
 
 func TestGettingTrackingData(t *testing.T) {

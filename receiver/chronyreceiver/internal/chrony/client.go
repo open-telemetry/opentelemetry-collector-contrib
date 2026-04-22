@@ -96,23 +96,23 @@ func New(addr string, timeout time.Duration, opts ...ClientOption) (Client, erro
 	return c, nil
 }
 
-// GetTrackingData is not safe for concurrent use when localAddr is set;
-// the scraper framework serializes calls so this is not an issue in practice.
-func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
+// GetTrackingData is not safe for concurrent use.
+// The scraper framework serializes calls so this is not an issue in practice.
+func (c *client) GetTrackingData(ctx context.Context) (_ *Tracking, err error) {
 	ctx, cancel := c.getContext(ctx)
 	defer cancel()
 
-	if c.conn == nil {
-		sock, err := c.dialer(ctx, c.proto, c.addr)
-		if err != nil {
-			return nil, errors.Join(err, c.Close())
-		}
-		c.conn = sock
+	sock, err := c.dialer(ctx, c.proto, c.addr)
+	if err != nil {
+		return nil, errors.Join(err, c.Close())
 	}
+	c.conn = sock
+	defer func() {
+		err = errors.Join(err, c.Close())
+	}()
 
 	if deadline, ok := ctx.Deadline(); ok {
-		err := c.conn.SetDeadline(deadline)
-		if err != nil {
+		if err = c.conn.SetDeadline(deadline); err != nil {
 			return nil, err
 		}
 	}
@@ -120,12 +120,12 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	packet := chrony.NewTrackingPacket()
 	packet.SetSequence(uint32(clockwork.FromContext(ctx).Now().UnixNano()))
 
-	if err := binary.Write(c.conn, binary.BigEndian, packet); err != nil {
-		return nil, errors.Join(err, c.Close())
+	if err = binary.Write(c.conn, binary.BigEndian, packet); err != nil {
+		return nil, err
 	}
 	data := make([]uint8, 1024)
-	if _, err := c.conn.Read(data); err != nil {
-		return nil, errors.Join(err, c.Close())
+	if _, err = c.conn.Read(data); err != nil {
+		return nil, err
 	}
 
 	return newTrackingData(data)
