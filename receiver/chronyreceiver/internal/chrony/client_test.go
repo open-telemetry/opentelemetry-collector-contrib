@@ -339,6 +339,36 @@ func TestDialErrorCleansUpLocalSocket(t *testing.T) {
 	assert.Equal(t, 2, attempts, "Must retry dialing after cleanup")
 }
 
+func TestReadErrorCleansUpGeneratedSocket(t *testing.T) {
+	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping UDS test on windows")
+	}
+
+	sockDir := newShortSocketDir(t)
+	readConn := newScriptedConn()
+
+	chronyClient, err := New("unix://"+sockDir, 10*time.Second,
+		WithFileMountPath(sockDir),
+		func(c *client) {
+			c.dialer = func(context.Context, string, string) (net.Conn, error) {
+				require.NoError(t, os.WriteFile(c.localAddr, []byte(""), 0o600))
+				return readConn, nil
+			}
+		},
+	)
+	require.NoError(t, err, "Must not error when creating client")
+
+	_, err = chronyClient.GetTrackingData(t.Context())
+	assert.ErrorIs(t, err, io.EOF, "Must return the read error")
+
+	cl := chronyClient.(*client)
+	_, err = os.Stat(cl.localAddr)
+	require.ErrorIs(t, err, os.ErrNotExist, "Must remove local socket after read error")
+	assert.True(t, readConn.closed, "Must close the connection after the read error")
+}
+
 func TestGetTrackingDataDialsFreshConnectionPerScrape(t *testing.T) {
 	t.Parallel()
 
