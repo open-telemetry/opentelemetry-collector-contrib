@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/prometheus_receiver
+component: receiver/prometheus
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Remove `receiver.prometheusreceiver.EnableNativeHistograms`, `receiver.prometheusreceiver.RemoveStartTimeAdjustment` and `receiver.prometheusreceiver.UseCreatedMetric` feature gates.
