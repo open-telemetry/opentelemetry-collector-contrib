@@ -34,12 +34,14 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
 				Auth: component.MustNewID("azureauth"),
-				EventHub: &EventHubTriggerConfig{
-					Logs: []LogsEncodingConfig{
-						{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
-						{Name: "raw_logs", Encoding: component.MustNewID("azureresourcelogs_encoding")},
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Logs: []LogsEncodingConfig{
+							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+							{Name: "raw_logs", Encoding: component.MustNewID("azureresourcelogs_encoding")},
+						},
+						IncludeMetadata: true,
 					},
-					IncludeMetadata: true,
 				},
 			},
 		},
@@ -47,9 +49,11 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "no_auth"),
 			expected: &Config{
 				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
-				EventHub: &EventHubTriggerConfig{
-					Logs: []LogsEncodingConfig{
-						{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Logs: []LogsEncodingConfig{
+							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+						},
 					},
 				},
 			},
@@ -57,6 +61,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:                 component.NewIDWithName(metadata.Type, "no_http_config"),
 			expectedErrMessage: "missing http server settings",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "no_triggers"),
+			expectedErrMessage: "missing triggers configuration",
 		},
 		{
 			id:                 component.NewIDWithName(metadata.Type, "no_event_hub"),
@@ -68,15 +76,15 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:                 component.NewIDWithName(metadata.Type, "missing_binding_name"),
-			expectedErrMessage: "event_hub.logs[0].name must be set",
+			expectedErrMessage: "triggers.event_hub.logs[0].name must be set",
 		},
 		{
 			id:                 component.NewIDWithName(metadata.Type, "missing_binding_encoding"),
-			expectedErrMessage: "event_hub.logs[0].encoding must be set",
+			expectedErrMessage: "triggers.event_hub.logs[0].encoding must be set",
 		},
 		{
 			id:                 component.NewIDWithName(metadata.Type, "duplicate_binding_name"),
-			expectedErrMessage: `event_hub.logs: duplicate binding name "logs"`,
+			expectedErrMessage: `triggers.event_hub.logs: duplicate binding name "logs"`,
 		},
 	}
 	for _, tt := range tests {

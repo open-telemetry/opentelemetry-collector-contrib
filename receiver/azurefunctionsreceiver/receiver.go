@@ -66,17 +66,17 @@ func (r *functionsReceiver) Start(ctx context.Context, host component.Host) erro
 	return nil
 }
 
-// registerTriggerRoutes attaches HTTP handlers for each configured trigger. Add new triggers here
-// alongside extensions to hasTriggerWithBindings in config.go.
+// registerTriggerRoutes attaches HTTP handlers for each configured trigger
 func (r *functionsReceiver) registerTriggerRoutes(mux *http.ServeMux, host component.Host) error {
 	return r.registerEventHubRoutes(mux, host)
 }
 
 func (r *functionsReceiver) registerEventHubRoutes(mux *http.ServeMux, host component.Host) error {
-	eh := r.cfg.EventHub
-	if eh == nil || len(eh.Logs) == 0 {
+	t := r.cfg.Triggers
+	if t == nil || t.EventHub == nil || len(t.EventHub.Logs) == 0 {
 		return nil
 	}
+	eh := t.EventHub
 
 	unmarshalers, err := loadLogsUnmarshalers(host, eh.Logs)
 	if err != nil {

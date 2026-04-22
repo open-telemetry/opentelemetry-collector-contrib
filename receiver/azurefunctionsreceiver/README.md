@@ -32,13 +32,14 @@ The following receiver configuration parameters are supported.
 
 | Name | Type | Description |
 |------|------|-------------|
-| `http_config` | confighttp.ServerConfig | **Required.** HTTP server settings (e.g. `endpoint: :9090`). Typically use `FUNCTIONS_CUSTOMHANDLER_PORT`. |
+| `http` | confighttp.ServerConfig | **Required.** HTTP server settings (e.g. `endpoint: :9090`). Typically use `FUNCTIONS_CUSTOMHANDLER_PORT`. |
 | `auth` | component.ID | Optional. Component ID of the extension that provides Azure authentication (e.g. token credential). |
-| `event_hub` | object | Optional. Event Hub trigger configuration. When set, defines log bindings and metadata behavior. |
-| `event_hub.logs` | list | List of log bindings. Each entry has `name` (binding name; maps to path `/<name>`) and `encoding` (component.ID). Binding names must be unique. |
-| `event_hub.include_metadata` | bool | Optional. When true, add Azure Functions invoke metadata (e.g. Event Hub partition context) to resource attributes. Default: false. |
+| `triggers` | object | **Required.** Trigger configuration (e.g. Event Hub). At least one trigger with at least one log binding is required. |
+| `triggers.event_hub` | object | Event Hub trigger configuration. Defines log bindings and metadata behavior. |
+| `triggers.event_hub.logs` | list | List of log bindings. Each entry has `name` (binding name; maps to path `/<name>`) and `encoding` (component.ID). Binding names must be unique. |
+| `triggers.event_hub.include_metadata` | bool | Optional. When true, add Azure Functions invoke metadata (e.g. Event Hub partition context) to resource attributes. Default: false. |
 
-At least one trigger with at least one log binding must be configured for the receiver to register endpoints. Required fields must be set for the receiver to start.
+The `triggers` section and at least one trigger with at least one log binding are required for the receiver to register endpoints. Required fields must be set for the receiver to start.
 
 ### Example configuration
 
@@ -46,20 +47,21 @@ At least one trigger with at least one log binding must be configured for the re
 receivers:
   azure_functions:
     # HTTP server configuration
-    http_config:
+    http:
       endpoint: :${env:FUNCTIONS_CUSTOMHANDLER_PORT:-9090}
 
     # Optional: Azure auth extension
     auth: azureauth
 
-    # Event Hub trigger: multiple log bindings, each with its own encoding
-    event_hub:
-      logs:
-        - name: logs
-          encoding: azure_encoding
-        - name: raw_logs
-          encoding: azureresourcelogs_encoding
-      include_metadata: true
+    # Triggers: Event Hub with multiple log bindings, each with its own encoding
+    triggers:
+      event_hub:
+        logs:
+          - name: logs
+            encoding: azure_encoding
+          - name: raw_logs
+            encoding: azureresourcelogs_encoding
+        include_metadata: true
 
 extensions:
   azureauth:
@@ -86,4 +88,4 @@ service:
 
 - Deployed as an Azure Functions custom handler.
 - Azure Functions host configuration (`host.json`) with custom handler settings.
-- Event Hub trigger bindings configured in `function.json`; binding names should match the `event_hub.logs[].name` values (e.g. `logs`, `raw_logs`).
+- Event Hub trigger bindings configured in `function.json`; binding names should match the `triggers.event_hub.logs[].name` values (e.g. `logs`, `raw_logs`).

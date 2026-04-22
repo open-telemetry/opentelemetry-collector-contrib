@@ -13,11 +13,17 @@ import (
 
 type Config struct {
 	// HTTP defines the HTTP server settings for the Azure Functions invoke endpoints.
-	HTTP *confighttp.ServerConfig `mapstructure:"http_config"`
+	HTTP *confighttp.ServerConfig `mapstructure:"http"`
 
 	// Auth is the component.ID of the extension that provides Azure authentication
 	Auth component.ID `mapstructure:"auth"`
 
+	// Triggers holds configuration for Azure Functions triggers (e.g. Event Hub)
+	Triggers *TriggersConfig `mapstructure:"triggers"`
+}
+
+// TriggersConfig groups all supported trigger types for this receiver.
+type TriggersConfig struct {
 	// EventHub configures the Event Hub trigger: log bindings and their encodings.
 	EventHub *EventHubTriggerConfig `mapstructure:"event_hub"`
 }
@@ -37,12 +43,9 @@ type LogsEncodingConfig struct {
 	Encoding component.ID `mapstructure:"encoding"`
 }
 
-// hasTriggerWithBindings returns true if any trigger is configured with at least one binding.
-func (cfg *Config) hasTriggerWithBindings() bool {
-	if cfg.EventHub != nil && len(cfg.EventHub.Logs) > 0 {
-		return true
-	}
-	return false
+// hasAnyBinding reports whether at least one trigger has at least one binding.
+func (t *TriggersConfig) hasAnyBinding() bool {
+	return t.EventHub != nil && len(t.EventHub.Logs) > 0
 }
 
 // Validate checks if the receiver configuration is valid.
@@ -52,22 +55,25 @@ func (cfg *Config) Validate() error {
 		errs = append(errs, errors.New("missing http server settings"))
 	}
 
-	if !cfg.hasTriggerWithBindings() {
+	if cfg.Triggers == nil {
+		errs = append(errs, errors.New("missing triggers configuration"))
+	} else if !cfg.Triggers.hasAnyBinding() {
 		errs = append(errs, errors.New("at least one configured trigger with at least one binding is required"))
 	}
 
-	if cfg.EventHub != nil {
-		seen := make(map[string]struct{}, len(cfg.EventHub.Logs))
-		for i, log := range cfg.EventHub.Logs {
+	if cfg.Triggers != nil && cfg.Triggers.EventHub != nil {
+		eh := cfg.Triggers.EventHub
+		seen := make(map[string]struct{}, len(eh.Logs))
+		for i, log := range eh.Logs {
 			if log.Name == "" {
-				errs = append(errs, fmt.Errorf("event_hub.logs[%d].name must be set", i))
+				errs = append(errs, fmt.Errorf("triggers.event_hub.logs[%d].name must be set", i))
 			} else if _, ok := seen[log.Name]; ok {
-				errs = append(errs, fmt.Errorf("event_hub.logs: duplicate binding name %q", log.Name))
+				errs = append(errs, fmt.Errorf("triggers.event_hub.logs: duplicate binding name %q", log.Name))
 			} else {
 				seen[log.Name] = struct{}{}
 			}
 			if log.Encoding.String() == "" {
-				errs = append(errs, fmt.Errorf("event_hub.logs[%d].encoding must be set", i))
+				errs = append(errs, fmt.Errorf("triggers.event_hub.logs[%d].encoding must be set", i))
 			}
 		}
 	}

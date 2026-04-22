@@ -20,17 +20,25 @@ $defs:
         x-customType: go.opentelemetry.io/collector/component.ID
       name:
         type: string
+  triggers_config:
+    description: TriggersConfig groups all supported trigger types for this receiver.
+    type: object
+    properties:
+      event_hub:
+        description: 'EventHub configures the Event Hub trigger: log bindings and their encodings.'
+        x-pointer: true
+        $ref: event_hub_trigger_config
 type: object
 properties:
   auth:
     description: Auth is the component.ID of the extension that provides Azure authentication
     type: string
     x-customType: go.opentelemetry.io/collector/component.ID
-  event_hub:
-    description: 'EventHub configures the Event Hub trigger: log bindings and their encodings.'
-    x-pointer: true
-    $ref: event_hub_trigger_config
-  http_config:
+  http:
     description: HTTP defines the HTTP server settings for the Azure Functions invoke endpoints.
     x-pointer: true
     $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+  triggers:
+    description: Triggers holds configuration for Azure Functions triggers (e.g. Event Hub)
+    x-pointer: true
+    $ref: triggers_config
