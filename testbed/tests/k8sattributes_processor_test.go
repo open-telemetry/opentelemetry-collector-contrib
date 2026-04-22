@@ -482,7 +482,7 @@ type kwokCluster struct {
 // createKWOKCluster starts a kwokctl binary-runtime cluster, scales it to numNodes nodes
 // and numNamespaces namespaces, writes the kubeconfig to a temp file, constructs a
 // Kubernetes client, and returns the assembled kwokCluster.
-// The sanitised t.Name() to form the cluster name (capped at 50
+// The sanitized t.Name() to form the cluster name (capped at 50
 // characters).  The returned Cleanup must be called when the cluster is no longer needed.
 func createKWOKCluster(t *testing.T, numNamespaces int) kwokCluster {
 	t.Helper()
@@ -772,10 +772,10 @@ type extendedClusterPodUIDs struct {
 // createKWOKCluster handles node scaling (numNodes nodes) and namespace scaling
 // The four workload scale commands run in parallel, as do their pod-readiness waits.
 // CronJob pods receive extra timeout headroom because the schedule must first fire (≤ 60 s).
-func setupKWOKClusterExtended(t *testing.T, N int) (kubeconfigPath string, podUIDs extendedClusterPodUIDs, cleanup func()) {
+func setupKWOKClusterExtended(t *testing.T, n int) (kubeconfigPath string, podUIDs extendedClusterPodUIDs, cleanup func()) {
 	t.Helper()
-	// createKWOKCluster scales to numNodes nodes and N namespaces
-	kc := createKWOKCluster(t, N)
+	// createKWOKCluster scales to numNodes nodes and n namespaces
+	kc := createKWOKCluster(t, n)
 	cleanup = kc.Cleanup
 	kubeconfigPath = kc.KubeconfigPath
 	clusterName := kc.Name
@@ -807,13 +807,10 @@ func setupKWOKClusterExtended(t *testing.T, N int) (kubeconfigPath string, podUI
 	scaleErrs := make([]error, len(workloads))
 	var scaleWg sync.WaitGroup
 	for wi, ws := range workloads {
-		wi, ws := wi, ws
-		scaleWg.Add(1)
-		go func() {
-			defer scaleWg.Done()
+		scaleWg.Go(func() {
 			args := []string{
 				"scale", ws.kind,
-				"--replicas", fmt.Sprintf("%d", N),
+				"--replicas", fmt.Sprintf("%d", n),
 				"--serial-length", "6",
 				"--name", clusterName,
 				"--config", kwokConfigPath,
@@ -825,7 +822,7 @@ func setupKWOKClusterExtended(t *testing.T, N int) (kubeconfigPath string, podUI
 			if cmdOut, cmdErr := cmd.CombinedOutput(); cmdErr != nil {
 				scaleErrs[wi] = fmt.Errorf("kwokctl scale %s: %w\n%s", ws.kind, cmdErr, cmdOut)
 			}
-		}()
+		})
 	}
 	scaleWg.Wait()
 	for wi, e := range scaleErrs {
@@ -834,7 +831,7 @@ func setupKWOKClusterExtended(t *testing.T, N int) (kubeconfigPath string, podUI
 
 	// Wait for N pods in each namespace in parallel.
 	// CronJob pods get extra headroom: the schedule must fire (≤ 60 s) before pods appear.
-	baseWait := min(3*time.Minute+time.Duration(N/5)*time.Second, 15*time.Minute)
+	baseWait := min(3*time.Minute+time.Duration(n/5)*time.Second, 15*time.Minute)
 	nsWaits := []struct {
 		ns      string
 		timeout time.Duration
@@ -848,20 +845,17 @@ func setupKWOKClusterExtended(t *testing.T, N int) (kubeconfigPath string, podUI
 	podCounts := make([]int, len(nsWaits))
 	var waitWg sync.WaitGroup
 	for wi, target := range nsWaits {
-		wi, target := wi, target
-		waitWg.Add(1)
-		go func() {
-			defer waitWg.Done()
+		waitWg.Go(func() {
 			assert.Eventually(t, func() bool {
 				list, listErr := clientset.CoreV1().Pods(target.ns).List(ctx, metav1.ListOptions{})
 				if listErr != nil {
 					return false
 				}
 				podCounts[wi] = len(list.Items)
-				return podCounts[wi] >= N
+				return podCounts[wi] >= n
 			}, target.timeout, 1*time.Second,
-				"timed out waiting for %d pods in %s (got %d)", N, target.ns, podCounts[wi])
-		}()
+				"timed out waiting for %d pods in %s (got %d)", n, target.ns, podCounts[wi])
+		})
 	}
 	waitWg.Wait()
 
@@ -886,7 +880,7 @@ func setupKWOKClusterExtended(t *testing.T, N int) (kubeconfigPath string, podUI
 	require.NotEmpty(t, podUIDs.CronJob, "cronjob pod UID must not be empty")
 
 	t.Logf("[kwok-ext] %d of each type (4×%d=%d pods total); UIDs: deploy=%s sts=%s ds=%s cj=%s",
-		N, N, 4*N, podUIDs.Deployment, podUIDs.StatefulSet, podUIDs.DaemonSet, podUIDs.CronJob)
+		n, n, 4*n, podUIDs.Deployment, podUIDs.StatefulSet, podUIDs.DaemonSet, podUIDs.CronJob)
 
 	return kubeconfigPath, podUIDs, cleanup
 }
