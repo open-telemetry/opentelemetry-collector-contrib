@@ -260,7 +260,7 @@ components:
     - receiver/expvar
     - receiver/faro
     - receiver/file_log
-    - receiver/filestats
+    - receiver/file_stats
     - receiver/flinkmetrics
     - receiver/fluentforward
     - receiver/github
