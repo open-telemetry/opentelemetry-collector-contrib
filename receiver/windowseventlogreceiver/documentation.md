@@ -2,6 +2,80 @@
 
 # windows_event_log
 
+## Internal Telemetry
+
+The following telemetry is emitted by this component.
+
+### otelcol_receiver_windows_event_log_batch_size
+
+The number of events fetched from the Windows Event Log API in a single batch read via EvtNext.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {events} | Histogram | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| channel | The name of the Windows Event Log channel. | Any Str | - |
+
+### otelcol_receiver_windows_event_log_channel_size
+
+The approximate number of records in the Windows Event Log channel, sampled once per collection cycle via EvtGetLogInfo.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {events} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| channel | The name of the Windows Event Log channel. | Any Str | - |
+
+### otelcol_receiver_windows_event_log_event_size
+
+The size in bytes of the rendered Windows Event XML per event, measured after decoding from the Windows API buffer.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Histogram | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| channel | The name of the Windows Event Log channel. | Any Str | - |
+
+### otelcol_receiver_windows_event_log_lag
+
+The lag between the time a Windows event was originally logged and the time it was received by the collector, computed as the maximum observed lag across all log records in the most recent batch.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Gauge | Double | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| channel | The name of the Windows Event Log channel. | Any Str | - |
+
+### otelcol_receiver_windows_event_log_missed_events
+
+The estimated number of Windows Event Log records dropped from the ring buffer before being read, detected via gaps in consecutive EventRecordID values. Only meaningful in channel mode (not query mode). Does not count events lost during a complete ring-buffer overflow, which instead triggers a subscription reopen.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {events} | Sum | Int | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| channel | The name of the Windows Event Log channel. | Any Str | - |
+
 ## Feature Gates
 
 This component has the following feature gates:

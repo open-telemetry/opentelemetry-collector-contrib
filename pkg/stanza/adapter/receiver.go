@@ -59,7 +59,7 @@ func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
 	}
 	logRecordCount := pLogs.LogRecordCount()
 
-	cErr := r.consumer.ConsumeLogs(ctx, pLogs)
+	cErr := r.consumer.ConsumeLogs(obsrecvCtx, pLogs)
 	if cErr != nil {
 		r.set.Logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 	}

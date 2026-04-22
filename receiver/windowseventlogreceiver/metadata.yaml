@@ -29,3 +29,64 @@ feature_gates:
     from_version: v0.150.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44156
     skip_strict_validation: true
+
+attributes:
+  channel:
+    description: The name of the Windows Event Log channel.
+    type: string
+
+telemetry:
+  metrics:
+    receiver_windows_event_log_batch_size:
+      enabled: true
+      optional: true
+      description: The number of events fetched from the Windows Event Log API in a single batch read via EvtNext.
+      stability: development
+      unit: "{events}"
+      histogram:
+        value_type: int
+        bucket_boundaries: [1, 5, 10, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+      attributes: [channel]
+
+    receiver_windows_event_log_channel_size:
+      enabled: true
+      optional: true
+      description: The approximate number of records in the Windows Event Log channel, sampled once per collection cycle via EvtGetLogInfo.
+      stability: development
+      unit: "{events}"
+      gauge:
+        value_type: int
+      attributes: [channel]
+
+    receiver_windows_event_log_event_size:
+      enabled: true
+      optional: true
+      description: The size in bytes of the rendered Windows Event XML per event, measured after decoding from the Windows API buffer.
+      stability: development
+      unit: By
+      histogram:
+        value_type: int
+        bucket_boundaries: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144]
+      attributes: [channel]
+
+    receiver_windows_event_log_lag:
+      enabled: true
+      optional: true
+      description: The lag between the time a Windows event was originally logged and the time it was received by the collector, computed as the maximum observed lag across all log records in the most recent batch.
+      stability: development
+      unit: s
+      gauge:
+        async: true
+        value_type: double
+      attributes: [channel]
+
+    receiver_windows_event_log_missed_events:
+      enabled: true
+      optional: true
+      description: The estimated number of Windows Event Log records dropped from the ring buffer before being read, detected via gaps in consecutive EventRecordID values. Only meaningful in channel mode (not query mode). Does not count events lost during a complete ring-buffer overflow, which instead triggers a subscription reopen.
+      stability: development
+      unit: "{events}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [channel]
