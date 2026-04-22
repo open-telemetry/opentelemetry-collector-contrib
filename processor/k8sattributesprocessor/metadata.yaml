@@ -163,6 +163,13 @@ feature_gates:
       When enabled, semconv stable attributes are enabled.
     from_version: v0.145.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44589
+  - id: processor.k8sattributes.ShareProcessorBetweenPipelines
+    stage: alpha
+    description: >-
+      When enabled, processor instances with identical configuration are shared
+      across different signal type pipelines, reducing duplicate Kubernetes API watchers.
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/2450
   - id: processor.k8sattributes.telemetry.disableOldFormatMetrics
     stage: alpha
     description: >-
