@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.150.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/client v1.56.1-0.20260415114935-307e3abdbae9
@@ -170,3 +171,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
