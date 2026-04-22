@@ -732,3 +732,44 @@ func newReceiver(t *testing.T, cfg *Config, nextConsumer consumer.Logs) *logsRec
 	require.NoError(t, err)
 	return r
 }
+
+// TestArrayAttributes covers #46716: Cloudflare log records carry several
+// array-typed fields (BotDetectionIDs, SecurityActions, SecurityRuleIDs, …)
+// that used to be dropped with "unsupported type" warnings. They should now
+// round-trip as pcommon.Slice attributes.
+func TestArrayAttributes(t *testing.T) {
+	payload := `{"ClientIP":"1.2.3.4","EdgeStartTimestamp":"2023-03-03T05:29:05Z","BotDetectionIDs":[1,2,3],"SecurityActions":["block","log"],"SecurityRuleIDs":["rule-a","rule-b"]}`
+
+	recv := newReceiver(t, &Config{
+		Logs: LogsConfig{
+			Endpoint:           "localhost:0",
+			TLS:                &configtls.ServerConfig{},
+			MaxRequestBodySize: 1024,
+			TimestampField:     "EdgeStartTimestamp",
+			Attributes:         map[string]string{},
+			Separator:          ".",
+		},
+	}, &consumertest.LogsSink{})
+
+	rawLogs, err := parsePayload([]byte(payload))
+	require.NoError(t, err)
+	logs := recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+	botIDs, ok := attrs.Get("BotDetectionIDs")
+	require.True(t, ok, "BotDetectionIDs must be preserved as an attribute")
+	require.Equal(t, pcommon.ValueTypeSlice, botIDs.Type())
+	require.Equal(t, 3, botIDs.Slice().Len())
+
+	secActions, ok := attrs.Get("SecurityActions")
+	require.True(t, ok, "SecurityActions must be preserved as an attribute")
+	require.Equal(t, pcommon.ValueTypeSlice, secActions.Type())
+	require.Equal(t, []any{"block", "log"}, secActions.Slice().AsRaw())
+
+	secRuleIDs, ok := attrs.Get("SecurityRuleIDs")
+	require.True(t, ok, "SecurityRuleIDs must be preserved as an attribute")
+	require.Equal(t, pcommon.ValueTypeSlice, secRuleIDs.Type())
+	require.Equal(t, []any{"rule-a", "rule-b"}, secRuleIDs.Slice().AsRaw())
+}
