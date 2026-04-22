@@ -77,12 +77,15 @@ func (t *translator) loadTranslation(content *ast11.Schema) error {
 		if exist {
 			continue
 		}
+		rev, err := NewRevision(version, def)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
 		t.log.Debug("Creating new entry",
 			zap.Stringer("version", version),
 		)
-		t.indexes[*version], t.revisions = len(t.revisions), append(t.revisions,
-			*NewRevision(version, def),
-		)
+		t.indexes[*version], t.revisions = len(t.revisions), append(t.revisions, *rev)
 	}
 	sort.Sort(t)
 

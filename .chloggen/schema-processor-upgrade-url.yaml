@@ -1,0 +1,11 @@
+change_type: bug_fix
+component: processor/schema
+note: Fix upgrade path silently applying no changes due to fetching the incoming signal's schema file instead of the target schema file
+issues: [47427, 47632]
+subtext: |
+  When upgrading a signal to a newer target version, the processor was fetching the schema
+  file at the incoming signal's URL. Because OTel schema files only contain history up to
+  their own version, the translator found no applicable revisions and silently passed the
+  signal through unchanged. The processor now fetches the target schema URL on the upgrade
+  path, which contains the complete forward migration history.
+change_logs: [user]
