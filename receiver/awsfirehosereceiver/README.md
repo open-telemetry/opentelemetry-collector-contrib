@@ -96,8 +96,6 @@ The built-in `cwlogs` encoding is deprecated and will be removed in a future ver
 Use the [`aws_logs_encoding`](../../extension/encoding/awslogsencodingextension) extension with
 `format: cloudwatch` instead.
 
-When using `aws_logs_encoding`, the receiver detects and decompresses gzip-compressed Firehose records before invoking the extension.
-
 ```yaml
 extensions:
   aws_logs_encoding:
