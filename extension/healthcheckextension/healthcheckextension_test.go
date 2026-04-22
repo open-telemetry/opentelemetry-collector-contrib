@@ -249,8 +249,8 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 
 			require.NoError(t, hcExt.Start(t.Context(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
-				//nolint:usetesting // defer functions may run after test context is cancelled
-				require.NoError(t, hcExt.Shutdown(context.Background()))
+				// cleanup functions run after test context is cancelled
+				require.NoError(t, hcExt.Shutdown(context.WithoutCancel(t.Context())))
 			})
 
 			// Give a chance for the server goroutine to run.
