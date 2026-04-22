@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !linux
+//go:build !linux && !windows
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
@@ -23,5 +23,9 @@ func validatePlatformEnabledMetrics(cfg *Config, logger *zap.Logger) {
 	if cfg.Metrics.ProcessPagingFaults.Enabled {
 		logger.Warn("process.paging.faults is only supported on Linux; disabling metric on this platform")
 		cfg.Metrics.ProcessPagingFaults.Enabled = false
+	}
+	if cfg.Metrics.ProcessHandles.Enabled {
+		logger.Warn("process.handles is only supported on Windows; disabling metric on this platform")
+		cfg.Metrics.ProcessHandles.Enabled = false
 	}
 }

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build linux
+//go:build windows
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
@@ -16,8 +16,8 @@ import (
 // See https://github.com/open-telemetry/opentelemetry-collector/issues/15020;
 // replace this with the generated equivalent once it lands.
 func validatePlatformEnabledMetrics(cfg *Config, logger *zap.Logger) {
-	if cfg.Metrics.ProcessHandles.Enabled {
-		logger.Warn("process.handles is only supported on Windows; disabling metric on this platform")
-		cfg.Metrics.ProcessHandles.Enabled = false
+	if cfg.Metrics.ProcessContextSwitches.Enabled {
+		logger.Warn("process.context_switches is only supported on Linux; disabling metric on this platform")
+		cfg.Metrics.ProcessContextSwitches.Enabled = false
 	}
 }
