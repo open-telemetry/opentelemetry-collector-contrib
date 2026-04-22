@@ -26,6 +26,8 @@ type Config struct {
 type TriggersConfig struct {
 	// EventHub configures the Event Hub trigger: log bindings and their encodings.
 	EventHub *EventHubTriggerConfig `mapstructure:"event_hub"`
+
+	_ struct{} // prevent unkeyed literal initialization
 }
 
 // EventHubTriggerConfig holds configuration for the Event Hub trigger.
