@@ -69,6 +69,10 @@ type prometheusRemoteWriteReceiver struct {
 	bodyBufferPool *sync.Pool
 }
 
+// labelSeparator is used as a separator when building hashes from label values.
+// 0xff is chosen because it cannot appear in valid UTF-8, avoiding accidental collisions.
+const labelSeparator = "\xff"
+
 // scopeInfo holds instrumentation scope fields extracted from otel_scope_* labels.
 type scopeInfo struct {
 	Name       string
@@ -84,14 +88,13 @@ type attribute struct {
 }
 
 func (si scopeInfo) key() string {
-	const sep = "\xff"
 	const fixedFields = 3 // Name, Version, SchemaURL
 	parts := make([]string, 0, fixedFields+len(si.scopeAttrs))
 	parts = append(parts, si.Name, si.Version, si.SchemaURL)
 	for _, kv := range si.scopeAttrs {
-		parts = append(parts, kv.Key+sep+kv.Value)
+		parts = append(parts, kv.Key+labelSeparator+kv.Value)
 	}
-	return strings.Join(parts, sep)
+	return strings.Join(parts, labelSeparator)
 }
 
 // metricIdentity contains all the components that uniquely identify a metric
@@ -124,8 +127,6 @@ func createMetricIdentity(resourceID, metricName, unit string, si scopeInfo, met
 
 // Hash generates a unique hash for the metric identity
 func (mi metricIdentity) Hash() uint64 {
-	const separator = "\xff"
-
 	parts := []string{
 		mi.ResourceID,
 		mi.ScopeName,
@@ -136,9 +137,9 @@ func (mi metricIdentity) Hash() uint64 {
 		fmt.Sprintf("%d", mi.Type),
 	}
 	for _, kv := range mi.ScopeAttrs {
-		parts = append(parts, kv.Key+separator+kv.Value)
+		parts = append(parts, kv.Key+labelSeparator+kv.Value)
 	}
-	return xxhash.Sum64String(strings.Join(parts, separator))
+	return xxhash.Sum64String(strings.Join(parts, labelSeparator))
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -295,7 +296,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // from the LRU cache when available. Never returns cached objects to avoid shared
 // mutation across concurrent requests.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
-	hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+	hashedLabels := xxhash.Sum64String(ls.Get("job") + labelSeparator + ls.Get("instance"))
 
 	if rm, ok := reqRM[hashedLabels]; ok {
 		return rm, hashedLabels
