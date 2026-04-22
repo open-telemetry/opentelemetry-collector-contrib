@@ -2524,6 +2524,160 @@ func TestTranslateV2(t *testing.T) {
 				Exemplars:  0,
 			},
 		},
+		{
+			// otel_scope_schema_url must be set as the schema URL on the ScopeMetrics,
+			// not appear as a metric data point attribute.
+			name: "otel_scope_schema_url sets scope schema URL",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "myscope", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"otel_scope_schema_url", "https://example.com/schema/v1", // 11, 12
+					"extra_attr", "extra_value", // 13, 14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("myscope")
+				sm.Scope().SetVersion("v1")
+				sm.SetSchemaUrl("https://example.com/schema/v1")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_metric")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetDoubleValue(1.0)
+				dp.Attributes().PutStr("extra_attr", "extra_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Samples: 1},
+		},
+		{
+			// Labels with otel_scope_ prefix other than name/version/schema_url must become
+			// scope attributes (with the prefix stripped) and must NOT appear as metric point attributes.
+			name: "otel_scope_* extra labels become scope attributes",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "myscope", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"otel_scope_foo", "bar", // 11, 12  → scope attr "foo"="bar"
+					"regular_attr", "regular_value", // 13, 14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("myscope")
+				sm.Scope().SetVersion("v1")
+				sm.Scope().Attributes().PutStr("foo", "bar")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_metric")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetDoubleValue(1.0)
+				dp.Attributes().PutStr("regular_attr", "regular_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Samples: 1},
+		},
+		{
+			// All otel_scope_* label variants together (name, version, schema_url, extra attr).
+			name: "all otel_scope_* labels handled correctly for NHCB histogram",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_hist", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "histscope", // 7, 8
+					"otel_scope_version", "v2", // 9, 10
+					"otel_scope_schema_url", "https://example.com/schema/v2", // 11, 12
+					"otel_scope_lib", "mylib", // 13, 14  → scope attr "lib"="mylib"
+					"dp_attr", "dp_value", // 15, 16
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+						Histograms: []writev2.Histogram{
+							{
+								Schema:         -53, // NHCB
+								Count:          &writev2.Histogram_CountInt{CountInt: 2},
+								Sum:            3.0,
+								Timestamp:      1000,
+								CustomValues:   []float64{1.0},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveDeltas: []int64{1, 1},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("histscope")
+				sm.Scope().SetVersion("v2")
+				sm.SetSchemaUrl("https://example.com/schema/v2")
+				sm.Scope().Attributes().PutStr("lib", "mylib")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_hist")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				hist := metric.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1000 * int64(time.Millisecond)))
+				dp.SetSum(3.0)
+				dp.SetCount(2)
+				dp.ExplicitBounds().FromRaw([]float64{1.0})
+				dp.BucketCounts().FromRaw([]uint64{1, 2})
+				dp.Attributes().PutStr("dp_attr", "dp_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Histograms: 1},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
