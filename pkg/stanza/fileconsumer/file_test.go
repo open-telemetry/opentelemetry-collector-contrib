@@ -1730,3 +1730,68 @@ func TestCopyTruncateResetsOffsetOnRestart_IdenticalFirstKB(t *testing.T) {
 	}
 	sink2.ExpectNoCalls(t)
 }
+
+// TestSkipUnchangedPathByMtime verifies that with the gate enabled, a file
+// whose path+mtime is unchanged between polls skips the open/fingerprint/read
+// cycle on the second poll. Exercised by: first poll consumes the file and
+// stamps LastObservedPath/LastObservedMtime; second poll sees the same
+// path+mtime and the tracker's TryReuseByPathMtime handles reuse.
+func TestSkipUnchangedPathByMtime(t *testing.T) {
+	// NOT parallel — modifies global feature gate
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogSkipUnchangedPathByMtimeFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogSkipUnchangedPathByMtimeFeatureGate.ID(), false))
+	})
+
+	tempDir := t.TempDir()
+	cfg := NewConfig()
+	cfg.Include = []string{filepath.Join(tempDir, "*.log")}
+	cfg.StartAt = "beginning"
+
+	op, sink := testManager(t, cfg)
+	op.persister = testutil.NewUnscopedMockPersister()
+
+	path := filepath.Join(tempDir, "a.log")
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+	require.NoError(t, err)
+	filetest.WriteString(t, f, "line1\n")
+	require.NoError(t, f.Close())
+
+	// First poll: file is new, opens and reads. Metadata should be stamped.
+	op.poll(t.Context())
+	sink.ExpectToken(t, []byte("line1"))
+
+	// Inspect tracked metadata — one of the entries (the reader in
+	// previousPollFiles or its closed metadata) should have LastObservedPath
+	// set to our file and a non-zero LastObservedMtime.
+	var stampedMd *reader.Metadata
+	for _, md := range op.tracker.GetMetadata() {
+		if md.LastObservedPath == path {
+			stampedMd = md
+			break
+		}
+	}
+	require.NotNil(t, stampedMd, "expected at least one tracked metadata to carry LastObservedPath for the file")
+	require.False(t, stampedMd.LastObservedMtime.IsZero(), "expected LastObservedMtime to be stamped")
+	firstMtime := stampedMd.LastObservedMtime
+	firstOffset := stampedMd.Offset
+
+	// Second poll: file is unchanged. Because the gate is on and mtime matches,
+	// the tracker should reuse the metadata without opening the file again. No
+	// new tokens should appear.
+	op.poll(t.Context())
+	sink.ExpectNoCalls(t)
+
+	// The metadata should still be tracked (reuse path promotes it into the
+	// fresh generation). Offset and mtime should be unchanged.
+	var postReuseMd *reader.Metadata
+	for _, md := range op.tracker.GetMetadata() {
+		if md.LastObservedPath == path {
+			postReuseMd = md
+			break
+		}
+	}
+	require.NotNil(t, postReuseMd, "metadata should still be tracked after the skip poll")
+	assert.Equal(t, firstMtime, postReuseMd.LastObservedMtime, "mtime should be unchanged since the file was not modified")
+	assert.Equal(t, firstOffset, postReuseMd.Offset, "offset should be unchanged since no read happened")
+}

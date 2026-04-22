@@ -38,6 +38,14 @@ var FilelogProtobufCheckpointEncodingFeatureGate = featuregate.GlobalRegistry().
 	featuregate.WithRegisterFromVersion("v0.148.0"),
 )
 
+var FilelogSkipUnchangedPathByMtimeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"filelog.skipUnchangedPathByMtime",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, a file whose path+mtime is unchanged from a previously tracked reader (within the `knownFiles` generation window) is skipped during the poll: no open, no fingerprint, no read. The retained reader metadata is promoted into the current generation so it ages on the same schedule as if it had been processed."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47861"),
+	featuregate.WithRegisterFromVersion("v0.156.0"),
+)
+
 var FilelogWindowsCaseInsensitiveFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"filelog.windows.caseInsensitive",
 	featuregate.StageAlpha,

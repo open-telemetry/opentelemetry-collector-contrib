@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"slices"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -40,6 +41,15 @@ type Tracker interface {
 	TotalReaders() int
 	AddUnmatched(*os.File, *fingerprint.Fingerprint)
 	LookupArchive(context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata)
+
+	// TryReuseByPathMtime is called before opening and fingerprinting a path.
+	// If a previously tracked reader has LastObservedPath == path and
+	// LastObservedMtime == mtime, its metadata is promoted into the current
+	// generation (so it ages on the same schedule as if it had been processed)
+	// and the method returns true to signal the caller to skip this path.
+	// Callers should only invoke this when the filelog.skipUnchangedPathByMtime
+	// feature gate is enabled.
+	TryReuseByPathMtime(path string, mtime time.Time) bool
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -172,6 +182,82 @@ func (t *fileTracker) TotalReaders() int {
 	return total
 }
 
+// TryReuseByPathMtime searches previousPollFiles and every knownFiles
+// generation for a reader whose LastObservedPath and LastObservedMtime match
+// the given arguments. On match, the metadata is removed from wherever it was
+// found and re-added to knownFiles[0] so it ages in lock-step with files that
+// were processed this poll. A matching previous-poll reader is closed (its
+// file handle released) and only its Metadata is promoted. Returns true iff a
+// match was found.
+//
+// Intentionally does NOT consult the internal archive: that store's purpose
+// is fingerprint-based resume-identity for readers that have aged out of the
+// active generation window, and path+mtime lookup there would conflate
+// path-based identity with fingerprint-based identity (e.g. an archived
+// pre-rotation entry could share both path and mtime with a current
+// post-rotation file).
+func (t *fileTracker) TryReuseByPathMtime(path string, mtime time.Time) bool {
+	if path == "" {
+		return false
+	}
+
+	// previousPollFiles: Readers kept across polls for reread detection.
+	if idx := indexOfPathMtimeReader(t.previousPollFiles.Get(), path, mtime); idx >= 0 {
+		matched := t.previousPollFiles.Get()[idx]
+		t.previousPollFiles.RemoveAt(idx)
+		// Release the file handle and retain only Metadata; promote to knownFiles[0].
+		t.knownFiles[0].Add(matched.Close())
+		return true
+	}
+
+	// knownFiles generations. If found in knownFiles[0] we just leave it in
+	// place (already in the freshest generation). Otherwise we remove from the
+	// older generation and re-add to [0] so it ages fresh from here.
+	for i := 0; i < len(t.knownFiles); i++ {
+		idx := indexOfPathMtimeMetadata(t.knownFiles[i].Get(), path, mtime)
+		if idx < 0 {
+			continue
+		}
+		if i == 0 {
+			return true
+		}
+		matched := t.knownFiles[i].Get()[idx]
+		t.knownFiles[i].RemoveAt(idx)
+		t.knownFiles[0].Add(matched)
+		return true
+	}
+
+	return false
+}
+
+// indexOfPathMtimeReader finds the first Reader whose Metadata matches the
+// path+mtime pair, or -1 if none.
+func indexOfPathMtimeReader(rs []*reader.Reader, path string, mtime time.Time) int {
+	for i, r := range rs {
+		if r.Metadata == nil {
+			continue
+		}
+		if r.LastObservedPath == path && r.LastObservedMtime.Equal(mtime) {
+			return i
+		}
+	}
+	return -1
+}
+
+// indexOfPathMtimeMetadata finds the first Metadata matching the path+mtime
+// pair, or -1 if none.
+func indexOfPathMtimeMetadata(ms []*reader.Metadata, path string, mtime time.Time) int {
+	for i, m := range ms {
+		if m == nil {
+			continue
+		}
+		if m.LastObservedPath == path && m.LastObservedMtime.Equal(mtime) {
+			return i
+		}
+	}
+	return -1
+}
+
 // noStateTracker only tracks the current polled files. Once the poll is
 // complete and telemetry is consumed, the tracked files are closed. The next
 // poll will create fresh readers with no previously tracked offsets.
@@ -243,3 +329,7 @@ func (t *noStateTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint
 func (t *noStateTracker) LookupArchive(context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata) {
 	return t.unmatchedFiles, t.unmatchedFps, make([]*reader.Metadata, len(t.unmatchedFps))
 }
+
+// TryReuseByPathMtime always returns false for noStateTracker; there is no
+// persistent state to reuse across polls.
+func (*noStateTracker) TryReuseByPathMtime(string, time.Time) bool { return false }
