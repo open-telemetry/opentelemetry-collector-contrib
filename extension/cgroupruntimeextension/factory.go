@@ -6,6 +6,8 @@ package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
+	"time"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	gomaxecs "github.com/rdforte/gomaxecs/maxprocs"
@@ -53,10 +55,11 @@ func createExtension(_ context.Context, set extension.Settings, cfg component.Co
 				set.Logger.Debug(fmt.Sprintf(str, params))
 			}))
 		},
-		func(ratio float64) (int64, error) {
-			return memlimit.SetGoMemLimitWithOpts(
+		func(ratio float64, _ time.Duration) (undoFunc, error) {
+			initial, err := memlimit.SetGoMemLimitWithOpts(
 				memlimit.WithRatio(ratio),
 				memlimit.WithRefreshInterval(0),
 			)
+			return func() { debug.SetMemoryLimit(initial) }, err
 		}), nil
 }

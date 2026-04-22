@@ -30,7 +30,7 @@ func TestExtension(t *testing.T) {
 					Ratio:   0.5,
 				},
 			},
-			expectedCalls: 3,
+			expectedCalls: 4,
 		},
 		{
 			name: "everything disabled",
@@ -56,7 +56,7 @@ func TestExtension(t *testing.T) {
 					RefreshInterval: 15 * time.Second,
 				},
 			},
-			expectedCalls: 1,
+			expectedCalls: 2,
 		},
 	}
 
@@ -68,9 +68,9 @@ func TestExtension(t *testing.T) {
 				allCalls++
 				return func() { allCalls++ }, _err
 			}
-			memLimitSetterMock := func(_ float64) (int64, error) {
+			memLimitSetterMock := func(_ float64, _ time.Duration) (undoFunc, error) {
 				allCalls++
-				return 1000, _err
+				return func() { allCalls++ }, _err
 			}
 			settings := extensiontest.NewNopSettings(extensiontest.NopType)
 			cg := newCgroupRuntime(test.config, settings.Logger, maxProcsSetterMock, memLimitSetterMock)
@@ -100,9 +100,9 @@ func TestMemLimitRefreshStopsOnShutdown(t *testing.T) {
 	maxProcsSetterMock := func() (undoFunc, error) {
 		return func() {}, nil
 	}
-	memLimitSetterMock := func(_ float64) (int64, error) {
+	memLimitSetterMock := func(_ float64, _ time.Duration) (undoFunc, error) {
 		memLimitCalls.Add(1)
-		return 1000, nil
+		return func() {}, nil
 	}
 
 	settings := extensiontest.NewNopSettings(extensiontest.NopType)

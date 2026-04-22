@@ -16,7 +16,7 @@ import (
 type (
 	undoFunc            func()
 	maxProcsFn          func() (undoFunc, error)
-	memLimitWithRatioFn func(float64) (int64, error)
+	memLimitWithRatioFn func(float64, time.Duration) (undoFunc, error)
 )
 
 type cgroupRuntimeExtension struct {
@@ -28,10 +28,9 @@ type cgroupRuntimeExtension struct {
 	undoMaxProcsFn undoFunc
 
 	memLimitWithRatioFn
+	undoMemLimitFn        undoFunc
 	memLimitRefreshCancel context.CancelFunc
 	memLimitRefreshDone   chan struct{}
-	initialGoMemLimit     int64
-	isGoMemLimitSet       bool
 }
 
 func newCgroupRuntime(cfg *Config, logger *zap.Logger, maxProcsFn maxProcsFn, memLimitFn memLimitWithRatioFn) *cgroupRuntimeExtension {
@@ -43,7 +42,7 @@ func newCgroupRuntime(cfg *Config, logger *zap.Logger, maxProcsFn maxProcsFn, me
 	}
 }
 
-func (c *cgroupRuntimeExtension) Start(_ context.Context, _ component.Host) error {
+func (c *cgroupRuntimeExtension) Start(ctx context.Context, _ component.Host) error {
 	var err error
 	if c.config.GoMaxProcs.Enabled {
 		c.undoMaxProcsFn, err = c.maxProcsFn()
@@ -57,11 +56,10 @@ func (c *cgroupRuntimeExtension) Start(_ context.Context, _ component.Host) erro
 	}
 
 	if c.config.GoMemLimit.Enabled {
-		c.initialGoMemLimit, err = c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio)
+		c.undoMemLimitFn, err = c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio, c.config.GoMemLimit.RefreshInterval)
 		if err != nil {
 			return err
 		}
-		c.isGoMemLimitSet = true
 
 		c.logger.Info("GOMEMLIMIT has been set",
 			zap.Int64("GOMEMLIMIT", debug.SetMemoryLimit(-1)),
@@ -71,7 +69,7 @@ func (c *cgroupRuntimeExtension) Start(_ context.Context, _ component.Host) erro
 			// automemlimit.WithRefreshInterval currently starts an unmanaged goroutine.
 			// Keep refresh scheduling in this extension so it can be cleanly stopped in Shutdown.
 			// See: https://github.com/KimMachineGun/automemlimit/issues/29
-			refreshCtx, cancel := context.WithCancel(context.Background())
+			refreshCtx, cancel := context.WithCancel(ctx)
 			c.memLimitRefreshCancel = cancel
 			c.memLimitRefreshDone = make(chan struct{})
 			go c.refreshGoMemLimit(refreshCtx)
@@ -91,7 +89,7 @@ func (c *cgroupRuntimeExtension) refreshGoMemLimit(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if _, err := c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio); err != nil {
+			if _, err := c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio, c.config.GoMemLimit.RefreshInterval); err != nil {
 				c.logger.Warn("GOMEMLIMIT refresh failed", zap.Error(err))
 			}
 		}
@@ -107,8 +105,8 @@ func (c *cgroupRuntimeExtension) Shutdown(_ context.Context) error {
 	if c.undoMaxProcsFn != nil {
 		c.undoMaxProcsFn()
 	}
-	if c.isGoMemLimitSet {
-		debug.SetMemoryLimit(c.initialGoMemLimit)
+	if c.undoMemLimitFn != nil {
+		c.undoMemLimitFn()
 	}
 
 	return nil
