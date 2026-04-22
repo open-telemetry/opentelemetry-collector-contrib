@@ -307,7 +307,7 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 			metricFunc: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetName("test.counter")
-				m.SetUnit("bytes")
+				m.SetUnit("By")
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
@@ -322,7 +322,7 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 			metricFunc: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetName("test.counter")
-				m.SetUnit("bytes")
+				m.SetUnit("By")
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
@@ -337,7 +337,7 @@ func TestFromMetricsV2_TranslationStrategies(t *testing.T) {
 			metricFunc: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetName("test.counter")
-				m.SetUnit("bytes")
+				m.SetUnit("By")
 				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleValue(1.23)
