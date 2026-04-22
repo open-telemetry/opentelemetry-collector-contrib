@@ -1108,6 +1108,20 @@ func TestExtractionRules(t *testing.T) {
 				"service.namespace":   "annotation-namespace",
 			},
 		},
+		{
+			name:  "service-attributes-annotation-takes-precedence-over-labels",
+			rules: serviceRules,
+			additionalLabels: map[string]string{
+				"app.kubernetes.io/name": "label-service",
+			},
+			additionalAnnotations: map[string]string{
+				"resource.opentelemetry.io/service.name": "annotation-service",
+			},
+			attributes: map[string]string{
+				"service.name":      "annotation-service",
+				"service.namespace": "ns1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
