@@ -111,6 +111,38 @@ var (
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
+// isNativeProtocol returns true if the endpoint uses the ClickHouse native protocol
+// (clickhouse:// or tcp://), which sends data using FORMAT Native.
+func (cfg *Config) isNativeProtocol() bool {
+	dsnURL, err := url.Parse(cfg.Endpoint)
+	if err != nil {
+		return false
+	}
+	scheme := dsnURL.Scheme
+	return scheme == "clickhouse" || scheme == "tcp"
+}
+
+// isAsyncInsertEnabled returns true if async_insert is enabled via config,
+// endpoint query params, or connection_params.
+func (cfg *Config) isAsyncInsertEnabled() bool {
+	// Check connection_params first.
+	if v, ok := cfg.ConnectionParams["async_insert"]; ok {
+		return v == "1" || v == "true"
+	}
+
+	// Check endpoint query params.
+	dsnURL, err := url.Parse(cfg.Endpoint)
+	if err != nil {
+		return cfg.AsyncInsert
+	}
+	if dsnURL.Query().Has("async_insert") {
+		v := dsnURL.Query().Get("async_insert")
+		return v == "1" || v == "true"
+	}
+
+	return cfg.AsyncInsert
+}
+
 func createDefaultConfig() component.Config {
 	return &Config{
 		collectorVersion: "unknown",

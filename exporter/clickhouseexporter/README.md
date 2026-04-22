@@ -491,6 +491,31 @@ DDL can be found in the `internal/sqltemplates` package.
 All `Map` columns have been replaced with `JSON`.
 ClickHouse v25+ is recommended for reliable JSON support.
 
+## Known Limitations
+
+### async_insert with Native protocol
+
+The `async_insert` config option (default: `true`) may not behave as expected when using the ClickHouse native protocol (`clickhouse://` or `tcp://` schemes).
+
+The `clickhouse-go` driver uses `FORMAT Native` (binary columnar blocks) for batch inserts. ClickHouse's [async_insert](https://clickhouse.com/docs/optimize/asynchronous-inserts) is designed to buffer small text-based INSERT payloads (e.g., `FORMAT Values`, `FORMAT JSONEachRow`), but `FORMAT Native` sends a fully-formed data block that ClickHouse processes synchronously — bypassing the async_insert buffer entirely.
+
+**Impact:** Each batch INSERT creates a separate data part regardless of async_insert settings. With short batch timeouts (e.g., 5s), this can result in excessive part creation and merge storms, putting heavy I/O pressure on storage.
+
+**Workarounds:**
+1. **Increase batch timeout** — Setting `batch.timeout: 60s` in the batch processor significantly reduces part creation rate at the cost of increased dashboard latency.
+2. **Use HTTP protocol** — Using `http://host:8123` as the endpoint may allow async_insert to function as intended, since HTTP-based inserts use text-based formats that ClickHouse can buffer.
+
+**Diagnostic:** You can verify whether async_insert is effective by checking:
+```sql
+-- Should show entries if async_insert is working
+SELECT * FROM system.asynchronous_inserts;
+
+-- Check if FORMAT Native is being used
+SELECT query, Settings FROM system.query_log
+WHERE type = 'QueryFinish' AND query_kind = 'Insert'
+ORDER BY event_time DESC LIMIT 5 FORMAT Vertical;
+```
+
 ## Contributing
 
 Before contributing, review the contribution guidelines in [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md).

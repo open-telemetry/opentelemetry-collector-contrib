@@ -799,3 +799,113 @@ func TestBuildClickHouseOptions_WithCAFileOnly(t *testing.T) {
 	// No panic, but options may be nil since TLS setup failed early.
 	require.Nil(t, opt, "expected nil options when TLS setup fails cleanly")
 }
+
+func TestIsNativeProtocol(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		expected bool
+	}{
+		{
+			name:     "clickhouse scheme",
+			endpoint: "clickhouse://localhost:9000",
+			expected: true,
+		},
+		{
+			name:     "tcp scheme",
+			endpoint: "tcp://localhost:9000",
+			expected: true,
+		},
+		{
+			name:     "http scheme",
+			endpoint: "http://localhost:8123",
+			expected: false,
+		},
+		{
+			name:     "https scheme",
+			endpoint: "https://localhost:8443",
+			expected: false,
+		},
+		{
+			name:     "invalid endpoint",
+			endpoint: "://invalid",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = tt.endpoint
+			assert.Equal(t, tt.expected, cfg.isNativeProtocol())
+		})
+	}
+}
+
+func TestIsAsyncInsertEnabled(t *testing.T) {
+	tests := []struct {
+		name             string
+		endpoint         string
+		asyncInsert      bool
+		connectionParams map[string]string
+		expected         bool
+	}{
+		{
+			name:        "default config with native protocol",
+			endpoint:    "clickhouse://localhost:9000",
+			asyncInsert: true,
+			expected:    true,
+		},
+		{
+			name:        "explicitly disabled",
+			endpoint:    "clickhouse://localhost:9000",
+			asyncInsert: false,
+			expected:    false,
+		},
+		{
+			name:             "enabled via connection_params",
+			endpoint:         "clickhouse://localhost:9000",
+			asyncInsert:      false,
+			connectionParams: map[string]string{"async_insert": "1"},
+			expected:         true,
+		},
+		{
+			name:             "disabled via connection_params",
+			endpoint:         "clickhouse://localhost:9000",
+			asyncInsert:      true,
+			connectionParams: map[string]string{"async_insert": "0"},
+			expected:         false,
+		},
+		{
+			name:        "enabled via endpoint query param",
+			endpoint:    "clickhouse://localhost:9000?async_insert=1",
+			asyncInsert: false,
+			expected:    true,
+		},
+		{
+			name:        "disabled via endpoint query param",
+			endpoint:    "clickhouse://localhost:9000?async_insert=false",
+			asyncInsert: true,
+			expected:    false,
+		},
+		{
+			name:             "connection_params takes precedence over endpoint",
+			endpoint:         "clickhouse://localhost:9000?async_insert=0",
+			asyncInsert:      false,
+			connectionParams: map[string]string{"async_insert": "true"},
+			expected:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = tt.endpoint
+			cfg.AsyncInsert = tt.asyncInsert
+			if tt.connectionParams != nil {
+				cfg.ConnectionParams = tt.connectionParams
+			}
+			assert.Equal(t, tt.expected, cfg.isAsyncInsertEnabled())
+		})
+	}
+}

@@ -36,6 +36,19 @@ func NewFactory() exporter.Factory {
 	)
 }
 
+func warnIfAsyncInsertIneffective(logger *zap.Logger, c *Config) {
+	if c.isNativeProtocol() && c.isAsyncInsertEnabled() {
+		logger.Warn(
+			"async_insert is enabled but may be ineffective with native protocol. "+
+				"The clickhouse-go driver sends data using FORMAT Native, which ClickHouse processes "+
+				"synchronously, bypassing async_insert buffering. This can cause excessive part creation "+
+				"and merge pressure. Consider using HTTP protocol (http://host:8123) or increasing the "+
+				"batch processor timeout as a workaround. "+
+				"See: https://clickhouse.com/docs/optimize/asynchronous-inserts",
+		)
+	}
+}
+
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
@@ -43,6 +56,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
+	warnIfAsyncInsertIneffective(set.Logger, c)
 
 	var exp anyLogsExporter
 	if useJSON(set.Logger, c) {
@@ -71,6 +85,7 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
+	warnIfAsyncInsertIneffective(set.Logger, c)
 
 	var exp anyTracesExporter
 	if useJSON(set.Logger, c) {
@@ -107,6 +122,7 @@ func createMetricExporter(
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
 	c.collectorVersion = set.BuildInfo.Version
+	warnIfAsyncInsertIneffective(set.Logger, c)
 	exp := newMetricsExporter(set.Logger, c)
 
 	return exporterhelper.NewMetrics(
