@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/Khan/genqlient v0.8.1
+	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v84 v84.0.0
 	github.com/gorilla/mux v1.8.1
@@ -16,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.150.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/config/confignet v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/config/configopaque v1.56.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/config/configretry v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/confmap v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/consumer v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/consumer/consumertest v0.150.1-0.20260415114935-307e3abdbae9
@@ -40,7 +42,6 @@ require (
 	github.com/alexflint/go-scalar v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect

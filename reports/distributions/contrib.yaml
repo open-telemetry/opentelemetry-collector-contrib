@@ -161,7 +161,7 @@ components:
         - expvar
         - faro
         - file_log
-        - filestats
+        - file_stats
         - flinkmetrics
         - fluentforward
         - github
