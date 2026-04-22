@@ -1389,6 +1389,9 @@ func TestSupervisor_saveAndReportConfigStatus(t *testing.T) {
 	s := Supervisor{
 		telemetrySettings: newNopTelemetrySettings(),
 		config: config.Supervisor{
+			Agent: config.Agent{
+				AutomaticConfigRollback: true,
+			},
 			Capabilities: config.Capabilities{
 				ReportsRemoteConfig: true,
 			},
@@ -1970,6 +1973,9 @@ service:
 		s := Supervisor{
 			telemetrySettings: newNopTelemetrySettings(),
 			config: config.Supervisor{
+				Agent: config.Agent{
+					AutomaticConfigRollback: true,
+				},
 				Capabilities: config.Capabilities{
 					AcceptsRemoteConfig: true,
 				},

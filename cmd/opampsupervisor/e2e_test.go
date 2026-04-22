@@ -331,6 +331,11 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 
 				return n != 0
 			}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
+
+			require.Never(t, func() bool {
+				_, err := os.Stat(filepath.Join(storageDir, "last_working_remote_config.dat"))
+				return err == nil
+			}, time.Second, 100*time.Millisecond, "Last working remote config should not be persisted when automatic rollback is disabled")
 		})
 	}
 }
@@ -603,14 +608,16 @@ func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testi
 			)
 
 			extraConfigData := map[string]string{
-				"url":         firstServer.addr,
-				"storage_dir": storageDir,
+				"url":                       firstServer.addr,
+				"storage_dir":               storageDir,
+				"automatic_config_rollback": "true",
 			}
 			if mode.UseHUPConfigReload {
 				extraConfigData["use_hup_config_reload"] = "true"
 			}
 
 			firstSupervisor, supervisorCfg := newSupervisor(t, "basic", extraConfigData)
+			require.True(t, supervisorCfg.Agent.AutomaticConfigRollback)
 			if mode.UseHUPConfigReload {
 				require.True(t, supervisorCfg.Agent.UseHUPConfigReload)
 			}
@@ -691,8 +698,9 @@ func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testi
 			)
 
 			restartedSupervisor, restartedSupervisorCfg := newSupervisor(t, "basic", map[string]string{
-				"url":         restartServer.addr,
-				"storage_dir": storageDir,
+				"url":                       restartServer.addr,
+				"storage_dir":               storageDir,
+				"automatic_config_rollback": "true",
 				"use_hup_config_reload": func() string {
 					if mode.UseHUPConfigReload {
 						return "true"
@@ -700,6 +708,7 @@ func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testi
 					return ""
 				}(),
 			})
+			require.True(t, restartedSupervisorCfg.Agent.AutomaticConfigRollback)
 			if mode.UseHUPConfigReload {
 				require.True(t, restartedSupervisorCfg.Agent.UseHUPConfigReload)
 			}

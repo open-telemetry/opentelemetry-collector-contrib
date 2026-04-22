@@ -1308,19 +1308,25 @@ func (s *Supervisor) loadRemoteConfig() {
 		return
 	}
 
-	lastWorkingRemoteConfig, err := s.loadPersistedRemoteConfig(lastWorkingRemoteConfigFile)
-	switch {
-	case err == nil && lastWorkingRemoteConfig != nil:
-		s.lastWorkingRemoteConfig.Store(lastWorkingRemoteConfig)
-	case errors.Is(err, os.ErrNotExist):
-	case err != nil:
-		s.telemetrySettings.Logger.Error("Cannot parse last working remote config", zap.Error(err))
+	if s.config.Agent.AutomaticConfigRollback {
+		lastWorkingRemoteConfig, err := s.loadPersistedRemoteConfig(lastWorkingRemoteConfigFile)
+		switch {
+		case err == nil && lastWorkingRemoteConfig != nil:
+			s.lastWorkingRemoteConfig.Store(lastWorkingRemoteConfig)
+		case errors.Is(err, os.ErrNotExist):
+		case err != nil:
+			s.telemetrySettings.Logger.Error("Cannot parse last working remote config", zap.Error(err))
+		}
 	}
 
 	lastReceivedRemoteConfig, err := s.loadPersistedRemoteConfig(lastRecvRemoteConfigFile)
 	switch {
 	case err == nil && lastReceivedRemoteConfig != nil:
-		s.remoteConfig.Store(s.remoteConfigForStartup(lastReceivedRemoteConfig))
+		if s.config.Agent.AutomaticConfigRollback {
+			s.remoteConfig.Store(s.remoteConfigForStartup(lastReceivedRemoteConfig))
+		} else {
+			s.remoteConfig.Store(lastReceivedRemoteConfig)
+		}
 	case errors.Is(err, os.ErrNotExist):
 		s.telemetrySettings.Logger.Info("No last received remote config found")
 	default:
@@ -2001,7 +2007,7 @@ func (s *Supervisor) saveAndReportConfigStatus(status protobufs.RemoteConfigStat
 	if err := s.persistentState.SetLastRemoteConfigStatus(rcs); err != nil {
 		s.telemetrySettings.Logger.Error("Could not save last remote config status", zap.Error(err))
 	}
-	if status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED {
+	if s.config.Agent.AutomaticConfigRollback && status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED {
 		if err := s.saveLastWorkingRemoteConfig(remoteConfig); err != nil {
 			s.telemetrySettings.Logger.Error("Could not save last working remote config", zap.Error(err))
 		}
