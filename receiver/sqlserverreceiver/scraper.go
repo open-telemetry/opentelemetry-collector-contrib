@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -39,22 +38,21 @@ const (
 )
 
 type sqlServerScraperHelper struct {
-	id                     component.ID
-	config                 *Config
-	sqlQuery               string
-	instanceName           string
-	clientProviderFunc     sqlquery.ClientProviderFunc
-	dbProviderFunc         sqlquery.DbProviderFunc
-	logger                 *zap.Logger
-	telemetry              sqlquery.TelemetryConfig
-	client                 sqlquery.DbClient
-	db                     *sql.DB
-	mb                     *metadata.MetricsBuilder
-	lb                     *metadata.LogsBuilder
-	cache                  *lru.Cache[string, int64]
-	lastExecutionTimestamp time.Time
-	obfuscator             *obfuscator
-	serviceInstanceID      string
+	id                 component.ID
+	config             *Config
+	sqlQuery           string
+	instanceName       string
+	clientProviderFunc sqlquery.ClientProviderFunc
+	dbProviderFunc     sqlquery.DbProviderFunc
+	logger             *zap.Logger
+	telemetry          sqlquery.TelemetryConfig
+	client             sqlquery.DbClient
+	db                 *sql.DB
+	mb                 *metadata.MetricsBuilder
+	lb                 *metadata.LogsBuilder
+	cache              *lru.Cache[string, int64]
+	obfuscator         *obfuscator
+	serviceInstanceID  string
 }
 
 var (
@@ -79,19 +77,18 @@ func newSQLServerScraper(id component.ID,
 	}
 
 	return &sqlServerScraperHelper{
-		id:                     id,
-		config:                 cfg,
-		sqlQuery:               query,
-		logger:                 params.Logger,
-		telemetry:              telemetry,
-		dbProviderFunc:         dbProviderFunc,
-		clientProviderFunc:     clientProviderFunc,
-		mb:                     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		lb:                     metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
-		cache:                  cache,
-		lastExecutionTimestamp: time.Unix(0, 0),
-		obfuscator:             newObfuscator(),
-		serviceInstanceID:      serviceInstanceID,
+		id:                 id,
+		config:             cfg,
+		sqlQuery:           query,
+		logger:             params.Logger,
+		telemetry:          telemetry,
+		dbProviderFunc:     dbProviderFunc,
+		clientProviderFunc: clientProviderFunc,
+		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                 metadata.NewLogsBuilder(cfg.LogsBuilderConfig, params),
+		cache:              cache,
+		obfuscator:         newObfuscator(),
+		serviceInstanceID:  serviceInstanceID,
 	}
 }
 
@@ -139,10 +136,6 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	var isQuerySample bool
 	switch s.sqlQuery {
 	case getSQLServerQueryTextAndPlanQuery():
-		if int(math.Ceil(time.Since(s.lastExecutionTimestamp).Seconds())) < int(s.config.TopQueryCollection.CollectionInterval.Seconds()) {
-			s.logger.Debug("Skipping the collection of top queries because the current time has not yet exceeded the last execution time plus the specified collection interval")
-			return plog.NewLogs(), nil
-		}
 		resources, err = s.recordDatabaseQueryTextAndPlan(ctx)
 	case getSQLServerQuerySamplesQuery():
 		isQuerySample = true
@@ -849,7 +842,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	resourcesAdded := false
 	now := time.Now()
 	timestamp := pcommon.NewTimestampFromTime(now)
-	s.lastExecutionTimestamp = now
 	for i, row := range rows {
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
@@ -1117,7 +1109,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			return resources, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
 		}
 		// in case the sql returned rows contains null value, we just log a warning and continue
-		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
+		//s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 
 	var errs []error

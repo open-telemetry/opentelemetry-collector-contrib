@@ -30,7 +30,7 @@ func createMetricsReceiver(
 	}
 	sqlServerScraper := newSQLServerPCScraper(params, cfg)
 
-	scraper, err := scraper.NewMetrics(sqlServerScraper.scrape,
+	metricsScraper, err := scraper.NewMetrics(sqlServerScraper.scrape,
 		scraper.WithStart(sqlServerScraper.start),
 		scraper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {
@@ -42,7 +42,13 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, scraperhelper.AddMetricsScraper(metadata.Type, scraper))
+	opts = append(opts, scraperhelper.AddFactoryWithCollectionInterval(
+		scraper.NewFactory(metadata.Type, nil,
+			scraper.WithMetrics(func(context.Context, scraper.Settings, component.Config) (scraper.Metrics, error) {
+				return metricsScraper, nil
+			}, component.StabilityLevelAlpha)),
+		nil,
+		0))
 
 	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig,

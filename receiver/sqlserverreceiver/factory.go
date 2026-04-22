@@ -211,7 +211,15 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 			return nil, err
 		}
 
-		opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
+		iv := metricsScrapeIntervalForQuery(cfg, sqlScraper.sqlQuery)
+		opt := scraperhelper.AddFactoryWithCollectionInterval(
+			scraper.NewFactory(metadata.Type, nil,
+				scraper.WithMetrics(func(context.Context, scraper.Settings, component.Config) (scraper.Metrics, error) {
+					return s, nil
+				}, component.StabilityLevelAlpha)),
+			nil,
+			iv,
+		)
 		opts = append(opts, opt)
 	}
 
@@ -233,11 +241,15 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 			return nil, err
 		}
 
-		opt := scraperhelper.AddFactoryWithConfig(
+		iv := logsScrapeIntervalForQuery(cfg, sqlScraper.sqlQuery)
+		opt := scraperhelper.AddFactoryWithCollectionInterval(
 			scraper.NewFactory(metadata.Type, nil,
 				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
 					return s, nil
-				}, component.StabilityLevelAlpha)), nil)
+				}, component.StabilityLevelAlpha)),
+			nil,
+			iv,
+		)
 		opts = append(opts, opt)
 	}
 

@@ -83,6 +83,10 @@ func (cfg *Config) Validate() error {
 		return errors.New("`top_query_collection.collection_interval` must not be less than 0")
 	}
 
+	if cfg.Events.DbServerQuerySample.CollectionInterval < 0 || cfg.Events.DbServerTopQuery.CollectionInterval < 0 {
+		return errors.New("`events` collection_interval must not be negative")
+	}
+
 	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)
 
 	return err

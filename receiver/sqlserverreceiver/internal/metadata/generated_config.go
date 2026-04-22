@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
@@ -11,8 +12,11 @@ import (
 
 // SqlserverBatchRequestRateMetricConfig provides config for the sqlserver.batch.request.rate metric.
 type SqlserverBatchRequestRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverBatchRequestRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -31,8 +35,11 @@ func (ms *SqlserverBatchRequestRateMetricConfig) Unmarshal(parser *confmap.Conf)
 
 // SqlserverBatchSQLCompilationRateMetricConfig provides config for the sqlserver.batch.sql_compilation.rate metric.
 type SqlserverBatchSQLCompilationRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverBatchSQLCompilationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -51,8 +58,11 @@ func (ms *SqlserverBatchSQLCompilationRateMetricConfig) Unmarshal(parser *confma
 
 // SqlserverBatchSQLRecompilationRateMetricConfig provides config for the sqlserver.batch.sql_recompilation.rate metric.
 type SqlserverBatchSQLRecompilationRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverBatchSQLRecompilationRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -71,8 +81,11 @@ func (ms *SqlserverBatchSQLRecompilationRateMetricConfig) Unmarshal(parser *conf
 
 // SqlserverComputerUptimeMetricConfig provides config for the sqlserver.computer.uptime metric.
 type SqlserverComputerUptimeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverComputerUptimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -91,8 +104,11 @@ func (ms *SqlserverComputerUptimeMetricConfig) Unmarshal(parser *confmap.Conf) e
 
 // SqlserverCPUCountMetricConfig provides config for the sqlserver.cpu.count metric.
 type SqlserverCPUCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverCPUCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -111,8 +127,11 @@ func (ms *SqlserverCPUCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // SqlserverDatabaseBackupOrRestoreRateMetricConfig provides config for the sqlserver.database.backup_or_restore.rate metric.
 type SqlserverDatabaseBackupOrRestoreRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverDatabaseBackupOrRestoreRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -138,8 +157,11 @@ const (
 
 // SqlserverDatabaseCountMetricConfig provides config for the sqlserver.database.count metric.
 type SqlserverDatabaseCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                     `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverDatabaseCountMetricAttributeKey `mapstructure:"attributes"`
@@ -179,8 +201,11 @@ func (ms *SqlserverDatabaseCountMetricConfig) Validate() error {
 
 // SqlserverDatabaseExecutionErrorsMetricConfig provides config for the sqlserver.database.execution.errors metric.
 type SqlserverDatabaseExecutionErrorsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverDatabaseExecutionErrorsMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -199,8 +224,11 @@ func (ms *SqlserverDatabaseExecutionErrorsMetricConfig) Unmarshal(parser *confma
 
 // SqlserverDatabaseFullScanRateMetricConfig provides config for the sqlserver.database.full_scan.rate metric.
 type SqlserverDatabaseFullScanRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverDatabaseFullScanRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -229,8 +257,11 @@ const (
 
 // SqlserverDatabaseIoMetricConfig provides config for the sqlserver.database.io metric.
 type SqlserverDatabaseIoMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverDatabaseIoMetricAttributeKey `mapstructure:"attributes"`
@@ -280,8 +311,11 @@ const (
 
 // SqlserverDatabaseLatencyMetricConfig provides config for the sqlserver.database.latency metric.
 type SqlserverDatabaseLatencyMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverDatabaseLatencyMetricAttributeKey `mapstructure:"attributes"`
@@ -331,8 +365,11 @@ const (
 
 // SqlserverDatabaseOperationsMetricConfig provides config for the sqlserver.database.operations metric.
 type SqlserverDatabaseOperationsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverDatabaseOperationsMetricAttributeKey `mapstructure:"attributes"`
@@ -379,8 +416,11 @@ const (
 
 // SqlserverDatabaseTempdbSpaceMetricConfig provides config for the sqlserver.database.tempdb.space metric.
 type SqlserverDatabaseTempdbSpaceMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                           `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverDatabaseTempdbSpaceMetricAttributeKey `mapstructure:"attributes"`
@@ -420,8 +460,11 @@ func (ms *SqlserverDatabaseTempdbSpaceMetricConfig) Validate() error {
 
 // SqlserverDatabaseTempdbVersionStoreSizeMetricConfig provides config for the sqlserver.database.tempdb.version_store.size metric.
 type SqlserverDatabaseTempdbVersionStoreSizeMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverDatabaseTempdbVersionStoreSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -440,8 +483,11 @@ func (ms *SqlserverDatabaseTempdbVersionStoreSizeMetricConfig) Unmarshal(parser 
 
 // SqlserverDeadlockRateMetricConfig provides config for the sqlserver.deadlock.rate metric.
 type SqlserverDeadlockRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -460,8 +506,11 @@ func (ms *SqlserverDeadlockRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 
 // SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric.
 type SqlserverIndexSearchRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverIndexSearchRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -480,8 +529,11 @@ func (ms *SqlserverIndexSearchRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 
 // SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric.
 type SqlserverLockTimeoutRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverLockTimeoutRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -500,8 +552,11 @@ func (ms *SqlserverLockTimeoutRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 
 // SqlserverLockWaitCountMetricConfig provides config for the sqlserver.lock.wait.count metric.
 type SqlserverLockWaitCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -520,8 +575,11 @@ func (ms *SqlserverLockWaitCountMetricConfig) Unmarshal(parser *confmap.Conf) er
 
 // SqlserverLockWaitRateMetricConfig provides config for the sqlserver.lock.wait.rate metric.
 type SqlserverLockWaitRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverLockWaitRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -540,8 +598,11 @@ func (ms *SqlserverLockWaitRateMetricConfig) Unmarshal(parser *confmap.Conf) err
 
 // SqlserverLockWaitTimeAvgMetricConfig provides config for the sqlserver.lock.wait_time.avg metric.
 type SqlserverLockWaitTimeAvgMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverLockWaitTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -560,8 +621,11 @@ func (ms *SqlserverLockWaitTimeAvgMetricConfig) Unmarshal(parser *confmap.Conf) 
 
 // SqlserverLoginRateMetricConfig provides config for the sqlserver.login.rate metric.
 type SqlserverLoginRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverLoginRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -580,8 +644,11 @@ func (ms *SqlserverLoginRateMetricConfig) Unmarshal(parser *confmap.Conf) error 
 
 // SqlserverLogoutRateMetricConfig provides config for the sqlserver.logout.rate metric.
 type SqlserverLogoutRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverLogoutRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -600,8 +667,11 @@ func (ms *SqlserverLogoutRateMetricConfig) Unmarshal(parser *confmap.Conf) error
 
 // SqlserverMemoryGrantsPendingCountMetricConfig provides config for the sqlserver.memory.grants.pending.count metric.
 type SqlserverMemoryGrantsPendingCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverMemoryGrantsPendingCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -620,8 +690,11 @@ func (ms *SqlserverMemoryGrantsPendingCountMetricConfig) Unmarshal(parser *confm
 
 // SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric.
 type SqlserverMemoryUsageMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -648,8 +721,11 @@ const (
 
 // SqlserverOsWaitDurationMetricConfig provides config for the sqlserver.os.wait.duration metric.
 type SqlserverOsWaitDurationMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                      `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverOsWaitDurationMetricAttributeKey `mapstructure:"attributes"`
@@ -689,8 +765,11 @@ func (ms *SqlserverOsWaitDurationMetricConfig) Validate() error {
 
 // SqlserverPageBufferCacheFreeListStallsRateMetricConfig provides config for the sqlserver.page.buffer_cache.free_list.stalls.rate metric.
 type SqlserverPageBufferCacheFreeListStallsRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverPageBufferCacheFreeListStallsRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -709,8 +788,11 @@ func (ms *SqlserverPageBufferCacheFreeListStallsRateMetricConfig) Unmarshal(pars
 
 // SqlserverPageBufferCacheHitRatioMetricConfig provides config for the sqlserver.page.buffer_cache.hit_ratio metric.
 type SqlserverPageBufferCacheHitRatioMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverPageBufferCacheHitRatioMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -729,8 +811,11 @@ func (ms *SqlserverPageBufferCacheHitRatioMetricConfig) Unmarshal(parser *confma
 
 // SqlserverPageCheckpointFlushRateMetricConfig provides config for the sqlserver.page.checkpoint.flush.rate metric.
 type SqlserverPageCheckpointFlushRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverPageCheckpointFlushRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -749,8 +834,11 @@ func (ms *SqlserverPageCheckpointFlushRateMetricConfig) Unmarshal(parser *confma
 
 // SqlserverPageLazyWriteRateMetricConfig provides config for the sqlserver.page.lazy_write.rate metric.
 type SqlserverPageLazyWriteRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverPageLazyWriteRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -776,8 +864,11 @@ const (
 
 // SqlserverPageLifeExpectancyMetricConfig provides config for the sqlserver.page.life_expectancy metric.
 type SqlserverPageLifeExpectancyMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                          `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverPageLifeExpectancyMetricAttributeKey `mapstructure:"attributes"`
@@ -817,8 +908,11 @@ func (ms *SqlserverPageLifeExpectancyMetricConfig) Validate() error {
 
 // SqlserverPageLookupRateMetricConfig provides config for the sqlserver.page.lookup.rate metric.
 type SqlserverPageLookupRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverPageLookupRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -844,8 +938,11 @@ const (
 
 // SqlserverPageOperationRateMetricConfig provides config for the sqlserver.page.operation.rate metric.
 type SqlserverPageOperationRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                         `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverPageOperationRateMetricAttributeKey `mapstructure:"attributes"`
@@ -885,8 +982,11 @@ func (ms *SqlserverPageOperationRateMetricConfig) Validate() error {
 
 // SqlserverPageSplitRateMetricConfig provides config for the sqlserver.page.split.rate metric.
 type SqlserverPageSplitRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverPageSplitRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -905,8 +1005,11 @@ func (ms *SqlserverPageSplitRateMetricConfig) Unmarshal(parser *confmap.Conf) er
 
 // SqlserverProcessesBlockedMetricConfig provides config for the sqlserver.processes.blocked metric.
 type SqlserverProcessesBlockedMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverProcessesBlockedMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -932,8 +1035,11 @@ const (
 
 // SqlserverReplicaDataRateMetricConfig provides config for the sqlserver.replica.data.rate metric.
 type SqlserverReplicaDataRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverReplicaDataRateMetricAttributeKey `mapstructure:"attributes"`
@@ -980,8 +1086,11 @@ const (
 
 // SqlserverResourcePoolDiskOperationsMetricConfig provides config for the sqlserver.resource_pool.disk.operations metric.
 type SqlserverResourcePoolDiskOperationsMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                                  `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverResourcePoolDiskOperationsMetricAttributeKey `mapstructure:"attributes"`
@@ -1021,8 +1130,11 @@ func (ms *SqlserverResourcePoolDiskOperationsMetricConfig) Validate() error {
 
 // SqlserverResourcePoolDiskThrottledReadRateMetricConfig provides config for the sqlserver.resource_pool.disk.throttled.read.rate metric.
 type SqlserverResourcePoolDiskThrottledReadRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverResourcePoolDiskThrottledReadRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1041,8 +1153,11 @@ func (ms *SqlserverResourcePoolDiskThrottledReadRateMetricConfig) Unmarshal(pars
 
 // SqlserverResourcePoolDiskThrottledWriteRateMetricConfig provides config for the sqlserver.resource_pool.disk.throttled.write.rate metric.
 type SqlserverResourcePoolDiskThrottledWriteRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverResourcePoolDiskThrottledWriteRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1069,8 +1184,11 @@ const (
 
 // SqlserverTableCountMetricConfig provides config for the sqlserver.table.count metric.
 type SqlserverTableCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 
 	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
 	EnabledAttributes   []SqlserverTableCountMetricAttributeKey `mapstructure:"attributes"`
@@ -1110,8 +1228,11 @@ func (ms *SqlserverTableCountMetricConfig) Validate() error {
 
 // SqlserverTransactionDelayMetricConfig provides config for the sqlserver.transaction.delay metric.
 type SqlserverTransactionDelayMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionDelayMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1130,8 +1251,11 @@ func (ms *SqlserverTransactionDelayMetricConfig) Unmarshal(parser *confmap.Conf)
 
 // SqlserverTransactionMirrorWriteRateMetricConfig provides config for the sqlserver.transaction.mirror_write.rate metric.
 type SqlserverTransactionMirrorWriteRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionMirrorWriteRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1150,8 +1274,11 @@ func (ms *SqlserverTransactionMirrorWriteRateMetricConfig) Unmarshal(parser *con
 
 // SqlserverTransactionRateMetricConfig provides config for the sqlserver.transaction.rate metric.
 type SqlserverTransactionRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1170,8 +1297,11 @@ func (ms *SqlserverTransactionRateMetricConfig) Unmarshal(parser *confmap.Conf) 
 
 // SqlserverTransactionWriteRateMetricConfig provides config for the sqlserver.transaction.write.rate metric.
 type SqlserverTransactionWriteRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionWriteRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1190,8 +1320,11 @@ func (ms *SqlserverTransactionWriteRateMetricConfig) Unmarshal(parser *confmap.C
 
 // SqlserverTransactionLogFlushDataRateMetricConfig provides config for the sqlserver.transaction_log.flush.data.rate metric.
 type SqlserverTransactionLogFlushDataRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionLogFlushDataRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1210,8 +1343,11 @@ func (ms *SqlserverTransactionLogFlushDataRateMetricConfig) Unmarshal(parser *co
 
 // SqlserverTransactionLogFlushRateMetricConfig provides config for the sqlserver.transaction_log.flush.rate metric.
 type SqlserverTransactionLogFlushRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionLogFlushRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1230,8 +1366,11 @@ func (ms *SqlserverTransactionLogFlushRateMetricConfig) Unmarshal(parser *confma
 
 // SqlserverTransactionLogFlushWaitRateMetricConfig provides config for the sqlserver.transaction_log.flush.wait.rate metric.
 type SqlserverTransactionLogFlushWaitRateMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionLogFlushWaitRateMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1250,8 +1389,11 @@ func (ms *SqlserverTransactionLogFlushWaitRateMetricConfig) Unmarshal(parser *co
 
 // SqlserverTransactionLogGrowthCountMetricConfig provides config for the sqlserver.transaction_log.growth.count metric.
 type SqlserverTransactionLogGrowthCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionLogGrowthCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1270,8 +1412,11 @@ func (ms *SqlserverTransactionLogGrowthCountMetricConfig) Unmarshal(parser *conf
 
 // SqlserverTransactionLogShrinkCountMetricConfig provides config for the sqlserver.transaction_log.shrink.count metric.
 type SqlserverTransactionLogShrinkCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionLogShrinkCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1290,8 +1435,11 @@ func (ms *SqlserverTransactionLogShrinkCountMetricConfig) Unmarshal(parser *conf
 
 // SqlserverTransactionLogUsageMetricConfig provides config for the sqlserver.transaction_log.usage metric.
 type SqlserverTransactionLogUsageMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverTransactionLogUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1310,8 +1458,11 @@ func (ms *SqlserverTransactionLogUsageMetricConfig) Unmarshal(parser *confmap.Co
 
 // SqlserverUserConnectionCountMetricConfig provides config for the sqlserver.user.connection.count metric.
 type SqlserverUserConnectionCountMetricConfig struct {
-	Enabled          bool `mapstructure:"enabled"`
-	enabledSetByUser bool
+	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this metric is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	enabledSetByUser   bool
 }
 
 func (ms *SqlserverUserConnectionCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -1562,6 +1713,9 @@ func DefaultMetricsConfig() MetricsConfig {
 // EventConfig provides common config for a particular event.
 type EventConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// CollectionInterval sets how frequently this event is scraped when using a scraper controller.
+	// Zero uses the receiver-level collection_interval.
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 
 	enabledSetByUser bool
 }

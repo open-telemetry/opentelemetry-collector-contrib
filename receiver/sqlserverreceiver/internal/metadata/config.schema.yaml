@@ -11,6 +11,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.batch.sql_compilation.rate:
         description: "SqlserverBatchSQLCompilationRateMetricConfig provides config for the sqlserver.batch.sql_compilation.rate metric."
         type: object
@@ -18,6 +23,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.batch.sql_recompilation.rate:
         description: "SqlserverBatchSQLRecompilationRateMetricConfig provides config for the sqlserver.batch.sql_recompilation.rate metric."
         type: object
@@ -25,6 +35,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.computer.uptime:
         description: "SqlserverComputerUptimeMetricConfig provides config for the sqlserver.computer.uptime metric."
         type: object
@@ -32,6 +47,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.cpu.count:
         description: "SqlserverCPUCountMetricConfig provides config for the sqlserver.cpu.count metric."
         type: object
@@ -39,6 +59,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.database.backup_or_restore.rate:
         description: "SqlserverDatabaseBackupOrRestoreRateMetricConfig provides config for the sqlserver.database.backup_or_restore.rate metric."
         type: object
@@ -46,6 +71,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.database.count:
         description: "SqlserverDatabaseCountMetricConfig provides config for the sqlserver.database.count metric."
         type: object
@@ -53,6 +83,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -76,6 +111,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.database.full_scan.rate:
         description: "SqlserverDatabaseFullScanRateMetricConfig provides config for the sqlserver.database.full_scan.rate metric."
         type: object
@@ -83,6 +123,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.database.io:
         description: "SqlserverDatabaseIoMetricConfig provides config for the sqlserver.database.io metric."
         type: object
@@ -90,6 +135,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -119,6 +169,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -148,6 +203,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -177,6 +237,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -200,6 +265,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.deadlock.rate:
         description: "SqlserverDeadlockRateMetricConfig provides config for the sqlserver.deadlock.rate metric."
         type: object
@@ -207,6 +277,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.index.search.rate:
         description: "SqlserverIndexSearchRateMetricConfig provides config for the sqlserver.index.search.rate metric."
         type: object
@@ -214,6 +289,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.lock.timeout.rate:
         description: "SqlserverLockTimeoutRateMetricConfig provides config for the sqlserver.lock.timeout.rate metric."
         type: object
@@ -221,6 +301,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.lock.wait.count:
         description: "SqlserverLockWaitCountMetricConfig provides config for the sqlserver.lock.wait.count metric."
         type: object
@@ -228,6 +313,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.lock.wait.rate:
         description: "SqlserverLockWaitRateMetricConfig provides config for the sqlserver.lock.wait.rate metric."
         type: object
@@ -235,6 +325,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.lock.wait_time.avg:
         description: "SqlserverLockWaitTimeAvgMetricConfig provides config for the sqlserver.lock.wait_time.avg metric."
         type: object
@@ -242,6 +337,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.login.rate:
         description: "SqlserverLoginRateMetricConfig provides config for the sqlserver.login.rate metric."
         type: object
@@ -249,6 +349,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.logout.rate:
         description: "SqlserverLogoutRateMetricConfig provides config for the sqlserver.logout.rate metric."
         type: object
@@ -256,6 +361,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.memory.grants.pending.count:
         description: "SqlserverMemoryGrantsPendingCountMetricConfig provides config for the sqlserver.memory.grants.pending.count metric."
         type: object
@@ -263,6 +373,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.memory.usage:
         description: "SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric."
         type: object
@@ -270,6 +385,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.os.wait.duration:
         description: "SqlserverOsWaitDurationMetricConfig provides config for the sqlserver.os.wait.duration metric."
         type: object
@@ -277,6 +397,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -302,6 +427,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.page.buffer_cache.hit_ratio:
         description: "SqlserverPageBufferCacheHitRatioMetricConfig provides config for the sqlserver.page.buffer_cache.hit_ratio metric."
         type: object
@@ -309,6 +439,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.page.checkpoint.flush.rate:
         description: "SqlserverPageCheckpointFlushRateMetricConfig provides config for the sqlserver.page.checkpoint.flush.rate metric."
         type: object
@@ -316,6 +451,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.page.lazy_write.rate:
         description: "SqlserverPageLazyWriteRateMetricConfig provides config for the sqlserver.page.lazy_write.rate metric."
         type: object
@@ -323,6 +463,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.page.life_expectancy:
         description: "SqlserverPageLifeExpectancyMetricConfig provides config for the sqlserver.page.life_expectancy metric."
         type: object
@@ -330,6 +475,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -353,6 +503,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.page.operation.rate:
         description: "SqlserverPageOperationRateMetricConfig provides config for the sqlserver.page.operation.rate metric."
         type: object
@@ -360,6 +515,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -383,6 +543,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.processes.blocked:
         description: "SqlserverProcessesBlockedMetricConfig provides config for the sqlserver.processes.blocked metric."
         type: object
@@ -390,6 +555,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.replica.data.rate:
         description: "SqlserverReplicaDataRateMetricConfig provides config for the sqlserver.replica.data.rate metric."
         type: object
@@ -397,6 +567,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -420,6 +595,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -443,6 +623,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.resource_pool.disk.throttled.write.rate:
         description: "SqlserverResourcePoolDiskThrottledWriteRateMetricConfig provides config for the sqlserver.resource_pool.disk.throttled.write.rate metric."
         type: object
@@ -450,6 +635,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.table.count:
         description: "SqlserverTableCountMetricConfig provides config for the sqlserver.table.count metric."
         type: object
@@ -457,6 +647,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
           aggregation_strategy:
             type: string
             enum:
@@ -482,6 +677,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction.mirror_write.rate:
         description: "SqlserverTransactionMirrorWriteRateMetricConfig provides config for the sqlserver.transaction.mirror_write.rate metric."
         type: object
@@ -489,6 +689,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction.rate:
         description: "SqlserverTransactionRateMetricConfig provides config for the sqlserver.transaction.rate metric."
         type: object
@@ -496,6 +701,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction.write.rate:
         description: "SqlserverTransactionWriteRateMetricConfig provides config for the sqlserver.transaction.write.rate metric."
         type: object
@@ -503,6 +713,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction_log.flush.data.rate:
         description: "SqlserverTransactionLogFlushDataRateMetricConfig provides config for the sqlserver.transaction_log.flush.data.rate metric."
         type: object
@@ -510,6 +725,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction_log.flush.rate:
         description: "SqlserverTransactionLogFlushRateMetricConfig provides config for the sqlserver.transaction_log.flush.rate metric."
         type: object
@@ -517,6 +737,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction_log.flush.wait.rate:
         description: "SqlserverTransactionLogFlushWaitRateMetricConfig provides config for the sqlserver.transaction_log.flush.wait.rate metric."
         type: object
@@ -524,6 +749,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction_log.growth.count:
         description: "SqlserverTransactionLogGrowthCountMetricConfig provides config for the sqlserver.transaction_log.growth.count metric."
         type: object
@@ -531,6 +761,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction_log.shrink.count:
         description: "SqlserverTransactionLogShrinkCountMetricConfig provides config for the sqlserver.transaction_log.shrink.count metric."
         type: object
@@ -538,6 +773,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.transaction_log.usage:
         description: "SqlserverTransactionLogUsageMetricConfig provides config for the sqlserver.transaction_log.usage metric."
         type: object
@@ -545,6 +785,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       sqlserver.user.connection.count:
         description: "SqlserverUserConnectionCountMetricConfig provides config for the sqlserver.user.connection.count metric."
         type: object
@@ -552,6 +797,11 @@ $defs:
           enabled:
             type: boolean
             default: true
+          collection_interval:
+            description: Optional scrape interval for this metric; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
   events_config:
     description: EventsConfig provides config for sqlserver events.
     type: object
@@ -563,6 +813,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this event; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
       db.server.top_query:
         description: EventConfig provides common config for a  db.server.top_query event.
         type: object
@@ -570,6 +825,11 @@ $defs:
           enabled:
             type: boolean
             default: false
+          collection_interval:
+            description: Optional scrape interval for this event; zero uses the receiver collection_interval.
+            type: string
+            x-customType: time.Duration
+            format: duration
   resource_attributes_config:
     description: ResourceAttributesConfig provides config for sqlserver resource attributes.
     type: object
