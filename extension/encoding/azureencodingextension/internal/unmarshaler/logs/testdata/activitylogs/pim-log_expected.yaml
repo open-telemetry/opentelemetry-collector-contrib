@@ -1,0 +1,353 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000001/RESOURCEGROUPS/myresourcegroupname/PROVIDERS/MICROSOFT.KEYVAULT/VAULTS/mykeyvaultname
+        - key: cloud.region
+          value:
+            stringValue: global
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: Administrative
+              - key: azure.operation.name
+                value:
+                  stringValue: Remove member from role (PIM activation expired)
+              - key: azure.result.type
+                value:
+                  stringValue: Succeeded
+              - key: azure.correlation_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000002
+              - key: azure.pim.resource.group_name
+                value:
+                  stringValue: mykeyvaultname
+              - key: azure.pim.resource.provider_name
+                value:
+                  stringValue: azurerbac
+              - key: azure.pim.resource.type
+                value:
+                  stringValue: Microsoft.KeyVault/vaults
+              - key: azure.pim.tenant_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000003
+              - key: azure.pim.event.name
+                value:
+                  stringValue: RemoveActivatedRole
+              - key: azure.pim.event.id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000004
+              - key: azure.pim.role.assignment.request_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000006
+              - key: azure.pim.role.definition
+                value:
+                  stringValue: Key Vault Crypto Officer
+              - key: azure.pim.role.definition.origin_id
+                value:
+                  stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000007
+              - key: azure.pim.subject.id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000009
+              - key: azure.pim.subject.name
+                value:
+                  stringValue: User LastName
+              - key: azure.pim.action.type
+                value:
+                  stringValue: Revoke
+              - key: azure.pim.role.assignment.origin_id
+                value:
+                  stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/myresourcegroupname/providers/Microsoft.KeyVault/vaults/mykeyvaultname/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000005
+              - key: azure.pim.caller
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: UPN
+                            - key: identity_value
+                              value:
+                                stringValue: ""
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: ObjectID
+                            - key: identity_value
+                              value:
+                                stringValue: 00000000-0000-0000-0000-000000000008
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: Username
+                            - key: identity_value
+                              value:
+                                stringValue: AzureADPIM
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: Name
+                            - key: identity_value
+                              value:
+                                stringValue: AzureADPIM
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: ObjectClass
+                            - key: identity_value
+                              value:
+                                stringValue: User
+            body: {}
+            timeUnixNano: "1775857420265755400"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.activity
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloudevents.event_source
+          value:
+            stringValue: azure.resource.log
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/00000000-0000-0000-0000-000000000001
+        - key: cloud.region
+          value:
+            stringValue: global
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: Administrative
+              - key: azure.operation.name
+                value:
+                  stringValue: Add member to role requested (PIM activation)
+              - key: azure.result.type
+                value:
+                  stringValue: Succeeded
+              - key: network.peer.address
+                value:
+                  stringValue: 203.0.113.10
+              - key: azure.correlation_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000010
+              - key: azure.pim.subscription_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000001
+              - key: azure.pim.resource.group_name
+                value:
+                  stringValue: MyAzureSubscriptionName
+              - key: azure.pim.resource.provider_name
+                value:
+                  stringValue: azurerbac
+              - key: azure.pim.resource.type
+                value:
+                  stringValue: subscription
+              - key: azure.pim.tenant_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000003
+              - key: azure.pim.event.name
+                value:
+                  stringValue: CreateRequestRoleActivation
+              - key: azure.pim.event.id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000011
+              - key: azure.pim.role.assignment.request_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000012
+              - key: azure.pim.role.definition
+                value:
+                  stringValue: Storage Blob Data Contributor
+              - key: azure.pim.role.definition.origin_id
+                value:
+                  stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000013
+              - key: azure.pim.justification
+                value:
+                  stringValue: I need access to complete my task.
+              - key: azure.pim.subject.id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000009
+              - key: azure.pim.subject.name
+                value:
+                  stringValue: User LastName
+              - key: azure.pim.caller
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: UPN
+                            - key: identity_value
+                              value:
+                                stringValue: user@example.com
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: ObjectID
+                            - key: identity_value
+                              value:
+                                stringValue: 00000000-0000-0000-0000-000000000008
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: Username
+                            - key: identity_value
+                              value:
+                                stringValue: User LastName
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: Name
+                            - key: identity_value
+                              value:
+                                stringValue: User LastName
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: ObjectClass
+                            - key: identity_value
+                              value:
+                                stringValue: User
+            body: {}
+            timeUnixNano: "1775942608718281700"
+          - attributes:
+              - key: azure.category
+                value:
+                  stringValue: Administrative
+              - key: azure.operation.name
+                value:
+                  stringValue: Add member to role completed (PIM activation)
+              - key: azure.result.type
+                value:
+                  stringValue: Succeeded
+              - key: network.peer.address
+                value:
+                  stringValue: 203.0.113.10
+              - key: azure.correlation_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000010
+              - key: azure.pim.subscription_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000001
+              - key: azure.pim.resource.group_name
+                value:
+                  stringValue: MyAzureSubscriptionName
+              - key: azure.pim.resource.provider_name
+                value:
+                  stringValue: azurerbac
+              - key: azure.pim.resource.type
+                value:
+                  stringValue: subscription
+              - key: azure.pim.tenant_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000003
+              - key: azure.pim.event.name
+                value:
+                  stringValue: ActivateRole
+              - key: azure.pim.event.id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000014
+              - key: azure.pim.role.assignment.request_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000012
+              - key: azure.pim.role.definition
+                value:
+                  stringValue: Storage Blob Data Contributor
+              - key: azure.pim.role.definition.origin_id
+                value:
+                  stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000013
+              - key: azure.pim.justification
+                value:
+                  stringValue: I need access to complete my task.
+              - key: azure.pim.subject.id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000009
+              - key: azure.pim.subject.name
+                value:
+                  stringValue: User LastName
+              - key: azure.pim.action.type
+                value:
+                  stringValue: Grant
+              - key: azure.pim.role.assignment.origin_id
+                value:
+                  stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000015
+              - key: azure.pim.caller
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: UPN
+                            - key: identity_value
+                              value:
+                                stringValue: user@example.com
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: ObjectID
+                            - key: identity_value
+                              value:
+                                stringValue: 00000000-0000-0000-0000-000000000008
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: Username
+                            - key: identity_value
+                              value:
+                                stringValue: User LastName
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: Name
+                            - key: identity_value
+                              value:
+                                stringValue: User LastName
+                      - kvlistValue:
+                          values:
+                            - key: identity_type
+                              value:
+                                stringValue: ObjectClass
+                            - key: identity_value
+                              value:
+                                stringValue: User
+            body: {}
+            timeUnixNano: "1775942610421201100"
+        scope:
+          attributes:
+            - key: encoding.format
+              value:
+                stringValue: azure.activity
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension
+          version: test-version
