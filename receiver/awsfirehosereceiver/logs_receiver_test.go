@@ -4,6 +4,8 @@
 package awsfirehosereceiver
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"net/http"
@@ -62,6 +64,14 @@ func TestLogsReceiver_Start(t *testing.T) {
 			encoding:            "otlp_logs/name",
 			wantUnmarshalerType: plogUnmarshalerExtension{},
 		},
+		"WithAWSLogsEncoding": {
+			encoding:            "aws_logs_encoding",
+			wantUnmarshalerType: plogUnmarshalerExtension{},
+		},
+		"WithAWSLogsEncodingDeprecatedType": {
+			encoding:            "awslogs_encoding",
+			wantUnmarshalerType: plogUnmarshalerExtension{},
+		},
 		"WithDeprecatedRecordType": {
 			recordType:          "otlp_logs",
 			wantUnmarshalerType: plogUnmarshalerExtension{},
@@ -96,6 +106,8 @@ func TestLogsReceiver_Start(t *testing.T) {
 				extensions: map[component.ID]component.Component{
 					component.MustNewID("otlp_logs"):                 plogUnmarshalerExtension{},
 					component.MustNewIDWithName("otlp_logs", "name"): plogUnmarshalerExtension{},
+					component.MustNewID("aws_logs_encoding"):         plogUnmarshalerExtension{},
+					component.MustNewID("awslogs_encoding"):          plogUnmarshalerExtension{},
 					component.MustNewID("otlp_metrics"):              pmetricUnmarshalerExtension{},
 				},
 			}
@@ -200,6 +212,28 @@ func TestLogsConsumer(t *testing.T) {
 		require.Len(t, rc.results, 2)
 		assert.NoError(t, plogtest.CompareLogs(logs0, rc.results[0]))
 		assert.NoError(t, plogtest.CompareLogs(logs1, rc.results[1]))
+	})
+}
+
+func TestGunzipRecordIfNeeded(t *testing.T) {
+	t.Run("NonGzip", func(t *testing.T) {
+		input := []byte("plain-text")
+
+		got, err := gunzipRecordIfNeeded(input)
+		require.NoError(t, err)
+		require.Equal(t, input, got)
+	})
+
+	t.Run("Gzip", func(t *testing.T) {
+		var compressed bytes.Buffer
+		w := gzip.NewWriter(&compressed)
+		_, err := w.Write([]byte("decompressed-payload"))
+		require.NoError(t, err)
+		require.NoError(t, w.Close())
+
+		got, err := gunzipRecordIfNeeded(compressed.Bytes())
+		require.NoError(t, err)
+		require.Equal(t, []byte("decompressed-payload"), got)
 	})
 }
 

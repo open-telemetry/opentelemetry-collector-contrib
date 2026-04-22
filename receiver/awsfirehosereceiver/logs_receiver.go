@@ -4,6 +4,8 @@
 package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -91,6 +93,10 @@ func (c *logsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, c
 		if errors.Is(err, io.EOF) {
 			break
 		}
+		record, err = gunzipRecordIfNeeded(record)
+		if err != nil {
+			return http.StatusBadRequest, fmt.Errorf("failed to decompress record: %w", err)
+		}
 		logs, err := c.unmarshaler.UnmarshalLogs(record)
 		if err != nil {
 			return http.StatusBadRequest, err
@@ -115,4 +121,23 @@ func (c *logsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, c
 		}
 	}
 	return http.StatusOK, nil
+}
+
+func gunzipRecordIfNeeded(record []byte) ([]byte, error) {
+	if len(record) < 2 || record[0] != 0x1f || record[1] != 0x8b {
+		return record, nil
+	}
+
+	reader, err := gzip.NewReader(bytes.NewReader(record))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	decompressed, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressed, nil
 }
