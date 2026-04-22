@@ -131,6 +131,14 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Request) {
 	ctx := gtr.obsrecv.StartTracesOp(req.Context())
 
+	for k, v := range gtr.cfg.WebHook.RequiredHeaders {
+		if req.Header.Get(k) != string(v) {
+			gtr.logger.Sugar().Debugf("required header check failed", zap.String("header", k))
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+	}
+
 	p, err := github.ValidatePayload(req, []byte(gtr.cfg.WebHook.Secret))
 	if err != nil {
 		gtr.logger.Sugar().Debugf("unable to validate payload", zap.Error(err))
