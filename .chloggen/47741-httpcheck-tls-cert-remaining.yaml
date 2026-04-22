@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: receiver/httpcheckreceiver
+component: receiver/http_check
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Ensure httpcheck.tls.cert_remaining is emitted once per scrape.
