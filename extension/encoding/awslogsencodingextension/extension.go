@@ -91,7 +91,6 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 				zap.String("new_format", constants.FormatVPCFlowLog),
 			)
 		}
-
 		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
 			cfg.VPCFlowLogConfig,
 			settings.BuildInfo,

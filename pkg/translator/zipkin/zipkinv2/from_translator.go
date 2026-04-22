@@ -319,9 +319,14 @@ func zipkinEndpointFromTags(
 	redundantKeys map[string]bool,
 ) (endpoint *zipkinmodel.Endpoint) {
 	serviceName := localServiceName
-	if peerSvc, ok := zTags[string(conventionsv138.PeerServiceKey)]; ok && remoteEndpoint {
-		serviceName = peerSvc
-		redundantKeys[string(conventionsv138.PeerServiceKey)] = true
+	if remoteEndpoint {
+		if peerSvc, ok := zTags[string(conventions.ServicePeerNameKey)]; ok {
+			serviceName = peerSvc
+			redundantKeys[string(conventions.ServicePeerNameKey)] = true
+		} else if peerSvc, ok := zTags[string(conventionsv138.PeerServiceKey)]; ok {
+			serviceName = peerSvc
+			redundantKeys[string(conventionsv138.PeerServiceKey)] = true
+		}
 	}
 
 	var ipKey, v0IPKey, portKey string

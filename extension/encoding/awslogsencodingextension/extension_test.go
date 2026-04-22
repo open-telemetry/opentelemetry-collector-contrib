@@ -162,7 +162,10 @@ func TestGetReaderFromFormat(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			e := &encodingExtension{format: test.format}
+			e := &encodingExtension{
+				format: test.format,
+				cfg:    createDefaultConfig().(*Config),
+			}
 			_, reader, err := e.getReaderFromFormat(test.buf)
 			require.NoError(t, err)
 			require.NotNil(t, reader)

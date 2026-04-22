@@ -1021,15 +1021,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	for _, r := range c.Rules.Annotations {
-		if !disableLegacy {
-			r.extractFromPodMetadata(pod.Annotations, tags, K8SPodAnnotations)
-		}
-		if enableStable {
-			r.extractFromPodMetadata(pod.Annotations, tags, conventions.K8SPodAnnotation)
-		}
-	}
-
 	if c.Rules.ServiceName {
 		copyLabel(pod, tags, "app.kubernetes.io/name", conventions.ServiceNameKey)
 		// app.kubernetes.io/instance has a higher precedence than app.kubernetes.io/name
@@ -1038,6 +1029,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.ServiceVersion {
 		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
+	}
+
+	// Annotations are processed after labels so that OTel annotations
+	// (e.g. resource.opentelemetry.io/service.name) take precedence over
+	// well-known Kubernetes labels (e.g. app.kubernetes.io/name).
+	for _, r := range c.Rules.Annotations {
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8SPodAnnotations)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Annotations, tags, conventions.K8SPodAnnotation)
+		}
 	}
 
 	return tags
