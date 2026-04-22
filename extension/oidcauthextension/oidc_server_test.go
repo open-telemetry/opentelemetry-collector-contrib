@@ -4,16 +4,15 @@
 package oidcauthextension
 
 import (
-	"bytes"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1" // #nosec
-	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -24,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,11 +32,16 @@ import (
 type oidcServer struct {
 	*httptest.Server
 	x509Cert   []byte
-	privateKey *rsa.PrivateKey
+	privateKey crypto.Signer
+	alg        jose.SignatureAlgorithm
 }
 
 func newOIDCServer() (*oidcServer, error) {
-	jwks := map[string]any{}
+	return newOIDCServerWithAlg(jose.RS256)
+}
+
+func newOIDCServerWithAlg(alg jose.SignatureAlgorithm) (*oidcServer, error) {
+	jwks := jose.JSONWebKeySet{}
 
 	mux := http.NewServeMux()
 	server := httptest.NewUnstartedServer(mux)
@@ -60,7 +65,7 @@ func newOIDCServer() (*oidcServer, error) {
 		}
 	})
 
-	privateKey, err := createPrivateKey()
+	privateKey, err := createPrivateKey(alg)
 	if err != nil {
 		return nil, err
 	}
@@ -70,24 +75,20 @@ func newOIDCServer() (*oidcServer, error) {
 		return nil, err
 	}
 
-	eBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(eBytes, uint64(privateKey.E))
-	eBytes = bytes.TrimLeft(eBytes, "\x00")
-
 	// #nosec
 	sum := sha1.Sum(x509Cert)
-	jwks["keys"] = []map[string]any{{
-		"alg": "RS256",
-		"kty": "RSA",
-		"use": "sig",
-		"x5c": []string{base64.StdEncoding.EncodeToString(x509Cert)},
-		"n":   base64.RawURLEncoding.EncodeToString(privateKey.N.Bytes()),
-		"e":   base64.RawURLEncoding.EncodeToString(eBytes),
-		"kid": base64.RawURLEncoding.EncodeToString(sum[:]),
-		"x5t": base64.RawURLEncoding.EncodeToString(sum[:]),
-	}}
+	kid := base64.RawURLEncoding.EncodeToString(sum[:])
 
-	return &oidcServer{server, x509Cert, privateKey}, nil
+	jwk := jose.JSONWebKey{
+		Key:       privateKey.Public(),
+		KeyID:     kid,
+		Algorithm: string(alg),
+		Use:       "sig",
+	}
+
+	jwks.Keys = []jose.JSONWebKey{jwk}
+
+	return &oidcServer{server, x509Cert, privateKey, alg}, nil
 }
 
 func newReverseProxy(t *testing.T, dst string) *httptest.Server {
@@ -107,29 +108,20 @@ func newReverseProxy(t *testing.T, dst string) *httptest.Server {
 }
 
 func (s *oidcServer) token(jsonPayload []byte) (string, error) {
-	jsonHeader, err := json.Marshal(map[string]any{
-		"alg": "RS256",
-		"typ": "JWT",
-	})
+	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: s.alg, Key: s.privateKey}, (&jose.SignerOptions{}).WithType("JWT"))
 	if err != nil {
 		return "", err
 	}
 
-	header := base64.RawURLEncoding.EncodeToString(jsonHeader)
-	payload := base64.RawURLEncoding.EncodeToString(jsonPayload)
-	digest := sha256.Sum256(fmt.Appendf(nil, "%s.%s", header, payload))
-
-	signature, err := rsa.SignPKCS1v15(rand.Reader, s.privateKey, crypto.SHA256, digest[:])
+	object, err := signer.Sign(jsonPayload)
 	if err != nil {
 		return "", err
 	}
 
-	encodedSignature := base64.RawURLEncoding.EncodeToString(signature)
-	token := fmt.Sprintf("%s.%s.%s", header, payload, encodedSignature)
-	return token, nil
+	return object.CompactSerialize()
 }
 
-func createCertificate(privateKey *rsa.PrivateKey) ([]byte, error) {
+func createCertificate(privateKey crypto.Signer) ([]byte, error) {
 	cert := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
@@ -139,7 +131,7 @@ func createCertificate(privateKey *rsa.PrivateKey) ([]byte, error) {
 		NotAfter:  time.Now().Add(5 * time.Minute),
 	}
 
-	x509Cert, err := x509.CreateCertificate(rand.Reader, &cert, &cert, &privateKey.PublicKey, privateKey)
+	x509Cert, err := x509.CreateCertificate(rand.Reader, &cert, &cert, privateKey.Public(), privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -147,10 +139,13 @@ func createCertificate(privateKey *rsa.PrivateKey) ([]byte, error) {
 	return x509Cert, nil
 }
 
-func createPrivateKey() (*rsa.PrivateKey, error) {
-	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, err
+func createPrivateKey(alg jose.SignatureAlgorithm) (crypto.Signer, error) {
+	switch alg {
+	case jose.RS256:
+		return rsa.GenerateKey(rand.Reader, 2048)
+	case jose.ES256:
+		return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	default:
+		return nil, fmt.Errorf("unsupported algorithm: %s", alg)
 	}
-	return priv, nil
 }

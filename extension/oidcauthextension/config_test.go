@@ -12,6 +12,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestLegacyConfigMapping(t *testing.T) {
+	config := &Config{
+		IssuerURL:            "https://example.com",
+		Audience:             "client-id",
+		IgnoreAudience:       true,
+		IssuerCAPath:         "/etc/ca.crt",
+		UsernameClaim:        "user",
+		GroupsClaim:          "groups",
+		SupportedSigningAlgs: []string{"RS256"},
+	}
+
+	providers := config.getProviderConfigs()
+	require.Len(t, providers, 1)
+	require.Equal(t, config.IssuerURL, providers[0].IssuerURL)
+	require.Equal(t, config.Audience, providers[0].Audience)
+	require.Equal(t, config.IgnoreAudience, providers[0].IgnoreAudience)
+	require.Equal(t, config.IssuerCAPath, providers[0].IssuerCAPath)
+	require.Equal(t, config.UsernameClaim, providers[0].UsernameClaim)
+	require.Equal(t, config.GroupsClaim, providers[0].GroupsClaim)
+	require.Equal(t, config.SupportedSigningAlgs, providers[0].SupportedSigningAlgs)
+}
+
 func TestDuplicateIssuers(t *testing.T) {
 	config := &Config{
 		Attribute: "authorization",
@@ -110,4 +132,13 @@ func TestPublicKeysFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDefaultConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	require.Equal(t, "authorization", cfg.Attribute)
+	require.Equal(t, []string{"RS256"}, cfg.SupportedSigningAlgs)
+	// Validate should NOT fail just because of the default SupportedSigningAlgs
+	// if nothing else is set (no providers).
+	require.NoError(t, cfg.Validate())
 }
