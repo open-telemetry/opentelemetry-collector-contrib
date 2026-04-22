@@ -721,11 +721,11 @@ func (prw *prometheusRemoteWriteReceiver) addExponentialHistogramDatapoint(datap
 		setCountAndSum(histogram, dp)
 	}
 
-	// The maximum bucket index is derived from the formula (2**2**-n)**i <= MaxFloat64.
+	// The maximum bucket index is derived from the formula (2^(2^-n))^i <= MaxFloat64.
 	// MaxFloat64 is approx 2^1024. So (2^-n) * i <= 1024 => i <= 1024 * 2^n.
 	// The bucket containing MaxFloat64 has index i_max = 1024 * 2^n.
 	// The next bucket (i_max + 1) is the +Inf overflow bucket, which is also allowed.
-	// Buckets beyond that must be dropped.
+	// Buckets with an index strictly greater than i_max + 1 must be dropped.
 	// See https://prometheus.io/docs/specs/native_histograms/#schema for more information.
 	overflowLimit := int32(math.Ldexp(1024, int(histogram.Schema))) + 1
 	var droppedCount uint64
