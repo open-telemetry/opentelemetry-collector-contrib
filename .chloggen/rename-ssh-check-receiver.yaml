@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: deprecation
+
+component: receiver/ssh_check
+
+note: Rename `sshcheck` receiver to `ssh_check` with deprecated alias `sshcheck`
+
+issues: [45339]
+
+subtext:
+
+change_logs: [user]

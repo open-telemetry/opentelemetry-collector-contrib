@@ -325,7 +325,7 @@ components:
     - receiver/splunkenterprise
     - receiver/sqlquery
     - receiver/sqlserver
-    - receiver/sshcheck
+    - receiver/ssh_check
     - receiver/statsd
     - receiver/stef
     - receiver/syslog

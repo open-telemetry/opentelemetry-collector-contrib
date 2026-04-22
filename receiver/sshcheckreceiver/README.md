@@ -22,6 +22,9 @@ If `ignore_host_key` is not set then host key validation requires the agent eith
 
 ## Configuration
 
+> **Note:** This receiver was renamed from `sshcheck` to `ssh_check` to match the snake_case naming convention.
+> The deprecated component type `sshcheck` is still accepted as an alias and will log a deprecation warning.
+
 The following settings are required:
 - `endpoint`
 - `username`
@@ -41,7 +44,7 @@ The following settings are optional:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: localhost:2222
     username: otelu
     password: $OTELP
@@ -52,7 +55,7 @@ receivers:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: sftp.example.com:22
     username: monitoring
     key_file: /path/to/private_key
@@ -63,7 +66,7 @@ receivers:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: sftp.example.com:22
     username: monitoring
     key_file: /path/to/private_key
@@ -75,7 +78,7 @@ receivers:
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: production-server.example.com:22
     username: monitoring
     key_file: /etc/otel/ssh_monitoring_key
@@ -95,7 +98,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [sshcheck]
+      receivers: [ssh_check]
       processors: [batch]
       exporters: [otlp_grpc]
 ```
@@ -110,7 +113,7 @@ The `timeout` option controls how long the receiver waits for an SSH connection 
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: slow-server.example.com:22
     username: user
     password: pass
@@ -124,14 +127,14 @@ SFTP checks can be enabled in two ways:
 1. **Using the `check_sftp` option** (enables SFTP status and duration metrics):
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     check_sftp: true
 ```
 
 2. **By enabling SFTP metrics individually**:
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     metrics:
       sshcheck.sftp_duration:
         enabled: true
@@ -147,7 +150,7 @@ Individual metrics can be enabled or disabled using the `metrics` configuration 
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: localhost:2222
     username: user
     password: pass
@@ -176,7 +179,7 @@ The `known_hosts` option specifies the path to the SSH known_hosts file for host
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     endpoint: server.example.com:22
     username: user
     key_file: /path/to/key
@@ -189,7 +192,7 @@ The `ignore_host_key` option disables host key validation. **This should only be
 
 ```yaml
 receivers:
-  sshcheck:
+  ssh_check:
     ignore_host_key: true  # ⚠️ Only for testing!
 ```
 
