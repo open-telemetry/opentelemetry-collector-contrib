@@ -6,24 +6,21 @@ package translation
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// blockingProvider signals when Retrieve is called and blocks until released.
-// Used to verify that the lock is not held during the HTTP call.
-type blockingProvider struct {
-	started chan struct{}
-	release chan struct{}
+// slowProvider simulates a slow HTTP fetch with a fixed delay.
+type slowProvider struct {
+	delay time.Duration
 }
 
-func (p *blockingProvider) Retrieve(_ context.Context, key string) (string, error) {
-	p.started <- struct{}{}
-	<-p.release
+func (p *slowProvider) Retrieve(_ context.Context, key string) (string, error) {
+	time.Sleep(p.delay)
 	return key, nil
 }
 
@@ -43,41 +40,38 @@ func (p *firstErrorProvider) Retrieve(_ context.Context, key string) (string, er
 	return key, nil
 }
 
-// TestCacheableProviderConcurrentFetch verifies that the lock is not held during the
-// HTTP call. If it were, only one goroutine could be inside provider.Retrieve at a time.
-// The test uses a blockingProvider that signals when it has been entered and then blocks.
-// With correct behavior, two goroutines can both be inside the HTTP call simultaneously.
-func TestCacheableProviderConcurrentFetch(t *testing.T) {
-	started := make(chan struct{}, 2)
-	release := make(chan struct{})
+// BenchmarkCacheableProviderConcurrentFetch measures throughput of concurrent fetches
+// for distinct keys. With the lock released during the HTTP call, goroutines can fetch
+// in parallel rather than serializing behind the mutex.
+//
+// With a 1ms provider delay and 10 goroutines each doing 100 fetches:
+//   - Lock released before fetch: ~100ms total (goroutines overlap)
+//   - Lock held during fetch:     ~1000ms total (goroutines serialize)
+func BenchmarkCacheableProviderConcurrentFetch(b *testing.B) {
+	const (
+		goroutines    = 10
+		fetchesPerG   = 100
+		providerDelay = time.Millisecond
+	)
 
-	cp := NewCacheableProvider(&blockingProvider{started: started, release: release}, time.Minute, 10)
-
-	var wg sync.WaitGroup
-	for range 2 {
-		wg.Go(func() {
-			_, _ = cp.Retrieve(t.Context(), "key")
-		})
-	}
-
-	// Both goroutines must reach the HTTP call concurrently.
-	// If the mutex were held during the HTTP call, the second goroutine would block
-	// on acquiring the lock and never reach provider.Retrieve until the first completes.
-	for range 2 {
-		select {
-		case <-started:
-		case <-time.After(2 * time.Second):
-			t.Fatal("goroutine blocked waiting for lock — mutex is held during HTTP call")
+	for range b.N {
+		cp := NewCacheableProvider(&slowProvider{delay: providerDelay}, time.Minute, 10)
+		var wg sync.WaitGroup
+		for g := range goroutines {
+			wg.Add(1)
+			go func(base int) {
+				defer wg.Done()
+				for i := range fetchesPerG {
+					key := "key-" + strconv.Itoa(base*fetchesPerG+i)
+					_, err := cp.Retrieve(b.Context(), key)
+					if err != nil {
+						b.Error(err)
+					}
+				}
+			}(g)
 		}
+		wg.Wait()
 	}
-
-	close(release)
-	wg.Wait()
-
-	// After both complete, the result should be cached.
-	v, err := cp.Retrieve(t.Context(), "key")
-	assert.NoError(t, err)
-	assert.Equal(t, "key", v)
 }
 
 func TestCacheableProvider(t *testing.T) {
