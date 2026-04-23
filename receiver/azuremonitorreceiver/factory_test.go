@@ -38,7 +38,7 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					MetricsBuilderConfig:              metadata.NewDefaultMetricsBuilderConfig(),
+					MetricsBuilderConfig:              metadata.DefaultMetricsBuilderConfig(),
 					Services:                          monitorServices,
 					CacheResources:                    24 * 60 * 60,
 					CacheResourcesDefinitions:         24 * 60 * 60,

@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ControllerConfig:                  cfg,
-		MetricsBuilderConfig:              metadata.NewDefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig:              metadata.DefaultMetricsBuilderConfig(),
 		CacheResources:                    24 * 60 * 60,
 		CacheResourcesDefinitions:         24 * 60 * 60,
 		MaximumNumberOfMetricsInACall:     20,
