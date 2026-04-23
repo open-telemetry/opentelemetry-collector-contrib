@@ -237,7 +237,7 @@ processor/schemaprocessor/                                       @open-telemetry
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/spanpruningprocessor/                                  @open-telemetry/collector-contrib-approvers @portertech
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @pankaj101A @jagan2221
-processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech @Logiraptor @jmacd
+processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech @jmacd @csmarchbanks @carsonip
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/unrollprocessor/                                       @open-telemetry/collector-contrib-approvers @axw @schmikei @rnishtala-sumo
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
