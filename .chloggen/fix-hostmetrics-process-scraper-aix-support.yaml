@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/host_metrics
+
+note: Add AIX to the process scraper's supported-OS allowlist. The AIX-specific scraper implementation is added separately.
+
+issues: [47095]
+
+subtext:
+
+change_logs: []
