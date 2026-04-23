@@ -782,6 +782,7 @@ The `ConvertTextToElementsXML` Converter returns an edited version of an XML str
 
 `target` is a Getter that returns a string. This string should be in XML format.
 If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+Conversion is bounded by a maximum XML nesting depth of 10,000 levels; deeper documents return an error.
 
 `xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
 selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
