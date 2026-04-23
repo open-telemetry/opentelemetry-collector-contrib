@@ -79,6 +79,10 @@ func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 				Timeout: 12 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
+			FlowControlConfig: FlowControlConfig{
+				StreamAckDeadline:       60 * time.Second,
+				TriggerAckBatchDuration: 10 * time.Second,
+			},
 		},
 	}
 }
@@ -165,6 +169,10 @@ func TestReceiver(t *testing.T) {
 				Timeout: 1 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
+			FlowControlConfig: FlowControlConfig{
+				StreamAckDeadline:       60 * time.Second,
+				TriggerAckBatchDuration: 10 * time.Second,
+			},
 		},
 		tracesConsumer:  traceSink,
 		metricsConsumer: metricSink,
@@ -179,8 +187,6 @@ func TestReceiver(t *testing.T) {
 	// no locks should be kept though
 	assert.NoError(t, receiver.Start(ctx, fakeHost{}))
 
-	time.Sleep(1 * time.Second)
-
 	// Test an OTLP trace message
 	traceSink.Reset()
 	srv.Publish("projects/my-project/topics/otlp", createTraceExport(), map[string]string{
@@ -189,7 +195,7 @@ func TestReceiver(t *testing.T) {
 	})
 	assert.Eventually(t, func() bool {
 		return len(traceSink.AllTraces()) == 1
-	}, 100*time.Second, 10*time.Millisecond)
+	}, 30*time.Second, 10*time.Millisecond)
 
 	// Test an OTLP metric message
 	metricSink.Reset()
@@ -199,7 +205,7 @@ func TestReceiver(t *testing.T) {
 	})
 	assert.Eventually(t, func() bool {
 		return len(metricSink.AllMetrics()) == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 30*time.Second, 10*time.Millisecond)
 
 	// Test an OTLP log message
 	logSink.Reset()
@@ -209,7 +215,7 @@ func TestReceiver(t *testing.T) {
 	})
 	assert.Eventually(t, func() bool {
 		return len(logSink.AllLogs()) == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 30*time.Second, 10*time.Millisecond)
 
 	assert.NoError(t, receiver.Shutdown(ctx))
 	assert.NoError(t, receiver.Shutdown(ctx))
@@ -407,5 +413,5 @@ func TestEncodingWithCompressionConfig(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		return len(traceSink.AllTraces()) == 1
-	}, time.Second, 10*time.Millisecond)
+	}, 30*time.Second, 10*time.Millisecond)
 }
