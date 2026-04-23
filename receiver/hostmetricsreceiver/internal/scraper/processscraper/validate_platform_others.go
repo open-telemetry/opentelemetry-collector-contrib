@@ -20,4 +20,8 @@ func validatePlatformEnabledMetrics(cfg *Config, logger *zap.Logger) {
 		logger.Warn("process.context_switches is only supported on Linux; disabling metric on this platform")
 		cfg.Metrics.ProcessContextSwitches.Enabled = false
 	}
+	if cfg.Metrics.ProcessPagingFaults.Enabled {
+		logger.Warn("process.paging.faults is only supported on Linux; disabling metric on this platform")
+		cfg.Metrics.ProcessPagingFaults.Enabled = false
+	}
 }

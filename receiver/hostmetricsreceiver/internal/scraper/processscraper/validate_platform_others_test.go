@@ -31,6 +31,22 @@ func TestValidatePlatformEnabledMetrics_NonLinux_DisablesContextSwitches(t *test
 	assert.Contains(t, logs.All()[0].Message, "process.context_switches")
 }
 
+func TestValidatePlatformEnabledMetrics_NonLinux_DisablesPagingFaults(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	cfg := &Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	cfg.Metrics.ProcessPagingFaults.Enabled = true
+
+	validatePlatformEnabledMetrics(cfg, logger)
+
+	assert.False(t, cfg.Metrics.ProcessPagingFaults.Enabled, "process.paging.faults should be disabled on non-Linux")
+	assert.Equal(t, 1, logs.Len(), "expected one warning log entry")
+	assert.Contains(t, logs.All()[0].Message, "process.paging.faults")
+}
+
 func TestValidatePlatformEnabledMetrics_NonLinux_NoopWhenDisabled(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
@@ -39,9 +55,11 @@ func TestValidatePlatformEnabledMetrics_NonLinux_NoopWhenDisabled(t *testing.T) 
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessContextSwitches.Enabled = false
+	cfg.Metrics.ProcessPagingFaults.Enabled = false
 
 	validatePlatformEnabledMetrics(cfg, logger)
 
 	assert.False(t, cfg.Metrics.ProcessContextSwitches.Enabled)
-	assert.Equal(t, 0, logs.Len(), "no log when metric was not enabled")
+	assert.False(t, cfg.Metrics.ProcessPagingFaults.Enabled)
+	assert.Equal(t, 0, logs.Len(), "no log when metrics were not enabled")
 }
