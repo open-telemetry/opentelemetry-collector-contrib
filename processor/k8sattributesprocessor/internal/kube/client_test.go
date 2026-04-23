@@ -4720,5 +4720,5 @@ func TestCompactPodMap(t *testing.T) {
 	assert.Contains(t, c.Pods, podB)
 	assert.Contains(t, c.Pods, podC)
 	assert.NotContains(t, c.Pods, podA)
-	assert.Equal(t, 2, len(c.Pods))
+	assert.Len(t, c.Pods, 2)
 }

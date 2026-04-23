@@ -778,9 +778,7 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 
 func (c *WatchClient) compactPodMap() {
 	newMap := make(map[PodIdentifier]*Pod, len(c.Pods))
-	for k, v := range c.Pods {
-		newMap[k] = v
-	}
+	maps.Copy(newMap, c.Pods)
 	c.Pods = newMap
 }
 
