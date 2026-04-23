@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: processor/resourcedetection
+note: "Docker detector no longer discards host.name and os.type when the container lookup fails"
+issues: [46275]
+subtext:
+change_logs: [user]
