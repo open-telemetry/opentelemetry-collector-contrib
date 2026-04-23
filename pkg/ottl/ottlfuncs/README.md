@@ -1816,6 +1816,8 @@ This Converter should be preferred over `ParseXML` when minor semantic details (
 This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
 a direct representation of XML data. Users are encouraged to simplify their XML documents prior to using `ParseSimplifiedXML`.
 
+Parsing is bounded by a maximum nesting depth of 10,000 levels; deeper documents return an error.
+
 See other functions which may be useful for preparing XML documents:
 
 - [`ConvertAttributesToElementsXML`](#convertattributestoelementsxml)
