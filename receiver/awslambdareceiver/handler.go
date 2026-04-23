@@ -302,7 +302,7 @@ func (c *cwLogsHandler) handle(ctx context.Context, event json.RawMessage) error
 		LogGroup  string `json:"logGroup"`
 		LogStream string `json:"logStream"`
 	}
-	if err := gojson.Unmarshal(payload, &meta); err != nil {
+	if err = gojson.Unmarshal(payload, &meta); err != nil {
 		return fmt.Errorf("failed to parse cloudwatch payload metadata: %w", err)
 	}
 
