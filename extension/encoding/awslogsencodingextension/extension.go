@@ -63,9 +63,11 @@ func init() {
 type encodingExtension struct {
 	cfg *Config
 
-	unmarshaler awsunmarshaler.AWSUnmarshaler
-	format      string
-	gzipPool    sync.Pool
+	unmarshaler             awsunmarshaler.AWSUnmarshaler
+	format                  string
+	gzipPool                sync.Pool
+	logger                  *zap.Logger
+	warnGzipDeprecationOnce sync.Once
 }
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
@@ -80,6 +82,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
+			logger:      settings.Logger,
 		}, nil
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
 		if cfg.Format == constants.FormatVPCFlowLogV1 {
@@ -98,6 +101,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			cfg:         cfg,
 			unmarshaler: unmarshaler,
 			format:      constants.FormatVPCFlowLog,
+			logger:      settings.Logger,
 		}, err
 	case constants.FormatS3AccessLog, constants.FormatS3AccessLogV1:
 		if cfg.Format == constants.FormatS3AccessLogV1 {
@@ -109,6 +113,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatS3AccessLog,
+			logger:      settings.Logger,
 		}, nil
 	case constants.FormatWAFLog, constants.FormatWAFLogV1:
 		if cfg.Format == constants.FormatWAFLogV1 {
@@ -120,6 +125,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: waf.NewWAFLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatWAFLog,
+			logger:      settings.Logger,
 		}, nil
 	case constants.FormatCloudTrailLog, constants.FormatCloudTrailLogV1:
 		if cfg.Format == constants.FormatCloudTrailLogV1 {
@@ -133,6 +139,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 				settings.BuildInfo,
 				cloudTrailUserIdentityPrefixFeatureGate.IsEnabled()),
 			format: constants.FormatCloudTrailLog,
+			logger: settings.Logger,
 		}, nil
 	case constants.FormatELBAccessLog, constants.FormatELBAccessLogV1:
 		if cfg.Format == constants.FormatELBAccessLogV1 {
@@ -147,11 +154,13 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 				settings.Logger,
 			),
 			format: constants.FormatELBAccessLog,
+			logger: settings.Logger,
 		}, nil
 	case constants.FormatNetworkFirewallLog:
 		return &encodingExtension{
 			unmarshaler: networkfirewall.NewNetworkFirewallLogUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatNetworkFirewallLog,
+			logger:      settings.Logger,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
@@ -229,6 +238,11 @@ func isGzipData(buf []byte) bool {
 // getReaderForData returns the appropriate reader and encoding type based on data format
 func (e *encodingExtension) getReaderForData(buf []byte) (string, io.Reader, error) {
 	if isGzipData(buf) {
+		e.warnGzipDeprecationOnce.Do(func() {
+			if e.logger != nil {
+				e.logger.Warn("transparent gzip decompression in aws_logs_encoding is deprecated and will be removed in a future release; callers should decompress payloads before invoking the extension")
+			}
+		})
 		reader, err := e.getGzipReader(buf)
 		return gzipEncoding, reader, err
 	}
