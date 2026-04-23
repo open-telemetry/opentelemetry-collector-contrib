@@ -190,7 +190,7 @@ components:
     - processor/deltatocumulative
     - processor/deltatorate
     - processor/digitaloceandetector
-    - processor/dnslookup
+    - processor/drain
     - processor/dynatracedetector
     - processor/filter
     - processor/geoip
@@ -218,6 +218,7 @@ components:
     - processor/scalewaydetector
     - processor/schema
     - processor/span
+    - processor/spanpruning
     - processor/sumologic
     - processor/tail_sampling
     - processor/tencentcvmdetector
@@ -258,7 +259,7 @@ components:
     - receiver/expvar
     - receiver/faro
     - receiver/file_log
-    - receiver/filestats
+    - receiver/file_stats
     - receiver/flinkmetrics
     - receiver/fluentforward
     - receiver/github
@@ -268,8 +269,8 @@ components:
     - receiver/googlecloudpubsubpush
     - receiver/googlecloudspanner
     - receiver/haproxy
-    - receiver/hostmetrics
-    - receiver/httpcheck
+    - receiver/host_metrics
+    - receiver/http_check
     - receiver/huaweicloudcesreceiver
     - receiver/icmpcheckreceiver
     - receiver/iis
@@ -279,7 +280,7 @@ components:
     - receiver/journald
     - receiver/k8s_cluster
     - receiver/k8s_events
-    - receiver/k8sobjects
+    - receiver/k8s_objects
     - receiver/kafka
     - receiver/kafkametrics
     - receiver/kubeletstats
@@ -323,20 +324,20 @@ components:
     - receiver/splunkenterprise
     - receiver/sqlquery
     - receiver/sqlserver
-    - receiver/sshcheck
+    - receiver/ssh_check
     - receiver/statsd
     - receiver/stef
     - receiver/syslog
     - receiver/systemd
     - receiver/tcp_log
     - receiver/tcpcheck
-    - receiver/tlscheck
+    - receiver/tls_check
     - receiver/udp_log
     - receiver/vcenter
     - receiver/vcr
     - receiver/wavefront
     - receiver/webhookevent
-    - receiver/windowseventlog
+    - receiver/windows_event_log
     - receiver/windowsperfcounters
     - receiver/windowsservice
     - receiver/yang_grpc

@@ -30,7 +30,14 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	qConfig := exporterhelper.NewDefaultQueueConfig()
+	qConfig.Batch.GetOrInsertDefault()
+	qs := configoptional.Some(qConfig)
+
+	retryConfig := configretry.NewDefaultBackOffConfig()
+	retryConfig.Multiplier = DefaultRetryOnFailureMultiplier
+	retryConfig.MaxInterval = DefaultRetryOnFailureMaxInterval
+	retryConfig.MaxElapsedTime = DefaultRetryOnFailureMaxElapsedTime
 
 	return &Config{
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
@@ -39,7 +46,7 @@ func createDefaultConfig() component.Config {
 		Client:             DefaultClient,
 
 		ClientConfig:         createDefaultClientConfig(),
-		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		BackOffConfig:        retryConfig,
 		QueueSettings:        qs,
 		StickySessionEnabled: DefaultStickySessionEnabled,
 	}

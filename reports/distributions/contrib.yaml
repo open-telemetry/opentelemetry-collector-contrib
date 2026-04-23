@@ -104,6 +104,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - geoip
         - groupbyattrs
@@ -121,6 +122,7 @@ components:
         - resource
         - resourcedetection
         - span
+        - spanpruning
         - sumologic
         - tail_sampling
         - transform
@@ -159,7 +161,7 @@ components:
         - expvar
         - faro
         - file_log
-        - filestats
+        - file_stats
         - flinkmetrics
         - fluentforward
         - github
@@ -168,8 +170,8 @@ components:
         - googlecloudpubsub
         - googlecloudspanner
         - haproxy
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - iis
         - influxdb
         - jaeger
@@ -177,7 +179,7 @@ components:
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kafka
         - kafkametrics
         - kubeletstats
@@ -219,19 +221,19 @@ components:
         - splunkenterprise
         - sqlquery
         - sqlserver
-        - sshcheck
+        - ssh_check
         - statsd
         - stef
         - syslog
         - systemd
         - tcp_log
         - tcpcheck
-        - tlscheck
+        - tls_check
         - udp_log
         - vcenter
         - wavefront
         - webhookevent
-        - windowseventlog
+        - windows_event_log
         - windowsperfcounters
         - windowsservice
         - yang_grpc

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/azureencodingextension/internal/unmarshaler"
 )
@@ -64,24 +64,36 @@ const (
 	attributeHTTPHeaderReferer = "http.request.header.referer"
 )
 
+type appServiceAppLogProperties struct {
+	ContainerID       string `json:"containerId"`
+	CustomLevel       string `json:"customLevel"`
+	ExceptionClass    string `json:"exceptionClass"`
+	Host              string `json:"host"`
+	Logger            string `json:"logger"`
+	Message           string `json:"message"`
+	Method            string `json:"method"`
+	Source            string `json:"source"`
+	StackTrace        string `json:"stackTrace"`
+	WebSiteInstanceID string `json:"webSiteInstanceId"`
+}
+
+func (p *appServiceAppLogProperties) UnmarshalJSON(data []byte) error {
+	type alias appServiceAppLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceAppLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appserviceapplogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServiceAppLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		ContainerID       string `json:"containerId"`
-		CustomLevel       string `json:"customLevel"`
-		ExceptionClass    string `json:"exceptionClass"`
-		Host              string `json:"host"`
-		Logger            string `json:"logger"`
-		Message           string `json:"message"`
-		Method            string `json:"method"`
-		Source            string `json:"source"`
-		StackTrace        string `json:"stackTrace"`
-		WebSiteInstanceID string `json:"webSiteInstanceId"`
-	} `json:"properties"`
+	Properties appServiceAppLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceAppLog) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
@@ -100,16 +112,28 @@ func (r *azureAppServiceAppLog) PutProperties(attrs pcommon.Map, body pcommon.Va
 	return nil
 }
 
+type appServiceAuditLogProperties struct {
+	User            string `json:"user"`
+	UserDisplayName string `json:"userDisplayName"`
+	UserAddress     string `json:"userAddress"`
+	Protocol        string `json:"protocol"`
+}
+
+func (p *appServiceAuditLogProperties) UnmarshalJSON(data []byte) error {
+	type alias appServiceAuditLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceAuditLogProperties(temp)
+	return nil
+}
+
 // See https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/app-service/configure-basic-auth-disable.md#monitor-for-basic-authentication-attempts
 type azureAppServiceAuditLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		User            string `json:"user"`
-		UserDisplayName string `json:"userDisplayName"`
-		UserAddress     string `json:"userAddress"`
-		Protocol        string `json:"protocol"`
-	} `json:"properties"`
+	Properties appServiceAuditLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceAuditLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
@@ -121,22 +145,34 @@ func (r *azureAppServiceAuditLog) PutProperties(attrs pcommon.Map, _ pcommon.Val
 	return nil
 }
 
+type appServiceAuthenticationLogProperties struct {
+	Details              string      `json:"details"`
+	Host                 string      `json:"hostName"`
+	Message              string      `json:"message"`
+	ModuleRuntimeVersion string      `json:"moduleRuntimeVersion"`
+	SiteName             string      `json:"siteName"`
+	StatusCode           json.Number `json:"statusCode"`    // int
+	SubStatusCode        json.Number `json:"subStatusCode"` // int
+	TaskName             string      `json:"taskName"`
+}
+
+func (p *appServiceAuthenticationLogProperties) UnmarshalJSON(data []byte) error {
+	type alias appServiceAuthenticationLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceAuthenticationLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appserviceauthenticationlogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServiceAuthenticationLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		Details              string      `json:"details"`
-		Host                 string      `json:"hostName"`
-		Message              string      `json:"message"`
-		ModuleRuntimeVersion string      `json:"moduleRuntimeVersion"`
-		SiteName             string      `json:"siteName"`
-		StatusCode           json.Number `json:"statusCode"`    // int
-		SubStatusCode        json.Number `json:"subStatusCode"` // int
-		TaskName             string      `json:"taskName"`
-	} `json:"properties"`
+	Properties appServiceAuthenticationLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceAuthenticationLog) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
@@ -152,16 +188,28 @@ func (r *azureAppServiceAuthenticationLog) PutProperties(attrs pcommon.Map, body
 	return nil
 }
 
+type appServiceConsoleLogProperties struct {
+	ContainerID string `json:"containerId"`
+	Host        string `json:"host"`
+}
+
+func (p *appServiceConsoleLogProperties) UnmarshalJSON(data []byte) error {
+	type alias appServiceConsoleLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceConsoleLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appserviceconsolelogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServiceConsoleLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		ContainerID string `json:"containerId"`
-		Host        string `json:"host"`
-	} `json:"properties"`
+	Properties appServiceConsoleLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceConsoleLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {
@@ -171,31 +219,47 @@ func (r *azureAppServiceConsoleLog) PutProperties(attrs pcommon.Map, _ pcommon.V
 	return nil
 }
 
+// appServiceHTTPLogProperties represents the properties field of AppServiceHTTPLogs.
+// Azure can emit this field as either a JSON object or a stringified JSON string
+// (common when logs are routed via Azure Event Hub).
+type appServiceHTTPLogProperties struct {
+	ClientIP       string      `json:"CIp"`
+	Host           string      `json:"ComputerName"`
+	Cookie         string      `json:"Cookie"`
+	RequestBytes   json.Number `json:"CsBytes"` // int
+	HostHeader     string      `json:"CsHost"`
+	RequestMethod  string      `json:"CsMethod"`
+	URIQuery       string      `json:"CsUriQuery"`
+	RequestPath    string      `json:"CsUriStem"`
+	UserName       string      `json:"CsUsername"`
+	Referer        string      `json:"Referer"`
+	Result         string      `json:"Result"`
+	ResponseBytes  json.Number `json:"ScBytes"`  // int
+	HTTPStatusCode json.Number `json:"ScStatus"` // int
+	HTTPSubStatus  string      `json:"ScSubStatus"`
+	ServerPort     json.Number `json:"SPort"`     // int
+	TimeTaken      json.Number `json:"TimeTaken"` // int
+	UserAgent      string      `json:"UserAgent"`
+}
+
+func (p *appServiceHTTPLogProperties) UnmarshalJSON(data []byte) error {
+	// Define an alias type to avoid infinite recursion
+	type alias appServiceHTTPLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceHTTPLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appservicehttplogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServiceHTTPLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		ClientIP       string      `json:"CIp"`
-		Host           string      `json:"ComputerName"`
-		Cookie         string      `json:"Cookie"`
-		RequestBytes   json.Number `json:"CsBytes"` // int
-		HostHeader     string      `json:"CsHost"`
-		RequestMethod  string      `json:"CsMethod"`
-		URIQuery       string      `json:"CsUriQuery"`
-		RequestPath    string      `json:"CsUriStem"`
-		UserName       string      `json:"CsUsername"`
-		Referer        string      `json:"Referer"`
-		Result         string      `json:"Result"`
-		ResponseBytes  json.Number `json:"ScBytes"`  // int
-		HTTPStatusCode json.Number `json:"ScStatus"` // int
-		HTTPSubStatus  string      `json:"ScSubStatus"`
-		ServerPort     json.Number `json:"SPort"`     // int
-		TimeTaken      json.Number `json:"TimeTaken"` // int
-		UserAgent      string      `json:"UserAgent"`
-	} `json:"properties"`
+	Properties appServiceHTTPLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceHTTPLog) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
@@ -224,23 +288,35 @@ func (r *azureAppServiceHTTPLog) PutProperties(attrs pcommon.Map, body pcommon.V
 	return nil
 }
 
+type appServiceIPSecAuditLogProperties struct {
+	ClientIP          string `json:"CIp"`
+	HostHeader        string `json:"CsHost"`
+	Details           string `json:"details"`
+	Result            string `json:"Result"`
+	IsServiceEndpoint string `json:"ServiceEndpoint"`
+	XAzureFDID        string `json:"XAzureFDID"`     // X-Azure-FDID header
+	XFDHealthProbe    string `json:"XFDHealthProbe"` // X-FD-HealthProbe header
+	XForwardedFor     string `json:"XForwardedFor"`  // X-Forwarded-For header
+	XForwardedHost    string `json:"XForwardedHost"` // X-Forwarded-Host header
+}
+
+func (p *appServiceIPSecAuditLogProperties) UnmarshalJSON(data []byte) error {
+	type alias appServiceIPSecAuditLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceIPSecAuditLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appserviceipsecauditlogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServiceIPSecAuditLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		ClientIP          string `json:"CIp"`
-		HostHeader        string `json:"CsHost"`
-		Details           string `json:"details"`
-		Result            string `json:"Result"`
-		IsServiceEndpoint string `json:"ServiceEndpoint"`
-		XAzureFDID        string `json:"XAzureFDID"`     // X-Azure-FDID header
-		XFDHealthProbe    string `json:"XFDHealthProbe"` // X-FD-HealthProbe header
-		XForwardedFor     string `json:"XForwardedFor"`  // X-Forwarded-For header
-		XForwardedHost    string `json:"XForwardedHost"` // X-Forwarded-Host header
-	} `json:"properties"`
+	Properties appServiceIPSecAuditLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceIPSecAuditLog) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
@@ -258,20 +334,32 @@ func (r *azureAppServiceIPSecAuditLog) PutProperties(attrs pcommon.Map, body pco
 	return nil
 }
 
+type appServicePlatformLogProperties struct {
+	ContainerID  string `json:"containerId"`
+	DeploymentID string `json:"deploymentId"`
+	Exception    string `json:"Exception"`
+	Host         string `json:"host"`
+	Message      string `json:"message"`
+	StackTrace   string `json:"stackTrace"`
+}
+
+func (p *appServicePlatformLogProperties) UnmarshalJSON(data []byte) error {
+	type alias appServicePlatformLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServicePlatformLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appserviceplatformlogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServicePlatformLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		ContainerID  string `json:"containerId"`
-		DeploymentID string `json:"deploymentId"`
-		Exception    string `json:"Exception"`
-		Host         string `json:"host"`
-		Message      string `json:"message"`
-		StackTrace   string `json:"stackTrace"`
-	} `json:"properties"`
+	Properties appServicePlatformLogProperties `json:"properties"`
 }
 
 func (r *azureAppServicePlatformLog) PutProperties(attrs pcommon.Map, body pcommon.Value) error {
@@ -286,16 +374,28 @@ func (r *azureAppServicePlatformLog) PutProperties(attrs pcommon.Map, body pcomm
 	return nil
 }
 
+type appServiceFileAuditLogProperties struct {
+	Path    string `json:"path"`
+	Process string `json:"process"`
+}
+
+func (p *appServiceFileAuditLogProperties) UnmarshalJSON(data []byte) error {
+	type alias appServiceFileAuditLogProperties
+	var temp alias
+	if err := unmarshalStringOrObjectJSON(data, &temp); err != nil {
+		return err
+	}
+	*p = appServiceFileAuditLogProperties(temp)
+	return nil
+}
+
 // See https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appservicefileauditlogs
 // There is no documentation about the structure of the logs, so we will
 // implement this based on the fields from Azure Monitor table excluding generic fields
 type azureAppServiceFileAuditLog struct {
 	azureLogRecordBase
 
-	Properties struct {
-		Path    string `json:"path"`
-		Process string `json:"process"`
-	} `json:"properties"`
+	Properties appServiceFileAuditLogProperties `json:"properties"`
 }
 
 func (r *azureAppServiceFileAuditLog) PutProperties(attrs pcommon.Map, _ pcommon.Value) error {

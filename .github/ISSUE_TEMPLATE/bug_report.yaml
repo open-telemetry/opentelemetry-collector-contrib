@@ -200,7 +200,7 @@ body:
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
-      - processor/dnslookup
+      - processor/drain
       - processor/filter
       - processor/geoip
       - processor/groupbyattrs
@@ -235,6 +235,7 @@ body:
       - processor/resourcedetection/internal/vultr
       - processor/schema
       - processor/span
+      - processor/spanpruning
       - processor/sumologic
       - processor/tailsampling
       - processor/transform

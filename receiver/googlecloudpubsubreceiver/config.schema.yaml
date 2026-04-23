@@ -1,3 +1,24 @@
+$defs:
+  flow_control_config:
+    description: FlowControlConfig defines the flow control configuration for the receiver. This is used to tune the internal flow control implementation, along with the Pub/Sub flow control settings documented at https://cloud.google.com/pubsub/docs/flow-control and https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest
+    type: object
+    properties:
+      max_outstanding_bytes:
+        description: Pub/Sub flow control settings for the maximum number of outstanding bytes.
+        type: integer
+        x-customType: int64
+      max_outstanding_messages:
+        description: Pub/Sub flow control settings for the maximum number of outstanding messages.
+        type: integer
+        x-customType: int64
+      stream_ack_deadline:
+        description: The ack deadline to use for the Pub/Sub stream.
+        type: string
+        format: duration
+      trigger_ack_batch_duration:
+        description: The maximum duration the acknowledgement loop waits before sending the acknowledgements.
+        type: string
+        format: duration
 type: object
 properties:
   client_id:
@@ -12,6 +33,8 @@ properties:
   endpoint:
     description: Override of the Pubsub Endpoint, leave empty for the default endpoint
     type: string
+  flow_control:
+    $ref: flow_control_config
   ignore_encoding_error:
     description: Ignore errors when the configured encoder fails to decoding a PubSub messages
     type: boolean

@@ -51,13 +51,13 @@ components:
     receiver:
         - file_log
         - fluentforward
-        - hostmetrics
-        - httpcheck
+        - host_metrics
+        - http_check
         - jaeger
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kubeletstats
         - otelarrow
         - prometheus
