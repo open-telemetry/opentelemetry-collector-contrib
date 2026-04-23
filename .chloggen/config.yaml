@@ -191,6 +191,7 @@ components:
     - processor/deltatorate
     - processor/digitaloceandetector
     - processor/dnslookup
+    - processor/drain
     - processor/dynatracedetector
     - processor/filter
     - processor/geoip
@@ -259,7 +260,7 @@ components:
     - receiver/expvar
     - receiver/faro
     - receiver/file_log
-    - receiver/filestats
+    - receiver/file_stats
     - receiver/flinkmetrics
     - receiver/fluentforward
     - receiver/github
@@ -324,7 +325,7 @@ components:
     - receiver/splunkenterprise
     - receiver/sqlquery
     - receiver/sqlserver
-    - receiver/sshcheck
+    - receiver/ssh_check
     - receiver/statsd
     - receiver/stef
     - receiver/syslog

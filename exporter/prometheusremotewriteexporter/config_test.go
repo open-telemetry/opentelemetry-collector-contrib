@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -31,25 +32,28 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = "localhost:8888"
-	clientConfig.TLS = configtls.ClientConfig{
+	clientConfigWithoutHeaders := confighttp.NewDefaultClientConfig()
+	clientConfigWithoutHeaders.Endpoint = "localhost:8888"
+	clientConfigWithoutHeaders.TLS = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 		},
 		Insecure: false,
 	}
-	clientConfig.ReadBufferSize = 0
-	clientConfig.WriteBufferSize = 512 * 1024
-	clientConfig.Timeout = 5 * time.Second
-	clientConfig.Headers = configopaque.MapList{
+	clientConfigWithoutHeaders.ReadBufferSize = 0
+	clientConfigWithoutHeaders.WriteBufferSize = 512 * 1024
+	clientConfigWithoutHeaders.Timeout = 5 * time.Second
+
+	clientConfigWithHeaders := clientConfigWithoutHeaders
+	clientConfigWithHeaders.Headers = configopaque.MapList{
 		{Name: "Prometheus-Remote-Write-Version", Value: "0.1.0"},
 		{Name: "X-Scope-OrgID", Value: "234"},
 	}
 	tests := []struct {
-		id           component.ID
-		expected     component.Config
-		errorMessage string
+		id               component.ID
+		expected         component.Config
+		errorMessage     string
+		enableSendingRW2 bool
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
@@ -77,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				AddMetricSuffixes:           false,
 				Namespace:                   "test-space",
 				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
-				ClientConfig:                clientConfig,
+				ClientConfig:                clientConfigWithHeaders,
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: TargetInfo{
 					Enabled: true,
@@ -85,6 +89,43 @@ func TestLoadConfig(t *testing.T) {
 				RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "translation_strategy"),
+			expected: &Config{
+				MaxBatchSizeBytes:          3000000,
+				MaxBatchRequestParallelism: nil,
+				TimeoutSettings:            exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     50 * time.Millisecond,
+					RandomizationFactor: 0.5,
+					Multiplier:          1.5,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+				},
+				RemoteWriteQueue: RemoteWriteQueue{
+					Enabled:      true,
+					QueueSize:    10000,
+					NumConsumers: 5,
+				},
+				ExternalLabels:      map[string]string{},
+				AddMetricSuffixes:   true,
+				TranslationStrategy: "NoTranslation",
+				ClientConfig: func() confighttp.ClientConfig {
+					cc := confighttp.NewDefaultClientConfig()
+					cc.Endpoint = "localhost:8888"
+					cc.WriteBufferSize = 512 * 1024
+					cc.Timeout = 5 * time.Second
+					return cc
+				}(),
+				RemoteWriteProtoMsg: remoteapi.WriteV2MessageType,
+				TargetInfo: TargetInfo{
+					Enabled: true,
+				},
+			},
+			enableSendingRW2: true,
+		},
+
 		{
 			id:           component.NewIDWithName(metadata.Type, "negative_queue_size"),
 			errorMessage: "remote write queue size can't be negative",
@@ -105,10 +146,28 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "unknown_protobuf_message"),
 			errorMessage: "unknown type for remote write protobuf message io.prometheus.write.v4.Request, supported: prometheus.WriteRequest, io.prometheus.write.v2.Request",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_translation_strategy"),
+			errorMessage: "invalid translation_strategy: invalid_strategy",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "v1_no_utf8"),
+			errorMessage: "translation strategy NoUTF8EscapingWithSuffixes requires Prometheus Remote Write 2.0",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "v1_no_translation"),
+			errorMessage: "translation strategy NoTranslation requires Prometheus Remote Write 2.0",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
+			if tt.enableSendingRW2 {
+				oldValue := enableSendingRW2FeatureGate.IsEnabled()
+				testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, true)
+				defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
+			}
+
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 

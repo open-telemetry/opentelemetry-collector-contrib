@@ -104,6 +104,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - geoip
         - groupbyattrs
@@ -160,7 +161,7 @@ components:
         - expvar
         - faro
         - file_log
-        - filestats
+        - file_stats
         - flinkmetrics
         - fluentforward
         - github
@@ -220,7 +221,7 @@ components:
         - splunkenterprise
         - sqlquery
         - sqlserver
-        - sshcheck
+        - ssh_check
         - statsd
         - stef
         - syslog
