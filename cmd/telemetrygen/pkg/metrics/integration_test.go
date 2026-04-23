@@ -9,6 +9,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"sync"
@@ -19,7 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	collectormetrics "go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 )
 
 // mockMetricsReceiver is a mock gRPC receiver for testing
@@ -309,4 +317,117 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// With default batch size 100, we should get 2 batches (100 + 50)
 		assert.Len(t, metrics, 2, "Should have received 2 batches with default batch size 100")
 	})
+}
+
+func TestHTTPExporterOptions_Timeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				if tc.handlerDelay > 0 {
+					time.Sleep(tc.handlerDelay)
+				}
+			}))
+			defer srv.Close()
+			srvURL, _ := url.Parse(srv.URL)
+
+			cfg := Config{
+				Config: config.Config{
+					Insecure:       true,
+					CustomEndpoint: srvURL.Host,
+					Timeout:        tc.timeout,
+				},
+			}
+			opts, err := httpExporterOptions(&cfg)
+			require.NoError(t, err)
+
+			exp, err := otlpmetrichttp.New(t.Context(), opts...)
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = exp.Shutdown(t.Context()) })
+
+			err = exp.Export(t.Context(), &metricdata.ResourceMetrics{})
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGRPCExporterOptions_Timeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := grpc.NewServer(grpc.UnaryInterceptor(func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+				if tc.handlerDelay > 0 {
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					case <-time.After(tc.handlerDelay):
+					}
+				}
+				return handler(ctx, req)
+			}))
+			collectormetrics.RegisterGRPCServer(srv, &mockMetricsReceiver{})
+			lis, err := net.Listen("tcp", "localhost:0")
+			require.NoError(t, err)
+			go srv.Serve(lis) //nolint:errcheck
+			defer srv.Stop()
+
+			cfg := Config{
+				Config: config.Config{
+					Insecure:       true,
+					CustomEndpoint: lis.Addr().String(),
+					Timeout:        tc.timeout,
+				},
+			}
+			opts, err := grpcExporterOptions(&cfg)
+			require.NoError(t, err)
+			exp, err := otlpmetricgrpc.New(t.Context(), opts...)
+			require.NoError(t, err)
+			defer func() { _ = exp.Shutdown(t.Context()) }()
+
+			err = exp.Export(t.Context(), &metricdata.ResourceMetrics{})
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

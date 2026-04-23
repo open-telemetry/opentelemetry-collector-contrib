@@ -40,6 +40,8 @@ $defs:
         type: string
       s3_prefix:
         type: string
+      skip_ingesting_tagged_objects:
+        type: boolean
       tag_object_after_ingestion:
         type: boolean
   sqs_config:
