@@ -80,7 +80,7 @@ func TestScrape(t *testing.T) {
 				scraper.bootTime = test.bootTimeFunc
 			}
 			if test.timesFunc != nil {
-				scraper.times = test.timesFunc
+				scraper.emitCPUMetrics = newGopsutilEmitter(test.timesFunc)
 			}
 
 			err := scraper.start(t.Context(), componenttest.NewNopHost())
@@ -306,21 +306,20 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 // Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
+	var currentTimes []cpu.TimesStat
 	scraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()})
-	// mock times function to force an error in next scrape
-	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
-		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
-	}
+	scraper.emitCPUMetrics = newGopsutilEmitter(func(_ context.Context, _ bool) ([]cpu.TimesStat, error) {
+		return currentTimes, nil
+	})
+
 	err := scraper.start(t.Context(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
+	currentTimes = []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}
 	_, err = scraper.scrape(t.Context())
-	// Force error not finding CPU info
-	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
-		return []cpu.TimesStat{}, nil
-	}
 	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-	// 2nd scrape will trigger utilization metrics calculation
+
+	currentTimes = []cpu.TimesStat{}
 	md, err := scraper.scrape(t.Context())
 	var partialScrapeErr scrapererror.PartialScrapeError
 	assert.ErrorAs(t, err, &partialScrapeErr)
@@ -374,12 +373,14 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
+	var currentTimes []cpu.TimesStat
 	cpuScraper := newCPUScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: overriddenMetricsSettings})
+	cpuScraper.emitCPUMetrics = newGopsutilEmitter(func(_ context.Context, _ bool) ([]cpu.TimesStat, error) {
+		return currentTimes, nil
+	})
+
 	for _, scrapeData := range scrapesData {
-		// mock TimeStats and Now
-		cpuScraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
-			return scrapeData.times, nil
-		}
+		currentTimes = scrapeData.times
 		cpuScraper.now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, scrapeData.scrapeTime)
 			return now
