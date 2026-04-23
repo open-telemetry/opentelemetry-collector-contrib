@@ -8,7 +8,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.54.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.69.1
 	github.com/goccy/go-json v0.10.6
-	github.com/iancoleman/strcase v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.150.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.150.0
@@ -23,8 +22,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/receiver v1.56.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/collector/receiver/receivertest v0.150.1-0.20260415114935-307e3abdbae9
-	go.opentelemetry.io/collector/scraper v0.150.0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.150.0
+	go.opentelemetry.io/collector/scraper v0.150.1-0.20260415114935-307e3abdbae9
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.150.1-0.20260415114935-307e3abdbae9
 	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1

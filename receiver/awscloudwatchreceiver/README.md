@@ -32,7 +32,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles                                                                                                                                                                        |
 | `imds_endpoint` | *optional* | string | A way of specifying a custom URL to be used by the EC2 IMDS client to validate the session. If unset, and the environment variable `AWS_EC2_METADATA_SERVICE_ENDPOINT` has a value the client will use the value of the environment variable as the endpoint for operation calls. |
 | `logs`          | *optional* | `Logs`    | Configuration for logs collection. See [Logs Parameters](#logs-parameters).       |
-| `metrics`       | *optional* | `Metrics` | Configuration for metrics collection. See [Metrics Parameters](#metrics-parameters-getmetricdata--listmetrics). |
+| `metrics`       | *optional* | `Metrics` | Configuration for metrics collection via GetMetricData. See [Metrics Parameters](#metrics-parameters-getmetricdata--listmetrics). |
 | `storage`       | *optional* | string    | The ID of a storage extension to be used for state persistence.                   |
 
 ### Logs Parameters
@@ -65,42 +65,61 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
       - `names`: A list of full log stream names to filter the discovered log groups to collect from.
       - `prefixes`: A list of prefixes to filter the discovered log groups to collect from.
 
-### Metrics Parameters (GetMetricData / ListMetrics)
+### Metrics collection
 
-The metrics path uses the collector's scraper pattern. Configure under `metrics`:
+Metrics are scraped on a configurable interval using the CloudWatch [GetMetricData](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html) API. You can either list the metrics you want explicitly under `queries`, or let the receiver discover them automatically via `discovery`. The two options are mutually exclusive.
 
-| Parameter             | Type     | Default    | Description                                                                                                                                                                                  |
-| --------------------- | -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `collection_interval` | Duration | 5 minutes  | How often to scrape CloudWatch metrics.                                                                                                                                                      |
-| `period`              | Duration | 300s       | CloudWatch metric period for each GetMetricData query.                                                                                                                                       |
-| `delay`               | Duration | 10 minutes | How far back from now to set the query end time, to account for CloudWatch metric publication latency. Each scrape queries the window `[now - delay - collection_interval, now - delay]`, so consecutive scrapes do not overlap. |
-| `metrics`             | List     | —          | Explicit list of metric queries (namespace, metric_name, dimensions, stat).                                                                                                                  |
-| `discovery`           | Optional | —          | Use ListMetrics to discover metrics (mutually exclusive with `metrics`).                                                                                                                     |
+#### Scraper settings
 
-When using an explicit `metrics` list, each entry must have `namespace` and `metric_name`; for EC2 metrics include the `InstanceId` dimension.
+| Parameter             | Type     | Default    | Description |
+| --------------------- | -------- | ---------- | ----------- |
+| `collection_interval` | Duration | 5 minutes  | How often to poll CloudWatch for new data points. |
+| `period`              | Duration | 5 minutes  | The CloudWatch aggregation window. Must match the resolution of the metrics you are collecting. |
+| `delay`               | Duration | 10 minutes | How far back from now the query window ends. CloudWatch metrics are typically available within 3–10 minutes of being recorded; increase this value if you observe missing data points. Each scrape covers exactly one `collection_interval` worth of data ending at `now - delay`, so consecutive scrapes never overlap. |
 
-#### Discovery sub-parameters
+#### Explicit queries (`queries`)
 
-| Parameter     | Type    | Default   | Description                                                                              |
-| ------------- | ------- | --------- | ---------------------------------------------------------------------------------------- |
-| `namespace`   | String  | —         | Optional namespace filter (e.g. `AWS/EC2`). If omitted, all namespaces are discovered.  |
-| `metric_name` | String  | —         | Optional metric name filter.                                                             |
-| `limit`       | Integer | 100       | Maximum number of metrics to discover and scrape per collection interval.                |
-| `stat`        | String  | `Average` | CloudWatch statistic applied to all discovered metrics (e.g. `Sum`, `Maximum`).         |
+List every metric you want to collect. Each entry supports:
 
-#### Naming conventions
+| Parameter     | Type            | Required | Description |
+| ------------- | --------------- | -------- | ----------- |
+| `namespace`   | String          | yes      | CloudWatch namespace, e.g. `AWS/EC2`. |
+| `metric_name` | String          | yes      | CloudWatch metric name, e.g. `CPUUtilization`. |
+| `dimensions`  | Map             | no       | CloudWatch dimension key/value pairs. Required for metrics that are scoped to a specific resource (e.g. a single EC2 instance or DynamoDB table). Original casing is preserved. |
+| `stats`       | List of strings | no       | Which CloudWatch statistics to fetch. See [Statistics](#statistics) below. |
 
-Metric names and dimension keys are converted from PascalCase to snake_case (e.g. `CPUUtilization` → `cpu_utilization`, `LoadBalancer` → `load_balancer`). Well-known dimensions are additionally mapped to OpenTelemetry semantic conventions:
+#### Auto-discovery (`discovery`)
 
-| CloudWatch dimension | OTel attribute        |
-| -------------------- | --------------------- |
-| `InstanceId`         | `service.instance.id` |
+Instead of listing metrics manually, the receiver can call [ListMetrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_ListMetrics.html) to discover them automatically.
 
-All other dimensions follow the snake_case conversion and are emitted as plain resource attributes.
+| Parameter     | Type            | Default | Description |
+| ------------- | --------------- | ------- | ----------- |
+| `namespace`   | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). If omitted, all namespaces are discovered. |
+| `metric_name` | String          | —       | Restrict discovery to metrics with this name. |
+| `limit`       | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
+| `stats`       | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
 
-> **Note on `delay`:** CloudWatch metrics are typically available within 3–10 minutes of being recorded. If `delay` is set too low, the query window may fall in a period where data has not yet been published. Increase `delay` if you observe missing data points.
+#### Statistics
 
-#### Explicit Metrics Example
+The `stats` field controls which CloudWatch statistics are fetched and how they are represented in OpenTelemetry:
+
+- **Omitted (default):** the four standard statistics — `Sum`, `SampleCount`, `Minimum`, `Maximum` — are fetched and combined into a single **Summary** data point per timestamp (`sum`, `count`, quantile 0.0 for minimum, quantile 1.0 for maximum). This matches the [CloudWatch Metric Streams OpenTelemetry 1.0.0 format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html) and costs 4 API sub-queries per metric per scrape.
+- **Explicit list:** only the listed statistics are fetched, each costing one API sub-query. Each produces a separate **Gauge** data point on the same metric, identified by a `stat` attribute (e.g. `stat = Average`). Use this when you only need a subset of statistics to reduce AWS API costs. Different metrics in the same `queries` list can have different `stats`.
+
+Standard statistics: `Average`, `Sum`, `Minimum`, `Maximum`, `SampleCount`.
+Extended statistics (percentiles, trimmed means, etc.): `p99`, `p95`, `p50`, `tm99`, `wm99`, etc. Extended statistics are only supported on metrics that explicitly enable them in CloudWatch — requesting an unsupported extended statistic returns no data.
+
+#### Output format
+
+All metrics follow the [CloudWatch Metric Streams OpenTelemetry 1.0.0 format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html):
+
+- **Metric name:** `amazonaws.com/{Namespace}/{MetricName}` (CloudWatch casing preserved)
+- **Resource attributes:** `cloud.provider = aws`, `cloud.region = <configured region>`
+- **Data point attributes:** `Namespace`, `MetricName`, and `Dimensions` (a nested key/value map, omitted when no dimensions are set)
+
+#### Examples
+
+Collect two EC2 metrics as Summary (all four standard statistics):
 
 ```yaml
 awscloudwatch:
@@ -108,19 +127,41 @@ awscloudwatch:
   metrics:
     collection_interval: 1m
     period: 60s
-    delay: 5m
-    metrics:
+    queries:
       - namespace: AWS/EC2
         metric_name: CPUUtilization
-        stat: Average
         dimensions:
           InstanceId: i-1234567890abcdef0
       - namespace: AWS/EC2
         metric_name: NetworkIn
-        stat: Sum
 ```
 
-#### Metrics Autodiscovery Example
+Collect specific statistics only (Gauge output, fewer API sub-queries per metric):
+
+```yaml
+awscloudwatch:
+  region: us-east-1
+  metrics:
+    collection_interval: 1m
+    period: 60s
+    queries:
+      - namespace: AWS/EC2
+        metric_name: CPUUtilization
+        stats:
+          - Average
+          - p99
+      - namespace: AWS/DynamoDB
+        metric_name: SuccessfulRequestLatency
+        dimensions:
+          TableName: my-table
+          Operation: GetItem
+        stats:
+          - p50
+          - p95
+          - p99
+```
+
+Auto-discover all EC2 metrics (Summary output):
 
 ```yaml
 awscloudwatch:
@@ -132,7 +173,6 @@ awscloudwatch:
     discovery:
       namespace: AWS/EC2
       limit: 200
-      stat: Average
 ```
 
 #### Logs Autodiscovery Example Configuration

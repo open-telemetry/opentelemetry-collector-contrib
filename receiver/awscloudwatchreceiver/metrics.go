@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
-	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,12 +26,17 @@ import (
 )
 
 const (
-	// dimensionInstanceID is the CloudWatch dimension name for EC2 instance; we map it to service.instance.id.
-	dimensionInstanceID = "InstanceId"
-	namespaceDelimiter  = "/"
-
 	// maxGetMetricDataQueries is the AWS limit per GetMetricData request.
 	maxGetMetricDataQueries = 500
+
+	// statsPerMetric is the number of CloudWatch statistics we request per metric (Sum, SampleCount, Minimum, Maximum).
+	statsPerMetric = 4
+
+	// stat index constants within a metric's sub-queries
+	statIdxSum   = 0
+	statIdxCount = 1
+	statIdxMin   = 2
+	statIdxMax   = 3
 )
 
 type cloudWatchMetricsScraper struct {
@@ -58,9 +62,6 @@ func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloud
 		if d.Limit <= 0 {
 			d.Limit = defaultMetricsDiscoverLimit
 		}
-		if d.Stat == "" {
-			d.Stat = defaultMetricsStat
-		}
 		discovery = &d
 	}
 	return &cloudWatchMetricsScraper{
@@ -69,7 +70,7 @@ func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloud
 		period:             cfg.Metrics.Period,
 		delay:              cfg.Metrics.Delay,
 		collectionInterval: cfg.Metrics.CollectionInterval,
-		metrics:            cfg.Metrics.Metrics,
+		metrics:            cfg.Metrics.Queries,
 		discovery:          discovery,
 	}
 }
@@ -117,14 +118,25 @@ func (s *cloudWatchMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	startTime := alignTimeToPeriod(endTime.Add(-s.collectionInterval), periodSec)
 
 	md := pmetric.NewMetrics()
-	for batchStart := 0; batchStart < len(metricsToScrape); batchStart += maxGetMetricDataQueries {
-		batchEnd := min(batchStart+maxGetMetricDataQueries, len(metricsToScrape))
+	for batchStart := 0; batchStart < len(metricsToScrape); {
+		// Build the largest batch whose total sub-query count stays within the API limit.
+		queryCount := numSubQueries(metricsToScrape[batchStart])
+		batchEnd := batchStart + 1
+		for batchEnd < len(metricsToScrape) {
+			n := numSubQueries(metricsToScrape[batchEnd])
+			if queryCount+n > maxGetMetricDataQueries {
+				break
+			}
+			queryCount += n
+			batchEnd++
+		}
 		batch := metricsToScrape[batchStart:batchEnd]
 		batchMd, err := s.pollBatch(ctx, batch, startTime, endTime)
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
 		batchMd.ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		batchStart = batchEnd
 	}
 	return md, nil
 }
@@ -167,7 +179,7 @@ func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQue
 				Namespace:  aws.ToString(met.Namespace),
 				MetricName: aws.ToString(met.MetricName),
 				Dimensions: dimensionsToMap(met.Dimensions),
-				Stat:       s.discovery.Stat,
+				Stats:      s.discovery.Stats,
 			}
 			out = append(out, q)
 		}
@@ -192,28 +204,48 @@ func dimensionsToMap(dims []types.Dimension) map[string]string {
 	return out
 }
 
+// metricStats are the four CloudWatch statistics fetched for every metric to build a Summary.
+var metricStats = [statsPerMetric]string{"Sum", "SampleCount", "Minimum", "Maximum"}
+
+// numSubQueries returns the number of GetMetricData sub-queries needed for one metric.
+// Metrics without an explicit Stats list use all four summary statistics.
+func numSubQueries(q MetricQuery) int {
+	if len(q.Stats) == 0 {
+		return statsPerMetric
+	}
+	return len(q.Stats)
+}
+
 // pollBatch runs GetMetricData for a batch of metrics and returns the converted pdata.Metrics.
+// Each metric generates four sub-queries (Sum, SampleCount, Minimum, Maximum) so that the results
+// can be combined into an OpenTelemetry Summary metric aligned with the CloudWatch Metric Streams
+// OpenTelemetry 1.0.0 format.
 // It follows pagination via NextToken to collect all data points for the requested time window.
 func (s *cloudWatchMetricsScraper) pollBatch(ctx context.Context, batch []MetricQuery, startTime, endTime time.Time) (pmetric.Metrics, error) {
-	queries := make([]types.MetricDataQuery, 0, len(batch))
+	totalQueries := 0
+	for _, q := range batch {
+		totalQueries += numSubQueries(q)
+	}
+	queries := make([]types.MetricDataQuery, 0, totalQueries)
 	for i, q := range batch {
-		stat := q.Stat
-		if stat == "" {
-			stat = defaultMetricsStat
+		stats := metricStats[:]
+		if len(q.Stats) > 0 {
+			stats = q.Stats
 		}
-		mdq := types.MetricDataQuery{
-			Id: aws.String(fmt.Sprintf("q%d", i)),
-			MetricStat: &types.MetricStat{
-				Metric: &types.Metric{
-					Namespace:  aws.String(q.Namespace),
-					MetricName: aws.String(q.MetricName),
-					Dimensions: dimensionsFromMap(q.Dimensions),
+		for si, stat := range stats {
+			queries = append(queries, types.MetricDataQuery{
+				Id: aws.String(fmt.Sprintf("q%d_%d", i, si)),
+				MetricStat: &types.MetricStat{
+					Metric: &types.Metric{
+						Namespace:  aws.String(q.Namespace),
+						MetricName: aws.String(q.MetricName),
+						Dimensions: dimensionsFromMap(q.Dimensions),
+					},
+					Period: aws.Int32(int32(s.period.Seconds())),
+					Stat:   aws.String(stat),
 				},
-				Period: aws.Int32(int32(s.period.Seconds())),
-				Stat:   aws.String(stat),
-			},
+			})
 		}
-		queries = append(queries, mdq)
 	}
 
 	input := &cloudwatch.GetMetricDataInput{
@@ -271,110 +303,181 @@ func dimensionsFromMap(d map[string]string) []types.Dimension {
 	return out
 }
 
-// resourceKey returns a stable string identifying a resource by namespace and dimensions,
-// used to group metrics from the same resource under a single ResourceMetrics.
-// Dimensions are sorted by key for determinism. "," and "=" are safe separators because
-// AWS namespace and dimension names/values are restricted to [a-zA-Z0-9._\-#:/].
-func resourceKey(namespace string, dimensions map[string]string) string {
-	keys := make([]string, 0, len(dimensions))
-	for k := range dimensions {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	parts := make([]string, 0, 1+len(keys))
-	parts = append(parts, namespace)
-	for _, k := range keys {
-		parts = append(parts, k+"="+dimensions[k])
-	}
-	return strings.Join(parts, ",")
-}
-
-// toServiceAttributes splits the CloudWatch namespace into service.namespace and service.name
-// E.g. "AWS/EC2" -> ("AWS", "EC2"); otherwise returns ("", namespace).
-func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
-	before, after, ok := strings.Cut(namespace, namespaceDelimiter)
-	if ok && strings.EqualFold(before, conventions.CloudProviderAWS.Value.AsString()) {
-		return before, after
-	}
-	return "", namespace
-}
-
-// setResourceAttributes sets resource attributes from namespace and dimensions, reusing the same
-// conventions (cloud.*, service.*, InstanceId -> service.instance.id).
-func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource, namespace string, dimensions map[string]string) {
+// setResourceAttributes sets the resource-level attributes that identify the AWS source.
+// Aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format: only cloud.provider
+// and cloud.region are set on the resource; namespace and dimensions go on data points.
+func (s *cloudWatchMetricsScraper) setResourceAttributes(resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	attrs.PutStr(string(conventions.CloudRegionKey), s.cfg.Region)
-	serviceNamespace, serviceName := toServiceAttributes(namespace)
-	if serviceNamespace != "" {
-		attrs.PutStr(string(conventions.ServiceNamespaceKey), serviceNamespace)
-	}
-	attrs.PutStr(string(conventions.ServiceNameKey), serviceName)
-	for k, v := range dimensions {
-		switch k {
-		case dimensionInstanceID:
-			attrs.PutStr(string(conventions.ServiceInstanceIDKey), v)
-		default:
-			attrs.PutStr(strcase.ToSnake(k), v)
-		}
-	}
 }
 
-// convertGetMetricDataToPdata converts GetMetricData results to pdata.Metrics. Resource attributes follow the
-// same conventions (cloud.*, service.*, dimension mapping).
-// Results are matched to metricsList by query Id ("q0", "q1", ...).
-// Metrics sharing the same namespace and dimensions are grouped under a single ResourceMetrics.
-func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.MetricDataResult, metricsList []MetricQuery, endTime time.Time) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	scopeByKey := make(map[string]pmetric.ScopeMetrics)
-	// metricByKey deduplicates metrics across paginated results: the same query ID
-	// may appear in multiple GetMetricData pages, each carrying different data points.
-	type metricKey struct{ resource, name string }
-	metricByKey := make(map[metricKey]pmetric.Metric)
+// parseQueryID parses a sub-query ID of the form "q{metricIdx}_{statIdx}".
+func parseQueryID(id string) (metricIdx, statIdx int, err error) {
+	trimmed := strings.TrimPrefix(id, "q")
+	parts := strings.SplitN(trimmed, "_", 2)
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid query ID %q", id)
+	}
+	metricIdx, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return
+	}
+	statIdx, err = strconv.Atoi(parts[1])
+	return
+}
 
-	// Precompute snake_case names once; the same query may appear across multiple pages.
-	metricNames := make([]string, len(metricsList))
+// convertGetMetricDataToPdata converts GetMetricData results to pdata.Metrics.
+//
+// When a MetricQuery has no Stats (empty), all four statistics are fetched and combined into an
+// OpenTelemetry Summary metric, aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format:
+//   - Metric name: "amazonaws.com/{Namespace}/{MetricName}".
+//   - Metric type: Summary with count (SampleCount), sum (Sum), min quantile (Minimum), max quantile (Maximum).
+//   - Data point attributes: Namespace (string), MetricName (string), Dimensions (kvlist).
+//
+// When a MetricQuery has explicit Stats, each selected statistic is emitted as a Gauge data point on the
+// same metric, with an additional "stat" attribute identifying the statistic.
+func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.MetricDataResult, metricsList []MetricQuery, endTime time.Time) pmetric.Metrics {
+	// statMaps[metricIdx][statIdx] holds a map from timestamp → value for that metric/stat combination.
+	// The inner slice length equals numSubQueries(metricsList[i]).
+	type tsMap = map[time.Time]float64
+	statMaps := make([][]tsMap, len(metricsList))
 	for i, q := range metricsList {
-		metricNames[i] = strcase.ToSnake(q.MetricName)
+		n := numSubQueries(q)
+		statMaps[i] = make([]tsMap, n)
+		for j := range statMaps[i] {
+			statMaps[i][j] = make(tsMap)
+		}
 	}
 
 	for _, result := range results {
-		if len(result.Values) == 0 || result.Id == nil {
+		if result.Id == nil || len(result.Values) == 0 {
 			continue
 		}
-		idx, err := strconv.Atoi(strings.TrimPrefix(*result.Id, "q"))
-		if err != nil || idx < 0 || idx >= len(metricsList) {
+		metricIdx, statIdx, err := parseQueryID(*result.Id)
+		if err != nil || metricIdx < 0 || metricIdx >= len(metricsList) || statIdx < 0 || statIdx >= len(statMaps[metricIdx]) {
 			continue
 		}
-		q := metricsList[idx]
-		key := resourceKey(q.Namespace, q.Dimensions)
-		sm, ok := scopeByKey[key]
-		if !ok {
-			rm := md.ResourceMetrics().AppendEmpty()
-			s.setResourceAttributes(rm.Resource(), q.Namespace, q.Dimensions)
-			sm = rm.ScopeMetrics().AppendEmpty()
-			sm.Scope().SetName(metadata.ScopeName)
-			scopeByKey[key] = sm
+		for j, v := range result.Values {
+			ts := endTime
+			if j < len(result.Timestamps) {
+				ts = result.Timestamps[j]
+			}
+			statMaps[metricIdx][statIdx][ts] = v
 		}
-		metricName := metricNames[idx]
-		mk := metricKey{key, metricName}
-		metric, exists := metricByKey[mk]
-		if !exists {
-			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(metricName)
-			metric.SetEmptyGauge()
-			metricByKey[mk] = metric
+	}
+
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	s.setResourceAttributes(rm.Resource())
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName(metadata.ScopeName)
+
+	periodNano := pcommon.Timestamp(s.period.Nanoseconds())
+
+	for i, q := range metricsList {
+		// Skip metrics with no data across any stat.
+		hasData := false
+		for _, tsm := range statMaps[i] {
+			if len(tsm) > 0 {
+				hasData = true
+				break
+			}
+		}
+		if !hasData {
+			continue
 		}
 
-		for j, v := range result.Values {
-			dp := metric.Gauge().DataPoints().AppendEmpty()
-			dp.SetDoubleValue(v)
-			if j < len(result.Timestamps) {
-				dp.SetTimestamp(pcommon.Timestamp(result.Timestamps[j].UnixNano()))
-			} else {
-				dp.SetTimestamp(pcommon.NewTimestampFromTime(endTime))
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("amazonaws.com/" + q.Namespace + "/" + q.MetricName)
+
+		if len(q.Stats) == 0 {
+			// Summary mode: combine Sum, SampleCount, Minimum, Maximum into one Summary data point per timestamp.
+			tsSet := make(map[time.Time]struct{})
+			for _, tsm := range statMaps[i] {
+				for ts := range tsm {
+					tsSet[ts] = struct{}{}
+				}
+			}
+			timestamps := make([]time.Time, 0, len(tsSet))
+			for ts := range tsSet {
+				timestamps = append(timestamps, ts)
+			}
+			sort.Slice(timestamps, func(a, b int) bool { return timestamps[a].Before(timestamps[b]) })
+
+			summary := metric.SetEmptySummary()
+			for _, ts := range timestamps {
+				dp := summary.DataPoints().AppendEmpty()
+				tsNano := pcommon.NewTimestampFromTime(ts)
+				dp.SetTimestamp(tsNano)
+				if tsNano > periodNano {
+					dp.SetStartTimestamp(tsNano - periodNano)
+				}
+				if count, ok := statMaps[i][statIdxCount][ts]; ok {
+					dp.SetCount(uint64(count))
+				}
+				if sum, ok := statMaps[i][statIdxSum][ts]; ok {
+					dp.SetSum(sum)
+				}
+				if minVal, ok := statMaps[i][statIdxMin][ts]; ok {
+					qv := dp.QuantileValues().AppendEmpty()
+					qv.SetQuantile(0.0)
+					qv.SetValue(minVal)
+				}
+				if maxVal, ok := statMaps[i][statIdxMax][ts]; ok {
+					qv := dp.QuantileValues().AppendEmpty()
+					qv.SetQuantile(1.0)
+					qv.SetValue(maxVal)
+				}
+				applyQueryAttrs(dp.Attributes(), q)
+			}
+		} else {
+			// Gauge mode: one Gauge data point per (stat, timestamp), tagged with a "stat" attribute.
+			gauge := metric.SetEmptyGauge()
+			for si, statName := range q.Stats {
+				timestamps := make([]time.Time, 0, len(statMaps[i][si]))
+				for ts := range statMaps[i][si] {
+					timestamps = append(timestamps, ts)
+				}
+				sort.Slice(timestamps, func(a, b int) bool { return timestamps[a].Before(timestamps[b]) })
+				for _, ts := range timestamps {
+					dp := gauge.DataPoints().AppendEmpty()
+					tsNano := pcommon.NewTimestampFromTime(ts)
+					dp.SetTimestamp(tsNano)
+					if tsNano > periodNano {
+						dp.SetStartTimestamp(tsNano - periodNano)
+					}
+					dp.SetDoubleValue(statMaps[i][si][ts])
+					attrs := dp.Attributes()
+					attrs.PutStr("Namespace", q.Namespace)
+					attrs.PutStr("MetricName", q.MetricName)
+					attrs.PutStr("stat", statName)
+					if len(q.Dimensions) > 0 {
+						dimsMap := attrs.PutEmptyMap("Dimensions")
+						for k, v := range q.Dimensions {
+							dimsMap.PutStr(k, v)
+						}
+					}
+				}
 			}
 		}
 	}
+
+	// Drop the ResourceMetrics if no metric had any data.
+	if sm.Metrics().Len() == 0 {
+		return pmetric.NewMetrics()
+	}
 	return md
+}
+
+// applyQueryAttrs sets the common data point attributes: Namespace, MetricName, and Dimensions (kvlist).
+func applyQueryAttrs(attrs pcommon.Map, q MetricQuery) {
+	attrs.PutStr("Namespace", q.Namespace)
+	attrs.PutStr("MetricName", q.MetricName)
+	if len(q.Dimensions) > 0 {
+		dimsMap := attrs.PutEmptyMap("Dimensions")
+		for k, v := range q.Dimensions {
+			dimsMap.PutStr(k, v)
+		}
+	}
 }

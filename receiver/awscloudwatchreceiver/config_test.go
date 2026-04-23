@@ -308,17 +308,15 @@ func TestLoadMetricsConfig(t *testing.T) {
 					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute},
 					Period:           60 * time.Second,
 					Delay:            defaultMetricsDelay,
-					Metrics: []MetricQuery{
+					Queries: []MetricQuery{
 						{
 							Namespace:  "AWS/EC2",
 							MetricName: "CPUUtilization",
-							Stat:       "Average",
 							Dimensions: map[string]string{"InstanceId": "i-1234567890abcdef0"},
 						},
 						{
 							Namespace:  "AWS/EC2",
 							MetricName: "NetworkIn",
-							Stat:       "Sum",
 						},
 					},
 				},
@@ -336,7 +334,42 @@ func TestLoadMetricsConfig(t *testing.T) {
 					Discovery: &MetricsDiscoveryConfig{
 						Namespace: "AWS/EC2",
 						Limit:     200,
-						Stat:      "Maximum",
+					},
+				},
+			},
+		},
+		{
+			name: "metrics-explicit-gauge",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute},
+					Period:           60 * time.Second,
+					Delay:            defaultMetricsDelay,
+					Queries: []MetricQuery{
+						{
+							Namespace:  "AWS/EC2",
+							MetricName: "CPUUtilization",
+							Stats:      []string{"Average", "p99"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "metrics-discovery-gauge",
+			expectedConfig: &Config{
+				Region: "us-east-1",
+				Logs:   defaultLogs(),
+				Metrics: MetricsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute},
+					Period:           300 * time.Second,
+					Delay:            defaultMetricsDelay,
+					Discovery: &MetricsDiscoveryConfig{
+						Namespace: "AWS/EC2",
+						Limit:     100,
+						Stats:     []string{"Sum", "Average"},
 					},
 				},
 			},
@@ -352,7 +385,6 @@ func TestLoadMetricsConfig(t *testing.T) {
 					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
 						Limit: 50,
-						Stat:  "Sum",
 					},
 				},
 			},
@@ -402,7 +434,7 @@ func TestValidateMetricsConfig(t *testing.T) {
 			name: "explicit metrics valid",
 			config: withMetrics(MetricsConfig{
 				Period: 60 * time.Second,
-				Metrics: []MetricQuery{
+				Queries: []MetricQuery{
 					{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},
 				},
 			}),
@@ -417,7 +449,7 @@ func TestValidateMetricsConfig(t *testing.T) {
 		{
 			name: "metrics and discovery mutually exclusive",
 			config: withMetrics(MetricsConfig{
-				Metrics:   []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+				Queries:   []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
 				Discovery: &MetricsDiscoveryConfig{Limit: 10},
 			}),
 			expectedErr: errMetricsAndDiscoveryConfigured,
@@ -433,7 +465,7 @@ func TestValidateMetricsConfig(t *testing.T) {
 			name: "collection interval too short",
 			config: withMetrics(MetricsConfig{
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 500 * time.Millisecond},
-				Metrics:          []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+				Queries:          []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
 			}),
 			expectedErr: errInvalidMetricsCollectionInterval,
 		},
@@ -441,7 +473,7 @@ func TestValidateMetricsConfig(t *testing.T) {
 			name: "period too short",
 			config: withMetrics(MetricsConfig{
 				Period:  500 * time.Millisecond,
-				Metrics: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+				Queries: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
 			}),
 			expectedErr: errInvalidMetricsPeriod,
 		},
@@ -449,7 +481,7 @@ func TestValidateMetricsConfig(t *testing.T) {
 			name: "delay too short",
 			config: withMetrics(MetricsConfig{
 				Delay:   500 * time.Millisecond,
-				Metrics: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+				Queries: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
 			}),
 			expectedErr: errInvalidMetricsDelay,
 		},
@@ -464,14 +496,14 @@ func TestValidateMetricsConfig(t *testing.T) {
 		{
 			name: "metric missing namespace",
 			config: withMetrics(MetricsConfig{
-				Metrics: []MetricQuery{{MetricName: "CPUUtilization"}},
+				Queries: []MetricQuery{{MetricName: "CPUUtilization"}},
 			}),
 			expectedErr: errMetricMissingNamespace,
 		},
 		{
 			name: "metric missing name",
 			config: withMetrics(MetricsConfig{
-				Metrics: []MetricQuery{{Namespace: "AWS/EC2"}},
+				Queries: []MetricQuery{{Namespace: "AWS/EC2"}},
 			}),
 			expectedErr: errMetricMissingName,
 		},
@@ -479,14 +511,14 @@ func TestValidateMetricsConfig(t *testing.T) {
 			name: "period zero uses default (valid)",
 			config: withMetrics(MetricsConfig{
 				Period:  0,
-				Metrics: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+				Queries: []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
 			}),
 		},
 		{
 			name: "collection interval zero uses default (valid)",
 			config: withMetrics(MetricsConfig{
 				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 0},
-				Metrics:          []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+				Queries:          []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
 			}),
 		},
 	}

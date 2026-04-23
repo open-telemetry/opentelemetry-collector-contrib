@@ -19,7 +19,6 @@ var (
 	defaultEventLimit           = 1000
 	defaultLogGroupLimit        = 50
 	defaultMetricsPeriod        = 300 * time.Second
-	defaultMetricsStat          = "Average"
 	defaultMetricsCollectionInt = 5 * time.Minute
 	defaultMetricsDiscoverLimit = 100
 	defaultMetricsDelay         = 10 * time.Minute
@@ -46,7 +45,7 @@ type MetricsConfig struct {
 	// CloudWatch metrics are typically available within 3–10 minutes of being recorded.
 	// Defaults to 10m.
 	Delay     time.Duration           `mapstructure:"delay"`
-	Metrics   []MetricQuery           `mapstructure:"metrics"`
+	Queries   []MetricQuery           `mapstructure:"queries"`
 	Discovery *MetricsDiscoveryConfig `mapstructure:"discovery,omitempty"`
 }
 
@@ -56,15 +55,23 @@ type MetricsDiscoveryConfig struct {
 	Namespace  string `mapstructure:"namespace"`   // optional filter, e.g. "AWS/EC2"
 	MetricName string `mapstructure:"metric_name"` // optional filter
 	Limit      int    `mapstructure:"limit"`       // max metrics to discover and scrape (default 100)
-	Stat       string `mapstructure:"stat"`        // e.g. Average, Sum; default Average
+	// Stats selects which CloudWatch statistics to fetch for all discovered metrics.
+	// Same semantics as MetricQuery.Stats.
+	Stats []string `mapstructure:"stats"`
 }
 
 // MetricQuery defines a single CloudWatch metric to scrape via GetMetricData.
+// When Stats is empty all four statistics (Sum, SampleCount, Minimum, Maximum) are fetched and
+// combined into an OpenTelemetry Summary metric aligned with the CloudWatch Metric Streams
+// OpenTelemetry 1.0.0 format.
+// When Stats is set, each named statistic is fetched and emitted as a separate Gauge data point
+// on the same metric, with a "stat" attribute identifying the statistic.
+// CloudWatch statistic names: Sum, Average, Minimum, Maximum, SampleCount, p99, p95, etc.
 type MetricQuery struct {
 	Namespace  string            `mapstructure:"namespace"`
 	MetricName string            `mapstructure:"metric_name"`
 	Dimensions map[string]string `mapstructure:"dimensions"`
-	Stat       string            `mapstructure:"stat"` // e.g. Average, Sum, Maximum, Minimum; default Average
+	Stats      []string          `mapstructure:"stats"`
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
@@ -111,13 +118,14 @@ var (
 	errMetricMissingName                = errors.New("metric must have metric_name")
 	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
+	errEmptyStatName                    = errors.New("stat name must not be empty")
 )
 
 // Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
 // does not cause a validation error when metrics collection is not configured. The scraper
 // framework requires a positive CollectionInterval only when the metrics controller is started.
 func (m *MetricsConfig) Validate() error {
-	if len(m.Metrics) == 0 && m.Discovery == nil {
+	if len(m.Queries) == 0 && m.Discovery == nil {
 		return nil
 	}
 	return m.ControllerConfig.Validate()
@@ -156,27 +164,37 @@ func (c *Config) validateMetricsDurations() error {
 }
 
 func (c *Config) validateMetricsConfig() error {
-	if c.Metrics.Discovery != nil && len(c.Metrics.Metrics) > 0 {
+	if c.Metrics.Discovery != nil && len(c.Metrics.Queries) > 0 {
 		return errMetricsAndDiscoveryConfigured
 	}
 	if c.Metrics.Discovery != nil {
 		if c.Metrics.Discovery.Limit <= 0 {
 			return errInvalidDiscoveryLimit
 		}
+		for j, st := range c.Metrics.Discovery.Stats {
+			if st == "" {
+				return fmt.Errorf("metrics.discovery.stats[%d]: %w", j, errEmptyStatName)
+			}
+		}
 		return c.validateMetricsDurations()
 	}
-	if len(c.Metrics.Metrics) == 0 {
+	if len(c.Metrics.Queries) == 0 {
 		return nil
 	}
 	if err := c.validateMetricsDurations(); err != nil {
 		return err
 	}
-	for i, m := range c.Metrics.Metrics {
+	for i, m := range c.Metrics.Queries {
 		if m.Namespace == "" {
 			return fmt.Errorf("metrics[%d]: %w", i, errMetricMissingNamespace)
 		}
 		if m.MetricName == "" {
 			return fmt.Errorf("metrics[%d]: %w", i, errMetricMissingName)
+		}
+		for j, st := range m.Stats {
+			if st == "" {
+				return fmt.Errorf("metrics[%d].stats[%d]: %w", i, j, errEmptyStatName)
+			}
 		}
 	}
 	return nil

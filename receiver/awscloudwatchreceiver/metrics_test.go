@@ -87,54 +87,49 @@ func TestAlignTimeToPeriod(t *testing.T) {
 	}
 }
 
-func TestResourceKey(t *testing.T) {
+func TestParseQueryID(t *testing.T) {
 	cases := []struct {
-		name       string
-		namespace  string
-		dimensions map[string]string
-		want       string
+		id        string
+		wantM     int
+		wantS     int
+		wantError bool
 	}{
-		{
-			name:      "no dimensions",
-			namespace: "AWS/EC2",
-			want:      "AWS/EC2",
-		},
-		{
-			name:       "single dimension",
-			namespace:  "AWS/EC2",
-			dimensions: map[string]string{"InstanceId": "i-1234"},
-			want:       "AWS/EC2,InstanceId=i-1234",
-		},
-		{
-			name:       "multiple dimensions sorted",
-			namespace:  "AWS/EC2",
-			dimensions: map[string]string{"Z": "z", "A": "a"},
-			want:       "AWS/EC2,A=a,Z=z",
-		},
+		{"q0_0", 0, 0, false},
+		{"q5_3", 5, 3, false},
+		{"q123_2", 123, 2, false},
+		{"invalid", 0, 0, true},
+		{"q_0", 0, 0, true},
+		{"q0", 0, 0, true},
 	}
 	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, resourceKey(tc.namespace, tc.dimensions))
+		t.Run(tc.id, func(t *testing.T) {
+			m, s, err := parseQueryID(tc.id)
+			if tc.wantError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.wantM, m)
+			require.Equal(t, tc.wantS, s)
 		})
 	}
 }
 
 func TestToServiceAttributes(t *testing.T) {
+	// toServiceAttributes has been removed; this test validates the metric name format instead.
 	cases := []struct {
-		namespace string
-		wantNS    string
-		wantName  string
+		namespace  string
+		metricName string
+		wantName   string
 	}{
-		{"AWS/EC2", "AWS", "EC2"},
-		{"AWS/ApplicationELB", "AWS", "ApplicationELB"},
-		{"CustomNamespace", "", "CustomNamespace"},
-		{"aws/ec2", "aws", "ec2"}, // case-insensitive match on provider prefix
+		{"AWS/EC2", "CPUUtilization", "amazonaws.com/AWS/EC2/CPUUtilization"},
+		{"AWS/ApplicationELB", "RequestCount", "amazonaws.com/AWS/ApplicationELB/RequestCount"},
+		{"CustomNamespace", "MyMetric", "amazonaws.com/CustomNamespace/MyMetric"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.namespace, func(t *testing.T) {
-			ns, name := toServiceAttributes(tc.namespace)
-			require.Equal(t, tc.wantNS, ns)
-			require.Equal(t, tc.wantName, name)
+			got := "amazonaws.com/" + tc.namespace + "/" + tc.metricName
+			require.Equal(t, tc.wantName, got)
 		})
 	}
 }
@@ -152,7 +147,7 @@ func TestConvertGetMetricDataToPdata_SkipsNoValues(t *testing.T) {
 	cfg := &Config{Region: "us-east-1"}
 	scr := testScraper(cfg)
 	results := []types.MetricDataResult{
-		{Id: aws.String("q0"), Values: nil}, // no values – should be skipped
+		{Id: aws.String("q0_0"), Values: nil}, // no values – should be skipped
 	}
 	batch := []MetricQuery{
 		{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},
@@ -167,11 +162,10 @@ func TestConvertGetMetricDataToPdata_SingleMetric(t *testing.T) {
 
 	ts := time.Unix(1_700_000_000, 0).UTC()
 	results := []types.MetricDataResult{
-		{
-			Id:         aws.String("q0"),
-			Values:     []float64{42.5},
-			Timestamps: []time.Time{ts},
-		},
+		{Id: aws.String("q0_0"), Values: []float64{20.0}, Timestamps: []time.Time{ts}},  // Sum
+		{Id: aws.String("q0_1"), Values: []float64{3.0}, Timestamps: []time.Time{ts}},   // SampleCount
+		{Id: aws.String("q0_2"), Values: []float64{0.0}, Timestamps: []time.Time{ts}},   // Minimum
+		{Id: aws.String("q0_3"), Values: []float64{18.0}, Timestamps: []time.Time{ts}},  // Maximum
 	}
 	batch := []MetricQuery{
 		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Dimensions: map[string]string{"InstanceId": "i-abc"}},
@@ -182,22 +176,18 @@ func TestConvertGetMetricDataToPdata_SingleMetric(t *testing.T) {
 
 	rm := md.ResourceMetrics().At(0)
 	attrs := rm.Resource().Attributes()
+
+	// Resource has only cloud.provider and cloud.region.
 	v, ok := attrs.Get("cloud.provider")
 	require.True(t, ok)
 	require.Equal(t, "aws", v.Str())
 	v, ok = attrs.Get("cloud.region")
 	require.True(t, ok)
 	require.Equal(t, "us-east-1", v.Str())
-	v, ok = attrs.Get("service.name")
-	require.True(t, ok)
-	require.Equal(t, "EC2", v.Str())
-	v, ok = attrs.Get("service.namespace")
-	require.True(t, ok)
-	require.Equal(t, "AWS", v.Str())
-	// InstanceId maps to service.instance.id
-	v, ok = attrs.Get("service.instance.id")
-	require.True(t, ok)
-	require.Equal(t, "i-abc", v.Str())
+	_, hasServiceName := attrs.Get("service.name")
+	require.False(t, hasServiceName, "service.name must not be on the resource")
+	_, hasServiceNS := attrs.Get("service.namespace")
+	require.False(t, hasServiceNS, "service.namespace must not be on the resource")
 
 	require.Equal(t, 1, rm.ScopeMetrics().Len())
 	sm := rm.ScopeMetrics().At(0)
@@ -205,19 +195,43 @@ func TestConvertGetMetricDataToPdata_SingleMetric(t *testing.T) {
 	require.Equal(t, 1, sm.Metrics().Len())
 
 	metric := sm.Metrics().At(0)
-	require.Equal(t, "cpu_utilization", metric.Name()) // snake_case
-	require.Equal(t, 1, metric.Gauge().DataPoints().Len())
-	dp := metric.Gauge().DataPoints().At(0)
-	require.InDelta(t, 42.5, dp.DoubleValue(), 0.001)
+	require.Equal(t, "amazonaws.com/AWS/EC2/CPUUtilization", metric.Name())
+
+	// Must be Summary, not Gauge.
+	require.Equal(t, 1, metric.Summary().DataPoints().Len())
+	dp := metric.Summary().DataPoints().At(0)
+	require.Equal(t, uint64(3), dp.Count())
+	require.InDelta(t, 20.0, dp.Sum(), 0.001)
+
+	// Quantile values: min (0.0) and max (1.0).
+	require.Equal(t, 2, dp.QuantileValues().Len())
+	require.Equal(t, 0.0, dp.QuantileValues().At(0).Quantile())
+	require.InDelta(t, 0.0, dp.QuantileValues().At(0).Value(), 0.001)
+	require.Equal(t, 1.0, dp.QuantileValues().At(1).Quantile())
+	require.InDelta(t, 18.0, dp.QuantileValues().At(1).Value(), 0.001)
+
+	// Data point attributes: Namespace, MetricName, Dimensions kvlist.
+	dpAttrs := dp.Attributes()
+	ns, ok := dpAttrs.Get("Namespace")
+	require.True(t, ok)
+	require.Equal(t, "AWS/EC2", ns.Str())
+	mn, ok := dpAttrs.Get("MetricName")
+	require.True(t, ok)
+	require.Equal(t, "CPUUtilization", mn.Str())
+	dims, ok := dpAttrs.Get("Dimensions")
+	require.True(t, ok)
+	instID, ok := dims.Map().Get("InstanceId")
+	require.True(t, ok)
+	require.Equal(t, "i-abc", instID.Str())
 }
 
-func TestConvertGetMetricDataToPdata_NonSemconvDimensionsSnakeCase(t *testing.T) {
+func TestConvertGetMetricDataToPdata_DimensionsPreserveCase(t *testing.T) {
 	cfg := &Config{Region: "us-east-1"}
 	scr := testScraper(cfg)
 
 	ts := time.Unix(1_700_000_000, 0).UTC()
 	results := []types.MetricDataResult{
-		{Id: aws.String("q0"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}}, // SampleCount only
 	}
 	batch := []MetricQuery{
 		{Namespace: "AWS/ApplicationELB", MetricName: "RequestCount", Dimensions: map[string]string{
@@ -228,81 +242,172 @@ func TestConvertGetMetricDataToPdata_NonSemconvDimensionsSnakeCase(t *testing.T)
 
 	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
 	require.Equal(t, 1, md.ResourceMetrics().Len())
-	attrs := md.ResourceMetrics().At(0).Resource().Attributes()
+	dp := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0)
 
-	// Non-semconv dimensions must be snake_cased, not emitted as PascalCase.
-	_, hasPascal := attrs.Get("LoadBalancer")
-	require.False(t, hasPascal, "dimension key should be snake_case, not PascalCase")
-	v, ok := attrs.Get("load_balancer")
+	// Dimensions are stored as a kvlistValue with original CloudWatch casing.
+	dims, ok := dp.Attributes().Get("Dimensions")
 	require.True(t, ok)
-	require.Equal(t, "app/my-lb/abc123", v.Str())
-	v, ok = attrs.Get("target_group")
+	lb, ok := dims.Map().Get("LoadBalancer")
 	require.True(t, ok)
-	require.Equal(t, "targetgroup/my-tg/def456", v.Str())
+	require.Equal(t, "app/my-lb/abc123", lb.Str())
+	tg, ok := dims.Map().Get("TargetGroup")
+	require.True(t, ok)
+	require.Equal(t, "targetgroup/my-tg/def456", tg.Str())
 }
 
-func TestConvertGetMetricDataToPdata_GroupsSameResource(t *testing.T) {
+func TestConvertGetMetricDataToPdata_GroupsSameMetricAcrossPages(t *testing.T) {
 	cfg := &Config{Region: "us-east-1"}
 	scr := testScraper(cfg)
 
-	ts := time.Unix(1_700_000_000, 0).UTC()
-	dims := map[string]string{"InstanceId": "i-abc"}
+	t1 := time.Unix(1_700_000_000, 0).UTC()
+	t2 := t1.Add(60 * time.Second)
+
+	// Two pages of Sum results for the same metric at different timestamps.
 	results := []types.MetricDataResult{
-		{Id: aws.String("q0"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
-		{Id: aws.String("q1"), Values: []float64{2.0}, Timestamps: []time.Time{ts}},
-	}
-	batch := []MetricQuery{
-		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Dimensions: dims},
-		{Namespace: "AWS/EC2", MetricName: "NetworkIn", Dimensions: dims},
-	}
-
-	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
-	// Both metrics share the same namespace+dimensions, so only one ResourceMetrics.
-	require.Equal(t, 1, md.ResourceMetrics().Len())
-	sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	require.Equal(t, 2, sm.Metrics().Len())
-	names := []string{sm.Metrics().At(0).Name(), sm.Metrics().At(1).Name()}
-	require.ElementsMatch(t, []string{"cpu_utilization", "network_in"}, names)
-}
-
-func TestConvertGetMetricDataToPdata_DifferentResourcesPerNamespace(t *testing.T) {
-	cfg := &Config{Region: "us-east-1"}
-	scr := testScraper(cfg)
-
-	ts := time.Unix(1_700_000_000, 0).UTC()
-	results := []types.MetricDataResult{
-		{Id: aws.String("q0"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
-		{Id: aws.String("q1"), Values: []float64{2.0}, Timestamps: []time.Time{ts}},
-	}
-	batch := []MetricQuery{
-		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Dimensions: map[string]string{"InstanceId": "i-1"}},
-		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Dimensions: map[string]string{"InstanceId": "i-2"}},
-	}
-
-	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
-	require.Equal(t, 2, md.ResourceMetrics().Len())
-}
-
-func TestConvertGetMetricDataToPdata_FallbackTimestamp(t *testing.T) {
-	endTime := time.Unix(1_700_000_300, 0).UTC()
-	cfg := &Config{Region: "us-east-1"}
-	scr := testScraper(cfg)
-
-	results := []types.MetricDataResult{
-		// Timestamps slice is shorter than Values slice.
-		{Id: aws.String("q0"), Values: []float64{1.0, 2.0}, Timestamps: []time.Time{}},
+		{Id: aws.String("q0_0"), Values: []float64{10.0, 20.0}, Timestamps: []time.Time{t1, t2}},
+		{Id: aws.String("q0_1"), Values: []float64{2.0, 4.0}, Timestamps: []time.Time{t1, t2}},
 	}
 	batch := []MetricQuery{
 		{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},
 	}
 
-	md := scr.convertGetMetricDataToPdata(results, batch, endTime)
-	dps := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
-	require.Equal(t, 2, dps.Len())
-	// Both data points should fall back to endTime.
-	for i := 0; i < dps.Len(); i++ {
-		require.Equal(t, endTime.UnixNano(), int64(dps.At(i).Timestamp()))
+	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	require.Equal(t, 2, metric.Summary().DataPoints().Len())
+}
+
+func TestConvertGetMetricDataToPdata_MultipleMetrics(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	results := []types.MetricDataResult{
+		{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
+		{Id: aws.String("q1_1"), Values: []float64{2.0}, Timestamps: []time.Time{ts}},
 	}
+	batch := []MetricQuery{
+		{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},
+		{Namespace: "AWS/EC2", MetricName: "NetworkIn"},
+	}
+
+	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
+	require.Equal(t, 1, md.ResourceMetrics().Len()) // single resource for all metrics
+	sm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
+	require.Equal(t, 2, sm.Metrics().Len())
+	names := []string{sm.Metrics().At(0).Name(), sm.Metrics().At(1).Name()}
+	require.ElementsMatch(t, []string{"amazonaws.com/AWS/EC2/CPUUtilization", "amazonaws.com/AWS/EC2/NetworkIn"}, names)
+}
+
+// --- gauge mode tests ---
+
+func TestConvertGetMetricDataToPdata_GaugeMode_SingleStat(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	results := []types.MetricDataResult{
+		{Id: aws.String("q0_0"), Values: []float64{42.5}, Timestamps: []time.Time{ts}},
+	}
+	batch := []MetricQuery{
+		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stats: []string{"Average"}},
+	}
+
+	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	require.Equal(t, "amazonaws.com/AWS/EC2/CPUUtilization", metric.Name())
+
+	// Must be Gauge, not Summary.
+	require.Equal(t, 1, metric.Gauge().DataPoints().Len())
+	dp := metric.Gauge().DataPoints().At(0)
+	require.InDelta(t, 42.5, dp.DoubleValue(), 0.001)
+
+	// Data point attributes include "stat".
+	ns, ok := dp.Attributes().Get("Namespace")
+	require.True(t, ok)
+	require.Equal(t, "AWS/EC2", ns.Str())
+	stat, ok := dp.Attributes().Get("stat")
+	require.True(t, ok)
+	require.Equal(t, "Average", stat.Str())
+}
+
+func TestConvertGetMetricDataToPdata_GaugeMode_MultipleStats(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	results := []types.MetricDataResult{
+		{Id: aws.String("q0_0"), Values: []float64{10.0}, Timestamps: []time.Time{ts}}, // Sum
+		{Id: aws.String("q0_1"), Values: []float64{99.9}, Timestamps: []time.Time{ts}}, // p99
+	}
+	batch := []MetricQuery{
+		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stats: []string{"Sum", "p99"}},
+	}
+
+	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+
+	metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	// Two data points: one per stat.
+	require.Equal(t, 2, metric.Gauge().DataPoints().Len())
+
+	statVals := map[string]float64{}
+	for j := 0; j < metric.Gauge().DataPoints().Len(); j++ {
+		dp := metric.Gauge().DataPoints().At(j)
+		s, ok := dp.Attributes().Get("stat")
+		require.True(t, ok)
+		statVals[s.Str()] = dp.DoubleValue()
+	}
+	require.InDelta(t, 10.0, statVals["Sum"], 0.001)
+	require.InDelta(t, 99.9, statVals["p99"], 0.001)
+}
+
+func TestConvertGetMetricDataToPdata_GaugeMode_NoDimensionsAttr(t *testing.T) {
+	cfg := &Config{Region: "us-east-1"}
+	scr := testScraper(cfg)
+
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	results := []types.MetricDataResult{
+		{Id: aws.String("q0_0"), Values: []float64{5.0}, Timestamps: []time.Time{ts}},
+	}
+	// No dimensions set — Dimensions attr must not appear.
+	batch := []MetricQuery{
+		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stats: []string{"Average"}},
+	}
+
+	md := scr.convertGetMetricDataToPdata(results, batch, time.Now())
+	dp := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+	_, hasDims := dp.Attributes().Get("Dimensions")
+	require.False(t, hasDims)
+}
+
+func TestPollBatch_GaugeMode_GeneratesOneSubQueryPerStat(t *testing.T) {
+	ts := time.Unix(1_700_000_000, 0).UTC()
+	mc := &mockMetricsClient{}
+	mc.On("GetMetricData", mock.Anything, mock.MatchedBy(func(p *cloudwatch.GetMetricDataInput) bool {
+		// Stats: ["Sum", "p99"] → 2 sub-queries.
+		return len(p.MetricDataQueries) == 2
+	}), mock.Anything).Return(
+		&cloudwatch.GetMetricDataOutput{
+			MetricDataResults: []types.MetricDataResult{
+				{Id: aws.String("q0_0"), Values: []float64{10.0}, Timestamps: []time.Time{ts}},
+				{Id: aws.String("q0_1"), Values: []float64{99.0}, Timestamps: []time.Time{ts}},
+			},
+		}, nil,
+	)
+
+	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Period: 60 * time.Second}}
+	scr := testScraper(cfg)
+	scr.client = mc
+
+	batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stats: []string{"Sum", "p99"}}}
+	md, err := scr.pollBatch(t.Context(), batch, ts.Add(-60*time.Second), ts)
+	require.NoError(t, err)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	require.Equal(t, 2, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().Len())
+	mc.AssertExpectations(t)
 }
 
 // --- listMetrics tests ---
@@ -319,7 +424,7 @@ func TestListMetrics_SinglePage(t *testing.T) {
 	)
 
 	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
-		Discovery: &MetricsDiscoveryConfig{Limit: 10, Stat: "Average"},
+		Discovery: &MetricsDiscoveryConfig{Limit: 10},
 	}}
 	scr := testScraper(cfg)
 	scr.client = mc
@@ -353,7 +458,7 @@ func TestListMetrics_Paginated(t *testing.T) {
 	)
 
 	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
-		Discovery: &MetricsDiscoveryConfig{Limit: 100, Stat: "Average"},
+		Discovery: &MetricsDiscoveryConfig{Limit: 100},
 	}}
 	scr := testScraper(cfg)
 	scr.client = mc
@@ -378,7 +483,7 @@ func TestListMetrics_LimitRespected(t *testing.T) {
 	)
 
 	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
-		Discovery: &MetricsDiscoveryConfig{Limit: 2, Stat: "Average"},
+		Discovery: &MetricsDiscoveryConfig{Limit: 2},
 	}}
 	scr := testScraper(cfg)
 	scr.client = mc
@@ -395,7 +500,7 @@ func TestListMetrics_Error(t *testing.T) {
 	)
 
 	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{
-		Discovery: &MetricsDiscoveryConfig{Limit: 10, Stat: "Average"},
+		Discovery: &MetricsDiscoveryConfig{Limit: 10},
 	}}
 	scr := testScraper(cfg)
 	scr.client = mc
@@ -406,15 +511,20 @@ func TestListMetrics_Error(t *testing.T) {
 
 // --- pollBatch tests ---
 
-func TestPollBatch_SinglePage(t *testing.T) {
+func TestPollBatch_GeneratesFourSubQueries(t *testing.T) {
 	ts := time.Unix(1_700_000_000, 0).UTC()
 	mc := &mockMetricsClient{}
-	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
+	mc.On("GetMetricData", mock.Anything, mock.MatchedBy(func(p *cloudwatch.GetMetricDataInput) bool {
+		// Each metric generates 4 sub-queries (Sum, SampleCount, Minimum, Maximum).
+		return len(p.MetricDataQueries) == 4
+	}), mock.Anything).Return(
 		&cloudwatch.GetMetricDataOutput{
 			MetricDataResults: []types.MetricDataResult{
-				{Id: aws.String("q0"), Values: []float64{99.9}, Timestamps: []time.Time{ts}},
+				{Id: aws.String("q0_0"), Values: []float64{20.0}, Timestamps: []time.Time{ts}},
+				{Id: aws.String("q0_1"), Values: []float64{3.0}, Timestamps: []time.Time{ts}},
+				{Id: aws.String("q0_2"), Values: []float64{4.0}, Timestamps: []time.Time{ts}},
+				{Id: aws.String("q0_3"), Values: []float64{9.0}, Timestamps: []time.Time{ts}},
 			},
-			NextToken: nil,
 		}, nil,
 	)
 
@@ -422,49 +532,14 @@ func TestPollBatch_SinglePage(t *testing.T) {
 	scr := testScraper(cfg)
 	scr.client = mc
 
-	batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stat: "Average"}}
+	batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}}
 	md, err := scr.pollBatch(t.Context(), batch, ts.Add(-60*time.Second), ts)
 	require.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
-	mc.AssertExpectations(t)
-}
 
-func TestPollBatch_Paginated(t *testing.T) {
-	ts := time.Unix(1_700_000_000, 0).UTC()
-	token := "page2"
-	mc := &mockMetricsClient{}
-	mc.On("GetMetricData", mock.Anything, mock.MatchedBy(func(p *cloudwatch.GetMetricDataInput) bool {
-		return p.NextToken == nil
-	}), mock.Anything).Return(
-		&cloudwatch.GetMetricDataOutput{
-			MetricDataResults: []types.MetricDataResult{
-				{Id: aws.String("q0"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
-			},
-			NextToken: &token,
-		}, nil,
-	).Once()
-	mc.On("GetMetricData", mock.Anything, mock.MatchedBy(func(p *cloudwatch.GetMetricDataInput) bool {
-		return p.NextToken != nil && *p.NextToken == token
-	}), mock.Anything).Return(
-		&cloudwatch.GetMetricDataOutput{
-			MetricDataResults: []types.MetricDataResult{
-				{Id: aws.String("q0"), Values: []float64{2.0}, Timestamps: []time.Time{ts.Add(60 * time.Second)}},
-			},
-			NextToken: nil,
-		}, nil,
-	)
-
-	cfg := &Config{Region: "us-east-1", Metrics: MetricsConfig{Period: 60 * time.Second}}
-	scr := testScraper(cfg)
-	scr.client = mc
-
-	batch := []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stat: "Average"}}
-	md, err := scr.pollBatch(t.Context(), batch, ts.Add(-120*time.Second), ts)
-	require.NoError(t, err)
-	// Both pages for the same metric/resource → 1 ResourceMetrics, 1 metric, 2 data points.
-	require.Equal(t, 1, md.ResourceMetrics().Len())
-	dps := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints()
-	require.Equal(t, 2, dps.Len())
+	dp := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0)
+	require.Equal(t, uint64(3), dp.Count())
+	require.InDelta(t, 20.0, dp.Sum(), 0.001)
 	mc.AssertExpectations(t)
 }
 
@@ -493,9 +568,8 @@ func TestScrape_ExplicitMetrics(t *testing.T) {
 	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatch.GetMetricDataOutput{
 			MetricDataResults: []types.MetricDataResult{
-				{Id: aws.String("q0"), Values: []float64{50.0}, Timestamps: []time.Time{ts}},
+				{Id: aws.String("q0_1"), Values: []float64{1.0}, Timestamps: []time.Time{ts}},
 			},
-			NextToken: nil,
 		}, nil,
 	)
 
@@ -503,8 +577,8 @@ func TestScrape_ExplicitMetrics(t *testing.T) {
 		Region: "us-east-1",
 		Metrics: MetricsConfig{
 			Period: 60 * time.Second,
-			Metrics: []MetricQuery{
-				{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Stat: "Average"},
+			Queries: []MetricQuery{
+				{Namespace: "AWS/EC2", MetricName: "CPUUtilization"},
 			},
 		},
 	}
@@ -528,9 +602,8 @@ func TestScrape_Discovery(t *testing.T) {
 	mc.On("GetMetricData", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatch.GetMetricDataOutput{
 			MetricDataResults: []types.MetricDataResult{
-				{Id: aws.String("q0"), Values: []float64{75.0}, Timestamps: []time.Time{ts}},
+				{Id: aws.String("q0_1"), Values: []float64{75.0}, Timestamps: []time.Time{ts}},
 			},
-			NextToken: nil,
 		}, nil,
 	)
 
@@ -541,7 +614,6 @@ func TestScrape_Discovery(t *testing.T) {
 			Discovery: &MetricsDiscoveryConfig{
 				Namespace: "AWS/EC2",
 				Limit:     10,
-				Stat:      "Average",
 			},
 		},
 	}
@@ -564,7 +636,7 @@ func TestScrape_DiscoveryEmpty(t *testing.T) {
 		Region: "us-east-1",
 		Metrics: MetricsConfig{
 			Period:    60 * time.Second,
-			Discovery: &MetricsDiscoveryConfig{Limit: 10, Stat: "Average"},
+			Discovery: &MetricsDiscoveryConfig{Limit: 10},
 		},
 	}
 	scr := testScraper(cfg)
@@ -585,7 +657,7 @@ func TestScrape_DiscoveryError(t *testing.T) {
 		Region: "us-east-1",
 		Metrics: MetricsConfig{
 			Period:    60 * time.Second,
-			Discovery: &MetricsDiscoveryConfig{Limit: 10, Stat: "Average"},
+			Discovery: &MetricsDiscoveryConfig{Limit: 10},
 		},
 	}
 	scr := testScraper(cfg)

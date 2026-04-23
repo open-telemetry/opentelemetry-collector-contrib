@@ -8,4 +8,4 @@ receivers:
       discovery:
         namespace: AWS/EC2
         limit: 50
-        stat: Average
+  
