@@ -12,6 +12,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -27,11 +28,12 @@ type anyLogsExporter interface {
 }
 
 type logsJSONExporter struct {
-	cfg            *Config
-	logger         *zap.Logger
-	db             driver.Conn
-	insertSQL      string
-	schemaFeatures struct {
+	cfg              *Config
+	logger           *zap.Logger
+	db               driver.Conn
+	insertSQL        string
+	materializedDefs []internal.MaterializedColumnDef
+	schemaFeatures   struct {
 		AttributeKeys bool
 		EventName     bool
 	}
@@ -100,6 +102,9 @@ func (e *logsJSONExporter) detectSchemaFeatures(ctx context.Context) error {
 			e.schemaFeatures.EventName = true
 		}
 	}
+
+	defs := materializedColumnDefs(e.cfg.LogsMaterializedColumns)
+	e.materializedDefs = internal.ValidateMaterializedColumns(defs, columnNames, e.logger)
 
 	return nil
 }
@@ -181,7 +186,7 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 					timestamp = r.ObservedTimestamp()
 				}
 
-				columnValues := make([]any, 0, 19)
+				columnValues := make([]any, 0, 19+len(e.materializedDefs))
 				columnValues = append(columnValues,
 					timestamp.AsTime(),
 					r.TraceID().String(),
@@ -207,6 +212,16 @@ func (e *logsJSONExporter) pushLogsData(ctx context.Context, ld plog.Logs) error
 
 				if e.schemaFeatures.EventName {
 					columnValues = append(columnValues, r.EventName())
+				}
+
+				if len(e.materializedDefs) > 0 {
+					sources := map[string]pcommon.Map{
+						"ResourceAttributes": resAttr,
+						"ScopeAttributes":    scopeAttr,
+						"LogAttributes":      logAttr,
+					}
+
+					columnValues = internal.AppendMaterializedValues(columnValues, e.materializedDefs, sources)
 				}
 
 				appendErr := batch.Append(columnValues...)
@@ -257,6 +272,10 @@ func (e *logsJSONExporter) renderInsertLogsJSONSQL() {
 
 		featureColumnPositions.WriteString(", ?")
 	}
+
+	matCols, matPlaceholders := internal.BuildMaterializedSQLFragments(e.materializedDefs)
+	featureColumnNames.WriteString(matCols)
+	featureColumnPositions.WriteString(matPlaceholders)
 
 	e.insertSQL = fmt.Sprintf(sqltemplates.LogsJSONInsert, e.cfg.database(), e.cfg.LogsTableName, featureColumnNames.String(), featureColumnPositions.String())
 }

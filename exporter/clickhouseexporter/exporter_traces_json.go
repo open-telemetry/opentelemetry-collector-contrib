@@ -12,6 +12,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -27,11 +28,12 @@ type anyTracesExporter interface {
 }
 
 type tracesJSONExporter struct {
-	cfg            *Config
-	logger         *zap.Logger
-	db             driver.Conn
-	insertSQL      string
-	schemaFeatures struct {
+	cfg              *Config
+	logger           *zap.Logger
+	db               driver.Conn
+	insertSQL        string
+	materializedDefs []internal.MaterializedColumnDef
+	schemaFeatures   struct {
 		AttributeKeys bool
 	}
 }
@@ -93,6 +95,9 @@ func (e *tracesJSONExporter) detectSchemaFeatures(ctx context.Context) error {
 			e.schemaFeatures.AttributeKeys = true
 		}
 	}
+
+	defs := materializedColumnDefs(e.cfg.TracesMaterializedColumns)
+	e.materializedDefs = internal.ValidateMaterializedColumns(defs, columnNames, e.logger)
 
 	return nil
 }
@@ -167,7 +172,7 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 					return fmt.Errorf("failed to convert json trace links: %w", linksErr)
 				}
 
-				columnValues := make([]any, 0, 24)
+				columnValues := make([]any, 0, 24+len(e.materializedDefs))
 				columnValues = append(columnValues,
 					span.StartTimestamp().AsTime(),
 					span.TraceID().String(),
@@ -196,6 +201,15 @@ func (e *tracesJSONExporter) pushTraceData(ctx context.Context, td ptrace.Traces
 				if e.schemaFeatures.AttributeKeys {
 					spanAttrKeys := internal.UniqueFlattenedAttributes(spanAttr)
 					columnValues = append(columnValues, resAttrKeys, spanAttrKeys)
+				}
+
+				if len(e.materializedDefs) > 0 {
+					sources := map[string]pcommon.Map{
+						"ResourceAttributes": resAttr,
+						"SpanAttributes":     spanAttr,
+					}
+
+					columnValues = internal.AppendMaterializedValues(columnValues, e.materializedDefs, sources)
 				}
 
 				appendErr := batch.Append(columnValues...)
@@ -285,6 +299,10 @@ func (e *tracesJSONExporter) renderInsertTracesJSONSQL() {
 
 		featureColumnPositions.WriteString(", ?, ?, ?")
 	}
+
+	matCols, matPlaceholders := internal.BuildMaterializedSQLFragments(e.materializedDefs)
+	featureColumnNames.WriteString(matCols)
+	featureColumnPositions.WriteString(matPlaceholders)
 
 	e.insertSQL = fmt.Sprintf(sqltemplates.TracesJSONInsert, e.cfg.database(), e.cfg.TracesTableName, featureColumnNames.String(), featureColumnPositions.String())
 }

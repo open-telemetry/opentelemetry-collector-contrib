@@ -21,6 +21,7 @@ INSERT INTO %q.%q (
     Links.SpanId,
     Links.TraceState,
     Links.Attributes
+    %s
 ) VALUES (
     ?,
     ?,
@@ -44,4 +45,5 @@ INSERT INTO %q.%q (
     ?,
     ?,
     ?
+    %s
 )

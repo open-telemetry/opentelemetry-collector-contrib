@@ -52,3 +52,19 @@ clickhouse/table-engine-params-only:
   endpoint: clickhouse://127.0.0.1:9000
   table_engine:
     params: "whatever"
+clickhouse/materialized-columns:
+  endpoint: clickhouse://127.0.0.1:9000
+  logs_materialized_columns:
+    - map: ResourceAttributes
+      key: service.id
+      column: ServiceId
+    - map: LogAttributes
+      key: log.level
+      column: LogLevel
+  traces_materialized_columns:
+    - map: ResourceAttributes
+      key: service.id
+      column: ServiceId
+    - map: SpanAttributes
+      key: http.method
+      column: HttpMethod

@@ -1,4 +1,17 @@
 $defs:
+  materialized_column:
+    description: MaterializedColumn defines a client-side extraction from a Map/JSON attribute column into a dedicated String column. The exporter extracts the value at the given key from the source map and sends it as a separate column value in the INSERT statement.
+    type: object
+    properties:
+      column:
+        description: Column is the target column name in the ClickHouse table (must be a String column).
+        type: string
+      key:
+        description: Key is the attribute key to extract (e.g. "service.name", "http.method").
+        type: string
+      map:
+        description: 'Map is the source attribute column to extract from. Valid values: "ResourceAttributes", "ScopeAttributes", "SpanAttributes", "LogAttributes".'
+        type: string
   metric_tables_config:
     type: object
     properties:
@@ -54,6 +67,11 @@ properties:
   json:
     description: JSON enables the JSON column type for attributes in logs and traces tables. When false (default), Map columns are used. When true, JSON columns are used. ClickHouse v25+ is recommended for reliable JSON support. You may also need to add `enable_json_type=1` to your endpoint or connection_params.
     type: boolean
+  logs_materialized_columns:
+    description: 'LogsMaterializedColumns configures client-side extraction of attribute values into dedicated columns for the logs table. Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value. Missing keys default to empty string. Valid source maps: ResourceAttributes, ScopeAttributes, LogAttributes.'
+    type: array
+    items:
+      $ref: materialized_column
   logs_table_name:
     description: LogsTableName is the table name for logs. default is `otel_logs`.
     type: string
@@ -75,6 +93,11 @@ properties:
   tls:
     description: TLS is the TLS config for connecting to ClickHouse.
     $ref: go.opentelemetry.io/collector/config/configtls.client_config
+  traces_materialized_columns:
+    description: 'TracesMaterializedColumns configures client-side extraction of attribute values into dedicated columns for the traces table. Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value. Missing keys default to empty string. Valid source maps: ResourceAttributes, ScopeAttributes, SpanAttributes.'
+    type: array
+    items:
+      $ref: materialized_column
   traces_table_name:
     description: TracesTableName is the table name for traces. default is `otel_traces`.
     type: string

@@ -328,6 +328,17 @@ Table engine:
 Modifies `ENGINE` definition when table is created. If not set then `ENGINE` defaults to `MergeTree()`.
 Can be combined with `cluster_name` to enable [replication for fault tolerance](https://clickhouse.com/docs/en/architecture/replication).
 
+Client-side materialized columns (see [Client-Side Materialized Columns](#client-side-materialized-columns)):
+
+- `logs_materialized_columns` (default = []): Extracts attribute values client-side into dedicated `String` columns for the logs table.
+    - `map`: Source attribute column (`ResourceAttributes`, `ScopeAttributes`, or `LogAttributes`)
+    - `key`: Attribute key to extract (e.g. `service.name`)
+    - `column`: Target column name in the ClickHouse table
+- `traces_materialized_columns` (default = []): Same as above, but for the traces table.
+    - `map`: Source attribute column (`ResourceAttributes`, `ScopeAttributes`, or `SpanAttributes`)
+    - `key`: Attribute key to extract
+    - `column`: Target column name in the ClickHouse table
+
 Processing:
 
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
@@ -469,6 +480,37 @@ service:
       receivers: [ examplereceiver ]
       exporters: [ clickhouse ]
 ```
+
+## Client-Side Materialized Columns
+
+Server-side materialized columns that extract from `Map` columns (e.g. `ResourceAttributes['service.name']`) cause a linear scan per column on every `INSERT`. This can be a problem at scale. To avoid this, the exporter can extract values client-side and send them as dedicated `String` columns.
+
+Add a `String` column to your table, then configure `logs_materialized_columns` or `traces_materialized_columns` to populate it:
+
+```sql
+ALTER TABLE otel.otel_traces ADD COLUMN ServiceId String CODEC(ZSTD(1));
+```
+
+```yaml
+exporters:
+  clickhouse:
+    traces_materialized_columns:
+      - map: ResourceAttributes
+        key: service.id
+        column: ServiceId
+```
+
+Logs and traces have separate config lists, so you can configure different columns for each table. Missing keys default to empty string. The exporter detects available columns at startup; if a target column doesn't exist in the table, it is skipped with a warning.
+
+For non-`String` types, use an ephemeral column with a server-side materialized column to cast:
+
+```sql
+ALTER TABLE otel.otel_traces
+  ADD COLUMN RequestDurationString String EPHEMERAL,
+  ADD COLUMN RequestDuration Float64 MATERIALIZED toFloat64OrZero(RequestDurationString);
+```
+
+Point the exporter's `column` to the ephemeral column (`RequestDurationString`).
 
 ## Experimental JSON support
 

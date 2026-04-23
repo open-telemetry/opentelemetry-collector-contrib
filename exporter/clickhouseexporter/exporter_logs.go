@@ -11,6 +11,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -20,9 +21,10 @@ import (
 )
 
 type logsExporter struct {
-	db             driver.Conn
-	insertSQL      string
-	schemaFeatures struct {
+	db               driver.Conn
+	insertSQL        string
+	materializedDefs []internal.MaterializedColumnDef
+	schemaFeatures   struct {
 		EventName bool
 	}
 
@@ -84,6 +86,9 @@ func (e *logsExporter) detectSchemaFeatures(ctx context.Context) error {
 		}
 	}
 
+	defs := materializedColumnDefs(e.cfg.LogsMaterializedColumns)
+	e.materializedDefs = internal.ValidateMaterializedColumns(defs, columnNames, e.logger)
+
 	return nil
 }
 
@@ -127,15 +132,17 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			scopeName := scopeLogScope.Name()
 			scopeVersion := scopeLogScope.Version()
 			scopeLogRecords := scopeLog.LogRecords()
-			scopeAttrMap := internal.AttributesToMap(scopeLogScope.Attributes())
+			scopeAttr := scopeLogScope.Attributes()
+			scopeAttrMap := internal.AttributesToMap(scopeAttr)
 
 			slrLen := scopeLogRecords.Len()
 			// 16 matches the max number of columns in the insert statement.
 			// If you add or remove columns, update this value.
-			columnValues := make([]any, 0, 16)
+			columnValues := make([]any, 0, 16+len(e.materializedDefs))
 			for k := range slrLen {
 				r := scopeLogRecords.At(k)
-				logAttrMap := internal.AttributesToMap(r.Attributes())
+				logAttr := r.Attributes()
+				logAttrMap := internal.AttributesToMap(logAttr)
 
 				timestamp := r.Timestamp()
 				if timestamp == 0 {
@@ -163,6 +170,16 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 
 				if e.schemaFeatures.EventName {
 					columnValues = append(columnValues, r.EventName())
+				}
+
+				if len(e.materializedDefs) > 0 {
+					sources := map[string]pcommon.Map{
+						"ResourceAttributes": resAttr,
+						"ScopeAttributes":    scopeAttr,
+						"LogAttributes":      logAttr,
+					}
+
+					columnValues = internal.AppendMaterializedValues(columnValues, e.materializedDefs, sources)
 				}
 
 				appendErr := batch.Append(columnValues...)
@@ -202,6 +219,10 @@ func (e *logsExporter) renderInsertLogsSQL() {
 
 		featureColumnPositions.WriteString(", ?")
 	}
+
+	matCols, matPlaceholders := internal.BuildMaterializedSQLFragments(e.materializedDefs)
+	featureColumnNames.WriteString(matCols)
+	featureColumnPositions.WriteString(matPlaceholders)
 
 	e.insertSQL = fmt.Sprintf(sqltemplates.LogsInsert, e.cfg.database(), e.cfg.LogsTableName, featureColumnNames.String(), featureColumnPositions.String())
 }

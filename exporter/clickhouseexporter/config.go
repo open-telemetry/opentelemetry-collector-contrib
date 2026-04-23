@@ -72,8 +72,41 @@ type Config struct {
 	// ClickHouse v25+ is recommended for reliable JSON support.
 	// You may also need to add `enable_json_type=1` to your endpoint or connection_params.
 	JSON bool `mapstructure:"json"`
+	// LogsMaterializedColumns configures client-side extraction of attribute values into dedicated columns for the logs table.
+	// Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value.
+	// Missing keys default to empty string. Valid source maps: ResourceAttributes, ScopeAttributes, LogAttributes.
+	LogsMaterializedColumns []MaterializedColumn `mapstructure:"logs_materialized_columns"`
+	// TracesMaterializedColumns configures client-side extraction of attribute values into dedicated columns for the traces table.
+	// Each entry extracts a key from a Map/JSON attribute column and sends it as a separate String column value.
+	// Missing keys default to empty string. Valid source maps: ResourceAttributes, ScopeAttributes, SpanAttributes.
+	TracesMaterializedColumns []MaterializedColumn `mapstructure:"traces_materialized_columns"`
 	// MetricsTables defines the table names for metric types.
 	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
+}
+
+// MaterializedColumn defines a client-side extraction from a Map/JSON attribute column
+// into a dedicated String column. The exporter extracts the value at the given key from
+// the source map and sends it as a separate column value in the INSERT statement.
+type MaterializedColumn struct {
+	// Map is the source attribute column to extract from.
+	// Valid values: "ResourceAttributes", "ScopeAttributes", "SpanAttributes", "LogAttributes".
+	Map string `mapstructure:"map"`
+	// Key is the attribute key to extract (e.g. "service.name", "http.method").
+	Key string `mapstructure:"key"`
+	// Column is the target column name in the ClickHouse table (must be a String column).
+	Column string `mapstructure:"column"`
+}
+
+var validLogsMaterializedColumnSources = map[string]bool{
+	"ResourceAttributes": true,
+	"ScopeAttributes":    true,
+	"LogAttributes":      true,
+}
+
+var validTracesMaterializedColumnSources = map[string]bool{
+	"ResourceAttributes": true,
+	"ScopeAttributes":    true,
+	"SpanAttributes":     true,
 }
 
 type MetricTablesConfig struct {
@@ -147,6 +180,10 @@ func (cfg *Config) Validate() (err error) {
 	}
 
 	cfg.buildMetricTableNames()
+
+	if validateErr := cfg.validateMaterializedColumns(); validateErr != nil {
+		err = errors.Join(err, validateErr)
+	}
 
 	// Validate DSN with clickhouse driver.
 	// Last chance to catch invalid config.
@@ -267,6 +304,57 @@ func (cfg *Config) areMetricTableNamesSet() bool {
 		cfg.MetricsTables.Summary.Name != "" ||
 		cfg.MetricsTables.Histogram.Name != "" ||
 		cfg.MetricsTables.ExponentialHistogram.Name != ""
+}
+
+func (cfg *Config) validateMaterializedColumns() (err error) {
+	err = errors.Join(err, validateMaterializedColumnList("logs_materialized_columns", cfg.LogsMaterializedColumns, validLogsMaterializedColumnSources))
+	err = errors.Join(err, validateMaterializedColumnList("traces_materialized_columns", cfg.TracesMaterializedColumns, validTracesMaterializedColumnSources))
+	return err
+}
+
+func validateMaterializedColumnList(fieldName string, columns []MaterializedColumn, validSources map[string]bool) (err error) {
+	seenColumns := make(map[string]bool, len(columns))
+
+	for i, mc := range columns {
+		switch {
+		case mc.Map == "":
+			err = errors.Join(err, fmt.Errorf("%s[%d]: map must not be empty", fieldName, i))
+		case !validSources[mc.Map]:
+			err = errors.Join(err, fmt.Errorf("%s[%d]: invalid map %q", fieldName, i, mc.Map))
+		}
+
+		if mc.Key == "" {
+			err = errors.Join(err, fmt.Errorf("%s[%d]: key must not be empty", fieldName, i))
+		}
+
+		switch {
+		case mc.Column == "":
+			err = errors.Join(err, fmt.Errorf("%s[%d]: column must not be empty", fieldName, i))
+		case seenColumns[mc.Column]:
+			err = errors.Join(err, fmt.Errorf("%s[%d]: duplicate column name %q", fieldName, i, mc.Column))
+		default:
+			seenColumns[mc.Column] = true
+		}
+	}
+
+	return err
+}
+
+func materializedColumnDefs(columns []MaterializedColumn) []internal.MaterializedColumnDef {
+	if len(columns) == 0 {
+		return nil
+	}
+
+	defs := make([]internal.MaterializedColumnDef, len(columns))
+	for i, mc := range columns {
+		defs[i] = internal.MaterializedColumnDef{
+			Map:    mc.Map,
+			Key:    mc.Key,
+			Column: mc.Column,
+		}
+	}
+
+	return defs
 }
 
 // tableEngineString generates the ENGINE string.
