@@ -169,9 +169,6 @@ linters:
         path: receiver/hostmetricsreceiver/
       - linters:
           - forbidigo
-        path: receiver/jaegerreceiver/
-      - linters:
-          - forbidigo
         path: receiver/vcenterreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
