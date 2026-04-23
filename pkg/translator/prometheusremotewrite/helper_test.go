@@ -385,6 +385,35 @@ func Test_createLabelSet(t *testing.T) {
 			want:                        getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
 			underscoreLabelSanitization: true,
 		},
+		{
+			name: "empty_attribute_value_excluded",
+			resource: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("resource.attr", "")
+				return res
+			}(),
+			orig: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr(label11, value11)
+				m.PutStr(label12, "")
+				return m
+			}(),
+			externalLabels: map[string]string{},
+			extras:         []string{label31, value31},
+			want:           getPromLabels(label11, value11, label31, value31),
+		},
+		{
+			name: "empty_service_name_excluded",
+			resource: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("service.name", "")
+				res.Attributes().PutStr("service.instance.id", "")
+				return res
+			}(),
+			orig:           lbs1,
+			externalLabels: map[string]string{},
+			want:           getPromLabels(label11, value11, label12, value12),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -577,39 +606,119 @@ func Test_getPromExemplars(t *testing.T) {
 func Test_getPromExemplarsV2(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
-		name      string
-		histogram pmetric.HistogramDataPoint
-		expected  []writev2.Exemplar
+		name            string
+		histogram       pmetric.HistogramDataPoint
+		expected        []writev2.Exemplar
+		expectedStrings []string
 	}{
 		{
 			name:      "with_exemplars_double_value",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     floatVal1,
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
 		},
 		{
 			name:      "with_exemplars_int_value",
 			histogram: getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     float64(intVal2),
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      float64(intVal2),
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, label11, value11, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:      "with_exemplars_without_trace_or_span",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", label11, value11),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+			expectedStrings: []string{label11, value11},
+		},
+		{
+			name:      "duplicate_trace_id_dropped",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, otlptranslator.ExemplarTraceIDKey, "duplicate_val"),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:      "too_many_runes_drops_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: nil,
+				},
+			},
+			expectedStrings: nil,
+		},
+		{
+			name:      "runes_at_limit_bytes_over_keeps_labels",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith128Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2},
+				},
+			},
+			expectedStrings: []string{keyWith128Runes, ""},
+		},
+		{
+			name:      "too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, keyWith64Runes, ""),
+			expected: []writev2.Exemplar{
+				{
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4},
+				},
+			},
+			expectedStrings: []string{otlptranslator.ExemplarSpanIDKey, spanIDValue1, otlptranslator.ExemplarTraceIDKey, traceIDValue1},
+		},
+		{
+			name:            "without_exemplar",
+			histogram:       pmetric.NewHistogramDataPoint(),
+			expected:        []writev2.Exemplar{},
+			expectedStrings: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplarsV2(tt.histogram)
+			symbols := make(map[string]uint32)
+			var counter uint32
+			var recordedStrings []string
+			symbolize := func(s string) uint32 {
+				recordedStrings = append(recordedStrings, s)
+				if id, ok := symbols[s]; ok {
+					return id
+				}
+				counter++
+				symbols[s] = counter
+				return counter
+			}
+			requests := getPromExemplarsV2(tt.histogram, symbolize)
 			assert.Exactly(t, tt.expected, requests)
+			assert.Equal(t, tt.expectedStrings, recordedStrings)
 		})
 	}
 }
@@ -1213,4 +1322,44 @@ func TestDisableScopeInfo(t *testing.T) {
 	assert.NotContains(t, labels, "otel_scope_name")
 	assert.NotContains(t, labels, "otel_scope_version")
 	assert.NotContains(t, labels, "otel_scope_scope_attr")
+}
+
+func TestConflictingScopeAttributesDropped(t *testing.T) {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("service.name", "test-service")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	scope := sm.Scope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("name", "dropped-name")
+	scope.Attributes().PutStr("version", "dropped-version")
+	scope.Attributes().PutStr("schema_url", "dropped-schema-url")
+	scope.Attributes().PutStr("valid_attr", "valid-value")
+
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	m.SetEmptyGauge()
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
+	dp.SetIntValue(1)
+
+	tsMap, err := FromMetrics(md, Settings{})
+	require.NoError(t, err)
+	require.NotEmpty(t, tsMap)
+	require.Len(t, tsMap, 1)
+
+	ts, ok := tsMap["0"]
+	require.True(t, ok)
+
+	labels := make(map[string]string)
+	for _, l := range ts.Labels {
+		labels[l.Name] = l.Value
+	}
+
+	assert.Equal(t, "test-scope", labels["otel_scope_name"], "otel_scope_name should come from scope.Name(), not attribute")
+	assert.Equal(t, "1.0.0", labels["otel_scope_version"], "otel_scope_version should come from scope.Version(), not attribute")
+	assert.NotContains(t, labels, "otel_scope_schema_url", "schema_url should not be exported as scope attribute")
+	assert.Equal(t, "valid-value", labels["otel_scope_valid_attr"], "valid scope attribute should be present")
 }
