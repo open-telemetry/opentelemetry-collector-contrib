@@ -4,87 +4,84 @@
 package loadbalancingexporter
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func TestMergeTracesTwoEmpty(t *testing.T) {
-	expectedEmpty := ptrace.NewTraces()
-	trace1 := ptrace.NewTraces()
-	trace2 := ptrace.NewTraces()
+func TestFailedTracesFromError(t *testing.T) {
+	input := twoServicesWithSameTraceID()
+	partial := ptrace.NewTraces()
+	input.ResourceSpans().At(0).CopyTo(partial.ResourceSpans().AppendEmpty())
 
-	mergedTraces := mergeTraces(trace1, trace2)
+	failed := failedTracesFromError(consumererror.NewTraces(errors.New("partial failure"), partial), input)
+	require.Equal(t, partial.SpanCount(), failed.SpanCount())
 
-	require.Equal(t, expectedEmpty, mergedTraces)
+	failed = failedTracesFromError(errors.New("total failure"), input)
+	require.Equal(t, input.SpanCount(), failed.SpanCount())
 }
 
-func TestMergeTracesSingleEmpty(t *testing.T) {
-	expectedTraces := simpleTraces()
+func TestFailedLogsFromError(t *testing.T) {
+	input := logsWithTwoRecords()
+	partial := logsWithOneRecord()
 
-	trace1 := ptrace.NewTraces()
-	trace2 := simpleTraces()
+	failed := failedLogsFromError(consumererror.NewLogs(errors.New("partial failure"), partial), input)
+	require.Equal(t, partial.LogRecordCount(), failed.LogRecordCount())
 
-	mergedTraces := mergeTraces(trace1, trace2)
-
-	require.Equal(t, expectedTraces, mergedTraces)
+	failed = failedLogsFromError(errors.New("total failure"), input)
+	require.Equal(t, input.LogRecordCount(), failed.LogRecordCount())
 }
 
-func TestMergeTraces(t *testing.T) {
-	expectedTraces := ptrace.NewTraces()
-	expectedTraces.ResourceSpans().EnsureCapacity(3)
-	aspans := expectedTraces.ResourceSpans().AppendEmpty()
-	aspans.Resource().Attributes().PutStr("service.name", "service-name-1")
-	aspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
-	bspans := expectedTraces.ResourceSpans().AppendEmpty()
-	bspans.Resource().Attributes().PutStr("service.name", "service-name-2")
-	bspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 2})
-	cspans := expectedTraces.ResourceSpans().AppendEmpty()
-	cspans.Resource().Attributes().PutStr("service.name", "service-name-3")
-	cspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 3})
+func TestFailedMetricsFromError(t *testing.T) {
+	input := metricsWithTwoDataPoints()
+	partial := metricsWithOneDataPoint()
 
-	trace1 := ptrace.NewTraces()
-	trace1.ResourceSpans().EnsureCapacity(2)
-	t1aspans := trace1.ResourceSpans().AppendEmpty()
-	t1aspans.Resource().Attributes().PutStr("service.name", "service-name-1")
-	t1aspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
-	t1bspans := trace1.ResourceSpans().AppendEmpty()
-	t1bspans.Resource().Attributes().PutStr("service.name", "service-name-2")
-	t1bspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 2})
+	failed := failedMetricsFromError(consumererror.NewMetrics(errors.New("partial failure"), partial), input)
+	require.Equal(t, partial.DataPointCount(), failed.DataPointCount())
 
-	trace2 := ptrace.NewTraces()
-	trace2.ResourceSpans().EnsureCapacity(1)
-	t2cspans := trace2.ResourceSpans().AppendEmpty()
-	t2cspans.Resource().Attributes().PutStr("service.name", "service-name-3")
-	t2cspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 3})
-
-	mergedTraces := mergeTraces(trace1, trace2)
-
-	require.Equal(t, expectedTraces, mergedTraces)
+	failed = failedMetricsFromError(errors.New("total failure"), input)
+	require.Equal(t, input.DataPointCount(), failed.DataPointCount())
 }
 
-func benchMergeTraces(b *testing.B, tracesCount int) {
-	traces1 := ptrace.NewTraces()
-	traces2 := ptrace.NewTraces()
+func logsWithTwoRecords() plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
 
-	for range tracesCount {
-		appendSimpleTraceWithID(traces2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 3, 4})
-	}
-
-	for b.Loop() {
-		mergeTraces(traces1, traces2)
-	}
+	return logs
 }
 
-func BenchmarkMergeTraces_X100(b *testing.B) {
-	benchMergeTraces(b, 100)
+func logsWithOneRecord() plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+
+	return logs
 }
 
-func BenchmarkMergeTraces_X500(b *testing.B) {
-	benchMergeTraces(b, 500)
+func metricsWithTwoDataPoints() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	sum := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum()
+	sum.DataPoints().AppendEmpty().SetIntValue(1)
+	sum.DataPoints().AppendEmpty().SetIntValue(2)
+
+	return metrics
 }
 
-func BenchmarkMergeTraces_X1000(b *testing.B) {
-	benchMergeTraces(b, 1000)
+func metricsWithOneDataPoint() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	sum := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum()
+	sum.DataPoints().AppendEmpty().SetIntValue(1)
+
+	return metrics
 }

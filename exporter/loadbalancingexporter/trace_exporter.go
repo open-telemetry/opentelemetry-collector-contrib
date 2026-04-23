@@ -137,7 +137,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		exp.consumeWG.Done()
 		errs = multierr.Append(errs, err)
 		if err != nil {
-			failedTraces = mergeTraces(failedTraces, td)
+			failedTraces = mergeTraces(failedTraces, failedTracesFromError(err, td))
 		}
 		duration := time.Since(start)
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))

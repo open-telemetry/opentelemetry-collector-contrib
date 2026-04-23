@@ -156,7 +156,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		exp.consumeWG.Done()
 		errs = multierr.Append(errs, err)
 		if err != nil {
-			failedMetrics = mergeMetrics(failedMetrics, mds)
+			failedMetrics = mergeMetrics(failedMetrics, failedMetricsFromError(err, mds))
 		}
 		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {

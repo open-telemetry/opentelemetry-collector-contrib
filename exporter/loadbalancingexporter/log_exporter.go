@@ -87,7 +87,7 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for _, batch := range batches {
 		if err := e.consumeLog(ctx, batch); err != nil {
 			errs = multierr.Append(errs, err)
-			failedLogs = mergeLogs(failedLogs, batch)
+			failedLogs = mergeLogs(failedLogs, failedLogsFromError(err, batch))
 		}
 	}
 
