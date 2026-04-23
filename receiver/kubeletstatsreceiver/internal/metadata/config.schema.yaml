@@ -235,6 +235,13 @@ $defs:
           enabled:
             type: boolean
             default: false
+      k8s.node.system_container.memory.usage:
+        description: "K8sNodeSystemContainerMemoryUsageMetricConfig provides config for the k8s.node.system_container.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       k8s.node.system_container.memory.working_set:
         description: "K8sNodeSystemContainerMemoryWorkingSetMetricConfig provides config for the k8s.node.system_container.memory.working_set metric."
         type: object

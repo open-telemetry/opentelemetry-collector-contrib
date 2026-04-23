@@ -47,7 +47,7 @@ const (
 	podMetrics             = 15
 	containerMetrics       = 11
 	volumeMetrics          = 5
-	systemContainerMetrics = 3
+	systemContainerMetrics = 4
 
 	dataLen = numContainers*containerMetrics + numPods*podMetrics + numNodes*nodeMetrics + numVolumes*volumeMetrics
 )
@@ -97,6 +97,7 @@ func TestScraperWithSystemContainerMetrics(t *testing.T) {
 	metricsConfig := metadata.DefaultMetricsBuilderConfig()
 	metricsConfig.Metrics.K8sNodeSystemContainerCPUTime.Enabled = true
 	metricsConfig.Metrics.K8sNodeSystemContainerCPUUsage.Enabled = true
+	metricsConfig.Metrics.K8sNodeSystemContainerMemoryUsage.Enabled = true
 	metricsConfig.Metrics.K8sNodeSystemContainerMemoryWorkingSet.Enabled = true
 
 	r, err := newKubeletScraper(

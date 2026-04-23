@@ -215,6 +215,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeSystemContainerCPUUsageDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -781,6 +784,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.node.system_container.memory.usage":
+					assert.False(t, validatedMetrics["k8s.node.system_container.memory.usage"], "Found a duplicate in the metrics slice: k8s.node.system_container.memory.usage")
+					validatedMetrics["k8s.node.system_container.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "System container memory usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.system_container.memory.working_set":
 					assert.False(t, validatedMetrics["k8s.node.system_container.memory.working_set"], "Found a duplicate in the metrics slice: k8s.node.system_container.memory.working_set")
 					validatedMetrics["k8s.node.system_container.memory.working_set"] = true

@@ -67,6 +67,8 @@ all_set:
       enabled: true
     k8s.node.system_container.cpu.usage:
       enabled: true
+    k8s.node.system_container.memory.usage:
+      enabled: true
     k8s.node.system_container.memory.working_set:
       enabled: true
     k8s.node.uptime:
@@ -223,6 +225,8 @@ none_set:
     k8s.node.system_container.cpu.time:
       enabled: false
     k8s.node.system_container.cpu.usage:
+      enabled: false
+    k8s.node.system_container.memory.usage:
       enabled: false
     k8s.node.system_container.memory.working_set:
       enabled: false

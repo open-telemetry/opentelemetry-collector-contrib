@@ -126,6 +126,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeSystemContainerCPUUsage: MetricConfig{
 						Enabled: true,
 					},
+					K8sNodeSystemContainerMemoryUsage: MetricConfig{
+						Enabled: true,
+					},
 					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
 						Enabled: true,
 					},
@@ -332,6 +335,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						Enabled: false,
 					},
 					K8sNodeSystemContainerCPUUsage: MetricConfig{
+						Enabled: false,
+					},
+					K8sNodeSystemContainerMemoryUsage: MetricConfig{
 						Enabled: false,
 					},
 					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{

@@ -62,6 +62,13 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime, a.allNetworkInterfaces[NodeMetricGroup])
 	// todo s.Runtime.ImageFs
+	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
+	rb.SetK8sNodeName(s.NodeName)
+	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithResource(rb.Emit()),
+	))
+
 	for _, cs := range s.SystemContainers {
 		rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 		rb.SetK8sNodeName(s.NodeName)
@@ -75,13 +82,6 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 			metadata.WithResource(rb.Emit()),
 		))
 	}
-
-	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
-	rb.SetK8sNodeName(s.NodeName)
-	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
-		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
-		metadata.WithResource(rb.Emit()),
-	))
 }
 
 func (a *metricDataAccumulator) podStats(s *stats.PodStats) {

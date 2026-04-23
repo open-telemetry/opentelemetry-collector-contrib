@@ -98,6 +98,7 @@ var ContainerMemoryMetrics = MemoryMetrics{
 }
 
 var SystemContainerMemoryMetrics = MemoryMetrics{
+	Usage:      (*MetricsBuilder).RecordK8sNodeSystemContainerMemoryUsageDataPoint,
 	WorkingSet: (*MetricsBuilder).RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint,
 }
 

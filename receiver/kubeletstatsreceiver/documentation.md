@@ -458,6 +458,14 @@ Total CPU usage (sum of all cores per second) averaged over the sample window fo
 | ---- | ----------- | ---------- | --------- |
 | {cpu} | Gauge | Double | Development |
 
+### k8s.node.system_container.memory.usage
+
+System container memory usage
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### k8s.node.system_container.memory.working_set
 
 System container memory working_set

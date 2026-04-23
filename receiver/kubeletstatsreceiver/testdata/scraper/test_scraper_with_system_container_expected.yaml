@@ -4,9 +4,6 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: minikube
-        - key: k8s.node.system_container.name
-          value:
-            stringValue: kubelet
     scopeMetrics:
       - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
@@ -153,6 +150,19 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: minikube
+        - key: k8s.node.system_container.name
+          value:
+            stringValue: kubelet
+    scopeMetrics:
+      - metrics:
           - description: Total cumulative CPU time (sum of all cores) spent by the system container since its creation
             name: k8s.node.system_container.cpu.time
             sum:
@@ -171,6 +181,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: k8s.node.system_container.cpu.usage
             unit: '{cpu}'
+          - description: System container memory usage
+            gauge:
+              dataPoints:
+                - asInt: "33259520"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.system_container.memory.usage
+            unit: By
           - description: System container memory working_set
             gauge:
               dataPoints:
@@ -210,6 +228,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: k8s.node.system_container.cpu.usage
             unit: '{cpu}'
+          - description: System container memory usage
+            gauge:
+              dataPoints:
+                - asInt: "428924928"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.system_container.memory.usage
+            unit: By
           - description: System container memory working_set
             gauge:
               dataPoints:
@@ -249,6 +275,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: k8s.node.system_container.cpu.usage
             unit: '{cpu}'
+          - description: System container memory usage
+            gauge:
+              dataPoints:
+                - asInt: "1186713600"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.node.system_container.memory.usage
+            unit: By
           - description: System container memory working_set
             gauge:
               dataPoints:

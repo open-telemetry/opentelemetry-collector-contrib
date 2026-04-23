@@ -62,6 +62,7 @@ type MetricsConfig struct {
 	K8sNodeNetworkIo                       MetricConfig `mapstructure:"k8s.node.network.io"`
 	K8sNodeSystemContainerCPUTime          MetricConfig `mapstructure:"k8s.node.system_container.cpu.time"`
 	K8sNodeSystemContainerCPUUsage         MetricConfig `mapstructure:"k8s.node.system_container.cpu.usage"`
+	K8sNodeSystemContainerMemoryUsage      MetricConfig `mapstructure:"k8s.node.system_container.memory.usage"`
 	K8sNodeSystemContainerMemoryWorkingSet MetricConfig `mapstructure:"k8s.node.system_container.memory.working_set"`
 	K8sNodeUptime                          MetricConfig `mapstructure:"k8s.node.uptime"`
 	K8sPodCPUNodeUtilization               MetricConfig `mapstructure:"k8s.pod.cpu.node.utilization"`
@@ -191,6 +192,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		K8sNodeSystemContainerCPUUsage: MetricConfig{
+			Enabled: false,
+		},
+		K8sNodeSystemContainerMemoryUsage: MetricConfig{
 			Enabled: false,
 		},
 		K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
