@@ -34,13 +34,14 @@ const (
 	faroSDKVersion      = "sdk_version"
 	faroSDKIntegrations = "sdk_integrations"
 
-	faroApp            = "app"
-	faroAppName        = "app_name"
-	faroAppNamespace   = "app_namespace"
-	faroAppRelease     = "app_release"
-	faroAppVersion     = "app_version"
-	faroAppBundleID    = "app_bundle_id"
-	faroAppEnvironment = "app_environment"
+	faroApp               = "app"
+	faroAppName           = "app_name"
+	faroAppNamespace      = "app_namespace"
+	faroAppRelease        = "app_release"
+	faroAppVersion        = "app_version"
+	faroAppBundleID       = "app_bundle_id"
+	faroAppEnvironment    = "app_environment"
+	faroAppInstallationID = "app_installation_id"
 
 	faroBrowserName           = "browser_name"
 	faroBrowserVersion        = "browser_version"
@@ -55,6 +56,18 @@ const (
 
 	faroBrand        = "brand"
 	faroBrandVersion = "version"
+
+	faroDeviceManufacturer    = "device_manufacturer"
+	faroDeviceModelIdentifier = "device_model_identifier"
+	faroDeviceModelName       = "device_model_name"
+	faroDeviceBrand           = "device_brand"
+	faroDeviceIsPhysical      = "device_is_physical"
+	faroDeviceType            = "device_type"
+
+	faroOSName    = "os_name"
+	faroOSVersion = "os_version"
+	faroOSBuildID = "os_build_id"
+	faroOSDetail  = "os_detail"
 
 	faroGeoContinentIso   = "geo_continent_iso"
 	faroGeoCountryIso     = "geo_country_iso"
@@ -93,6 +106,7 @@ const (
 	faroExceptionValue      = "value"
 	faroExceptionHash       = "hash"
 	faroExceptionStacktrace = "stacktrace"
+	faroExceptionFatal      = "fatal"
 
 	faroStacktraceFunction = "function"
 	faroStackTraceModule   = "module"
@@ -304,6 +318,11 @@ func extractMetaFromKeyVal(kv map[string]string, rl pcommon.Resource) (faroTypes
 	if err != nil {
 		return meta, err
 	}
+	device, err := extractDeviceFromKeyVal(kv)
+	if err != nil {
+		return meta, err
+	}
+	osMeta := extractOSFromKeyVal(kv)
 	geo := extractGeoFromKeyVal(kv)
 	k6, err := extractK6FromKeyVal(kv)
 	if err != nil {
@@ -317,6 +336,8 @@ func extractMetaFromKeyVal(kv map[string]string, rl pcommon.Resource) (faroTypes
 
 	meta.App = app
 	meta.Browser = *browser
+	meta.Device = device
+	meta.OS = osMeta
 	meta.Geo = geo
 	meta.K6 = k6
 	meta.Page = page
@@ -427,6 +448,9 @@ func extractAppFromKeyVal(kv map[string]string, rl pcommon.Resource) faroTypes.A
 			app.Environment = environment
 		}
 	}
+	if installationID, ok := kv[faroAppInstallationID]; ok {
+		app.InstallationID = installationID
+	}
 	return app
 }
 
@@ -513,6 +537,50 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 		}
 	}
 	return brands, nil
+}
+
+func extractDeviceFromKeyVal(kv map[string]string) (faroTypes.Device, error) {
+	var device faroTypes.Device
+	if manufacturer, ok := kv[faroDeviceManufacturer]; ok {
+		device.Manufacturer = manufacturer
+	}
+	if modelIdentifier, ok := kv[faroDeviceModelIdentifier]; ok {
+		device.ModelIdentifier = modelIdentifier
+	}
+	if modelName, ok := kv[faroDeviceModelName]; ok {
+		device.ModelName = modelName
+	}
+	if brand, ok := kv[faroDeviceBrand]; ok {
+		device.Brand = brand
+	}
+	if isPhysical, ok := kv[faroDeviceIsPhysical]; ok {
+		parsed, err := strconv.ParseBool(isPhysical)
+		if err != nil {
+			return device, err
+		}
+		device.IsPhysical = parsed
+	}
+	if deviceType, ok := kv[faroDeviceType]; ok {
+		device.Type = deviceType
+	}
+	return device, nil
+}
+
+func extractOSFromKeyVal(kv map[string]string) faroTypes.OS {
+	var osMeta faroTypes.OS
+	if name, ok := kv[faroOSName]; ok {
+		osMeta.Name = name
+	}
+	if version, ok := kv[faroOSVersion]; ok {
+		osMeta.Version = version
+	}
+	if buildID, ok := kv[faroOSBuildID]; ok {
+		osMeta.BuildID = buildID
+	}
+	if detail, ok := kv[faroOSDetail]; ok {
+		osMeta.Detail = detail
+	}
+	return osMeta
 }
 
 func extractGeoFromKeyVal(kv map[string]string) faroTypes.Geo {
@@ -696,6 +764,13 @@ func extractExceptionFromKeyVal(kv map[string]string) (faroTypes.Exception, erro
 	}
 	if exceptionValue, ok := kv[faroExceptionValue]; ok {
 		exception.Value = exceptionValue
+	}
+	if fatal, ok := kv[faroExceptionFatal]; ok {
+		parsed, err := strconv.ParseBool(fatal)
+		if err != nil {
+			return exception, err
+		}
+		exception.Fatal = parsed
 	}
 	exceptionContext := extractExceptionContextFromKeyVal(kv)
 	if len(exceptionContext) > 0 {

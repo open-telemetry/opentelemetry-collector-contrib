@@ -134,8 +134,13 @@ exporters:
       max_elapsed_time: <max_elapsed_time>
 
     sending_queue:
-      # default = false
+      # default = true
       enabled: {true, false}
+
+      # Sizer determines the type of size measurement used by this component.
+      # It accepts "requests", "items", or "bytes".
+      # default = requests
+      sizer: <>
       # number of consumers that dequeue batches; ignored if enabled is false,
       # default = 10
       num_consumers: <num_consumers>
@@ -150,6 +155,25 @@ exporters:
       # num_seconds is the number of seconds to buffer in case of a backend outage,
       # requests_per_second is the average number of requests per seconds.
       queue_size: <queue_size>
+
+      # BlockOnOverflow determines the behavior when the component's TotalSize limit is reached.
+      # If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
+      # default = false
+      block_on_overflow: <block_on_overflow>
+
+      # BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
+      batch:
+        # FlushTimeout sets the time after which a batch will be sent regardless of its size.
+        # default = 200ms
+        flush_timeout: <>
+        # Sizer determines the type of size measurement used by the batch.
+        # If not configured, use the same configuration as the queue.
+        # It accepts "requests", "items", or "bytes".
+        # default = items
+        sizer: <>
+        # MinSize defines the configuration for the minimum size of a batch.
+        # default = 8192
+        min_size: <>
 ```
 
 ## Source Templates
