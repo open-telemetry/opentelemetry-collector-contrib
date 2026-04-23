@@ -62,6 +62,10 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 		set.Logger.Warn("`remote_write_queue.num_consumers` will be used to configure processing parallelism, rather than request parallelism in a future release. This may cause out-of-order issues unless you take action. Please migrate to using `max_batch_request_parallelism` to keep the your existing behavior.")
 	}
 
+	if !prwCfg.AddMetricSuffixes {
+		set.Logger.Warn("`add_metric_suffixes` is deprecated. Please use `translation_strategy: UnderscoreEscapingWithoutSuffixes` instead.")
+	}
+
 	prwe, err := newPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
@@ -117,9 +121,10 @@ func createDefaultConfig() component.Config {
 		MaxBatchSizeBytes: 3000000,
 		// To set this as default once `exporter.prometheusremotewritexporter.EnableMultipleWorkers` is removed
 		// MaxBatchRequestParallelism: 5,
-		TimeoutSettings:     exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig:       retrySettings,
-		AddMetricSuffixes:   true,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig:     retrySettings,
+		AddMetricSuffixes: true,
+		// TODO: Set TranslationStrategy to UnderscoreEscapingWithSuffixes once AddMetricSuffixes is removed.
 		SendMetadata:        false,
 		RemoteWriteProtoMsg: remoteapi.WriteV1MessageType,
 		ClientConfig:        clientConfig,
