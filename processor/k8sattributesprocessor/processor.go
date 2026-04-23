@@ -195,7 +195,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	var pod *kube.Pod
 	var podFound bool
 	if podIdentifierValue.IsNotEmpty() {
-		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
+		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound && pod != nil {
 			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
 			for key, val := range pod.Attributes {
 				setResourceAttribute(resource.Attributes(), key, val)

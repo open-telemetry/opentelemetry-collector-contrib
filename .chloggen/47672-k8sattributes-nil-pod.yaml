@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: processor/k8s_attributes
+note: "Guard processResource against a nil *kube.Pod returned alongside podFound=true"
+issues: [47672]
+subtext:
+change_logs: [user]
