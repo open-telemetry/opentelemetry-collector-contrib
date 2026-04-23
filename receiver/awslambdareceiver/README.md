@@ -380,9 +380,70 @@ service:
       exporters: [otlp_http]
 ```
 
-For this deployment configuration, when receiver is triggered by a CloudWatch Logs subscription filter, the CloudWatch 
-messages will be extracted and converted to an OpenTelemetry log record. 
+For this deployment configuration, when receiver is triggered by a CloudWatch Logs subscription filter, the CloudWatch
+messages will be extracted and converted to an OpenTelemetry log record.
 These logs then get forwarded to an OTLP listener via the `otlp_http` exporter.
+
+### Multi-Format CloudWatch Configuration (encodings)
+
+The `encodings` field under `cloudwatch` enables routing different CloudWatch subscription events
+to different decoders based on their log group and/or log stream. This is useful when a single
+Lambda is subscribed to multiple log groups carrying different event shapes — for example, VPC
+Flow Logs, Lambda function logs, and plain-text application logs.
+
+`encoding` (single, top-level) and `encodings` (list) are mutually exclusive — use one or the other.
+
+Each entry in `encodings` supports four fields:
+
+| Field                | Required | Description |
+|----------------------|----------|-------------|
+| `name`               | yes      | Unique identifier for this entry. For known names (`vpcflow`, `cloudtrail`, `lambda`, `waf`, `rds`, `eks`, `apigateway`) the default pattern is applied automatically when neither `log_group_pattern` nor `log_stream_pattern` is set. |
+| `encoding`           | no       | Extension ID of the decoder. Omit to pass content through as raw bytes using the built-in default CloudWatch decoder. |
+| `log_group_pattern`  | no*      | Pattern matched against the subscription event's `logGroup`. `*` matches one path segment; affix wildcards (`foo-*`, `*-bar`, `*baz*`) are supported. |
+| `log_stream_pattern` | no*      | Pattern matched against the subscription event's `logStream`. Same syntax as `log_group_pattern`. |
+
+\* At least one of `log_group_pattern` or `log_stream_pattern` must be set, unless the entry uses a built-in known name. Use `"*"` as a catch-all.
+
+For each entry, `log_group_pattern` is checked before `log_stream_pattern`. Across entries, the
+router evaluates in order of pattern specificity (more-specific patterns are matched first;
+`"*"` catch-all is matched last). Users may list entries in any order.
+
+#### Combining encodings with extensions
+
+```yaml
+extensions:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+    vpcflow:
+      file_format: plain-text
+  awslogs_encoding/lambda:
+    format: lambda
+
+receivers:
+  awslambda:
+    cloudwatch:
+      encodings:
+        - name: vpcflow
+          encoding: awslogs_encoding/vpcflow  # log_stream_pattern defaults to eni-*
+        - name: lambda
+          encoding: awslogs_encoding/lambda   # log_group_pattern defaults to /aws/lambda/*
+        - name: raw
+          log_group_pattern: "*"              # forward anything else as raw bytes
+```
+
+#### Built-in default CloudWatch patterns
+
+| Name         | Default pattern                                   |
+|--------------|---------------------------------------------------|
+| `vpcflow`    | `log_stream_pattern: eni-*`                       |
+| `cloudtrail` | `log_stream_pattern: *_CloudTrail_*`              |
+| `lambda`     | `log_group_pattern: /aws/lambda/*`                |
+| `waf`        | `log_group_pattern: aws-waf-logs-*`               |
+| `rds`        | `log_group_pattern: /aws/rds/instance/*/*`        |
+| `eks`        | `log_group_pattern: /aws/eks/*`                   |
+| `apigateway` | `log_group_pattern: API-Gateway-Execution-Logs_*` |
+
+For any name not listed above, `log_group_pattern` and/or `log_stream_pattern` must be specified explicitly.
 
 ### Example 4: Arbitrary S3 content (logs or metrics)
 
