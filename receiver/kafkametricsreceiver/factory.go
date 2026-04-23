@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 		ClientConfig:         configkafka.NewDefaultClientConfig(),
 		GroupMatch:           defaultGroupMatch,
 		TopicMatch:           defaultTopicMatch,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	if config.ClusterAlias != "" {
 		config.ResourceAttributes.KafkaClusterAlias.Enabled = true

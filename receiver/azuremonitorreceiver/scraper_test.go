@@ -261,7 +261,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		s := &azureScraper{
 			cfg:                          cfgLimitedMertics,
 			settings:                     settings.TelemetrySettings,
-			mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+			mb:                           metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings),
 			mutex:                        &sync.Mutex{},
 			time:                         getTimeMock(),
 			clientOptionsResolver:        optionsResolver,
@@ -320,7 +320,7 @@ func getNominalTestScraper() *azureScraper {
 	return &azureScraper{
 		cfg:                          cfg,
 		settings:                     settings.TelemetrySettings,
-		mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mb:                           metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings),
 		mutex:                        &sync.Mutex{},
 		time:                         getTimeMock(),
 		clientOptionsResolver:        optionsResolver,
@@ -489,7 +489,7 @@ func TestAzureScraperProcessResources(t *testing.T) {
 			s := &azureScraper{
 				cfg:                          tt.cfg,
 				settings:                     settings.TelemetrySettings,
-				mb:                           metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mb:                           metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings),
 				mutex:                        &sync.Mutex{},
 				time:                         getTimeMock(),
 				clientOptionsResolver:        optionsResolver,
