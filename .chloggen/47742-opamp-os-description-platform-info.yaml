@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: extension/opamp
+note: Avoid host ID lookup when building OpAMP agent OS description by using platform information directly.
+issues: [46965]
+subtext:
+change_logs: [user]
