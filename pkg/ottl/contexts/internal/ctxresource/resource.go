@@ -98,27 +98,17 @@ func syncEntityRefs(resource pcommon.Resource) {
 		return
 	}
 	attrs := resource.Attributes()
-	for i := entityRefs.Len() - 1; i >= 0; i-- {
-		entityRef := entityRefs.At(i)
-		missingIDKey := false
-		for _, IDKey := range entityRef.IdKeys().All() {
-			if _, exist := attrs.Get(IDKey); !exist {
-				missingIDKey = true
-				break
+	entityRefs.RemoveIf(func(entityRef entity.EntityRef) bool {
+		for _, idKey := range entityRef.IdKeys().All() {
+			if _, exist := attrs.Get(idKey); !exist {
+				return true
 			}
 		}
-		if missingIDKey {
-			entityRefs.RemoveIf(func(e entity.EntityRef) bool {
-				return e.Type() == entityRef.Type()
+		entityRef.DescriptionKeys().RemoveIf(
+			func(key string) bool {
+				_, exist := attrs.Get(key)
+				return !exist
 			})
-			continue
-		}
-		for _, descKey := range entityRef.DescriptionKeys().All() {
-			if _, exist := attrs.Get(descKey); !exist {
-				entityRef.DescriptionKeys().RemoveIf(func(dk string) bool {
-					return dk == descKey
-				})
-			}
-		}
-	}
+		return false
+	})
 }
