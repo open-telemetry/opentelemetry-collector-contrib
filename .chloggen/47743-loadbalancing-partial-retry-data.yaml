@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/loadbalancing
+note: Return retryable partial-data errors so only failed backend payloads are retried.
+issues: [47600]
+subtext:
+change_logs: [user]
