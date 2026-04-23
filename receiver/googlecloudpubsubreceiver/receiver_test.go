@@ -79,6 +79,10 @@ func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 				Timeout: 12 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
+			FlowControlConfig: FlowControlConfig{
+				StreamAckDeadline:       60 * time.Second,
+				TriggerAckBatchDuration: 10 * time.Second,
+			},
 		},
 	}
 }
@@ -165,6 +169,10 @@ func TestReceiver(t *testing.T) {
 				Timeout: 1 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
+			FlowControlConfig: FlowControlConfig{
+				StreamAckDeadline:       60 * time.Second,
+				TriggerAckBatchDuration: 10 * time.Second,
+			},
 		},
 		tracesConsumer:  traceSink,
 		metricsConsumer: metricSink,
