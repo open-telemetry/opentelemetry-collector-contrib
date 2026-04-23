@@ -216,6 +216,7 @@ service:
 		remoteConfig        *protobufs.AgentRemoteConfig
 		wantErr             bool
 		wantChanged         bool
+		wantConfigMapEmpty  bool
 		wantConfig          []byte
 	}{
 		{
@@ -229,9 +230,10 @@ service:
 					},
 				},
 			},
-			wantErr:     false,
-			wantChanged: true,
-			wantConfig:  effectiveConfig,
+			wantErr:            false,
+			wantChanged:        true,
+			wantConfigMapEmpty: false,
+			wantConfig:         effectiveConfig,
 		},
 		{
 			name:                "can accept remote config, receives none",
@@ -240,7 +242,22 @@ service:
 			remoteConfig:        nil,
 			wantErr:             false,
 			wantChanged:         false,
+			wantConfigMapEmpty:  false,
 			wantConfig:          mergedLocalConfig,
+		},
+		{
+			name:                "can accept remote config, empty remote config with local config files",
+			configFiles:         []string{"testdata/local_config1.yaml", "testdata/local_config2.yaml"},
+			acceptsRemoteConfig: true,
+			remoteConfig: &protobufs.AgentRemoteConfig{
+				Config: &protobufs.AgentConfigMap{
+					ConfigMap: map[string]*protobufs.AgentConfigFile{},
+				},
+			},
+			wantErr:            false,
+			wantChanged:        false,
+			wantConfigMapEmpty: false,
+			wantConfig:         mergedLocalConfig,
 		},
 		{
 			name:                "cannot accept remote config, receives one",
@@ -253,9 +270,10 @@ service:
 					},
 				},
 			},
-			wantErr:     false,
-			wantChanged: false,
-			wantConfig:  effectiveConfig,
+			wantErr:            false,
+			wantChanged:        false,
+			wantConfigMapEmpty: false,
+			wantConfig:         effectiveConfig,
 		},
 		{
 			name:                "cannot accept remote config, receives none",
@@ -264,6 +282,7 @@ service:
 			remoteConfig:        nil,
 			wantErr:             false,
 			wantChanged:         false,
+			wantConfigMapEmpty:  false,
 			wantConfig:          effectiveConfig,
 		},
 	}
@@ -306,7 +325,8 @@ service:
 			}
 			require.NoError(t, err)
 			require.Equal(t, tt.wantChanged, changed)
-			got := s.cfgState.Load().(*configState).mergedConfig
+			gotState := s.cfgState.Load().(*configState)
+			got := gotState.mergedConfig
 
 			k := koanf.New("::")
 			err = k.Load(rawbytes.Provider(tt.wantConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
@@ -316,6 +336,7 @@ service:
 
 			require.NoError(t, err)
 			require.Equal(t, string(gotParsed), got)
+			require.Equal(t, tt.wantConfigMapEmpty, gotState.configMapIsEmpty)
 		})
 	}
 }
