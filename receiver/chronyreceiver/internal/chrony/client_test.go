@@ -91,7 +91,9 @@ func newShortSocketDir(t *testing.T) string {
 	if runtime.GOOS == "windows" {
 		return t.TempDir()
 	}
-	dir, err := os.MkdirTemp("/tmp", "chrony-")
+	// Intentionally avoid t.TempDir here because unix socket paths must stay as short
+	// as possible on some platforms.
+	dir, err := os.MkdirTemp("/tmp", "chrony-") //nolint:usetesting
 	require.NoError(t, err)
 	t.Cleanup(func() { os.RemoveAll(dir) })
 	return dir
@@ -220,11 +222,11 @@ func (c *scriptedConn) Close() error {
 	return nil
 }
 
-func (c *scriptedConn) LocalAddr() net.Addr             { return stubAddr("local") }
-func (c *scriptedConn) RemoteAddr() net.Addr            { return stubAddr("remote") }
-func (c *scriptedConn) SetDeadline(time.Time) error     { return nil }
-func (c *scriptedConn) SetReadDeadline(time.Time) error { return nil }
-func (c *scriptedConn) SetWriteDeadline(time.Time) error {
+func (*scriptedConn) LocalAddr() net.Addr             { return stubAddr("local") }
+func (*scriptedConn) RemoteAddr() net.Addr            { return stubAddr("remote") }
+func (*scriptedConn) SetDeadline(time.Time) error     { return nil }
+func (*scriptedConn) SetReadDeadline(time.Time) error { return nil }
+func (*scriptedConn) SetWriteDeadline(time.Time) error {
 	return nil
 }
 

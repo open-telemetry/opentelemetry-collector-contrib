@@ -112,16 +112,16 @@ func (c *client) GetTrackingData(ctx context.Context) (_ *Tracking, err error) {
 	}()
 
 	if deadline, ok := ctx.Deadline(); ok {
-		if err = c.conn.SetDeadline(deadline); err != nil {
-			return nil, err
+		if setDeadlineErr := c.conn.SetDeadline(deadline); setDeadlineErr != nil {
+			return nil, setDeadlineErr
 		}
 	}
 
 	packet := chrony.NewTrackingPacket()
 	packet.SetSequence(uint32(clockwork.FromContext(ctx).Now().UnixNano()))
 
-	if err = binary.Write(c.conn, binary.BigEndian, packet); err != nil {
-		return nil, err
+	if writeErr := binary.Write(c.conn, binary.BigEndian, packet); writeErr != nil {
+		return nil, writeErr
 	}
 	data := make([]uint8, 1024)
 	if _, err = c.conn.Read(data); err != nil {
