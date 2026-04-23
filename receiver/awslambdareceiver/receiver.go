@@ -275,9 +275,9 @@ func newLogsHandler(
 	return newHandlerProvider(registry), nil
 }
 
-// buildS3LogsRouter constructs a logsDecoderRouter from the S3 encodings config.
+// buildS3LogsRouter constructs a s3LogsDecoderRouter from the S3 encodings config.
 // Encodings are sorted by path pattern specificity before being passed to the router.
-func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*logsDecoderRouter, error) {
+func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*s3LogsDecoderRouter, error) {
 	sortedEncodings := cfg.sortedEncodings()
 	decoders := make(map[string]encoding.LogsDecoderFactory, len(sortedEncodings))
 
@@ -300,7 +300,7 @@ func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*
 		decoders[enc.Name] = decoder
 	}
 
-	return newLogsDecoderRouter(sortedEncodings, decoders), nil
+	return newS3LogsDecoderRouter(sortedEncodings, decoders), nil
 }
 
 func newMetricsHandler(

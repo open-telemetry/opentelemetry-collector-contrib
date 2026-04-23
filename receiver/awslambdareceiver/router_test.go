@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver/internal"
 )
 
-func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
+func TestS3LogsDecoderRouter_GetDecoder(t *testing.T) {
 	t.Parallel()
 
 	defaultDecoder := internal.NewDefaultS3LogsDecoder()
@@ -106,7 +106,7 @@ func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			router := newLogsDecoderRouter(tt.encodings, tt.decoders)
+			router := newS3LogsDecoderRouter(tt.encodings, tt.decoders)
 			decoder, formatName, err := router.GetDecoder(tt.objectKey)
 
 			if tt.expectError {
@@ -121,7 +121,7 @@ func TestLogsDecoderRouter_GetDecoder(t *testing.T) {
 	}
 }
 
-func TestLogsDecoderRouter_PatternPriority(t *testing.T) {
+func TestS3LogsDecoderRouter_PatternPriority(t *testing.T) {
 	t.Parallel()
 
 	vpcDecoder := internal.NewDefaultS3LogsDecoder()
@@ -137,7 +137,7 @@ func TestLogsDecoderRouter_PatternPriority(t *testing.T) {
 		"catchall": catchallDecoder,
 	}
 
-	router := newLogsDecoderRouter(encodings, decoders)
+	router := newS3LogsDecoderRouter(encodings, decoders)
 
 	_, name, err := router.GetDecoder("AWSLogs/123/vpcflowlogs/us-east-1/file.log")
 	require.NoError(t, err)

@@ -814,7 +814,7 @@ func TestMultiFormatS3LogsHandler(t *testing.T) {
 				Return(io.NopCloser(bytes.NewReader(test.s3MockContent.data)), nil).
 				AnyTimes()
 
-			router := newLogsDecoderRouter(test.encodings, test.decoders)
+			router := newS3LogsDecoderRouter(test.encodings, test.decoders)
 			handler := newS3LogsHandler(s3Service, zap.NewNop(), router.GetDecoder, &noOpLogsConsumer{})
 
 			event, err := json.Marshal(test.s3Event)
