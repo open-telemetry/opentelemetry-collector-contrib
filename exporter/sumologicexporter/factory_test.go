@@ -28,7 +28,15 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	qConfig := exporterhelper.NewDefaultQueueConfig()
+	qConfig.Batch.GetOrInsertDefault()
+	qs := configoptional.Some(qConfig)
+	retryConfig := configretry.NewDefaultBackOffConfig()
+	retryConfig.Enabled = true
+	retryConfig.InitialInterval = 5 * time.Second
+	retryConfig.Multiplier = 1.2
+	retryConfig.MaxInterval = 5 * time.Minute
+	retryConfig.MaxElapsedTime = 1 * time.Hour
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 30 * time.Second
 	clientConfig.Compression = "gzip"
@@ -42,7 +50,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Client:             "otelcol",
 
 		ClientConfig:  clientConfig,
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		BackOffConfig: retryConfig,
 		QueueSettings: qs,
 	}, cfg)
 

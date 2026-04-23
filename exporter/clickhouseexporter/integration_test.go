@@ -265,11 +265,12 @@ func testIntegrationWithImage(t *testing.T, clickhouseImage string) {
 
 func TestIntegration(t *testing.T) {
 	// Update versions according to oldest and newest supported here: https://github.com/clickhouse/clickhouse/security
+	// 25.8 tests the bloom_filter fallback (CH < 26.2), 26.2 tests full text search indexes.
+	t.Run("26.2", func(t *testing.T) {
+		testIntegrationWithImage(t, "clickhouse/clickhouse-server:26.2-alpine")
+	})
 	t.Run("25.8", func(t *testing.T) {
 		testIntegrationWithImage(t, "clickhouse/clickhouse-server:25.8-alpine")
-	})
-	t.Run("25.3", func(t *testing.T) {
-		testIntegrationWithImage(t, "clickhouse/clickhouse-server:25.3-alpine")
 	})
 
 	// Verify all integration tests, ignoring test container reaper

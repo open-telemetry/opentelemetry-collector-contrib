@@ -108,6 +108,11 @@ func TestE2EClusterScoped(t *testing.T) {
 				"k8s.job.max_parallel_pods",
 				"k8s.hpa.current_replicas",
 				"k8s.job.successful_pods",
+				"k8s.persistentvolume.status.phase",
+				"k8s.persistentvolume.storage.capacity",
+				"k8s.persistentvolumeclaim.status.phase",
+				"k8s.persistentvolumeclaim.storage.capacity",
+				"k8s.persistentvolumeclaim.storage.request",
 				"k8s.service.endpoint.count",
 				"k8s.service.load_balancer.ingress.count"),
 			pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
@@ -122,6 +127,10 @@ func TestE2EClusterScoped(t *testing.T) {
 			pmetrictest.ChangeResourceAttributeValue("k8s.job.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolume.name", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolume.uid", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.name", shortenNames),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
@@ -203,6 +212,9 @@ func TestE2ENamespaceScoped(t *testing.T) {
 				"k8s.job.max_parallel_pods",
 				"k8s.hpa.current_replicas",
 				"k8s.job.successful_pods",
+				"k8s.persistentvolumeclaim.status.phase",
+				"k8s.persistentvolumeclaim.storage.capacity",
+				"k8s.persistentvolumeclaim.storage.request",
 				"k8s.service.endpoint.count",
 				"k8s.service.load_balancer.ingress.count"),
 			pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
@@ -217,6 +229,8 @@ func TestE2ENamespaceScoped(t *testing.T) {
 			pmetrictest.ChangeResourceAttributeValue("k8s.job.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.name", shortenNames),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
@@ -369,6 +383,9 @@ func shortenNames(value string) string {
 	if strings.HasPrefix(value, "test-k8scluster-receiver-job") {
 		return "test-k8scluster-receiver-job"
 	}
+	if strings.HasPrefix(value, "test-k8scluster-receiver-statefulset-pvc") {
+		return "test-k8scluster-receiver-statefulset-pvc"
+	}
 	return value
 }
 
@@ -396,7 +413,7 @@ func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T
 func startUpSink(t *testing.T, consumer any) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 
 	var err error
 	var rcvr component.Component
@@ -498,6 +515,57 @@ func TestE2ENamespaceMetadata(t *testing.T) {
 	})
 
 	require.NoError(t, plogtest.CompareLogs(expected, namespaceLogs[0],
+		plogtest.IgnoreTimestamp(),
+		plogtest.IgnoreObservedTimestamp(),
+		plogtest.IgnoreScopeLogsOrder(),
+		plogtest.IgnoreLogRecordsOrder(),
+	))
+}
+
+// TestE2EPVCEntity tests the k8s cluster receiver's exporting of PVC entities in a real k8s cluster
+func TestE2EPVCEntity(t *testing.T) {
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	require.NoError(t, err)
+
+	logsConsumer := new(consumertest.LogsSink)
+	shutdownSink := startUpSink(t, logsConsumer)
+	defer shutdownSink()
+
+	testID := uuid.NewString()[:8]
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "entities-test", "collector"), map[string]string{}, "")
+
+	t.Cleanup(func() {
+		for _, obj := range collectorObjs {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+		}
+	})
+
+	pvcObjs, err := k8stest.CreateObjects(k8sClient, filepath.Join(".", "testdata", "e2e", "entities-test", "testobjects-pvc"))
+	require.NoErrorf(t, err, "failed to create PVC test objects")
+	t.Cleanup(func() {
+		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, pvcObjs), "failed to delete PVC test objects")
+	})
+
+	entityType := "k8s.persistentvolumeclaim"
+	entityNameKey := "k8s.persistentvolumeclaim.name"
+	entityName := "test-entities-pvc"
+	pvcLogs := waitForEntityLogs(t, entityType, entityNameKey, entityName, logsConsumer)
+
+	expected, err := golden.ReadLogs("./testdata/e2e/entities-test/expected-pvc.yaml")
+	require.NoError(t, err)
+
+	commonReplacements := map[string]map[string]string{
+		"otel.entity.attributes": {
+			"k8s.persistentvolumeclaim.creation_timestamp": "2025-01-01T00:00:00Z",
+		},
+		"otel.entity.id": {
+			"k8s.persistentvolumeclaim.uid": "entity-id",
+		},
+	}
+
+	replaceLogValues(t, pvcLogs[0], commonReplacements)
+
+	require.NoError(t, plogtest.CompareLogs(expected, pvcLogs[0],
 		plogtest.IgnoreTimestamp(),
 		plogtest.IgnoreObservedTimestamp(),
 		plogtest.IgnoreScopeLogsOrder(),
