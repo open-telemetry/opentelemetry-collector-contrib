@@ -83,9 +83,7 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 	unsymbolizedExecutablesSet := make(map[libpf.FileID]struct{})
 	stackPayload := make([]StackPayload, 0, profile.Samples().Len())
 
-	hostMetadata := newHostMetadata(dic, resource, scope, profile)
-
-	hostResourceData := populateHostResourceData(resource, scope)
+	commonResourceAttributes := populateResourceData(dic, resource, scope, profile)
 
 	frequency := int64(math.Round(1e9 / float64(profile.Period())))
 	if frequency <= 0 {
@@ -107,14 +105,19 @@ func stackPayloads(dic pprofile.ProfilesDictionary, resource pcommon.Resource, s
 			return nil, fmt.Errorf("failed to create stacktrace ID: %w", err)
 		}
 
-		event := stackTraceEvent(dic, traceID, sample, frequency, hostMetadata)
+		event := stackTraceEvent(dic, traceID, sample, frequency, commonResourceAttributes)
 
 		// Set the stacktrace and stackframes to the payload.
 		// The docs only need to be written once.
 		stackPayload = append(stackPayload, StackPayload{
-			StackTrace:   stackTrace(traceID, frames, frameTypes),
-			StackFrames:  symbolizedFrames(frames),
-			HostMetadata: hostResourceData,
+			StackTrace:  stackTrace(traceID, frames, frameTypes),
+			StackFrames: symbolizedFrames(frames),
+			ResourceAttrs: ResourceData{
+				EcsVersion: EcsVersion{
+					V: EcsVersionString,
+				},
+				Data: commonResourceAttributes,
+			},
 		})
 
 		if !isFrameSymbolized(frames[len(frames)-1]) && leafFrame != nil {
@@ -216,20 +219,23 @@ func isFrameSymbolized(frame StackFrame) bool {
 	return len(frame.FileName) > 0 || len(frame.FunctionName) > 0
 }
 
-func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64, hostMetadata map[string]string) StackTraceEvent {
+func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample pprofile.Sample, frequency int64,
+	commonResourceAttrs map[string]string,
+) StackTraceEvent {
 	event := StackTraceEvent{
 		EcsVersion:       EcsVersion{V: EcsVersionString},
-		HostID:           hostMetadata[string(conventions.HostIDKey)],
+		HostID:           commonResourceAttrs[string(conventions.HostIDKey)],
 		StackTraceID:     traceID,
-		ContainerID:      hostMetadata[string(conventions.ContainerIDKey)],
-		ContainerName:    hostMetadata[string(conventions.ContainerNameKey)],
-		PodName:          hostMetadata[string(conventions.K8SPodNameKey)],
-		K8sNamespaceName: hostMetadata[string(conventions.K8SNamespaceNameKey)],
+		ContainerID:      commonResourceAttrs[string(conventions.ContainerIDKey)],
+		ContainerName:    commonResourceAttrs[string(conventions.ContainerNameKey)],
+		PodName:          commonResourceAttrs[string(conventions.K8SPodNameKey)],
+		K8sNamespaceName: commonResourceAttrs[string(conventions.K8SNamespaceNameKey)],
 		Count:            1, // Elasticsearch v9.2+ doesn't read the count value any more.
 		Frequency:        frequency,
-		HostName:         hostMetadata[string(conventions.HostNameKey)],
+		HostName:         commonResourceAttrs[string(conventions.HostNameKey)],
 		ProjectID:        2, // Use a project ID other than 1 to not conflict with ECH default value.
-		ServiceName:      hostMetadata[string(conventions.ServiceNameKey)],
+		ServiceName:      commonResourceAttrs[string(conventions.ServiceNameKey)],
+		ExecutableName:   commonResourceAttrs[string(conventions.ProcessExecutableNameKey)],
 	}
 
 	// Store event-specific attributes.
@@ -240,13 +246,8 @@ func stackTraceEvent(dic pprofile.ProfilesDictionary, traceID string, sample ppr
 		attr := dic.AttributeTable().At(int(idx))
 		key := dic.StringTable().At(int(attr.KeyStrindex()))
 
-		switch attribute.Key(key) {
-		case conventions.ThreadNameKey:
+		if attribute.Key(key) == conventions.ThreadNameKey {
 			event.ThreadName = attr.Value().AsString()
-		case conventions.ProcessExecutableNameKey:
-			event.ExecutableName = attr.Value().AsString()
-		case conventions.ServiceNameKey:
-			event.ServiceName = attr.Value().AsString()
 		}
 	}
 
@@ -500,20 +501,6 @@ func GetStartOfWeekFromTime(t time.Time) uint32 {
 	return uint32(t.Truncate(time.Hour * 24 * 7).Unix())
 }
 
-func newHostMetadata(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) map[string]string {
-	numAttrs := resource.Attributes().Len() + scope.Attributes().Len() + profile.AttributeIndices().Len()
-	if numAttrs == 0 {
-		return map[string]string{}
-	}
-	attrs := make(map[string]string, numAttrs)
-
-	addEventHostData(attrs, resource.Attributes())
-	addEventHostData(attrs, scope.Attributes())
-	addEventHostData(attrs, pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic))
-
-	return attrs
-}
-
 func addEventHostData(data map[string]string, attrs pcommon.Map) {
 	for k, v := range attrs.All() {
 		data[k] = v.AsString()
@@ -526,29 +513,16 @@ func int64ToBytes(value int64) []byte {
 	return buf
 }
 
-func populateHostResourceData(resource pcommon.Resource, scope pcommon.InstrumentationScope) HostResourceData {
-	hrd := HostResourceData{
-		Data: make(map[string]string, resource.Attributes().Len()+scope.Attributes().Len()),
+func populateResourceData(dic pprofile.ProfilesDictionary, resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) map[string]string {
+	numAttrs := resource.Attributes().Len() + scope.Attributes().Len() + profile.AttributeIndices().Len()
+	if numAttrs == 0 {
+		return map[string]string{}
 	}
+	attrs := make(map[string]string, numAttrs)
 
-	addEventHostData(hrd.Data, resource.Attributes())
-	addEventHostData(hrd.Data, scope.Attributes())
+	addEventHostData(attrs, resource.Attributes())
+	addEventHostData(attrs, scope.Attributes())
+	addEventHostData(attrs, pprofile.FromAttributeIndices(dic.AttributeTable(), profile, dic))
 
-	// Special case handling for host.id
-	hostID := hrd.Data[string(conventions.HostIDKey)]
-	if hostID == "" {
-		// In further processing host.id is used as unique key.
-		// So if this key is not present, hosts can not be compared.
-		return HostResourceData{
-			Data: map[string]string{},
-		}
-	}
-	hrd.V = EcsVersionString
-	hrd.HostID = hostID
-
-	// Avoid duplicate keys when JSON marshaling this struct
-	// by removing host.ID from hrd.Data
-	delete(hrd.Data, string(conventions.HostIDKey))
-
-	return hrd
+	return attrs
 }
