@@ -22,11 +22,11 @@ The **YANG gRPC Receiver** collects Model-Driven Telemetry (MDT) from network de
 
 ## Key Features
 
-- **Context-Aware Processing**: Automatically discovers dimensions (labels) like Interface names, VRF IDs, or BGP neighbors by traversing the telemetry tree.
+- **Dual-Pass Tree Traversal**: Implements a strict separation between the `keys` branch (Dimensions/Labels) and the `content` branch (Metrics). This ensures measurement values never leak into labels, maintaining high data quality and preventing cardinality explosions in Splunk.
+- **Context-Aware Processing**: Automatically discovers identifiers like Interface names, VRF IDs, or BGP neighbors during the first pass and preserves them for all nested metrics in the tree.
 - **YANG-Driven Mapping**: Uses Cisco YANG models to distinguish between Counters (monotonic sums) and Gauges (instantaneous values).
 - **Smart Fallback**: Works out-of-the-box using naming heuristics (detecting keys like `name`, `id`, `address`) even if local YANG files are not provided.
-- **OTLP Compliance**: Normalizes all Cisco numeric types into `float64` and handles string values as descriptive `_info` metrics.
-- **Security Hardening**: Includes built-in support for client IP allow-listing and ingestion rate limiting.
+- **OTLP Compliance**: Normalizes all Cisco numeric types into `float64` and handles string-based states (e.g., "up", "down") as descriptive `_info` metrics.
 
 ---
 
@@ -112,17 +112,29 @@ yang_grpc:
 ---
 
 # Example OTLP Output
-When processing Cisco ARP telemetry data, the receiver generates structured OTLP metrics:
 
-### Metric Name: cisco.content.arp-oper.type_info
+When processing Cisco Model-Driven Telemetry, the receiver generates structured OTLP metrics. It maps everything in the `keys` branch to **Attributes** and everything in the `content` branch to **DataPoints**.
 
-Value: 1.0 (Info Metric)
+### Scenario: Interface Statistics
+**Raw Path**: `Cisco-IOS-XE-interfaces-oper:interfaces/interface/statistics`
 
-### Attributes:
+#### Metric Name: `cisco.statistics.in-octets`
+- **Value**: `12345678` (Double)
+- **Attributes**:
+    - `interface`: `GigabitEthernet1/0/1`
+    - `name`: `GigabitEthernet1/0/1`
+    - `cisco.node_id`: `core-switch-01`
 
-* interface: Vlan200
-* vrf: Default
-* address: 10.10.10.1
-* yang.module: Cisco-IOS-XE-arp-oper
-* cisco.node_id: Switch-Core-01
-* cisco.subscription_id: 112
+---
+
+### Scenario: Operational States (Strings)
+**Raw Path**: `Cisco-IOS-XE-interfaces-oper:interfaces/interface/admin-status`
+
+#### Metric Name: `cisco.admin-status_info`
+- **Value**: `1.0` (Gauge)
+- **Attributes**:
+    - `interface`: `Vlan211`
+    - `value`: `if-state-up`  <-- *The actual string status is moved to an attribute*
+    - `cisco.node_id`: `core-switch-01`
+
+> **Implementation Note**: To ensure compatibility with Splunk Infrastructure Monitoring and Metrics indexes, this receiver avoids using dynamic content as label names. All numeric data found under the `content` branch of the GPB-KV tree is treated as a measurement, while only the `keys` branch is used to populate metadata.

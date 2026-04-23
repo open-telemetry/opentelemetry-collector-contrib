@@ -1,14 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package yanggrpcreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/yanggrpcreceiver"
+package yanggrpcreceiver
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"strconv"
 	"strings"
 
@@ -57,12 +56,12 @@ func (s *grpcService) processTelemetryData(req *pb.MdtDialoutArgs) error {
 	return s.receiver.consumer.ConsumeMetrics(context.Background(), metrics)
 }
 
-// convertToOTELMetrics maps Cisco KV-GPB data to OTLP using a Telegraf-inspired
-// approach: extract identifiers (tags) first, then emit measurements.
+// convertToOTELMetrics maps Cisco KV-GPB data to OTLP using a Two-Pass approach.
 func (s *grpcService) convertToOTELMetrics(telemetry *pb.Telemetry) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 
+	// Resource attributes are global to the device/node.
 	resAttrs := rm.Resource().Attributes()
 	resAttrs.PutStr("cisco.node_id", telemetry.GetNodeIdStr())
 	resAttrs.PutStr("cisco.encoding_path", telemetry.EncodingPath)
@@ -70,102 +69,112 @@ func (s *grpcService) convertToOTELMetrics(telemetry *pb.Telemetry) pmetric.Metr
 	sm := rm.ScopeMetrics().AppendEmpty()
 	timestamp := pcommon.Timestamp(telemetry.MsgTimestamp * 1000000)
 
-	// Process each entry in DataGpbkv as a distinct row/object.
 	for _, field := range telemetry.DataGpbkv {
-		// Step 1: Initialize context bag with global metadata.
+		// Log the raw structure for deep debugging if needed.
+		s.receiver.settings.Logger.Debug("Processing GPBKV Field", zap.String("name", field.Name))
+
+		// Step 1: Initialize context bag with the node ID.
 		ctxBag := map[string]string{
 			"node_id": telemetry.GetNodeIdStr(),
 		}
 
-		// Step 2: Pre-scan the entire tree for keys/identifiers (Telegraf logic).
-		// This ensures sibling branches like 'admin-status' can access 'interface-name'.
-		s.extractKeys(field, ctxBag)
+		// Step 2: Extract identifying keys only from the "keys" branch.
+		// This prevents metrics from leaking into labels.
+		s.extractKeysOnly(field, ctxBag)
 
-		// Step 3: Walk the tree again to emit actual metrics using the enriched context.
-		s.emitMetrics(sm, field, "", timestamp, ctxBag)
+		// Step 3: Walk the "content" branch only to emit measurements.
+		// We pass the ctxBag to attach labels to every data point.
+		s.emitMetricsOnly(sm, field, "", timestamp, ctxBag)
 	}
 
 	return metrics
 }
 
-// extractKeys recursively scans for string values that serve as identifiers.
-func (s *grpcService) extractKeys(field *pb.TelemetryField, ctxBag map[string]string) {
-	val := formatValueToString(field)
-	if val != "" {
-		// If it's a string value, it's likely a dimension/tag.
-		if _, ok := field.ValueByType.(*pb.TelemetryField_StringValue); ok {
-			ctxBag[field.Name] = val
-
-			// Common Cisco naming normalization.
-			lowName := strings.ToLower(field.Name)
-			if lowName == "name" || lowName == "interface-name" {
-				ctxBag["interface"] = val
+// extractKeysOnly specifically targets the "keys" branch to populate the ctxBag (Labels).
+func (s *grpcService) extractKeysOnly(field *pb.TelemetryField, ctxBag map[string]string) {
+	// If we hit the "keys" branch, extract all its children as attributes.
+	if field.Name == "keys" {
+		for _, subField := range field.Fields {
+			val := formatValueToString(subField)
+			if val != "" {
+				ctxBag[subField.Name] = val
+				// Add standard "interface" alias for convenience in Splunk/Prometheus.
+				lowName := strings.ToLower(subField.Name)
+				if lowName == "name" || lowName == "cname" || lowName == "interface-name" {
+					ctxBag["interface"] = val
+				}
 			}
 		}
+		return
 	}
+
+	// Recursive search for the "keys" branch in the tree.
 	for _, child := range field.Fields {
-		s.extractKeys(child, ctxBag)
+		s.extractKeysOnly(child, ctxBag)
 	}
 }
 
-// emitMetrics processes numerical values and emits OTLP metrics with the full context bag.
-func (s *grpcService) emitMetrics(sm pmetric.ScopeMetrics, field *pb.TelemetryField, pathPrefix string, timestamp pcommon.Timestamp, ctxBag map[string]string) {
-	currentPath := pathPrefix
-	if currentPath != "" {
-		currentPath += "."
+// emitMetricsOnly scans the "content" branch to generate OTLP Gauges and Sums.
+func (s *grpcService) emitMetricsOnly(sm pmetric.ScopeMetrics, field *pb.TelemetryField, pathPrefix string, timestamp pcommon.Timestamp, ctxBag map[string]string) {
+	// Skip the keys branch as it's already handled by extractKeysOnly.
+	if field.Name == "keys" {
+		return
 	}
-	currentPath += field.Name
 
-	// Only emit metrics for leaf nodes (values) that are NOT in the 'keys' branch.
-	if field.ValueByType != nil && len(field.Fields) == 0 && !strings.HasPrefix(currentPath, "keys") {
+	// Build the path (e.g., statistics.in-octets).
+	// We strip "content" prefix for cleaner metric names.
+	currentPath := pathPrefix
+	if field.Name != "content" {
+		if currentPath != "" {
+			currentPath += "."
+		}
+		currentPath += field.Name
+	}
+
+	// If it's a leaf node with a value, emit it as a metric.
+	if field.ValueByType != nil && len(field.Fields) == 0 {
 		m := sm.Metrics().AppendEmpty()
-		cleanName := strings.TrimPrefix(currentPath, "content.")
-		metricLabels := cloneCtxBag(ctxBag)
 
 		if strVal, ok := field.ValueByType.(*pb.TelemetryField_StringValue); ok {
-			// Step/Info metrics for string states (e.g., Up/Down).
-			createStepMetric(m, cleanName, strVal.StringValue, timestamp, metricLabels)
+			// Handle string states (up/down) as info metrics (value=1, state in attribute).
+			createStepMetric(m, currentPath, strVal.StringValue, timestamp, ctxBag)
 		} else {
-			// Numeric metrics for counters and gauges.
-			createNumericMetric(m, cleanName, getNumericValue(field), timestamp, nil, metricLabels)
+			// Handle numeric values (counters/gauges).
+			createNumericMetric(m, currentPath, getNumericValue(field), timestamp, ctxBag)
 		}
 	}
 
+	// Recursive walk through sub-branches (like 'statistics', 'ether-stats', etc.)
 	for _, child := range field.Fields {
-		s.emitMetrics(sm, child, currentPath, timestamp, ctxBag)
+		s.emitMetricsOnly(sm, child, currentPath, timestamp, ctxBag)
 	}
 }
 
-// createNumericMetric populates a NumberDataPoint.
-func createNumericMetric(m pmetric.Metric, name string, val float64, ts pcommon.Timestamp, yType *internal.YANGDataType, ctx map[string]string) {
+// createNumericMetric populates a Gauge or Sum data point.
+func createNumericMetric(m pmetric.Metric, name string, val float64, ts pcommon.Timestamp, ctx map[string]string) {
 	m.SetName("cisco." + name)
-	if yType != nil && yType.IsCounterType() {
-		sum := m.SetEmptySum()
-		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		dp := sum.DataPoints().AppendEmpty()
-		dp.SetDoubleValue(val)
-		dp.SetTimestamp(ts)
-		applyCtxBag(dp.Attributes(), ctx)
-	} else {
-		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp.SetDoubleValue(val)
-		dp.SetTimestamp(ts)
-		applyCtxBag(dp.Attributes(), ctx)
-	}
+
+	// Note: Without a full YANG dictionary, we default to Gauges.
+	// Sums/Counters can be refined here if name contains "octets", "pkts" or "errors".
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(val)
+	dp.SetTimestamp(ts)
+	applyCtxBag(dp.Attributes(), ctx)
 }
 
-// createStepMetric creates an "Info" metric where the actual value is an attribute.
+// createStepMetric creates an "Info" metric where the state is stored as a 'value' attribute.
 func createStepMetric(m pmetric.Metric, name, val string, ts pcommon.Timestamp, ctx map[string]string) {
 	m.SetName("cisco." + name + "_info")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetDoubleValue(1.0)
 	dp.SetTimestamp(ts)
+
+	// Add the actual status string as an attribute.
 	dp.Attributes().PutStr("value", val)
 	applyCtxBag(dp.Attributes(), ctx)
 }
 
-// getNumericValue extracts float64 from various protobuf types.
+// getNumericValue extracts float64 from various Protobuf numeric types.
 func getNumericValue(f *pb.TelemetryField) float64 {
 	switch v := f.ValueByType.(type) {
 	case *pb.TelemetryField_Uint32Value:
@@ -189,7 +198,7 @@ func getNumericValue(f *pb.TelemetryField) float64 {
 	return 0.0
 }
 
-// formatValueToString converts protobuf field values to string for labels.
+// formatValueToString converts leaf values to strings specifically for labels.
 func formatValueToString(f *pb.TelemetryField) string {
 	if f.ValueByType == nil {
 		return ""
@@ -209,12 +218,7 @@ func formatValueToString(f *pb.TelemetryField) string {
 	return ""
 }
 
-func cloneCtxBag(in map[string]string) map[string]string {
-	out := make(map[string]string, len(in))
-	maps.Copy(in, out)
-	return out
-}
-
+// applyCtxBag efficiently transfers labels from the map to the OTLP attributes map.
 func applyCtxBag(attrs pcommon.Map, ctx map[string]string) {
 	for k, v := range ctx {
 		if v != "" {
