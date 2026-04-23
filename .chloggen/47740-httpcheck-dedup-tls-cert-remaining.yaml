@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: receiver/http_check
+note: "Stop emitting two httpcheck.tls.cert_remaining data points per scrape"
+issues: [47740]
+subtext:
+change_logs: [user]
