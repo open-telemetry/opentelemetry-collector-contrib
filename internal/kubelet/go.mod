@@ -48,7 +48,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.56.1-0.20260423084629-98f555d14cd6 // indirect
 	go.opentelemetry.io/collector/confmap v1.56.1-0.20260423084629-98f555d14cd6 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.150.1-0.20260415114935-307e3abdbae9 // indirect
+	go.opentelemetry.io/collector/confmap/xconfmap v0.150.1-0.20260423084629-98f555d14cd6 // indirect
 	go.opentelemetry.io/collector/featuregate v1.56.1-0.20260423084629-98f555d14cd6 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
