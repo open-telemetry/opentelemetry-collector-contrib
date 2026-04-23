@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 		Scrapers: map[string]internal.Config{
 			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
 				NetAddr: confignet.AddrConfig{

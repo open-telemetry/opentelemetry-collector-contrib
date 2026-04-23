@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		ControllerConfig:     scs,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Endpoint:             "udp://localhost:3030",
 	}, cfg)
 }

@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 		AddrConfig: confignet.AddrConfig{
 			Endpoint: defaultEndpoint,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 

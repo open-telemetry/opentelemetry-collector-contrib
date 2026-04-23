@@ -413,7 +413,7 @@ func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T
 func startUpSink(t *testing.T, consumer any) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 
 	var err error
 	var rcvr component.Component

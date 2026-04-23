@@ -93,7 +93,7 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 		client:   client,
 		settings: receivertest.NewNopSettings(metadata.Type),
 		config: Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		clusterAdmin: newMockClusterAdmin(),
 	}
@@ -114,7 +114,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 		client:   client,
 		settings: receivertest.NewNopSettings(metadata.Type),
 		config: Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			ClusterAlias:         testClusterAlias,
 		},
 		clusterAdmin: newMockClusterAdmin(),

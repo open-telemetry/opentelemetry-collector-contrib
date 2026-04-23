@@ -19,7 +19,7 @@ import (
 )
 
 func TestScrape_UseMemAvailable(t *testing.T) {
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.SystemMemoryUtilization.Enabled = true
 	mbc.Metrics.SystemMemoryUsage.Enabled = true
 	scraperConfig := Config{
@@ -56,7 +56,7 @@ func TestScrape_UseMemAvailable(t *testing.T) {
 }
 
 func TestScrape_SharedMemory(t *testing.T) {
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.SystemMemoryLinuxShared.Enabled = true
 	scraperConfig := Config{
 		MetricsBuilderConfig: mbc,

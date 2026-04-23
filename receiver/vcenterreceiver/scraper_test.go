@@ -26,7 +26,7 @@ func TestScrape(t *testing.T) {
 	defer mockServer.Close()
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Endpoint:             mockServer.URL,
 		Username:             mock.MockUsername,
 		Password:             mock.MockPassword,
@@ -40,7 +40,7 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
 
-	optConfigs := metadata.DefaultMetricsBuilderConfig()
+	optConfigs := metadata.NewDefaultMetricsBuilderConfig()
 	optConfigs.Metrics.VcenterHostMemoryCapacity.Enabled = true
 	optConfigs.Metrics.VcenterVMMemoryGranted.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
@@ -64,7 +64,7 @@ func TestScrape_TLS(t *testing.T) {
 	defer mockServer.Close()
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Endpoint:             mockServer.URL,
 		Username:             mock.MockUsername,
 		Password:             mock.MockPassword,
@@ -120,7 +120,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		mb:     metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)

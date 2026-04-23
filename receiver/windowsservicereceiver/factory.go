@@ -26,7 +26,7 @@ func createDefaultConfig() component.Config {
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Minute,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		IncludeServices:      nil,
 		ExcludeServices:      nil,
 	}

@@ -28,7 +28,7 @@ func TestNewFactory(t *testing.T) {
 				CollectionInterval: 60 * time.Second,
 				InitialDelay:       time.Second,
 			},
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		}
 
 		require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

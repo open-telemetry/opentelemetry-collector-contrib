@@ -65,7 +65,7 @@ func TestScraper(t *testing.T) {
 		&fakeRestClient{},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
-		metadata.DefaultMetricsBuilderConfig(),
+		metadata.NewDefaultMetricsBuilderConfig(),
 		"worker-42",
 	)
 	require.NoError(t, err)
@@ -100,7 +100,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 		&fakeRestClient{},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
-		metadata.DefaultMetricsBuilderConfig(),
+		metadata.NewDefaultMetricsBuilderConfig(),
 		"worker-42",
 	)
 	require.NoError(t, err)
@@ -323,7 +323,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				&fakeRestClient{},
 				receivertest.NewNopSettings(metadata.Type),
 				options,
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -588,7 +588,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
 				},
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -743,7 +743,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mbc := metadata.DefaultMetricsBuilderConfig()
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
 			mbc.ResourceAttributes.AwsVolumeID.Enabled = true
 			mbc.ResourceAttributes.FsType.Enabled = true
 			mbc.ResourceAttributes.GcePdName.Enabled = true
@@ -846,7 +846,7 @@ func TestClientErrors(t *testing.T) {
 				},
 				settings,
 				options,
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"",
 			)
 			require.NoError(t, err)
