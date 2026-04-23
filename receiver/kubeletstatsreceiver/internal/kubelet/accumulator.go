@@ -69,7 +69,8 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 		metadata.WithResource(rb.Emit()),
 	))
 
-	for _, cs := range s.SystemContainers {
+	for i := range s.SystemContainers {
+		cs := &s.SystemContainers[i]
 		rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 		rb.SetK8sNodeName(s.NodeName)
 		rb.SetK8sNodeSystemContainerName(cs.Name)
