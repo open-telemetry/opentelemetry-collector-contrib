@@ -288,41 +288,32 @@ func BenchmarkStatementExecute_EntityRefsSync(b *testing.B) {
 		resSequence := ottlresource.NewStatementSequence(resParsed, settings)
 		logSequence := ottllog.NewStatementSequence(logParsed, settings)
 
-		resContexts := make([]*ottlresource.TransformContext, benchmarkContextPoolSize)
-		for i := range resContexts {
-			resContexts[i] = newBenchmarkResourceContext(scenario.attrsCount)
-		}
-		logContexts := make([]*ottllog.TransformContext, benchmarkContextPoolSize)
-		for i := range logContexts {
-			logContexts[i] = newBenchmarkLogContext(scenario.attrsCount)
-			resContexts[i].GetResource().CopyTo(logContexts[i].GetResource())
-		}
-
 		b.Run(scenario.name+"_resourceContext", func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; b.Loop(); i++ {
-				if err := resSequence.Execute(ctx, resContexts[i%len(resContexts)]); err != nil {
+
+				resContext := newBenchmarkResourceContext(scenario.attrsCount)
+				if err := resSequence.Execute(ctx, resContext); err != nil {
 					b.Fatalf("failed to execute log statements: %v", err)
 				}
+				resContext.Close()
 			}
 		})
-		for i := range resContexts {
-			resContexts[i].Close()
-		}
 
 		b.Run(scenario.name+"_logContext", func(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; b.Loop(); i++ {
-				if err := logSequence.Execute(ctx, logContexts[i%len(logContexts)]); err != nil {
+				logContext := newBenchmarkLogContext(scenario.attrsCount)
+				resContext := newBenchmarkResourceContext(scenario.attrsCount)
+				resContext.GetResource().CopyTo(logContext.GetResource())
+				if err := logSequence.Execute(ctx, logContext); err != nil {
 					b.Fatalf("failed to execute log statements: %v", err)
 				}
+				logContext.Close()
 			}
 		})
-		for i := range logContexts {
-			logContexts[i].Close()
-		}
 	}
 }
 
