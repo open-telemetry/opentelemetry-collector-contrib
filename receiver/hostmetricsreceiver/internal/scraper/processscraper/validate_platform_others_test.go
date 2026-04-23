@@ -47,6 +47,22 @@ func TestValidatePlatformEnabledMetrics_Others_DisablesPagingFaults(t *testing.T
 	assert.Contains(t, logs.All()[0].Message, "process.paging.faults")
 }
 
+func TestValidatePlatformEnabledMetrics_Others_DisablesSignalsPending(t *testing.T) {
+	core, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+
+	cfg := &Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	cfg.Metrics.ProcessSignalsPending.Enabled = true
+
+	validatePlatformEnabledMetrics(cfg, logger)
+
+	assert.False(t, cfg.Metrics.ProcessSignalsPending.Enabled, "process.signals_pending should be disabled")
+	assert.Equal(t, 1, logs.Len(), "expected one warning log entry")
+	assert.Contains(t, logs.All()[0].Message, "process.signals_pending")
+}
+
 func TestValidatePlatformEnabledMetrics_Others_DisablesHandles(t *testing.T) {
 	core, logs := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
