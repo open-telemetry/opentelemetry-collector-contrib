@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: receiver/tls_check
+
+note: Enables dynamic metric reaggregation in the TLS Check receiver. This does not break existing configuration files.
+
+issues: [46383]
+
+subtext:
+
+change_logs: [user]
