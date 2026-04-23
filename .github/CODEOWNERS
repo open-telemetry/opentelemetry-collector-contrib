@@ -199,7 +199,6 @@ processor/coralogixprocessor/                                    @open-telemetry
 processor/cumulativetodeltaprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @RichieSams
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
-processor/dnslookupprocessor/                                    @open-telemetry/collector-contrib-approvers @andrzej-stencel @kaisecheng @edmocosta
 processor/drainprocessor/                                        @open-telemetry/collector-contrib-approvers @MikeGoldsmith @atoulme @martinjt
 processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta @bogdandrutu
 processor/geoipprocessor/                                        @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll
