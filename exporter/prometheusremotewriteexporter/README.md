@@ -49,7 +49,8 @@ The following settings can be optionally configured:
 - `headers`: additional headers attached to each HTTP request.
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
-- `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true.
+- `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true. **Deprecated**: Use `translation_strategy` instead.
+- `translation_strategy`: Controls how OTLP metric and attribute names are translated into Prometheus metric and label names. Options are: `UnderscoreEscapingWithSuffixes` (default), `UnderscoreEscapingWithoutSuffixes`, `NoUTF8EscapingWithSuffixes`, and `NoTranslation`. When set, this takes precedence over `add_metric_suffixes`.
 - `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false. This option is ignored when using PRW 2.0, which always includes metadata.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)

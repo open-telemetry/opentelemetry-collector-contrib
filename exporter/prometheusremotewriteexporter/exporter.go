@@ -212,12 +212,13 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retryOnHTTP429:      retryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:         cfg.Namespace,
-			ExternalLabels:    sanitizedLabels,
-			DisableTargetInfo: !cfg.TargetInfo.Enabled,
-			DisableScopeInfo:  cfg.DisableScopeInfo,
-			AddMetricSuffixes: cfg.AddMetricSuffixes,
-			SendMetadata:      cfg.SendMetadata,
+			Namespace:           cfg.Namespace,
+			ExternalLabels:      sanitizedLabels,
+			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
+			DisableScopeInfo:    cfg.DisableScopeInfo,
+			AddMetricSuffixes:   cfg.AddMetricSuffixes,
+			TranslationStrategy: string(cfg.TranslationStrategy),
+			SendMetadata:        cfg.SendMetadata,
 		},
 		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
@@ -271,7 +272,7 @@ func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) 
 
 	var m []*prompb.MetricMetadata
 	if prwe.exporterSettings.SendMetadata {
-		m, err = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
+		m, err = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings)
 		if err != nil {
 			prwe.settings.Logger.Debug("failed to translate metrics into metadata, exporting remaining metadata", zap.Error(err), zap.Int("translated", len(m)))
 		}
