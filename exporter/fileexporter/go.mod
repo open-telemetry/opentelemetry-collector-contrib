@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileex
 go 1.25.0
 
 require (
-	github.com/DeRuina/timberjack v1.4.1
+	github.com/DeRuina/timberjack v1.4.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.18.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.150.0

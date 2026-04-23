@@ -116,6 +116,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeCondition: MetricConfig{
 						Enabled: true,
 					},
+					K8sPersistentvolumeStatusPhase: MetricConfig{
+						Enabled: true,
+					},
+					K8sPersistentvolumeStorageCapacity: MetricConfig{
+						Enabled: true,
+					},
+					K8sPersistentvolumeclaimStatusPhase: MetricConfig{
+						Enabled: true,
+					},
+					K8sPersistentvolumeclaimStorageCapacity: MetricConfig{
+						Enabled: true,
+					},
+					K8sPersistentvolumeclaimStorageRequest: MetricConfig{
+						Enabled: true,
+					},
 					K8sPodPhase: MetricConfig{
 						Enabled: true,
 					},
@@ -197,6 +212,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNamespaceUID:                        ResourceAttributeConfig{Enabled: true},
 					K8sNodeName:                            ResourceAttributeConfig{Enabled: true},
 					K8sNodeUID:                             ResourceAttributeConfig{Enabled: true},
+					K8sPersistentvolumeName:                ResourceAttributeConfig{Enabled: true},
+					K8sPersistentvolumeReclaimPolicy:       ResourceAttributeConfig{Enabled: true},
+					K8sPersistentvolumeUID:                 ResourceAttributeConfig{Enabled: true},
+					K8sPersistentvolumeclaimName:           ResourceAttributeConfig{Enabled: true},
+					K8sPersistentvolumeclaimUID:            ResourceAttributeConfig{Enabled: true},
 					K8sPodName:                             ResourceAttributeConfig{Enabled: true},
 					K8sPodQosClass:                         ResourceAttributeConfig{Enabled: true},
 					K8sPodUID:                              ResourceAttributeConfig{Enabled: true},
@@ -213,6 +233,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sServiceUID:                          ResourceAttributeConfig{Enabled: true},
 					K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: true},
 					K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: true},
+					K8sStorageclassName:                    ResourceAttributeConfig{Enabled: true},
 					OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: true},
 					OpenshiftClusterquotaUID:               ResourceAttributeConfig{Enabled: true},
 					OsDescription:                          ResourceAttributeConfig{Enabled: true},
@@ -314,6 +335,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeCondition: MetricConfig{
 						Enabled: false,
 					},
+					K8sPersistentvolumeStatusPhase: MetricConfig{
+						Enabled: false,
+					},
+					K8sPersistentvolumeStorageCapacity: MetricConfig{
+						Enabled: false,
+					},
+					K8sPersistentvolumeclaimStatusPhase: MetricConfig{
+						Enabled: false,
+					},
+					K8sPersistentvolumeclaimStorageCapacity: MetricConfig{
+						Enabled: false,
+					},
+					K8sPersistentvolumeclaimStorageRequest: MetricConfig{
+						Enabled: false,
+					},
 					K8sPodPhase: MetricConfig{
 						Enabled: false,
 					},
@@ -395,6 +431,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNamespaceUID:                        ResourceAttributeConfig{Enabled: false},
 					K8sNodeName:                            ResourceAttributeConfig{Enabled: false},
 					K8sNodeUID:                             ResourceAttributeConfig{Enabled: false},
+					K8sPersistentvolumeName:                ResourceAttributeConfig{Enabled: false},
+					K8sPersistentvolumeReclaimPolicy:       ResourceAttributeConfig{Enabled: false},
+					K8sPersistentvolumeUID:                 ResourceAttributeConfig{Enabled: false},
+					K8sPersistentvolumeclaimName:           ResourceAttributeConfig{Enabled: false},
+					K8sPersistentvolumeclaimUID:            ResourceAttributeConfig{Enabled: false},
 					K8sPodName:                             ResourceAttributeConfig{Enabled: false},
 					K8sPodQosClass:                         ResourceAttributeConfig{Enabled: false},
 					K8sPodUID:                              ResourceAttributeConfig{Enabled: false},
@@ -411,6 +452,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sServiceUID:                          ResourceAttributeConfig{Enabled: false},
 					K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: false},
 					K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: false},
+					K8sStorageclassName:                    ResourceAttributeConfig{Enabled: false},
 					OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: false},
 					OpenshiftClusterquotaUID:               ResourceAttributeConfig{Enabled: false},
 					OsDescription:                          ResourceAttributeConfig{Enabled: false},
@@ -475,6 +517,11 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sNamespaceUID:                        ResourceAttributeConfig{Enabled: true},
 				K8sNodeName:                            ResourceAttributeConfig{Enabled: true},
 				K8sNodeUID:                             ResourceAttributeConfig{Enabled: true},
+				K8sPersistentvolumeName:                ResourceAttributeConfig{Enabled: true},
+				K8sPersistentvolumeReclaimPolicy:       ResourceAttributeConfig{Enabled: true},
+				K8sPersistentvolumeUID:                 ResourceAttributeConfig{Enabled: true},
+				K8sPersistentvolumeclaimName:           ResourceAttributeConfig{Enabled: true},
+				K8sPersistentvolumeclaimUID:            ResourceAttributeConfig{Enabled: true},
 				K8sPodName:                             ResourceAttributeConfig{Enabled: true},
 				K8sPodQosClass:                         ResourceAttributeConfig{Enabled: true},
 				K8sPodUID:                              ResourceAttributeConfig{Enabled: true},
@@ -491,6 +538,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sServiceUID:                          ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: true},
 				K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: true},
+				K8sStorageclassName:                    ResourceAttributeConfig{Enabled: true},
 				OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: true},
 				OpenshiftClusterquotaUID:               ResourceAttributeConfig{Enabled: true},
 				OsDescription:                          ResourceAttributeConfig{Enabled: true},
@@ -525,6 +573,11 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sNamespaceUID:                        ResourceAttributeConfig{Enabled: false},
 				K8sNodeName:                            ResourceAttributeConfig{Enabled: false},
 				K8sNodeUID:                             ResourceAttributeConfig{Enabled: false},
+				K8sPersistentvolumeName:                ResourceAttributeConfig{Enabled: false},
+				K8sPersistentvolumeReclaimPolicy:       ResourceAttributeConfig{Enabled: false},
+				K8sPersistentvolumeUID:                 ResourceAttributeConfig{Enabled: false},
+				K8sPersistentvolumeclaimName:           ResourceAttributeConfig{Enabled: false},
+				K8sPersistentvolumeclaimUID:            ResourceAttributeConfig{Enabled: false},
 				K8sPodName:                             ResourceAttributeConfig{Enabled: false},
 				K8sPodQosClass:                         ResourceAttributeConfig{Enabled: false},
 				K8sPodUID:                              ResourceAttributeConfig{Enabled: false},
@@ -541,6 +594,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sServiceUID:                          ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetName:                     ResourceAttributeConfig{Enabled: false},
 				K8sStatefulsetUID:                      ResourceAttributeConfig{Enabled: false},
+				K8sStorageclassName:                    ResourceAttributeConfig{Enabled: false},
 				OpenshiftClusterquotaName:              ResourceAttributeConfig{Enabled: false},
 				OpenshiftClusterquotaUID:               ResourceAttributeConfig{Enabled: false},
 				OsDescription:                          ResourceAttributeConfig{Enabled: false},
