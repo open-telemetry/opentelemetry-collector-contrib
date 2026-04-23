@@ -100,6 +100,90 @@ func TestMatchPrefixWithWildcard(t *testing.T) {
 			objectKey: "AWSLogs/123456789012/vpcflowlogs/us-east-1/file.log.gz",
 			want:      false,
 		},
+		// Affix wildcards — prefix
+		{
+			name:      "prefix wildcard matches eni-*",
+			pattern:   "eni-*",
+			objectKey: "eni-0abc123def-all",
+			want:      true,
+		},
+		{
+			name:      "prefix wildcard rejects wrong prefix",
+			pattern:   "eni-*",
+			objectKey: "foo-bar",
+			want:      false,
+		},
+		{
+			name:      "prefix wildcard matches empty suffix",
+			pattern:   "foo*",
+			objectKey: "foo",
+			want:      true,
+		},
+		// Affix wildcards — suffix
+		{
+			name:      "suffix wildcard matches *Logs",
+			pattern:   "*Logs",
+			objectKey: "WAFLogs",
+			want:      true,
+		},
+		{
+			name:      "suffix wildcard rejects wrong suffix",
+			pattern:   "*Logs",
+			objectKey: "vpcflow",
+			want:      false,
+		},
+		{
+			name:      "suffix wildcard matches empty prefix",
+			pattern:   "*foo",
+			objectKey: "foo",
+			want:      true,
+		},
+		// Affix wildcards — contains
+		{
+			name:      "contains wildcard matches *_CloudTrail_*",
+			pattern:   "*_CloudTrail_*",
+			objectKey: "123456789012_CloudTrail_us-east-1",
+			want:      true,
+		},
+		{
+			name:      "contains wildcard rejects when substring missing",
+			pattern:   "*_CloudTrail_*",
+			objectKey: "vpcflow-logs",
+			want:      false,
+		},
+		{
+			name:      "contains wildcard matches substring equal to trim",
+			pattern:   "*foo*",
+			objectKey: "foo",
+			want:      true,
+		},
+		// Mid-segment rejection: foo*bar is not supported — matcher returns false.
+		{
+			name:      "mid-segment glob rejected (foo*bar)",
+			pattern:   "foo*bar",
+			objectKey: "foobazbar",
+			want:      false,
+		},
+		// Affix combined with path segments (CW log-group style).
+		{
+			name:      "affix within a path segment matches",
+			pattern:   "/aws/lambda/payment-*",
+			objectKey: "/aws/lambda/payment-service/2024/logs",
+			want:      true,
+		},
+		{
+			name:      "affix within a path segment rejects mismatch",
+			pattern:   "/aws/lambda/payment-*",
+			objectKey: "/aws/lambda/other-service/2024/logs",
+			want:      false,
+		},
+		// WAF-style prefix wildcard as log group name.
+		{
+			name:      "affix waf pattern matches aws-waf-logs-mywebacl",
+			pattern:   "aws-waf-logs-*",
+			objectKey: "aws-waf-logs-mywebacl",
+			want:      true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -142,6 +226,25 @@ func TestComparePatternSpecificity(t *testing.T) {
 			a:      "AWSLogs/*/*",
 			b:      "*",
 			expect: "a_wins",
+		},
+		// Affix specificity tier (between exact and full wildcard).
+		{
+			name:   "affix beats full wildcard",
+			a:      "eni-*",
+			b:      "*",
+			expect: "a_wins",
+		},
+		{
+			name:   "exact beats affix at same position",
+			a:      "eni-foo",
+			b:      "eni-*",
+			expect: "a_wins",
+		},
+		{
+			name:   "two single-segment affix patterns are equal specificity",
+			a:      "eni-*",
+			b:      "*-foo",
+			expect: "equal",
 		},
 	}
 
