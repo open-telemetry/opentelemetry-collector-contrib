@@ -68,7 +68,7 @@ func TestExtension(t *testing.T) {
 				allCalls++
 				return func() { allCalls++ }, _err
 			}
-			memLimitSetterMock := func(_ float64, _ time.Duration) (undoFunc, error) {
+			memLimitSetterMock := func(_ float64) (undoFunc, error) {
 				allCalls++
 				return func() { allCalls++ }, _err
 			}
@@ -100,7 +100,7 @@ func TestMemLimitRefreshStopsOnShutdown(t *testing.T) {
 	maxProcsSetterMock := func() (undoFunc, error) {
 		return func() {}, nil
 	}
-	memLimitSetterMock := func(_ float64, _ time.Duration) (undoFunc, error) {
+	memLimitSetterMock := func(_ float64) (undoFunc, error) {
 		memLimitCalls.Add(1)
 		return func() {}, nil
 	}

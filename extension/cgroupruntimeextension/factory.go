@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
-	"time"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	gomaxecs "github.com/rdforte/gomaxecs/maxprocs"
@@ -55,7 +54,7 @@ func createExtension(_ context.Context, set extension.Settings, cfg component.Co
 				set.Logger.Debug(fmt.Sprintf(str, params))
 			}))
 		},
-		func(ratio float64, _ time.Duration) (undoFunc, error) {
+		func(ratio float64) (undoFunc, error) {
 			initial, err := memlimit.SetGoMemLimitWithOpts(
 				memlimit.WithRatio(ratio),
 				memlimit.WithRefreshInterval(0),

@@ -16,7 +16,7 @@ import (
 type (
 	undoFunc            func()
 	maxProcsFn          func() (undoFunc, error)
-	memLimitWithRatioFn func(float64, time.Duration) (undoFunc, error)
+	memLimitWithRatioFn func(float64) (undoFunc, error)
 )
 
 type cgroupRuntimeExtension struct {
@@ -56,7 +56,7 @@ func (c *cgroupRuntimeExtension) Start(ctx context.Context, _ component.Host) er
 	}
 
 	if c.config.GoMemLimit.Enabled {
-		c.undoMemLimitFn, err = c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio, c.config.GoMemLimit.RefreshInterval)
+		c.undoMemLimitFn, err = c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func (c *cgroupRuntimeExtension) refreshGoMemLimit(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if _, err := c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio, c.config.GoMemLimit.RefreshInterval); err != nil {
+			if _, err := c.memLimitWithRatioFn(c.config.GoMemLimit.Ratio); err != nil {
 				c.logger.Warn("GOMEMLIMIT refresh failed", zap.Error(err))
 			}
 		}
