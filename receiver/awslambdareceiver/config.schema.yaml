@@ -1,4 +1,32 @@
 $defs:
+  cloud_watch_config:
+    description: CloudWatchConfig defines configuration options for the CloudWatch Logs Lambda trigger. sharedConfig is embedded via squash so the "encoding" key remains at the top level of the cloudwatch block — fully backwards compatible.
+    type: object
+    properties:
+      encoding:
+        description: Encoding defines the encoding to decode incoming Lambda invocation data.
+        type: string
+      encodings:
+        description: Encodings defines multiple encoding entries for CloudWatch log-group / log-stream routing (multi-format mode). Mutually exclusive with sharedConfig.Encoding. Only supported for the logs signal type. Metrics receivers reject configs that set this field.
+        type: array
+        items:
+          $ref: cw_encoding
+  cw_encoding:
+    description: CWEncoding defines one entry in the CloudWatch multi-encoding routing table. Each entry maps a log group and/or log stream pattern to an encoding extension.
+    type: object
+    properties:
+      encoding:
+        description: Encoding is the extension ID for decoding. If empty, content is passed through as-is using the built-in raw CloudWatch decoder.
+        type: string
+      log_group_pattern:
+        description: 'LogGroupPattern is matched against the subscription event''s logGroup. Uses the shared match syntax: exact, "*", or affix wildcards. Example: "/aws/lambda/*".'
+        type: string
+      log_stream_pattern:
+        description: 'LogStreamPattern is matched against the subscription event''s logStream. Uses the shared match syntax. Example: "eni-*".'
+        type: string
+      name:
+        description: Name identifies the encoding. For known names (vpcflow, cloudtrail, lambda, waf, rds, eks, apigateway) the default log_group_pattern or log_stream_pattern is applied automatically when neither is set.
+        type: string
   s_3_config:
     description: S3Config defines configuration options for the S3 Lambda trigger. It supersedes the sharedConfig for the s3 key. sharedConfig is embedded with mapstructure:",squash" so the "encoding" key remains at the top level of the s3 block in YAML — fully backwards-compatible.
     type: object
@@ -29,11 +57,7 @@ type: object
 properties:
   cloudwatch:
     description: CloudWatch defines configuration for the CloudWatch Logs Lambda trigger.
-    type: object
-    properties:
-      encoding:
-        description: Encoding defines the encoding to decode incoming Lambda invocation data.
-        type: string
+    $ref: cloud_watch_config
   failure_bucket_arn:
     description: FailureBucketARN is the ARN of the S3 bucket used to store failed Lambda event records.
     type: string

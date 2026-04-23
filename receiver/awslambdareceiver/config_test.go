@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			componentIDToLoad: component.NewIDWithName(metadata.Type, "aws_logs_encoding"),
 			expected: &Config{
 				S3:         S3Config{sharedConfig: sharedConfig{Encoding: "aws_logs_encoding"}},
-				CloudWatch: sharedConfig{Encoding: "aws_logs_encoding"},
+				CloudWatch: CloudWatchConfig{sharedConfig: sharedConfig{Encoding: "aws_logs_encoding"}},
 			},
 		},
 		{
@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 			componentIDToLoad: component.NewIDWithName(metadata.Type, "json_log_encoding"),
 			expected: &Config{
 				S3:         S3Config{sharedConfig: sharedConfig{Encoding: "json_log_encoding"}},
-				CloudWatch: sharedConfig{},
+				CloudWatch: CloudWatchConfig{},
 			},
 		},
 		{
@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			componentIDToLoad: component.NewIDWithName(metadata.Type, "empty_encoding"),
 			expected: &Config{
 				S3:         S3Config{},
-				CloudWatch: sharedConfig{},
+				CloudWatch: CloudWatchConfig{},
 			},
 		},
 		{
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			componentIDToLoad: component.NewIDWithName(metadata.Type, "with_failure_arn"),
 			expected: &Config{
 				S3:               S3Config{},
-				CloudWatch:       sharedConfig{},
+				CloudWatch:       CloudWatchConfig{},
 				FailureBucketARN: "arn:aws:s3:::example",
 			},
 		},
@@ -71,7 +71,21 @@ func TestLoadConfig(t *testing.T) {
 						{Name: "catchall", PathPattern: "*"},
 					},
 				},
-				CloudWatch: sharedConfig{},
+				CloudWatch: CloudWatchConfig{},
+			},
+		},
+		{
+			name:              "Config with CloudWatch multi-encoding",
+			componentIDToLoad: component.NewIDWithName(metadata.Type, "cw_multi_encoding"),
+			expected: &Config{
+				S3: S3Config{},
+				CloudWatch: CloudWatchConfig{
+					Encodings: []CWEncoding{
+						{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
+						{Name: "lambda", Encoding: "awslogs_encoding/lambda", LogGroupPattern: "/aws/lambda/*"},
+						{Name: "raw", LogGroupPattern: "*"},
+					},
+				},
 			},
 		},
 	}
@@ -250,6 +264,206 @@ func TestS3ConfigSortedEncodings(t *testing.T) {
 				{Name: "vpc-region", PathPattern: "AWSLogs/*/vpcflowlogs/us-east-1"},
 			}},
 			expectedOrder: []string{"vpc-region", "vpc-any"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sorted := tt.config.sortedEncodings()
+			if tt.expectedOrder == nil {
+				require.Nil(t, sorted)
+				return
+			}
+			var names []string
+			for _, e := range sorted {
+				names = append(names, e.Name)
+			}
+			require.Equal(t, tt.expectedOrder, names)
+		})
+	}
+}
+
+func TestCloudWatchConfigValidate(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		config  CloudWatchConfig
+		wantErr string
+	}{
+		{
+			name:   "empty config is valid",
+			config: CloudWatchConfig{},
+		},
+		{
+			name:   "single encoding is valid",
+			config: CloudWatchConfig{sharedConfig: sharedConfig{Encoding: "awslogs_encoding"}},
+		},
+		{
+			name: "known names without patterns are valid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{
+					{Name: "vpcflow", Encoding: "awslogs_encoding/vpc"},
+					{Name: "lambda", Encoding: "awslogs_encoding/lambda"},
+				},
+			},
+		},
+		{
+			name: "custom format with log_group_pattern is valid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{
+					{Name: "my-app", Encoding: "custom_encoding", LogGroupPattern: "/my-company/*/logs"},
+				},
+			},
+		},
+		{
+			name: "custom format with log_stream_pattern is valid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{
+					{Name: "prod", Encoding: "prod_encoding", LogStreamPattern: "production-*"},
+				},
+			},
+		},
+		{
+			name: "catch-all log_group_pattern is valid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{
+					{Name: "raw", LogGroupPattern: "*"},
+				},
+			},
+		},
+		{
+			name: "both log_group_pattern and log_stream_pattern is valid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{
+					{Name: "my-app", Encoding: "custom_encoding", LogGroupPattern: "/my-company/*", LogStreamPattern: "prod-*"},
+				},
+			},
+		},
+		{
+			name: "encoding and encodings are mutually exclusive",
+			config: CloudWatchConfig{
+				sharedConfig: sharedConfig{Encoding: "awslogs_encoding"},
+				Encodings:    []CWEncoding{{Name: "vpcflow"}},
+			},
+			wantErr: "'encoding' and 'encodings' are mutually exclusive",
+		},
+		{
+			name: "encoding entry without name is invalid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{{Encoding: "awslogs_encoding", LogGroupPattern: "/aws/lambda/*"}},
+			},
+			wantErr: "'name' is required",
+		},
+		{
+			name: "unknown format without patterns is invalid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{{Name: "custom_format", Encoding: "my_encoding"}},
+			},
+			wantErr: "'log_group_pattern' or 'log_stream_pattern' is required",
+		},
+		{
+			name: "duplicate names are invalid",
+			config: CloudWatchConfig{
+				Encodings: []CWEncoding{
+					{Name: "lambda", Encoding: "enc/lambda1", LogGroupPattern: "/aws/lambda/*"},
+					{Name: "lambda", Encoding: "enc/lambda2", LogGroupPattern: "/aws/lambda/payment-*"},
+				},
+			},
+			wantErr: "duplicate encoding name \"lambda\"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCWEncodingWithDefaults(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		enc           CWEncoding
+		wantLogGroup  string
+		wantLogStream string
+	}{
+		{name: "vpcflow gets default log_stream_pattern", enc: CWEncoding{Name: "vpcflow"}, wantLogStream: "eni-*"},
+		{name: "cloudtrail gets default log_stream_pattern", enc: CWEncoding{Name: "cloudtrail"}, wantLogStream: "*_CloudTrail_*"},
+		{name: "lambda gets default log_group_pattern", enc: CWEncoding{Name: "lambda"}, wantLogGroup: "/aws/lambda/*"},
+		{name: "waf gets default log_group_pattern", enc: CWEncoding{Name: "waf"}, wantLogGroup: "aws-waf-logs-*"},
+		{name: "rds gets default log_group_pattern", enc: CWEncoding{Name: "rds"}, wantLogGroup: "/aws/rds/instance/*/*"},
+		{name: "eks gets default log_group_pattern", enc: CWEncoding{Name: "eks"}, wantLogGroup: "/aws/eks/*"},
+		{name: "apigateway gets default log_group_pattern", enc: CWEncoding{Name: "apigateway"}, wantLogGroup: "API-Gateway-Execution-Logs_*"},
+		{name: "user log_group_pattern wins over default", enc: CWEncoding{Name: "vpcflow", LogGroupPattern: "custom"}, wantLogGroup: "custom"},
+		{name: "user log_stream_pattern wins over default", enc: CWEncoding{Name: "lambda", LogStreamPattern: "custom"}, wantLogStream: "custom"},
+		{name: "unknown name with no pattern yields empty", enc: CWEncoding{Name: "unknown"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolved := tt.enc.withDefaults()
+			require.Equal(t, tt.wantLogGroup, resolved.LogGroupPattern)
+			require.Equal(t, tt.wantLogStream, resolved.LogStreamPattern)
+		})
+	}
+}
+
+func TestCloudWatchConfigSortedEncodings(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		config        CloudWatchConfig
+		expectedOrder []string
+	}{
+		{
+			name:          "empty returns nil",
+			config:        CloudWatchConfig{},
+			expectedOrder: nil,
+		},
+		{
+			name: "catch-all last, log_group before log_stream",
+			config: CloudWatchConfig{Encodings: []CWEncoding{
+				{Name: "raw", LogGroupPattern: "*"},
+				{Name: "vpcflow"},
+				{Name: "lambda"},
+			}},
+			expectedOrder: []string{"lambda", "vpcflow", "raw"},
+		},
+		{
+			name: "log_group before log_stream",
+			config: CloudWatchConfig{Encodings: []CWEncoding{
+				{Name: "vpc", LogStreamPattern: "eni-*"},
+				{Name: "lambda", LogGroupPattern: "/aws/lambda/*"},
+			}},
+			expectedOrder: []string{"lambda", "vpc"},
+		},
+		{
+			name: "more specific log_group first",
+			config: CloudWatchConfig{Encodings: []CWEncoding{
+				{Name: "all-lambda", LogGroupPattern: "/aws/lambda/*"},
+				{Name: "payment-lambda", LogGroupPattern: "/aws/lambda/payment-*"},
+			}},
+			expectedOrder: []string{"payment-lambda", "all-lambda"},
+		},
+		{
+			name: "full three-level sort",
+			config: CloudWatchConfig{Encodings: []CWEncoding{
+				{Name: "raw", LogGroupPattern: "*"},
+				{Name: "prod-streams", LogStreamPattern: "production-*"},
+				{Name: "payment-lambda", LogGroupPattern: "/aws/lambda/payment-*"},
+				{Name: "lambda", LogGroupPattern: "/aws/lambda/*"},
+				{Name: "vpcflow", LogStreamPattern: "eni-*"},
+			}},
+			expectedOrder: []string{"payment-lambda", "lambda", "prod-streams", "vpcflow", "raw"},
 		},
 	}
 

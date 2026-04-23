@@ -564,7 +564,7 @@ func TestS3MultiEncodingConfig_Validate(t *testing.T) {
 				{Name: "catchall", PathPattern: "*"},
 			},
 		},
-		CloudWatch: sharedConfig{},
+		CloudWatch: CloudWatchConfig{},
 	}
 	require.NoError(t, cfg.Validate())
 	require.Len(t, cfg.S3.Encodings, 2)
@@ -581,7 +581,7 @@ func TestNewLogsHandler_MultiEncodingS3_Branch(t *testing.T) {
 				{Name: "catchall", PathPattern: "*"}, // catch-all, uses default decoder
 			},
 		},
-		CloudWatch: sharedConfig{},
+		CloudWatch: CloudWatchConfig{},
 	}
 	require.NoError(t, cfg.Validate())
 

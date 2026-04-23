@@ -22,3 +22,13 @@ awslambda/s3_multi_encoding:
         encoding: awslogs_encoding/cloudtrail
       - name: catchall
         path_pattern: "*"
+awslambda/cw_multi_encoding:
+  cloudwatch:
+    encodings:
+      - name: vpcflow
+        encoding: awslogs_encoding/vpc
+      - name: lambda
+        encoding: awslogs_encoding/lambda
+        log_group_pattern: "/aws/lambda/*"
+      - name: raw
+        log_group_pattern: "*"
