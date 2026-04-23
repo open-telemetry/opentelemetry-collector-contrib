@@ -10,7 +10,7 @@ component: processor/schema
 note: Fix rate-limit reset in CacheableProvider allowing burst of calls after cooldown expires, and log prefetch errors instead of silently discarding them
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47871]
+issues: [47428]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
