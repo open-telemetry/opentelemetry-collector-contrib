@@ -245,27 +245,36 @@ func parseS3Event(raw json.RawMessage) (events.S3EventRecord, error) {
 	return message.Records[0], nil
 }
 
-// cwLogsSubscriptionHandler is specialized in CloudWatch log stream subscription filter events
-type cwLogsSubscriptionHandler struct {
-	logsDecoder encoding.LogsDecoderFactory
-	consumer    consumer.Logs
+// cwLogsHandler is specialized in CloudWatch log stream subscription filter events.
+type cwLogsHandler struct {
+	logger     *zap.Logger
+	getDecoder func(logGroup, logStream string) (encoding.LogsDecoderFactory, string, error)
+	consumer   consumer.Logs
 }
 
-func newCWLogsSubscriptionHandler(
-	logsDecoder encoding.LogsDecoderFactory,
+// newCWLogsHandler builds a CloudWatch logs handler. The getDecoder function is called
+// per-event with the log_group and log_stream parsed from the payload, and must return
+// the LogsDecoderFactory to use for that event along with its encoding name.
+//
+// For single-encoding configs, getDecoder is a closure that returns the same factory
+// regardless of log_group / log_stream. For multi-encoding configs it is the router's GetDecoder.
+func newCWLogsHandler(
+	baseLogger *zap.Logger,
+	getDecoder func(logGroup, logStream string) (encoding.LogsDecoderFactory, string, error),
 	consumer consumer.Logs,
-) *cwLogsSubscriptionHandler {
-	return &cwLogsSubscriptionHandler{
-		logsDecoder: logsDecoder,
-		consumer:    consumer,
+) *cwLogsHandler {
+	return &cwLogsHandler{
+		logger:     baseLogger.Named("cloudwatch"),
+		getDecoder: getDecoder,
+		consumer:   consumer,
 	}
 }
 
-func (*cwLogsSubscriptionHandler) handlerType() eventType {
+func (*cwLogsHandler) handlerType() eventType {
 	return cwEvent
 }
 
-func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMessage) error {
+func (c *cwLogsHandler) handle(ctx context.Context, event json.RawMessage) error {
 	var log events.CloudwatchLogsEvent
 	if err := gojson.Unmarshal(event, &log); err != nil {
 		return fmt.Errorf("failed to unmarshal cloudwatch event log: %w", err)
@@ -276,15 +285,38 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 		return fmt.Errorf("failed to decode data from cloudwatch logs event: %w", err)
 	}
 
-	var reader *gzip.Reader
-	reader, err = gzip.NewReader(bytes.NewReader(decoded))
+	reader, err := gzip.NewReader(bytes.NewReader(decoded))
 	if err != nil {
 		return fmt.Errorf("failed to decompress data from cloudwatch subscription event: %w", err)
 	}
-
 	defer reader.Close()
 
-	decoder, err := c.logsDecoder.NewLogsDecoder(reader, encoding.WithFlushBytes(s3StreamBatchSize))
+	// Read the decompressed payload so we can peek at log_group / log_stream for routing
+	// before handing the bytes to the chosen decoder.
+	payload, err := io.ReadAll(reader)
+	if err != nil {
+		return fmt.Errorf("failed to read cloudwatch payload: %w", err)
+	}
+
+	var meta struct {
+		LogGroup  string `json:"logGroup"`
+		LogStream string `json:"logStream"`
+	}
+	if err := gojson.Unmarshal(payload, &meta); err != nil {
+		return fmt.Errorf("failed to parse cloudwatch payload metadata: %w", err)
+	}
+
+	factory, encodingName, err := c.getDecoder(meta.LogGroup, meta.LogStream)
+	if err != nil {
+		return fmt.Errorf("failed to route cloudwatch event (log_group=%q log_stream=%q): %w", meta.LogGroup, meta.LogStream, err)
+	}
+	c.logger.Debug("Matched encoding for CloudWatch event",
+		zap.String("LogGroup", meta.LogGroup),
+		zap.String("LogStream", meta.LogStream),
+		zap.String("Encoding", encodingName),
+	)
+
+	decoder, err := factory.NewLogsDecoder(bytes.NewReader(payload), encoding.WithFlushBytes(s3StreamBatchSize))
 	if err != nil {
 		return err
 	}
@@ -296,8 +328,7 @@ func (c *cwLogsSubscriptionHandler) handle(ctx context.Context, event json.RawMe
 			if errors.Is(err, io.EOF) {
 				break
 			}
-
-			return fmt.Errorf("failed to decode S3 logs: %w", err)
+			return fmt.Errorf("failed to decode CloudWatch logs (encoding %q): %w", encodingName, err)
 		}
 		if err = c.consumer.ConsumeLogs(ctx, logs); err != nil {
 			return checkConsumerErrorAndWrap(err)

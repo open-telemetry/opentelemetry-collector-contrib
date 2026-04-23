@@ -381,7 +381,10 @@ func TestHandleCloudwatchLogEvent(t *testing.T) {
 			lambdaEvent, err := json.Marshal(cwEvent)
 			require.NoError(t, err)
 
-			handler := newCWLogsSubscriptionHandler(test.extension, test.eventConsumer)
+			getDecoder := func(_, _ string) (encoding.LogsDecoderFactory, string, error) {
+				return test.extension, "", nil
+			}
+			handler := newCWLogsHandler(zap.NewNop(), getDecoder, test.eventConsumer)
 
 			err = handler.handle(t.Context(), lambdaEvent)
 			if test.expectedErr != "" {

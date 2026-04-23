@@ -261,16 +261,30 @@ func newLogsHandler(
 	}
 	registry[s3Event] = newS3LogsHandler(s3Service, logger, getLogsDecoder, next)
 
-	// CloudWatch: single-encoding path unchanged in this PR.
-	cwDecoder := internal.NewDefaultCWLogsDecoder()
-	if cfg.CloudWatch.Encoding != "" {
-		logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
-		cwDecoder, err = resolveLogsDecoder(host, cfg.CloudWatch.Encoding)
-		if err != nil {
-			return nil, err
+	// CloudWatch: multi-encoding or single-encoding. Both paths resolve to newCWLogsHandler,
+	// which accepts a per-event getDecoder function.
+	var getCWLogsDecoder func(logGroup, logStream string) (encoding.LogsDecoderFactory, string, error)
+	if len(cfg.CloudWatch.Encodings) > 0 {
+		cwRouter, buildErr := buildCWLogsRouter(host, cfg.CloudWatch, logger)
+		if buildErr != nil {
+			return nil, fmt.Errorf("failed to build CloudWatch multi-encoding router: %w", buildErr)
+		}
+		getCWLogsDecoder = cwRouter.GetDecoder
+	} else {
+		cwLogsDecoder := internal.NewDefaultCWLogsDecoder()
+		if cfg.CloudWatch.Encoding != "" {
+			logger.Info("Using configured CloudWatch encoding for logs", zap.String("encoding", cfg.CloudWatch.Encoding))
+			cwLogsDecoder, err = resolveLogsDecoder(host, cfg.CloudWatch.Encoding)
+			if err != nil {
+				return nil, err
+			}
+		}
+		encodingName := cfg.CloudWatch.Encoding
+		getCWLogsDecoder = func(_, _ string) (encoding.LogsDecoderFactory, string, error) {
+			return cwLogsDecoder, encodingName, nil
 		}
 	}
-	registry[cwEvent] = newCWLogsSubscriptionHandler(cwDecoder, next)
+	registry[cwEvent] = newCWLogsHandler(logger, getCWLogsDecoder, next)
 
 	return newHandlerProvider(registry), nil
 }
@@ -301,6 +315,35 @@ func buildS3LogsRouter(host component.Host, cfg S3Config, logger *zap.Logger) (*
 	}
 
 	return newS3LogsDecoderRouter(sortedEncodings, decoders), nil
+}
+
+// buildCWLogsRouter constructs a cwLogsDecoderRouter from the CloudWatch encodings config.
+// Encodings are sorted by pattern specificity before being passed to the router.
+func buildCWLogsRouter(host component.Host, cfg CloudWatchConfig, logger *zap.Logger) (*cwLogsDecoderRouter, error) {
+	sortedEncodings := cfg.sortedEncodings()
+	decoders := make(map[string]encoding.LogsDecoderFactory, len(sortedEncodings))
+
+	defaultDecoder := internal.NewDefaultCWLogsDecoder()
+	for _, enc := range sortedEncodings {
+		if enc.Encoding == "" {
+			// No extension configured: use the raw-passthrough decoder.
+			decoders[enc.Name] = defaultDecoder
+			continue
+		}
+		decoder, err := resolveLogsDecoder(host, enc.Encoding)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve encoding for CloudWatch entry %q: %w", enc.Name, err)
+		}
+		logger.Info("Registered decoder for CloudWatch encoding entry",
+			zap.String("name", enc.Name),
+			zap.String("encoding", enc.Encoding),
+			zap.String("log_group_pattern", enc.LogGroupPattern),
+			zap.String("log_stream_pattern", enc.LogStreamPattern),
+		)
+		decoders[enc.Name] = decoder
+	}
+
+	return newCWLogsDecoderRouter(sortedEncodings, decoders), nil
 }
 
 func newMetricsHandler(
