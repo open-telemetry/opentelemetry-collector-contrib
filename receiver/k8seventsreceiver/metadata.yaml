@@ -1,0 +1,18 @@
+display_name: Kubernetes Events Receiver
+type: k8s_events
+
+description: |
+  The Kubernetes Events Receiver collects events from the Kubernetes
+  API server. It collects all the new or updated events that come in.
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [dmitryax, TylerHelmuth, ChrsMark]
+
+# TODO: Update the receiver to pass the tests
+tests:
+  skip_lifecycle: true

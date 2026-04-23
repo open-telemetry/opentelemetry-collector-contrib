@@ -1,0 +1,22 @@
+receivers:
+  sshcheck:
+    endpoint: notdefault:1313
+    username: notdefault_username
+    password: notdefault_password
+    key_file: notdefault/path/keyfile
+    collection_interval: 10s
+    known_hosts: path/to/collector_known_hosts
+    ignore_host_key: false
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+     receivers: [sshcheck]
+     processors: [nop]
+     exporters: [nop]

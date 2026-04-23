@@ -1,0 +1,23 @@
+# The following entry demonstrates 
+# - endpoint: The URL on which logs will be forwarded based on the configured pipeline
+# - apitoken: Configuring the API Token as an authorization mechanism.
+logicmonitor/apitoken:
+  endpoint: https://company.logicmonitor.com/rest
+  api_token:
+    access_id: "accessid"
+    access_key: "accesskey"
+# The following entry demonstrates 
+# - endpoint: The URL on which logs will be forwarded based on the configured pipeline
+# - headers: Passing bearer token in headers for authorization.
+logicmonitor/bearertoken:
+  endpoint: https://company.logicmonitor.com/rest
+  headers:
+    Authorization: Bearer <token>
+# The following entry demonstrates how to set resource mapping operation (AND / OR). 
+# The values are case-insensitive
+logicmonitor/resource-mapping-op:
+  logs:
+    resource_mapping_op: "OR"
+  endpoint: https://company.logicmonitor.com/rest
+  headers:
+    Authorization: Bearer <token>

@@ -1,0 +1,14 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "30000000000"
+                  timeUnixNano: "40000000000"
+                  attributes:
+                    - key: boolKey
+                      value:
+                        stringValue: falseValue
+        scope: {}

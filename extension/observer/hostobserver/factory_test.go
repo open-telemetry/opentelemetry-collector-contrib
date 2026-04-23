@@ -1,0 +1,27 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package hostobserver
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
+)
+
+func TestValidConfig(t *testing.T) {
+	err := componenttest.CheckConfigStruct(createDefaultConfig())
+	require.NoError(t, err)
+}
+
+func TestCreateMetrics(t *testing.T) {
+	hostObserver, err := createExtension(
+		t.Context(),
+		extensiontest.NewNopSettings(extensiontest.NopType),
+		&Config{},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, hostObserver)
+}

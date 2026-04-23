@@ -1,0 +1,17 @@
+type: awsxray
+display_name: AWS X-Ray Tracing Exporter
+
+status:
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [wangzlei, srprash]
+
+tests:
+  config:
+    region: 'us-west-2'
+  expect_consumer_error: true
+  goleak:
+    skip: true

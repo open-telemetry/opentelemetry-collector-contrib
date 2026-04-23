@@ -1,0 +1,9 @@
+kafka:
+  brokers:
+    - "foo:123"
+  sending_queue:
+    enabled: true
+    batch:
+      sizer: bytes
+  logs:
+    topic_from_metadata_key: missing_metadata_key

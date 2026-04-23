@@ -1,0 +1,16 @@
+display_name: Database Storage Extension
+type: db_storage
+
+description: The Database Storage Extension can persist state to a relational database.
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, atoulme]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true

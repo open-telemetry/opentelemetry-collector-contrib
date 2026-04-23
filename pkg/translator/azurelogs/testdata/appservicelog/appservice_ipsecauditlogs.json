@@ -1,0 +1,18 @@
+{
+    "records": [
+        {
+            "time": "2024-04-24T12:06:12.0000000Z",
+            "resourceId": "/RESOURCE_ID",
+            "category": "AppServiceIPSecAuditLogs",
+            "operationName": "IPSecAuditLog",
+            "properties": {
+                "CIp": "42.42.42.42",
+                "CsHost": "HOST",
+                "XAzureFDID": "FDID",
+                "XFDHealthProbe": "HEALTH_PROBE",
+                "XForwardedFor": "FORWARDED_FOR",
+                "XForwardedHost": "FORWARDED_HOST"
+            }
+        }
+    ]
+}

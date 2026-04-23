@@ -1,0 +1,2 @@
+# ignore output file, they are just for debugging failed unit tests
+*.actual.yaml

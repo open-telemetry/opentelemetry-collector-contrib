@@ -1,0 +1,28 @@
+<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Eventlog" Guid="{fc65ddd8-d6ef-4962-83d5-6e5cfe9ce148}" />
+    <EventID>1102</EventID>
+    <Version>1</Version>
+    <Level>4</Level>
+    <Task>104</Task>
+    <Opcode>0</Opcode>
+    <Keywords>0x4020000000000000</Keywords>
+    <TimeCreated SystemTime="2023-10-12T10:38:24.543506200Z" />
+    <EventRecordID>2590526</EventRecordID>
+    <Correlation />
+    <Execution ProcessID="1472" ThreadID="7784" />
+    <Channel>Security</Channel>
+    <Computer>test.example.com</Computer>
+    <Security UserID="S-1-5-18" />
+  </System>
+  <UserData>
+    <LogFileCleared xmlns="http://manifests.microsoft.com/win/2004/08/windows/eventlog">
+      <SubjectUserSid>S-1-5-21-1148437859-4135665037-1195073887-1000</SubjectUserSid>
+      <SubjectUserName>test_user</SubjectUserName>
+      <SubjectDomainName>TEST</SubjectDomainName>
+      <SubjectLogonId>0xa8bb72</SubjectLogonId>
+      <ClientProcessId>4536</ClientProcessId>
+      <ClientProcessStartKey>17732923532772643</ClientProcessStartKey>
+    </LogFileCleared>
+  </UserData>
+</Event>

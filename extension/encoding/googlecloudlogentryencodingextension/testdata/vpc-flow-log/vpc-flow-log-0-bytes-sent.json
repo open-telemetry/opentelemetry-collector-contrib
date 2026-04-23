@@ -1,0 +1,50 @@
+{
+  "insertId": "16gybk0f1tkpe0",
+  "jsonPayload": {
+    "packets_sent": "640",
+    "bytes_sent": "0",
+    "reporter": "SRC",
+    "network_service": {
+      "dscp": 32
+    },
+    "connection": {
+      "protocol": 6,
+      "dest_port": 40708,
+      "src_port": 443,
+      "dest_ip": "203.0.113.1",
+      "src_ip": "192.0.2.1"
+    },
+    "start_time": "2025-09-27T21:12:02.937646004Z",
+    "src_instance": {
+      "region": "us-central1",
+      "project_id": "test-project-id",
+      "vm_name": "test-vm-1",
+      "zone": "us-central1-a",
+      "managed_instance_group": {
+        "name": "test-mig-1",
+        "zone": "us-central1-a"
+      }
+    },
+    "src_vpc": {
+      "vpc_name": "default",
+      "project_id": "test-project-id",
+      "subnetwork_region": "us-central1",
+      "subnetwork_name": "default"
+    },
+    "end_time": "2025-09-27T21:12:02.937646004Z"
+  },
+  "resource": {
+    "type": "vpc_flow_logs_config",
+    "labels": {
+      "name": "test-flow-logs-config",
+      "resource_container": "projects/123456789012",
+      "location": "global"
+    }
+  },
+  "timestamp": "2025-09-27T21:12:11.539677207Z",
+  "labels": {
+    "target_resource_name": "projects/123456789012/global/networks/default"
+  },
+  "logName": "projects/test-project-id/logs/networkmanagement.googleapis.com%2Fvpc_flows",
+  "receiveTimestamp": "2025-09-27T21:12:11.539677207Z"
+}

@@ -1,0 +1,11 @@
+groups:
+  - id: resource.attributes
+    type: attribute_group
+    brief: Resource attributes
+    attributes:
+      - id: ntp.host
+        brief: "NTP server used. Corresponds to configured `host`."
+        type: string
+        stability: beta
+        examples:
+          - "ntp.pool.org"

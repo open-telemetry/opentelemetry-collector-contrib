@@ -1,0 +1,16 @@
+display_name: OIDC Authenticator Extension
+type: oidc
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    seeking_new: true
+    active: [asweet-confluent]
+    emeritus: [jpkrohling]
+
+tests:
+  config:
+  skip_lifecycle: true
