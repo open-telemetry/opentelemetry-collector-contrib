@@ -17,7 +17,7 @@
 
 ## Description
 
-The interval processor (`intervalprocessor`) aggregates metrics and periodically forwards the latest values to the next component in the pipeline. The processor supports aggregating the following metric types:
+The interval processor (`intervalprocessor`) aggregates metrics and periodically forwards the latest values to the next component in the pipeline. It can optionally align export ticks to wall-clock interval boundaries (for example, `:00`, `:30` with `30s`) so replicas stay in phase after restarts. The processor supports aggregating the following metric types:
 
 * Monotonically increasing, cumulative sums
 * Monotonically increasing, cumulative histograms
@@ -38,9 +38,12 @@ The following settings can be optionally configured:
 
 ```yaml
 interval:
-  # The interval in which the processor should export the aggregated metrics. 
+  # The interval in which the processor should export the aggregated metrics.
   [ interval: <duration> | default = 60s ]
-  
+
+  # Whether to align export ticks to wall-clock interval boundaries.
+  [ align_to_wall_clock: <bool> | default = false ]
+
   pass_through:
     # Whether gauges should be aggregated or passed through to the next component as they are
     [ gauge: <bool> | default = false ]
