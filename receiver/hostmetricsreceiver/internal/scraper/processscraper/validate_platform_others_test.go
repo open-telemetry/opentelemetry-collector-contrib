@@ -52,7 +52,7 @@ func TestValidatePlatformEnabledMetrics_Others_DisablesSignalsPending(t *testing
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessSignalsPending.Enabled = true
 
@@ -84,7 +84,7 @@ func TestValidatePlatformEnabledMetrics_Others_NoopWhenDisabled(t *testing.T) {
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 
 	validatePlatformEnabledMetrics(cfg, logger)

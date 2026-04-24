@@ -20,7 +20,7 @@ func TestValidatePlatformEnabledMetrics_Windows_DisablesContextSwitches(t *testi
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessContextSwitches.Enabled = true
 
@@ -36,7 +36,7 @@ func TestValidatePlatformEnabledMetrics_Windows_DisablesPagingFaults(t *testing.
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessPagingFaults.Enabled = true
 
@@ -52,7 +52,7 @@ func TestValidatePlatformEnabledMetrics_Windows_DisablesSignalsPending(t *testin
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessSignalsPending.Enabled = true
 
@@ -68,7 +68,7 @@ func TestValidatePlatformEnabledMetrics_Windows_LeavesHandlesEnabled(t *testing.
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessHandles.Enabled = true
 

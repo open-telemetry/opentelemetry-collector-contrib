@@ -31,7 +31,7 @@ func TestValidatePlatformEnabledMetrics_Linux_DisablesHandles(t *testing.T) {
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessHandles.Enabled = true
 
