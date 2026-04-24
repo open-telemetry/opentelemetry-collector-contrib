@@ -4,18 +4,21 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: exporter/sumologic
+component: processor/tail_sampling
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Make the batching logic default for sumologic exporter
+note: "Add distributed tracing instrumentation to `tailsamplingprocessor` to provide visibility into trace processing behavior and policy evaluation"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [47820]
+issues: [43931]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Adds trace spans for key operations:
+  - `tailsampling.ConsumeTraces`: Tracks incoming traces/spans count
+  - `tailsampling.samplingPolicyOnTick`: Records batch processing metrics and policy evaluation results
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
