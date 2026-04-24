@@ -327,7 +327,7 @@ func TestBuildConfigCmd(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			cfg := NewConfigWithID("my_journald_input")
 			tt.Config(cfg)
-			newCmdFunc, err := cfg.buildNewCmdFunc()
+			newCmdFunc, err := cfg.buildNewCmdFunc(zap.NewNop())
 
 			require.NoError(t, err)
 			cmd := newCmdFunc(t.Context(), nil).(*exec.Cmd)
@@ -338,7 +338,7 @@ func TestBuildConfigCmd(t *testing.T) {
 
 func TestBuildConfigCmdCursor(t *testing.T) {
 	cfg := NewConfigWithID("my_journald_input")
-	newCmdFunc, err := cfg.buildNewCmdFunc()
+	newCmdFunc, err := cfg.buildNewCmdFunc(zap.NewNop())
 	require.NoError(t, err)
 
 	cmd := newCmdFunc(t.Context(), []byte("cursor-value")).(*exec.Cmd)
