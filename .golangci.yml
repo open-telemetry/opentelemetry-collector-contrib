@@ -174,10 +174,6 @@ linters:
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
       - linters:
           - forbidigo
-        path: receiver/cloudflarereceiver/
-        text: confighttp
-      - linters:
-          - forbidigo
         path: receiver/mongodbatlasreceiver/
         text: confighttp
       - linters:
