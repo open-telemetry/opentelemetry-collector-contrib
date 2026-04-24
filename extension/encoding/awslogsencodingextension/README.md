@@ -179,8 +179,13 @@ otelcol --config=config.yaml --feature-gates --feature-gates=<FEATURE_GATE_ID>
 The extension implements streaming support which allows processing of input data to be processed without loading entire logs into memory.
 The implementation follows `encoding.LogsDecoderExtension` contract and streamed unmarhaling is exposed through `NewLogsDecoder`.
 
-Note that, unlike non-streaming unmarshaling, caller is expected to detect and perform decompression operations (e.g. un-gzip).
-This allows streaming implementation to work independently of compression algorithms and buffer sizes.
+Caller is expected to detect and perform decompression operations (e.g. un-gzip) before invoking the extension.
+
+> [!WARNING]
+> Transparent gzip decompression inside `aws_logs_encoding` is deprecated and will be removed in a future release.
+> This currently only affects the non-streaming `UnmarshalLogs` API for backward compatibility. Receivers should decompress payloads before passing data to the extension.
+
+This allows the implementation to work independently of compression algorithms and buffer sizes.
 
 The table below summarizes streaming support details for each log type, along with the offset tracking mechanism,
 
