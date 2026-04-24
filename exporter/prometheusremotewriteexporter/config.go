@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -154,8 +155,8 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	if !enableSendingRW2FeatureGate.IsEnabled() && cfg.RemoteWriteProtoMsg == remoteapi.WriteV2MessageType {
-		return fmt.Errorf("remote write v2 is only supported with the feature gate %s", enableSendingRW2FeatureGate.ID())
+	if !metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled() && cfg.RemoteWriteProtoMsg == remoteapi.WriteV2MessageType {
+		return fmt.Errorf("remote write v2 is only supported with the feature gate %s", metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.ID())
 	}
 
 	// Validate translation strategy if set
