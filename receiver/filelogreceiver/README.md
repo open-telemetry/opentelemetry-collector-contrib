@@ -160,7 +160,7 @@ When log files are rotated using the `copytruncate` strategy (where the file is 
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include: [ /var/log/myapp/*.log ]
     on_truncate: read_whole_file  # Read entire file after copytruncate rotation
     operators:
