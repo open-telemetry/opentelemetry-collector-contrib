@@ -66,6 +66,7 @@ SELECT
 
         0
     ) AS wait_time_seconds,
+    COALESCE(statement.TIMER_WAIT/1e12, thread.processlist_time, 0) AS statement_timer_wait_seconds,
     -- Extension: Get @traceparent from user_variables_by_thread.
     -- This table is available on MySQL 5.7.3+ and MariaDB 10.5.2+.
     -- Use CONVERT for MySQL 8.0+ which stores user variables as binary (VARBINARY);

@@ -296,6 +296,7 @@ type querySample struct {
 	sessionStatus      string
 	waitEvent          string
 	waitTime           float64
+	statementTimerWait float64
 	traceparent        string
 }
 
@@ -938,27 +939,54 @@ func (c *mySQLClient) getQuerySamples(limit uint64, supportsProcesslist bool) ([
 
 	defer rows.Close()
 
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
 	var samples []querySample
 	for rows.Next() {
 		var s querySample
-		err := rows.Scan(
-			&s.sessionID,
-			&s.threadID,
-			&s.processlistUser,
-			&s.processlistHost,
-			&s.clientPort,
-			&s.processlistDB,
-			&s.processlistCommand,
-			&s.processlistState,
-			&s.sqlText,
-			&s.digest,
-			&s.eventID,
-			&s.sessionStatus,
-			&s.waitEvent,
-			&s.waitTime,
-			&s.traceparent,
-		)
-		if err != nil {
+		dest := make([]any, 0, len(cols))
+		for _, col := range cols {
+			switch strings.ToLower(col) {
+			case "session_id":
+				dest = append(dest, &s.sessionID)
+			case "internal_thread_id":
+				dest = append(dest, &s.threadID)
+			case "session_user":
+				dest = append(dest, &s.processlistUser)
+			case "client_address":
+				dest = append(dest, &s.processlistHost)
+			case "client_port":
+				dest = append(dest, &s.clientPort)
+			case "current_database":
+				dest = append(dest, &s.processlistDB)
+			case "session_command":
+				dest = append(dest, &s.processlistCommand)
+			case "session_state":
+				dest = append(dest, &s.processlistState)
+			case "sql_text":
+				dest = append(dest, &s.sqlText)
+			case "fingerprint":
+				dest = append(dest, &s.digest)
+			case "activity_event_id":
+				dest = append(dest, &s.eventID)
+			case "session_status":
+				dest = append(dest, &s.sessionStatus)
+			case "wait_event":
+				dest = append(dest, &s.waitEvent)
+			case "wait_time_seconds":
+				dest = append(dest, &s.waitTime)
+			case "statement_timer_wait_seconds":
+				dest = append(dest, &s.statementTimerWait)
+			case "traceparent":
+				dest = append(dest, &s.traceparent)
+			default:
+				return nil, fmt.Errorf("unknown column name %q for query samples", col)
+			}
+		}
+		if err := rows.Scan(dest...); err != nil {
 			return nil, err
 		}
 

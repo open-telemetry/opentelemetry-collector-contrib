@@ -287,6 +287,170 @@ func TestScrapeQuerySamplesTraceparent(t *testing.T) {
 		assert.Equal(t, pcommon.TraceID{}, record.TraceID(), "TraceID must be zero when traceparent is invalid")
 		assert.Equal(t, pcommon.SpanID{}, record.SpanID(), "SpanID must be zero when traceparent is invalid")
 	})
+
+	t.Run("bare IP processlistHost uses IP as address without logging an error", func(t *testing.T) {
+		core, observed := observer.New(zapcore.ErrorLevel)
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper.logger = zap.New(core)
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_bare_host"}
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err, "bare IP processlistHost must not cause a scrape error")
+		require.Equal(t, 0, observed.FilterMessage("Failed to parse processlistHost value").Len(), "bare IP must not log an error")
+		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(), "record must still be emitted")
+		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		addrVal, ok := record.Attributes().Get("client.address")
+		assert.True(t, ok)
+		assert.Equal(t, "192.168.200.161", addrVal.Str(), "client.address must be set to bare IP")
+
+		portVal, ok := record.Attributes().Get("client.port")
+		assert.True(t, ok)
+		assert.Equal(t, int64(0), portVal.Int(), "client.port must be zero when no port in processlistHost")
+
+		peerAddrVal, ok := record.Attributes().Get("network.peer.address")
+		assert.True(t, ok)
+		assert.Equal(t, "192.168.200.161", peerAddrVal.Str(), "network.peer.address must be set to bare IP")
+
+		peerPortVal, ok := record.Attributes().Get("network.peer.port")
+		assert.True(t, ok)
+		assert.Equal(t, int64(0), peerPortVal.Int(), "network.peer.port must be zero when no port in processlistHost")
+	})
+
+	t.Run("empty processlistHost produces empty address and zero port", func(t *testing.T) {
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		scraper.sqlclient = &mockClient{querySamplesFile: "query_samples_empty_host"}
+
+		result, err := scraper.scrapeQuerySampleFunc(t.Context())
+		require.NoError(t, err, "empty processlistHost must not cause a scrape error")
+		require.Equal(t, 1, result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(), "record must still be emitted")
+		record := result.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+		addrVal, ok := record.Attributes().Get("client.address")
+		assert.True(t, ok)
+		assert.Empty(t, addrVal.Str(), "client.address must be empty string when processlistHost is empty")
+
+		portVal, ok := record.Attributes().Get("client.port")
+		assert.True(t, ok)
+		assert.Equal(t, int64(0), portVal.Int(), "client.port must be zero when processlistHost is empty")
+
+		peerAddrVal, ok := record.Attributes().Get("network.peer.address")
+		assert.True(t, ok)
+		assert.Empty(t, peerAddrVal.Str(), "network.peer.address must be empty string when processlistHost is empty")
+
+		peerPortVal, ok := record.Attributes().Get("network.peer.port")
+		assert.True(t, ok)
+		assert.Equal(t, int64(0), peerPortVal.Int(), "network.peer.port must be zero when processlistHost is empty")
+	})
+}
+
+func TestScrapeTopQueryInterval(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.TopQueryCollection.CollectionInterval = 60 * time.Second
+
+	mc := &mockClient{topQueriesFile: "top_queries"}
+
+	newScraper := func() *mySQLScraper {
+		s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+		s.sqlclient = mc
+		return s
+	}
+
+	t.Run("first call always runs regardless of lastExecutionTimestamp", func(t *testing.T) {
+		scraper := newScraper()
+		before := scraper.lastExecutionTimestamp
+
+		_, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		assert.True(t, scraper.lastExecutionTimestamp.After(before), "lastExecutionTimestamp must be updated on first call")
+	})
+
+	t.Run("second call within interval is skipped", func(t *testing.T) {
+		scraper := newScraper()
+		// Simulate a recent collection — just ran 10 seconds ago
+		recent := time.Now().Add(-10 * time.Second)
+		scraper.lastExecutionTimestamp = recent
+
+		_, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, recent, scraper.lastExecutionTimestamp, "lastExecutionTimestamp must not change when interval has not elapsed")
+	})
+
+	t.Run("call after interval elapses runs again", func(t *testing.T) {
+		scraper := newScraper()
+		// Simulate last collection exactly at the interval boundary (60s ago)
+		past := time.Now().Add(-60 * time.Second)
+		scraper.lastExecutionTimestamp = past
+
+		_, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		assert.True(t, scraper.lastExecutionTimestamp.After(past), "lastExecutionTimestamp must be updated when interval has elapsed")
+	})
+
+	t.Run("call fires at interval boundary even when ticker arrives slightly early", func(t *testing.T) {
+		scraper := newScraper()
+		// Simulate ticker arriving ~1ms before the 60s mark — math.Ceil rounds 59.999s up to 60s,
+		// so this must still fire rather than waiting for the next 10s tick (which would be 70s total).
+		past := time.Now().Add(-60*time.Second + time.Millisecond)
+		scraper.lastExecutionTimestamp = past
+
+		_, err := scraper.scrapeTopQueryFunc(t.Context())
+		require.NoError(t, err)
+		assert.True(t, scraper.lastExecutionTimestamp.After(past), "ticker arriving 1ms early must still fire — math.Ceil rounds up to the interval boundary")
+	})
+}
+
+func TestCacheAndDiff(t *testing.T) {
+	newScraper := func() *mySQLScraper {
+		cfg := createDefaultConfig().(*Config)
+		return newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
+	}
+
+	t.Run("first call returns not-cached and the value itself", func(t *testing.T) {
+		s := newScraper()
+		cached, diff := s.cacheAndDiff("schema", "digest", "col", 100)
+		assert.False(t, cached)
+		assert.Equal(t, int64(100), diff)
+	})
+
+	t.Run("second call with higher value returns diff", func(t *testing.T) {
+		s := newScraper()
+		s.cacheAndDiff("schema", "digest", "col", 100)
+		cached, diff := s.cacheAndDiff("schema", "digest", "col", 250)
+		assert.True(t, cached)
+		assert.Equal(t, int64(150), diff)
+	})
+
+	t.Run("second call with same value returns zero diff", func(t *testing.T) {
+		s := newScraper()
+		s.cacheAndDiff("schema", "digest", "col", 100)
+		cached, diff := s.cacheAndDiff("schema", "digest", "col", 100)
+		assert.True(t, cached)
+		assert.Equal(t, int64(0), diff)
+	})
+
+	t.Run("counter reset: val less than cached returns val as diff and refreshes cache", func(t *testing.T) {
+		s := newScraper()
+		s.cacheAndDiff("schema", "digest", "col", 1_000_000) // pre-reboot accumulation
+		cached, diff := s.cacheAndDiff("schema", "digest", "col", 500)
+		assert.True(t, cached)
+		assert.Equal(t, int64(500), diff, "post-reset value should be treated as full diff since reset")
+
+		// next call after reset should compute diff correctly from the refreshed cached value
+		cached2, diff2 := s.cacheAndDiff("schema", "digest", "col", 750)
+		assert.True(t, cached2)
+		assert.Equal(t, int64(250), diff2, "subsequent call after reset should diff against the refreshed cache entry")
+	})
+
+	t.Run("negative value returns not-cached and zero", func(t *testing.T) {
+		s := newScraper()
+		cached, diff := s.cacheAndDiff("schema", "digest", "col", -1)
+		assert.False(t, cached)
+		assert.Equal(t, int64(0), diff)
+	})
 }
 
 var _ client = (*mockClient)(nil)
@@ -620,8 +784,9 @@ func (c *mockClient) getQuerySamples(uint64, bool) ([]querySample, error) {
 		s.sessionStatus = text[11]
 		s.waitEvent = text[12]
 		s.waitTime, _ = strconv.ParseFloat(text[13], 64)
-		if len(text) > 14 {
-			s.traceparent = text[14]
+		s.statementTimerWait, _ = strconv.ParseFloat(text[14], 64)
+		if len(text) > 15 {
+			s.traceparent = text[15]
 		}
 
 		samples = append(samples, s)

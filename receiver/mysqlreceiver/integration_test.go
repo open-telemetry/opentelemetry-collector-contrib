@@ -6,6 +6,8 @@
 package mysqlreceiver
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -21,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -184,7 +187,10 @@ func runPerfSchemaSetup(t *testing.T, cfg *Config) {
 	db := c.(*mySQLClient).client
 	stmts := []string{
 		"UPDATE performance_schema.setup_consumers SET ENABLED='YES' WHERE NAME IN ('events_statements_current','events_statements_history','events_statements_history_long','events_statements_digest','events_waits_current')",
-		"UPDATE performance_schema.setup_instruments SET ENABLED='YES', TIMED='YES' WHERE NAME LIKE 'statement/sql/%'",
+		"UPDATE performance_schema.setup_instruments SET ENABLED='YES', TIMED='YES' WHERE NAME LIKE 'statement/%'",
+		"UPDATE performance_schema.setup_instruments SET ENABLED='YES', TIMED='YES' WHERE NAME LIKE 'wait/%'",
+		"TRUNCATE TABLE performance_schema.events_statements_current",
+		"TRUNCATE TABLE performance_schema.events_waits_current",
 	}
 	for _, s := range stmts {
 		if _, execErr := db.Exec(s); execErr != nil {
@@ -587,6 +593,298 @@ func TestVersionCompatibility(t *testing.T) {
 			// empty, but the query itself must execute without error.
 			_, err = c.getReplicaStatusStats(dv.supportsReplicaStatus())
 			require.NoError(t, err, "getReplicaStatusStats should not fail (wrong command would cause syntax error)")
+		})
+	}
+}
+
+// assertStrAttrNonEmpty asserts that the named attribute exists and is a non-empty string.
+func assertStrAttrNonEmpty(t *testing.T, attrs pcommon.Map, key string, recIdx int) {
+	t.Helper()
+	v, ok := attrs.Get(key)
+	if assert.True(t, ok, "record %d: attribute %q missing", recIdx, key) {
+		assert.NotEmpty(t, v.Str(), "record %d: attribute %q must be non-empty", recIdx, key)
+	}
+}
+
+// assertStrAttrEqual asserts that the named attribute exists and equals want.
+func assertStrAttrEqual(t *testing.T, attrs pcommon.Map, key, want string, recIdx int) {
+	t.Helper()
+	v, ok := attrs.Get(key)
+	if assert.True(t, ok, "record %d: attribute %q missing", recIdx, key) {
+		assert.Equal(t, want, v.Str(), "record %d: attribute %q value mismatch", recIdx, key)
+	}
+}
+
+// assertIntAttrPositive asserts that the named attribute exists and is > 0.
+func assertIntAttrPositive(t *testing.T, attrs pcommon.Map, key string, recIdx int) {
+	t.Helper()
+	v, ok := attrs.Get(key)
+	if assert.True(t, ok, "record %d: attribute %q missing", recIdx, key) {
+		assert.Positive(t, v.Int(), "record %d: attribute %q must be > 0", recIdx, key)
+	}
+}
+
+// assertIntAttrNonNegative asserts that the named attribute exists and is >= 0.
+func assertIntAttrNonNegative(t *testing.T, attrs pcommon.Map, key string, recIdx int) {
+	t.Helper()
+	v, ok := attrs.Get(key)
+	if assert.True(t, ok, "record %d: attribute %q missing", recIdx, key) {
+		assert.GreaterOrEqual(t, v.Int(), int64(0), "record %d: attribute %q must be >= 0", recIdx, key)
+	}
+}
+
+// assertDoubleAttrNonNegative asserts that the named attribute exists and is >= 0.
+func assertDoubleAttrNonNegative(t *testing.T, attrs pcommon.Map, key string, recIdx int) {
+	t.Helper()
+	v, ok := attrs.Get(key)
+	if assert.True(t, ok, "record %d: attribute %q missing", recIdx, key) {
+		assert.GreaterOrEqual(t, v.Double(), float64(0), "record %d: attribute %q must be >= 0", recIdx, key)
+	}
+}
+
+// runBlockedCall holds an advisory lock on one connection and blocks a second
+// connection trying to acquire the same lock. It returns a cleanup function
+// that unblocks the waiter and closes both connections. The blocked connection
+// remains open — and therefore visible in events_statements_current with a
+// live non-zero TIMER_WAIT — until cleanup is called.
+//
+// The approach uses GET_LOCK / IS_FREE_LOCK (available on all supported MySQL
+// and MariaDB versions) rather than table locks, so no DDL is needed.
+func runBlockedCall(t *testing.T, cfg *Config) (cleanup func()) {
+	t.Helper()
+
+	holderC, err := newMySQLClient(cfg)
+	require.NoError(t, err)
+	require.NoError(t, holderC.Connect())
+	holderDB := holderC.(*mySQLClient).client
+
+	// Acquire the advisory lock on the holder connection (timeout=60s).
+	var held int
+	require.NoError(t, holderDB.QueryRow("SELECT GET_LOCK('otel_test_lock', 60)").Scan(&held))
+	require.Equal(t, 1, held, "holder failed to acquire advisory lock")
+
+	waiterC, err := newMySQLClient(cfg)
+	require.NoError(t, err)
+	require.NoError(t, waiterC.Connect())
+	waiterDB := waiterC.(*mySQLClient).client
+
+	// Block the waiter in a goroutine — SELECT GET_LOCK will wait until the
+	// holder releases. The goroutine is reaped by the cleanup function.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		// timeout=30s keeps the waiter blocked for the duration of the test.
+		var result sql.NullInt64
+		_ = waiterDB.QueryRowContext(context.Background(), "SELECT GET_LOCK('otel_test_lock', 30)").Scan(&result) //nolint:usetesting // t.Context() would cancel this query when the test ends, unblocking the waiter prematurely
+	}()
+
+	// Wait until the waiter is visible in events_statements_current.
+	require.Eventually(t, func() bool {
+		var count int
+		_ = holderDB.QueryRow(
+			"SELECT COUNT(*) FROM performance_schema.events_statements_current esc " +
+				"JOIN performance_schema.threads t ON t.thread_id = esc.thread_id " +
+				"WHERE t.processlist_command != 'Sleep' " +
+				"AND esc.sql_text LIKE '%GET_LOCK%otel_test_lock%'",
+		).Scan(&count)
+		return count > 0
+	}, 10*time.Second, 200*time.Millisecond, "timed out waiting for blocked session to appear in events_statements_current")
+
+	return func() {
+		// Release the lock — the waiter goroutine will unblock and return.
+		_, _ = holderDB.Exec("SELECT RELEASE_LOCK('otel_test_lock')")
+		<-done
+		holderC.Close()
+		waiterC.Close()
+	}
+}
+
+// TestIntegrationQuerySampleAttributes verifies that scrapeQuerySampleFunc
+// produces sample records with the attributes added by this branch:
+//
+//   - mysql.events_statements_current.timer_wait is present and > 0
+//   - mysql.events_waits_current.timer_wait is present (≥ 0)
+//   - All structural attributes (db.query.text, mysql.session.id,
+//     mysql.session.status, db.namespace, client.address, network.peer.address)
+//     are present on every record.
+//
+// A blocked advisory-lock call is used to guarantee that at least one session
+// is visible in events_statements_current with a live non-zero TIMER_WAIT for
+// the duration of the scrape.
+func TestIntegrationQuerySampleAttributes(t *testing.T) {
+	testCases := []struct {
+		name  string
+		image string
+	}{
+		{name: "MySQL-8.0.33", image: "mysql:8.0.33"},
+		{name: "MySQL-5.7", image: "mysql:5.7"},
+		{name: "MariaDB-10.11", image: "mariadb:10.11"},
+		{name: "MariaDB-11.4", image: "mariadb:11.4"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+
+			ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image:        tc.image,
+					ExposedPorts: []string{mysqlPort},
+					Cmd: []string{
+						"--performance_schema=ON",
+						"--max_digest_length=4096",
+						"--performance_schema_max_digest_length=4096",
+						"--performance_schema_max_sql_text_length=4096",
+					},
+					WaitingFor: wait.ForAll(
+						wait.ForListeningPort(mysqlPort).WithStartupTimeout(2*time.Minute),
+						wait.ForLog("ready for connections").WithStartupTimeout(2*time.Minute),
+					),
+					Env: map[string]string{
+						"MYSQL_ROOT_PASSWORD":   "otel",
+						"MYSQL_DATABASE":        "otel",
+						"MYSQL_USER":            "otel",
+						"MYSQL_PASSWORD":        "otel",
+						"MARIADB_ROOT_PASSWORD": "otel",
+						"MARIADB_DATABASE":      "otel",
+						"MARIADB_USER":          "otel",
+						"MARIADB_PASSWORD":      "otel",
+					},
+				},
+				Started: true,
+			})
+			testcontainers.CleanupContainer(t, ctr)
+			if err != nil && strings.Contains(err.Error(), "No such image") {
+				t.Skipf("image %s not available locally: %v", tc.image, err)
+			}
+			require.NoError(t, err)
+
+			host, err := ctr.Host(ctx)
+			require.NoError(t, err)
+			mappedPort, err := ctr.MappedPort(ctx, mysqlPort)
+			require.NoError(t, err)
+
+			cfg := containerConfig(host, mappedPort.Port())
+
+			runPerfSchemaSetup(t, cfg)
+
+			sharedPlanCache := newTTLCache[string](cfg.TopQueryCollection.QueryPlanCacheSize, 0)
+			settings := receivertest.NewNopSettings(metadata.Type)
+			scraper := newMySQLScraper(
+				settings,
+				cfg,
+				newCache[int64](int(cfg.TopQueryCollection.MaxQuerySampleCount*2*2)),
+				sharedPlanCache,
+			)
+			require.NoError(t, scraper.start(ctx, nil))
+			defer func() { assert.NoError(t, scraper.shutdown(ctx)) }()
+
+			// Hold the advisory lock and block a second connection so that
+			// events_statements_current has at least one row with non-zero TIMER_WAIT.
+			// runBlockedCall waits until the blocked thread is visible in
+			// events_statements_current before returning, so the scrape below is
+			// guaranteed to see it.
+			cleanup := runBlockedCall(t, cfg)
+			defer cleanup()
+
+			// Log how many events_statements_current rows exist to aid diagnosis.
+			{
+				dc, dcErr := newMySQLClient(cfg)
+				require.NoError(t, dcErr)
+				require.NoError(t, dc.Connect())
+				var count int
+				_ = dc.(*mySQLClient).client.QueryRow(
+					"SELECT COUNT(*) FROM performance_schema.events_statements_current esc " +
+						"JOIN performance_schema.threads t ON t.thread_id = esc.thread_id " +
+						"WHERE t.processlist_command NOT IN ('Sleep','Daemon')",
+				).Scan(&count)
+				t.Logf("events_statements_current active rows before scrape: %d", count)
+				dc.Close()
+			}
+
+			logs, err := scraper.scrapeQuerySampleFunc(ctx)
+			require.NoError(t, err, "scrapeQuerySampleFunc must not return an error")
+
+			// Collect all log records.
+			var lrs []pcommon.Map
+			for i := range logs.ResourceLogs().Len() {
+				rl := logs.ResourceLogs().At(i)
+				for j := range rl.ScopeLogs().Len() {
+					sl := rl.ScopeLogs().At(j)
+					for k := range sl.LogRecords().Len() {
+						lrs = append(lrs, sl.LogRecords().At(k).Attributes())
+					}
+				}
+			}
+
+			require.NotEmpty(t, lrs, "expected at least one query sample record (blocked call should be visible)")
+
+			// Every record must have non-zero/non-empty values for the key attributes.
+			for idx, attrs := range lrs {
+				assertStrAttrNonEmpty(t, attrs, "db.system.name", idx)
+				assertIntAttrPositive(t, attrs, "mysql.threads.thread_id", idx)
+				assertStrAttrNonEmpty(t, attrs, "mysql.threads.processlist_command", idx)
+				assertStrAttrNonEmpty(t, attrs, "mysql.session.status", idx)
+				assertIntAttrPositive(t, attrs, "mysql.session.id", idx)
+				assertStrAttrNonEmpty(t, attrs, "db.query.text", idx)
+				assertStrAttrNonEmpty(t, attrs, "client.address", idx)
+				assertStrAttrNonEmpty(t, attrs, "network.peer.address", idx)
+				// The attribute added by this branch — must be present and non-negative on
+				// every record. The GET_LOCK record below additionally asserts > 0.
+				assertDoubleAttrNonNegative(t, attrs, "mysql.events_statements_current.timer_wait", idx)
+			}
+
+			// Find the blocked GET_LOCK record and validate all attribute values.
+			// This is the record that proves mysql.events_statements_current.timer_wait
+			// is populated from a live in-flight statement, not from a stale or zero value.
+			found := false
+			for idx, attrs := range lrs {
+				qt, ok := attrs.Get("db.query.text")
+				if !ok || !strings.Contains(strings.ToUpper(qt.Str()), "GET_LOCK") {
+					continue
+				}
+				found = true
+
+				// Exact-value assertions where the value is known.
+				assertStrAttrEqual(t, attrs, "db.system.name", "mysql", idx)
+				assertStrAttrEqual(t, attrs, "mysql.threads.processlist_command", "Query", idx)
+
+				// Non-empty string attributes — value is version/session-dependent.
+				assertStrAttrNonEmpty(t, attrs, "user.name", idx)
+				assertStrAttrNonEmpty(t, attrs, "mysql.threads.processlist_state", idx)
+				assertStrAttrNonEmpty(t, attrs, "mysql.wait_type", idx)
+				assertStrAttrNonEmpty(t, attrs, "mysql.session.status", idx)
+				// digest is empty for in-flight statements that haven't completed
+				// digesting yet (MySQL 5.7, MariaDB) — presence is sufficient.
+				_, hasDigest := attrs.Get("mysql.events_statements_current.digest")
+				assert.True(t, hasDigest, "record %d (GET_LOCK): mysql.events_statements_current.digest missing", idx)
+
+				// Positive integer attributes.
+				assertIntAttrPositive(t, attrs, "mysql.threads.thread_id", idx)
+				assertIntAttrPositive(t, attrs, "mysql.session.id", idx)
+
+				// The key assertion for this branch: TIMER_WAIT must be non-zero
+				// because the statement is actively blocked (in-flight).
+				tw, hasTW := attrs.Get("mysql.events_statements_current.timer_wait")
+				assert.True(t, hasTW, "record %d (GET_LOCK): mysql.events_statements_current.timer_wait missing", idx)
+				if hasTW {
+					assert.Greater(t, tw.Double(), float64(0),
+						"record %d (GET_LOCK): mysql.events_statements_current.timer_wait must be > 0 for a blocked in-flight statement", idx)
+				}
+
+				// Wait timer — present and non-negative (may be 0 if no wait instrument fired).
+				wtw, hasWTW := attrs.Get("mysql.events_waits_current.timer_wait")
+				assert.True(t, hasWTW, "record %d (GET_LOCK): mysql.events_waits_current.timer_wait missing", idx)
+				if hasWTW {
+					assert.GreaterOrEqual(t, wtw.Double(), float64(0),
+						"record %d (GET_LOCK): mysql.events_waits_current.timer_wait must be >= 0", idx)
+				}
+
+				// Network attributes — non-negative integers (port may be 0 for Unix socket clients).
+				assertIntAttrNonNegative(t, attrs, "client.port", idx)
+				assertIntAttrNonNegative(t, attrs, "network.peer.port", idx)
+			}
+			assert.True(t, found, "expected to find a GET_LOCK query sample record for the blocked call")
 		})
 	}
 }
