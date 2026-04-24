@@ -144,10 +144,33 @@ action][run] and [otel-cli][otcli]. The key is generating IDs in the same way
 that this GitHub receiver does. The [trace_event_handling.go][tr] file contains
 the `new*ID` functions that generate deterministic IDs.
 
-**IMPORTANT** - Workflow Job names MUST be unique in each workflow for
-deterministic span IDs to not conflict with eachother. GitHub does not enforce
-this behavior, but when linting a workflow, warns that there are duplicate job
-names.
+**Trace ID and root span ID** are derived from `${{ github.run_id }}` and
+`${{ github.run_attempt }}` — both available in any runner context.
+
+**Job, step, and queue span IDs** are derived from the job's `check_run_id`,
+available in-runner as `${{ job.check_run_id }}` (GitHub Actions 2025-11-13+).
+The receiver uses `check_run_id` when the
+`receiver.githubreceiver.UseCheckRunID` feature gate is enabled (default: on).
+Disable with `--feature-gates=-receiver.githubreceiver.UseCheckRunID` to retain
+the legacy scheme.
+
+| Span | Hash input |
+|------|-----------|
+| Trace | `sha256("{run_id}{run_attempt}t")[0:32]` |
+| Root | `sha256("{run_id}{run_attempt}s")[16:32]` |
+| Job | `sha256("{check_run_id}-j")[16:32]` |
+| Step N | `sha256("{check_run_id}-s{N}")[16:32]` |
+| Queue | `sha256("{check_run_id}-q")[16:32]` |
+
+**Legacy scheme** (gate disabled): job, step, and queue IDs are hashed from
+`{run_id}{run_attempt}{job_name}{…}`.
+
+**IMPORTANT** - When using the legacy scheme (gate disabled), workflow job
+names MUST be unique in each workflow for deterministic span IDs to not
+conflict with each other. GitHub does not enforce this behavior, but when
+linting a workflow, warns that there are duplicate job names. This constraint
+is eliminated when the `UseCheckRunID` gate is enabled (the default) because
+`check_run_id` is globally unique per job attempt.
 
 ### Receiver Configuration
 

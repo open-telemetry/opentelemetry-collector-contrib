@@ -13,6 +13,7 @@ import (
 	"github.com/google/go-github/v84/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -466,6 +467,10 @@ func TestCreateStepSpans(t *testing.T) {
 	}
 }
 
+// TestNewStepSpanID exercises the legacy step span ID hash function.
+//
+// Deprecated: remove alongside newStepSpanID when the
+// receiver.githubreceiver.UseCheckRunID feature gate is promoted to Stable.
 func TestNewStepSpanID(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -577,6 +582,10 @@ func TestNewStepSpanID(t *testing.T) {
 	}
 }
 
+// TestNewStepSpanID_Consistency exercises the legacy step span ID hash function.
+//
+// Deprecated: remove alongside newStepSpanID when the
+// receiver.githubreceiver.UseCheckRunID feature gate is promoted to Stable.
 func TestNewStepSpanID_Consistency(t *testing.T) {
 	// Test that generates the same span ID for same inputs across multiple calls
 	runID := int64(12345)
@@ -595,6 +604,10 @@ func TestNewStepSpanID_Consistency(t *testing.T) {
 	}
 }
 
+// TestNewJobSpanID exercises the legacy job span ID hash function.
+//
+// Deprecated: remove alongside newJobSpanID when the
+// receiver.githubreceiver.UseCheckRunID feature gate is promoted to Stable.
 func TestNewJobSpanID(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -688,6 +701,10 @@ func TestNewJobSpanID(t *testing.T) {
 	}
 }
 
+// TestNewJobSpanID_Consistency exercises the legacy job span ID hash function.
+//
+// Deprecated: remove alongside newJobSpanID when the
+// receiver.githubreceiver.UseCheckRunID feature gate is promoted to Stable.
 func TestNewJobSpanID_Consistency(t *testing.T) {
 	// Test that generates the same span ID for same inputs across multiple calls
 	runID := int64(12345)
@@ -937,4 +954,351 @@ func TestCorrectActionTimestamps(t *testing.T) {
 			require.False(t, gotEnd.Before(gotStart), "end timestamp should not be before start timestamp")
 		})
 	}
+}
+
+func TestNewJobSpanIDFromCheckRun(t *testing.T) {
+	tests := []struct {
+		name        string
+		checkRunID  int64
+		wantError   bool
+		errContains string
+	}{
+		{
+			name:       "basic generation",
+			checkRunID: 40685651258,
+			wantError:  false,
+		},
+		{
+			name:       "different check_run_id produces different ID",
+			checkRunID: 99999999999,
+			wantError:  false,
+		},
+		{
+			name:        "zero check_run_id returns error",
+			checkRunID:  0,
+			wantError:   true,
+			errContains: "check_run_id is zero",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spanID, err := newJobSpanIDFromCheckRun(tt.checkRunID)
+			if tt.wantError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			require.NotEqual(t, pcommon.SpanID{}, spanID, "span ID should not be empty")
+
+			// Consistency: same input produces same output
+			spanID2, err := newJobSpanIDFromCheckRun(tt.checkRunID)
+			require.NoError(t, err)
+			require.Equal(t, spanID, spanID2, "same input should produce same span ID")
+
+			// Different IDs produce different outputs
+			differentID, err := newJobSpanIDFromCheckRun(tt.checkRunID + 1)
+			require.NoError(t, err)
+			require.NotEqual(t, spanID, differentID, "different check_run_ids should produce different span IDs")
+		})
+	}
+}
+
+func TestNewStepSpanIDFromCheckRun(t *testing.T) {
+	tests := []struct {
+		name        string
+		checkRunID  int64
+		stepNumber  int
+		wantError   bool
+		errContains string
+	}{
+		{
+			name:       "basic generation",
+			checkRunID: 40685651258,
+			stepNumber: 1,
+			wantError:  false,
+		},
+		{
+			name:       "different step numbers produce different IDs",
+			checkRunID: 40685651258,
+			stepNumber: 2,
+			wantError:  false,
+		},
+		{
+			name:        "zero check_run_id returns error",
+			checkRunID:  0,
+			stepNumber:  1,
+			wantError:   true,
+			errContains: "check_run_id is zero",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spanID, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepNumber)
+			if tt.wantError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			require.NotEqual(t, pcommon.SpanID{}, spanID, "span ID should not be empty")
+
+			// Consistency
+			spanID2, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepNumber)
+			require.NoError(t, err)
+			require.Equal(t, spanID, spanID2, "same input should produce same span ID")
+
+			// Different step number → different span ID
+			differentStep, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepNumber+1)
+			require.NoError(t, err)
+			require.NotEqual(t, spanID, differentStep, "different step numbers should produce different span IDs")
+		})
+	}
+}
+
+func TestNewQueueSpanIDFromCheckRun(t *testing.T) {
+	tests := []struct {
+		name        string
+		checkRunID  int64
+		wantError   bool
+		errContains string
+	}{
+		{
+			name:       "basic generation",
+			checkRunID: 40685651258,
+			wantError:  false,
+		},
+		{
+			name:        "zero check_run_id returns error",
+			checkRunID:  0,
+			wantError:   true,
+			errContains: "check_run_id is zero",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spanID, err := newQueueSpanIDFromCheckRun(tt.checkRunID)
+			if tt.wantError {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			require.NoError(t, err)
+			require.NotEqual(t, pcommon.SpanID{}, spanID, "span ID should not be empty")
+
+			// Consistency
+			spanID2, err := newQueueSpanIDFromCheckRun(tt.checkRunID)
+			require.NoError(t, err)
+			require.Equal(t, spanID, spanID2, "same input should produce same span ID")
+
+			// Different check_run_id → different span ID
+			differentID, err := newQueueSpanIDFromCheckRun(tt.checkRunID + 1)
+			require.NoError(t, err)
+			require.NotEqual(t, spanID, differentID, "different check_run_ids should produce different span IDs")
+		})
+	}
+}
+
+// TestCheckRunIDHashesAreDisjoint verifies that for a fixed check_run_id, the
+// job, step(1), step(2), and queue span IDs are all distinct from each other
+// and from the legacy hash outputs for comparable inputs.
+func TestCheckRunIDHashesAreDisjoint(t *testing.T) {
+	const checkRunID int64 = 40685651258
+
+	jobID, err := newJobSpanIDFromCheckRun(checkRunID)
+	require.NoError(t, err)
+
+	step1ID, err := newStepSpanIDFromCheckRun(checkRunID, 1)
+	require.NoError(t, err)
+
+	step2ID, err := newStepSpanIDFromCheckRun(checkRunID, 2)
+	require.NoError(t, err)
+
+	queueID, err := newQueueSpanIDFromCheckRun(checkRunID)
+	require.NoError(t, err)
+
+	// All four must be distinct
+	ids := []pcommon.SpanID{jobID, step1ID, step2ID, queueID}
+	for i := range ids {
+		for j := i + 1; j < len(ids); j++ {
+			require.NotEqual(t, ids[i], ids[j],
+				"span IDs at index %d and %d should be distinct", i, j)
+		}
+	}
+
+	// New IDs must differ from legacy counterparts for the same underlying run
+	legacyJobID, err := newJobSpanID(12345, 1, "test-job")
+	require.NoError(t, err)
+	require.NotEqual(t, jobID, legacyJobID, "new job span ID should differ from legacy")
+
+	legacyStepID, err := newStepSpanID(12345, 1, "test-job", "build", 1)
+	require.NoError(t, err)
+	require.NotEqual(t, step1ID, legacyStepID, "new step span ID should differ from legacy")
+}
+
+// TestHandleWorkflowJobWithGoldenFile_LegacyGate exercises the golden file
+// output produced under the legacy (pre-check_run_id) hash scheme.
+//
+// Deprecated: remove alongside newJobSpanID / newStepSpanID when the
+// receiver.githubreceiver.UseCheckRunID feature gate is promoted to Stable.
+func TestHandleWorkflowJobWithGoldenFile_LegacyGate(t *testing.T) {
+	gate := metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate
+	previous := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous))
+	})
+
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowJobEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+	traces, err := receiver.handleWorkflowJob(&event, data)
+	require.NoError(t, err, "Failed to handle workflow job event")
+
+	expectedFile := filepath.Join("testdata", "workflow-job-expected-legacy.yaml")
+
+	// Uncomment the following line to update the legacy golden file
+	// golden.WriteTraces(t, expectedFile, traces)
+
+	expectedTraces, err := golden.ReadTraces(expectedFile)
+	require.NoError(t, err, "Failed to read expected traces")
+
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
+}
+
+// TestHandleWorkflowJobWithGoldenFileSkipped_LegacyGate exercises the golden
+// file output for a skipped job under the legacy (pre-check_run_id) hash scheme.
+//
+// Deprecated: remove alongside newJobSpanID / newStepSpanID when the
+// receiver.githubreceiver.UseCheckRunID feature gate is promoted to Stable.
+func TestHandleWorkflowJobWithGoldenFileSkipped_LegacyGate(t *testing.T) {
+	gate := metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate
+	previous := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous))
+	})
+
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-job-skipped.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowJobEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+	traces, err := receiver.handleWorkflowJob(&event, data)
+	require.NoError(t, err, "Failed to handle workflow job event")
+
+	expectedFile := filepath.Join("testdata", "workflow-job-skipped-expected-legacy.yaml")
+
+	// Uncomment the following line to update the legacy golden file
+	// golden.WriteTraces(t, expectedFile, traces)
+
+	expectedTraces, err := golden.ReadTraces(expectedFile)
+	require.NoError(t, err, "Failed to read expected traces")
+
+	var queueSpan ptrace.Span
+	resourceSpans := expectedTraces.ResourceSpans()
+	for i := range resourceSpans.Len() {
+		scopeSpans := resourceSpans.At(i).ScopeSpans()
+		for j := range scopeSpans.Len() {
+			spans := scopeSpans.At(j).Spans()
+			for k := range spans.Len() {
+				if spans.At(k).Name() == "queue-build" {
+					queueSpan = spans.At(k)
+					break
+				}
+			}
+		}
+	}
+	require.Equal(t, queueSpan.StartTimestamp(), queueSpan.EndTimestamp(), "Start and end timestamps should be equal for queue-build span")
+	queueAttr, exists := queueSpan.Attributes().Get("cicd.pipeline.run.queue.duration")
+	require.True(t, exists)
+	require.Equal(t, float64(0), queueAttr.Double())
+
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
+}
+
+// TestHandleWorkflowJob_MissingCheckRunID verifies that handleWorkflowJob
+// returns an error when the gate is enabled and check_run_id is nil or zero,
+// and does NOT error when the gate is disabled (legacy path ignores the ID).
+func TestHandleWorkflowJob_MissingCheckRunID(t *testing.T) {
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.WebHook.NetAddr.Endpoint = "localhost:0"
+	consumer := consumertest.NewNop()
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
+	require.NoError(t, err)
+
+	makeEvent := func(id *int64) *github.WorkflowJobEvent {
+		return &github.WorkflowJobEvent{
+			WorkflowJob: &github.WorkflowJob{
+				ID:         id,
+				RunID:      github.Ptr(int64(9999999)),
+				RunAttempt: github.Ptr(int64(1)),
+				Name:       github.Ptr("test-job"),
+				Steps:      nil,
+			},
+			Repo: &github.Repository{
+				Name: github.Ptr("test-repo"),
+			},
+			Sender: &github.User{
+				Login: github.Ptr("test-user"),
+			},
+		}
+	}
+
+	gate := metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate
+
+	t.Run("gate enabled, ID nil → error", func(t *testing.T) {
+		previous := gate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+		t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous)) })
+
+		event := makeEvent(nil)
+		_, err := receiver.handleWorkflowJob(event, nil)
+		require.Error(t, err)
+	})
+
+	t.Run("gate enabled, ID zero → error", func(t *testing.T) {
+		previous := gate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+		t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous)) })
+
+		event := makeEvent(github.Ptr(int64(0)))
+		_, err := receiver.handleWorkflowJob(event, nil)
+		require.Error(t, err)
+	})
+
+	t.Run("gate disabled, ID nil → no error from span ID derivation", func(t *testing.T) {
+		previous := gate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+		t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous)) })
+
+		event := makeEvent(nil)
+		_, err := receiver.handleWorkflowJob(event, nil)
+		require.NoError(t, err)
+	})
 }
