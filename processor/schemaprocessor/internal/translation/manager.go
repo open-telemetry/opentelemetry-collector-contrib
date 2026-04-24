@@ -28,7 +28,8 @@ type Manager interface {
 }
 
 type manager struct {
-	log *zap.Logger
+	log          *zap.Logger
+	migrationMap map[string]*Version // target schema URL → copyFromVersion
 
 	rw            sync.RWMutex
 	providers     []Provider
@@ -40,7 +41,7 @@ var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
 // of schema
-func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provider) (Manager, error) {
+func NewManager(targetSchemaURLS []string, log *zap.Logger, migrationMap map[string]*Version, providers ...Provider) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
@@ -63,6 +64,7 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provide
 
 	return &manager{
 		log:           log,
+		migrationMap:  migrationMap,
 		match:         match,
 		translatorMap: make(map[string]*translator),
 		providers:     prs,
@@ -114,13 +116,16 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 			// try the next provider
 			continue
 		}
+		targetSchemaURL := joinSchemaFamilyAndVersion(family, targetTranslation)
+		copyFromVersion := m.migrationMap[targetSchemaURL]
 		t, err := newTranslator(
 			m.log.Named("translator").With(
 				zap.String("family", family),
 				zap.Stringer("target", targetTranslation),
 			),
-			joinSchemaFamilyAndVersion(family, targetTranslation),
+			targetSchemaURL,
 			content,
+			copyFromVersion,
 		)
 		if err != nil {
 			m.log.Error("Failed to create translator", zap.Error(err))

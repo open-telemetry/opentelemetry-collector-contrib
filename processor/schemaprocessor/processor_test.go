@@ -36,6 +36,23 @@ versions:%s`, transformations)
 	return data, nil
 }
 
+func newTestSchemaProcessorWithMigration(t *testing.T, transformations, targetVersion string, migration []MigrationEntry) *schemaProcessor {
+	cfg := &Config{
+		Targets:   []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targetVersion)},
+		Migration: migration,
+	}
+	trans, err := newSchemaProcessor(t.Context(), cfg, processor.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zaptest.NewLogger(t),
+		},
+	})
+	require.NoError(t, err, "Must not error when creating default schemaProcessor")
+	trans.manager.AddProvider(&dummySchemaProvider{
+		transformations: transformations,
+	})
+	return trans
+}
+
 func newTestSchemaProcessor(t *testing.T, transformations, targerVerion string) *schemaProcessor {
 	cfg := &Config{
 		Targets: []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targerVerion)},
@@ -110,5 +127,105 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 		out, err := trans.processLogs(t.Context(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
 		assert.Equal(t, in, out, "Must return the same data")
+	})
+}
+
+func TestMigrationModePreservesAttributes(t *testing.T) {
+	t.Parallel()
+
+	// Schema renames service_version -> service.version in version 1.9.0.
+	// Version 1.8.0 must be present so the translator recognizes it.
+	transformations := `
+  1.9.0:
+    all:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              service_version: service.version
+  1.8.0:`
+
+	t.Run("upgrade with migration preserves both attributes", func(t *testing.T) {
+		trans := newTestSchemaProcessorWithMigration(t, transformations, "1.9.0",
+			[]MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.9.0", From: "http://opentelemetry.io/schemas/1.8.0"}})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		// Both old and new attribute names should be present
+		oldVal, oldExists := attrs.Get("service_version")
+		newVal, newExists := attrs.Get("service.version")
+		assert.True(t, oldExists, "original attribute should be preserved")
+		assert.True(t, newExists, "renamed attribute should be added")
+		assert.Equal(t, "v1.0", oldVal.Str())
+		assert.Equal(t, "v1.0", newVal.Str())
+	})
+
+	t.Run("upgrade without migration only has new attribute", func(t *testing.T) {
+		trans := newTestSchemaProcessor(t, transformations, "1.9.0")
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		_, oldExists := attrs.Get("service_version")
+		newVal, newExists := attrs.Get("service.version")
+		assert.False(t, oldExists, "original attribute should be removed")
+		assert.True(t, newExists, "renamed attribute should be present")
+		assert.Equal(t, "v1.0", newVal.Str())
+	})
+
+	t.Run("both attributes already exist are preserved", func(t *testing.T) {
+		trans := newTestSchemaProcessorWithMigration(t, transformations, "1.9.0",
+			[]MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.9.0", From: "http://opentelemetry.io/schemas/1.8.0"}})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
+		rl.Resource().Attributes().PutStr("service_version", "v1.0")
+		rl.Resource().Attributes().PutStr("service.version", "v2.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		oldVal, _ := attrs.Get("service_version")
+		newVal, _ := attrs.Get("service.version")
+		assert.Equal(t, "v1.0", oldVal.Str(), "original value preserved")
+		assert.Equal(t, "v2.0", newVal.Str(), "existing target value preserved")
+	})
+
+	t.Run("downgrade with migration preserves both attributes", func(t *testing.T) {
+		// Target is 1.8.0 (downgrade), signal arrives at 1.9.0.
+		// Revision 1.9.0 renamed service_version -> service.version.
+		// Rollback should undo that rename but copy mode preserves both.
+		trans := newTestSchemaProcessorWithMigration(t, transformations, "1.8.0",
+			[]MigrationEntry{{Target: "http://opentelemetry.io/schemas/1.8.0", From: "http://opentelemetry.io/schemas/1.9.0"}})
+
+		in := plog.NewLogs()
+		rl := in.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
+		rl.Resource().Attributes().PutStr("service.version", "v1.0")
+
+		out, err := trans.processLogs(t.Context(), in)
+		require.NoError(t, err)
+
+		attrs := out.ResourceLogs().At(0).Resource().Attributes()
+		oldVal, oldExists := attrs.Get("service.version")
+		newVal, newExists := attrs.Get("service_version")
+		assert.True(t, oldExists, "original attribute should be preserved")
+		assert.True(t, newExists, "rolled-back attribute should be added")
+		assert.Equal(t, "v1.0", oldVal.Str())
+		assert.Equal(t, "v1.0", newVal.Str())
 	})
 }

@@ -41,6 +41,7 @@ func TestRequestTranslation(t *testing.T) {
 	m, err := NewManager(
 		[]string{schemaURL},
 		zaptest.NewLogger(t),
+		nil,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err, "Must not error when created manager")
@@ -105,6 +106,7 @@ versions:
 	m, err := NewManager(
 		[]string{targetURL},
 		zaptest.NewLogger(t),
+		nil,
 		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err)
@@ -144,6 +146,7 @@ func TestManagerError(t *testing.T) {
 	m, err := NewManager(
 		[]string{"http://localhost/1.1.0"},
 		zaptest.NewLogger(t),
+		nil,
 		&errorProvider{},
 	)
 	require.NoError(t, err, "Must not error when created manager")

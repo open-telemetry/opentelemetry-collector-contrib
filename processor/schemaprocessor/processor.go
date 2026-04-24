@@ -6,6 +6,7 @@ package schemaprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,9 +33,19 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		return nil, errors.New("invalid configuration provided")
 	}
 
+	migrationMap := make(map[string]*translation.Version)
+	for _, entry := range cfg.Migration {
+		_, fromVersion, err := translation.GetFamilyAndVersion(entry.From)
+		if err != nil {
+			return nil, fmt.Errorf("migration.from: %w", err)
+		}
+		migrationMap[entry.Target] = fromVersion
+	}
+
 	m, err := translation.NewManager(
 		cfg.Targets,
 		set.Logger.Named("schema-manager"),
+		migrationMap,
 	)
 	if err != nil {
 		return nil, err
@@ -177,6 +188,10 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 
 // start will add HTTP provider to the manager and prefetch schemas
 func (t *schemaProcessor) start(ctx context.Context, host component.Host) error {
+	for _, entry := range t.config.Migration {
+		t.log.Warn("migration is enabled: attribute renames will preserve original attributes alongside renamed ones; this is a temporary migration aid",
+			zap.String("target", entry.Target), zap.String("from", entry.From))
+	}
 	client, err := t.config.ToClient(ctx, host.GetExtensions(), t.telemetry)
 	if err != nil {
 		return err
