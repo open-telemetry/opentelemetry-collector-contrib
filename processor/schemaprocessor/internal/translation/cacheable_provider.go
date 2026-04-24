@@ -34,7 +34,7 @@ type CacheableProvider struct {
 // NewCacheableProvider creates a new CacheableProvider.
 // The cooldown parameter is the time to wait before retrying a failed call.
 // The limit parameter is the number of failed calls to allow before setting the cooldown period.
-func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) Provider {
+func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) *CacheableProvider {
 	return &CacheableProvider{
 		provider: provider,
 		// TODO make cache configurable
@@ -65,9 +65,10 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 		return "", fmt.Errorf("rate limited, last error: %w", lastErr)
 	}
 
-	// Reset count if past cooldown period
+	// After the cooldown expires, allow one retry but keep the count so the
+	// next failure triggers a new cooldown immediately.
 	if p.callcount >= p.limit {
-		p.callcount = 0
+		p.callcount = p.limit - 1
 	}
 	p.callcount++
 

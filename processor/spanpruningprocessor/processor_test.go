@@ -6,6 +6,7 @@ package spanpruningprocessor
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -244,6 +245,88 @@ func TestLeafSpanPruning_DurationStats(t *testing.T) {
 
 	totalDuration, _ := attrs.Get("aggregation.duration_total_ns")
 	assert.Equal(t, int64(600), totalDuration.Int())
+}
+
+func TestLeafSpanPruningProcessorWithHistogram(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.AggregationHistogramBuckets = []time.Duration{
+		10 * time.Millisecond,
+		50 * time.Millisecond,
+		100 * time.Millisecond,
+	}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithKnownDurations(t, []int64{
+		int64(5 * time.Millisecond),
+		int64(15 * time.Millisecond),
+		int64(25 * time.Millisecond),
+		int64(75 * time.Millisecond),
+		int64(150 * time.Millisecond),
+	})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+
+	summarySpan, found := findSummarySpan(td)
+	require.True(t, found)
+
+	attrs := summarySpan.Attributes()
+
+	bounds, exists := attrs.Get("aggregation.histogram_bucket_bounds_s")
+	require.True(t, exists)
+	require.Equal(t, 3, bounds.Slice().Len())
+	expectedBounds := []float64{0.01, 0.05, 0.1}
+	for i, expected := range expectedBounds {
+		assert.InDelta(t, expected, bounds.Slice().At(i).Double(), 1e-9)
+	}
+
+	counts, exists := attrs.Get("aggregation.histogram_bucket_counts")
+	require.True(t, exists)
+	expectedCounts := []int64{1, 3, 4, 5}
+	require.Equal(t, len(expectedCounts), counts.Slice().Len())
+	for i, expected := range expectedCounts {
+		assert.Equal(t, expected, counts.Slice().At(i).Int())
+	}
+}
+
+func TestLeafSpanPruningProcessorWithHistogramDisabled(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.AggregationHistogramBuckets = []time.Duration{}
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithKnownDurations(t, []int64{
+		int64(5 * time.Millisecond),
+		int64(15 * time.Millisecond),
+		int64(25 * time.Millisecond),
+		int64(75 * time.Millisecond),
+		int64(150 * time.Millisecond),
+	})
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, countSpans(td))
+
+	summarySpan, found := findSummarySpan(td)
+	require.True(t, found)
+
+	attrs := summarySpan.Attributes()
+
+	_, exists := attrs.Get("aggregation.histogram_bucket_bounds_s")
+	assert.False(t, exists)
+
+	_, exists = attrs.Get("aggregation.histogram_bucket_counts")
+	assert.False(t, exists)
 }
 
 func TestLeafSpanPruning_GroupByNonStringAttributes(t *testing.T) {
@@ -1653,6 +1736,153 @@ func TestLeafSpanPruning_TraceStateGrouping_EmptyTraceState(t *testing.T) {
 	attrs := summarySpan.Attributes()
 	spanCount, _ := attrs.Get("aggregation.span_count")
 	assert.Equal(t, int64(3), spanCount.Int())
+}
+
+// TestParentKeyCollisionAcrossDepths verifies that when the same span name
+// appears at multiple tree depths (causing buildParentGroupKey collisions),
+// nodes from overwritten groups are not incorrectly removed. This is a
+// regression test for a bug where the depth-2 parent group overwrites the
+// depth-1 entry in aggregationGroups, leaving depth-1 nodes marked for
+// removal but absent from the final plan.
+//
+// Trace structure (3 copies to meet MinSpansToAggregate=2 for parents):
+//
+//	root
+//	├── svc [depth-2 parent candidate]
+//	│   ├── svc [depth-1 parent candidate, SAME name as depth-2]
+//	│   │   ├── SELECT (leaf)
+//	│   │   └── SELECT (leaf)
+//	│   └── svc
+//	│       ├── SELECT (leaf)
+//	│       └── SELECT (leaf)
+//	├── svc
+//	│   ├── svc
+//	│   │   ├── SELECT (leaf)
+//	│   │   └── SELECT (leaf)
+//	│   └── svc
+//	│       ├── SELECT (leaf)
+//	│       └── SELECT (leaf)
+//	└── svc
+//	    ├── svc
+//	    │   ├── SELECT (leaf)
+//	    │   └── SELECT (leaf)
+//	    └── svc
+//	        ├── SELECT (leaf)
+//	        └── SELECT (leaf)
+//
+// Expected result (22 spans → 4 spans):
+//
+//	root
+//	├── summary(svc, aggregates 3 outer svc spans)
+//	│   └── summary(svc, aggregates 6 inner svc spans)
+//	│       └── summary(SELECT, aggregates 12 leaf spans)
+func TestParentKeyCollisionAcrossDepths(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.MinSpansToAggregate = 2
+	cfg.MaxParentDepth = -1
+
+	tp, err := factory.CreateTraces(t.Context(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
+	td := createTestTraceWithParentKeyCollision(t)
+
+	// Before: 1 root + 3 outer-svc + 6 inner-svc + 12 SELECT = 22 spans
+	originalSpanCount := countSpans(td)
+	assert.Equal(t, 22, originalSpanCount)
+
+	err = tp.ConsumeTraces(t.Context(), td)
+	require.NoError(t, err)
+
+	finalSpanCount := countSpans(td)
+
+	// Verify every non-summary span that remains is NOT an orphan: its parent
+	// must either be another span in the output or it must be the root.
+	remainingByID := make(map[pcommon.SpanID]ptrace.Span)
+	rss := td.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		ilss := rss.At(i).ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			spans := ilss.At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				span := spans.At(k)
+				remainingByID[span.SpanID()] = span
+			}
+		}
+	}
+	for id, span := range remainingByID {
+		parentID := span.ParentSpanID()
+		if parentID.IsEmpty() {
+			continue // root span
+		}
+		_, parentExists := remainingByID[parentID]
+		assert.True(t, parentExists, "span %s (name=%s) has dangling parent %s — parent was removed but span was kept",
+			id, span.Name(), parentID)
+	}
+
+	// With the bug, depth-1 "svc" nodes (6 spans) get incorrectly removed,
+	// dropping the count too low. The expected result: root + 3 summaries.
+	t.Logf("original=%d final=%d", originalSpanCount, finalSpanCount)
+	assert.Equal(t, 4, finalSpanCount,
+		"expected root + 3 summary spans (SELECT, inner svc, outer svc)")
+}
+
+func createTestTraceWithParentKeyCollision(t *testing.T) ptrace.Traces {
+	t.Helper()
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	rootSpanID := pcommon.SpanID([8]byte{1, 0, 0, 0, 0, 0, 0, 0})
+
+	root := ss.Spans().AppendEmpty()
+	root.SetTraceID(traceID)
+	root.SetSpanID(rootSpanID)
+	root.SetName("root")
+
+	spanIDCounter := byte(2)
+	nextID := func() pcommon.SpanID {
+		id := pcommon.SpanID([8]byte{spanIDCounter, 0, 0, 0, 0, 0, 0, 0})
+		spanIDCounter++
+		return id
+	}
+
+	// 3 outer "svc" spans (same name/kind/status → same parent group key)
+	for range 3 {
+		outerID := nextID()
+		outer := ss.Spans().AppendEmpty()
+		outer.SetTraceID(traceID)
+		outer.SetSpanID(outerID)
+		outer.SetParentSpanID(rootSpanID)
+		outer.SetName("svc")
+		outer.Status().SetCode(ptrace.StatusCodeOk)
+
+		// Each outer has 2 inner "svc" spans (same name → key collision with outer)
+		for range 2 {
+			innerID := nextID()
+			inner := ss.Spans().AppendEmpty()
+			inner.SetTraceID(traceID)
+			inner.SetSpanID(innerID)
+			inner.SetParentSpanID(outerID)
+			inner.SetName("svc")
+			inner.Status().SetCode(ptrace.StatusCodeOk)
+
+			// Each inner has 2 leaf SELECT spans
+			for range 2 {
+				leaf := ss.Spans().AppendEmpty()
+				leaf.SetTraceID(traceID)
+				leaf.SetSpanID(nextID())
+				leaf.SetParentSpanID(innerID)
+				leaf.SetName("SELECT")
+				leaf.Status().SetCode(ptrace.StatusCodeOk)
+				leaf.SetStartTimestamp(pcommon.Timestamp(1000000000))
+				leaf.SetEndTimestamp(pcommon.Timestamp(1000000100))
+			}
+		}
+	}
+
+	return td
 }
 
 // Helper functions for TraceState tests

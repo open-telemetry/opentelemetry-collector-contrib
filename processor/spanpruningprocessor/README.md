@@ -6,7 +6,7 @@
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fspanpruning%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fspanpruning) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fspanpruning%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fspanpruning) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_spanpruning)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_spanpruning&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@csmarchbanks](https://www.github.com/csmarchbanks) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -64,6 +64,11 @@ processors:
     # Prefix for aggregation statistics attributes
     # Default: "aggregation."
     aggregation_attribute_prefix: "batch."
+
+    # Upper bounds for histogram buckets (latency distribution)
+    # Default: [5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]
+    # Set to empty list to disable histogram attributes
+    aggregation_histogram_buckets: [10ms, 50ms, 100ms, 500ms, 1s]
 ```
 
 ## Configuration Options
@@ -74,6 +79,7 @@ processors:
 | `min_spans_to_aggregate` | int | 5 | Minimum group size before aggregation occurs |
 | `max_parent_depth` | int | 1 | Max depth of parent aggregation (0=none, -1=unlimited) |
 | `aggregation_attribute_prefix` | string | "aggregation." | Prefix for aggregation statistics attributes |
+| `aggregation_histogram_buckets` | []time.Duration | `[5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s]` | Upper bounds for latency histogram buckets |
 
 ### Glob Pattern Support
 
@@ -129,6 +135,20 @@ The following attributes are added to the summary span (shown with default `aggr
 | `<prefix>duration_max_ns` | int64 | Maximum duration in nanoseconds |
 | `<prefix>duration_avg_ns` | int64 | Average duration in nanoseconds |
 | `<prefix>duration_total_ns` | int64 | Total duration in nanoseconds |
+| `<prefix>histogram_bucket_bounds_s` | []float64 | Bucket upper bounds in seconds (excludes +Inf) |
+| `<prefix>histogram_bucket_counts` | []int64 | Cumulative count per bucket (includes +Inf bucket) |
+
+### Histogram Buckets
+
+When `aggregation_histogram_buckets` is configured, summary spans include latency distribution data as cumulative histogram buckets. Cumulative means each bucket count includes all spans with duration less than or equal to that bucket boundary.
+
+**Worked example** with buckets `[10ms, 50ms, 100ms]` and span durations `[5ms, 15ms, 25ms, 75ms, 150ms]`:
+- `histogram_bucket_bounds_s`: `[0.01, 0.05, 0.1]`
+- `histogram_bucket_counts`: `[1, 3, 4, 5]`
+  - Bucket 0 (<=10ms): 1 span (5ms)
+  - Bucket 1 (<=50ms): 3 spans (5ms, 15ms, 25ms)
+  - Bucket 2 (<=100ms): 4 spans (5ms, 15ms, 25ms, 75ms)
+  - Bucket 3 (+Inf): 5 spans (all spans)
 
 ## Pipeline Placement
 
