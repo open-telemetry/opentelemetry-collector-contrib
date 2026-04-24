@@ -88,8 +88,8 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 		}},
 	}
 
-	records := makeFranzMessages(msgs, recordHeaders)
-	setMessageHeaders(ctx, records, []string{"dynamic-key-ONLY", "shared-key"})
+	metadataHeaders := metadataToHeaders(ctx, []string{"dynamic-key-ONLY", "shared-key"})
+	records := makeFranzMessages(msgs, recordHeaders, metadataHeaders)
 
 	require.Len(t, records, 1, "expected exactly 1 record")
 	record := records[0]
