@@ -60,7 +60,7 @@ func NewFranzSyncProducer(client *kgo.Client,
 	for _, pair := range recordHeaders {
 		headers = append(headers, kgo.RecordHeader{
 			Key:   pair.Name,
-			Value: []byte(string(pair.Value)),
+			Value: []byte(pair.Value),
 		})
 	}
 
