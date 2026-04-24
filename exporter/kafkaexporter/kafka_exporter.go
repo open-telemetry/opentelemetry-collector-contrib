@@ -152,16 +152,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		})
 	}
 	err := e.producer.ExportData(ctx, m)
-	if err == nil {
-		if e.logger.Core().Enabled(zap.DebugLevel) {
-			for _, mi := range m.TopicMessages {
-				e.logger.Debug("kafka records exported",
-					zap.Int("records", len(mi.Messages)),
-					zap.String("topic", mi.Topic),
-				)
-			}
-		}
-	} else {
+	if err != nil {
 		for _, mi := range m.TopicMessages {
 			e.logger.Error("kafka records export failed",
 				zap.Int("records", len(mi.Messages)),
@@ -176,8 +167,17 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
 			)
 		}
+		return err
 	}
-	return err
+	if e.logger.Core().Enabled(zap.DebugLevel) {
+		for _, mi := range m.TopicMessages {
+			e.logger.Debug("kafka records exported",
+				zap.Int("records", len(mi.Messages)),
+				zap.String("topic", mi.Topic),
+			)
+		}
+	}
+	return nil
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
