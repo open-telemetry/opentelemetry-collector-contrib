@@ -269,8 +269,8 @@ func (gtr *githubTracesReceiver) createParentSpan(
 //
 // Deprecated: superseded by newJobSpanIDFromCheckRun, which is used when the
 // receiver.githubreceiver.UseCheckRunID feature gate is enabled (the default as
-// of v0.128.0). This function and its callers are scheduled for removal when the
-// gate is promoted to Stable. See
+// of v0.151.0). This function and its callers are scheduled for removal when
+// the gate is promoted to Stable. See
 // https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44856.
 func newJobSpanID(runID int64, runAttempt int, jobName string) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%d%s", runID, runAttempt, jobName)
@@ -439,8 +439,8 @@ func (*githubTracesReceiver) createStepSpan(
 //
 // Deprecated: superseded by newStepSpanIDFromCheckRun, which is used when the
 // receiver.githubreceiver.UseCheckRunID feature gate is enabled (the default as
-// of v0.128.0). This function and its callers are scheduled for removal when the
-// gate is promoted to Stable. See
+// of v0.151.0). This function and its callers are scheduled for removal when
+// the gate is promoted to Stable. See
 // https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44856.
 func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number int) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%d%s%s%d", runID, runAttempt, jobName, stepName, number)
