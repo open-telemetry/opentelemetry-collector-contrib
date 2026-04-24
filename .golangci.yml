@@ -139,9 +139,6 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: exporter/prometheusremotewriteexporter/
-      - linters:
-          - forbidigo
         path: exporter/signalfxexporter/
       - linters:
           - forbidigo
@@ -172,10 +169,6 @@ linters:
         path: receiver/vcenterreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
-      - linters:
-          - forbidigo
-        path: receiver/cloudflarereceiver/
-        text: confighttp
       - linters:
           - forbidigo
         path: receiver/mongodbatlasreceiver/
