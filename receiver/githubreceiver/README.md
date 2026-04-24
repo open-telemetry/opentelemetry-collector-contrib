@@ -148,11 +148,12 @@ the `new*ID` functions that generate deterministic IDs.
 `${{ github.run_attempt }}` — both available in any runner context.
 
 **Job, step, and queue span IDs** are derived from the job's `check_run_id`,
-available in-runner as `${{ job.check_run_id }}` (GitHub Actions 2025-11-13+).
+available in-runner as `${{ job.check_run_id }}`.
 The receiver uses `check_run_id` when the
 `receiver.githubreceiver.UseCheckRunID` feature gate is enabled (default: on).
 Disable with `--feature-gates=-receiver.githubreceiver.UseCheckRunID` to retain
 the legacy scheme.
+
 
 | Span | Hash input |
 |------|-----------|
@@ -161,6 +162,13 @@ the legacy scheme.
 | Job | `sha256("{check_run_id}-j")[16:32]` |
 | Step N | `sha256("{check_run_id}-s{N}")[16:32]` |
 | Queue | `sha256("{check_run_id}-q")[16:32]` |
+
+
+The `N` in `Step N` is the `step.number` field from the `workflow_job` webhook
+payload; a 1-based counter assigned by the runner that matches the step's order
+in the job for ordinary steps. GitHub Actions does not expose this value as a
+built-in context expression, so any step emitting correlated telemetry must
+supply `N` explicitly.
 
 **Legacy scheme** (gate disabled): job, step, and queue IDs are hashed from
 `{run_id}{run_attempt}{job_name}{…}`.
