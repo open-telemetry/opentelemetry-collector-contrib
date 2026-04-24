@@ -20,7 +20,7 @@ func TestValidatePlatformEnabledMetrics_NonLinux_DisablesContextSwitches(t *test
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessContextSwitches.Enabled = true
 
@@ -36,7 +36,7 @@ func TestValidatePlatformEnabledMetrics_NonLinux_DisablesPagingFaults(t *testing
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessPagingFaults.Enabled = true
 
@@ -52,7 +52,7 @@ func TestValidatePlatformEnabledMetrics_NonLinux_NoopWhenDisabled(t *testing.T) 
 	logger := zap.New(core)
 
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessContextSwitches.Enabled = false
 	cfg.Metrics.ProcessPagingFaults.Enabled = false

@@ -16,7 +16,7 @@ import (
 
 func TestValidatePlatformEnabledMetrics_Linux_LeavesContextSwitchesEnabled(t *testing.T) {
 	cfg := &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	cfg.Metrics.ProcessContextSwitches.Enabled = true
 
