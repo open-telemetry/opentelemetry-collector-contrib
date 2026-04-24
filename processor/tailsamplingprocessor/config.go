@@ -7,7 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 )
 
 // PolicyType indicates the type of sampling policy.
@@ -335,6 +338,10 @@ type Config struct {
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
 	// DecisionCache holds configuration for the decision cache(s)
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
+	// TailStorageID specifies an optional tail storage extension to use for buffering spans.
+	// If not set, in-memory tail storage is used.
+	// It is behind feature gate `processor.tailsamplingprocessor.tailstorageextension`.
+	TailStorageID *component.ID `mapstructure:"tail_storage"`
 	// Options allows for additional configuration of the tail-based sampling processor in code.
 	Options []Option `mapstructure:"-"`
 	// Make decision as soon as a policy matches
@@ -356,7 +363,7 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	switch cfg.SamplingStrategy {
 	case samplingStrategyTraceComplete, samplingStrategySpanIngest:
-		return nil
+		// valid sampling strategies
 	default:
 		return fmt.Errorf(
 			"invalid sampling_strategy %q, expected one of %q or %q",
@@ -365,4 +372,14 @@ func (cfg *Config) Validate() error {
 			samplingStrategySpanIngest,
 		)
 	}
+
+	if cfg.TailStorageID != nil && !tailstorageextension.IsFeatureGateEnabled() {
+		return fmt.Errorf(
+			"'tail_storage' requires the %q feature gate to be enabled, use --feature-gates=+%s",
+			tailstorageextension.FeatureGateID,
+			tailstorageextension.FeatureGateID,
+		)
+	}
+
+	return nil
 }

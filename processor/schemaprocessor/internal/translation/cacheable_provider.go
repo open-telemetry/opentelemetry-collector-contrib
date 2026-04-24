@@ -63,9 +63,10 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 		return "", fmt.Errorf("rate limited, last error: %w", p.lastErr)
 	}
 
-	// Reset count if past cooldown period
+	// After the cooldown expires, allow one retry but keep the count so the
+	// next failure triggers a new cooldown immediately.
 	if p.callcount >= p.limit {
-		p.callcount = 0
+		p.callcount = p.limit - 1
 	}
 	p.callcount++
 

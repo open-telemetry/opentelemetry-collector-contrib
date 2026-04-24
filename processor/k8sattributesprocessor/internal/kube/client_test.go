@@ -1108,6 +1108,20 @@ func TestExtractionRules(t *testing.T) {
 				"service.namespace":   "annotation-namespace",
 			},
 		},
+		{
+			name:  "service-attributes-annotation-takes-precedence-over-labels",
+			rules: serviceRules,
+			additionalLabels: map[string]string{
+				"app.kubernetes.io/name": "label-service",
+			},
+			additionalAnnotations: map[string]string{
+				"resource.opentelemetry.io/service.name": "annotation-service",
+			},
+			attributes: map[string]string{
+				"service.name":      "annotation-service",
+				"service.namespace": "ns1",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -4684,4 +4698,27 @@ func TestMetadataNewForConfigFailure(t *testing.T) {
 	assert.Nil(t, c)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "metadata.NewForConfig failed")
+}
+
+func TestCompactPodMap(t *testing.T) {
+	podA := PodIdentifier{{Value: "pod-a"}}
+	podB := PodIdentifier{{Value: "pod-b"}}
+	podC := PodIdentifier{{Value: "pod-c"}}
+
+	c := WatchClient{
+		Pods: map[PodIdentifier]*Pod{
+			podA: {},
+			podB: {},
+		},
+	}
+
+	c.Pods[podC] = &Pod{}
+	delete(c.Pods, podA)
+
+	c.compactPodMap()
+
+	assert.Contains(t, c.Pods, podB)
+	assert.Contains(t, c.Pods, podC)
+	assert.NotContains(t, c.Pods, podA)
+	assert.Len(t, c.Pods, 2)
 }
