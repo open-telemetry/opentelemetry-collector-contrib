@@ -28,7 +28,9 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
+	qConfig := exporterhelper.NewDefaultQueueConfig()
+	qConfig.Batch.GetOrInsertDefault()
+	qs := configoptional.Some(qConfig)
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.Enabled = true
 	retryConfig.InitialInterval = 5 * time.Second

@@ -160,7 +160,7 @@ The WebHook configuration exposes the following settings:
 * `path`: (default = `/events`) - The path for Action events to be sent to.
 * `health_path`: (default = `/health`) - The path for health checks.
 * `secret`: (optional) - The secret used to [validates the payload][valid].
-* `required_header`: (optional) - The required header key and value for incoming requests.
+* `required_headers`: (optional) - One or more header key/value pairs that every webhook request must carry (the health check endpoint is exempt). Requests missing any configured header, or carrying the wrong value, are rejected before the payload is parsed. GitHub itself does not send custom request headers, so this setting is intended for deployments where a front-end WAF or proxy injects the agreed header.
 * `service_name`: (optional) - The service name for the traces. See the
 [Configuring Service Name](#configuring-service-name) section for more
 information.
