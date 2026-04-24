@@ -45,6 +45,10 @@ component_management:
     name: confmap_provider_secretsmanagerprovider
     paths:
     - confmap/provider/secretsmanagerprovider/**
+  - component_id: connector_alertsgen
+    name: connector_alertsgen
+    paths:
+    - connector/alertsgenconnector/**
   - component_id: connector_count
     name: connector_count
     paths:

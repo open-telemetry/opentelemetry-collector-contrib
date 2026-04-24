@@ -10,6 +10,7 @@ confmap/provider/aesprovider confmap/provider/aesprovider
 confmap/provider/googlesecretmanagerprovider confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider confmap/provider/secretsmanagerprovider
+connector/alertsgenconnector connector/alertsgen
 connector/countconnector connector/count
 connector/datadogconnector connector/datadog
 connector/exceptionsconnector connector/exceptions
