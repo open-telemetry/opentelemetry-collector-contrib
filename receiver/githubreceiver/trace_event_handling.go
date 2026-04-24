@@ -297,6 +297,14 @@ func (gtr *githubTracesReceiver) createStepSpans(
 ) error {
 	steps := event.GetWorkflowJob().Steps
 	unique := newUniqueSteps(steps)
+	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() &&
+		hasDuplicateStepNames(steps) {
+		gtr.logger.Warn(
+			"duplicate step names detected; steps sharing a name will have colliding span IDs. "+
+				"Use unique step names within a job for reliable TRACEPARENT reproduction.",
+			zap.String("job", event.GetWorkflowJob().GetName()),
+		)
+	}
 	var errors error
 	for i, step := range steps {
 		name := unique[i]
@@ -342,6 +350,21 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 	return results
 }
 
+// hasDuplicateStepNames reports whether any two steps in the slice share the
+// same raw name. Used to warn operators when UseCheckRunID is enabled and
+// duplicate names would cause colliding step span IDs.
+func hasDuplicateStepNames(steps []*github.TaskStep) bool {
+	seen := make(map[string]struct{}, len(steps))
+	for _, step := range steps {
+		name := step.GetName()
+		if _, ok := seen[name]; ok {
+			return true
+		}
+		seen[name] = struct{}{}
+	}
+	return false
+}
+
 // createStepSpan creates a span with a deterministic spandID for the provided
 // step.
 func (*githubTracesReceiver) createStepSpan(
@@ -372,7 +395,7 @@ func (*githubTracesReceiver) createStepSpan(
 		if checkRunID == 0 {
 			return errors.New("workflow_job.id (check_run_id) is missing; cannot derive step span ID with UseCheckRunID enabled")
 		}
-		spanID, err = newStepSpanIDFromCheckRun(checkRunID, number)
+		spanID, err = newStepSpanIDFromCheckRun(checkRunID, step.GetName())
 	} else {
 		spanID, err = newStepSpanID(runID, runAttempt, jobName, stepName, number)
 	}
@@ -453,13 +476,18 @@ func newJobSpanIDFromCheckRun(checkRunID int64) (pcommon.SpanID, error) {
 }
 
 // newStepSpanIDFromCheckRun creates a deterministic Step Span ID from the job's
-// check_run_id and the step's 1-based number. The "-s" separator ensures the
-// input cannot collide with a job or queue hash input.
-func newStepSpanIDFromCheckRun(checkRunID int64, stepNumber int) (pcommon.SpanID, error) {
+// check_run_id and the step's raw name. The "-s-" separator keeps this input
+// structurally disjoint from the job ("-j") and queue ("-q") hash inputs.
+//
+// The raw step.GetName() value is used — not the uniquified name produced by
+// newUniqueSteps — so users can reconstruct the span ID from the step name as
+// written in their workflow YAML. Workflows with duplicate step names will
+// produce colliding span IDs; a WARN is logged by createStepSpans in that case.
+func newStepSpanIDFromCheckRun(checkRunID int64, stepName string) (pcommon.SpanID, error) {
 	if checkRunID == 0 {
 		return pcommon.SpanID{}, errors.New("check_run_id is zero; cannot derive step span ID")
 	}
-	input := fmt.Sprintf("%d-s%d", checkRunID, stepNumber)
+	input := fmt.Sprintf("%d-s-%s", checkRunID, stepName)
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
 

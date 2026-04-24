@@ -148,7 +148,9 @@ the `new*ID` functions that generate deterministic IDs.
 `${{ github.run_attempt }}` — both available in any runner context.
 
 **Job, step, and queue span IDs** are derived from the job's `check_run_id`,
-available in-runner as `${{ job.check_run_id }}`.
+available in-runner as `${{ job.check_run_id }}`. Step span IDs additionally
+incorporate the step's raw `name:` field, making them fully reproducible from
+values available inside a step.
 The receiver uses `check_run_id` when the
 `receiver.githubreceiver.UseCheckRunID` feature gate is enabled (default: on).
 Disable with `--feature-gates=-receiver.githubreceiver.UseCheckRunID` to retain
@@ -160,25 +162,54 @@ the legacy scheme.
 | Trace | `sha256("{run_id}{run_attempt}t")[0:32]` |
 | Root | `sha256("{run_id}{run_attempt}s")[16:32]` |
 | Job | `sha256("{check_run_id}-j")[16:32]` |
-| Step N | `sha256("{check_run_id}-s{N}")[16:32]` |
+| Step | `sha256("{check_run_id}-s-{step_name}")[16:32]` |
 | Queue | `sha256("{check_run_id}-q")[16:32]` |
 
 
-The `N` in `Step N` is the `step.number` field from the `workflow_job` webhook
-payload; a 1-based counter assigned by the runner that matches the step's order
-in the job for ordinary steps. GitHub Actions does not expose this value as a
-built-in context expression, so any step emitting correlated telemetry must
-supply `N` explicitly.
+`{step_name}` is the step's raw `name:` as written in the workflow YAML. This
+avoids any dependency on the runner-assigned `step.number`, which is not
+exposed in the GitHub Actions execution context.
+
+**IMPORTANT** - Step names MUST be unique within a job for deterministic step
+span IDs to not collide. Neither GitHub Actions nor `actionlint` enforce this,
+but the receiver logs a WARN when duplicates are detected in a payload, and
+duplicate steps will share a span ID (child spans attach to the first
+occurrence). Prefer unique, stable `name:` values for any step that needs to
+emit correlated telemetry.
+
+To generate a matching `TRACEPARENT` inside a step with only built-in Actions
+context (no REST API call, no step number), use the following shell helper:
+
+```bash
+# With receiver.githubreceiver.UseCheckRunID enabled (default from v0.151.0).
+# Usage inside a step (requires unique step names within the job):
+#
+#   - name: &step_name "My Step"
+#     env:
+#       STEP_NAME: *step_name
+#     run: |
+#       export TRACEPARENT=$(otel_github_traceparent "$STEP_NAME")
+otel_github_traceparent() {
+  trace_id=$(printf '%s' "${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}t" | sha256sum | cut -c1-32)
+  span_id=$(printf '%s' "${{ job.check_run_id }}-s-$1"            | sha256sum | cut -c17-32)
+  printf '00-%s-%s-01\n' "$trace_id" "$span_id"
+}
+```
+
+The YAML anchor pattern (`&step_name` / `*step_name`) avoids duplicating the
+step name between the `name:` field and the `env:` block.
 
 **Legacy scheme** (gate disabled): job, step, and queue IDs are hashed from
-`{run_id}{run_attempt}{job_name}{…}`.
+`{run_id}{run_attempt}{job_name}{…}`. Step IDs under the legacy scheme
+additionally incorporate the runner-assigned `step.number`.
 
 **IMPORTANT** - When using the legacy scheme (gate disabled), workflow job
 names MUST be unique in each workflow for deterministic span IDs to not
 conflict with each other. GitHub does not enforce this behavior, but when
-linting a workflow, warns that there are duplicate job names. This constraint
-is eliminated when the `UseCheckRunID` gate is enabled (the default) because
-`check_run_id` is globally unique per job attempt.
+linting a workflow, warns that there are duplicate job names. The
+`UseCheckRunID` gate (default) removes this constraint for job-level
+uniqueness because `check_run_id` is globally unique per job attempt, but
+introduces the step-name uniqueness constraint described above.
 
 ### Receiver Configuration
 

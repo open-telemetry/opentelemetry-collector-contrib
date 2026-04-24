@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -1009,34 +1010,40 @@ func TestNewStepSpanIDFromCheckRun(t *testing.T) {
 	tests := []struct {
 		name        string
 		checkRunID  int64
-		stepNumber  int
+		stepName    string
 		wantError   bool
 		errContains string
 	}{
 		{
 			name:       "basic generation",
 			checkRunID: 40685651258,
-			stepNumber: 1,
+			stepName:   "Set up job",
 			wantError:  false,
 		},
 		{
-			name:       "different step numbers produce different IDs",
+			name:       "different names produce different IDs",
 			checkRunID: 40685651258,
-			stepNumber: 2,
+			stepName:   "Run tests",
 			wantError:  false,
 		},
 		{
 			name:        "zero check_run_id returns error",
 			checkRunID:  0,
-			stepNumber:  1,
+			stepName:    "anything",
 			wantError:   true,
 			errContains: "check_run_id is zero",
+		},
+		{
+			name:       "empty step name",
+			checkRunID: 40685651258,
+			stepName:   "",
+			wantError:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spanID, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepNumber)
+			spanID, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepName)
 			if tt.wantError {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), tt.errContains)
@@ -1046,14 +1053,14 @@ func TestNewStepSpanIDFromCheckRun(t *testing.T) {
 			require.NotEqual(t, pcommon.SpanID{}, spanID, "span ID should not be empty")
 
 			// Consistency
-			spanID2, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepNumber)
+			spanID2, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepName)
 			require.NoError(t, err)
 			require.Equal(t, spanID, spanID2, "same input should produce same span ID")
 
-			// Different step number → different span ID
-			differentStep, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepNumber+1)
+			// Different step name → different span ID
+			differentStep, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepName+"-other")
 			require.NoError(t, err)
-			require.NotEqual(t, spanID, differentStep, "different step numbers should produce different span IDs")
+			require.NotEqual(t, spanID, differentStep, "different step names should produce different span IDs")
 		})
 	}
 }
@@ -1111,10 +1118,10 @@ func TestCheckRunIDHashesAreDisjoint(t *testing.T) {
 	jobID, err := newJobSpanIDFromCheckRun(checkRunID)
 	require.NoError(t, err)
 
-	step1ID, err := newStepSpanIDFromCheckRun(checkRunID, 1)
+	step1ID, err := newStepSpanIDFromCheckRun(checkRunID, "Set up job")
 	require.NoError(t, err)
 
-	step2ID, err := newStepSpanIDFromCheckRun(checkRunID, 2)
+	step2ID, err := newStepSpanIDFromCheckRun(checkRunID, "Run tests")
 	require.NoError(t, err)
 
 	queueID, err := newQueueSpanIDFromCheckRun(checkRunID)
@@ -1137,6 +1144,159 @@ func TestCheckRunIDHashesAreDisjoint(t *testing.T) {
 	legacyStepID, err := newStepSpanID(12345, 1, "test-job", "build", 1)
 	require.NoError(t, err)
 	require.NotEqual(t, step1ID, legacyStepID, "new step span ID should differ from legacy")
+}
+
+func TestHasDuplicateStepNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		steps    []*github.TaskStep
+		expected bool
+	}{
+		{
+			name:     "nil steps",
+			steps:    nil,
+			expected: false,
+		},
+		{
+			name:     "empty steps",
+			steps:    []*github.TaskStep{},
+			expected: false,
+		},
+		{
+			name: "all unique",
+			steps: []*github.TaskStep{
+				{Name: github.Ptr("Build")},
+				{Name: github.Ptr("Test")},
+				{Name: github.Ptr("Deploy")},
+			},
+			expected: false,
+		},
+		{
+			name: "one duplicate pair",
+			steps: []*github.TaskStep{
+				{Name: github.Ptr("Build")},
+				{Name: github.Ptr("Test")},
+				{Name: github.Ptr("Build")},
+			},
+			expected: true,
+		},
+		{
+			name: "all same",
+			steps: []*github.TaskStep{
+				{Name: github.Ptr("Build")},
+				{Name: github.Ptr("Build")},
+				{Name: github.Ptr("Build")},
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, hasDuplicateStepNames(tt.steps))
+		})
+	}
+}
+
+// TestCreateStepSpans_DuplicateNameWarning verifies that when UseCheckRunID is
+// enabled and the payload contains duplicate step names, a WARN log is emitted
+// and the duplicate spans share a span ID (the collision is intentional; the
+// documented trade-off for reproducible TRACEPARENT generation in-runner).
+// When the gate is disabled, the legacy path disambiguates by step number so
+// no WARN is emitted.
+func TestCreateStepSpans_DuplicateNameWarning(t *testing.T) {
+	makeEvent := func() *github.WorkflowJobEvent {
+		return &github.WorkflowJobEvent{
+			WorkflowJob: &github.WorkflowJob{
+				ID:         github.Ptr(int64(123)),
+				RunID:      github.Ptr(int64(456)),
+				RunAttempt: github.Ptr(int64(1)),
+				Name:       github.Ptr("Test Job"),
+				Steps: []*github.TaskStep{
+					{Name: github.Ptr("Build"), Number: github.Ptr(int64(1))},
+					{Name: github.Ptr("Build"), Number: github.Ptr(int64(2))},
+				},
+			},
+		}
+	}
+
+	gate := metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate
+
+	collectSpans := func(rs ptrace.ResourceSpans) []ptrace.Span {
+		var out []ptrace.Span
+		for i := 0; i < rs.ScopeSpans().Len(); i++ {
+			spans := rs.ScopeSpans().At(i).Spans()
+			for j := 0; j < spans.Len(); j++ {
+				out = append(out, spans.At(j))
+			}
+		}
+		return out
+	}
+
+	t.Run("gate enabled, duplicate names", func(t *testing.T) {
+		previous := gate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+		t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous)) })
+
+		core, recorded := observer.New(zap.WarnLevel)
+		logger := zap.New(core)
+
+		receiver := &githubTracesReceiver{
+			logger:   logger,
+			cfg:      createDefaultConfig().(*Config),
+			settings: receivertest.NewNopSettings(metadata.Type),
+		}
+
+		event := makeEvent()
+		traceID, err := newTraceID(event.GetWorkflowJob().GetRunID(), int(event.GetWorkflowJob().GetRunAttempt()))
+		require.NoError(t, err)
+		parentID, err := newParentSpanID(event.GetWorkflowJob().GetRunID(), int(event.GetWorkflowJob().GetRunAttempt()))
+		require.NoError(t, err)
+
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		require.NoError(t, receiver.createStepSpans(rs, event, traceID, parentID))
+
+		warnings := recorded.FilterMessageSnippet("duplicate step names").All()
+		require.Len(t, warnings, 1, "expected exactly one WARN about duplicate step names")
+		// Confirm the WARN carries the job name as a structured field.
+		jobField, ok := warnings[0].ContextMap()["job"]
+		require.True(t, ok, "WARN should have a job field")
+		require.Equal(t, "Test Job", jobField)
+
+		spans := collectSpans(rs)
+		require.Len(t, spans, 2, "both step spans should still be emitted")
+		require.Equal(t, spans[0].SpanID(), spans[1].SpanID(),
+			"duplicate step names must hash to the same span ID (collision is intentional under UseCheckRunID)")
+	})
+
+	t.Run("gate disabled, duplicate names", func(t *testing.T) {
+		previous := gate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+		t.Cleanup(func() { require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous)) })
+
+		core, recorded := observer.New(zap.WarnLevel)
+		logger := zap.New(core)
+
+		receiver := &githubTracesReceiver{
+			logger:   logger,
+			cfg:      createDefaultConfig().(*Config),
+			settings: receivertest.NewNopSettings(metadata.Type),
+		}
+
+		event := makeEvent()
+		traceID, err := newTraceID(event.GetWorkflowJob().GetRunID(), int(event.GetWorkflowJob().GetRunAttempt()))
+		require.NoError(t, err)
+		parentID, err := newParentSpanID(event.GetWorkflowJob().GetRunID(), int(event.GetWorkflowJob().GetRunAttempt()))
+		require.NoError(t, err)
+
+		traces := ptrace.NewTraces()
+		rs := traces.ResourceSpans().AppendEmpty()
+		require.NoError(t, receiver.createStepSpans(rs, event, traceID, parentID))
+
+		warnings := recorded.FilterMessageSnippet("duplicate step names").All()
+		require.Empty(t, warnings, "no WARN should be emitted when the gate is disabled")
+	})
 }
 
 // TestHandleWorkflowJobWithGoldenFile_LegacyGate exercises the golden file

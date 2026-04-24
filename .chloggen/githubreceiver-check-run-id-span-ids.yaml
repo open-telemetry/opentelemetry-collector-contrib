@@ -13,11 +13,13 @@ note: >-
   workflow job name. This allows in-action telemetry tools to reproduce matching span
   IDs using `${{ job.check_run_id }}` without calling the GitHub REST API, and
   eliminates the silent span ID collision when a workflow contains duplicate job
-  names. Disable with `--feature-gates=-receiver.githubreceiver.UseCheckRunID` to
-  retain the legacy hash scheme.
+  names. Step Span IDs are generated exclusively using the check_run_id
+  alongside the step name. Disable with
+  `--feature-gates=-receiver.githubreceiver.UseCheckRunID` to retain the legacy
+  hash scheme.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [44856]
+issues: [44856, 45157]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
