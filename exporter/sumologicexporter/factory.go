@@ -30,10 +30,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qConfig := exporterhelper.NewDefaultQueueConfig()
-	qConfig.Batch.GetOrInsertDefault()
-	qs := configoptional.Some(qConfig)
-
+	qs := configoptional.Default(exporterhelper.NewDefaultQueueConfig())
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.Multiplier = DefaultRetryOnFailureMultiplier
 	retryConfig.MaxInterval = DefaultRetryOnFailureMaxInterval
