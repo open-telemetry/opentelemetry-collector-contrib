@@ -457,10 +457,6 @@ component_management:
     name: processor_deltatorate
     paths:
     - processor/deltatorateprocessor/**
-  - component_id: processor_dnslookup
-    name: processor_dnslookup
-    paths:
-    - processor/dnslookupprocessor/**
   - component_id: processor_drain
     name: processor_drain
     paths:
