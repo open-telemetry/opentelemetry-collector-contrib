@@ -22,7 +22,22 @@ There are also optional metrics that you must specify in your configuration to c
 
 ## Prerequisites
 
-This receiver supports MySQL version 8.0 and MariaDB 10.11.
+The receiver detects the database product and version on first connection and adjusts its
+behavior accordingly.
+
+### Supported database versions
+
+| Product | Versions | Query plans on `db.server.top_query` | Traceparent propagation | `client.port` / `network.peer.port` | Replica status syntax |
+|---------|----------|--------------------------------------|-------------------------|--------------------------------------|-----------------------|
+| MySQL | 5.7.x | No | Yes | 0 | `SHOW SLAVE STATUS` |
+| MySQL | 8.0.0–8.0.21 | Yes | Yes | 0 | `SHOW SLAVE STATUS` |
+| MySQL | 8.0.22+ | Yes | Yes | Populated | `SHOW REPLICA STATUS` |
+| MySQL | 8.4.x | Yes | Yes | Populated | `SHOW REPLICA STATUS` |
+| MySQL | 9.x | Yes | Yes | Populated | `SHOW REPLICA STATUS` |
+| MariaDB | 10.5.x–10.11.x | No | Yes | 0 | `SHOW SLAVE STATUS` |
+| MariaDB | 11.x (LTS: 11.4, 11.8) | No | Yes | 0 | `SHOW SLAVE STATUS` |
+
+See [COMPATIBILITY.md](./COMPATIBILITY.md) for full details on version-gated behavior and fallbacks.
 
 Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`.
 
@@ -109,6 +124,24 @@ application transactions to be correlated with query samples collected by this r
 > spelled them. The JOIN condition `VARIABLE_NAME = 'traceparent'` therefore
 > matches any case variation the client used (e.g. `SET @TraceParent = '...'`
 > works identically to `SET @traceparent = '...'`).
+### Query plan availability by version
+
+EXPLAIN needs a concrete SQL statement. The normalized digest text in
+`events_statements_summary_by_digest` uses placeholders (`SELECT ? FROM t WHERE id = ?`),
+which MySQL will not execute.
+
+MySQL 8.0 added `query_sample_text` to `events_statements_summary_by_digest`. It holds an
+actual statement that was run for each digest, so the top-query scraper can call EXPLAIN
+without needing to catch the query in flight.
+
+MariaDB and MySQL 5.x do not have `query_sample_text`, so the top-query scraper has nothing
+to EXPLAIN. Query plans are not available for these versions.
+
+If a statement is truncated (the stored text ends with `...`), the receiver skips EXPLAIN for
+that statement on all versions. Truncation is controlled by
+[`performance_schema_max_sql_text_length`](https://dev.mysql.com/doc/refman/8.0/en/performance-schema-system-variables.html#sysvar_performance_schema_max_sql_text_length)
+(default 1024). Setting it to `4096` is recommended — see the requirements table below.
+
 ### MySQL Requirements to enable log collection
 
 | Parameter                                | Value                            | Description                                         |
@@ -117,3 +150,44 @@ application transactions to be correlated with query samples collected by this r
 | `max_digest_length`                      | `4096`  (Recommended)            | Maximum length of digest text                       |
 | `performance_schema_max_digest_length`   | `4096`  (Recommended)            | Maximum length of digest text on performance schema |
 | `performance_schema_max_sql_text_length` | `4096`  (Recommended)            | Maximum length of sql text                          |
+
+### Enabling `events_waits_current` for lock-wait duration
+
+The `mysql.events_waits_current.timer_wait` attribute on `db.server.query_sample` events is
+populated from `performance_schema.events_waits_current`. That consumer is **disabled by default**
+on all supported platforms. Without it, `timer_wait` is always `0`.
+
+#### Required privilege
+
+The database user must have `UPDATE` on `performance_schema.setup_consumers` in addition to the
+`SELECT` grant above:
+
+```sql
+GRANT SELECT ON performance_schema.* TO '<your-user>'@'%';
+GRANT UPDATE ON performance_schema.setup_consumers TO '<your-user>'@'%';
+```
+
+#### Enabling the consumer
+
+**Manual server (MySQL 5.7 / 8.x / MariaDB) — persistent across restarts**
+
+Add to `[mysqld]` in `my.cnf` / `my.ini`:
+
+```ini
+performance-schema-consumer-events-waits-current=ON
+```
+
+**AWS RDS (MySQL 5.7 / 8.x / MariaDB) — runtime only**
+
+AWS RDS does not expose `performance-schema-consumer-events-waits-current` as a parameter group
+setting. The consumer must be enabled at runtime and will reset on instance restart or failover:
+
+```sql
+UPDATE performance_schema.setup_consumers
+SET ENABLED = 'YES'
+WHERE NAME = 'events_waits_current';
+```
+
+Run this statement after each restart, or grant the receiver user `UPDATE` on
+`performance_schema.setup_consumers` so that the receiver can re-enable it automatically on
+reconnect.

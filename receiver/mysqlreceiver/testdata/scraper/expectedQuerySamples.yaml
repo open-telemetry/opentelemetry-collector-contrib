@@ -54,17 +54,17 @@ resourceLogs:
                   stringValue: 192.168.1.80
               - key: client.port
                 value:
-                  intValue: "1234"
+                  intValue: "0"
               - key: network.peer.address
                 value:
                   stringValue: 192.168.1.80
               - key: network.peer.port
                 value:
-                  intValue: "1234"
+                  intValue: "0"
             body: {}
             eventName: db.server.query_sample
             spanId: "2222222222222222"
-            timeUnixNano: "1774540151557334000"
+            timeUnixNano: "1774975747106490000"
             traceId: "11111111111111111111111111111111"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
