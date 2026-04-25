@@ -1,0 +1,14 @@
+change_type: enhancement
+
+component: receiver/mysql
+
+note: |
+  Add MySQL <8 and MariaDB compatibility for query sample and top-query collection. The receiver now detects the server product and version at connect time and gates behavior accordingly. Changes include: (1) top-query collection uses a fallback template on MySQL <8 and MariaDB that omits `query_sample_text` (absent on those versions); (2) `client.port` and `network.peer.port` are now populated on MySQL 8.0.22+ via a lock-free join on `performance_schema.processlist`, and remain 0 on older MySQL and all MariaDB versions where this table is unavailable; (3) `mysql.events_waits_current.timer_wait` now uses a three-tier fallback — exact `TIMER_WAIT` for completed waits, a PS timer approximation for in-progress waits on MySQL 5.7+/8.0+, and `thread.processlist_time` (integer-second precision) as a universal fallback for MariaDB and older MySQL.
+
+issues: [47302]
+
+subtext: |
+  Supported products and versions: MySQL 5.7.3+, 8.0+; MariaDB 10.5.2+, 11.x.
+  See COMPATIBILITY.md in the receiver directory for a full version × feature matrix.
+
+change_logs: [user]
