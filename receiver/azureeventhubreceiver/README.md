@@ -226,7 +226,7 @@ and the OpenTelemetry attributes.
 | resultSignature (optional)                                             | azure.result.signature (attribute)                                                                |
 | resultType (optional)                                                  | azure.result.type (attribute)                                                                     |
 | tenantId (required, tenant logs)                                       | azure.tenant.id (attribute)                                                                       |
-| time, timeStamp, EventTimeString, EventTimestamp, startTime (required) | time_unix_nano (fields listed in order of precedence, with `time` having the highest precendence) |
+| time, timeStamp, EventTimeString, EventTimestamp, startTime (required) | time_unix_nano (fields listed in order of precedence, with `time` having the highest precedence) |
 | identity (optional)                                                    | azure.identity (attribute, nested)                                                                |
 
 Notes:
