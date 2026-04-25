@@ -95,7 +95,7 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 		resourceSchemaURL := rMetric.SchemaUrl()
 		if resourceSchemaURL != "" {
 			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
-			tr, err := t.manager.RequestTranslation(context.Background(), resourceSchemaURL)
+			tr, err := t.manager.RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
 				return md, err
@@ -186,7 +186,9 @@ func (t *schemaProcessor) start(ctx context.Context, host component.Host) error 
 	go func(ctx context.Context) {
 		for _, schemaURL := range t.config.Prefetch {
 			t.log.Info("prefetching schema", zap.String("url", schemaURL))
-			_, _ = t.manager.RequestTranslation(ctx, schemaURL)
+			if _, err := t.manager.RequestTranslation(ctx, schemaURL); err != nil {
+				t.log.Warn("failed to prefetch schema", zap.String("url", schemaURL), zap.Error(err))
+			}
 		}
 	}(ctx)
 

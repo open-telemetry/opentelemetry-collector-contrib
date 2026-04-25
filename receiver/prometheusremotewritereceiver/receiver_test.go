@@ -579,7 +579,7 @@ func TestTranslateV2(t *testing.T) {
 				// The second metric should have 1 data point.
 				metrics1 := sm1.Metrics().AppendEmpty()
 				metrics1.SetName("test_metric")
-				metrics1.SetUnit("seconds")
+				metrics1.SetUnit("s")
 				metrics1.SetDescription("longer description")
 				metrics1.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
@@ -595,7 +595,7 @@ func TestTranslateV2(t *testing.T) {
 
 				metrics2 := sm1.Metrics().AppendEmpty()
 				metrics2.SetName("test_metric")
-				metrics2.SetUnit("milliseconds")
+				metrics2.SetUnit("ms")
 				metrics2.SetDescription("small desc")
 				metrics2.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
 
@@ -2097,6 +2097,233 @@ func TestTranslateV2(t *testing.T) {
 			},
 		},
 		{
+			name: "unit word conversion - bytes to By",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "disk_read", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"bytes", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 512, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("disk_read")
+				m.SetUnit("By")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(true)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(512)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - bytes_per_second rate to By/s",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "network_throughput", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"bytes_per_second", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 1024, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("network_throughput")
+				m.SetUnit("By/s")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1024)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - meters_per_second rate to m/s",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "velocity", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"meters_per_second", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 30, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("velocity")
+				m.SetUnit("m/s")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(30)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - unknown unit passes through unchanged",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "custom_metric", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"widgets", // 7 - unknown unit, not in the wordToUCUM map
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 7},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Samples:    []writev2.Sample{{Value: 42, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("custom_metric")
+				m.SetUnit("widgets")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(42)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "unit word conversion - histogram with seconds unit to s",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "request_duration", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"seconds", // 7
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata: writev2.Metadata{
+							Type:    writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+							UnitRef: 7,
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+						Histograms: []writev2.Histogram{
+							{
+								Schema:         -53,
+								Count:          &writev2.Histogram_CountInt{CountInt: 10},
+								Sum:            5.0,
+								Timestamp:      1,
+								StartTimestamp: 1,
+								CustomValues:   []float64{0.1, 0.5, 1.0},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 4}},
+								PositiveDeltas: []int64{2, 3, 4, 1},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("request_duration")
+				m.SetUnit("s")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				hist := m.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetCount(10)
+				dp.SetSum(5.0)
+				dp.ExplicitBounds().FromRaw([]float64{0.1, 0.5, 1.0})
+				dp.BucketCounts().FromRaw([]uint64{2, 5, 9, 10})
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed:  true,
+				Histograms: 1,
+			},
+		},
+		{
 			name: "multiple counter metrics with exemplar",
 			request: &writev2.Request{
 				Symbols: []string{
@@ -2296,6 +2523,160 @@ func TestTranslateV2(t *testing.T) {
 				Histograms: 0,
 				Exemplars:  0,
 			},
+		},
+		{
+			// otel_scope_schema_url must be set as the schema URL on the ScopeMetrics,
+			// not appear as a metric data point attribute.
+			name: "otel_scope_schema_url sets scope schema URL",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "myscope", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"otel_scope_schema_url", "https://example.com/schema/v1", // 11, 12
+					"extra_attr", "extra_value", // 13, 14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("myscope")
+				sm.Scope().SetVersion("v1")
+				sm.SetSchemaUrl("https://example.com/schema/v1")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_metric")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetDoubleValue(1.0)
+				dp.Attributes().PutStr("extra_attr", "extra_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Samples: 1},
+		},
+		{
+			// Labels with otel_scope_ prefix other than name/version/schema_url must become
+			// scope attributes (with the prefix stripped) and must NOT appear as metric point attributes.
+			name: "otel_scope_* extra labels become scope attributes",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "myscope", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"otel_scope_foo", "bar", // 11, 12  → scope attr "foo"="bar"
+					"regular_attr", "regular_value", // 13, 14
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("myscope")
+				sm.Scope().SetVersion("v1")
+				sm.Scope().Attributes().PutStr("foo", "bar")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_metric")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "gauge")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetDoubleValue(1.0)
+				dp.Attributes().PutStr("regular_attr", "regular_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Samples: 1},
+		},
+		{
+			// All otel_scope_* label variants together (name, version, schema_url, extra attr).
+			name: "all otel_scope_* labels handled correctly for NHCB histogram",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_hist", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "histscope", // 7, 8
+					"otel_scope_version", "v2", // 9, 10
+					"otel_scope_schema_url", "https://example.com/schema/v2", // 11, 12
+					"otel_scope_lib", "mylib", // 13, 14  → scope attr "lib"="mylib"
+					"dp_attr", "dp_value", // 15, 16
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16},
+						Histograms: []writev2.Histogram{
+							{
+								Schema:         -53, // NHCB
+								Count:          &writev2.Histogram_CountInt{CountInt: 2},
+								Sum:            3.0,
+								Timestamp:      1000,
+								CustomValues:   []float64{1.0},
+								PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+								PositiveDeltas: []int64{1, 1},
+							},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm.Resource().Attributes().PutStr("service.name", "test")
+				rm.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("histscope")
+				sm.Scope().SetVersion("v2")
+				sm.SetSchemaUrl("https://example.com/schema/v2")
+				sm.Scope().Attributes().PutStr("lib", "mylib")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("test_hist")
+				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "histogram")
+				hist := metric.SetEmptyHistogram()
+				hist.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := hist.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1000 * int64(time.Millisecond)))
+				dp.SetSum(3.0)
+				dp.SetCount(2)
+				dp.ExplicitBounds().FromRaw([]float64{1.0})
+				dp.BucketCounts().FromRaw([]uint64{1, 2})
+				dp.Attributes().PutStr("dp_attr", "dp_value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{Confirmed: true, Histograms: 1},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

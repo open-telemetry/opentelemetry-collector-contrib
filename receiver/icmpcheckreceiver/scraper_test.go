@@ -34,7 +34,7 @@ func TestNewScraper(t *testing.T) {
 		Targets: []PingTarget{
 			{Host: "example.com"},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	settings := receivertest.NewNopSettings(metadata.Type)
 
@@ -81,7 +81,7 @@ func TestIcmpCheckScraperStart(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				Targets:              tt.targets,
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			}
 			settings := receivertest.NewNopSettings(metadata.Type)
 			scraper := newScraper(cfg, settings)
@@ -235,7 +235,7 @@ func TestAddMetrics(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			}
 			if tc.customizeConfig != nil {
 				tc.customizeConfig(cfg)
@@ -287,7 +287,7 @@ func TestIcmpCheckScraperScrape(t *testing.T) {
 			{Host: "127.0.0.1", PingCount: 1, PingTimeout: 1 * time.Second, PingInterval: 1 * time.Second},
 			{Host: "example.com"},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	settings := receivertest.NewNopSettings(metadata.Type)
 	scraper := newScraper(cfg, settings)

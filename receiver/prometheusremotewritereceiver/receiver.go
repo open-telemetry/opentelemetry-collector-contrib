@@ -69,44 +69,77 @@ type prometheusRemoteWriteReceiver struct {
 	bodyBufferPool *sync.Pool
 }
 
+// labelSeparator is used as a separator when building hashes from label values.
+// 0xff is chosen because it cannot appear in valid UTF-8, avoiding accidental collisions.
+const labelSeparator = "\xff"
+
+// scopeInfo holds instrumentation scope fields extracted from otel_scope_* labels.
+type scopeInfo struct {
+	Name       string
+	Version    string
+	SchemaURL  string
+	scopeAttrs []attribute // scope attributes with the "otel_scope_" prefix stripped
+}
+
+// attribute is a simple key-value pair for scope attributes.
+type attribute struct {
+	Key   string
+	Value string
+}
+
+func (si scopeInfo) key() string {
+	const fixedFields = 3 // Name, Version, SchemaURL
+	parts := make([]string, 0, fixedFields+len(si.scopeAttrs))
+	parts = append(parts, si.Name, si.Version, si.SchemaURL)
+	for _, kv := range si.scopeAttrs {
+		parts = append(parts, kv.Key+labelSeparator+kv.Value)
+	}
+	return strings.Join(parts, labelSeparator)
+}
+
 // metricIdentity contains all the components that uniquely identify a metric
 // according to the OpenTelemetry Protocol data model.
 // The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
 type metricIdentity struct {
-	ResourceID   string
-	ScopeName    string
-	ScopeVersion string
-	MetricName   string
-	Unit         string
-	Type         writev2.Metadata_MetricType
+	ResourceID     string
+	ScopeName      string
+	ScopeVersion   string
+	ScopeSchemaURL string
+	ScopeAttrs     []attribute
+	MetricName     string
+	Unit           string
+	Type           writev2.Metadata_MetricType
 }
 
 // createMetricIdentity creates a metricIdentity struct from the required components
-func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit string, metricType writev2.Metadata_MetricType) metricIdentity {
+func createMetricIdentity(resourceID, metricName, unit string, si scopeInfo, metricType writev2.Metadata_MetricType) metricIdentity {
 	return metricIdentity{
-		ResourceID:   resourceID,
-		ScopeName:    scopeName,
-		ScopeVersion: scopeVersion,
-		MetricName:   metricName,
-		Unit:         unit,
-		Type:         metricType,
+		ResourceID:     resourceID,
+		ScopeName:      si.Name,
+		ScopeVersion:   si.Version,
+		ScopeSchemaURL: si.SchemaURL,
+		ScopeAttrs:     si.scopeAttrs,
+		MetricName:     metricName,
+		Unit:           unit,
+		Type:           metricType,
 	}
 }
 
 // Hash generates a unique hash for the metric identity
 func (mi metricIdentity) Hash() uint64 {
-	const separator = "\xff"
-
-	combined := strings.Join([]string{
+	parts := []string{
 		mi.ResourceID,
 		mi.ScopeName,
 		mi.ScopeVersion,
+		mi.ScopeSchemaURL,
 		mi.MetricName,
 		mi.Unit,
 		fmt.Sprintf("%d", mi.Type),
-	}, separator)
-
-	return xxhash.Sum64String(combined)
+	}
+	for _, kv := range mi.ScopeAttrs {
+		parts = append(parts, kv.Key+labelSeparator+kv.Value)
+	}
+	return xxhash.Sum64String(strings.Join(parts, labelSeparator))
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -263,7 +296,7 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // from the LRU cache when available. Never returns cached objects to avoid shared
 // mutation across concurrent requests.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
-	hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+	hashedLabels := xxhash.Sum64String(ls.Get("job") + labelSeparator + ls.Get("instance"))
 
 	if rm, ok := reqRM[hashedLabels]; ok {
 		return rm, hashedLabels
@@ -348,7 +381,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
-		scopeName, scopeVersion := prw.extractScopeInfo(ls)
+		si := prw.extractScopeInfo(ls)
 		metricName := metadata.Name
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
@@ -366,7 +399,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Handle histograms separately due to their complex mixed-schema processing
 		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM ||
 			ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_UNSPECIFIED && len(ts.Histograms) > 0 {
-			prw.processHistogramTimeSeries(otelMetrics, ls, ts, scopeName, scopeVersion, metricName, unit, description, metricCache, &stats, modifiedResourceMetric, exemplarMap)
+			prw.processHistogramTimeSeries(otelMetrics, ls, ts, si, metricName, unit, description, metricCache, &stats, modifiedResourceMetric, exemplarMap)
 			continue
 		}
 
@@ -374,23 +407,22 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		rm, _ := prw.getOrCreateRM(ls, otelMetrics, modifiedResourceMetric)
 
 		resourceID := identity.OfResource(rm.Resource())
-		metricIdentity := createMetricIdentity(
+		metricID := createMetricIdentity(
 			resourceID.String(), // Resource identity
-			scopeName,           // Scope name
-			scopeVersion,        // Scope version
 			metricName,          // Metric name
 			unit,                // Unit
+			si,                  // Scope info
 			ts.Metadata.Type,    // Metric type
 		)
 
-		metricKey := metricIdentity.Hash()
+		metricKey := metricID.Hash()
 
 		// Find or create scope
 		var scope pmetric.ScopeMetrics
 		var foundScope bool
 		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
 			s := rm.ScopeMetrics().At(i)
-			if s.Scope().Name() == scopeName && s.Scope().Version() == scopeVersion {
+			if scopeMatchesInfo(s, si) {
 				scope = s
 				foundScope = true
 				break
@@ -398,8 +430,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 		if !foundScope {
 			scope = rm.ScopeMetrics().AppendEmpty()
-			scope.Scope().SetName(scopeName)
-			scope.Scope().SetVersion(scopeVersion)
+			applyScopeInfo(scope, si)
 		}
 
 		// Get or create metric
@@ -440,8 +471,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 			key := exemplarKey{
-				ScopeName:    scopeName,
-				ScopeVersion: scopeVersion,
+				ScopeName:    si.Name,
+				ScopeVersion: si.Version,
 				MetricName:   metricName,
 				MetricType:   ts.Metadata.Type,
 			}
@@ -466,7 +497,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 	otelMetrics pmetric.Metrics,
 	ls labels.Labels,
 	ts *writev2.TimeSeries,
-	scopeName, scopeVersion, metricName, unit, description string,
+	si scopeInfo,
+	metricName, unit, description string,
 	metricCache map[uint64]pmetric.Metric,
 	stats *promremote.WriteResponseStats,
 	modifiedRM map[uint64]pmetric.ResourceMetrics,
@@ -516,7 +548,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		var foundScope bool
 		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
 			s := rm.ScopeMetrics().At(i)
-			if s.Scope().Name() == scopeName && s.Scope().Version() == scopeVersion {
+			if scopeMatchesInfo(s, si) {
 				scope = s
 				foundScope = true
 				break
@@ -524,14 +556,12 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 		if !foundScope {
 			scope = rm.ScopeMetrics().AppendEmpty()
-			scope.Scope().SetName(scopeName)
-			scope.Scope().SetVersion(scopeVersion)
+			applyScopeInfo(scope, si)
 		}
 
-		metricID := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s",
+		metricID := fmt.Sprintf("%s:%s:%s:%s:%s:%s",
 			resourceID.String(),
-			scopeName,
-			scopeVersion,
+			si.key(),
 			metricName,
 			unit,
 			fmt.Sprintf("%d", ts.Metadata.Type),
@@ -581,8 +611,8 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		}
 
 		key := exemplarKey{
-			ScopeName:    scopeName,
-			ScopeVersion: scopeVersion,
+			ScopeName:    si.Name,
+			ScopeVersion: si.Version,
 			MetricName:   metricName,
 			MetricType:   ts.Metadata.Type,
 		}
@@ -597,7 +627,7 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 func setMetric(scope pmetric.ScopeMetrics, metricName, unit, description string) pmetric.Metric {
 	metric := scope.Metrics().AppendEmpty()
 	metric.SetName(metricName)
-	metric.SetUnit(unit)
+	metric.SetUnit(prometheus.UnitWordToUCUM(unit))
 	metric.SetDescription(description)
 	return metric
 }
@@ -786,7 +816,7 @@ func convertAbsoluteBuckets(spans []writev2.BucketSpan, counts []float64, bucket
 	}
 }
 
-// extractAttributes return all attributes different from job, instance, metric name and scope name/version
+// extractAttributes returns metric data point attributes, excluding job, instance, metric name, and all otel_scope_* labels.
 func extractAttributes(ls labels.Labels) pcommon.Map {
 	attrs := pcommon.NewMap()
 	// job, instance and metric name will always become labels
@@ -794,27 +824,66 @@ func extractAttributes(ls labels.Labels) pcommon.Map {
 	ls.Range(func(l labels.Label) {
 		if l.Name != "instance" && l.Name != "job" && // Become resource attributes
 			l.Name != model.MetricNameLabel && // Becomes metric name
-			l.Name != "otel_scope_name" && l.Name != "otel_scope_version" { // Becomes scope name and version
+			!strings.HasPrefix(l.Name, "otel_scope_") { // Become instrumentation scope fields
 			attrs.PutStr(l.Name, l.Value)
 		}
 	})
 	return attrs
 }
 
-// extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
-// it will use the default values from the settings.
-func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (string, string) {
-	scopeName := prw.settings.BuildInfo.Description
-	scopeVersion := prw.settings.BuildInfo.Version
-
-	if sName := ls.Get("otel_scope_name"); sName != "" {
-		scopeName = sName
+// extractScopeInfo extracts all otel_scope_* labels into a scopeInfo per the Prometheus/OTLP compatibility spec.
+// Falls back to receiver build info when otel_scope_name is absent.
+func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) scopeInfo {
+	si := scopeInfo{
+		Name:    prw.settings.BuildInfo.Description,
+		Version: prw.settings.BuildInfo.Version,
 	}
 
-	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
-		scopeVersion = sVersion
+	ls.Range(func(l labels.Label) {
+		switch l.Name {
+		case "otel_scope_name":
+			if l.Value != "" {
+				si.Name = l.Value
+			}
+		case "otel_scope_version":
+			if l.Value != "" {
+				si.Version = l.Value
+			}
+		case "otel_scope_schema_url":
+			si.SchemaURL = l.Value
+		default:
+			if attrKey, ok := strings.CutPrefix(l.Name, "otel_scope_"); ok {
+				si.scopeAttrs = append(si.scopeAttrs, attribute{Key: attrKey, Value: l.Value})
+			}
+		}
+	})
+
+	return si
+}
+
+func scopeMatchesInfo(sm pmetric.ScopeMetrics, si scopeInfo) bool {
+	if sm.Scope().Name() != si.Name || sm.Scope().Version() != si.Version || sm.SchemaUrl() != si.SchemaURL {
+		return false
 	}
-	return scopeName, scopeVersion
+	if sm.Scope().Attributes().Len() != len(si.scopeAttrs) {
+		return false
+	}
+	for _, kv := range si.scopeAttrs {
+		v, ok := sm.Scope().Attributes().Get(kv.Key)
+		if !ok || v.Str() != kv.Value {
+			return false
+		}
+	}
+	return true
+}
+
+func applyScopeInfo(sm pmetric.ScopeMetrics, si scopeInfo) {
+	sm.Scope().SetName(si.Name)
+	sm.Scope().SetVersion(si.Version)
+	sm.SetSchemaUrl(si.SchemaURL)
+	for _, kv := range si.scopeAttrs {
+		sm.Scope().Attributes().PutStr(kv.Key, kv.Value)
+	}
 }
 
 // addNHCBDatapoint converts a single Native Histogram Custom Buckets (NHCB) to OpenTelemetry histogram datapoints

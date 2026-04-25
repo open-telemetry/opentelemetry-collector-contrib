@@ -136,11 +136,14 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 	}
 
 	// Determine the environment value from the incoming spans.
-	// First check "deployment.environment" attribute.
+	// First check "deployment.environment.name" attribute (new OTel standard).
+	// Then check "deployment.environment" attribute (deprecated).
 	// Then, try "environment" attribute (SignalFx schema).
 	// Otherwise, use the same fallback value as set on the backend.
 	var environment string
-	if env, ok := attrs.Get("deployment.environment"); ok {
+	if env, ok := attrs.Get("deployment.environment.name"); ok {
+		environment = env.Str()
+	} else if env, ok = attrs.Get("deployment.environment"); ok {
 		environment = env.Str()
 	} else if env, ok = attrs.Get("environment"); ok {
 		environment = env.Str()
