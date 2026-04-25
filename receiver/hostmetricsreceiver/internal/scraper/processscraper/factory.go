@@ -22,7 +22,7 @@ func NewFactory() scraper.Factory {
 // createDefaultConfig creates the default configuration for the Scraper.
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -32,8 +32,11 @@ func createMetricsScraper(
 	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" && runtime.GOOS != "freebsd" {
-		return nil, errors.New("process scraper only available on Linux, Windows, macOS, or FreeBSD")
+	// Hardcoded supported-OS list pending mdatagen `supported_os` annotation support.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15020;
+	// migrate to a metadata.yaml declaration and drop the runtime.GOOS check once it lands.
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" && runtime.GOOS != "freebsd" && runtime.GOOS != "aix" {
+		return nil, errors.New("process scraper only available on Linux, Windows, macOS, FreeBSD, or AIX")
 	}
 
 	s, err := newProcessScraper(settings, cfg.(*Config))
