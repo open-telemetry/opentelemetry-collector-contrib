@@ -6,6 +6,7 @@ package schemaprocessor
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t, &Config{
-		ClientConfig: confighttp.NewDefaultClientConfig(),
+		ClientConfig:    confighttp.NewDefaultClientConfig(),
+		CacheCooldown:   10 * time.Minute,
+		CacheRetryLimit: 3,
 		Prefetch: []string{
 			"https://opentelemetry.io/schemas/1.9.0",
 		},
@@ -86,4 +89,24 @@ func TestConfigurationValidation(t *testing.T) {
 
 		assert.ErrorIs(t, xconfmap.Validate(cfg), tc.expectError, tc.scenario)
 	}
+}
+
+func TestConfigurationValidation_CacheFields(t *testing.T) {
+	t.Parallel()
+
+	cfg := &Config{
+		Targets:       []string{"https://opentelemetry.io/schemas/1.9.0"},
+		CacheCooldown: -1 * time.Minute,
+	}
+	err := xconfmap.Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cache_cooldown must not be negative")
+
+	cfg = &Config{
+		Targets:         []string{"https://opentelemetry.io/schemas/1.9.0"},
+		CacheRetryLimit: -1,
+	}
+	err = xconfmap.Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cache_retry_limit must not be negative")
 }

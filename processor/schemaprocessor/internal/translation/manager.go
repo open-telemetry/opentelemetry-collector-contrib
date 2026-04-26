@@ -34,13 +34,15 @@ type manager struct {
 	providers     []Provider
 	match         map[string]*Version
 	translatorMap map[string]*translator
+	cooldown      time.Duration
+	limit         int
 }
 
 var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
 // of schema
-func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provider) (Manager, error) {
+func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Duration, limit int, providers ...Provider) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
@@ -57,8 +59,7 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provide
 	// wrap provider with cacheable provider
 	var prs []Provider
 	for _, p := range providers {
-		// TODO make cache configurable
-		prs = append(prs, NewCacheableProvider(p, 5*time.Minute, 5))
+		prs = append(prs, NewCacheableProvider(p, cooldown, limit))
 	}
 
 	return &manager{
@@ -66,6 +67,8 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provide
 		match:         match,
 		translatorMap: make(map[string]*translator),
 		providers:     prs,
+		cooldown:      cooldown,
+		limit:         limit,
 	}, nil
 }
 
@@ -142,7 +145,7 @@ func (m *manager) AddProvider(p Provider) {
 		return
 	}
 	if _, ok := p.(*CacheableProvider); !ok {
-		p = NewCacheableProvider(p, 5*time.Minute, 5)
+		p = NewCacheableProvider(p, m.cooldown, m.limit)
 	}
 	m.providers = append(m.providers, p)
 }

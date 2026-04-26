@@ -37,7 +37,6 @@ type CacheableProvider struct {
 func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) Provider {
 	return &CacheableProvider{
 		provider: provider,
-		// TODO make cache configurable
 		cache:    cache.New(cache.NoExpiration, cache.NoExpiration),
 		cooldown: cooldown,
 		limit:    limit,

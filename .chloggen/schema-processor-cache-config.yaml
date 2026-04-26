@@ -1,0 +1,6 @@
+change_type: enhancement
+component: processor/schema
+note: Make CacheableProvider cooldown and retry limit configurable via `cache_cooldown` and `cache_retry_limit`.
+issues: [47761]
+subtext: ""
+change_logs: []
