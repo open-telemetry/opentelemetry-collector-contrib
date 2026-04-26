@@ -39,7 +39,7 @@ resourceSpans:
             stringValue: build
         - key: cicd.pipeline.task.run.sender.login
           value:
-            stringValue: adrielp
+            stringValue: username
         - key: cicd.pipeline.task.run.url.full
           value:
             stringValue: https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/runs/14796710445/job/41546348818
