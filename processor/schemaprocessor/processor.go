@@ -35,6 +35,8 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 	m, err := translation.NewManager(
 		cfg.Targets,
 		set.Logger.Named("schema-manager"),
+		cfg.CacheCooldown,
+		cfg.CacheRetryLimit,
 	)
 	if err != nil {
 		return nil, err
