@@ -1,5 +1,6 @@
 display_name: FlinkMetrics Receiver
-type: flinkmetrics
+type: flink_metrics
+deprecated_type: flinkmetrics
 
 description: |
   This receiver uses Flink's [REST API](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#rest-api-integration)
