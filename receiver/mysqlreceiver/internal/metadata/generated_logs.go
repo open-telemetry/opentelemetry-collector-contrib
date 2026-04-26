@@ -138,6 +138,18 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
+	if lbc.ResourceAttributes.DbProduct.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["db.product"] = filter.CreateFilter(lbc.ResourceAttributes.DbProduct.EventsInclude)
+	}
+	if lbc.ResourceAttributes.DbProduct.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["db.product"] = filter.CreateFilter(lbc.ResourceAttributes.DbProduct.EventsExclude)
+	}
+	if lbc.ResourceAttributes.DbVersion.EventsInclude != nil {
+		lb.resourceAttributeIncludeFilter["db.version"] = filter.CreateFilter(lbc.ResourceAttributes.DbVersion.EventsInclude)
+	}
+	if lbc.ResourceAttributes.DbVersion.EventsExclude != nil {
+		lb.resourceAttributeExcludeFilter["db.version"] = filter.CreateFilter(lbc.ResourceAttributes.DbVersion.EventsExclude)
+	}
 	if lbc.ResourceAttributes.MysqlInstanceEndpoint.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(lbc.ResourceAttributes.MysqlInstanceEndpoint.EventsInclude)
 	}

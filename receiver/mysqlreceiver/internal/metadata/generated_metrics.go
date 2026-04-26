@@ -5412,6 +5412,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.DbProduct.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["db.product"] = filter.CreateFilter(mbc.ResourceAttributes.DbProduct.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.DbProduct.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["db.product"] = filter.CreateFilter(mbc.ResourceAttributes.DbProduct.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.DbVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["db.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbVersion.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.DbVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["db.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbVersion.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude)
 	}

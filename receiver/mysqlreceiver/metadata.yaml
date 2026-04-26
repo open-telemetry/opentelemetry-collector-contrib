@@ -15,6 +15,14 @@ status:
 reaggregation_enabled: true
 
 resource_attributes:
+  db.product:
+    description: The database product of the instance.
+    enabled: false
+    type: string
+  db.version:
+    description: The database version of the instance.
+    enabled: false
+    type: string
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
     enabled: true

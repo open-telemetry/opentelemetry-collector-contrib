@@ -863,6 +863,10 @@ func newTopQueryScraper(t *testing.T, mc *mockClient) *mySQLScraper {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
 	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
@@ -1067,60 +1071,10 @@ func TestLogDetectedVersion(t *testing.T) {
 	}
 }
 
-// TestSetScopeAttributes verifies that setScopeAttributes stamps db.version and
-// db.product onto every ScopeLogs scope, and that an unknown version is a no-op.
-func TestSetScopeAttributes(t *testing.T) {
-	makeLogsWithScopes := func(n int) plog.Logs {
-		logs := plog.NewLogs()
-		rl := logs.ResourceLogs().AppendEmpty()
-		for range n {
-			rl.ScopeLogs().AppendEmpty()
-		}
-		return logs
-	}
-
-	t.Run("MySQL 8 sets db.version and db.product", func(t *testing.T) {
-		s := &mySQLScraper{detectedVersion: mustDBVersion(t, "8.0.27")}
-		logs := makeLogsWithScopes(2)
-		s.setScopeAttributes(logs)
-
-		sls := logs.ResourceLogs().At(0).ScopeLogs()
-		for i := 0; i < sls.Len(); i++ {
-			attrs := sls.At(i).Scope().Attributes()
-			ver, ok := attrs.Get("db.version")
-			require.True(t, ok)
-			assert.Equal(t, "8.0.27", ver.Str())
-			prod, ok := attrs.Get("db.product")
-			require.True(t, ok)
-			assert.Equal(t, "MySQL", prod.Str())
-		}
-	})
-
-	t.Run("MariaDB sets db.product=MariaDB", func(t *testing.T) {
-		s := &mySQLScraper{detectedVersion: mustDBVersion(t, "10.11.6-MariaDB")}
-		logs := makeLogsWithScopes(1)
-		s.setScopeAttributes(logs)
-
-		attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes()
-		prod, ok := attrs.Get("db.product")
-		require.True(t, ok)
-		assert.Equal(t, "MariaDB", prod.Str())
-	})
-
-	t.Run("unknown version is a no-op", func(t *testing.T) {
-		s := &mySQLScraper{} // detectedVersion is zero value
-		logs := makeLogsWithScopes(1)
-		s.setScopeAttributes(logs)
-
-		attrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes()
-		assert.Equal(t, 0, attrs.Len(), "no attributes should be set when version is unknown")
-	})
-}
-
-// TestScrapeQuerySampleFuncScopeAttributes verifies that scrapeQuerySampleFunc
-// stamps db.version and db.product scope attributes — exercising emitLogsWithScopeAttrs
+// TestScrapeQuerySampleFuncResourceAttributes verifies that scrapeQuerySampleFunc
+// stamps db.version and db.product resource attributes — exercising emitLogs
 // via the query-sample path (as opposed to the top-query path).
-func TestScrapeQuerySampleFuncScopeAttributes(t *testing.T) {
+func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	v8 := mustDBVersion(t, "8.0.27")
 	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &v8}
 	cfg := createDefaultConfig().(*Config)
@@ -1128,6 +1082,10 @@ func TestScrapeQuerySampleFuncScopeAttributes(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
 	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
@@ -1136,16 +1094,13 @@ func TestScrapeQuerySampleFuncScopeAttributes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
-	sls := logs.ResourceLogs().At(0).ScopeLogs()
-	for i := 0; i < sls.Len(); i++ {
-		attrs := sls.At(i).Scope().Attributes()
-		ver, ok := attrs.Get("db.version")
-		assert.True(t, ok, "db.version scope attribute missing on query-sample output")
-		assert.Equal(t, "8.0.27", ver.Str())
-		prod, ok := attrs.Get("db.product")
-		assert.True(t, ok, "db.product scope attribute missing on query-sample output")
-		assert.Equal(t, "MySQL", prod.Str())
-	}
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	ver, ok := attrs.Get("db.version")
+	assert.True(t, ok, "db.version resource attribute missing on query-sample output")
+	assert.Equal(t, "8.0.27", ver.Str())
+	prod, ok := attrs.Get("db.product")
+	assert.True(t, ok, "db.product resource attribute missing on query-sample output")
+	assert.Equal(t, "MySQL", prod.Str())
 }
 
 // TestScrapeTopQueryFuncScanRowWithSampleText verifies that when MySQL 8 is detected
@@ -1175,9 +1130,9 @@ func TestScrapeTopQueryFuncScanRowWithSampleText(t *testing.T) {
 		"sampleStatement must be the querySampleText scanned from column 6")
 }
 
-// TestScrapeTopQueryFuncScopeAttributes verifies that scrapeTopQueryFunc stamps
-// scope attributes onto emitted logs when a version has been detected.
-func TestScrapeTopQueryFuncScopeAttributes(t *testing.T) {
+// TestScrapeTopQueryFuncResourceAttributes verifies that scrapeTopQueryFunc stamps
+// resource attributes onto emitted logs when a version has been detected.
+func TestScrapeTopQueryFuncResourceAttributes(t *testing.T) {
 	v8 := mustDBVersion(t, "8.0.27")
 	mc := &mockClient{
 		topQueriesFile:    "top_queries",
@@ -1192,14 +1147,11 @@ func TestScrapeTopQueryFuncScopeAttributes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
-	sls := logs.ResourceLogs().At(0).ScopeLogs()
-	for i := 0; i < sls.Len(); i++ {
-		attrs := sls.At(i).Scope().Attributes()
-		ver, ok := attrs.Get("db.version")
-		assert.True(t, ok, "db.version scope attribute missing")
-		assert.Equal(t, "8.0.27", ver.Str())
-		prod, ok := attrs.Get("db.product")
-		assert.True(t, ok, "db.product scope attribute missing")
-		assert.Equal(t, "MySQL", prod.Str())
-	}
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	ver, ok := attrs.Get("db.version")
+	assert.True(t, ok, "db.version resource attribute missing")
+	assert.Equal(t, "8.0.27", ver.Str())
+	prod, ok := attrs.Get("db.product")
+	assert.True(t, ok, "db.product resource attribute missing")
+	assert.Equal(t, "MySQL", prod.Str())
 }
