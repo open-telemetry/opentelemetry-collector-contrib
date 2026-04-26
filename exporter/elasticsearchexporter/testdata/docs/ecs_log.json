@@ -1,0 +1,28 @@
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "event": {
+    "action": "authentication.failure",
+    "severity": 17
+  },
+  "host": {
+    "hostname": "my-host",
+    "name": "my-host"
+  },
+  "log": {
+    "level": "ERROR"
+  },
+  "message": "User authentication failed",
+  "service": {
+    "environment": "production",
+    "name": "my-service"
+  },
+  "span": {
+    "id": "0102030405060708"
+  },
+  "trace": {
+    "id": "0102030405060708090a0b0c0d0e0f10"
+  },
+  "user": {
+    "id": "user-123"
+  }
+}

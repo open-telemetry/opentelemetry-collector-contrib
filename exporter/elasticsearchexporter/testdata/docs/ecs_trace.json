@@ -1,0 +1,30 @@
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "event": {
+    "outcome": "success"
+  },
+  "host": {
+    "hostname": "my-host",
+    "name": "my-host"
+  },
+  "http": {
+    "method": "GET",
+    "status_code": 200,
+    "url": "/api/users"
+  },
+  "parent": {
+    "id": "0807060504030201"
+  },
+  "service": {
+    "environment": "production",
+    "name": "my-service"
+  },
+  "span": {
+    "id": "0102030405060708",
+    "kind": "SERVER",
+    "name": "GET /api/users"
+  },
+  "trace": {
+    "id": "0102030405060708090a0b0c0d0e0f10"
+  }
+}

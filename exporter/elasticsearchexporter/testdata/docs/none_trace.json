@@ -1,0 +1,21 @@
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "Attributes.http.method": "GET",
+  "Attributes.http.status_code": 200,
+  "Attributes.http.url": "/api/users",
+  "Duration": 1000000,
+  "EndTimestamp": "2024-03-12T20:00:42.123456789Z",
+  "Kind": "SPAN_KIND_SERVER",
+  "Link": "[]",
+  "Name": "GET /api/users",
+  "ParentSpanId": "0807060504030201",
+  "Resource.deployment.environment": "production",
+  "Resource.host.name": "my-host",
+  "Resource.service.name": "my-service",
+  "Scope.name": "io.opentelemetry.example",
+  "Scope.version": "1.0.0",
+  "SpanId": "0102030405060708",
+  "TraceId": "0102030405060708090a0b0c0d0e0f10",
+  "TraceStatus": 1,
+  "TraceStatusDescription": "success"
+}

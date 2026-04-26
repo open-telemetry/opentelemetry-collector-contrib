@@ -1,0 +1,16 @@
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "Body": "User authentication failed",
+  "Resource.deployment.environment": "production",
+  "Resource.host.name": "my-host",
+  "Resource.service.name": "my-service",
+  "Scope.name": "io.opentelemetry.example",
+  "Scope.version": "1.0.0",
+  "SeverityNumber": 17,
+  "SeverityText": "ERROR",
+  "SpanId": "0102030405060708",
+  "TraceFlags": 0,
+  "TraceId": "0102030405060708090a0b0c0d0e0f10",
+  "event.name": "authentication.failure",
+  "user.id": "user-123"
+}

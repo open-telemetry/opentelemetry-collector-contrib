@@ -1,0 +1,18 @@
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "host": {
+    "hostname": "my-host",
+    "name": "my-host"
+  },
+  "http": {
+    "method": "GET",
+    "server": {
+      "request": {
+        "duration": 0.125
+      }
+    }
+  },
+  "service": {
+    "name": "my-service"
+  }
+}

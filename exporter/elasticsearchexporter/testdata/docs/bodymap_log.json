@@ -1,0 +1,7 @@
+{
+  "@timestamp": "2024-03-12T20:00:41.123456789Z",
+  "message": "User authentication failed",
+  "level": "error",
+  "service": "my-service",
+  "status_code": 401
+}

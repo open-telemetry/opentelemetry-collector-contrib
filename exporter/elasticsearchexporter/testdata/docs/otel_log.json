@@ -1,0 +1,27 @@
+{
+  "@timestamp": "1710273641123.456789",
+  "observed_timestamp": "1710273641123.456789",
+  "severity_text": "ERROR",
+  "severity_number": 17,
+  "trace_id": "0102030405060708090a0b0c0d0e0f10",
+  "span_id": "0102030405060708",
+  "attributes": {
+    "user.id": "user-123",
+    "event.name": "authentication.failure"
+  },
+  "event_name": "authentication.failure",
+  "resource": {
+    "attributes": {
+      "service.name": "my-service",
+      "host.name": "my-host",
+      "deployment.environment": "production"
+    }
+  },
+  "scope": {
+    "name": "io.opentelemetry.example",
+    "version": "1.0.0"
+  },
+  "body": {
+    "text": "User authentication failed"
+  }
+}
