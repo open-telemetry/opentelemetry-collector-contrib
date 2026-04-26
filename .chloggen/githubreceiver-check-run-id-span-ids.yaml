@@ -7,16 +7,7 @@ change_type: enhancement
 component: receiver/github
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: >-
-  Add feature gate `receiver.githubreceiver.UseCheckRunID` (Beta, on by default) that
-  derives job, step, and queue span IDs from the GitHub `check_run_id` instead of the
-  workflow job name. This allows in-action telemetry tools to reproduce matching span
-  IDs using `${{ job.check_run_id }}` without calling the GitHub REST API, and
-  eliminates the silent span ID collision when a workflow contains duplicate job
-  names. Step Span IDs are generated exclusively using the check_run_id
-  alongside the step name. Disable with
-  `--feature-gates=-receiver.githubreceiver.UseCheckRunID` to retain the legacy
-  hash scheme.
+note: Add job.check_run_id deterministic spans via the receiver.githubreceiver.UserCheckRunID feature gate
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44856, 45157]
@@ -25,9 +16,13 @@ issues: [44856, 45157]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Trace ID and root span ID are unchanged. Webhook payloads missing `workflow_job.id`
-  are rejected while the gate is enabled; set the gate to disabled to accept them
-  under the legacy scheme.
+  Feature gate `receiver.githubreceiver.UseCheckRunID` derives job, step, and
+  queue span IDs from the GitHub `check_run_id` instead of the workflow job
+  name. This allows in-action telemetry tools to reproduce matching span IDs by
+  leveraging `${{ job.check_run_id }}` and name exclusively instead of calling
+  the GitHub REST API. Trace ID and root span ID are unchanged. Webhook payloads
+  missing `workflow_job.id` are rejected while the gate is enabled; set the gate
+  to disabled to accept them under the legacy scheme.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

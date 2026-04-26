@@ -218,7 +218,13 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	var jobSpanID pcommon.SpanID
 	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
 		if event.WorkflowJob == nil || event.WorkflowJob.ID == nil || event.GetWorkflowJob().GetID() == 0 {
-			return pcommon.SpanID{}, errors.New("workflow_job.id (check_run_id) is missing; cannot derive job span ID with UseCheckRunID enabled")
+			return pcommon.SpanID{}, fmt.Errorf(
+				"failed to derive job parent span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d)",
+				event.GetRepo().GetFullName(),
+				event.GetWorkflowJob().GetName(),
+				event.GetWorkflowJob().GetRunID(),
+				event.GetWorkflowJob().GetRunAttempt(),
+			)
 		}
 		jobSpanID, err = newJobSpanIDFromCheckRun(event.GetWorkflowJob().GetID())
 	} else {
@@ -302,7 +308,8 @@ func (gtr *githubTracesReceiver) createStepSpans(
 		gtr.logger.Warn(
 			"duplicate step names detected; steps sharing a name will have colliding span IDs. "+
 				"Use unique step names within a job for reliable TRACEPARENT reproduction.",
-			zap.String("job", event.GetWorkflowJob().GetName()),
+			zap.String("workflow_job.name", event.GetWorkflowJob().GetName()),
+			zap.Int64("workflow_job.run.id", event.GetWorkflowJob().GetRunID()),
 		)
 	}
 	var errors error
@@ -393,7 +400,13 @@ func (*githubTracesReceiver) createStepSpan(
 	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
 		checkRunID := event.GetWorkflowJob().GetID()
 		if checkRunID == 0 {
-			return errors.New("workflow_job.id (check_run_id) is missing; cannot derive step span ID with UseCheckRunID enabled")
+			return fmt.Errorf(
+				"failed to derive step span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d)",
+				event.GetRepo().GetFullName(),
+				event.GetWorkflowJob().GetName(),
+				event.GetWorkflowJob().GetRunID(),
+				event.GetWorkflowJob().GetRunAttempt(),
+			)
 		}
 		spanID, err = newStepSpanIDFromCheckRun(checkRunID, step.GetName())
 	} else {
@@ -544,7 +557,13 @@ func (*githubTracesReceiver) createJobQueueSpan(
 	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
 		checkRunID := event.GetWorkflowJob().GetID()
 		if checkRunID == 0 {
-			return errors.New("workflow_job.id (check_run_id) is missing; cannot derive queue span ID with UseCheckRunID enabled")
+			return fmt.Errorf(
+				"failed to derive queue span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d)",
+				event.GetRepo().GetFullName(),
+				event.GetWorkflowJob().GetName(),
+				event.GetWorkflowJob().GetRunID(),
+				event.GetWorkflowJob().GetRunAttempt(),
+			)
 		}
 		spanID, err = newQueueSpanIDFromCheckRun(checkRunID)
 	} else {

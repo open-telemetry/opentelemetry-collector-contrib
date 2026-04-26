@@ -1260,8 +1260,8 @@ func TestCreateStepSpans_DuplicateNameWarning(t *testing.T) {
 		warnings := recorded.FilterMessageSnippet("duplicate step names").All()
 		require.Len(t, warnings, 1, "expected exactly one WARN about duplicate step names")
 		// Confirm the WARN carries the job name as a structured field.
-		jobField, ok := warnings[0].ContextMap()["job"]
-		require.True(t, ok, "WARN should have a job field")
+		jobField, ok := warnings[0].ContextMap()["workflow_job.name"]
+		require.True(t, ok, "WARN should have a workflow_job.name field")
 		require.Equal(t, "Test Job", jobField)
 
 		spans := collectSpans(rs)
