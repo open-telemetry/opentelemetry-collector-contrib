@@ -15,11 +15,11 @@ status:
 reaggregation_enabled: true
 
 resource_attributes:
-  db.product:
+  db.product.name:
     description: The database product of the instance.
     enabled: false
     type: string
-  db.version:
+  db.product.version:
     description: The database version of the instance.
     enabled: false
     type: string

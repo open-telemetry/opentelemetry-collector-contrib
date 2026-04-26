@@ -731,6 +731,6 @@ This provides insights into query performance and resource usage, helping users 
 
 | Name | Description | Values | Enabled | Semantic Convention |
 | ---- | ----------- | ------ | ------- | ------------------- |
-| db.product | The database product of the instance. | Any Str | false | - |
-| db.version | The database version of the instance. | Any Str | false | - |
+| db.product.name | The database product of the instance. | Any Str | false | - |
+| db.product.version | The database version of the instance. | Any Str | false | - |
 | mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true | - |

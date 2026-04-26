@@ -13,8 +13,8 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetDbProduct("db.product-val")
-			rb.SetDbVersion("db.version-val")
+			rb.SetDbProductName("db.product.name-val")
+			rb.SetDbProductVersion("db.product.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 
 			res := rb.Emit()
@@ -31,15 +31,15 @@ func TestResourceBuilder(t *testing.T) {
 			default:
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
-			dbProductAttrVal, ok := res.Attributes().Get("db.product")
+			dbProductNameAttrVal, ok := res.Attributes().Get("db.product.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "db.product-val", dbProductAttrVal.Str())
+				assert.Equal(t, "db.product.name-val", dbProductNameAttrVal.Str())
 			}
-			dbVersionAttrVal, ok := res.Attributes().Get("db.version")
+			dbProductVersionAttrVal, ok := res.Attributes().Get("db.product.version")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.Equal(t, "db.version-val", dbVersionAttrVal.Str())
+				assert.Equal(t, "db.product.version-val", dbProductVersionAttrVal.Str())
 			}
 			mysqlInstanceEndpointAttrVal, ok := res.Attributes().Get("mysql.instance.endpoint")
 			assert.True(t, ok)

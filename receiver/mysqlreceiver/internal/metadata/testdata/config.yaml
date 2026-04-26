@@ -140,9 +140,9 @@ all_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
-    db.product:
+    db.product.name:
       enabled: true
-    db.version:
+    db.product.version:
       enabled: true
     mysql.instance.endpoint:
       enabled: true
@@ -287,9 +287,9 @@ reaggregate_set:
     db.server.top_query:
       enabled: true
   resource_attributes:
-    db.product:
+    db.product.name:
       enabled: true
-    db.version:
+    db.product.version:
       enabled: true
     mysql.instance.endpoint:
       enabled: true
@@ -434,21 +434,21 @@ none_set:
     db.server.top_query:
       enabled: false
   resource_attributes:
-    db.product:
+    db.product.name:
       enabled: false
-    db.version:
+    db.product.version:
       enabled: false
     mysql.instance.endpoint:
       enabled: false
 filter_set_include:
   resource_attributes:
-    db.product:
+    db.product.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
       events_include:
         - regexp: ".*"
-    db.version:
+    db.product.version:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -462,18 +462,18 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    db.product:
+    db.product.name:
       enabled: true
       metrics_exclude:
-        - strict: "db.product-val"
+        - strict: "db.product.name-val"
       events_exclude:
-        - strict: "db.product-val"
-    db.version:
+        - strict: "db.product.name-val"
+    db.product.version:
       enabled: true
       metrics_exclude:
-        - strict: "db.version-val"
+        - strict: "db.product.version-val"
       events_exclude:
-        - strict: "db.version-val"
+        - strict: "db.product.version-val"
     mysql.instance.endpoint:
       enabled: true
       metrics_exclude:

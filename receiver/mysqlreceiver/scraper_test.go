@@ -863,10 +863,10 @@ func newTopQueryScraper(t *testing.T, mc *mockClient) *mySQLScraper {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbProductName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbProductVersion.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbProductName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbProductVersion.Enabled = true
 	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
@@ -1082,10 +1082,10 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.DbProduct.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.DbVersion.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbProductName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbProductVersion.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbProductName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbProductVersion.Enabled = true
 	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
 	s.sqlclient = mc
 	s.detectedVersion = mc.getDBVersion()
@@ -1095,11 +1095,11 @@ func TestScrapeQuerySampleFuncResourceAttributes(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
 	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
-	ver, ok := attrs.Get("db.version")
-	assert.True(t, ok, "db.version resource attribute missing on query-sample output")
+	ver, ok := attrs.Get("db.product.version")
+	assert.True(t, ok, "db.product.version resource attribute missing on query-sample output")
 	assert.Equal(t, "8.0.27", ver.Str())
-	prod, ok := attrs.Get("db.product")
-	assert.True(t, ok, "db.product resource attribute missing on query-sample output")
+	prod, ok := attrs.Get("db.product.name")
+	assert.True(t, ok, "db.product.name resource attribute missing on query-sample output")
 	assert.Equal(t, "MySQL", prod.Str())
 }
 
@@ -1148,10 +1148,10 @@ func TestScrapeTopQueryFuncResourceAttributes(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
 	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
-	ver, ok := attrs.Get("db.version")
-	assert.True(t, ok, "db.version resource attribute missing")
+	ver, ok := attrs.Get("db.product.version")
+	assert.True(t, ok, "db.product.version resource attribute missing")
 	assert.Equal(t, "8.0.27", ver.Str())
-	prod, ok := attrs.Get("db.product")
-	assert.True(t, ok, "db.product resource attribute missing")
+	prod, ok := attrs.Get("db.product.name")
+	assert.True(t, ok, "db.product.name resource attribute missing")
 	assert.Equal(t, "MySQL", prod.Str())
 }

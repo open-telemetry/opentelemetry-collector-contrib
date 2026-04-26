@@ -2378,17 +2378,17 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for mysql resource attributes.
 type ResourceAttributesConfig struct {
-	DbProduct             ResourceAttributeConfig `mapstructure:"db.product"`
-	DbVersion             ResourceAttributeConfig `mapstructure:"db.version"`
+	DbProductName         ResourceAttributeConfig `mapstructure:"db.product.name"`
+	DbProductVersion      ResourceAttributeConfig `mapstructure:"db.product.version"`
 	MysqlInstanceEndpoint ResourceAttributeConfig `mapstructure:"mysql.instance.endpoint"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		DbProduct: ResourceAttributeConfig{
+		DbProductName: ResourceAttributeConfig{
 			Enabled: false,
 		},
-		DbVersion: ResourceAttributeConfig{
+		DbProductVersion: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		MysqlInstanceEndpoint: ResourceAttributeConfig{

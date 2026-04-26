@@ -156,8 +156,8 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
 	if m.detectedVersion.version != nil {
-		rb.SetDbProduct(m.detectedVersion.productString())
-		rb.SetDbVersion(m.detectedVersion.version.String())
+		rb.SetDbProductName(m.detectedVersion.productString())
+		rb.SetDbProductVersion(m.detectedVersion.version.String())
 	}
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
@@ -170,8 +170,8 @@ func (m *mySQLScraper) emitLogs(errs *scrapererror.ScrapeErrors) (plog.Logs, err
 	rb := m.lb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
 	if m.detectedVersion.version != nil {
-		rb.SetDbProduct(m.detectedVersion.productString())
-		rb.SetDbVersion(m.detectedVersion.version.String())
+		rb.SetDbProductName(m.detectedVersion.productString())
+		rb.SetDbProductVersion(m.detectedVersion.version.String())
 	}
 	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
 	return logs, errs.Combine()
