@@ -36,7 +36,7 @@ func (*Factory) CreateDefaultConfig() internal.Config {
 		ClientConfig:         clientConfig,
 		ConcurrencyLimit:     defaultConcurrencyLimit, // Default to 50 concurrent goroutines
 		MergedPRLookbackDays: defaultMergedPRLookbackDays,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		RetryConfig: RetryConfig{
 			BackOffConfig: configretry.BackOffConfig{
 				Enabled:             true,
