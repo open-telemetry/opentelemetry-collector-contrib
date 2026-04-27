@@ -96,5 +96,5 @@ func Test_NewUDSServer_DefaultSocketBufferSize(t *testing.T) {
 	server, err := NewUDSServer("unixgram", socketPath, 0o622, 0)
 	require.NoError(t, err)
 	require.NotNil(t, server)
-	defer server.Close()
+	server.Close()
 }
