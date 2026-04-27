@@ -1167,6 +1167,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 					if _, ok := missingBlockingSessionIDs[idleSessionVal.(int64)]; ok {
 						rows = append(rows, idleRow)
 					}
+				} else {
+					s.logger.Debug("failed to parse idle blocker session id", zap.String("column", sessionID), zap.String("value", idleRow[sessionID]), zap.Error(parseErr))
 				}
 			}
 		}
