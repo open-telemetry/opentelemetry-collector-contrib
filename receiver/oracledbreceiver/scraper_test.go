@@ -50,7 +50,7 @@ var queryResponses = map[string][]metricRow{
 	},
 	tablespaceUsageSQL:  {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 	dataDictHitRatioSQL: {{"DATA_DICTIONARY_HIT_RATIO": "98.75"}},
-	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_MB": "12.5"}},
+	recycleBinSizeSQL:   {{"RECYCLE_BIN_SIZE_BYTES": "13107200"}},
 	storageUsageSQL:     {{"USED_DB_SIZE": "5368709120", "ALLOCATED_DB_SIZE": "10737418240"}},
 }
 
@@ -205,6 +205,8 @@ func TestScraper_Scrape(t *testing.T) {
 }
 
 func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
+	const floatDelta = 0.01
+
 	tests := []struct {
 		name       string
 		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
@@ -238,38 +240,10 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := metadata.DefaultMetricsBuilderConfig()
-			// Disable all default-enabled metrics so only our 4 new ones are active.
-			cfg.Metrics.OracledbEnqueueDeadlocks.Enabled = false
-			cfg.Metrics.OracledbExchangeDeadlocks.Enabled = false
-			cfg.Metrics.OracledbExecutions.Enabled = false
-			cfg.Metrics.OracledbParseCalls.Enabled = false
-			cfg.Metrics.OracledbHardParses.Enabled = false
-			cfg.Metrics.OracledbUserCommits.Enabled = false
-			cfg.Metrics.OracledbUserRollbacks.Enabled = false
-			cfg.Metrics.OracledbPhysicalReads.Enabled = false
-			cfg.Metrics.OracledbSessionsUsage.Enabled = false
-			cfg.Metrics.OracledbSessionsLimit.Enabled = false
-			cfg.Metrics.OracledbProcessesUsage.Enabled = false
-			cfg.Metrics.OracledbProcessesLimit.Enabled = false
-			cfg.Metrics.OracledbEnqueueLocksUsage.Enabled = false
-			cfg.Metrics.OracledbEnqueueLocksLimit.Enabled = false
-			cfg.Metrics.OracledbEnqueueResourcesUsage.Enabled = false
-			cfg.Metrics.OracledbEnqueueResourcesLimit.Enabled = false
-			cfg.Metrics.OracledbTablespaceSizeUsage.Enabled = false
-			cfg.Metrics.OracledbTablespaceSizeLimit.Enabled = false
-			cfg.Metrics.OracledbLogons.Enabled = false
-			cfg.Metrics.OracledbLogicalReads.Enabled = false
-			cfg.Metrics.OracledbCPUTime.Enabled = false
-			cfg.Metrics.OracledbPgaMemory.Enabled = false
-			cfg.Metrics.OracledbPhysicalReadsDirect.Enabled = false
-			cfg.Metrics.OracledbPhysicalReadIoRequests.Enabled = false
-			cfg.Metrics.OracledbPhysicalWrites.Enabled = false
-			cfg.Metrics.OracledbPhysicalWritesDirect.Enabled = false
-			cfg.Metrics.OracledbPhysicalWriteIoRequests.Enabled = false
 			cfg.Metrics.OracledbDataDictionaryHitRatio.Enabled = true
-			cfg.Metrics.OracledbRecycleBinSize.Enabled = true
-			cfg.Metrics.OracledbStorageAllocated.Enabled = true
-			cfg.Metrics.OracledbStorageUsedPct.Enabled = true
+			cfg.Metrics.OracledbRecycleBinLimit.Enabled = true
+			cfg.Metrics.OracledbStorageUsage.Enabled = true
+			cfg.Metrics.OracledbStorageUtilization.Enabled = true
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
@@ -293,17 +267,18 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				metrics := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-				assert.Equal(t, 4, metrics.Len())
 
 				metricMap := make(map[string]float64)
 				for i := 0; i < metrics.Len(); i++ {
 					metric := metrics.At(i)
-					metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+					if metric.Type() == pmetric.MetricTypeGauge && metric.Gauge().DataPoints().Len() > 0 {
+						metricMap[metric.Name()] = metric.Gauge().DataPoints().At(0).DoubleValue()
+					}
 				}
-				assert.InDelta(t, 98.75, metricMap["oracledb.data_dictionary_hit_ratio"], 0.01)
-				assert.InDelta(t, 12.5, metricMap["oracledb.recycle_bin_size"], 0.01)
-				assert.InDelta(t, 10240.0, metricMap["oracledb.storage.allocated"], 0.01)
-				assert.InDelta(t, 50.0, metricMap["oracledb.storage.used_pct"], 0.01)
+				assert.InDelta(t, 98.75, metricMap["oracledb.data_dictionary.hit_ratio"], floatDelta)
+				assert.InDelta(t, 13107200.0, metricMap["oracledb.recycle_bin.limit"], floatDelta)
+				assert.InDelta(t, 5368709120.0, metricMap["oracledb.storage.usage"], floatDelta)
+				assert.InDelta(t, 0.5, metricMap["oracledb.storage.utilization"], floatDelta)
 			}
 		})
 	}

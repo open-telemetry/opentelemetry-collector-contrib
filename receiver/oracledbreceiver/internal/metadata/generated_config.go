@@ -49,7 +49,7 @@ func (ms *OracledbCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary_hit_ratio metric.
+// OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric.
 type OracledbDataDictionaryHitRatioMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -709,13 +709,13 @@ func (ms *OracledbQueriesParallelizedMetricConfig) Unmarshal(parser *confmap.Con
 	return nil
 }
 
-// OracledbRecycleBinSizeMetricConfig provides config for the oracledb.recycle_bin_size metric.
-type OracledbRecycleBinSizeMetricConfig struct {
+// OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric.
+type OracledbRecycleBinLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbRecycleBinSizeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbRecycleBinLimitMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -798,13 +798,13 @@ func (ms *OracledbSessionsUsageMetricConfig) Validate() error {
 	return nil
 }
 
-// OracledbStorageAllocatedMetricConfig provides config for the oracledb.storage.allocated metric.
-type OracledbStorageAllocatedMetricConfig struct {
+// OracledbStorageUsageMetricConfig provides config for the oracledb.storage.usage metric.
+type OracledbStorageUsageMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbStorageAllocatedMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbStorageUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -818,13 +818,13 @@ func (ms *OracledbStorageAllocatedMetricConfig) Unmarshal(parser *confmap.Conf) 
 	return nil
 }
 
-// OracledbStorageUsedPctMetricConfig provides config for the oracledb.storage.used_pct metric.
-type OracledbStorageUsedPctMetricConfig struct {
+// OracledbStorageUtilizationMetricConfig provides config for the oracledb.storage.utilization metric.
+type OracledbStorageUtilizationMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
 }
 
-func (ms *OracledbStorageUsedPctMetricConfig) Unmarshal(parser *confmap.Conf) error {
+func (ms *OracledbStorageUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -1018,7 +1018,7 @@ func (ms *OracledbUserRollbacksMetricConfig) Unmarshal(parser *confmap.Conf) err
 type MetricsConfig struct {
 	OracledbConsistentGets                        OracledbConsistentGetsMetricConfig                        `mapstructure:"oracledb.consistent_gets"`
 	OracledbCPUTime                               OracledbCPUTimeMetricConfig                               `mapstructure:"oracledb.cpu_time"`
-	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary_hit_ratio"`
+	OracledbDataDictionaryHitRatio                OracledbDataDictionaryHitRatioMetricConfig                `mapstructure:"oracledb.data_dictionary.hit_ratio"`
 	OracledbDbBlockGets                           OracledbDbBlockGetsMetricConfig                           `mapstructure:"oracledb.db_block_gets"`
 	OracledbDdlStatementsParallelized             OracledbDdlStatementsParallelizedMetricConfig             `mapstructure:"oracledb.ddl_statements_parallelized"`
 	OracledbDmlLocksLimit                         OracledbDmlLocksLimitMetricConfig                         `mapstructure:"oracledb.dml_locks.limit"`
@@ -1051,11 +1051,11 @@ type MetricsConfig struct {
 	OracledbProcessesLimit                        OracledbProcessesLimitMetricConfig                        `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        OracledbProcessesUsageMetricConfig                        `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   OracledbQueriesParallelizedMetricConfig                   `mapstructure:"oracledb.queries_parallelized"`
-	OracledbRecycleBinSize                        OracledbRecycleBinSizeMetricConfig                        `mapstructure:"oracledb.recycle_bin_size"`
+	OracledbRecycleBinLimit                       OracledbRecycleBinLimitMetricConfig                       `mapstructure:"oracledb.recycle_bin.limit"`
 	OracledbSessionsLimit                         OracledbSessionsLimitMetricConfig                         `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         OracledbSessionsUsageMetricConfig                         `mapstructure:"oracledb.sessions.usage"`
-	OracledbStorageAllocated                      OracledbStorageAllocatedMetricConfig                      `mapstructure:"oracledb.storage.allocated"`
-	OracledbStorageUsedPct                        OracledbStorageUsedPctMetricConfig                        `mapstructure:"oracledb.storage.used_pct"`
+	OracledbStorageUsage                          OracledbStorageUsageMetricConfig                          `mapstructure:"oracledb.storage.usage"`
+	OracledbStorageUtilization                    OracledbStorageUtilizationMetricConfig                    `mapstructure:"oracledb.storage.utilization"`
 	OracledbTablespaceSizeLimit                   OracledbTablespaceSizeLimitMetricConfig                   `mapstructure:"oracledb.tablespace_size.limit"`
 	OracledbTablespaceSizeUsage                   OracledbTablespaceSizeUsageMetricConfig                   `mapstructure:"oracledb.tablespace_size.usage"`
 	OracledbTransactionsLimit                     OracledbTransactionsLimitMetricConfig                     `mapstructure:"oracledb.transactions.limit"`
@@ -1171,7 +1171,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbQueriesParallelized: OracledbQueriesParallelizedMetricConfig{
 			Enabled: false,
 		},
-		OracledbRecycleBinSize: OracledbRecycleBinSizeMetricConfig{
+		OracledbRecycleBinLimit: OracledbRecycleBinLimitMetricConfig{
 			Enabled: false,
 		},
 		OracledbSessionsLimit: OracledbSessionsLimitMetricConfig{
@@ -1182,10 +1182,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			AggregationStrategy: AggregationStrategyAvg,
 			EnabledAttributes:   []OracledbSessionsUsageMetricAttributeKey{OracledbSessionsUsageMetricAttributeKeySessionType, OracledbSessionsUsageMetricAttributeKeySessionStatus},
 		},
-		OracledbStorageAllocated: OracledbStorageAllocatedMetricConfig{
+		OracledbStorageUsage: OracledbStorageUsageMetricConfig{
 			Enabled: false,
 		},
-		OracledbStorageUsedPct: OracledbStorageUsedPctMetricConfig{
+		OracledbStorageUtilization: OracledbStorageUtilizationMetricConfig{
 			Enabled: false,
 		},
 		OracledbTablespaceSizeLimit: OracledbTablespaceSizeLimitMetricConfig{

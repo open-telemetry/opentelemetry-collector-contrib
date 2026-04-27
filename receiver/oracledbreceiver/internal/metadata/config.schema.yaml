@@ -18,8 +18,8 @@ $defs:
           enabled:
             type: boolean
             default: true
-      oracledb.data_dictionary_hit_ratio:
-        description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary_hit_ratio metric."
+      oracledb.data_dictionary.hit_ratio:
+        description: "OracledbDataDictionaryHitRatioMetricConfig provides config for the oracledb.data_dictionary.hit_ratio metric."
         type: object
         properties:
           enabled:
@@ -249,8 +249,8 @@ $defs:
           enabled:
             type: boolean
             default: false
-      oracledb.recycle_bin_size:
-        description: "OracledbRecycleBinSizeMetricConfig provides config for the oracledb.recycle_bin_size metric."
+      oracledb.recycle_bin.limit:
+        description: "OracledbRecycleBinLimitMetricConfig provides config for the oracledb.recycle_bin.limit metric."
         type: object
         properties:
           enabled:
@@ -288,15 +288,15 @@ $defs:
             default:
               - "session_type"
               - "session_status"
-      oracledb.storage.allocated:
-        description: "OracledbStorageAllocatedMetricConfig provides config for the oracledb.storage.allocated metric."
+      oracledb.storage.usage:
+        description: "OracledbStorageUsageMetricConfig provides config for the oracledb.storage.usage metric."
         type: object
         properties:
           enabled:
             type: boolean
             default: false
-      oracledb.storage.used_pct:
-        description: "OracledbStorageUsedPctMetricConfig provides config for the oracledb.storage.used_pct metric."
+      oracledb.storage.utilization:
+        description: "OracledbStorageUtilizationMetricConfig provides config for the oracledb.storage.utilization metric."
         type: object
         properties:
           enabled:

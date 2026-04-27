@@ -202,7 +202,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordOracledbRecycleBinSizeDataPoint(ts, 1)
+			mb.RecordOracledbRecycleBinLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -216,10 +216,10 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			allMetricsCount++
-			mb.RecordOracledbStorageAllocatedDataPoint(ts, 1)
+			mb.RecordOracledbStorageUsageDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbStorageUsedPctDataPoint(ts, 1)
+			mb.RecordOracledbStorageUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -316,9 +316,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "oracledb.data_dictionary_hit_ratio":
-					assert.False(t, validatedMetrics["oracledb.data_dictionary_hit_ratio"], "Found a duplicate in the metrics slice: oracledb.data_dictionary_hit_ratio")
-					validatedMetrics["oracledb.data_dictionary_hit_ratio"] = true
+				case "oracledb.data_dictionary.hit_ratio":
+					assert.False(t, validatedMetrics["oracledb.data_dictionary.hit_ratio"], "Found a duplicate in the metrics slice: oracledb.data_dictionary.hit_ratio")
+					validatedMetrics["oracledb.data_dictionary.hit_ratio"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
 					assert.Equal(t, "Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.", mi.Description())
@@ -760,13 +760,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "oracledb.recycle_bin_size":
-					assert.False(t, validatedMetrics["oracledb.recycle_bin_size"], "Found a duplicate in the metrics slice: oracledb.recycle_bin_size")
-					validatedMetrics["oracledb.recycle_bin_size"] = true
+				case "oracledb.recycle_bin.limit":
+					assert.False(t, validatedMetrics["oracledb.recycle_bin.limit"], "Found a duplicate in the metrics slice: oracledb.recycle_bin.limit")
+					validatedMetrics["oracledb.recycle_bin.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total size of the recycle bin in megabytes.", mi.Description())
-					assert.Equal(t, "MBy", mi.Unit())
+					assert.Equal(t, "Total size of the recycle bin in bytes.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -829,25 +829,25 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok = dp.Attributes().Get("session_status")
 						assert.False(t, ok)
 					}
-				case "oracledb.storage.allocated":
-					assert.False(t, validatedMetrics["oracledb.storage.allocated"], "Found a duplicate in the metrics slice: oracledb.storage.allocated")
-					validatedMetrics["oracledb.storage.allocated"] = true
+				case "oracledb.storage.usage":
+					assert.False(t, validatedMetrics["oracledb.storage.usage"], "Found a duplicate in the metrics slice: oracledb.storage.usage")
+					validatedMetrics["oracledb.storage.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Total allocated database storage size in megabytes from dba_data_files.", mi.Description())
-					assert.Equal(t, "MBy", mi.Unit())
+					assert.Equal(t, "Used database storage size in bytes from dba_data_files and dba_free_space.", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-				case "oracledb.storage.used_pct":
-					assert.False(t, validatedMetrics["oracledb.storage.used_pct"], "Found a duplicate in the metrics slice: oracledb.storage.used_pct")
-					validatedMetrics["oracledb.storage.used_pct"] = true
+				case "oracledb.storage.utilization":
+					assert.False(t, validatedMetrics["oracledb.storage.utilization"], "Found a duplicate in the metrics slice: oracledb.storage.utilization")
+					validatedMetrics["oracledb.storage.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
 					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "Percentage of allocated database storage that is used.", mi.Description())
-					assert.Equal(t, "%", mi.Unit())
+					assert.Equal(t, "Fraction of allocated database storage that is used, as a ratio between 0 and 1.", mi.Description())
+					assert.Equal(t, "1", mi.Unit())
 					dp := mi.Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

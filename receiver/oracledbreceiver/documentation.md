@@ -249,7 +249,7 @@ Number of times a consistent read was requested for a block from the buffer cach
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {gets} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.data_dictionary_hit_ratio
+### oracledb.data_dictionary.hit_ratio
 
 Data dictionary cache hit ratio from v$rowcache, expressed as a percentage.
 
@@ -385,29 +385,29 @@ Number of SELECT statements executed in parallel
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | {queries} | Sum | Int | Cumulative | true | Development |
 
-### oracledb.recycle_bin_size
+### oracledb.recycle_bin.limit
 
-Total size of the recycle bin in megabytes.
-
-| Unit | Metric Type | Value Type | Stability |
-| ---- | ----------- | ---------- | --------- |
-| MBy | Gauge | Double | Development |
-
-### oracledb.storage.allocated
-
-Total allocated database storage size in megabytes from dba_data_files.
+Total size of the recycle bin in bytes.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| MBy | Gauge | Double | Development |
+| By | Gauge | Double | Development |
 
-### oracledb.storage.used_pct
+### oracledb.storage.usage
 
-Percentage of allocated database storage that is used.
+Used database storage size in bytes from dba_data_files and dba_free_space.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| % | Gauge | Double | Development |
+| By | Gauge | Double | Development |
+
+### oracledb.storage.utilization
+
+Fraction of allocated database storage that is used, as a ratio between 0 and 1.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
 
 ## Default Events
 
