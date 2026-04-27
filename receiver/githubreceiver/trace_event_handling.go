@@ -226,7 +226,8 @@ func (gtr *githubTracesReceiver) createParentSpan(
 				event.GetWorkflowJob().GetRunAttempt(),
 			)
 		}
-		jobSpanID, err = newJobSpanIDFromCheckRun(event.GetWorkflowJob().GetID())
+		input := fmt.Sprintf("%d-j", event.GetWorkflowJob().GetID())
+		jobSpanID, err = newSpanIDFromCheckRun(input)
 	} else {
 		jobSpanID, err = newJobSpanID(
 			event.GetWorkflowJob().GetRunID(),
@@ -273,7 +274,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 // newJobSpanID creates a deterministic Job Span ID based on the provided runID,
 // runAttempt, and the name of the job.
 //
-// Deprecated: superseded by newJobSpanIDFromCheckRun, which is used when the
+// Deprecated: superseded by newSpanIDFromCheckRun, which is used when the
 // receiver.githubreceiver.UseCheckRunID feature gate is enabled (the default as
 // of v0.151.0). This function and its callers are scheduled for removal when
 // the gate is promoted to Stable. See
@@ -408,7 +409,8 @@ func (*githubTracesReceiver) createStepSpan(
 				event.GetWorkflowJob().GetRunAttempt(),
 			)
 		}
-		spanID, err = newStepSpanIDFromCheckRun(checkRunID, step.GetName())
+		input := fmt.Sprintf("%d-%s-s", checkRunID, step.GetName())
+		spanID, err = newSpanIDFromCheckRun(input)
 	} else {
 		spanID, err = newStepSpanID(runID, runAttempt, jobName, stepName, number)
 	}
@@ -450,7 +452,7 @@ func (*githubTracesReceiver) createStepSpan(
 // newStepSpanID creates a deterministic Step Span ID based on the provided
 // inputs.
 //
-// Deprecated: superseded by newStepSpanIDFromCheckRun, which is used when the
+// Deprecated: superseded by newSpanIDFromCheckRun, which is used when the
 // receiver.githubreceiver.UseCheckRunID feature gate is enabled (the default as
 // of v0.151.0). This function and its callers are scheduled for removal when
 // the gate is promoted to Stable. See
@@ -469,57 +471,15 @@ func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number
 	return spanID, nil
 }
 
-// newJobSpanIDFromCheckRun creates a deterministic Job Span ID from the job's
-// check_run_id (the WorkflowJob.id webhook field). The input is suffixed with
-// "-j" to keep it structurally disjoint from step and queue hash inputs.
-func newJobSpanIDFromCheckRun(checkRunID int64) (pcommon.SpanID, error) {
-	if checkRunID == 0 {
-		return pcommon.SpanID{}, errors.New("check_run_id is zero; cannot derive job span ID")
-	}
-	input := fmt.Sprintf("%d-j", checkRunID)
-	hash := sha256.Sum256([]byte(input))
-	spanIDHex := hex.EncodeToString(hash[:])
-
-	var spanID pcommon.SpanID
-	_, err := hex.Decode(spanID[:], []byte(spanIDHex[16:32]))
-	if err != nil {
-		return pcommon.SpanID{}, err
-	}
-	return spanID, nil
-}
-
-// newStepSpanIDFromCheckRun creates a deterministic Step Span ID from the job's
-// check_run_id and the step's raw name. The "-s-" separator keeps this input
-// structurally disjoint from the job ("-j") and queue ("-q") hash inputs.
+// newSpanIDFromCheckRun creates span IDs from input. input is a formatted
+// string based off GitHub information with an appended value to enable the
+// creation of deterministic IDs.
 //
-// The raw step.GetName() value is used — not the uniquified name produced by
-// newUniqueSteps — so users can reconstruct the span ID from the step name as
-// written in their workflow YAML. Workflows with duplicate step names will
-// produce colliding span IDs; a WARN is logged by createStepSpans in that case.
-func newStepSpanIDFromCheckRun(checkRunID int64, stepName string) (pcommon.SpanID, error) {
-	if checkRunID == 0 {
-		return pcommon.SpanID{}, errors.New("check_run_id is zero; cannot derive step span ID")
-	}
-	input := fmt.Sprintf("%d-s-%s", checkRunID, stepName)
-	hash := sha256.Sum256([]byte(input))
-	spanIDHex := hex.EncodeToString(hash[:])
-
-	var spanID pcommon.SpanID
-	_, err := hex.Decode(spanID[:], []byte(spanIDHex[16:32]))
-	if err != nil {
-		return pcommon.SpanID{}, err
-	}
-	return spanID, nil
-}
-
-// newQueueSpanIDFromCheckRun creates a deterministic Queue Span ID from the
-// job's check_run_id. Suffix "-q" keeps the input disjoint from job and step
-// hash inputs.
-func newQueueSpanIDFromCheckRun(checkRunID int64) (pcommon.SpanID, error) {
-	if checkRunID == 0 {
-		return pcommon.SpanID{}, errors.New("check_run_id is zero; cannot derive queue span ID")
-	}
-	input := fmt.Sprintf("%d-q", checkRunID)
+// input is as follows:
+// jobSpanID := fmt.Sprintf("%d-j", checkRunID)
+// queueJobSpanID := fmt.Sprintf("%d-q", checkRunID)
+// stepSpanID := fmt.Sprintf("%d-%s-s", checkRunID, stepName)
+func newSpanIDFromCheckRun(input string) (pcommon.SpanID, error) {
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
 
@@ -565,7 +525,8 @@ func (*githubTracesReceiver) createJobQueueSpan(
 				event.GetWorkflowJob().GetRunAttempt(),
 			)
 		}
-		spanID, err = newQueueSpanIDFromCheckRun(checkRunID)
+		input := fmt.Sprintf("%d-q", checkRunID)
+		spanID, err = newSpanIDFromCheckRun(input)
 	} else {
 		spanID, err = newStepSpanID(runID, runAttempt, jobName, spanName, 1)
 	}

@@ -5,6 +5,7 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -957,174 +958,67 @@ func TestCorrectActionTimestamps(t *testing.T) {
 	}
 }
 
-func TestNewJobSpanIDFromCheckRun(t *testing.T) {
+func TestNewSpanIDFromCheckRun(t *testing.T) {
+	const checkRunID int64 = 40685651258
+
 	tests := []struct {
-		name        string
-		checkRunID  int64
-		wantError   bool
-		errContains string
+		name  string
+		input string
 	}{
 		{
-			name:       "basic generation",
-			checkRunID: 40685651258,
-			wantError:  false,
+			name:  "job input shape",
+			input: fmt.Sprintf("%d-j", checkRunID),
 		},
 		{
-			name:       "different check_run_id produces different ID",
-			checkRunID: 99999999999,
-			wantError:  false,
+			name:  "step input shape",
+			input: fmt.Sprintf("%d-%s-s", checkRunID, "Set up job"),
 		},
 		{
-			name:        "zero check_run_id returns error",
-			checkRunID:  0,
-			wantError:   true,
-			errContains: "check_run_id is zero",
+			name:  "queue input shape",
+			input: fmt.Sprintf("%d-q", checkRunID),
+		},
+		{
+			name:  "empty step name still hashes",
+			input: fmt.Sprintf("%d-%s-s", checkRunID, ""),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spanID, err := newJobSpanIDFromCheckRun(tt.checkRunID)
-			if tt.wantError {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.errContains)
-				return
-			}
+			spanID, err := newSpanIDFromCheckRun(tt.input)
 			require.NoError(t, err)
 			require.NotEqual(t, pcommon.SpanID{}, spanID, "span ID should not be empty")
 
 			// Consistency: same input produces same output
-			spanID2, err := newJobSpanIDFromCheckRun(tt.checkRunID)
+			spanID2, err := newSpanIDFromCheckRun(tt.input)
 			require.NoError(t, err)
 			require.Equal(t, spanID, spanID2, "same input should produce same span ID")
 
-			// Different IDs produce different outputs
-			differentID, err := newJobSpanIDFromCheckRun(tt.checkRunID + 1)
+			// Different input produces different output
+			differentSpanID, err := newSpanIDFromCheckRun(tt.input + "-x")
 			require.NoError(t, err)
-			require.NotEqual(t, spanID, differentID, "different check_run_ids should produce different span IDs")
-		})
-	}
-}
-
-func TestNewStepSpanIDFromCheckRun(t *testing.T) {
-	tests := []struct {
-		name        string
-		checkRunID  int64
-		stepName    string
-		wantError   bool
-		errContains string
-	}{
-		{
-			name:       "basic generation",
-			checkRunID: 40685651258,
-			stepName:   "Set up job",
-			wantError:  false,
-		},
-		{
-			name:       "different names produce different IDs",
-			checkRunID: 40685651258,
-			stepName:   "Run tests",
-			wantError:  false,
-		},
-		{
-			name:        "zero check_run_id returns error",
-			checkRunID:  0,
-			stepName:    "anything",
-			wantError:   true,
-			errContains: "check_run_id is zero",
-		},
-		{
-			name:       "empty step name",
-			checkRunID: 40685651258,
-			stepName:   "",
-			wantError:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			spanID, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepName)
-			if tt.wantError {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.errContains)
-				return
-			}
-			require.NoError(t, err)
-			require.NotEqual(t, pcommon.SpanID{}, spanID, "span ID should not be empty")
-
-			// Consistency
-			spanID2, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepName)
-			require.NoError(t, err)
-			require.Equal(t, spanID, spanID2, "same input should produce same span ID")
-
-			// Different step name → different span ID
-			differentStep, err := newStepSpanIDFromCheckRun(tt.checkRunID, tt.stepName+"-other")
-			require.NoError(t, err)
-			require.NotEqual(t, spanID, differentStep, "different step names should produce different span IDs")
-		})
-	}
-}
-
-func TestNewQueueSpanIDFromCheckRun(t *testing.T) {
-	tests := []struct {
-		name        string
-		checkRunID  int64
-		wantError   bool
-		errContains string
-	}{
-		{
-			name:       "basic generation",
-			checkRunID: 40685651258,
-			wantError:  false,
-		},
-		{
-			name:        "zero check_run_id returns error",
-			checkRunID:  0,
-			wantError:   true,
-			errContains: "check_run_id is zero",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			spanID, err := newQueueSpanIDFromCheckRun(tt.checkRunID)
-			if tt.wantError {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tt.errContains)
-				return
-			}
-			require.NoError(t, err)
-			require.NotEqual(t, pcommon.SpanID{}, spanID, "span ID should not be empty")
-
-			// Consistency
-			spanID2, err := newQueueSpanIDFromCheckRun(tt.checkRunID)
-			require.NoError(t, err)
-			require.Equal(t, spanID, spanID2, "same input should produce same span ID")
-
-			// Different check_run_id → different span ID
-			differentID, err := newQueueSpanIDFromCheckRun(tt.checkRunID + 1)
-			require.NoError(t, err)
-			require.NotEqual(t, spanID, differentID, "different check_run_ids should produce different span IDs")
+			require.NotEqual(t, spanID, differentSpanID, "different inputs should produce different span IDs")
 		})
 	}
 }
 
 // TestCheckRunIDHashesAreDisjoint verifies that for a fixed check_run_id, the
-// job, step(1), step(2), and queue span IDs are all distinct from each other
-// and from the legacy hash outputs for comparable inputs.
+// job, step(1), step(2), and queue input shapes used by the production callers
+// all hash to distinct span IDs, and that those IDs differ from the legacy
+// (pre-check_run_id) hash scheme outputs for comparable inputs.
 func TestCheckRunIDHashesAreDisjoint(t *testing.T) {
 	const checkRunID int64 = 40685651258
 
-	jobID, err := newJobSpanIDFromCheckRun(checkRunID)
+	jobID, err := newSpanIDFromCheckRun(fmt.Sprintf("%d-j", checkRunID))
 	require.NoError(t, err)
 
-	step1ID, err := newStepSpanIDFromCheckRun(checkRunID, "Set up job")
+	step1ID, err := newSpanIDFromCheckRun(fmt.Sprintf("%d-%s-s", checkRunID, "Set up job"))
 	require.NoError(t, err)
 
-	step2ID, err := newStepSpanIDFromCheckRun(checkRunID, "Run tests")
+	step2ID, err := newSpanIDFromCheckRun(fmt.Sprintf("%d-%s-s", checkRunID, "Run tests"))
 	require.NoError(t, err)
 
-	queueID, err := newQueueSpanIDFromCheckRun(checkRunID)
+	queueID, err := newSpanIDFromCheckRun(fmt.Sprintf("%d-q", checkRunID))
 	require.NoError(t, err)
 
 	// All four must be distinct

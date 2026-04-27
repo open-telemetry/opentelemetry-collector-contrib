@@ -161,7 +161,7 @@ the legacy scheme.
 | Trace | `sha256("{run_id}{run_attempt}t")[0:32]` |
 | Root | `sha256("{run_id}{run_attempt}s")[16:32]` |
 | Job | `sha256("{check_run_id}-j")[16:32]` |
-| Step | `sha256("{check_run_id}-s-{step_name}")[16:32]` |
+| Step | `sha256("{check_run_id}-{step_name}-s")[16:32]` |
 | Queue | `sha256("{check_run_id}-q")[16:32]` |
 
 `{step_name}` is the step's raw `name:` as written in the workflow YAML. This

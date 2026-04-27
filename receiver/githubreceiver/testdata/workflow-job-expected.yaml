@@ -97,7 +97,7 @@ resourceSpans:
             kind: 1
             name: Set up job
             parentSpanId: 2b09b38c69b64a9c
-            spanId: dc01093b32e1584f
+            spanId: d592338e114eb265
             startTimeUnixNano: "1744837742000000000"
             status:
               code: 1
@@ -116,7 +116,7 @@ resourceSpans:
             kind: 1
             name: Run actions/checkout@v4
             parentSpanId: 2b09b38c69b64a9c
-            spanId: 46bdedfc331acc20
+            spanId: 602aa68801658dfb
             startTimeUnixNano: "1744837744000000000"
             status:
               code: 1
@@ -135,7 +135,7 @@ resourceSpans:
             kind: 1
             name: Set up Go
             parentSpanId: 2b09b38c69b64a9c
-            spanId: bddaafc30ef293db
+            spanId: b4e2dc3f8b594ba4
             startTimeUnixNano: "1744837745000000000"
             status:
               code: 1
@@ -154,7 +154,7 @@ resourceSpans:
             kind: 1
             name: Make test-all
             parentSpanId: 2b09b38c69b64a9c
-            spanId: e1dfa102bcf024eb
+            spanId: 1d8f21b62c1aa854
             startTimeUnixNano: "1744837746000000000"
             status:
               code: 1
@@ -173,7 +173,7 @@ resourceSpans:
             kind: 1
             name: Upload coverage to Codecov
             parentSpanId: 2b09b38c69b64a9c
-            spanId: ec0f9d90fe291e52
+            spanId: 64f5d6ae9b09754a
             startTimeUnixNano: "1744837820000000000"
             status:
               code: 1
@@ -192,7 +192,7 @@ resourceSpans:
             kind: 1
             name: Post Set up Go
             parentSpanId: 2b09b38c69b64a9c
-            spanId: 3261446ceefda4d0
+            spanId: c418efb98b4f6f97
             startTimeUnixNano: "1744837823000000000"
             status:
               code: 1
@@ -211,7 +211,7 @@ resourceSpans:
             kind: 1
             name: Post Run actions/checkout@v4
             parentSpanId: 2b09b38c69b64a9c
-            spanId: 3177fa07d5f68c79
+            spanId: d6c960a4173d889c
             startTimeUnixNano: "1744837825000000000"
             status:
               code: 1
@@ -230,7 +230,7 @@ resourceSpans:
             kind: 1
             name: Complete job
             parentSpanId: 2b09b38c69b64a9c
-            spanId: ce59b43993972ea2
+            spanId: 39890c36be341dce
             startTimeUnixNano: "1744837823000000000"
             status:
               code: 1
