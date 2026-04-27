@@ -47,6 +47,18 @@ azure_blob/wif:
     metrics: "test"
     logs: "test"
     traces: "test"
+azure_blob/queue:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "system_managed_identity"
+  sending_queue:
+    enabled: true
+    num_consumers: 10
+    queue_size: 100
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
 azure_blob/err1:
   auth:
     type: "system_managed_identity"
