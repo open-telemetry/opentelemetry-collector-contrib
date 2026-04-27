@@ -93,28 +93,31 @@ const (
 	attributeAzureAdministrativeHierarchy = "azure.administrative.hierarchy"
 )
 
+// Generic Azure attributes carried by PIM events but not PIM-specific.
+// Defined here for now; can be promoted to a shared location if other categories adopt them.
+const (
+	attributeAzureResourceGroupName    = "azure.resource.group.name"
+	attributeAzureResourceProviderName = "azure.resource.provider.name"
+	attributeAzureResourceType         = "azure.resource.type"
+)
+
 // Non-SemConv attributes for PIM (Privileged Identity Management) events,
 // which arrive as Administrative category Activity Logs with ResourceProviderName=azurerbac.
 // Microsoft does not publish a formal schema for the properties payload; these fields
 // are derived from real PIM event samples.
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47566
 const (
-	attributeAzurePIMSubscriptionID          = "azure.pim.subscription_id"
-	attributeAzurePIMResourceGroupName       = "azure.pim.resource.group_name"
-	attributeAzurePIMResourceProviderName    = "azure.pim.resource.provider_name"
-	attributeAzurePIMResourceType            = "azure.pim.resource.type"
-	attributeAzurePIMTenantID                = "azure.pim.tenant_id"
 	attributeAzurePIMEventName               = "azure.pim.event.name"
 	attributeAzurePIMEventID                 = "azure.pim.event.id"
-	attributeAzurePIMRoleAssignmentRequestID = "azure.pim.role.assignment.request_id"
-	attributeAzurePIMRoleDefinition          = "azure.pim.role.definition"
-	attributeAzurePIMRoleDefinitionOriginID  = "azure.pim.role.definition.origin_id"
+	attributeAzurePIMRoleAssignmentRequestID = "azure.pim.role.assignment.request.id"
+	attributeAzurePIMRoleDefinitionName      = "azure.pim.role.definition.name"
+	attributeAzurePIMRoleDefinitionOriginID  = "azure.pim.role.definition.origin.id"
 	attributeAzurePIMCallerInfo              = "azure.pim.caller"
 	attributeAzurePIMJustification           = "azure.pim.justification"
 	attributeAzurePIMSubjectID               = "azure.pim.subject.id"
 	attributeAzurePIMSubjectName             = "azure.pim.subject.name"
 	attributeAzurePIMActionType              = "azure.pim.action.type"
-	attributeAzurePIMOriginRoleAssignmentID  = "azure.pim.role.assignment.origin_id"
+	attributeAzurePIMRoleAssignmentOriginID  = "azure.pim.role.assignment.origin.id"
 )
 
 // pimCallerIdentity represents one entry in the CallerInfo JSON array
@@ -164,21 +167,21 @@ func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Valu
 	unmarshaler.AttrPutStrIf(attrs, attributeAzureAdministrativeHierarchy, r.Properties.Hierarchy)
 
 	// PIM fields
-	unmarshaler.AttrPutStrPtrIf(attrs, attributeAzurePIMSubscriptionID, r.Properties.SubscriptionID)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMResourceGroupName, r.Properties.ResourceGroupName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMResourceProviderName, r.Properties.ResourceProviderName)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMResourceType, r.Properties.ResourceType)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMTenantID, r.Properties.TenantID)
+	unmarshaler.AttrPutStrPtrIf(attrs, string(conventions.CloudAccountIDKey), r.Properties.SubscriptionID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceGroupName, r.Properties.ResourceGroupName)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceProviderName, r.Properties.ResourceProviderName)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureResourceType, r.Properties.ResourceType)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzureTenantID, r.Properties.TenantID)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMEventName, r.Properties.EventName)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMEventID, r.Properties.EventID)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleAssignmentRequestID, r.Properties.RoleAssignmentRequestID)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleDefinition, r.Properties.RoleDefinition)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleDefinitionName, r.Properties.RoleDefinition)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleDefinitionOriginID, r.Properties.RoleDefinitionOriginID)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMJustification, r.Properties.Justification)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMSubjectID, r.Properties.SubjectID)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMSubjectName, r.Properties.SubjectName)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMActionType, r.Properties.ActionType)
-	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMOriginRoleAssignmentID, r.Properties.OriginRoleAssignmentID)
+	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleAssignmentOriginID, r.Properties.OriginRoleAssignmentID)
 
 	// CallerInfo is a JSON-encoded array of identity entries
 	if r.Properties.CallerInfo != "" {

@@ -28,16 +28,16 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000002
-              - key: azure.pim.resource.group_name
+              - key: azure.resource.group.name
                 value:
                   stringValue: mykeyvaultname
-              - key: azure.pim.resource.provider_name
+              - key: azure.resource.provider.name
                 value:
                   stringValue: azurerbac
-              - key: azure.pim.resource.type
+              - key: azure.resource.type
                 value:
                   stringValue: Microsoft.KeyVault/vaults
-              - key: azure.pim.tenant_id
+              - key: azure.tenant.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000003
               - key: azure.pim.event.name
@@ -46,13 +46,13 @@ resourceLogs:
               - key: azure.pim.event.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000004
-              - key: azure.pim.role.assignment.request_id
+              - key: azure.pim.role.assignment.request.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000006
-              - key: azure.pim.role.definition
+              - key: azure.pim.role.definition.name
                 value:
                   stringValue: Key Vault Crypto Officer
-              - key: azure.pim.role.definition.origin_id
+              - key: azure.pim.role.definition.origin.id
                 value:
                   stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000007
               - key: azure.pim.subject.id
@@ -64,7 +64,7 @@ resourceLogs:
               - key: azure.pim.action.type
                 value:
                   stringValue: Revoke
-              - key: azure.pim.role.assignment.origin_id
+              - key: azure.pim.role.assignment.origin.id
                 value:
                   stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/myresourcegroupname/providers/Microsoft.KeyVault/vaults/mykeyvaultname/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000005
               - key: azure.pim.caller
@@ -152,19 +152,19 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000010
-              - key: azure.pim.subscription_id
+              - key: cloud.account.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000001
-              - key: azure.pim.resource.group_name
+              - key: azure.resource.group.name
                 value:
                   stringValue: MyAzureSubscriptionName
-              - key: azure.pim.resource.provider_name
+              - key: azure.resource.provider.name
                 value:
                   stringValue: azurerbac
-              - key: azure.pim.resource.type
+              - key: azure.resource.type
                 value:
                   stringValue: subscription
-              - key: azure.pim.tenant_id
+              - key: azure.tenant.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000003
               - key: azure.pim.event.name
@@ -173,13 +173,13 @@ resourceLogs:
               - key: azure.pim.event.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000011
-              - key: azure.pim.role.assignment.request_id
+              - key: azure.pim.role.assignment.request.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000012
-              - key: azure.pim.role.definition
+              - key: azure.pim.role.definition.name
                 value:
                   stringValue: Storage Blob Data Contributor
-              - key: azure.pim.role.definition.origin_id
+              - key: azure.pim.role.definition.origin.id
                 value:
                   stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000013
               - key: azure.pim.justification
@@ -253,19 +253,19 @@ resourceLogs:
               - key: azure.correlation_id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000010
-              - key: azure.pim.subscription_id
+              - key: cloud.account.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000001
-              - key: azure.pim.resource.group_name
+              - key: azure.resource.group.name
                 value:
                   stringValue: MyAzureSubscriptionName
-              - key: azure.pim.resource.provider_name
+              - key: azure.resource.provider.name
                 value:
                   stringValue: azurerbac
-              - key: azure.pim.resource.type
+              - key: azure.resource.type
                 value:
                   stringValue: subscription
-              - key: azure.pim.tenant_id
+              - key: azure.tenant.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000003
               - key: azure.pim.event.name
@@ -274,13 +274,13 @@ resourceLogs:
               - key: azure.pim.event.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000014
-              - key: azure.pim.role.assignment.request_id
+              - key: azure.pim.role.assignment.request.id
                 value:
                   stringValue: 00000000-0000-0000-0000-000000000012
-              - key: azure.pim.role.definition
+              - key: azure.pim.role.definition.name
                 value:
                   stringValue: Storage Blob Data Contributor
-              - key: azure.pim.role.definition.origin_id
+              - key: azure.pim.role.definition.origin.id
                 value:
                   stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleDefinitions/00000000-0000-0000-0000-000000000013
               - key: azure.pim.justification
@@ -295,7 +295,7 @@ resourceLogs:
               - key: azure.pim.action.type
                 value:
                   stringValue: Grant
-              - key: azure.pim.role.assignment.origin_id
+              - key: azure.pim.role.assignment.origin.id
                 value:
                   stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000015
               - key: azure.pim.caller

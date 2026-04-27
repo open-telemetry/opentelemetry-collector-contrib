@@ -18,8 +18,10 @@ issues: [47566]
 subtext: |
   Azure PIM (Privileged Identity Management) events share the Administrative category with
   standard audit events but carry a different properties payload. All PIM-specific fields
-  were silently dropped. This change adds explicit mappings under azure.pim.* for all known
-  PIM fields and parses CallerInfo into a structured slice of {identity_type, identity_value} maps.
+  were silently dropped. This change adds explicit mappings for all known PIM fields:
+  generic Azure concepts use cloud.account.id and azure.{tenant,resource}.* attributes,
+  while PIM-specific fields use azure.pim.*. CallerInfo is parsed into a structured slice
+  of {identity_type, identity_value} maps.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
