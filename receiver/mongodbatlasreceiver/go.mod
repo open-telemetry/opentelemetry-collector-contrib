@@ -32,15 +32,15 @@ require (
 
 require (
 	go.opentelemetry.io/collector/component/componenttest v0.150.1-0.20260424074859-d91c0edd1da5
-	go.opentelemetry.io/collector/config/confighttp v0.150.0
-	go.opentelemetry.io/collector/config/confignet v1.56.0
-	go.opentelemetry.io/collector/config/configoptional v1.56.0
+	go.opentelemetry.io/collector/config/confighttp v0.150.1-0.20260424074859-d91c0edd1da5
+	go.opentelemetry.io/collector/config/confignet v1.56.1-0.20260424074859-d91c0edd1da5
+	go.opentelemetry.io/collector/config/configoptional v1.56.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/consumer/consumertest v0.150.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/extension/xextension v0.150.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/receiver/receivertest v0.150.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/receiver/xreceiver v0.150.1-0.20260424074859-d91c0edd1da5
-	go.opentelemetry.io/collector/scraper v0.150.0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.150.0
+	go.opentelemetry.io/collector/scraper v0.150.1-0.20260424074859-d91c0edd1da5
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.150.1-0.20260424074859-d91c0edd1da5
 )
 
 require (
@@ -83,14 +83,14 @@ require (
 	github.com/valyala/fastjson v1.6.10 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.56.1-0.20260424074859-d91c0edd1da5 // indirect
-	go.opentelemetry.io/collector/config/configauth v1.56.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.56.0 // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v1.56.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v1.56.1-0.20260424074859-d91c0edd1da5 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.56.1-0.20260424074859-d91c0edd1da5 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v1.56.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.56.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.150.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.56.1-0.20260424074859-d91c0edd1da5 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/featuregate v1.56.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
@@ -103,8 +103,8 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.43.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
-	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
