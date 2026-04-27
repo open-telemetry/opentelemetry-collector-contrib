@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/mysql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add db.product.version and db.product.name as optional resource attributes
+note: Add db.system.version and db.system.name as optional resource attributes
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47414]

@@ -1008,8 +1008,8 @@ $defs:
     description: ResourceAttributesConfig provides config for mysql resource attributes.
     type: object
     properties:
-      db.product.name:
-        description: ResourceAttributeConfig provides common config for a db.product.name resource attribute.
+      db.system.name:
+        description: ResourceAttributeConfig provides common config for a db.system.name resource attribute.
         type: object
         properties:
           enabled:
@@ -1035,8 +1035,8 @@ $defs:
             type: array
             items:
               $ref: go.opentelemetry.io/collector/filter.config
-      db.product.version:
-        description: ResourceAttributeConfig provides common config for a db.product.version resource attribute.
+      db.system.version:
+        description: ResourceAttributeConfig provides common config for a db.system.version resource attribute.
         type: object
         properties:
           enabled:

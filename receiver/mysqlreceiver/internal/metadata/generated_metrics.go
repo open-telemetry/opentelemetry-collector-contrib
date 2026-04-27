@@ -5412,17 +5412,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.DbProductName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["db.product.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbProductName.MetricsInclude)
+	if mbc.ResourceAttributes.DbSystemName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["db.system.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.DbProductName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["db.product.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbProductName.MetricsExclude)
+	if mbc.ResourceAttributes.DbSystemName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["db.system.name"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.DbProductVersion.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["db.product.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbProductVersion.MetricsInclude)
+	if mbc.ResourceAttributes.DbSystemVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.DbProductVersion.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["db.product.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbProductVersion.MetricsExclude)
+	if mbc.ResourceAttributes.DbSystemVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["db.system.version"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystemVersion.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude)

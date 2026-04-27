@@ -21,17 +21,17 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetDbProductName sets provided value as "db.product.name" attribute.
-func (rb *ResourceBuilder) SetDbProductName(val string) {
-	if rb.config.DbProductName.Enabled {
-		rb.res.Attributes().PutStr("db.product.name", val)
+// SetDbSystemName sets provided value as "db.system.name" attribute.
+func (rb *ResourceBuilder) SetDbSystemName(val string) {
+	if rb.config.DbSystemName.Enabled {
+		rb.res.Attributes().PutStr("db.system.name", val)
 	}
 }
 
-// SetDbProductVersion sets provided value as "db.product.version" attribute.
-func (rb *ResourceBuilder) SetDbProductVersion(val string) {
-	if rb.config.DbProductVersion.Enabled {
-		rb.res.Attributes().PutStr("db.product.version", val)
+// SetDbSystemVersion sets provided value as "db.system.version" attribute.
+func (rb *ResourceBuilder) SetDbSystemVersion(val string) {
+	if rb.config.DbSystemVersion.Enabled {
+		rb.res.Attributes().PutStr("db.system.version", val)
 	}
 }
 

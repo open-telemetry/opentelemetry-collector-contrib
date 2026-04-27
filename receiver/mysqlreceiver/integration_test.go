@@ -147,10 +147,10 @@ func containerConfig(host, port string) *Config {
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	cfg.TopQueryCollection.LookbackTime = 300 // 5-minute window to catch our workload queries
-	cfg.MetricsBuilderConfig.ResourceAttributes.DbProductName.Enabled = true
-	cfg.MetricsBuilderConfig.ResourceAttributes.DbProductVersion.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.DbProductName.Enabled = true
-	cfg.LogsBuilderConfig.ResourceAttributes.DbProductVersion.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemName.Enabled = true
+	cfg.LogsBuilderConfig.ResourceAttributes.DbSystemVersion.Enabled = true
 	return cfg
 }
 
@@ -398,11 +398,11 @@ func TestIntegrationLogScraper(t *testing.T) {
 			// Verify resource attributes on top-query logs.
 			for i := range topLogs.ResourceLogs().Len() {
 				attrs := topLogs.ResourceLogs().At(i).Resource().Attributes()
-				_, hasVersion := attrs.Get("db.product.version")
-				assert.True(t, hasVersion, "db.product.version resource attribute missing on top-query ResourceLogs[%d]", i)
-				prod, hasProd := attrs.Get("db.product.name")
-				assert.True(t, hasProd, "db.product.name resource attribute missing on top-query ResourceLogs[%d]", i)
-				assert.Equal(t, tc.wantProduct, prod.Str(), "db.product.name mismatch on ResourceLogs[%d]", i)
+				_, hasVersion := attrs.Get("db.system.version")
+				assert.True(t, hasVersion, "db.system.version resource attribute missing on top-query ResourceLogs[%d]", i)
+				prod, hasProd := attrs.Get("db.system.name")
+				assert.True(t, hasProd, "db.system.name resource attribute missing on top-query ResourceLogs[%d]", i)
+				assert.Equal(t, tc.wantProduct, prod.Str(), "db.system.name mismatch on ResourceLogs[%d]", i)
 			}
 
 			// --- scrapeQuerySampleFunc ---
@@ -432,11 +432,11 @@ func TestIntegrationLogScraper(t *testing.T) {
 			// Verify resource attributes on query-sample logs.
 			for i := range sampleLogs.ResourceLogs().Len() {
 				attrs := sampleLogs.ResourceLogs().At(i).Resource().Attributes()
-				_, hasVersion := attrs.Get("db.product.version")
-				assert.True(t, hasVersion, "db.product.version resource attribute missing on sample ResourceLogs[%d]", i)
-				prod, hasProd := attrs.Get("db.product.name")
-				assert.True(t, hasProd, "db.product.name resource attribute missing on sample ResourceLogs[%d]", i)
-				assert.Equal(t, tc.wantProduct, prod.Str(), "db.product.name mismatch on ResourceLogs[%d]", i)
+				_, hasVersion := attrs.Get("db.system.version")
+				assert.True(t, hasVersion, "db.system.version resource attribute missing on sample ResourceLogs[%d]", i)
+				prod, hasProd := attrs.Get("db.system.name")
+				assert.True(t, hasProd, "db.system.name resource attribute missing on sample ResourceLogs[%d]", i)
+				assert.Equal(t, tc.wantProduct, prod.Str(), "db.system.name mismatch on ResourceLogs[%d]", i)
 			}
 
 			// Verify version detection on the scraper's client.
