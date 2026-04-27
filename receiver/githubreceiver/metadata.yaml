@@ -6,8 +6,7 @@ sem_conv_version: 1.40.0
 status:
   class: receiver
   stability:
-    alpha: [metrics]
-    development: [traces]
+    alpha: [metrics, traces]
   distributions: [contrib]
   codeowners:
     active: [adrielp, crobert-1, TylerHelmuth]
