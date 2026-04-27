@@ -189,7 +189,7 @@ context (no REST API call, no step number), use the following shell helper:
 #       export TRACEPARENT=$(otel_github_traceparent "$STEP_NAME")
 otel_github_traceparent() {
   trace_id=$(printf '%s' "${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}t" | sha256sum | cut -c1-32)
-  span_id=$(printf '%s' "${{ job.check_run_id }}-s-$1"            | sha256sum | cut -c17-32)
+  span_id=$(printf '%s' "${{ job.check_run_id }}-$1-s"            | sha256sum | cut -c17-32)
   printf '00-%s-%s-01\n' "$trace_id" "$span_id"
 }
 ```
