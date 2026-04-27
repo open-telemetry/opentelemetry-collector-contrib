@@ -43,7 +43,7 @@ $defs:
       start_from:
         type: string
   metric_query:
-    description: MetricQuery defines a single CloudWatch metric to scrape via GetMetricData.
+    description: 'MetricQuery defines a single CloudWatch metric to scrape via GetMetricData. When Stats is empty all four statistics (Sum, SampleCount, Minimum, Maximum) are fetched and combined into an OpenTelemetry Summary metric aligned with the CloudWatch Metric Streams OpenTelemetry 1.0.0 format. When Stats is set, each named statistic is fetched and emitted as a separate Gauge data point on the same metric, with a "stat" attribute identifying the statistic. CloudWatch statistic names: Sum, Average, Minimum, Maximum, SampleCount, p99, p95, etc.'
     type: object
     properties:
       dimensions:
@@ -54,8 +54,10 @@ $defs:
         type: string
       namespace:
         type: string
-      stat:
-        type: string
+      stats:
+        type: array
+        items:
+          type: string
   metrics_config:
     description: MetricsConfig is the configuration for the metrics (GetMetricData) portion of this receiver. Either Metrics (explicit list) or Discovery (ListMetrics-based) may be set, not both. Collection interval and scraper behavior are controlled via the embedded ControllerConfig.
     type: object
@@ -67,14 +69,14 @@ $defs:
       discovery:
         x-pointer: true
         $ref: metrics_discovery_config
-      metrics:
-        type: array
-        items:
-          $ref: metric_query
       period:
         description: Period is the CloudWatch statistics aggregation window. Defaults to 5m.
         type: string
         format: duration
+      queries:
+        type: array
+        items:
+          $ref: metric_query
     allOf:
       - $ref: go.opentelemetry.io/collector/scraper/scraperhelper.controller_config
   metrics_discovery_config:
@@ -87,8 +89,11 @@ $defs:
         type: string
       namespace:
         type: string
-      stat:
-        type: string
+      stats:
+        description: Stats selects which CloudWatch statistics to fetch for all discovered metrics. Same semantics as MetricQuery.Stats.
+        type: array
+        items:
+          type: string
   stream_config:
     description: StreamConfig represents the configuration for the log stream filtering
     type: object
