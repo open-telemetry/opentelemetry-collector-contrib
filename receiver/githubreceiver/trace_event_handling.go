@@ -304,9 +304,8 @@ func (gtr *githubTracesReceiver) createStepSpans(
 	parentSpanID pcommon.SpanID,
 ) error {
 	steps := event.GetWorkflowJob().Steps
-	unique := newUniqueSteps(steps)
-	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() &&
-		hasDuplicateStepNames(steps) {
+	unique, hasDup := newUniqueSteps(steps)
+	if hasDup && metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
 		gtr.logger.Warn(
 			"duplicate step names detected; steps sharing a name will have colliding span IDs. "+
 				"Use unique step names within a job for reliable TRACEPARENT reproduction.",
@@ -327,10 +326,13 @@ func (gtr *githubTracesReceiver) createStepSpans(
 
 // newUniqueSteps creates a new slice of step names from the provided GitHub
 // event steps. Each step name, if duplicated, is appended with `-n` where n is
-// the numbered occurrence.
-func newUniqueSteps(steps []*github.TaskStep) []string {
+// the numbered occurrence. The second return value reports whether any two
+// steps shared the same raw name; callers use this to warn operators when
+// UseCheckRunID is enabled and the duplicates would cause colliding step span
+// IDs.
+func newUniqueSteps(steps []*github.TaskStep) ([]string, bool) {
 	if len(steps) == 0 {
-		return nil
+		return nil, false
 	}
 
 	results := make([]string, len(steps))
@@ -340,6 +342,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 		count[step.GetName()]++
 	}
 
+	hasDup := false
 	occurrences := make(map[string]int, len(steps))
 	for i, step := range steps {
 		name := step.GetName()
@@ -348,6 +351,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 			continue
 		}
 
+		hasDup = true
 		occurrences[name]++
 		if occurrences[name] == 1 {
 			results[i] = name
@@ -356,22 +360,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 		}
 	}
 
-	return results
-}
-
-// hasDuplicateStepNames reports whether any two steps in the slice share the
-// same raw name. Used to warn operators when UseCheckRunID is enabled and
-// duplicate names would cause colliding step span IDs.
-func hasDuplicateStepNames(steps []*github.TaskStep) bool {
-	seen := make(map[string]struct{}, len(steps))
-	for _, step := range steps {
-		name := step.GetName()
-		if _, ok := seen[name]; ok {
-			return true
-		}
-		seen[name] = struct{}{}
-	}
-	return false
+	return results, hasDup
 }
 
 // createStepSpan creates a span with a deterministic spandID for the provided

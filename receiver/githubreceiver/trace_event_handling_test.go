@@ -212,19 +212,22 @@ func TestNewParentSpanID_Consistency(t *testing.T) {
 
 func TestNewUniqueSteps(t *testing.T) {
 	tests := []struct {
-		name     string
-		steps    []*github.TaskStep
-		expected []string
+		name           string
+		steps          []*github.TaskStep
+		expected       []string
+		expectedHasDup bool
 	}{
 		{
-			name:     "nil steps",
-			steps:    nil,
-			expected: nil,
+			name:           "nil steps",
+			steps:          nil,
+			expected:       nil,
+			expectedHasDup: false,
 		},
 		{
-			name:     "empty steps",
-			steps:    []*github.TaskStep{},
-			expected: nil,
+			name:           "empty steps",
+			steps:          []*github.TaskStep{},
+			expected:       nil,
+			expectedHasDup: false,
 		},
 		{
 			name: "no duplicate steps",
@@ -233,7 +236,8 @@ func TestNewUniqueSteps(t *testing.T) {
 				{Name: github.Ptr("Test")},
 				{Name: github.Ptr("Deploy")},
 			},
-			expected: []string{"Build", "Test", "Deploy"},
+			expected:       []string{"Build", "Test", "Deploy"},
+			expectedHasDup: false,
 		},
 		{
 			name: "with duplicate steps",
@@ -245,7 +249,8 @@ func TestNewUniqueSteps(t *testing.T) {
 				{Name: github.Ptr("Test")},
 				{Name: github.Ptr("Deploy")},
 			},
-			expected: []string{"Setup", "Build", "Test", "Build-1", "Test-1", "Deploy"},
+			expected:       []string{"Setup", "Build", "Test", "Build-1", "Test-1", "Deploy"},
+			expectedHasDup: true,
 		},
 		{
 			name: "multiple duplicates of same step",
@@ -255,7 +260,8 @@ func TestNewUniqueSteps(t *testing.T) {
 				{Name: github.Ptr("Build")},
 				{Name: github.Ptr("Build")},
 			},
-			expected: []string{"Build", "Build-1", "Build-2", "Build-3"},
+			expected:       []string{"Build", "Build-1", "Build-2", "Build-3"},
+			expectedHasDup: true,
 		},
 		{
 			name: "with empty step names",
@@ -264,13 +270,16 @@ func TestNewUniqueSteps(t *testing.T) {
 				{Name: github.Ptr("")},
 				{Name: github.Ptr("Build")},
 			},
-			expected: []string{"", "-1", "Build"},
+			expected:       []string{"", "-1", "Build"},
+			expectedHasDup: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := newUniqueSteps(tt.steps)
+			result, hasDup := newUniqueSteps(tt.steps)
+
+			require.Equal(t, tt.expectedHasDup, hasDup, "hasDup mismatch")
 
 			// Check length matches
 			if len(result) != len(tt.expected) {
@@ -1038,58 +1047,6 @@ func TestCheckRunIDHashesAreDisjoint(t *testing.T) {
 	legacyStepID, err := newStepSpanID(12345, 1, "test-job", "build", 1)
 	require.NoError(t, err)
 	require.NotEqual(t, step1ID, legacyStepID, "new step span ID should differ from legacy")
-}
-
-func TestHasDuplicateStepNames(t *testing.T) {
-	tests := []struct {
-		name     string
-		steps    []*github.TaskStep
-		expected bool
-	}{
-		{
-			name:     "nil steps",
-			steps:    nil,
-			expected: false,
-		},
-		{
-			name:     "empty steps",
-			steps:    []*github.TaskStep{},
-			expected: false,
-		},
-		{
-			name: "all unique",
-			steps: []*github.TaskStep{
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Test")},
-				{Name: github.Ptr("Deploy")},
-			},
-			expected: false,
-		},
-		{
-			name: "one duplicate pair",
-			steps: []*github.TaskStep{
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Test")},
-				{Name: github.Ptr("Build")},
-			},
-			expected: true,
-		},
-		{
-			name: "all same",
-			steps: []*github.TaskStep{
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Build")},
-				{Name: github.Ptr("Build")},
-			},
-			expected: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, hasDuplicateStepNames(tt.steps))
-		})
-	}
 }
 
 // TestCreateStepSpans_DuplicateNameWarning verifies that when UseCheckRunID is
