@@ -38,7 +38,7 @@ protocol](https://github.com/open-telemetry/opentelemetry-proto).
 
 ```yaml
 receivers:
-  filelog:
+  file_log:
     include:
       - /var/log/foo.log
 
@@ -51,7 +51,7 @@ connectors:
 service:
   pipelines:
     logs/raw:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [otlpjson]
     metrics/otlp:
       receivers: [otlpjson]

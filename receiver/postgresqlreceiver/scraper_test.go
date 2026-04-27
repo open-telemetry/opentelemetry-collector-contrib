@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -588,11 +589,12 @@ func TestScrapeTopQueries(t *testing.T) {
 	}
 
 	expectedRows := make([]string, 0, len(expectedReturnedValue))
-	expectedValues := ""
+	var expectedValuesBuilder strings.Builder
 	for k, v := range expectedReturnedValue {
 		expectedRows = append(expectedRows, k)
-		expectedValues += fmt.Sprintf("%s,", v)
+		expectedValuesBuilder.WriteString(fmt.Sprintf("%s,", v))
 	}
+	expectedValues := expectedValuesBuilder.String()
 
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30), newTTLCache[string](1, time.Second))
 	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)

@@ -18,7 +18,7 @@ type s3TimeBasedReader struct {
 	logger *zap.Logger
 
 	listObjectsClient              ListObjectsAPI
-	getObjectClient                GetObjectAPI
+	singleObjectClient             SingleObjectAPI
 	s3Bucket                       string
 	s3Prefix                       string
 	s3PartitionFormat              string
@@ -28,10 +28,12 @@ type s3TimeBasedReader struct {
 	startTime                      time.Time
 	endTime                        time.Time
 	notifier                       statusNotifier
+	tagObjectAfterIngestion        bool
+	skipIngestingTaggedObjects     bool
 }
 
 func newS3TimeBasedReader(ctx context.Context, notifier statusNotifier, logger *zap.Logger, cfg *Config) (*s3TimeBasedReader, error) {
-	listObjectsClient, getObjectClient, err := newS3Client(ctx, cfg.S3Downloader)
+	listObjectsClient, singleObjectClient, err := newS3Client(ctx, cfg.S3Downloader)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +59,7 @@ func newS3TimeBasedReader(ctx context.Context, notifier statusNotifier, logger *
 	return &s3TimeBasedReader{
 		logger:                         logger,
 		listObjectsClient:              listObjectsClient,
-		getObjectClient:                getObjectClient,
+		singleObjectClient:             singleObjectClient,
 		s3Bucket:                       cfg.S3Downloader.S3Bucket,
 		s3Prefix:                       cfg.S3Downloader.S3Prefix,
 		filePrefix:                     cfg.S3Downloader.FilePrefix,
@@ -67,6 +69,8 @@ func newS3TimeBasedReader(ctx context.Context, notifier statusNotifier, logger *
 		startTime:                      startTime,
 		endTime:                        endTime,
 		notifier:                       notifier,
+		tagObjectAfterIngestion:        cfg.S3Downloader.TagObjectAfterIngestion,
+		skipIngestingTaggedObjects:     cfg.S3Downloader.SkipIngestingTaggedObjects,
 	}, nil
 }
 
@@ -144,13 +148,43 @@ func (s3Reader *s3TimeBasedReader) readTelemetryForTime(ctx context.Context, t t
 			s3Reader.logger.Info("No telemetry found for time", zap.String("prefix", prefix), zap.Time("time", t))
 		} else {
 			for _, obj := range page.Contents {
-				data, err := retrieveS3Object(ctx, s3Reader.getObjectClient, s3Reader.s3Bucket, *obj.Key)
+				if s3Reader.skipIngestingTaggedObjects {
+					var hasTag bool
+					hasTag, err = hasIngestedTag(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
+					if err != nil {
+						s3Reader.logger.Error("Failed to check object tags",
+							zap.String("key", *obj.Key),
+							zap.Error(err))
+						return err
+					} else if hasTag {
+						s3Reader.logger.Info("Skipping already ingested object",
+							zap.String("key", *obj.Key))
+						continue
+					}
+				}
+
+				data, err := retrieveS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key)
 				if err != nil {
 					return err
 				}
+
 				s3Reader.logger.Debug("Retrieved telemetry", zap.String("key", *obj.Key))
-				if err := dataCallback(ctx, *obj.Key, data); err != nil {
-					return err
+				if callbackErr := dataCallback(ctx, *obj.Key, data); callbackErr != nil {
+					return callbackErr
+				}
+
+				if s3Reader.tagObjectAfterIngestion {
+					if err = tagS3Object(ctx, s3Reader.singleObjectClient, s3Reader.s3Bucket, *obj.Key); err != nil {
+						s3Reader.logger.Warn("Failed to tag S3 object",
+							zap.String("bucket", s3Reader.s3Bucket),
+							zap.String("key", *obj.Key),
+							zap.Error(err))
+						// Don't return error as the object was processed successfully
+					} else {
+						s3Reader.logger.Debug("Tagged S3 object",
+							zap.String("bucket", s3Reader.s3Bucket),
+							zap.String("key", *obj.Key))
+					}
 				}
 			}
 		}

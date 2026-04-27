@@ -293,7 +293,9 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 			ctx := t.Context()
 			require.NoError(t, mgp.Start(ctx, nil))
 
-			cErr := mgp.ConsumeMetrics(t.Context(), test.inMetrics)
+			inputCopy := pmetric.NewMetrics()
+			test.inMetrics.CopyTo(inputCopy)
+			cErr := mgp.ConsumeMetrics(t.Context(), inputCopy)
 			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
@@ -514,7 +516,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 
 	for _, testCase := range testCaseNames {
 		t.Run(testCase.name, func(t *testing.T) {
-			require.NoError(t, featuregate.GlobalRegistry().Set(matchAttributes.ID(), testCase.matchAttributesFlagEnabled))
+			require.NoError(t, featuregate.GlobalRegistry().Set(metadata.MetricsgenerationMatchAttributesFeatureGate.ID(), testCase.matchAttributesFlagEnabled))
 
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", testCase.testDir, "config.yaml"))
 			assert.NoError(t, err)

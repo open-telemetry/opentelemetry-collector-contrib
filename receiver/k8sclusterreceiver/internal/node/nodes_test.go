@@ -167,7 +167,7 @@ func TestNodeMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)
@@ -357,7 +357,7 @@ func TestNodeMetadata(t *testing.T) {
 			ResourceIDKey: "k8s.node.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID("test-node-uid"),
 			Metadata: map[string]string{
-				"env":                                "production",
+				"k8s.node.label.env":                 "production",
 				"k8s.node.name":                      "test-node",
 				"k8s.node.condition_ready":           "true",
 				"k8s.node.condition_memory_pressure": "false",
