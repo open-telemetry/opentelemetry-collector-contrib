@@ -2678,6 +2678,98 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{Confirmed: true, Histograms: 1},
 		},
+		{
+			name: "info metric - converted to non-monotonic sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "build_info", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"version", "v1.0.0", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("build_info")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "info")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(false)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("version", "v1.0.0")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "stateset metric - converted to non-monotonic sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "my_feature_flag", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"my_feature_flag", "enabled", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_STATESET},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("my_feature_flag")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "stateset")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(false)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("my_feature_flag", "enabled")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
