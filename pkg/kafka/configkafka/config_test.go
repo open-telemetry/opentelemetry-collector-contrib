@@ -77,6 +77,26 @@ func TestClientConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		"sasl_oauthbearer": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.Authentication.SASL = &SASLConfig{
+					Mechanism:            "OAUTHBEARER",
+					OAuthBearerTokenFile: "/var/run/token",
+				}
+				return cfg
+			}(),
+		},
+		"sasl_oauthbearer_extension": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.Authentication.SASL = &SASLConfig{
+					Mechanism:              "OAUTHBEARER",
+					OAuthBearerTokenSource: component.MustNewID("oauth2client"),
+				}
+				return cfg
+			}(),
+		},
 		"sasl_plain": {
 			expected: func() ClientConfig {
 				cfg := NewDefaultClientConfig()
@@ -135,10 +155,19 @@ func TestClientConfig(t *testing.T) {
 			expectedErr: "invalid protocol version: invalid version `none`",
 		},
 		"sasl_invalid_mechanism": {
-			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
+			expectedErr: "auth::sasl: mechanism should be one of 'PLAIN', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FANCY",
 		},
 		"sasl_invalid_version": {
 			expectedErr: "auth::sasl: version has to be either 0 or 1. configured value -1",
+		},
+		"sasl_oauthbearer_missing_token_file": {
+			expectedErr: "auth::sasl: one of oauthbearer_token_source or oauthbearer_token_file is required",
+		},
+		"sasl_oauthbearer_empty_token_file": {
+			expectedErr: "auth::sasl: one of oauthbearer_token_source or oauthbearer_token_file is required",
+		},
+		"sasl_oauthbearer_token_and_extension": {
+			expectedErr: "auth::sasl: only one of oauthbearer_token_source or oauthbearer_token_file may be set",
 		},
 		"sasl_plain_username_required": {
 			expectedErr: "auth::sasl: username is required",

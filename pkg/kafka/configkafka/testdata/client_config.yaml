@@ -30,6 +30,16 @@ kafka/sasl_aws_msk_iam_oauthbearer_with_region:
       mechanism: AWS_MSK_IAM_OAUTHBEARER
       aws_msk:
         region: us-east-1
+kafka/sasl_oauthbearer:
+  auth:
+    sasl:
+      mechanism: OAUTHBEARER
+      oauthbearer_token_file: /var/run/token
+kafka/sasl_oauthbearer_extension:
+  auth:
+    sasl:
+      mechanism: OAUTHBEARER
+      oauthbearer_token_source: oauth2client
 kafka/sasl_plain:
   auth:
     sasl:
@@ -60,6 +70,21 @@ kafka/sasl_invalid_mechanism:
   auth:
     sasl:
       mechanism: FANCY
+kafka/sasl_oauthbearer_missing_token_file:
+  auth:
+    sasl:
+      mechanism: OAUTHBEARER
+kafka/sasl_oauthbearer_empty_token_file:
+  auth:
+    sasl:
+      mechanism: OAUTHBEARER
+      oauthbearer_token_file: ""
+kafka/sasl_oauthbearer_token_and_extension:
+  auth:
+    sasl:
+      mechanism: OAUTHBEARER
+      oauthbearer_token_file: /var/run/token
+      oauthbearer_token_source: oauth2client
 
 kafka/sasl_invalid_version:
   auth:

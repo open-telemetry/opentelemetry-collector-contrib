@@ -45,7 +45,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	ext, err := newObserver(
 		zap.NewNop(),
 		factory.CreateDefaultConfig().(*Config),
-		func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
+		func(context.Context, configkafka.ClientConfig, component.Host) (sarama.ClusterAdmin, error) {
 			return mockAdmin, nil
 		},
 	)
@@ -86,7 +86,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	extAllSettings := loadConfig(t, component.NewIDWithName(metadata.Type, "all_settings"))
 	ext, err := newObserver(
 		zap.NewNop(), extAllSettings,
-		func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
+		func(context.Context, configkafka.ClientConfig, component.Host) (sarama.ClusterAdmin, error) {
 			return mockAdmin, nil
 		},
 	)

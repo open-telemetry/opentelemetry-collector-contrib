@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kfake"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
@@ -150,7 +151,7 @@ func TestNewSaramaClientConfig(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			output, err := newSaramaClientConfig(t.Context(), tt.input)
+			output, err := newSaramaClientConfig(t.Context(), tt.input, componenttest.NewNopHost())
 			if tt.expectedErr != "" {
 				require.Error(t, err)
 				require.ErrorContains(t, err, tt.expectedErr)
@@ -165,7 +166,7 @@ func TestNewSaramaClientConfig(t *testing.T) {
 
 func TestNewSaramaClient(t *testing.T) {
 	_, clientConfig := kafkatest.NewCluster(t)
-	client, err := NewSaramaClient(t.Context(), clientConfig)
+	client, err := NewSaramaClient(t.Context(), clientConfig, componenttest.NewNopHost())
 	require.NoError(t, err)
 	assert.NoError(t, client.Close())
 }
@@ -186,7 +187,7 @@ func TestNewSaramaClient_SASL(t *testing.T) {
 			Password:  password,
 			Version:   1, // kfake only supports version 1
 		}
-		client, err := NewSaramaClient(t.Context(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig, componenttest.NewNopHost())
 		if err != nil {
 			return err
 		}
@@ -258,7 +259,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 	tryConnect := func(cfg configtls.ClientConfig) error {
 		clientConfig := clientConfig // copy
 		clientConfig.TLS = &cfg
-		client, err := NewSaramaClient(t.Context(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig, componenttest.NewNopHost())
 		if err != nil {
 			return err
 		}
@@ -289,7 +290,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 		clientConfig := clientConfig // copy
 		clientConfig.Authentication.TLS = &tlsConfig
 
-		client, err := NewSaramaClient(t.Context(), clientConfig)
+		client, err := NewSaramaClient(t.Context(), clientConfig, componenttest.NewNopHost())
 		require.NoError(t, err)
 		assert.NoError(t, client.Close())
 
@@ -297,7 +298,7 @@ func TestNewSaramaClient_TLS(t *testing.T) {
 		// top-level TLS config is specified.
 		invalidTLSConfig := configtls.NewDefaultClientConfig()
 		clientConfig.TLS = &invalidTLSConfig
-		_, err = NewSaramaClient(t.Context(), clientConfig)
+		_, err = NewSaramaClient(t.Context(), clientConfig, componenttest.NewNopHost())
 		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
 	})
 
@@ -330,7 +331,7 @@ func TestNewSaramaClientConfigWithAWSMSKIAM(t *testing.T) {
 		},
 	}
 
-	saramaConfig, err := newSaramaClientConfig(t.Context(), clientConfig)
+	saramaConfig, err := newSaramaClientConfig(t.Context(), clientConfig, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	// Verify that TLS is enabled, not just SASL

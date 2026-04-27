@@ -10,6 +10,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -35,7 +36,7 @@ var (
 	testBrokers    = make([]*sarama.Broker, 1)
 )
 
-func mockNewSaramaClient(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+func mockNewSaramaClient(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 	return newMockClient(), nil
 }
 

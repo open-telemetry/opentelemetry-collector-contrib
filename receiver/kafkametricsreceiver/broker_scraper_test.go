@@ -11,6 +11,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -64,7 +65,7 @@ func TestBrokerScraperStart(t *testing.T) {
 }
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
-	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
 	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
@@ -75,7 +76,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 }
 
 func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
-	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
 	bs, err := createBrokerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))

@@ -25,8 +25,9 @@ var (
 
 type kafkaTopicsObserver struct {
 	*endpointswatcher.EndpointsWatcher
-	logger *zap.Logger
-	config *Config
+	logger                *zap.Logger
+	config                *Config
+	newAdminClusterClient func(context.Context, configkafka.ClientConfig, component.Host) (sarama.ClusterAdmin, error)
 
 	adminClient      sarama.ClusterAdmin
 	cancelKafkaAdmin func()
@@ -35,25 +36,17 @@ type kafkaTopicsObserver struct {
 func newObserver(
 	logger *zap.Logger,
 	config *Config,
-	newAdminClusterClient func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error),
+	newAdminClusterClient func(context.Context, configkafka.ClientConfig, component.Host) (sarama.ClusterAdmin, error),
 ) (extension.Extension, error) {
 	topicRegexp, err := regexp.Compile(config.TopicRegex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic regex: %w", err)
 	}
 
-	kCtx, cancel := context.WithCancel(context.Background())
-	adminClient, err := newAdminClusterClient(kCtx, config.ClientConfig)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("could not create kafka cluster admin: %w", err)
-	}
-
 	o := &kafkaTopicsObserver{
-		logger:           logger,
-		config:           config,
-		cancelKafkaAdmin: cancel,
-		adminClient:      adminClient,
+		logger:                logger,
+		config:                config,
+		newAdminClusterClient: newAdminClusterClient,
 	}
 	o.EndpointsWatcher = endpointswatcher.New(
 		&kafkaTopicsEndpointsLister{o: o, topicRegexp: topicRegexp},
@@ -63,18 +56,29 @@ func newObserver(
 	return o, nil
 }
 
-func (*kafkaTopicsObserver) Start(context.Context, component.Host) error {
+func (k *kafkaTopicsObserver) Start(_ context.Context, host component.Host) error {
+	kCtx, cancel := context.WithCancel(context.Background())
+	adminClient, err := k.newAdminClusterClient(kCtx, k.config.ClientConfig, host)
+	if err != nil {
+		cancel()
+		return fmt.Errorf("could not create kafka cluster admin: %w", err)
+	}
+	k.adminClient = adminClient
+	k.cancelKafkaAdmin = cancel
 	return nil
 }
 
 func (k *kafkaTopicsObserver) Shutdown(context.Context) error {
 	k.StopListAndWatch()
-	k.cancelKafkaAdmin()
-	err := k.adminClient.Close()
-	if err != nil {
-		return fmt.Errorf("failed to close kafka cluster admin client: %w", err)
+	if k.cancelKafkaAdmin != nil {
+		k.cancelKafkaAdmin()
 	}
-	k.logger.Info("kafka cluster admin client closed")
+	if k.adminClient != nil {
+		if err := k.adminClient.Close(); err != nil {
+			return fmt.Errorf("failed to close kafka cluster admin client: %w", err)
+		}
+		k.logger.Info("kafka cluster admin client closed")
+	}
 	return nil
 }
 

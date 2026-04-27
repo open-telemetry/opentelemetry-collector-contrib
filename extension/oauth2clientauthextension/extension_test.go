@@ -815,3 +815,54 @@ func TestJwtOAuth(t *testing.T) {
 	_, err = client.Do(req)
 	assert.NoError(t, err)
 }
+
+func TestClientAuthenticatorTokenSource(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"access_token":"good-token","token_type":"bearer","expires_in":60}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		ClientID:     "client",
+		ClientSecret: "secret",
+		TokenURL:     server.URL,
+	}
+
+	auth, err := newClientAuthenticator(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	ts, err := auth.TokenSource(t.Context())
+	require.NoError(t, err)
+
+	tok, err := ts.Token()
+	require.NoError(t, err)
+	require.Equal(t, "good-token", tok.AccessToken)
+}
+
+func TestClientAuthenticatorTokenSourceError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte("not-json"))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cfg := &Config{
+		ClientID:     "client",
+		ClientSecret: "secret",
+		TokenURL:     server.URL,
+	}
+
+	auth, err := newClientAuthenticator(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	ts, err := auth.TokenSource(t.Context())
+	require.NoError(t, err)
+
+	tok, err := ts.Token()
+	require.ErrorIs(t, err, errFailedToGetSecurityToken)
+	require.ErrorContains(t, err, server.URL)
+	require.Nil(t, tok)
+}

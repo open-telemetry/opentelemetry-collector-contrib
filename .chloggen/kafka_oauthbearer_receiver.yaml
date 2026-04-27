@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/kafka
+note: "Add generic Kafka SASL OAUTHBEARER support with extension-backed and file-based token sources."
+issues: [39248]
+subtext:
+change_logs: [user, api]

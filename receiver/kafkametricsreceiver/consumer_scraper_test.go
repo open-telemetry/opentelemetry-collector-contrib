@@ -12,6 +12,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -54,7 +55,7 @@ func TestConsumerScraper_createConsumerScraper(t *testing.T) {
 }
 
 func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
-	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
 	cs, err := createConsumerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
@@ -65,7 +66,7 @@ func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 }
 
 func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
-	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
 	cs, err := createConsumerScraper(t.Context(), Config{}, receivertest.NewNopSettings(metadata.Type))
@@ -76,7 +77,7 @@ func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
 }
 
 func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
-	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig, component.Host) (sarama.Client, error) {
 		client := newMockClient()
 		client.Mock.
 			On("Close").Return(nil)

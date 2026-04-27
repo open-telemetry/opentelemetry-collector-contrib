@@ -26,11 +26,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -124,6 +126,97 @@ func TestTracesPusher_ctx_Kgo(t *testing.T) {
 		}, record.Headers, "message headers mismatch")
 		assert.Nil(t, record.Key, "expected nil key for this test case")
 	})
+}
+
+func TestExporterStartWithFranzOAuthExtension(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	extID := component.MustNewID("oauth2client")
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
+		OAuthBearerTokenSource: extID,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp := newTracesExporter(*config, set)
+
+	host := hostWithExtensions{
+		Host:       componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{extID: oauthTestExtension{}},
+	}
+
+	ctx := t.Context()
+	err := exp.Start(ctx, host)
+	require.NoError(t, err)
+
+	require.NoError(t, exp.Close(ctx))
+}
+
+func TestExporterStartWithFranzOAuthExtensionMissing(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	extID := component.MustNewID("oauth2client")
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
+		OAuthBearerTokenSource: extID,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp := newTracesExporter(*config, set)
+
+	host := hostWithExtensions{
+		Host:       componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{},
+	}
+
+	err := exp.Start(t.Context(), host)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "oauth token source extension \"oauth2client\" not found")
+}
+
+func TestExporterStartWithFranzOAuthExtensionWrongType(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	extID := component.MustNewID("oauth2client")
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
+		OAuthBearerTokenSource: extID,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp := newTracesExporter(*config, set)
+
+	host := hostWithExtensions{
+		Host:       componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{extID: nonTokenSourceExtension{}},
+	}
+
+	err := exp.Start(t.Context(), host)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "does not implement TokenSource(context.Context) (oauth2.TokenSource, error)")
+}
+
+func TestExporterStartWithFranzOAuthExtensionTokenSourceError(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	extID := component.MustNewID("oauth2client")
+	config.Authentication.SASL = &configkafka.SASLConfig{
+		Mechanism:              kafka.OAUTHBEARER,
+		Version:                1,
+		OAuthBearerTokenSource: extID,
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp := newTracesExporter(*config, set)
+
+	host := hostWithExtensions{
+		Host:       componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{extID: oauthErrorExtension{}},
+	}
+
+	err := exp.Start(t.Context(), host)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to obtain token source from extension \"oauth2client\"")
+	require.ErrorContains(t, err, "boom")
 }
 
 func TestTracesPusher_conf_err(t *testing.T) {
@@ -1199,6 +1292,45 @@ type extensionsHost map[component.ID]component.Component
 func (m extensionsHost) GetExtensions() map[component.ID]component.Component {
 	return m
 }
+
+type hostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+type oauthTestExtension struct{}
+
+func (oauthTestExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (oauthTestExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func (oauthTestExtension) TokenSource(context.Context) (oauth2.TokenSource, error) {
+	return oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "test-token"}), nil
+}
+
+type oauthErrorExtension struct{}
+
+func (oauthErrorExtension) Start(context.Context, component.Host) error { return nil }
+
+func (oauthErrorExtension) Shutdown(context.Context) error { return nil }
+
+func (oauthErrorExtension) TokenSource(context.Context) (oauth2.TokenSource, error) {
+	return nil, errors.New("boom")
+}
+
+type nonTokenSourceExtension struct{}
+
+func (nonTokenSourceExtension) Start(context.Context, component.Host) error { return nil }
+
+func (nonTokenSourceExtension) Shutdown(context.Context) error { return nil }
 
 type ptraceMarshalerFuncExtension func(ptrace.Traces) ([]byte, error)
 

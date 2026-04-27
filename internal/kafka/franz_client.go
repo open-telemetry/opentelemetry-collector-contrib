@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -39,10 +38,6 @@ const (
 	AWSMSKIAMOAUTHBEARER = "AWS_MSK_IAM_OAUTHBEARER" //nolint:gosec // These aren't credentials.
 	OAUTHBEARER          = "OAUTHBEARER"
 )
-
-type contextTokenSource interface {
-	Token(context.Context) (*oauth2.Token, error)
-}
 
 // NewFranzSyncProducer creates a new Kafka client using the franz-go library.
 func NewFranzSyncProducer(
@@ -244,7 +239,7 @@ func commonOpts(
 		opts = append(opts, kgo.SASL(auth.AsMechanism()))
 	}
 	if clientCfg.Authentication.SASL != nil {
-		saslOpt, err := configureKgoSASL(clientCfg.Authentication.SASL, host)
+		saslOpt, err := configureKgoSASL(ctx, clientCfg.Authentication.SASL, host)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure SASL: %w", err)
 		}
@@ -291,7 +286,7 @@ func commonOpts(
 	return opts, nil
 }
 
-func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
+func configureKgoSASL(ctx context.Context, cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt, error) {
 	var m sasl.Mechanism
 	switch cfg.Mechanism {
 	case PLAIN:
@@ -306,25 +301,30 @@ func configureKgoSASL(cfg *configkafka.SASLConfig, host component.Host) (kgo.Opt
 			return oauth.Auth{Token: token}, err
 		})
 	case OAUTHBEARER:
-		extMap := host.GetExtensions()
-		oauthExt, exists := extMap[cfg.OAuthBearerTokenSource]
-		if !exists {
-			return nil, fmt.Errorf("extension %s is not configured", cfg.OAuthBearerTokenSource)
+		tp, err := resolveOAuthBearerProvider(context.WithoutCancel(ctx), cfg, host)
+		if err != nil {
+			return nil, err
 		}
-
-		m = oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
-			ts := oauthExt.(contextTokenSource)
-
-			token, err := ts.Token(ctx)
-			if err != nil {
-				return oauth.Auth{}, err
-			}
-			return oauth.Auth{Token: token.AccessToken}, nil
-		})
+		m = newKgoOAuthMechanism(tp)
 	default:
 		return nil, fmt.Errorf("unsupported SASL mechanism: %s", cfg.Mechanism)
 	}
 	return kgo.SASL(m), nil
+}
+
+func newKgoOAuthMechanism(tokenProvider TokenProvider) sasl.Mechanism {
+	return oauth.Oauth(func(ctx context.Context) (oauth.Auth, error) {
+		token, err := tokenProvider.Token(ctx)
+		if err != nil {
+			return oauth.Auth{}, err
+		}
+		// Defensive check: our built-in TokenProviders already fail on empty tokens, but custom
+		// TokenProviders may not.
+		if token == "" {
+			return oauth.Auth{}, ErrEmptyToken
+		}
+		return oauth.Auth{Token: token}, nil
+	})
 }
 
 func configureKgoKerberos(cfg *configkafka.KerberosConfig) (kgo.Opt, error) {

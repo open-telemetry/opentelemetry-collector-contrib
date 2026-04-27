@@ -27,14 +27,16 @@ type brokerScraper struct {
 	config       Config
 	clusterAdmin sarama.ClusterAdmin
 	mb           *metadata.MetricsBuilder
+	host         component.Host
 }
 
 const (
 	logRetentionHours = "log.retention.hours"
 )
 
-func (s *brokerScraper) start(_ context.Context, _ component.Host) error {
+func (s *brokerScraper) start(_ context.Context, host component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
+	s.host = host
 	return nil
 }
 
@@ -49,7 +51,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	if s.client == nil || s.client.Closed() {
-		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig, s.host)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)
 		}

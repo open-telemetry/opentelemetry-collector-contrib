@@ -8,13 +8,14 @@ import (
 	"crypto/tls"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
 // NewSaramaClient returns a new Kafka client with the given configuration.
-func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
-	saramaConfig, err := newSaramaClientConfig(ctx, config)
+func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig, host component.Host) (sarama.Client, error) {
+	saramaConfig, err := newSaramaClientConfig(ctx, config, host)
 	if err != nil {
 		return nil, err
 	}
@@ -22,8 +23,8 @@ func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sara
 }
 
 // NewSaramaClusterAdminClient returns a new Kafka cluster admin client with the given configuration.
-func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
-	saramaConfig, err := newSaramaClientConfig(ctx, config)
+func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientConfig, host component.Host) (sarama.ClusterAdmin, error) {
+	saramaConfig, err := newSaramaClientConfig(ctx, config, host)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +32,7 @@ func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientC
 }
 
 // newSaramaClientConfig returns a Sarama client config, based on the given config.
-func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
+func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig, host component.Host) (*sarama.Config, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.ClientID = config.ClientID
 	if config.RackID != "" {
@@ -69,6 +70,8 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 	case config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == OAUTHBEARER:
 		saramaConfig.Net.TLS.Enable = true
 	}
-	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
+	if err := configureSaramaAuthentication(ctx, config.Authentication, saramaConfig, host); err != nil {
+		return nil, err
+	}
 	return saramaConfig, nil
 }
