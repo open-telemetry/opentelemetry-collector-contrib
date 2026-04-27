@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/github
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add job.check_run_id deterministic spans via the receiver.githubreceiver.UserCheckRunID feature gate
+note: Add job.check_run_id deterministic spans via the receiver.githubreceiver.UseCheckRunID feature gate
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44856, 45157]

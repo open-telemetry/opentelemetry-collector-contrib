@@ -217,16 +217,17 @@ func (gtr *githubTracesReceiver) createParentSpan(
 
 	var jobSpanID pcommon.SpanID
 	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
-		if event.WorkflowJob == nil || event.WorkflowJob.ID == nil || event.GetWorkflowJob().GetID() == 0 {
+		checkRunID := event.GetWorkflowJob().GetID()
+		if checkRunID == 0 {
 			return pcommon.SpanID{}, fmt.Errorf(
-				"failed to derive job parent span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d)",
+				"failed to derive job parent span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d",
 				event.GetRepo().GetFullName(),
 				event.GetWorkflowJob().GetName(),
 				event.GetWorkflowJob().GetRunID(),
 				event.GetWorkflowJob().GetRunAttempt(),
 			)
 		}
-		input := fmt.Sprintf("%d-j", event.GetWorkflowJob().GetID())
+		input := fmt.Sprintf("%d-j", checkRunID)
 		jobSpanID, err = newSpanIDFromCheckRun(input)
 	} else {
 		jobSpanID, err = newJobSpanID(
@@ -402,7 +403,7 @@ func (*githubTracesReceiver) createStepSpan(
 		checkRunID := event.GetWorkflowJob().GetID()
 		if checkRunID == 0 {
 			return fmt.Errorf(
-				"failed to derive step span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d)",
+				"failed to derive step span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d",
 				event.GetRepo().GetFullName(),
 				event.GetWorkflowJob().GetName(),
 				event.GetWorkflowJob().GetRunID(),
@@ -518,7 +519,7 @@ func (*githubTracesReceiver) createJobQueueSpan(
 		checkRunID := event.GetWorkflowJob().GetID()
 		if checkRunID == 0 {
 			return fmt.Errorf(
-				"failed to derive queue span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d)",
+				"failed to derive queue span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d",
 				event.GetRepo().GetFullName(),
 				event.GetWorkflowJob().GetName(),
 				event.GetWorkflowJob().GetRunID(),
