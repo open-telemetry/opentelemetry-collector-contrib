@@ -27,12 +27,12 @@ var priorityToSeverity = map[string]entry.Severity{
 
 // priorityToSeverityText maps journald PRIORITY values to OTel severity text.
 var priorityToSeverityText = map[string]string{
-	"0": "emerg",
-	"1": "alert",
-	"2": "crit",
-	"3": "err",
-	"4": "warning",
-	"5": "notice",
+	"0": "fatal;",
+	"1": "error3",
+	"2": "error2",
+	"3": "error",
+	"4": "warn",
+	"5": "info2",
 	"6": "info",
 	"7": "debug",
 }
@@ -45,7 +45,7 @@ var attributeMapping = map[string]string{
 	"CODE_LINE":         "code.line.number",
 	"TID":               "thread.id",
 	"SYSLOG_FACILITY":   "syslog.facility.code",
-	"SYSLOG_IDENTIFIER": "syslog.msg.id",
+	"SYSLOG_IDENTIFIER": "syslog.msgid",
 	"SYSLOG_PID":        "syslog.pid",
 }
 
