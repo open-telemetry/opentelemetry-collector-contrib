@@ -30,7 +30,7 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 	}
 
 	host := unknownHostName
-	fields := map[string]any{}
+	fields := make(map[string]any, lr.Attributes().Len()+res.Attributes().Len()+2)
 	if spanID := lr.SpanID(); !spanID.IsEmpty() {
 		fields[spanIDFieldKey] = hex.EncodeToString(spanID[:])
 	}
@@ -57,7 +57,7 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			mergeValue(fields, k, v.AsRaw())
+			mergeValue(fields, k, v)
 		}
 	}
 	for k, v := range lr.Attributes().All() {
@@ -73,7 +73,7 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			mergeValue(fields, k, v.AsRaw())
+			mergeValue(fields, k, v)
 		}
 	}
 
@@ -93,48 +93,67 @@ func LogToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, toOtelAttrs HecTo
 	}
 }
 
-func mergeValue(dst map[string]any, k string, v any) {
-	switch element := v.(type) {
-	case []any:
-		if isArrayFlat(element) {
-			dst[k] = v
+func mergeValue(dst map[string]any, k string, v pcommon.Value) {
+	switch v.Type() {
+	case pcommon.ValueTypeEmpty:
+		dst[k] = nil
+	case pcommon.ValueTypeStr:
+		dst[k] = v.Str()
+	case pcommon.ValueTypeBool:
+		dst[k] = v.Bool()
+	case pcommon.ValueTypeDouble:
+		dst[k] = v.Double()
+	case pcommon.ValueTypeInt:
+		dst[k] = v.Int()
+	case pcommon.ValueTypeBytes:
+		dst[k] = v.Bytes().AsRaw()
+	case pcommon.ValueTypeMap:
+		flattenAndMergeMap(v.Map(), dst, k)
+	case pcommon.ValueTypeSlice:
+		if isArrayFlat(v.Slice()) {
+			dst[k] = v.Slice().AsRaw()
 		} else {
-			b, _ := json.Marshal(element)
+			b, _ := json.Marshal(v.Slice().AsRaw())
 			dst[k] = string(b)
 		}
-	case map[string]any:
-		flattenAndMergeMap(element, dst, k)
-	default:
-		dst[k] = v
 	}
 }
 
-func isArrayFlat(array []any) bool {
-	for _, v := range array {
-		switch v.(type) {
-		case []any, map[string]any:
+func isArrayFlat(array pcommon.Slice) bool {
+	for _, v := range array.All() {
+		switch v.Type() {
+		case pcommon.ValueTypeSlice, pcommon.ValueTypeMap:
 			return false
 		}
 	}
 	return true
 }
 
-func flattenAndMergeMap(src, dst map[string]any, key string) {
-	for k, v := range src {
+func flattenAndMergeMap(src pcommon.Map, dst map[string]any, key string) {
+	for k, v := range src.All() {
 		current := fmt.Sprintf("%s.%s", key, k)
-		switch element := v.(type) {
-		case map[string]any:
-			flattenAndMergeMap(element, dst, current)
-		case []any:
-			if isArrayFlat(element) {
-				dst[current] = element
+		switch v.Type() {
+		case pcommon.ValueTypeMap:
+			flattenAndMergeMap(v.Map(), dst, current)
+		case pcommon.ValueTypeSlice:
+			if isArrayFlat(v.Slice()) {
+				dst[current] = v.Slice().AsRaw()
 			} else {
-				b, _ := json.Marshal(element)
+				b, _ := json.Marshal(v.Slice().AsRaw())
 				dst[current] = string(b)
 			}
-
-		default:
-			dst[current] = element
+		case pcommon.ValueTypeEmpty:
+			dst[current] = nil
+		case pcommon.ValueTypeStr:
+			dst[current] = v.Str()
+		case pcommon.ValueTypeBool:
+			dst[current] = v.Bool()
+		case pcommon.ValueTypeDouble:
+			dst[current] = v.Double()
+		case pcommon.ValueTypeInt:
+			dst[current] = v.Int()
+		case pcommon.ValueTypeBytes:
+			dst[current] = v.Bytes().AsRaw()
 		}
 	}
 }

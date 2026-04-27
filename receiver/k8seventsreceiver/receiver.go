@@ -157,6 +157,9 @@ func (kr *k8seventsReceiver) startWatchers() {
 			Exclude:             map[apiWatch.EventType]bool{apiWatch.Deleted: true}, // Skip DELETED events (matches old Informer behavior)
 		},
 		kr.settings.Logger,
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47575
+		// rv persistence to be added to k8seventsreceiver
+		nil,
 		func(event *apiWatch.Event) {
 			// The k8sinventory watch observer uses dynamic client which returns unstructured objects
 			// We need to convert them to corev1.Event

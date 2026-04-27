@@ -455,11 +455,35 @@ func (d DebugData) asMap() map[string]any {
 	}
 }
 
+// parsedEvent is the interface consumed by sendEvent. All fields accessed in
+// sendEvent must go through this interface so that the compiler enforces that
+// rawParsedEvent explicitly supports any new access added to the raw path.
+type parsedEvent interface {
+	getOriginal() string
+	getSystemTime() string
+	getLevel() string
+	getRenderedLevel() string
+	// formattedBody returns the structured body map for non-raw mode.
+	// Panics if called on rawParsedEvent — only valid when raw=false.
+	toEventXML() *EventXML
+}
+
+func (e *EventXML) getOriginal() string   { return e.Original }
+func (e *EventXML) getSystemTime() string { return e.TimeCreated.SystemTime }
+func (e *EventXML) getLevel() string      { return e.Level }
+func (e *EventXML) getRenderedLevel() string {
+	if e.RenderingInfo != nil {
+		return e.RenderingInfo.Level
+	}
+	return ""
+}
+func (e *EventXML) toEventXML() *EventXML { return e }
+
 // unmarshalEventXML will unmarshal EventXML from xml bytes.
 // Illegal XML 1.0 characters (e.g. U+0001 found in some Sysmon events) are
 // stripped before parsing so that a single malformed event does not halt the
 // entire receiver.
-func unmarshalEventXML(data []byte) (*EventXML, error) {
+func unmarshalEventXML(data []byte) (parsedEvent, error) {
 	sanitized := sanitizeXMLBytes(data)
 	var eventXML EventXML
 	if err := xml.Unmarshal(sanitized, &eventXML); err != nil {
@@ -468,6 +492,50 @@ func unmarshalEventXML(data []byte) (*EventXML, error) {
 	// The sanitized bytes are only required for XML unmarshalling - the original data is preserved.
 	eventXML.Original = string(data)
 	return &eventXML, nil
+}
+
+// rawEventXML holds only the fields needed when raw=true, avoiding the
+// allocation and parsing cost of the full EventXML struct. The RenderingInfo
+// field carries just the rendered level, which is used for severity even in
+// raw mode when the deep render path is active.
+type rawEventXML struct {
+	Original      string               `xml:"-"`
+	TimeCreated   TimeCreated          `xml:"System>TimeCreated"`
+	Level         string               `xml:"System>Level"`
+	RenderingInfo *rawRenderingInfoXML `xml:"RenderingInfo"`
+}
+
+// rawRenderingInfoXML holds only the Level field from RenderingInfo.
+type rawRenderingInfoXML struct {
+	Level string `xml:"Level"`
+}
+
+func (r *rawEventXML) getOriginal() string   { return r.Original }
+func (r *rawEventXML) getSystemTime() string { return r.TimeCreated.SystemTime }
+func (r *rawEventXML) getLevel() string      { return r.Level }
+func (r *rawEventXML) getRenderedLevel() string {
+	if r.RenderingInfo != nil {
+		return r.RenderingInfo.Level
+	}
+	return ""
+}
+
+func (*rawEventXML) toEventXML() *EventXML {
+	panic("toEventXML called on rawEventXML: only valid in non-raw mode")
+}
+
+// unmarshalRawEventXML parses only the fields needed when raw=true and returns
+// a rawParsedEvent. Use this instead of unmarshalEventXML when raw=true to
+// avoid populating fields that will not be used.
+func unmarshalRawEventXML(data []byte) (parsedEvent, error) {
+	sanitized := sanitizeXMLBytes(data)
+	var raw rawEventXML
+	if err := xml.Unmarshal(sanitized, &raw); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(sanitized))
+	}
+	// The sanitized bytes are only required for XML unmarshalling - the original data is preserved.
+	raw.Original = string(data)
+	return &raw, nil
 }
 
 // sanitizeXMLBytes removes characters that are illegal in XML 1.0 documents.

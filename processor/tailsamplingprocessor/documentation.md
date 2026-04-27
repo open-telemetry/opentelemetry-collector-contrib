@@ -16,11 +16,11 @@ Count of spans that were sampled or not per sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_count_traces_sampled
 
@@ -32,11 +32,11 @@ Count of traces that were sampled or not per sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
@@ -48,9 +48,9 @@ Number of spans that were able to be immediately released due to a decision cach
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
 
 ### otelcol_processor_tail_sampling_global_count_traces_sampled
 
@@ -62,10 +62,10 @@ Global count of traces that were sampled or not by at least one policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool |
-| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sampled | Whether the sampling decision was sampled or not, false can mean either not sampled or dropped | Any Bool | - |
+| decision | The sampling decision | Str: ``sampled``, ``not_sampled``, ``dropped`` | - |
 
 ### otelcol_processor_tail_sampling_new_trace_id_received
 
@@ -109,9 +109,9 @@ Total number of executions of a specific sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
 
 ### otelcol_processor_tail_sampling_sampling_policy_execution_time_sum
 
@@ -123,9 +123,9 @@ Total time spent (in microseconds) executing a specific sampling policy
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| policy | Name of the policy | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| policy | Name of the policy | Any Str | - |
 
 ### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
@@ -158,3 +158,16 @@ Count of traces that were dropped because they were too large
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {traces} | Sum | Int | true | Development |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `processor.tailsamplingprocessor.disableinvertdecisions` | beta | When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED. | v0.126.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39833) |
+| `processor.tailsamplingprocessor.metricstatcountspanssampled` | alpha | When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces. | v0.95.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30482) |
+| `processor.tailsamplingprocessor.recordpolicy` | alpha | When enabled, attaches the name of the policy (and if applicable, composite policy) responsible for sampling a trace in the 'tailsampling.policy', 'tailsampling.composite_policy', and `tailsampling.cached_decision` attributes. | v0.120.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35180) |
+| `processor.tailsamplingprocessor.tailstorageextension` | alpha | When enabled, allows configuring tail_storage to use a tail storage extension implementation. | v0.150.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/47331) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

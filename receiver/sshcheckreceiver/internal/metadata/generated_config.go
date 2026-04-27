@@ -27,7 +27,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for sshcheck metrics.
+// MetricsConfig provides config for ssh_check metrics.
 type MetricsConfig struct {
 	SshcheckDuration     MetricConfig `mapstructure:"sshcheck.duration"`
 	SshcheckError        MetricConfig `mapstructure:"sshcheck.error"`
@@ -86,7 +86,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for sshcheck resource attributes.
+// ResourceAttributesConfig provides config for ssh_check resource attributes.
 type ResourceAttributesConfig struct {
 	SSHEndpoint ResourceAttributeConfig `mapstructure:"ssh.endpoint"`
 }
@@ -99,15 +99,20 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for sshcheck metrics builder.
+// MetricsBuilderConfig is a configuration for ssh_check metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
+}
+
+// Deprecated: Use NewDefaultMetricsBuilderConfig.
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return NewDefaultMetricsBuilderConfig()
 }
