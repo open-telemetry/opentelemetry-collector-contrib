@@ -112,7 +112,7 @@ components:
         - interval
         - isolationforest
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metric_start_time
         - metricsgeneration
         - metricstransform

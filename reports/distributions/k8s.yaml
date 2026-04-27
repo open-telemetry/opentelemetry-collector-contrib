@@ -39,7 +39,7 @@ components:
         - groupbytrace
         - interval
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metricstransform
         - probabilistic_sampler
         - redaction

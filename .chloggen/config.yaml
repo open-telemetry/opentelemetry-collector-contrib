@@ -202,7 +202,7 @@ components:
     - processor/interval
     - processor/isolationforest
     - processor/k8s_attributes
-    - processor/logdedup
+    - processor/log_dedup
     - processor/logstransform
     - processor/lookup
     - processor/metric_start_time
