@@ -11,12 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v85/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
 func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent, rawPayload []byte) (ptrace.Traces, error) {
@@ -213,7 +215,27 @@ func (gtr *githubTracesReceiver) createParentSpan(
 		return pcommon.SpanID{}, fmt.Errorf("failed to generate parent span ID: %w", err)
 	}
 
-	jobSpanID, err := newJobSpanID(event.GetWorkflowJob().GetRunID(), int(event.GetWorkflowJob().GetRunAttempt()), event.GetWorkflowJob().GetName())
+	var jobSpanID pcommon.SpanID
+	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
+		checkRunID := event.GetWorkflowJob().GetID()
+		if checkRunID == 0 {
+			return pcommon.SpanID{}, fmt.Errorf(
+				"failed to derive job parent span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d",
+				event.GetRepo().GetFullName(),
+				event.GetWorkflowJob().GetName(),
+				event.GetWorkflowJob().GetRunID(),
+				event.GetWorkflowJob().GetRunAttempt(),
+			)
+		}
+		input := fmt.Sprintf("%d-j", checkRunID)
+		jobSpanID, err = newSpanIDFromCheckRun(input)
+	} else {
+		jobSpanID, err = newJobSpanID(
+			event.GetWorkflowJob().GetRunID(),
+			int(event.GetWorkflowJob().GetRunAttempt()),
+			event.GetWorkflowJob().GetName(),
+		)
+	}
 	if err != nil {
 		return pcommon.SpanID{}, fmt.Errorf("failed to generate job span ID: %w", err)
 	}
@@ -250,8 +272,14 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	return jobSpanID, nil
 }
 
-// newJobSpanId creates a deterministic Job Span ID based on the provided runID,
+// newJobSpanID creates a deterministic Job Span ID based on the provided runID,
 // runAttempt, and the name of the job.
+//
+// Deprecated: superseded by newSpanIDFromCheckRun, which is used when the
+// receiver.githubreceiver.UseCheckRunID feature gate is enabled (the default as
+// of v0.151.0). This function and its callers are scheduled for removal when
+// the gate is promoted to Stable. See
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44856.
 func newJobSpanID(runID int64, runAttempt int, jobName string) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%d%s", runID, runAttempt, jobName)
 	hash := sha256.Sum256([]byte(input))
@@ -276,7 +304,15 @@ func (gtr *githubTracesReceiver) createStepSpans(
 	parentSpanID pcommon.SpanID,
 ) error {
 	steps := event.GetWorkflowJob().Steps
-	unique := newUniqueSteps(steps)
+	unique, hasDup := newUniqueSteps(steps)
+	if hasDup && metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
+		gtr.logger.Warn(
+			"duplicate step names detected; steps sharing a name will have colliding span IDs. "+
+				"Use unique step names within a job for reliable TRACEPARENT reproduction.",
+			zap.String("workflow_job.name", event.GetWorkflowJob().GetName()),
+			zap.Int64("workflow_job.run.id", event.GetWorkflowJob().GetRunID()),
+		)
+	}
 	var errors error
 	for i, step := range steps {
 		name := unique[i]
@@ -290,10 +326,13 @@ func (gtr *githubTracesReceiver) createStepSpans(
 
 // newUniqueSteps creates a new slice of step names from the provided GitHub
 // event steps. Each step name, if duplicated, is appended with `-n` where n is
-// the numbered occurrence.
-func newUniqueSteps(steps []*github.TaskStep) []string {
+// the numbered occurrence. The second return value reports whether any two
+// steps shared the same raw name; callers use this to warn operators when
+// UseCheckRunID is enabled and the duplicates would cause colliding step span
+// IDs.
+func newUniqueSteps(steps []*github.TaskStep) ([]string, bool) {
 	if len(steps) == 0 {
-		return nil
+		return nil, false
 	}
 
 	results := make([]string, len(steps))
@@ -303,6 +342,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 		count[step.GetName()]++
 	}
 
+	hasDup := false
 	occurrences := make(map[string]int, len(steps))
 	for i, step := range steps {
 		name := step.GetName()
@@ -311,6 +351,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 			continue
 		}
 
+		hasDup = true
 		occurrences[name]++
 		if occurrences[name] == 1 {
 			results[i] = name
@@ -319,7 +360,7 @@ func newUniqueSteps(steps []*github.TaskStep) []string {
 		}
 	}
 
-	return results
+	return results, hasDup
 }
 
 // createStepSpan creates a span with a deterministic spandID for the provided
@@ -344,7 +385,25 @@ func (*githubTracesReceiver) createStepSpan(
 	jobName := event.GetWorkflowJob().GetName()
 	stepName := step.GetName()
 	number := int(step.GetNumber())
-	spanID, err := newStepSpanID(runID, runAttempt, jobName, stepName, number)
+
+	var spanID pcommon.SpanID
+	var err error
+	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
+		checkRunID := event.GetWorkflowJob().GetID()
+		if checkRunID == 0 {
+			return fmt.Errorf(
+				"failed to derive step span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d",
+				event.GetRepo().GetFullName(),
+				event.GetWorkflowJob().GetName(),
+				event.GetWorkflowJob().GetRunID(),
+				event.GetWorkflowJob().GetRunAttempt(),
+			)
+		}
+		input := fmt.Sprintf("%d-%s-s", checkRunID, step.GetName())
+		spanID, err = newSpanIDFromCheckRun(input)
+	} else {
+		spanID, err = newStepSpanID(runID, runAttempt, jobName, stepName, number)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to generate step span ID: %w", err)
 	}
@@ -382,6 +441,12 @@ func (*githubTracesReceiver) createStepSpan(
 
 // newStepSpanID creates a deterministic Step Span ID based on the provided
 // inputs.
+//
+// Deprecated: superseded by newSpanIDFromCheckRun, which is used when the
+// receiver.githubreceiver.UseCheckRunID feature gate is enabled (the default as
+// of v0.151.0). This function and its callers are scheduled for removal when
+// the gate is promoted to Stable. See
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44856.
 func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number int) (pcommon.SpanID, error) {
 	input := fmt.Sprintf("%d%d%s%s%d", runID, runAttempt, jobName, stepName, number)
 	hash := sha256.Sum256([]byte(input))
@@ -393,6 +458,26 @@ func newStepSpanID(runID int64, runAttempt int, jobName, stepName string, number
 		return pcommon.SpanID{}, err
 	}
 
+	return spanID, nil
+}
+
+// newSpanIDFromCheckRun creates span IDs from input. input is a formatted
+// string based off GitHub information with an appended value to enable the
+// creation of deterministic IDs.
+//
+// input is as follows:
+// jobSpanID := fmt.Sprintf("%d-j", checkRunID)
+// queueJobSpanID := fmt.Sprintf("%d-q", checkRunID)
+// stepSpanID := fmt.Sprintf("%d-%s-s", checkRunID, stepName)
+func newSpanIDFromCheckRun(input string) (pcommon.SpanID, error) {
+	hash := sha256.Sum256([]byte(input))
+	spanIDHex := hex.EncodeToString(hash[:])
+
+	var spanID pcommon.SpanID
+	_, err := hex.Decode(spanID[:], []byte(spanIDHex[16:32]))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
 	return spanID, nil
 }
 
@@ -416,9 +501,27 @@ func (*githubTracesReceiver) createJobQueueSpan(
 
 	runID := event.GetWorkflowJob().GetRunID()
 	runAttempt := int(event.GetWorkflowJob().GetRunAttempt())
-	spanID, err := newStepSpanID(runID, runAttempt, jobName, spanName, 1)
+
+	var spanID pcommon.SpanID
+	var err error
+	if metadata.ReceiverGithubreceiverUseCheckRunIDFeatureGate.IsEnabled() {
+		checkRunID := event.GetWorkflowJob().GetID()
+		if checkRunID == 0 {
+			return fmt.Errorf(
+				"failed to derive queue span ID; workflow_job.id is missing for: repo=%q job=%q run_id=%d run_attempt=%d",
+				event.GetRepo().GetFullName(),
+				event.GetWorkflowJob().GetName(),
+				event.GetWorkflowJob().GetRunID(),
+				event.GetWorkflowJob().GetRunAttempt(),
+			)
+		}
+		input := fmt.Sprintf("%d-q", checkRunID)
+		spanID, err = newSpanIDFromCheckRun(input)
+	} else {
+		spanID, err = newStepSpanID(runID, runAttempt, jobName, spanName, 1)
+	}
 	if err != nil {
-		return fmt.Errorf("failed to generate step span ID: %w", err)
+		return fmt.Errorf("failed to generate queue span ID: %w", err)
 	}
 
 	span.SetSpanID(spanID)

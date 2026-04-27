@@ -17,6 +17,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
+func TestZipkinEndpointFromTagsPrefersV1ServicePeerName(t *testing.T) {
+	redundantKeys := make(map[string]bool)
+	zTags := map[string]string{
+		"peer.service":      "legacy-peer",
+		"service.peer.name": "v1-peer",
+	}
+
+	endpoint := zipkinEndpointFromTags(zTags, "local-service", true, redundantKeys)
+	assert.NotNil(t, endpoint)
+	assert.Equal(t, "v1-peer", endpoint.ServiceName)
+	assert.True(t, redundantKeys["service.peer.name"])
+	assert.False(t, redundantKeys["peer.service"])
+}
+
 func TestInternalTracesToZipkinSpans(t *testing.T) {
 	tests := []struct {
 		name string

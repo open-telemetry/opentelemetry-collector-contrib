@@ -1,0 +1,13 @@
+# Use this changelog template to create an entry for release notes.
+
+change_type: deprecation
+
+component: receiver/file_stats
+
+note: Rename `filestats` receiver to `file_stats` with deprecated alias `filestats`
+
+issues: [45339]
+
+subtext:
+
+change_logs: [user]
