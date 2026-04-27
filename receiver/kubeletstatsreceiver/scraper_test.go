@@ -94,7 +94,7 @@ func TestScraperWithSystemContainerMetrics(t *testing.T) {
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
-	metricsConfig := metadata.DefaultMetricsBuilderConfig()
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
 	metricsConfig.Metrics.K8sNodeSystemContainerCPUTime.Enabled = true
 	metricsConfig.Metrics.K8sNodeSystemContainerCPUUsage.Enabled = true
 	metricsConfig.Metrics.K8sNodeSystemContainerMemoryUsage.Enabled = true
