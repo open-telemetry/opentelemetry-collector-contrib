@@ -4,6 +4,7 @@
 package azureauthextension
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,51 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension/internal/metadata"
 )
+
+func TestConfigValidate(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		cfg         *Config
+		expectedErr string
+	}{
+		"no_authentication_method": {
+			cfg:         &Config{},
+			expectedErr: errEmptyAuthentication.Error(),
+		},
+		"use_default_only": {
+			cfg: &Config{UseDefault: true},
+		},
+		"server_both_fields_empty": {
+			cfg: &Config{
+				UseDefault: true,
+				Server:     configoptional.Some(Server{}),
+			},
+			expectedErr: errors.Join(errEmptyServerIssuerURL, errEmptyServerAudience).Error(),
+		},
+		"server_valid": {
+			cfg: &Config{
+				UseDefault: true,
+				Server: configoptional.Some(Server{
+					IssuerURL: "https://issuer.example",
+					Audience:  "api://aud",
+				}),
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			err := tc.cfg.Validate()
+			if tc.expectedErr != "" {
+				require.EqualError(t, err, tc.expectedErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -38,6 +84,24 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				UseDefault: true,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_server_auth"),
+			expected: &Config{
+				UseDefault: true,
+				Server: configoptional.Some(Server{
+					IssuerURL: "https://login.microsoftonline.com/test/v2.0",
+					Audience:  "api://collector-ingest",
+				}),
+			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "server_auth_empty_issuer"),
+			expectedErr: errEmptyServerIssuerURL.Error(),
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "server_auth_empty_audience"),
+			expectedErr: errEmptyServerAudience.Error(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_service_principal_secret"),
