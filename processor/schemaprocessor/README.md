@@ -24,6 +24,16 @@ be sure to follow [schema overview](https://opentelemetry.io/docs/reference/spec
 In order to improve efficiency of the processor, the `prefetch` option allows the processor to start downloading and preparing
 the translations needed for signals that match the schema URL.
 
+The processor caches fetched schema translation files. If a fetch fails, the
+processor retries up to `cache_retry_limit` times before entering a cooldown
+period of `cache_cooldown` during which further attempts for the same key
+return an error immediately.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `cache_cooldown` | duration | `5m` | Wait time after retry limit is reached |
+| `cache_retry_limit` | int | `5` | Consecutive failures before cooldown |
+
 ## Schema Formats
 
 A [schema URL](https://opentelemetry.io/docs/reference/specification/schemas/overview/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
