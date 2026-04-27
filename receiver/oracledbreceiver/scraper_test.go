@@ -155,7 +155,7 @@ func TestScraper_Scrape(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.OracledbConsistentGets.Enabled = true
 			cfg.Metrics.OracledbDbBlockGets.Enabled = true
 
@@ -167,7 +167,7 @@ func TestScraper_Scrape(t *testing.T) {
 				},
 				clientProviderFunc:   test.dbclientFn,
 				id:                   component.ID{},
-				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			}
 			err := scrpr.start(t.Context(), componenttest.NewNopHost())
 			defer func() {
@@ -264,7 +264,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 			logsCfg := metadata.DefaultLogsBuilderConfig()
 			logsCfg.ResourceAttributes.HostName.Enabled = true
 			logsCfg.Events.DbServerTopQuery.Enabled = true
-			metricsCfg := metadata.DefaultMetricsBuilderConfig()
+			metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 			lruCache, _ := lru.New[string, map[string]int64](500)
 			lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
 
@@ -277,7 +277,7 @@ func TestScraper_ScrapeTopNLogs(t *testing.T) {
 				},
 				clientProviderFunc:   test.dbclientFn,
 				id:                   component.ID{},
-				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				metricCache:          lruCache,
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
@@ -462,7 +462,7 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 	logsCfg := metadata.DefaultLogsBuilderConfig()
 	logsCfg.ResourceAttributes.HostName.Enabled = true
 	logsCfg.Events.DbServerTopQuery.Enabled = true
-	metricsCfg := metadata.DefaultMetricsBuilderConfig()
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 	lruCache, _ := lru.New[string, map[string]int64](500)
 	lruCache.Add("fxk8aq3nds8aw:0", cacheValueSameExecCount)
 
@@ -484,7 +484,7 @@ func TestTopNLogsDiscardedWhenExecutionCountUnchanged(t *testing.T) {
 			return &fakeDbClient{Responses: [][]metricRow{metricRowData}}
 		},
 		id:                   component.ID{},
-		metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		metricCache:          lruCache,
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
@@ -539,7 +539,7 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 	logsCfg := metadata.DefaultLogsBuilderConfig()
 	logsCfg.ResourceAttributes.HostName.Enabled = true
 	logsCfg.Events.DbServerTopQuery.Enabled = true
-	metricsCfg := metadata.DefaultMetricsBuilderConfig()
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 
 	lruCache, _ := lru.New[string, map[string]int64](500)
 	lruCache.Add("abc123:0", map[string]int64{
@@ -571,7 +571,7 @@ func TestTopNLogsProcedureNameEmpty(t *testing.T) {
 			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
 		},
 		id:                   component.ID{},
-		metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		metricCache:          lruCache,
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
@@ -645,7 +645,7 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logsCfg := metadata.DefaultLogsBuilderConfig()
 			logsCfg.Events.DbServerTopQuery.Enabled = true
-			metricsCfg := metadata.DefaultMetricsBuilderConfig()
+			metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 			lruCache, _ := lru.New[string, map[string]int64](500)
 			lruCache.Add("fxk8aq3nds8aw:0", cacheValue)
 
@@ -657,7 +657,7 @@ func TestScrapesTopNLogsOnlyWhenIntervalHasElapsed(t *testing.T) {
 					return nil, nil
 				},
 				clientProviderFunc:   test.dbclientFn,
-				metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				metricCache:          lruCache,
 				topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
@@ -722,7 +722,7 @@ func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
 	logsCfg := metadata.DefaultLogsBuilderConfig()
 	logsCfg.ResourceAttributes.HostName.Enabled = true
 	logsCfg.Events.DbServerTopQuery.Enabled = true
-	metricsCfg := metadata.DefaultMetricsBuilderConfig()
+	metricsCfg := metadata.NewDefaultMetricsBuilderConfig()
 
 	lruCache, _ := lru.New[string, map[string]int64](500)
 	lruCache.Add("valid001:0", map[string]int64{
@@ -757,7 +757,7 @@ func TestObfuscateCacheHitsSkipsInvalidEntriesWithWarning(t *testing.T) {
 			return &fakeDbClient{Responses: [][]metricRow{metricsData}}
 		},
 		id:                   component.ID{},
-		metricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		metricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		logsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		metricCache:          lruCache,
 		topQueryCollectCfg:   TopQueryCollection{MaxQuerySampleCount: 5000, TopQueryCount: 200},
