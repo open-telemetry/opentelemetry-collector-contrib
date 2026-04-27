@@ -12,3 +12,13 @@ awslambda/empty_encoding:
 
 awslambda/with_failure_arn:
   failure_bucket_arn: arn:aws:s3:::example
+
+awslambda/s3_multi_encoding:
+  s3:
+    encodings:
+      - name: vpcflow
+        encoding: awslogs_encoding/vpcflow
+      - name: cloudtrail
+        encoding: awslogs_encoding/cloudtrail
+      - name: catchall
+        path_pattern: "*"

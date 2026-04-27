@@ -5,8 +5,8 @@ description: The Drain Processor applies the Drain log clustering algorithm to l
 status:
   class: processor
   stability:
-    development: [logs]
-  distributions: []
+    alpha: [logs]
+  distributions: [contrib]
   codeowners:
     active: [MikeGoldsmith, atoulme, martinjt]
 

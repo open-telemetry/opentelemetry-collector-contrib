@@ -86,18 +86,34 @@ type s3Handler struct {
 	decodeF func(ctx context.Context, reader io.Reader, event events.S3EventRecord) error
 }
 
+// newS3LogsHandler builds an S3 logs handler. The getDecoder function is called
+// per-event with the S3 object key and must return the LogsDecoderFactory to use
+// for that object, along with its encoding name for logging purposes.
+//
+// For single-encoding configs, getDecoder is a closure that returns the same factory
+// regardless of the object key. For multi-encoding configs it is the router's GetDecoder.
 func newS3LogsHandler(
 	service internal.S3Service,
 	baseLogger *zap.Logger,
-	logsDecoder encoding.LogsDecoderFactory,
+	getDecoder func(objectKey string) (encoding.LogsDecoderFactory, string, error),
 	consumer consumer.Logs,
 ) *s3Handler {
+	logger := baseLogger.Named("s3")
 	logDecodeF := func(ctx context.Context, reader io.Reader, event events.S3EventRecord) error {
+		factory, encodingName, err := getDecoder(event.S3.Object.URLDecodedKey)
+		if err != nil {
+			return fmt.Errorf("failed to route S3 object: %w", err)
+		}
+		logger.Debug("Matched encoding for S3 object",
+			zap.String("File", event.S3.Object.URLDecodedKey),
+			zap.String("Encoding", encodingName),
+		)
+
 		var decoder encoding.LogsDecoder
 		// Bytes based batching and disable flush on items
-		decoder, err := logsDecoder.NewLogsDecoder(reader, encoding.WithFlushBytes(s3StreamBatchSize), encoding.WithFlushItems(0))
+		decoder, err = factory.NewLogsDecoder(reader, encoding.WithFlushBytes(s3StreamBatchSize), encoding.WithFlushItems(0))
 		if err != nil {
-			return fmt.Errorf("failed to derive the extension for S3 logs: %w", err)
+			return fmt.Errorf("failed to derive the extension for S3 logs (encoding %q): %w", encodingName, err)
 		}
 
 		for {
@@ -108,7 +124,7 @@ func newS3LogsHandler(
 					break
 				}
 
-				return fmt.Errorf("failed to decode S3 logs: %w", err)
+				return fmt.Errorf("failed to decode S3 logs (encoding %q): %w", encodingName, err)
 			}
 
 			enrichS3Logs(logs, event)
@@ -122,7 +138,7 @@ func newS3LogsHandler(
 
 	return &s3Handler{
 		s3Service: service,
-		logger:    baseLogger.Named("s3"),
+		logger:    logger,
 		decodeF:   logDecodeF,
 	}
 }
@@ -173,7 +189,7 @@ func (*s3Handler) handlerType() eventType {
 
 func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	var err error
-	parsedEvent, err := s.parseEvent(event)
+	parsedEvent, err := parseS3Event(event)
 	if err != nil {
 		return fmt.Errorf("failed to parse the event: %w", err)
 	}
@@ -213,13 +229,15 @@ func (s *s3Handler) handle(ctx context.Context, event json.RawMessage) error {
 	return nil
 }
 
-func (*s3Handler) parseEvent(raw json.RawMessage) (event events.S3EventRecord, err error) {
+// parseS3Event parses a raw JSON S3 event notification and returns the single S3 event record.
+// S3 event notifications always contain exactly one record.
+func parseS3Event(raw json.RawMessage) (events.S3EventRecord, error) {
 	var message events.S3Event
 	if err := gojson.Unmarshal(raw, &message); err != nil {
 		return events.S3EventRecord{}, fmt.Errorf("failed to unmarshal S3 event notification: %w", err)
 	}
 
-	// Records cannot be more than 1 in case of s3 event notifications
+	// This receiver processes one S3 object per invocation; reject events with != 1 record.
 	if len(message.Records) > 1 || len(message.Records) == 0 {
 		return events.S3EventRecord{}, fmt.Errorf("s3 event notification should contain one record instead of %d", len(message.Records))
 	}

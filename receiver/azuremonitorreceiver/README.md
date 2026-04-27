@@ -275,3 +275,9 @@ It is composed by
 > - minimum timegrain.
 > 
 > It is used to get several metrics in one request.
+
+## Troubleshooting
+- [Azure Monitor Troubleshooting Guide](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/metrics-troubleshoot)
+- Enabling the [debug exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/debugexporter/README.md) will display all the collected metrics
+- Enabling the `service.telemetry.logs.level: DEBUG` ([internal telemetry settings](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs) will display the queries made to the Azure API.
+- It is advised to install the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and use in particular [`az monitor` command](https://learn.microsoft.com/en-us/cli/azure/monitor?view=azure-cli-latest) to try reproducing these queries.

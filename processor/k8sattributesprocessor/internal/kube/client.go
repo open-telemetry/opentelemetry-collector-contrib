@@ -749,6 +749,7 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 	c.deleteMut.Unlock()
 
 	c.m.Lock()
+	deleted := false
 	for i := range toDelete {
 		d := toDelete[i]
 		if p, ok := c.Pods[d.id]; ok {
@@ -756,9 +757,15 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 			// and the underlying state (ip<>pod mapping) has not changed.
 			if p.PodUID == d.podUID {
 				delete(c.Pods, d.id)
+				deleted = true
 			}
 		}
 	}
+
+	if deleted {
+		c.compactPodMap()
+	}
+
 	podTableSize := len(c.Pods)
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
@@ -767,6 +774,12 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 		c.telemetryBuilder.K8sWatcherPodCacheSize.Record(context.Background(), int64(podTableSize))
 	}
 	c.m.Unlock()
+}
+
+func (c *WatchClient) compactPodMap() {
+	newMap := make(map[PodIdentifier]*Pod, len(c.Pods))
+	maps.Copy(newMap, c.Pods)
+	c.Pods = newMap
 }
 
 // GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.

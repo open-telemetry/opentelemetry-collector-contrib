@@ -97,6 +97,74 @@ var MapAttributeK8sContainerStatusState = map[string]AttributeK8sContainerStatus
 	"waiting":    AttributeK8sContainerStatusStateWaiting,
 }
 
+// AttributeK8sPersistentvolumeStatusPhase specifies the value k8s.persistentvolume.status.phase attribute.
+type AttributeK8sPersistentvolumeStatusPhase int
+
+const (
+	_ AttributeK8sPersistentvolumeStatusPhase = iota
+	AttributeK8sPersistentvolumeStatusPhasePending
+	AttributeK8sPersistentvolumeStatusPhaseAvailable
+	AttributeK8sPersistentvolumeStatusPhaseBound
+	AttributeK8sPersistentvolumeStatusPhaseReleased
+	AttributeK8sPersistentvolumeStatusPhaseFailed
+)
+
+// String returns the string representation of the AttributeK8sPersistentvolumeStatusPhase.
+func (av AttributeK8sPersistentvolumeStatusPhase) String() string {
+	switch av {
+	case AttributeK8sPersistentvolumeStatusPhasePending:
+		return "Pending"
+	case AttributeK8sPersistentvolumeStatusPhaseAvailable:
+		return "Available"
+	case AttributeK8sPersistentvolumeStatusPhaseBound:
+		return "Bound"
+	case AttributeK8sPersistentvolumeStatusPhaseReleased:
+		return "Released"
+	case AttributeK8sPersistentvolumeStatusPhaseFailed:
+		return "Failed"
+	}
+	return ""
+}
+
+// MapAttributeK8sPersistentvolumeStatusPhase is a helper map of string to AttributeK8sPersistentvolumeStatusPhase attribute value.
+var MapAttributeK8sPersistentvolumeStatusPhase = map[string]AttributeK8sPersistentvolumeStatusPhase{
+	"Pending":   AttributeK8sPersistentvolumeStatusPhasePending,
+	"Available": AttributeK8sPersistentvolumeStatusPhaseAvailable,
+	"Bound":     AttributeK8sPersistentvolumeStatusPhaseBound,
+	"Released":  AttributeK8sPersistentvolumeStatusPhaseReleased,
+	"Failed":    AttributeK8sPersistentvolumeStatusPhaseFailed,
+}
+
+// AttributeK8sPersistentvolumeclaimStatusPhase specifies the value k8s.persistentvolumeclaim.status.phase attribute.
+type AttributeK8sPersistentvolumeclaimStatusPhase int
+
+const (
+	_ AttributeK8sPersistentvolumeclaimStatusPhase = iota
+	AttributeK8sPersistentvolumeclaimStatusPhasePending
+	AttributeK8sPersistentvolumeclaimStatusPhaseBound
+	AttributeK8sPersistentvolumeclaimStatusPhaseLost
+)
+
+// String returns the string representation of the AttributeK8sPersistentvolumeclaimStatusPhase.
+func (av AttributeK8sPersistentvolumeclaimStatusPhase) String() string {
+	switch av {
+	case AttributeK8sPersistentvolumeclaimStatusPhasePending:
+		return "Pending"
+	case AttributeK8sPersistentvolumeclaimStatusPhaseBound:
+		return "Bound"
+	case AttributeK8sPersistentvolumeclaimStatusPhaseLost:
+		return "Lost"
+	}
+	return ""
+}
+
+// MapAttributeK8sPersistentvolumeclaimStatusPhase is a helper map of string to AttributeK8sPersistentvolumeclaimStatusPhase attribute value.
+var MapAttributeK8sPersistentvolumeclaimStatusPhase = map[string]AttributeK8sPersistentvolumeclaimStatusPhase{
+	"Pending": AttributeK8sPersistentvolumeclaimStatusPhasePending,
+	"Bound":   AttributeK8sPersistentvolumeclaimStatusPhaseBound,
+	"Lost":    AttributeK8sPersistentvolumeclaimStatusPhaseLost,
+}
+
 // AttributeK8sServiceEndpointAddressType specifies the value k8s.service.endpoint.address_type attribute.
 type AttributeK8sServiceEndpointAddressType int
 
@@ -248,6 +316,21 @@ var MetricsInfo = metricsInfo{
 	K8sNodeCondition: metricInfo{
 		Name: "k8s.node.condition",
 	},
+	K8sPersistentvolumeStatusPhase: metricInfo{
+		Name: "k8s.persistentvolume.status.phase",
+	},
+	K8sPersistentvolumeStorageCapacity: metricInfo{
+		Name: "k8s.persistentvolume.storage.capacity",
+	},
+	K8sPersistentvolumeclaimStatusPhase: metricInfo{
+		Name: "k8s.persistentvolumeclaim.status.phase",
+	},
+	K8sPersistentvolumeclaimStorageCapacity: metricInfo{
+		Name: "k8s.persistentvolumeclaim.storage.capacity",
+	},
+	K8sPersistentvolumeclaimStorageRequest: metricInfo{
+		Name: "k8s.persistentvolumeclaim.storage.request",
+	},
 	K8sPodPhase: metricInfo{
 		Name: "k8s.pod.phase",
 	},
@@ -305,54 +388,59 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	K8sContainerCPULimit                metricInfo
-	K8sContainerCPURequest              metricInfo
-	K8sContainerEphemeralstorageLimit   metricInfo
-	K8sContainerEphemeralstorageRequest metricInfo
-	K8sContainerMemoryLimit             metricInfo
-	K8sContainerMemoryRequest           metricInfo
-	K8sContainerReady                   metricInfo
-	K8sContainerRestarts                metricInfo
-	K8sContainerStatusReason            metricInfo
-	K8sContainerStatusState             metricInfo
-	K8sContainerStorageLimit            metricInfo
-	K8sContainerStorageRequest          metricInfo
-	K8sCronjobActiveJobs                metricInfo
-	K8sDaemonsetCurrentScheduledNodes   metricInfo
-	K8sDaemonsetDesiredScheduledNodes   metricInfo
-	K8sDaemonsetMisscheduledNodes       metricInfo
-	K8sDaemonsetReadyNodes              metricInfo
-	K8sDeploymentAvailable              metricInfo
-	K8sDeploymentDesired                metricInfo
-	K8sHpaCurrentReplicas               metricInfo
-	K8sHpaDesiredReplicas               metricInfo
-	K8sHpaMaxReplicas                   metricInfo
-	K8sHpaMinReplicas                   metricInfo
-	K8sJobActivePods                    metricInfo
-	K8sJobDesiredSuccessfulPods         metricInfo
-	K8sJobFailedPods                    metricInfo
-	K8sJobMaxParallelPods               metricInfo
-	K8sJobSuccessfulPods                metricInfo
-	K8sNamespacePhase                   metricInfo
-	K8sNodeCondition                    metricInfo
-	K8sPodPhase                         metricInfo
-	K8sPodStatusReason                  metricInfo
-	K8sReplicasetAvailable              metricInfo
-	K8sReplicasetDesired                metricInfo
-	K8sReplicationControllerAvailable   metricInfo
-	K8sReplicationControllerDesired     metricInfo
-	K8sResourceQuotaHardLimit           metricInfo
-	K8sResourceQuotaUsed                metricInfo
-	K8sServiceEndpointCount             metricInfo
-	K8sServiceLoadBalancerIngressCount  metricInfo
-	K8sStatefulsetCurrentPods           metricInfo
-	K8sStatefulsetDesiredPods           metricInfo
-	K8sStatefulsetReadyPods             metricInfo
-	K8sStatefulsetUpdatedPods           metricInfo
-	OpenshiftAppliedclusterquotaLimit   metricInfo
-	OpenshiftAppliedclusterquotaUsed    metricInfo
-	OpenshiftClusterquotaLimit          metricInfo
-	OpenshiftClusterquotaUsed           metricInfo
+	K8sContainerCPULimit                    metricInfo
+	K8sContainerCPURequest                  metricInfo
+	K8sContainerEphemeralstorageLimit       metricInfo
+	K8sContainerEphemeralstorageRequest     metricInfo
+	K8sContainerMemoryLimit                 metricInfo
+	K8sContainerMemoryRequest               metricInfo
+	K8sContainerReady                       metricInfo
+	K8sContainerRestarts                    metricInfo
+	K8sContainerStatusReason                metricInfo
+	K8sContainerStatusState                 metricInfo
+	K8sContainerStorageLimit                metricInfo
+	K8sContainerStorageRequest              metricInfo
+	K8sCronjobActiveJobs                    metricInfo
+	K8sDaemonsetCurrentScheduledNodes       metricInfo
+	K8sDaemonsetDesiredScheduledNodes       metricInfo
+	K8sDaemonsetMisscheduledNodes           metricInfo
+	K8sDaemonsetReadyNodes                  metricInfo
+	K8sDeploymentAvailable                  metricInfo
+	K8sDeploymentDesired                    metricInfo
+	K8sHpaCurrentReplicas                   metricInfo
+	K8sHpaDesiredReplicas                   metricInfo
+	K8sHpaMaxReplicas                       metricInfo
+	K8sHpaMinReplicas                       metricInfo
+	K8sJobActivePods                        metricInfo
+	K8sJobDesiredSuccessfulPods             metricInfo
+	K8sJobFailedPods                        metricInfo
+	K8sJobMaxParallelPods                   metricInfo
+	K8sJobSuccessfulPods                    metricInfo
+	K8sNamespacePhase                       metricInfo
+	K8sNodeCondition                        metricInfo
+	K8sPersistentvolumeStatusPhase          metricInfo
+	K8sPersistentvolumeStorageCapacity      metricInfo
+	K8sPersistentvolumeclaimStatusPhase     metricInfo
+	K8sPersistentvolumeclaimStorageCapacity metricInfo
+	K8sPersistentvolumeclaimStorageRequest  metricInfo
+	K8sPodPhase                             metricInfo
+	K8sPodStatusReason                      metricInfo
+	K8sReplicasetAvailable                  metricInfo
+	K8sReplicasetDesired                    metricInfo
+	K8sReplicationControllerAvailable       metricInfo
+	K8sReplicationControllerDesired         metricInfo
+	K8sResourceQuotaHardLimit               metricInfo
+	K8sResourceQuotaUsed                    metricInfo
+	K8sServiceEndpointCount                 metricInfo
+	K8sServiceLoadBalancerIngressCount      metricInfo
+	K8sStatefulsetCurrentPods               metricInfo
+	K8sStatefulsetDesiredPods               metricInfo
+	K8sStatefulsetReadyPods                 metricInfo
+	K8sStatefulsetUpdatedPods               metricInfo
+	OpenshiftAppliedclusterquotaLimit       metricInfo
+	OpenshiftAppliedclusterquotaUsed        metricInfo
+	OpenshiftClusterquotaLimit              metricInfo
+	OpenshiftClusterquotaUsed               metricInfo
 }
 
 type metricInfo struct {
@@ -1869,6 +1957,270 @@ func newMetricK8sNodeCondition(cfg MetricConfig) metricK8sNodeCondition {
 	return m
 }
 
+type metricK8sPersistentvolumeStatusPhase struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.persistentvolume.status.phase metric with initial data.
+func (m *metricK8sPersistentvolumeStatusPhase) init() {
+	m.data.SetName("k8s.persistentvolume.status.phase")
+	m.data.SetDescription("The current phase of the PersistentVolume (1 for the current phase, 0 for others).")
+	m.data.SetUnit("{persistentvolume}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sPersistentvolumeStatusPhase) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sPersistentvolumeStatusPhaseAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.persistentvolume.status.phase", k8sPersistentvolumeStatusPhaseAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPersistentvolumeStatusPhase) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPersistentvolumeStatusPhase) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPersistentvolumeStatusPhase(cfg MetricConfig) metricK8sPersistentvolumeStatusPhase {
+	m := metricK8sPersistentvolumeStatusPhase{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPersistentvolumeStorageCapacity struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.persistentvolume.storage.capacity metric with initial data.
+func (m *metricK8sPersistentvolumeStorageCapacity) init() {
+	m.data.SetName("k8s.persistentvolume.storage.capacity")
+	m.data.SetDescription("The storage capacity of the PersistentVolume.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPersistentvolumeStorageCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPersistentvolumeStorageCapacity) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPersistentvolumeStorageCapacity) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPersistentvolumeStorageCapacity(cfg MetricConfig) metricK8sPersistentvolumeStorageCapacity {
+	m := metricK8sPersistentvolumeStorageCapacity{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPersistentvolumeclaimStatusPhase struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.persistentvolumeclaim.status.phase metric with initial data.
+func (m *metricK8sPersistentvolumeclaimStatusPhase) init() {
+	m.data.SetName("k8s.persistentvolumeclaim.status.phase")
+	m.data.SetDescription("The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for others).")
+	m.data.SetUnit("{persistentvolumeclaim}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricK8sPersistentvolumeclaimStatusPhase) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sPersistentvolumeclaimStatusPhaseAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.persistentvolumeclaim.status.phase", k8sPersistentvolumeclaimStatusPhaseAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPersistentvolumeclaimStatusPhase) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPersistentvolumeclaimStatusPhase) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPersistentvolumeclaimStatusPhase(cfg MetricConfig) metricK8sPersistentvolumeclaimStatusPhase {
+	m := metricK8sPersistentvolumeclaimStatusPhase{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPersistentvolumeclaimStorageCapacity struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.persistentvolumeclaim.storage.capacity metric with initial data.
+func (m *metricK8sPersistentvolumeclaimStorageCapacity) init() {
+	m.data.SetName("k8s.persistentvolumeclaim.storage.capacity")
+	m.data.SetDescription("The actual storage capacity provisioned for the PersistentVolumeClaim. Only available when bound.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPersistentvolumeclaimStorageCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPersistentvolumeclaimStorageCapacity) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPersistentvolumeclaimStorageCapacity) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPersistentvolumeclaimStorageCapacity(cfg MetricConfig) metricK8sPersistentvolumeclaimStorageCapacity {
+	m := metricK8sPersistentvolumeclaimStorageCapacity{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPersistentvolumeclaimStorageRequest struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.persistentvolumeclaim.storage.request metric with initial data.
+func (m *metricK8sPersistentvolumeclaimStorageRequest) init() {
+	m.data.SetName("k8s.persistentvolumeclaim.storage.request")
+	m.data.SetDescription("The storage requested by the PersistentVolumeClaim.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPersistentvolumeclaimStorageRequest) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPersistentvolumeclaimStorageRequest) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPersistentvolumeclaimStorageRequest) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPersistentvolumeclaimStorageRequest(cfg MetricConfig) metricK8sPersistentvolumeclaimStorageRequest {
+	m := metricK8sPersistentvolumeclaimStorageRequest{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodPhase struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2790,61 +3142,66 @@ func newMetricOpenshiftClusterquotaUsed(cfg MetricConfig) metricOpenshiftCluster
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                    MetricsBuilderConfig // config of the metrics builder.
-	startTime                                 pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                           int                  // maximum observed number of metrics per resource.
-	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                 component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter            map[string]filter.Filter
-	resourceAttributeExcludeFilter            map[string]filter.Filter
-	metricK8sContainerCPULimit                metricK8sContainerCPULimit
-	metricK8sContainerCPURequest              metricK8sContainerCPURequest
-	metricK8sContainerEphemeralstorageLimit   metricK8sContainerEphemeralstorageLimit
-	metricK8sContainerEphemeralstorageRequest metricK8sContainerEphemeralstorageRequest
-	metricK8sContainerMemoryLimit             metricK8sContainerMemoryLimit
-	metricK8sContainerMemoryRequest           metricK8sContainerMemoryRequest
-	metricK8sContainerReady                   metricK8sContainerReady
-	metricK8sContainerRestarts                metricK8sContainerRestarts
-	metricK8sContainerStatusReason            metricK8sContainerStatusReason
-	metricK8sContainerStatusState             metricK8sContainerStatusState
-	metricK8sContainerStorageLimit            metricK8sContainerStorageLimit
-	metricK8sContainerStorageRequest          metricK8sContainerStorageRequest
-	metricK8sCronjobActiveJobs                metricK8sCronjobActiveJobs
-	metricK8sDaemonsetCurrentScheduledNodes   metricK8sDaemonsetCurrentScheduledNodes
-	metricK8sDaemonsetDesiredScheduledNodes   metricK8sDaemonsetDesiredScheduledNodes
-	metricK8sDaemonsetMisscheduledNodes       metricK8sDaemonsetMisscheduledNodes
-	metricK8sDaemonsetReadyNodes              metricK8sDaemonsetReadyNodes
-	metricK8sDeploymentAvailable              metricK8sDeploymentAvailable
-	metricK8sDeploymentDesired                metricK8sDeploymentDesired
-	metricK8sHpaCurrentReplicas               metricK8sHpaCurrentReplicas
-	metricK8sHpaDesiredReplicas               metricK8sHpaDesiredReplicas
-	metricK8sHpaMaxReplicas                   metricK8sHpaMaxReplicas
-	metricK8sHpaMinReplicas                   metricK8sHpaMinReplicas
-	metricK8sJobActivePods                    metricK8sJobActivePods
-	metricK8sJobDesiredSuccessfulPods         metricK8sJobDesiredSuccessfulPods
-	metricK8sJobFailedPods                    metricK8sJobFailedPods
-	metricK8sJobMaxParallelPods               metricK8sJobMaxParallelPods
-	metricK8sJobSuccessfulPods                metricK8sJobSuccessfulPods
-	metricK8sNamespacePhase                   metricK8sNamespacePhase
-	metricK8sNodeCondition                    metricK8sNodeCondition
-	metricK8sPodPhase                         metricK8sPodPhase
-	metricK8sPodStatusReason                  metricK8sPodStatusReason
-	metricK8sReplicasetAvailable              metricK8sReplicasetAvailable
-	metricK8sReplicasetDesired                metricK8sReplicasetDesired
-	metricK8sReplicationControllerAvailable   metricK8sReplicationControllerAvailable
-	metricK8sReplicationControllerDesired     metricK8sReplicationControllerDesired
-	metricK8sResourceQuotaHardLimit           metricK8sResourceQuotaHardLimit
-	metricK8sResourceQuotaUsed                metricK8sResourceQuotaUsed
-	metricK8sServiceEndpointCount             metricK8sServiceEndpointCount
-	metricK8sServiceLoadBalancerIngressCount  metricK8sServiceLoadBalancerIngressCount
-	metricK8sStatefulsetCurrentPods           metricK8sStatefulsetCurrentPods
-	metricK8sStatefulsetDesiredPods           metricK8sStatefulsetDesiredPods
-	metricK8sStatefulsetReadyPods             metricK8sStatefulsetReadyPods
-	metricK8sStatefulsetUpdatedPods           metricK8sStatefulsetUpdatedPods
-	metricOpenshiftAppliedclusterquotaLimit   metricOpenshiftAppliedclusterquotaLimit
-	metricOpenshiftAppliedclusterquotaUsed    metricOpenshiftAppliedclusterquotaUsed
-	metricOpenshiftClusterquotaLimit          metricOpenshiftClusterquotaLimit
-	metricOpenshiftClusterquotaUsed           metricOpenshiftClusterquotaUsed
+	config                                        MetricsBuilderConfig // config of the metrics builder.
+	startTime                                     pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                               int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                 pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                     component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                map[string]filter.Filter
+	resourceAttributeExcludeFilter                map[string]filter.Filter
+	metricK8sContainerCPULimit                    metricK8sContainerCPULimit
+	metricK8sContainerCPURequest                  metricK8sContainerCPURequest
+	metricK8sContainerEphemeralstorageLimit       metricK8sContainerEphemeralstorageLimit
+	metricK8sContainerEphemeralstorageRequest     metricK8sContainerEphemeralstorageRequest
+	metricK8sContainerMemoryLimit                 metricK8sContainerMemoryLimit
+	metricK8sContainerMemoryRequest               metricK8sContainerMemoryRequest
+	metricK8sContainerReady                       metricK8sContainerReady
+	metricK8sContainerRestarts                    metricK8sContainerRestarts
+	metricK8sContainerStatusReason                metricK8sContainerStatusReason
+	metricK8sContainerStatusState                 metricK8sContainerStatusState
+	metricK8sContainerStorageLimit                metricK8sContainerStorageLimit
+	metricK8sContainerStorageRequest              metricK8sContainerStorageRequest
+	metricK8sCronjobActiveJobs                    metricK8sCronjobActiveJobs
+	metricK8sDaemonsetCurrentScheduledNodes       metricK8sDaemonsetCurrentScheduledNodes
+	metricK8sDaemonsetDesiredScheduledNodes       metricK8sDaemonsetDesiredScheduledNodes
+	metricK8sDaemonsetMisscheduledNodes           metricK8sDaemonsetMisscheduledNodes
+	metricK8sDaemonsetReadyNodes                  metricK8sDaemonsetReadyNodes
+	metricK8sDeploymentAvailable                  metricK8sDeploymentAvailable
+	metricK8sDeploymentDesired                    metricK8sDeploymentDesired
+	metricK8sHpaCurrentReplicas                   metricK8sHpaCurrentReplicas
+	metricK8sHpaDesiredReplicas                   metricK8sHpaDesiredReplicas
+	metricK8sHpaMaxReplicas                       metricK8sHpaMaxReplicas
+	metricK8sHpaMinReplicas                       metricK8sHpaMinReplicas
+	metricK8sJobActivePods                        metricK8sJobActivePods
+	metricK8sJobDesiredSuccessfulPods             metricK8sJobDesiredSuccessfulPods
+	metricK8sJobFailedPods                        metricK8sJobFailedPods
+	metricK8sJobMaxParallelPods                   metricK8sJobMaxParallelPods
+	metricK8sJobSuccessfulPods                    metricK8sJobSuccessfulPods
+	metricK8sNamespacePhase                       metricK8sNamespacePhase
+	metricK8sNodeCondition                        metricK8sNodeCondition
+	metricK8sPersistentvolumeStatusPhase          metricK8sPersistentvolumeStatusPhase
+	metricK8sPersistentvolumeStorageCapacity      metricK8sPersistentvolumeStorageCapacity
+	metricK8sPersistentvolumeclaimStatusPhase     metricK8sPersistentvolumeclaimStatusPhase
+	metricK8sPersistentvolumeclaimStorageCapacity metricK8sPersistentvolumeclaimStorageCapacity
+	metricK8sPersistentvolumeclaimStorageRequest  metricK8sPersistentvolumeclaimStorageRequest
+	metricK8sPodPhase                             metricK8sPodPhase
+	metricK8sPodStatusReason                      metricK8sPodStatusReason
+	metricK8sReplicasetAvailable                  metricK8sReplicasetAvailable
+	metricK8sReplicasetDesired                    metricK8sReplicasetDesired
+	metricK8sReplicationControllerAvailable       metricK8sReplicationControllerAvailable
+	metricK8sReplicationControllerDesired         metricK8sReplicationControllerDesired
+	metricK8sResourceQuotaHardLimit               metricK8sResourceQuotaHardLimit
+	metricK8sResourceQuotaUsed                    metricK8sResourceQuotaUsed
+	metricK8sServiceEndpointCount                 metricK8sServiceEndpointCount
+	metricK8sServiceLoadBalancerIngressCount      metricK8sServiceLoadBalancerIngressCount
+	metricK8sStatefulsetCurrentPods               metricK8sStatefulsetCurrentPods
+	metricK8sStatefulsetDesiredPods               metricK8sStatefulsetDesiredPods
+	metricK8sStatefulsetReadyPods                 metricK8sStatefulsetReadyPods
+	metricK8sStatefulsetUpdatedPods               metricK8sStatefulsetUpdatedPods
+	metricOpenshiftAppliedclusterquotaLimit       metricOpenshiftAppliedclusterquotaLimit
+	metricOpenshiftAppliedclusterquotaUsed        metricOpenshiftAppliedclusterquotaUsed
+	metricOpenshiftClusterquotaLimit              metricOpenshiftClusterquotaLimit
+	metricOpenshiftClusterquotaUsed               metricOpenshiftClusterquotaUsed
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -2873,53 +3230,58 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sContainerCPULimit:              newMetricK8sContainerCPULimit(mbc.Metrics.K8sContainerCPULimit),
 		metricK8sContainerCPURequest:            newMetricK8sContainerCPURequest(mbc.Metrics.K8sContainerCPURequest),
 		metricK8sContainerEphemeralstorageLimit: newMetricK8sContainerEphemeralstorageLimit(mbc.Metrics.K8sContainerEphemeralstorageLimit),
-		metricK8sContainerEphemeralstorageRequest: newMetricK8sContainerEphemeralstorageRequest(mbc.Metrics.K8sContainerEphemeralstorageRequest),
-		metricK8sContainerMemoryLimit:             newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
-		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
-		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
-		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
-		metricK8sContainerStatusReason:            newMetricK8sContainerStatusReason(mbc.Metrics.K8sContainerStatusReason),
-		metricK8sContainerStatusState:             newMetricK8sContainerStatusState(mbc.Metrics.K8sContainerStatusState),
-		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
-		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
-		metricK8sCronjobActiveJobs:                newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
-		metricK8sDaemonsetCurrentScheduledNodes:   newMetricK8sDaemonsetCurrentScheduledNodes(mbc.Metrics.K8sDaemonsetCurrentScheduledNodes),
-		metricK8sDaemonsetDesiredScheduledNodes:   newMetricK8sDaemonsetDesiredScheduledNodes(mbc.Metrics.K8sDaemonsetDesiredScheduledNodes),
-		metricK8sDaemonsetMisscheduledNodes:       newMetricK8sDaemonsetMisscheduledNodes(mbc.Metrics.K8sDaemonsetMisscheduledNodes),
-		metricK8sDaemonsetReadyNodes:              newMetricK8sDaemonsetReadyNodes(mbc.Metrics.K8sDaemonsetReadyNodes),
-		metricK8sDeploymentAvailable:              newMetricK8sDeploymentAvailable(mbc.Metrics.K8sDeploymentAvailable),
-		metricK8sDeploymentDesired:                newMetricK8sDeploymentDesired(mbc.Metrics.K8sDeploymentDesired),
-		metricK8sHpaCurrentReplicas:               newMetricK8sHpaCurrentReplicas(mbc.Metrics.K8sHpaCurrentReplicas),
-		metricK8sHpaDesiredReplicas:               newMetricK8sHpaDesiredReplicas(mbc.Metrics.K8sHpaDesiredReplicas),
-		metricK8sHpaMaxReplicas:                   newMetricK8sHpaMaxReplicas(mbc.Metrics.K8sHpaMaxReplicas),
-		metricK8sHpaMinReplicas:                   newMetricK8sHpaMinReplicas(mbc.Metrics.K8sHpaMinReplicas),
-		metricK8sJobActivePods:                    newMetricK8sJobActivePods(mbc.Metrics.K8sJobActivePods),
-		metricK8sJobDesiredSuccessfulPods:         newMetricK8sJobDesiredSuccessfulPods(mbc.Metrics.K8sJobDesiredSuccessfulPods),
-		metricK8sJobFailedPods:                    newMetricK8sJobFailedPods(mbc.Metrics.K8sJobFailedPods),
-		metricK8sJobMaxParallelPods:               newMetricK8sJobMaxParallelPods(mbc.Metrics.K8sJobMaxParallelPods),
-		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
-		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
-		metricK8sNodeCondition:                    newMetricK8sNodeCondition(mbc.Metrics.K8sNodeCondition),
-		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
-		metricK8sPodStatusReason:                  newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
-		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
-		metricK8sReplicasetDesired:                newMetricK8sReplicasetDesired(mbc.Metrics.K8sReplicasetDesired),
-		metricK8sReplicationControllerAvailable:   newMetricK8sReplicationControllerAvailable(mbc.Metrics.K8sReplicationControllerAvailable),
-		metricK8sReplicationControllerDesired:     newMetricK8sReplicationControllerDesired(mbc.Metrics.K8sReplicationControllerDesired),
-		metricK8sResourceQuotaHardLimit:           newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
-		metricK8sResourceQuotaUsed:                newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
-		metricK8sServiceEndpointCount:             newMetricK8sServiceEndpointCount(mbc.Metrics.K8sServiceEndpointCount),
-		metricK8sServiceLoadBalancerIngressCount:  newMetricK8sServiceLoadBalancerIngressCount(mbc.Metrics.K8sServiceLoadBalancerIngressCount),
-		metricK8sStatefulsetCurrentPods:           newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
-		metricK8sStatefulsetDesiredPods:           newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
-		metricK8sStatefulsetReadyPods:             newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
-		metricK8sStatefulsetUpdatedPods:           newMetricK8sStatefulsetUpdatedPods(mbc.Metrics.K8sStatefulsetUpdatedPods),
-		metricOpenshiftAppliedclusterquotaLimit:   newMetricOpenshiftAppliedclusterquotaLimit(mbc.Metrics.OpenshiftAppliedclusterquotaLimit),
-		metricOpenshiftAppliedclusterquotaUsed:    newMetricOpenshiftAppliedclusterquotaUsed(mbc.Metrics.OpenshiftAppliedclusterquotaUsed),
-		metricOpenshiftClusterquotaLimit:          newMetricOpenshiftClusterquotaLimit(mbc.Metrics.OpenshiftClusterquotaLimit),
-		metricOpenshiftClusterquotaUsed:           newMetricOpenshiftClusterquotaUsed(mbc.Metrics.OpenshiftClusterquotaUsed),
-		resourceAttributeIncludeFilter:            make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:            make(map[string]filter.Filter),
+		metricK8sContainerEphemeralstorageRequest:     newMetricK8sContainerEphemeralstorageRequest(mbc.Metrics.K8sContainerEphemeralstorageRequest),
+		metricK8sContainerMemoryLimit:                 newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
+		metricK8sContainerMemoryRequest:               newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
+		metricK8sContainerReady:                       newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
+		metricK8sContainerRestarts:                    newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
+		metricK8sContainerStatusReason:                newMetricK8sContainerStatusReason(mbc.Metrics.K8sContainerStatusReason),
+		metricK8sContainerStatusState:                 newMetricK8sContainerStatusState(mbc.Metrics.K8sContainerStatusState),
+		metricK8sContainerStorageLimit:                newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
+		metricK8sContainerStorageRequest:              newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
+		metricK8sCronjobActiveJobs:                    newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
+		metricK8sDaemonsetCurrentScheduledNodes:       newMetricK8sDaemonsetCurrentScheduledNodes(mbc.Metrics.K8sDaemonsetCurrentScheduledNodes),
+		metricK8sDaemonsetDesiredScheduledNodes:       newMetricK8sDaemonsetDesiredScheduledNodes(mbc.Metrics.K8sDaemonsetDesiredScheduledNodes),
+		metricK8sDaemonsetMisscheduledNodes:           newMetricK8sDaemonsetMisscheduledNodes(mbc.Metrics.K8sDaemonsetMisscheduledNodes),
+		metricK8sDaemonsetReadyNodes:                  newMetricK8sDaemonsetReadyNodes(mbc.Metrics.K8sDaemonsetReadyNodes),
+		metricK8sDeploymentAvailable:                  newMetricK8sDeploymentAvailable(mbc.Metrics.K8sDeploymentAvailable),
+		metricK8sDeploymentDesired:                    newMetricK8sDeploymentDesired(mbc.Metrics.K8sDeploymentDesired),
+		metricK8sHpaCurrentReplicas:                   newMetricK8sHpaCurrentReplicas(mbc.Metrics.K8sHpaCurrentReplicas),
+		metricK8sHpaDesiredReplicas:                   newMetricK8sHpaDesiredReplicas(mbc.Metrics.K8sHpaDesiredReplicas),
+		metricK8sHpaMaxReplicas:                       newMetricK8sHpaMaxReplicas(mbc.Metrics.K8sHpaMaxReplicas),
+		metricK8sHpaMinReplicas:                       newMetricK8sHpaMinReplicas(mbc.Metrics.K8sHpaMinReplicas),
+		metricK8sJobActivePods:                        newMetricK8sJobActivePods(mbc.Metrics.K8sJobActivePods),
+		metricK8sJobDesiredSuccessfulPods:             newMetricK8sJobDesiredSuccessfulPods(mbc.Metrics.K8sJobDesiredSuccessfulPods),
+		metricK8sJobFailedPods:                        newMetricK8sJobFailedPods(mbc.Metrics.K8sJobFailedPods),
+		metricK8sJobMaxParallelPods:                   newMetricK8sJobMaxParallelPods(mbc.Metrics.K8sJobMaxParallelPods),
+		metricK8sJobSuccessfulPods:                    newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
+		metricK8sNamespacePhase:                       newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
+		metricK8sNodeCondition:                        newMetricK8sNodeCondition(mbc.Metrics.K8sNodeCondition),
+		metricK8sPersistentvolumeStatusPhase:          newMetricK8sPersistentvolumeStatusPhase(mbc.Metrics.K8sPersistentvolumeStatusPhase),
+		metricK8sPersistentvolumeStorageCapacity:      newMetricK8sPersistentvolumeStorageCapacity(mbc.Metrics.K8sPersistentvolumeStorageCapacity),
+		metricK8sPersistentvolumeclaimStatusPhase:     newMetricK8sPersistentvolumeclaimStatusPhase(mbc.Metrics.K8sPersistentvolumeclaimStatusPhase),
+		metricK8sPersistentvolumeclaimStorageCapacity: newMetricK8sPersistentvolumeclaimStorageCapacity(mbc.Metrics.K8sPersistentvolumeclaimStorageCapacity),
+		metricK8sPersistentvolumeclaimStorageRequest:  newMetricK8sPersistentvolumeclaimStorageRequest(mbc.Metrics.K8sPersistentvolumeclaimStorageRequest),
+		metricK8sPodPhase:                             newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
+		metricK8sPodStatusReason:                      newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
+		metricK8sReplicasetAvailable:                  newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
+		metricK8sReplicasetDesired:                    newMetricK8sReplicasetDesired(mbc.Metrics.K8sReplicasetDesired),
+		metricK8sReplicationControllerAvailable:       newMetricK8sReplicationControllerAvailable(mbc.Metrics.K8sReplicationControllerAvailable),
+		metricK8sReplicationControllerDesired:         newMetricK8sReplicationControllerDesired(mbc.Metrics.K8sReplicationControllerDesired),
+		metricK8sResourceQuotaHardLimit:               newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
+		metricK8sResourceQuotaUsed:                    newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
+		metricK8sServiceEndpointCount:                 newMetricK8sServiceEndpointCount(mbc.Metrics.K8sServiceEndpointCount),
+		metricK8sServiceLoadBalancerIngressCount:      newMetricK8sServiceLoadBalancerIngressCount(mbc.Metrics.K8sServiceLoadBalancerIngressCount),
+		metricK8sStatefulsetCurrentPods:               newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
+		metricK8sStatefulsetDesiredPods:               newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
+		metricK8sStatefulsetReadyPods:                 newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
+		metricK8sStatefulsetUpdatedPods:               newMetricK8sStatefulsetUpdatedPods(mbc.Metrics.K8sStatefulsetUpdatedPods),
+		metricOpenshiftAppliedclusterquotaLimit:       newMetricOpenshiftAppliedclusterquotaLimit(mbc.Metrics.OpenshiftAppliedclusterquotaLimit),
+		metricOpenshiftAppliedclusterquotaUsed:        newMetricOpenshiftAppliedclusterquotaUsed(mbc.Metrics.OpenshiftAppliedclusterquotaUsed),
+		metricOpenshiftClusterquotaLimit:              newMetricOpenshiftClusterquotaLimit(mbc.Metrics.OpenshiftClusterquotaLimit),
+		metricOpenshiftClusterquotaUsed:               newMetricOpenshiftClusterquotaUsed(mbc.Metrics.OpenshiftClusterquotaUsed),
+		resourceAttributeIncludeFilter:                make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
@@ -3071,6 +3433,36 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.K8sNodeUID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.node.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeUID.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeReclaimPolicy.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolume.reclaim_policy"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeReclaimPolicy.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeReclaimPolicy.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolume.reclaim_policy"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeReclaimPolicy.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolume.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolume.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeUID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolumeclaim.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimUID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sPodName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
 	}
@@ -3166,6 +3558,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if mbc.ResourceAttributes.K8sStatefulsetUID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.statefulset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetUID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sStorageclassName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.storageclass.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStorageclassName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sStorageclassName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.storageclass.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStorageclassName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.OpenshiftClusterquotaName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["openshift.clusterquota.name"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaName.MetricsInclude)
@@ -3333,6 +3731,18 @@ func (mb *MetricsBuilder) ForK8sService(e *K8sServiceEntity) *K8sServiceMetricsB
 	return &K8sServiceMetricsBuilder{mb: mb, entity: e}
 }
 
+// ForK8sPersistentvolume returns a K8sPersistentvolumeMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.persistentvolume entity.
+func (mb *MetricsBuilder) ForK8sPersistentvolume(e *K8sPersistentvolumeEntity) *K8sPersistentvolumeMetricsBuilder {
+	return &K8sPersistentvolumeMetricsBuilder{mb: mb, entity: e}
+}
+
+// ForK8sPersistentvolumeclaim returns a K8sPersistentvolumeclaimMetricsBuilder that restricts metric recording
+// to metrics belonging to the k8s.persistentvolumeclaim entity.
+func (mb *MetricsBuilder) ForK8sPersistentvolumeclaim(e *K8sPersistentvolumeclaimEntity) *K8sPersistentvolumeclaimMetricsBuilder {
+	return &K8sPersistentvolumeclaimMetricsBuilder{mb: mb, entity: e}
+}
+
 // ForK8sHpa returns a K8sHpaMetricsBuilder that restricts metric recording
 // to metrics belonging to the k8s.hpa entity.
 func (mb *MetricsBuilder) ForK8sHpa(e *K8sHpaEntity) *K8sHpaMetricsBuilder {
@@ -3389,6 +3799,11 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sJobSuccessfulPods.emit(ils.Metrics())
 	mb.metricK8sNamespacePhase.emit(ils.Metrics())
 	mb.metricK8sNodeCondition.emit(ils.Metrics())
+	mb.metricK8sPersistentvolumeStatusPhase.emit(ils.Metrics())
+	mb.metricK8sPersistentvolumeStorageCapacity.emit(ils.Metrics())
+	mb.metricK8sPersistentvolumeclaimStatusPhase.emit(ils.Metrics())
+	mb.metricK8sPersistentvolumeclaimStorageCapacity.emit(ils.Metrics())
+	mb.metricK8sPersistentvolumeclaimStorageRequest.emit(ils.Metrics())
 	mb.metricK8sPodPhase.emit(ils.Metrics())
 	mb.metricK8sPodStatusReason.emit(ils.Metrics())
 	mb.metricK8sReplicasetAvailable.emit(ils.Metrics())
@@ -3646,6 +4061,41 @@ func (mb *MetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp,
 // Deprecated: Use mb.ForK8sNode(entity).RecordK8sNodeConditionDataPoint(...) instead.
 func (mb *MetricsBuilder) RecordK8sNodeConditionDataPoint(ts pcommon.Timestamp, val int64, conditionAttributeValue string) {
 	mb.metricK8sNodeCondition.recordDataPoint(mb.startTime, ts, val, conditionAttributeValue)
+}
+
+// RecordK8sPersistentvolumeStatusPhaseDataPoint adds a data point to k8s.persistentvolume.status.phase metric.
+//
+// Deprecated: Use mb.ForK8sPersistentvolume(entity).RecordK8sPersistentvolumeStatusPhaseDataPoint(...) instead.
+func (mb *MetricsBuilder) RecordK8sPersistentvolumeStatusPhaseDataPoint(ts pcommon.Timestamp, val int64, k8sPersistentvolumeStatusPhaseAttributeValue AttributeK8sPersistentvolumeStatusPhase) {
+	mb.metricK8sPersistentvolumeStatusPhase.recordDataPoint(mb.startTime, ts, val, k8sPersistentvolumeStatusPhaseAttributeValue.String())
+}
+
+// RecordK8sPersistentvolumeStorageCapacityDataPoint adds a data point to k8s.persistentvolume.storage.capacity metric.
+//
+// Deprecated: Use mb.ForK8sPersistentvolume(entity).RecordK8sPersistentvolumeStorageCapacityDataPoint(...) instead.
+func (mb *MetricsBuilder) RecordK8sPersistentvolumeStorageCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPersistentvolumeStorageCapacity.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPersistentvolumeclaimStatusPhaseDataPoint adds a data point to k8s.persistentvolumeclaim.status.phase metric.
+//
+// Deprecated: Use mb.ForK8sPersistentvolumeclaim(entity).RecordK8sPersistentvolumeclaimStatusPhaseDataPoint(...) instead.
+func (mb *MetricsBuilder) RecordK8sPersistentvolumeclaimStatusPhaseDataPoint(ts pcommon.Timestamp, val int64, k8sPersistentvolumeclaimStatusPhaseAttributeValue AttributeK8sPersistentvolumeclaimStatusPhase) {
+	mb.metricK8sPersistentvolumeclaimStatusPhase.recordDataPoint(mb.startTime, ts, val, k8sPersistentvolumeclaimStatusPhaseAttributeValue.String())
+}
+
+// RecordK8sPersistentvolumeclaimStorageCapacityDataPoint adds a data point to k8s.persistentvolumeclaim.storage.capacity metric.
+//
+// Deprecated: Use mb.ForK8sPersistentvolumeclaim(entity).RecordK8sPersistentvolumeclaimStorageCapacityDataPoint(...) instead.
+func (mb *MetricsBuilder) RecordK8sPersistentvolumeclaimStorageCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPersistentvolumeclaimStorageCapacity.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPersistentvolumeclaimStorageRequestDataPoint adds a data point to k8s.persistentvolumeclaim.storage.request metric.
+//
+// Deprecated: Use mb.ForK8sPersistentvolumeclaim(entity).RecordK8sPersistentvolumeclaimStorageRequestDataPoint(...) instead.
+func (mb *MetricsBuilder) RecordK8sPersistentvolumeclaimStorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPersistentvolumeclaimStorageRequest.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.

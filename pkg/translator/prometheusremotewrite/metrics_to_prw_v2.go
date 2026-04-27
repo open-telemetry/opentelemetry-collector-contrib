@@ -54,13 +54,15 @@ type metadata struct {
 }
 
 func newPrometheusConverterV2(settings Settings) *prometheusConverterV2 {
+	withSuffixes, utf8Allowed := getTranslationConfiguration(settings)
+
 	return &prometheusConverterV2{
 		unique:      map[uint64]*writev2.TimeSeries{},
 		conflicts:   map[uint64][]*writev2.TimeSeries{},
 		symbolTable: writev2.NewSymbolTable(),
-		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: settings.AddMetricSuffixes, Namespace: settings.Namespace},
-		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled()},
-		unitNamer:   otlptranslator.UnitNamer{},
+		metricNamer: otlptranslator.MetricNamer{WithMetricSuffixes: withSuffixes, Namespace: settings.Namespace, UTF8Allowed: utf8Allowed},
+		labelNamer:  otlptranslator.LabelNamer{UnderscoreLabelSanitization: !prometheus.DropSanitizationGate.IsEnabled(), UTF8Allowed: utf8Allowed},
+		unitNamer:   otlptranslator.UnitNamer{UTF8Allowed: utf8Allowed},
 	}
 }
 

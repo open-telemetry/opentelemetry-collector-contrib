@@ -215,7 +215,6 @@ processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
-processor/dnslookupprocessor
 processor/drainprocessor
 processor/filterprocessor
 processor/geoipprocessor

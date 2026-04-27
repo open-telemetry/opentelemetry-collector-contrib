@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/mongodb_atlas
+note: "Fix include_clusters/exclude_clusters filtering having no effect."
+issues: [47037]
+change_logs: [user]

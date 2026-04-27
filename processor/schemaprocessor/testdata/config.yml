@@ -1,4 +1,6 @@
 schema/with-all-options:
+  cache_cooldown: 10m
+  cache_retry_limit: 3
   # Prefetch is an optional field that allows
   # the collector to fetch the defined schema files
   # as the collector starts.

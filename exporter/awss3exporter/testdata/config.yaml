@@ -10,12 +10,16 @@ exporters:
     timeout: 8
 
     s3uploader:
-        region: 'us-east-1'
-        s3_bucket: 'foo'
-        s3_prefix: 'bar'
-        s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
-        s3_partition_timezone: 'Europe/London'
-        endpoint: "http://endpoint.com"
+      region: 'us-east-1'
+      s3_bucket: 'foo'
+      s3_prefix: 'bar'
+      s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
+      s3_partition_timezone: 'Europe/London'
+      endpoint: "http://endpoint.com"
+    
+    retry_on_failure:
+      enabled: true
+      randomization_factor: 0.3
 
 processors:
   nop:

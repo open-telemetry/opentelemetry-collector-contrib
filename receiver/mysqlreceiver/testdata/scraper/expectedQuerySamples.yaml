@@ -46,6 +46,9 @@ resourceLogs:
               - key: mysql.session.id
                 value:
                   intValue: "-54321"
+              - key: mysql.events_statements_current.timer_wait
+                value:
+                  doubleValue: 0.005
               - key: mysql.events_waits_current.timer_wait
                 value:
                   doubleValue: 1.2851652e-05
@@ -64,7 +67,7 @@ resourceLogs:
             body: {}
             eventName: db.server.query_sample
             spanId: "2222222222222222"
-            timeUnixNano: "1774540151557334000"
+            timeUnixNano: "1777051214725807000"
             traceId: "11111111111111111111111111111111"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver

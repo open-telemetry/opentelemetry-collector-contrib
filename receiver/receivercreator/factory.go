@@ -36,6 +36,13 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		Discovery: DiscoveryConfig{
+			DefaultFileLogConfig: userConfigMap{
+				"include_file_path": true,
+				"include_file_name": false,
+				"operators":         []any{map[string]any{"id": "container-parser", "type": "container"}},
+			},
+		},
 		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
 				string(conventions.K8SPodNameKey):       "`name`",

@@ -5,10 +5,31 @@ all_set:
       enabled: true
     sshcheck.error:
       enabled: true
+      attributes: ["error.message"]
     sshcheck.sftp_duration:
       enabled: true
     sshcheck.sftp_error:
       enabled: true
+      attributes: ["error.message"]
+    sshcheck.sftp_status:
+      enabled: true
+    sshcheck.status:
+      enabled: true
+  resource_attributes:
+    ssh.endpoint:
+      enabled: true
+reaggregate_set:
+  metrics:
+    sshcheck.duration:
+      enabled: true
+    sshcheck.error:
+      enabled: true
+      attributes: []
+    sshcheck.sftp_duration:
+      enabled: true
+    sshcheck.sftp_error:
+      enabled: true
+      attributes: []
     sshcheck.sftp_status:
       enabled: true
     sshcheck.status:
@@ -22,10 +43,12 @@ none_set:
       enabled: false
     sshcheck.error:
       enabled: false
+      attributes: ["error.message"]
     sshcheck.sftp_duration:
       enabled: false
     sshcheck.sftp_error:
       enabled: false
+      attributes: ["error.message"]
     sshcheck.sftp_status:
       enabled: false
     sshcheck.status:

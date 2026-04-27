@@ -41,8 +41,10 @@ func TestSyncMetadata(t *testing.T) {
 		{
 			name: "all_stats_available",
 			cpuStat: cpu.InfoStat{
-				Cores:     4,
-				ModelName: "testprocessor",
+				Cores:      1,
+				ModelName:  "testprocessor",
+				PhysicalID: "0",
+				CoreID:     "0",
 			},
 			cpuStatErr: nil,
 			memStat: mem.VirtualMemoryStat{
@@ -63,7 +65,7 @@ func TestSyncMetadata(t *testing.T) {
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
-							"host_cpu_cores":      "4",
+							"host_cpu_cores":      "1",
 							"host_cpu_model":      "testprocessor",
 							"host_logical_cpus":   "1",
 							"host_physical_cpus":  "1",
@@ -84,8 +86,10 @@ func TestSyncMetadata(t *testing.T) {
 		{
 			name: "no_host_stats",
 			cpuStat: cpu.InfoStat{
-				Cores:     4,
-				ModelName: "testprocessor",
+				Cores:      1,
+				ModelName:  "testprocessor",
+				PhysicalID: "0",
+				CoreID:     "0",
 			},
 			cpuStatErr: nil,
 			memStat: mem.VirtualMemoryStat{
@@ -102,7 +106,7 @@ func TestSyncMetadata(t *testing.T) {
 					ResourceID:    "host1",
 					MetadataDelta: metadata.MetadataDelta{
 						MetadataToUpdate: map[string]string{
-							"host_cpu_cores":     "4",
+							"host_cpu_cores":     "1",
 							"host_cpu_model":     "testprocessor",
 							"host_logical_cpus":  "1",
 							"host_physical_cpus": "1",

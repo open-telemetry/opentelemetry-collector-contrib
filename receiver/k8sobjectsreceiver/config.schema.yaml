@@ -47,5 +47,9 @@ properties:
     items:
       x-pointer: true
       $ref: k_8_s_objects_config
+  storage:
+    x-pointer: true
+    type: string
+    x-customType: go.opentelemetry.io/collector/component.ID
 allOf:
   - $ref: /internal/k8sconfig.api_config

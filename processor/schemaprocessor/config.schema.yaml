@@ -1,6 +1,13 @@
 description: Config defines the user provided values for the Schema Processor
 type: object
 properties:
+  cache_cooldown:
+    description: CacheCooldown is the duration to wait before retrying schema fetches after the retry limit has been reached. Defaults to 5 minutes.
+    type: string
+    format: duration
+  cache_retry_limit:
+    description: CacheRetryLimit is the number of consecutive failed schema fetch attempts allowed before enforcing the cooldown period. Defaults to 5.
+    type: integer
   prefetch:
     description: PreCache is a list of schema URLs that are downloaded and cached at the start of the collector runtime in order to avoid fetching data that later on could block processing of signals. (Optional field)
     type: array

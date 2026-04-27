@@ -1,0 +1,5 @@
+change_type: bug_fix
+component: receiver/gitlab
+note: "Skip stages with an empty `StartedAt` timestamp (e.g. from early-failed pipelines where a stage was queued but never executed), preventing the \"invalid startedAt timestamp: time is empty\" error."
+issues: [45756]
+change_logs: [user]

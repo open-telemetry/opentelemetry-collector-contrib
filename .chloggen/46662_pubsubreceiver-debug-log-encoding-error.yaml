@@ -1,0 +1,10 @@
+change_type: enhancement
+component: receiver/googlecloudpubsub
+note: Add debug log of the pubsub message when an encoding error occurs.
+issues: [46662]
+subtext: |
+  When the configured encoder fails to decode a Pub/Sub message, a debug-level
+  log is now emitted containing the message ID, attributes, and the underlying
+  error. This log is emitted regardless of the `ignore_encoding_error` setting,
+  making it easier to diagnose which messages are causing decoding failures.
+change_logs: [user]
