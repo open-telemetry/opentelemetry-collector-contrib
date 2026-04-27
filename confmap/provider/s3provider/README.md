@@ -38,7 +38,7 @@ s3://doc-example-bucket.s3.us-west-2.amazonaws.com/config.yaml
 
 ### S3-compatible services (path-style)
 
-For non-AWS S3-compatible services such as GCS, MinIO, or DigitalOcean Spaces:
+For non-AWS S3-compatible services such as MinIO or DigitalOcean Spaces:
 
 ```
 s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]?region=[REGION]
@@ -50,7 +50,6 @@ s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]?region=[REGION]
 Examples:
 
 ```
-s3://storage.googleapis.com/my-bucket/config.yaml?region=us-east-1
 s3://minio.example.com/my-bucket/config.yaml
 s3://localhost:9000/my-bucket/config.yaml
 ```

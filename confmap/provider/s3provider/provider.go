@@ -46,10 +46,9 @@ type provider struct {
 //	s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
 //	s3://doc-example-bucket.s3.us-west-2.amazonaws.com/config.yaml
 //
-// S3-compatible path-style (for GCS, MinIO, and other S3-compatible services):
+// S3-compatible path-style (for MinIO, DigitalOcean Spaces, and other S3-compatible services):
 //
 //	s3://[ENDPOINT_HOST]/[BUCKET]/[KEY]?region=[REGION]
-//	s3://storage.googleapis.com/my-bucket/config.yaml?region=us-east-1
 //	s3://minio.example.com/my-bucket/config.yaml
 func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newWithSettings)
