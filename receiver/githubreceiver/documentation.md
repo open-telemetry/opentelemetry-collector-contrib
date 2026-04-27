@@ -189,3 +189,13 @@ The number of unique contributors to a repository.
 | ---- | ----------- | ------ | ------- | ------------------- |
 | vcs.owner.name | The group owner within the version control system | Any Str | true | - |
 | vcs.provider.name | The name of the version control system provider | Any Str | true | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.githubreceiver.UseCheckRunID` | beta | When enabled, deterministic job, step, and queue span IDs are derived from the GitHub check_run_id (the WorkflowJob.id webhook field, also exposed in-runner as ${{ job.check_run_id }}). Step span IDs additionally incorporate the step's raw name, allowing in-action telemetry tools to reproduce matching span IDs without calling the GitHub REST API and without knowing the runner-dependent step number. Payloads missing a check_run_id are rejected while this gate is enabled. Workflows with duplicate step names within a job will log a warning; duplicate steps will share the same span ID. | v0.151.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44856) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
