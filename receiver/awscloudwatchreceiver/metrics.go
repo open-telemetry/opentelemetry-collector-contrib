@@ -321,10 +321,10 @@ func parseQueryID(id string) (metricIdx, statIdx int, err error) {
 	}
 	metricIdx, err = strconv.Atoi(parts[0])
 	if err != nil {
-		return
+		return metricIdx, statIdx, err
 	}
 	statIdx, err = strconv.Atoi(parts[1])
-	return
+	return metricIdx, statIdx, err
 }
 
 // convertGetMetricDataToPdata converts GetMetricData results to pdata.Metrics.

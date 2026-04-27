@@ -162,10 +162,10 @@ func TestConvertGetMetricDataToPdata_SingleMetric(t *testing.T) {
 
 	ts := time.Unix(1_700_000_000, 0).UTC()
 	results := []types.MetricDataResult{
-		{Id: aws.String("q0_0"), Values: []float64{20.0}, Timestamps: []time.Time{ts}},  // Sum
-		{Id: aws.String("q0_1"), Values: []float64{3.0}, Timestamps: []time.Time{ts}},   // SampleCount
-		{Id: aws.String("q0_2"), Values: []float64{0.0}, Timestamps: []time.Time{ts}},   // Minimum
-		{Id: aws.String("q0_3"), Values: []float64{18.0}, Timestamps: []time.Time{ts}},  // Maximum
+		{Id: aws.String("q0_0"), Values: []float64{20.0}, Timestamps: []time.Time{ts}}, // Sum
+		{Id: aws.String("q0_1"), Values: []float64{3.0}, Timestamps: []time.Time{ts}},  // SampleCount
+		{Id: aws.String("q0_2"), Values: []float64{0.0}, Timestamps: []time.Time{ts}},  // Minimum
+		{Id: aws.String("q0_3"), Values: []float64{18.0}, Timestamps: []time.Time{ts}}, // Maximum
 	}
 	batch := []MetricQuery{
 		{Namespace: "AWS/EC2", MetricName: "CPUUtilization", Dimensions: map[string]string{"InstanceId": "i-abc"}},
