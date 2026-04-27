@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha1" // #nosec G505 -- SHA1 is the algorithm mongodbatlas uses, it must be used to calculate the HMAC signature
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -23,8 +22,10 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -60,13 +61,12 @@ type alertsClient interface {
 }
 
 type alertsReceiver struct {
-	addr        string
-	secret      string
-	server      *http.Server
-	mode        string
-	tlsSettings *configtls.ServerConfig
-	consumer    consumer.Logs
-	wg          *sync.WaitGroup
+	secret       string
+	mode         string
+	serverConfig *confighttp.ServerConfig
+	consumer     consumer.Logs
+	wg           *sync.WaitGroup
+	listenClose  func(ctx context.Context) error
 
 	// only relevant in `poll` mode
 	projects          []*ProjectConfig
@@ -86,12 +86,12 @@ type alertsReceiver struct {
 
 func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
 	cfg := baseConfig.Alerts
-	var tlsConfig *tls.Config
 
+	// Validate TLS
 	if cfg.TLS != nil {
 		var err error
 
-		tlsConfig, err = cfg.TLS.LoadTLSConfig(context.Background())
+		_, err = cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -102,9 +102,7 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 	}
 
 	recv := &alertsReceiver{
-		addr:              cfg.Endpoint,
 		secret:            string(cfg.Secret),
-		tlsSettings:       cfg.TLS,
 		consumer:          consumer,
 		mode:              cfg.Mode,
 		projects:          cfg.Projects,
@@ -129,12 +127,18 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 		recv.client = client
 		return recv, nil
 	}
-	s := &http.Server{
-		TLSConfig:         tlsConfig,
-		Handler:           http.HandlerFunc(recv.handleRequest),
+	serverConfig := confighttp.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  cfg.Endpoint,
+			Transport: "tcp",
+		},
 		ReadHeaderTimeout: 20 * time.Second,
 	}
-	recv.server = s
+	if cfg.TLS != nil {
+		serverConfig.TLS = configoptional.Some(*cfg.TLS)
+	}
+	recv.serverConfig = &serverConfig
+
 	return recv, nil
 }
 
@@ -217,44 +221,34 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 
 func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
 	a.telemetrySettings.Logger.Debug("starting alerts receiver in listening mode")
-	// We use a.server.Serve* over a.server.ListenAndServe*
-	// So that we can catch and return errors relating to binding to network interface on start.
-	var lc net.ListenConfig
-
-	l, err := lc.Listen(ctx, "tcp", a.addr)
+	server, err := a.serverConfig.ToServer(
+		ctx,
+		host.GetExtensions(),
+		a.telemetrySettings,
+		http.HandlerFunc(a.handleRequest),
+	)
 	if err != nil {
 		return err
 	}
-
-	if a.tlsSettings != nil {
-		a.wg.Go(func() {
-			a.telemetrySettings.Logger.Debug("Starting ServeTLS",
-				zap.String("address", a.addr),
-				zap.String("certfile", a.tlsSettings.CertFile),
-				zap.String("keyfile", a.tlsSettings.KeyFile))
-
-			err := a.server.ServeTLS(l, a.tlsSettings.CertFile, a.tlsSettings.KeyFile)
-
-			a.telemetrySettings.Logger.Debug("Serve TLS done")
-
-			if err != http.ErrServerClosed {
-				a.telemetrySettings.Logger.Error("ServeTLS failed", zap.Error(err))
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			}
-		})
-	} else {
-		a.wg.Go(func() {
-			a.telemetrySettings.Logger.Debug("Starting Serve", zap.String("address", a.addr))
-
-			err := a.server.Serve(l)
-
-			a.telemetrySettings.Logger.Debug("Serve done")
-
-			if err != http.ErrServerClosed {
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			}
-		})
+	listener, err := a.serverConfig.ToListener(ctx)
+	if err != nil {
+		return err
 	}
+	a.listenClose = server.Shutdown
+	a.wg.Go(func() {
+		a.telemetrySettings.Logger.Debug(
+			"Starting Serve",
+			zap.String("address", a.serverConfig.NetAddr.Endpoint),
+		)
+
+		err := server.Serve(listener)
+
+		a.telemetrySettings.Logger.Debug("Serve done")
+
+		if err != http.ErrServerClosed {
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		}
+	})
 	return nil
 }
 
@@ -320,11 +314,12 @@ func (a *alertsReceiver) Shutdown(ctx context.Context) error {
 
 func (a *alertsReceiver) shutdownListener(ctx context.Context) error {
 	a.telemetrySettings.Logger.Debug("Shutting down server")
-	err := a.server.Shutdown(ctx)
-	if err != nil {
-		return err
+	if a.listenClose != nil {
+		err := a.listenClose(ctx)
+		if err != nil {
+			return err
+		}
 	}
-
 	a.telemetrySettings.Logger.Debug("Waiting for shutdown to complete.")
 	a.wg.Wait()
 	return nil
