@@ -292,7 +292,6 @@ func BenchmarkStatementExecute_EntityRefsSync(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; b.Loop(); i++ {
-
 				resContext := newBenchmarkResourceContext(scenario.attrsCount)
 				if err := resSequence.Execute(ctx, resContext); err != nil {
 					b.Fatalf("failed to execute log statements: %v", err)
