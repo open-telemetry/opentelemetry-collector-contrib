@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: receiver/datadog
+note: Fix invalid temporality and type combination for dd.internal.stats.payload metric by setting AggregationTemporality to Cumulative
+issues: [46937]
+subtext: |
+  The dd.internal.stats.payload metric is now correctly configured with AggregationTemporalityCumulative,
+  which was previously missing and causing OTLP validation errors when exporting metrics.
+change_logs: [user]
