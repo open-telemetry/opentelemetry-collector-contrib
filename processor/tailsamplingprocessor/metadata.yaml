@@ -7,8 +7,8 @@ status:
     beta: [traces]
   distributions: [contrib, k8s]
   codeowners:
-    active: [portertech, Logiraptor, jmacd]
-    emeritus: [jpkrohling]
+    active: [portertech, jmacd, csmarchbanks, carsonip]
+    emeritus: [jpkrohling, Logiraptor]
     seeking_new: true
 
 feature_gates:
