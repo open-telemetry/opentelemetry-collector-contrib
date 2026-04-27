@@ -5,6 +5,7 @@ package reader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -330,6 +331,113 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	sink.ExpectToken(t, append(content, additionalContext...))
 
 	sink.ExpectNoCalls(t)
+}
+
+// TestReadToEnd_OffsetPreservedOnEmitError is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47908.
+//
+// emit.Callback explicitly permits an error return, but readContents previously
+// advanced r.Offset unconditionally after every emitFunc call. Tokens whose
+// batch was rejected were skipped on the next poll, producing silent data loss.
+//
+// readContents must instead leave r.Offset untouched whenever emitFunc returns
+// a non-nil error, so the same bytes are re-read (and re-attempted) on the next
+// ReadToEnd cycle.
+func TestReadToEnd_OffsetPreservedOnEmitError(t *testing.T) {
+	errEmit := errors.New("emit failed")
+
+	t.Run("eof_path_single_batch_fails", func(t *testing.T) {
+		// Fewer lines than DefaultMaxBatchSize: the only emit happens on the EOF path.
+		tempDir := t.TempDir()
+		temp := filetest.OpenTemp(t, tempDir)
+		const content = "line1\nline2\nline3\n"
+		filetest.WriteString(t, temp, content)
+
+		var calls atomic.Int64
+		f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+			calls.Add(1)
+			return errEmit
+		})
+		fp, err := f.NewFingerprint(temp)
+		require.NoError(t, err)
+		r, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+		require.NoError(t, err)
+		defer r.Close()
+
+		r.ReadToEnd(t.Context())
+
+		assert.Equal(t, int64(1), calls.Load(), "emit should run exactly once at EOF")
+		assert.Equal(t, int64(0), r.Offset,
+			"offset must not advance when EOF emit fails — those tokens are still owed downstream")
+	})
+
+	t.Run("batch_full_path_first_batch_fails", func(t *testing.T) {
+		// More lines than DefaultMaxBatchSize so a mid-loop emit fires before EOF.
+		// On emit error readContents must bail out — otherwise the offset moves to
+		// EOF and subsequent batches are skipped silently.
+		const totalLines = DefaultMaxBatchSize * 2
+		tempDir := t.TempDir()
+		temp := filetest.OpenTemp(t, tempDir)
+		var buf strings.Builder
+		for i := range totalLines {
+			fmt.Fprintf(&buf, "line%04d\n", i) // 9 bytes/line
+		}
+		filetest.WriteString(t, temp, buf.String())
+
+		var calls atomic.Int64
+		f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+			calls.Add(1)
+			return errEmit
+		})
+		fp, err := f.NewFingerprint(temp)
+		require.NoError(t, err)
+		r, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+		require.NoError(t, err)
+		defer r.Close()
+
+		r.ReadToEnd(t.Context())
+
+		assert.Equal(t, int64(1), calls.Load(),
+			"reader must stop after the first failing batch instead of plowing through %d batches",
+			totalLines/DefaultMaxBatchSize)
+		assert.Equal(t, int64(0), r.Offset,
+			"offset must not advance when the first mid-loop emit fails")
+	})
+
+	t.Run("eof_after_successful_batch_fails", func(t *testing.T) {
+		// First batch (DefaultMaxBatchSize lines) succeeds; trailing EOF emit fails.
+		// Offset must reflect the first successful batch only, not the trailing tail.
+		const successfulLines = DefaultMaxBatchSize
+		const trailingLines = DefaultMaxBatchSize / 2
+		const lineWidth = int64(9) // "lineNNNN\n"
+		tempDir := t.TempDir()
+		temp := filetest.OpenTemp(t, tempDir)
+		var buf strings.Builder
+		for i := range successfulLines + trailingLines {
+			fmt.Fprintf(&buf, "line%04d\n", i)
+		}
+		filetest.WriteString(t, temp, buf.String())
+
+		var calls atomic.Int64
+		f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+			if calls.Add(1) == 1 {
+				return nil
+			}
+			return errEmit
+		})
+		fp, err := f.NewFingerprint(temp)
+		require.NoError(t, err)
+		r, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+		require.NoError(t, err)
+		defer r.Close()
+
+		r.ReadToEnd(t.Context())
+
+		assert.Equal(t, int64(2), calls.Load(),
+			"both the batch-full emit and the trailing EOF emit should run")
+		assert.Equal(t, int64(successfulLines)*lineWidth, r.Offset,
+			"offset must stop at the end of the last successful batch, not at EOF")
+	})
 }
 
 func BenchmarkFileRead(b *testing.B) {

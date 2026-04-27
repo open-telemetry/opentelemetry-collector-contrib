@@ -265,9 +265,11 @@ func (r *Reader) readContents(ctx context.Context) {
 			}
 
 			if numTokensBatched > 0 {
-				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets)
-				if err != nil {
+				if err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets); err != nil {
+					// Leave r.Offset where it was: the rejected tokens must be
+					// re-read on the next poll, not silently skipped.
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
+					return
 				}
 				r.Offset = s.Pos()
 			}
@@ -287,7 +289,12 @@ func (r *Reader) readContents(ctx context.Context) {
 		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
 			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum, tokenOffsets); err != nil {
+				// Stop reading. The scanner has already consumed bytes for the
+				// rejected batch, so we cannot safely continue from mid-batch;
+				// leaving r.Offset untouched lets the next poll re-read these
+				// tokens with a fresh scanner.
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
+				return
 			}
 			numTokensBatched = 0
 			r.Offset, tokenOffsets[0] = s.Pos(), s.Pos()
