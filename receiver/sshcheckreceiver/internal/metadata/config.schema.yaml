@@ -18,6 +18,22 @@ $defs:
           enabled:
             type: boolean
             default: true
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "error.message"
+            default:
+              - "error.message"
       sshcheck.sftp_duration:
         description: "SshcheckSftpDurationMetricConfig provides config for the sshcheck.sftp_duration metric."
         type: object
@@ -32,6 +48,22 @@ $defs:
           enabled:
             type: boolean
             default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "sum"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "error.message"
+            default:
+              - "error.message"
       sshcheck.sftp_status:
         description: "SshcheckSftpStatusMetricConfig provides config for the sshcheck.sftp_status metric."
         type: object
