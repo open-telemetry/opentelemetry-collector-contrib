@@ -16,3 +16,20 @@ status:
 tests:
   config:
     format: cloudwatch
+
+feature_gates:
+  - id: extension.encoding.awslogsencoding.DontEmitV0RPCConventions
+    stage: alpha
+    description: >-
+      When enabled, CloudTrail log unmarshaler no longer emits the deprecated
+      semconv v1.38.0 attributes rpc.service and rpc.system.
+      Requires extension.encoding.awslogsencoding.EmitV1RPCConventions to also be enabled.
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549
+  - id: extension.encoding.awslogsencoding.EmitV1RPCConventions
+    stage: alpha
+    description: >-
+      When enabled, CloudTrail log unmarshaler emits rpc.system.name
+      (semconv v1.40.0) instead of the deprecated rpc.system (semconv v1.38.0).
+    from_version: v0.150.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47549
