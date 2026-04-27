@@ -239,7 +239,7 @@ func TestScraper_ScrapeOperationalMetrics(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg := metadata.NewDefaultMetricsBuilderConfig()
 			cfg.Metrics.OracledbDataDictionaryHitRatio.Enabled = true
 			cfg.Metrics.OracledbRecycleBinLimit.Enabled = true
 			cfg.Metrics.OracledbStorageUsage.Enabled = true
