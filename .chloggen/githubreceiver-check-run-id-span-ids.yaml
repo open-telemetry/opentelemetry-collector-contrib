@@ -23,6 +23,7 @@ subtext: |
   the GitHub REST API. Trace ID and root span ID are unchanged. Webhook payloads
   missing `workflow_job.id` are rejected while the gate is enabled; set the gate
   to disabled to accept them under the legacy scheme.
+  Additionally promotes traces to alpha stability.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
