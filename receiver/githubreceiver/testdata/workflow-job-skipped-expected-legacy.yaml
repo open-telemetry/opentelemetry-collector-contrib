@@ -56,7 +56,7 @@ resourceSpans:
             kind: 1
             name: build
             parentSpanId: 3b54c768f3ef27e1
-            spanId: fb6779d8c7b7c66c
+            spanId: 84e27971417e5249
             startTimeUnixNano: "1746195355000000000"
             status:
               message: skipped
@@ -70,8 +70,8 @@ resourceSpans:
             endTimeUnixNano: "1746195355000000000"
             kind: 1
             name: queue-build
-            parentSpanId: fb6779d8c7b7c66c
-            spanId: 5ce15e491b4b01da
+            parentSpanId: 84e27971417e5249
+            spanId: 750687c67fcd26a3
             startTimeUnixNano: "1746195355000000000"
             status: {}
             traceId: 0b0cff7305ff68eb7d1bb72c7fdbe277
