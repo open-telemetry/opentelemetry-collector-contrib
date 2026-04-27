@@ -1,4 +1,24 @@
 $defs:
+  metric_config:
+    description: MetricConfig controls whether a single telemetry metric is emitted.
+    type: object
+    properties:
+      enabled:
+        type: boolean
+  metrics_config:
+    description: MetricsConfig holds the per-metric enable/disable flags for the receiver's internal telemetry metrics.
+    type: object
+    properties:
+      receiver_windows_event_log_batch_size:
+        $ref: metric_config
+      receiver_windows_event_log_channel_size:
+        $ref: metric_config
+      receiver_windows_event_log_event_size:
+        $ref: metric_config
+      receiver_windows_event_log_lag:
+        $ref: metric_config
+      receiver_windows_event_log_missed_events:
+        $ref: metric_config
   resolve_si_ds_config:
     description: ResolveSIDsConfig contains configuration for SID resolution
     type: object
@@ -14,6 +34,12 @@ $defs:
       enabled:
         description: Enabled controls whether SID resolution is active
         type: boolean
+  telemetry_config:
+    description: TelemetryConfig is the top-level config block for receiver telemetry settings.
+    type: object
+    properties:
+      metrics:
+        $ref: metrics_config
 description: WindowsLogConfig defines configuration for the Windows Event Log receiver.
 type: object
 properties:
@@ -23,6 +49,9 @@ properties:
   resolve_sids:
     description: ResolveSIDs contains configuration for SID-to-username resolution
     $ref: resolve_si_ds_config
+  telemetry:
+    description: Telemetry controls which internal receiver metrics are emitted.
+    $ref: telemetry_config
 allOf:
   - $ref: /pkg/stanza/operator/input/windows.config
   - $ref: /pkg/stanza/adapter.base_config
