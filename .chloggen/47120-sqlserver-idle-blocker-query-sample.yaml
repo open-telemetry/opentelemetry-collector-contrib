@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/sqlserver
 
 # A brief description of the change. Surround your text with quotes (") if it needs to start with a backtick (`).
-note: Adds idle blocking sessions to `db.server.query_sample` in the SQL Server receiver by appending sleeping blocker rows (with `sqlserver.command=IDLE_BLOCKER`) when blocker session IDs are missing from active requests.
+note: Adds idle blocking sessions to `db.server.query_sample` by appending sleeping blocker rows (with `sqlserver.command=IDLE_BLOCKER`) when blocker session IDs are missing from active requests.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47120]
