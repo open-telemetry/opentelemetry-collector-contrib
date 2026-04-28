@@ -1,0 +1,10 @@
+change_type: bug_fix
+component: processor/schema
+note: Fix mutex held during HTTP schema fetch, serialising concurrent schema retrievals
+issues: [47633]
+subtext: |
+  The CacheableProvider held its mutex for the entire duration of HTTP schema fetches.
+  Concurrent requests for uncached schemas would block on each other rather than
+  fetching in parallel. The lock is now released before the HTTP call and re-acquired
+  only to write the result to the cache and update internal state.
+change_logs: [user]

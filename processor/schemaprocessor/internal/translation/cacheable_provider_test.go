@@ -6,12 +6,23 @@ package translation
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+// slowProvider simulates a slow HTTP fetch with a fixed delay.
+type slowProvider struct {
+	delay time.Duration
+}
+
+func (p *slowProvider) Retrieve(_ context.Context, key string) (string, error) {
+	time.Sleep(p.delay)
+	return key, nil
+}
 
 type firstErrorProvider struct {
 	cnt int
@@ -29,6 +40,40 @@ func (p *firstErrorProvider) Retrieve(_ context.Context, key string) (string, er
 	return key, nil
 }
 
+// BenchmarkCacheableProviderConcurrentFetch measures throughput of concurrent fetches
+// for distinct keys. With the lock released during the HTTP call, goroutines can fetch
+// in parallel rather than serializing behind the mutex.
+//
+// With a 1ms provider delay and 10 goroutines each doing 100 fetches:
+//   - Lock released before fetch: ~100ms total (goroutines overlap)
+//   - Lock held during fetch:     ~1000ms total (goroutines serialize)
+func BenchmarkCacheableProviderConcurrentFetch(b *testing.B) {
+	const (
+		goroutines    = 10
+		fetchesPerG   = 100
+		providerDelay = time.Millisecond
+	)
+
+	for range b.N {
+		cp := NewCacheableProvider(&slowProvider{delay: providerDelay}, time.Minute, 10)
+		var wg sync.WaitGroup
+		for g := range goroutines {
+			wg.Add(1)
+			go func(base int) {
+				defer wg.Done()
+				for i := range fetchesPerG {
+					key := "key-" + strconv.Itoa(base*fetchesPerG+i)
+					_, err := cp.Retrieve(b.Context(), key)
+					if err != nil {
+						b.Error(err)
+					}
+				}
+			}(g)
+		}
+		wg.Wait()
+	}
+}
+
 // alwaysErrorProvider always returns an error and counts how many times Retrieve was called.
 type alwaysErrorProvider struct {
 	calls int
@@ -44,7 +89,7 @@ func (p *alwaysErrorProvider) Retrieve(_ context.Context, _ string) (string, err
 // than allowing another burst of `limit` calls through.
 func TestCacheableProviderRateLimit(t *testing.T) {
 	provider := &alwaysErrorProvider{}
-	cp := NewCacheableProvider(provider, time.Hour, 3).(*CacheableProvider)
+	cp := NewCacheableProvider(provider, time.Hour, 3)
 
 	// Exhaust the limit: 3 calls should reach the provider.
 	for range 3 {
