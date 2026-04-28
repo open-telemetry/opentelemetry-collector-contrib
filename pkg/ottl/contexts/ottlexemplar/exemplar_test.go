@@ -98,12 +98,36 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "trace_id string",
+			path: &pathtest.Path[*TransformContext]{
+				N:        "trace_id",
+				NextPath: &pathtest.Path[*TransformContext]{N: "string"},
+			},
+			orig:   "0102030405060708090a0b0c0d0e0f10",
+			newVal: "100f0e0d0c0b0a090807060504030201",
+			modified: func(exemplar pmetric.Exemplar, _ pcommon.Map) {
+				exemplar.SetTraceID([16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1})
+			},
+		},
+		{
 			name: "span_id",
 			path: &pathtest.Path[*TransformContext]{
 				N: "span_id",
 			},
 			orig:   pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}),
 			newVal: pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}),
+			modified: func(exemplar pmetric.Exemplar, _ pcommon.Map) {
+				exemplar.SetSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+			},
+		},
+		{
+			name: "span_id string",
+			path: &pathtest.Path[*TransformContext]{
+				N:        "span_id",
+				NextPath: &pathtest.Path[*TransformContext]{N: "string"},
+			},
+			orig:   "0102030405060708",
+			newVal: "0807060504030201",
 			modified: func(exemplar pmetric.Exemplar, _ pcommon.Map) {
 				exemplar.SetSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 			},
@@ -120,6 +144,17 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "filtered_attributes raw map",
+			path: &pathtest.Path[*TransformContext]{
+				N: "filtered_attributes",
+			},
+			orig:   refExemplar.FilteredAttributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(exemplar pmetric.Exemplar, _ pcommon.Map) {
+				_ = exemplar.FilteredAttributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "filtered_attributes string",
 			path: &pathtest.Path[*TransformContext]{
 				N: "filtered_attributes",
@@ -133,6 +168,22 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: "newVal",
 			modified: func(exemplar pmetric.Exemplar, _ pcommon.Map) {
 				exemplar.FilteredAttributes().PutStr("str", "newVal")
+			},
+		},
+		{
+			name: "filtered_attributes int",
+			path: &pathtest.Path[*TransformContext]{
+				N: "filtered_attributes",
+				KeySlice: []ottl.Key[*TransformContext]{
+					&pathtest.Key[*TransformContext]{
+						S: ottltest.Strp("int"),
+					},
+				},
+			},
+			orig:   int64(10),
+			newVal: int64(20),
+			modified: func(exemplar pmetric.Exemplar, _ pcommon.Map) {
+				exemplar.FilteredAttributes().PutInt("int", 20)
 			},
 		},
 		{
@@ -205,8 +256,22 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			assert.Equal(t, exExemplar, exemplar)
 			assert.Equal(t, exCache, testCache)
+
+			// Verify that setting an invalid type returns an error.
+			err = accessor.Set(t.Context(), tCtx, struct{}{})
+			require.Error(t, err)
 		})
 	}
+}
+
+func Test_newPathGetSetter_InvalidPath(t *testing.T) {
+	_, err := pathExpressionParser(getCache)(&pathtest.Path[*TransformContext]{N: "unknown_field"})
+	assert.Error(t, err)
+}
+
+func Test_newPathGetSetter_NilPath(t *testing.T) {
+	_, err := pathExpressionParser(getCache)(nil)
+	assert.Error(t, err)
 }
 
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
@@ -376,6 +441,7 @@ func createTelemetry() (pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.M
 	exemplar.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	exemplar.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	exemplar.FilteredAttributes().PutStr("str", "val")
+	exemplar.FilteredAttributes().PutInt("int", 10)
 
 	return rm, sm, metric, dp, exemplar
 }

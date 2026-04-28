@@ -240,6 +240,67 @@ func TestPathGetSetter_InvalidPath(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func Test_PathGetSetter_InvalidSubPath(t *testing.T) {
+	tests := []struct {
+		name string
+		path ottl.Path[*testContext]
+	}{
+		{
+			name: "trace_id",
+			path: &pathtest.Path[*testContext]{
+				N:        "trace_id",
+				NextPath: &pathtest.Path[*testContext]{N: "unknown_field"},
+			},
+		},
+		{
+			name: "span_id",
+			path: &pathtest.Path[*testContext]{
+				N:        "span_id",
+				NextPath: &pathtest.Path[*testContext]{N: "unknown_field"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ctxexemplar.PathGetSetter(tt.path)
+			assert.Error(t, err)
+		})
+	}
+}
+
+func Test_PathGetSetter_InvalidIDString(t *testing.T) {
+	tests := []struct {
+		name string
+		path ottl.Path[*testContext]
+	}{
+		{
+			name: "trace_id string",
+			path: &pathtest.Path[*testContext]{
+				N:        "trace_id",
+				NextPath: &pathtest.Path[*testContext]{N: "string"},
+			},
+		},
+		{
+			name: "span_id string",
+			path: &pathtest.Path[*testContext]{
+				N:        "span_id",
+				NextPath: &pathtest.Path[*testContext]{N: "string"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := ctxexemplar.PathGetSetter(tt.path)
+			require.NoError(t, err)
+
+			err = accessor.Set(t.Context(), newTestContext(createTelemetry()), "invalid")
+			assert.Error(t, err)
+		})
+	}
+}
+
 func TestPathGetSetter_NilPath(t *testing.T) {
 	_, err := ctxexemplar.PathGetSetter[*testContext](nil)
 	assert.Error(t, err)
