@@ -161,7 +161,7 @@ receivers:
       grpc:
 
 connectors:
-  servicegraph:
+  service_graph:
     latency_histogram_buckets: [100ms, 250ms, 1s, 5s, 10s]
     dimensions:
       - dimension-1
@@ -179,9 +179,9 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [servicegraph]
+      exporters: [service_graph]
     metrics/servicegraph:
-      receivers: [servicegraph]
+      receivers: [service_graph]
       exporters: [prometheus/servicegraph]
 ```
 
@@ -194,7 +194,7 @@ receivers:
       grpc:
 
 connectors:
-  servicegraph:
+  service_graph:
     dimensions:
       - db.system
       - messaging.system
@@ -214,8 +214,8 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [servicegraph]
+      exporters: [service_graph]
     metrics/servicegraph:
-      receivers: [servicegraph]
+      receivers: [service_graph]
       exporters: [prometheus/servicegraph]
 ```
