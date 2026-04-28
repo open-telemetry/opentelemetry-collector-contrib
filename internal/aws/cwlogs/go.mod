@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.6
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.69.1
-	github.com/aws/smithy-go v1.25.0
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.71.0
+	github.com/aws/smithy-go v1.25.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.56.1-0.20260415114935-307e3abdbae9
 	go.uber.org/goleak v1.3.0
