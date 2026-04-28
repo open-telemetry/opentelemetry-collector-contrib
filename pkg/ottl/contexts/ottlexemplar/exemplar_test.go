@@ -284,9 +284,14 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			expected: "my.metric",
 		},
 		{
-			name:     "datapoint value_double with context",
+			name:     "datapoint",
+			path:     &pathtest.Path[*TransformContext]{N: "datapoint", NextPath: &pathtest.Path[*TransformContext]{N: "value_double"}},
+			expected: 1.5,
+		},
+		{
+			name:     "datapoint with context",
 			path:     &pathtest.Path[*TransformContext]{C: "datapoint", N: "value_double"},
-			expected: float64(1.5),
+			expected: 1.5,
 		},
 	}
 
