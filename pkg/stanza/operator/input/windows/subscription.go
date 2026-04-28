@@ -68,7 +68,19 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 		if err != nil {
 			return fmt.Errorf("failed to convert path to utf16: %w", err)
 		}
-		subscriptionHandle, err = evtQuery(sessionHandle, pathPtr, queryPtr, EvtQueryFilePath)
+
+		var pathExpandedSize uint32
+		pathExpandedSize, err = windows.ExpandEnvironmentStrings(pathPtr, nil, 0)
+		if err != nil {
+			return fmt.Errorf("failed to get expanded path size: %w", err)
+		}
+		pathExpanded := make([]uint16, pathExpandedSize+2) // Terminating null character and + 1 character
+		_, err = windows.ExpandEnvironmentStrings(pathPtr, &pathExpanded[0], uint32(len(pathExpanded)))
+		if err != nil {
+			return fmt.Errorf("failed to expand path: %w", err)
+		}
+
+		subscriptionHandle, err = evtQuery(sessionHandle, &pathExpanded[0], queryPtr, EvtQueryFilePath)
 		if err != nil {
 			return fmt.Errorf("failed to query events from %s: %w", *path, err)
 		}
