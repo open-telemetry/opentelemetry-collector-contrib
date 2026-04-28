@@ -11,9 +11,9 @@ components:
         - otlpjson
         - roundrobin
         - routing
-        - servicegraph
+        - service_graph
         - signal_to_metrics
-        - spanmetrics
+        - span_metrics
         - sum
     exporter:
         - alibabacloud_logservice
@@ -163,7 +163,7 @@ components:
         - file_log
         - file_stats
         - flinkmetrics
-        - fluentforward
+        - fluent_forward
         - github
         - gitlab
         - googlecloudmonitoring

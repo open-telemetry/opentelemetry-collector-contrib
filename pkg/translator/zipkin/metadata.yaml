@@ -10,7 +10,7 @@ status:
 
 feature_gates:
   - id: pkg.translator.zipkin.DontEmitV0NetworkConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator no longer emits the deprecated
       net.host.ip, net.peer.ip, and peer.service (semconv v1.12.0)
@@ -19,7 +19,7 @@ feature_gates:
     from_version: v0.147.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45041
   - id: pkg.translator.zipkin.EmitV1NetworkConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, the Zipkin translator emits network.local.address and
       network.peer.address and service.peer.name (semconv v1.40.0)
