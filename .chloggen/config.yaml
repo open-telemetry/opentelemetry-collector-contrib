@@ -262,7 +262,7 @@ components:
     - receiver/file_log
     - receiver/file_stats
     - receiver/flinkmetrics
-    - receiver/fluentforward
+    - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
     - receiver/googlecloudmonitoring
