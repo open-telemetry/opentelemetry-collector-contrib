@@ -5,6 +5,7 @@ package awslogsencodingextension
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"sync"
 	"testing"
@@ -13,9 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
@@ -230,4 +234,92 @@ func TestConcurrentGzipReaderUsage(t *testing.T) {
 		})
 	}
 	wg.Wait()
+}
+
+// fakeInnerExtension is a minimal LogsUnmarshalerExtension used to stand in
+// for inner targets that the router dispatches to in the Start tests.
+type fakeInnerExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+func (*fakeInnerExtension) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+	return plog.NewLogs(), nil
+}
+
+func (*fakeInnerExtension) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return nil, nil
+}
+
+// hostWithExtensions wraps a NopHost so component.Host.GetExtensions returns
+// a custom map populated by tests.
+type hostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func TestStart_NoRoutes(t *testing.T) {
+	t.Parallel()
+
+	e, err := newExtension(
+		&Config{Format: constants.FormatCloudWatchLogsSubscriptionFilter},
+		extensiontest.NewNopSettings(extensiontest.NopType),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, e.Start(t.Context(), componenttest.NewNopHost()))
+	assert.Nil(t, e.router, "router should remain nil when no routes are configured")
+}
+
+func TestStart_RoutesWithValidHost(t *testing.T) {
+	t.Parallel()
+
+	innerID := component.MustNewIDWithName("aws_logs_encoding", "inner")
+	settings := extensiontest.NewNopSettings(extensiontest.NopType)
+
+	e, err := newExtension(
+		&Config{
+			Format: constants.FormatCloudWatchLogsSubscriptionFilter,
+			CloudWatchRoutes: []subscriptionfilter.CloudWatchRoute{
+				{Name: "vpcflow", Encoding: innerID},
+			},
+		},
+		settings,
+	)
+	require.NoError(t, err)
+
+	host := &hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			innerID: &fakeInnerExtension{},
+		},
+	}
+	require.NoError(t, e.Start(t.Context(), host))
+	assert.NotNil(t, e.router, "router should be built when routes are configured")
+}
+
+func TestStart_RoutesWithMissingInner(t *testing.T) {
+	t.Parallel()
+
+	innerID := component.MustNewIDWithName("aws_logs_encoding", "missing")
+
+	e, err := newExtension(
+		&Config{
+			Format: constants.FormatCloudWatchLogsSubscriptionFilter,
+			CloudWatchRoutes: []subscriptionfilter.CloudWatchRoute{
+				{Name: "vpcflow", Encoding: innerID},
+			},
+		},
+		extensiontest.NewNopSettings(extensiontest.NopType),
+	)
+	require.NoError(t, err)
+
+	err = e.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+	assert.Nil(t, e.router)
 }

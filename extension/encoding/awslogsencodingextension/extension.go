@@ -70,6 +70,13 @@ type encodingExtension struct {
 	gzipPool                sync.Pool
 	logger                  *zap.Logger
 	warnGzipDeprecationOnce sync.Once
+
+	// selfID is the component ID of this extension, used for cycle detection
+	// when resolving inner encoding extensions in the CloudWatch route router.
+	selfID component.ID
+	// router is built at Start time when the format is the CloudWatch
+	// subscription-filter and Config.CloudWatchRoutes is non-empty.
+	router *subscriptionfilter.Router
 }
 
 func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
@@ -82,9 +89,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			)
 		}
 		return &encodingExtension{
+			cfg:         cfg,
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
 			format:      constants.FormatCloudWatchLogsSubscriptionFilter,
 			logger:      settings.Logger,
+			selfID:      settings.ID,
 		}, nil
 	case constants.FormatVPCFlowLog, constants.FormatVPCFlowLogV1:
 		if cfg.Format == constants.FormatVPCFlowLogV1 {
@@ -176,7 +185,18 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	}
 }
 
-func (*encodingExtension) Start(_ context.Context, _ component.Host) error {
+func (e *encodingExtension) Start(_ context.Context, host component.Host) error {
+	// Routing is only meaningful for the CloudWatch subscription-filter format.
+	if e.format != constants.FormatCloudWatchLogsSubscriptionFilter ||
+		len(e.cfg.CloudWatchRoutes) == 0 {
+		return nil
+	}
+
+	router, err := subscriptionfilter.NewRouter(e.cfg.CloudWatchRoutes, host, e.selfID)
+	if err != nil {
+		return fmt.Errorf("failed to build CloudWatch route router: %w", err)
+	}
+	e.router = router
 	return nil
 }
 

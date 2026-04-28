@@ -4,11 +4,16 @@
 package subscriptionfilter
 
 import (
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 func mustNewID(t *testing.T, s string) component.ID {
@@ -199,7 +204,7 @@ func TestSortRoutes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := SortRoutes(tt.input)
+			got := sortRoutes(tt.input)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -213,7 +218,7 @@ func TestSortRoutesAppliesDefaults(t *testing.T) {
 		{Name: "lambda", Encoding: encID},  // expands to LogGroupPattern: /aws/lambda/*
 		{Name: "vpcflow", Encoding: encID}, // expands to LogStreamPattern: eni-*
 	}
-	got := SortRoutes(in)
+	got := sortRoutes(in)
 
 	// After defaults: lambda has a log_group_pattern, vpcflow has only log_stream_pattern.
 	// Sort places log_group entries before log_stream-only entries.
@@ -224,6 +229,219 @@ func TestSortRoutesAppliesDefaults(t *testing.T) {
 
 func TestSortRoutesEmpty(t *testing.T) {
 	t.Parallel()
-	assert.Nil(t, SortRoutes(nil))
-	assert.Nil(t, SortRoutes([]CloudWatchRoute{}))
+	assert.Nil(t, sortRoutes(nil))
+	assert.Nil(t, sortRoutes([]CloudWatchRoute{}))
+}
+
+// fakeLogsExtension is a minimal encoding.LogsUnmarshalerExtension used to
+// stand in for inner extensions in router tests. Each instance carries a
+// label so tests can assert which inner Match returned.
+type fakeLogsExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	label string
+}
+
+func (f *fakeLogsExtension) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+	return plog.NewLogs(), nil
+}
+
+func (f *fakeLogsExtension) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return nil, nil
+}
+
+// nonLogsExtension implements only component.Component, not the logs
+// unmarshaler interface — used to test the wrong-type error.
+type nonLogsExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+// fakeHost wraps a map of extensions so router resolution can find them.
+type fakeHost struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h *fakeHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func newFakeHost(t *testing.T, extensions map[component.ID]component.Component) component.Host {
+	t.Helper()
+	return &fakeHost{Host: componenttest.NewNopHost(), extensions: extensions}
+}
+
+func TestNewRouter(t *testing.T) {
+	t.Parallel()
+
+	innerID := mustNewID(t, "fake/inner")
+	otherID := mustNewID(t, "fake/other")
+	selfID := mustNewID(t, "aws_logs_encoding/cw_router")
+
+	t.Run("happy path with multiple routes", func(t *testing.T) {
+		t.Parallel()
+		host := newFakeHost(t, map[component.ID]component.Component{
+			innerID: &fakeLogsExtension{label: "inner"},
+			otherID: &fakeLogsExtension{label: "other"},
+		})
+		routes := []CloudWatchRoute{
+			{Name: "vpcflow", Encoding: innerID},                         // default LogStreamPattern: eni-*
+			{Name: "lambda", Encoding: otherID},                          // default LogGroupPattern: /aws/lambda/*
+			{Name: "catchall", LogGroupPattern: "*", Encoding: innerID},  // catch-all
+		}
+		router, err := NewRouter(routes, host, selfID)
+		require.NoError(t, err)
+		require.NotNil(t, router)
+		require.Len(t, router.routes, 3)
+
+		// Sort placed log_group entries before log_stream-only, then catch-all last.
+		// lambda has /aws/lambda/* (group), vpcflow has eni-* (stream-only), catchall is *.
+		assert.Equal(t, "lambda", router.routes[0].name)
+		assert.Equal(t, "vpcflow", router.routes[1].name)
+		assert.Equal(t, "catchall", router.routes[2].name)
+
+		// Each route's pattern is pre-split.
+		assert.NotNil(t, router.routes[0].logGroupParts)
+		assert.Nil(t, router.routes[0].logStreamParts)
+		assert.Nil(t, router.routes[1].logGroupParts)
+		assert.NotNil(t, router.routes[1].logStreamParts)
+	})
+
+	t.Run("missing extension ID", func(t *testing.T) {
+		t.Parallel()
+		host := newFakeHost(t, map[component.ID]component.Component{})
+		routes := []CloudWatchRoute{
+			{Name: "vpcflow", Encoding: innerID},
+		}
+		_, err := NewRouter(routes, host, selfID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `encoding extension "fake/inner" not found`)
+	})
+
+	t.Run("wrong extension type", func(t *testing.T) {
+		t.Parallel()
+		host := newFakeHost(t, map[component.ID]component.Component{
+			innerID: &nonLogsExtension{},
+		})
+		routes := []CloudWatchRoute{
+			{Name: "vpcflow", Encoding: innerID},
+		}
+		_, err := NewRouter(routes, host, selfID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "does not implement encoding.LogsUnmarshalerExtension")
+	})
+
+	t.Run("self-reference cycle", func(t *testing.T) {
+		t.Parallel()
+		host := newFakeHost(t, map[component.ID]component.Component{
+			selfID: &fakeLogsExtension{label: "self"},
+		})
+		routes := []CloudWatchRoute{
+			{Name: "loop", LogGroupPattern: "*", Encoding: selfID},
+		}
+		_, err := NewRouter(routes, host, selfID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "refers back to this extension")
+	})
+
+	t.Run("empty routes returns empty router", func(t *testing.T) {
+		t.Parallel()
+		host := newFakeHost(t, map[component.ID]component.Component{})
+		router, err := NewRouter(nil, host, selfID)
+		require.NoError(t, err)
+		require.NotNil(t, router)
+		assert.Empty(t, router.routes)
+	})
+}
+
+func TestRouterMatch(t *testing.T) {
+	t.Parallel()
+
+	selfID := mustNewID(t, "aws_logs_encoding/cw_router")
+
+	t.Run("matches against router with multiple routes", func(t *testing.T) {
+		t.Parallel()
+
+		innerID := mustNewID(t, "fake/inner")
+		otherID := mustNewID(t, "fake/other")
+		catchID := mustNewID(t, "fake/catch")
+
+		host := newFakeHost(t, map[component.ID]component.Component{
+			innerID: &fakeLogsExtension{label: "inner"},
+			otherID: &fakeLogsExtension{label: "other"},
+			catchID: &fakeLogsExtension{label: "catch"},
+		})
+		routes := []CloudWatchRoute{
+			{Name: "lambda-payments", LogGroupPattern: "/aws/lambda/payment-*", Encoding: innerID},
+			{Name: "lambda", Encoding: otherID},  // default /aws/lambda/*
+			{Name: "vpcflow", Encoding: innerID}, // default eni-*
+			{Name: "catchall", LogGroupPattern: "*", Encoding: catchID},
+		}
+		router, err := NewRouter(routes, host, selfID)
+		require.NoError(t, err)
+
+		tests := []struct {
+			name      string
+			logGroup  string
+			logStream string
+			wantRoute string
+		}{
+			{
+				name:      "specific lambda pattern wins over generic",
+				logGroup:  "/aws/lambda/payment-service",
+				logStream: "any",
+				wantRoute: "lambda-payments",
+			},
+			{
+				name:      "generic lambda matches when payment doesn't",
+				logGroup:  "/aws/lambda/orders-service",
+				logStream: "any",
+				wantRoute: "lambda",
+			},
+			{
+				name:      "log_stream eni-* matches",
+				logGroup:  "/whatever/group",
+				logStream: "eni-0abc",
+				wantRoute: "vpcflow",
+			},
+			{
+				name:      "catch-all when nothing else matches",
+				logGroup:  "/random/group",
+				logStream: "random-stream",
+				wantRoute: "catchall",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				inner, name, err := router.Match(tt.logGroup, tt.logStream)
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantRoute, name)
+				assert.NotNil(t, inner)
+			})
+		}
+	})
+
+	t.Run("returns error when no route matches", func(t *testing.T) {
+		t.Parallel()
+
+		innerID := mustNewID(t, "fake/inner")
+		host := newFakeHost(t, map[component.ID]component.Component{
+			innerID: &fakeLogsExtension{label: "inner"},
+		})
+		// Single specific route, no catch-all.
+		routes := []CloudWatchRoute{
+			{Name: "lambda", Encoding: innerID}, // default /aws/lambda/*
+		}
+		router, err := NewRouter(routes, host, selfID)
+		require.NoError(t, err)
+
+		inner, name, err := router.Match("/aws/rds/instance/mydb", "anything")
+		require.Error(t, err)
+		assert.Nil(t, inner)
+		assert.Empty(t, name)
+		assert.Contains(t, err.Error(), `no route matches logGroup="/aws/rds/instance/mydb"`)
+	})
 }

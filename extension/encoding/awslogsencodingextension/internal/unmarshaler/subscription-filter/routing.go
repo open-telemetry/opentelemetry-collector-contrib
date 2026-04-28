@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 // CloudWatchRoute defines a single routing rule for CloudWatch Logs
@@ -111,7 +113,7 @@ func ValidateRoutes(routes []CloudWatchRoute) error {
 	return errors.Join(errs...)
 }
 
-// SortRoutes returns a copy of routes ordered by routing precedence:
+// sortRoutes returns a copy of routes ordered by routing precedence:
 //
 //  1. Catch-all entries (a pattern equal to "*") are placed last.
 //  2. Entries with a log_group_pattern come before entries that use only
@@ -123,7 +125,7 @@ func ValidateRoutes(routes []CloudWatchRoute) error {
 // returned slice has all patterns populated for known names.
 //
 // Stable order is preserved among entries that compare equal.
-func SortRoutes(routes []CloudWatchRoute) []CloudWatchRoute {
+func sortRoutes(routes []CloudWatchRoute) []CloudWatchRoute {
 	if len(routes) == 0 {
 		return nil
 	}
@@ -183,4 +185,104 @@ func compareRoutes(a, b CloudWatchRoute, splitCache map[string][]string) int {
 		patA, patB = a.LogStreamPattern, b.LogStreamPattern
 	}
 	return comparePatternSpecificity(splitCache[patA], splitCache[patB])
+}
+
+// resolvedRoute is a CloudWatchRoute with patterns pre-split for fast matching
+// and the inner extension already resolved to a typed
+// LogsUnmarshalerExtension.
+type resolvedRoute struct {
+	name           string
+	inner          encoding.LogsUnmarshalerExtension
+	logGroupParts  []string // nil if log_group_pattern is empty after defaults
+	logStreamParts []string // nil if log_stream_pattern is empty after defaults
+}
+
+// Router dispatches CloudWatch subscription-filter events to inner encoding
+// extensions based on logGroup / logStream pattern matching.
+type Router struct {
+	routes []resolvedRoute
+}
+
+// NewRouter constructs a Router from validated routes. It applies defaults,
+// sorts routes by precedence, and resolves each route's component.ID against
+// host.GetExtensions(), failing fast if any ID is missing, points at a
+// component that does not implement encoding.LogsUnmarshalerExtension, or
+// refers back to selfID (cycle).
+//
+// selfID is the component.ID of the extension that owns this router.
+func NewRouter(
+	routes []CloudWatchRoute,
+	host component.Host,
+	selfID component.ID,
+) (*Router, error) {
+	sorted := sortRoutes(routes)
+	extensions := host.GetExtensions()
+
+	resolved := make([]resolvedRoute, 0, len(sorted))
+	for _, r := range sorted {
+		if r.Encoding == selfID {
+			return nil, fmt.Errorf(
+				"cloudwatch_routes[name=%q]: encoding %q refers back to this extension (cycle)",
+				r.Name, r.Encoding,
+			)
+		}
+
+		ext, ok := extensions[r.Encoding]
+		if !ok {
+			return nil, fmt.Errorf(
+				"cloudwatch_routes[name=%q]: encoding extension %q not found",
+				r.Name, r.Encoding,
+			)
+		}
+
+		inner, ok := ext.(encoding.LogsUnmarshalerExtension)
+		if !ok {
+			return nil, fmt.Errorf(
+				"cloudwatch_routes[name=%q]: extension %q does not implement encoding.LogsUnmarshalerExtension",
+				r.Name, r.Encoding,
+			)
+		}
+
+		rr := resolvedRoute{name: r.Name, inner: inner}
+		if r.LogGroupPattern != "" {
+			rr.logGroupParts = strings.Split(r.LogGroupPattern, "/")
+		}
+		if r.LogStreamPattern != "" {
+			rr.logStreamParts = strings.Split(r.LogStreamPattern, "/")
+		}
+		resolved = append(resolved, rr)
+	}
+
+	return &Router{routes: resolved}, nil
+}
+
+// Match returns the inner encoding extension that should handle a CloudWatch
+// subscription-filter event with the given logGroup and logStream values. It
+// iterates routes in precedence order; the first route with a matching
+// pattern wins. Within a single route, log_group_pattern is checked before
+// log_stream_pattern.
+//
+// The route's name is returned alongside the inner extension for logging /
+// observability. If no route matches, an error is returned.
+func (r *Router) Match(logGroup, logStream string) (encoding.LogsUnmarshalerExtension, string, error) {
+	var groupParts, streamParts []string
+	for _, rr := range r.routes {
+		if rr.logGroupParts != nil {
+			if groupParts == nil {
+				groupParts = strings.Split(logGroup, "/")
+			}
+			if matchPrefixWithWildcard(groupParts, rr.logGroupParts) {
+				return rr.inner, rr.name, nil
+			}
+		}
+		if rr.logStreamParts != nil {
+			if streamParts == nil {
+				streamParts = strings.Split(logStream, "/")
+			}
+			if matchPrefixWithWildcard(streamParts, rr.logStreamParts) {
+				return rr.inner, rr.name, nil
+			}
+		}
+	}
+	return nil, "", fmt.Errorf("no route matches logGroup=%q logStream=%q", logGroup, logStream)
 }
