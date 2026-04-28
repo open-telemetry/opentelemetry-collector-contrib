@@ -31,10 +31,6 @@ and please don't use it if the following limitations are a concern:
   scrape the targets multiple times.
 * Users need to configure each replica with different scraping configuration
   if they want to manually shard the scraping.
-* The receiver does not support persistent state. The embedded Prometheus
-  scrape manager keeps in-memory caches, for example staleness tracking and
-  service discovery metadata, that are rebuilt on restart.
-
 ## Unsupported features
 The Prometheus receiver is meant to minimally be a drop-in replacement for Prometheus. However,
 there are advanced features of Prometheus that we don't support and thus explicitly will return
