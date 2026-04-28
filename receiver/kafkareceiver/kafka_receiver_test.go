@@ -533,14 +533,14 @@ func TestReceiver_MessageMarking(t *testing.T) {
 						Value: 1,
 					}}, metricdatatest.IgnoreTimestamp())
 
-				observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
-				logEntries := observedErrorLogs.All()
-				require.Len(t, logEntries, 2)
-				assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
-				assert.Equal(t,
-					"failed to consume message, skipping due to message_marking config",
-					logEntries[1].Message,
-				)
+					observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+					logEntries := observedErrorLogs.All()
+					require.Len(t, logEntries, 2)
+					assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
+					assert.Equal(t,
+						"failed to consume message, skipping due to message_marking config",
+						logEntries[1].Message,
+					)
 				}
 			})
 		})
