@@ -51,13 +51,11 @@ func init() {
 }
 
 // NewFactory returns a ConnectorFactory.
-func NewFactory() xconnector.Factory {
+func NewFactory() connector.Factory {
 	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		xconnector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
-		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
-	)
+		xconnector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability))
 }
 
 func createDefaultConfig() component.Config {
