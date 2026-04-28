@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opense
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0
 	github.com/opensearch-project/opensearch-go/v4 v4.6.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.0
@@ -36,7 +36,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.150.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.151.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.57.0 // indirect

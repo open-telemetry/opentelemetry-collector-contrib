@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefr
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.151.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.0
 	go.opentelemetry.io/collector/component/componenttest v0.151.0

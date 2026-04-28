@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: exporter/splunk_hec
-note: Fix HEC routing partitioning broken when the exporterhelper batcher is enabled
-issues: [47695]
-change_logs: [user]

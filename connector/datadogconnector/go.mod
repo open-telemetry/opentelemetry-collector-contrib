@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datad
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.151.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.0
 	go.opentelemetry.io/collector/component/componenttest v0.151.0
@@ -224,15 +224,15 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.150.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.151.0 // indirect
 	github.com/openshift/api v0.0.0-20251015095338-264e80a2b6e7 // indirect
 	github.com/openshift/client-go v0.0.0-20251015124057-db0dee36e235 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect

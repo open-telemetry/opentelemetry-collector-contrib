@@ -4,8 +4,8 @@ go 1.25.0
 
 require (
 	github.com/klauspost/compress v1.18.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver v0.151.0
 	github.com/open-telemetry/otel-arrow/go v0.47.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.0
@@ -65,8 +65,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.150.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.150.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.151.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.151.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect

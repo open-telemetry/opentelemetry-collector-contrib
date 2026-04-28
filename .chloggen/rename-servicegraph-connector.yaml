@@ -1,5 +1,0 @@
-change_type: deprecation
-component: connector/service_graph
-note: Rename component type from `servicegraph` to `service_graph` to follow snake_case naming convention. The old name is kept as a deprecated alias.
-issues: [47971]
-change_logs: [user]

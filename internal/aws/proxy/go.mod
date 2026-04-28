@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.22
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/config/confignet v1.57.0
 	go.opentelemetry.io/collector/config/configtls v1.57.0
