@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.150.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/connector v0.150.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/connector/connectortest v0.150.1-0.20260424074859-d91c0edd1da5
+	go.opentelemetry.io/collector/connector/xconnector v0.150.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/consumer v1.56.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/consumer/consumertest v0.150.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/featuregate v1.56.1-0.20260424074859-d91c0edd1da5
@@ -48,7 +49,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/connector/xconnector v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
