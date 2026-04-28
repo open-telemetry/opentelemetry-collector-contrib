@@ -253,6 +253,28 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())
 }
 
+func TestConvertDoubleHistogramEmptyBucketCounts(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	metric.SetDescription("this is test metric")
+	metric.SetUnit("T")
+
+	histogramDataPoint := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{5, 25, 90})
+
+	pMap := pcommon.NewMap()
+
+	c := newCollector(&Config{}, zap.NewNop())
+	c.accumulator = &mockAccumulator{
+		metrics:            []pmetric.Metric{metric},
+		resourceAttributes: pMap,
+	}
+
+	// Should not panic
+	_, err := c.convertDoubleHistogram(metric, pMap, "test", "1.0.0", "http://test.com", pcommon.NewMap())
+	require.NoError(t, err)
+}
+
 func TestConvertMonotonicSumExemplar(t *testing.T) {
 	// initialize empty metric
 	metric := pmetric.NewMetric()
@@ -469,6 +491,40 @@ func TestWithoutScopeInfoFlag(t *testing.T) {
 	}
 
 	require.Empty(t, loggerCore.errorMessages, "collector unexpectedly returned an error")
+}
+
+func TestScopeAttributeConflictsDropped(t *testing.T) {
+	metric := pmetric.NewMetric()
+	metric.SetName("test_metric")
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetIntValue(42)
+	dp.Attributes().PutStr("somelabel", "1")
+
+	scopeAttributes := pcommon.NewMap()
+	scopeAttributes.PutStr("name", "should-be-dropped")
+	scopeAttributes.PutStr("version", "should-be-dropped")
+	scopeAttributes.PutStr("schema_url", "should-be-dropped")
+	scopeAttributes.PutStr("custom", "should-be-kept")
+
+	c := newCollector(&Config{}, zap.NewNop())
+	m, err := c.convertMetric(metric, pcommon.NewMap(), "test.scope", "1.0.0", "https://opentelemetry.io/schemas/1.7.0", scopeAttributes)
+	require.NoError(t, err)
+
+	pbMetric := io_prometheus_client.Metric{}
+	require.NoError(t, m.Write(&pbMetric))
+
+	labels := make(map[string]string, len(pbMetric.Label))
+	for _, l := range pbMetric.Label {
+		labels[l.GetName()] = l.GetValue()
+	}
+
+	require.Equal(t, map[string]string{
+		"somelabel":             "1",
+		"otel_scope_name":       "test.scope",
+		"otel_scope_version":    "1.0.0",
+		"otel_scope_schema_url": "https://opentelemetry.io/schemas/1.7.0",
+		"otel_scope_custom":     "should-be-kept",
+	}, labels)
 }
 
 func TestCollectMetrics(t *testing.T) {

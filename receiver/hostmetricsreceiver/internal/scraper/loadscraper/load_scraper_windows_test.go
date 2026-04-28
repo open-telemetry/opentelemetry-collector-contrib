@@ -50,7 +50,7 @@ func TestSetSkipScrapeOnFailureToStart(t *testing.T) {
 		t.Context(),
 		scrapertest.NewNopSettings(metadata.Type),
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 	)
 	require.NotNil(t, scraper)
@@ -68,7 +68,7 @@ func TestSetSkipScrapeOnFailureToStart(t *testing.T) {
 
 func TestLoadScrapeWithRealData(t *testing.T) {
 	config := Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	scraper := newLoadScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 
