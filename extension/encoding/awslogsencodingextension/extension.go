@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/klauspost/compress/gzip"
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
@@ -29,6 +30,7 @@ import (
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/waf"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xstreamencoding"
 )
 
 const (
@@ -205,6 +207,10 @@ func (*encodingExtension) Shutdown(_ context.Context) error {
 }
 
 func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	if e.router != nil {
+		return e.unmarshalLogsViaRouter(buf)
+	}
+
 	encodingReader, reader, err := e.getReaderFromFormat(buf)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to get reader for %q logs: %w", e.format, err)
@@ -230,11 +236,100 @@ func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 // Caller must perform any decompression before passing the reader to the decoder.
 // Implementations must utilize derived buffered readers as is.
 func (e *encodingExtension) NewLogsDecoder(reader io.Reader, options ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	if e.router != nil {
+		return e.newLogsDecoderViaRouter(reader)
+	}
+
 	if u, ok := e.unmarshaler.(awsunmarshaler.StreamingLogsUnmarshaler); ok {
 		return u.NewLogsDecoder(reader, options...)
 	}
 
 	return nil, fmt.Errorf("streaming not supported for format %q", e.format)
+}
+
+// unmarshalLogsViaRouter handles the routing path for UnmarshalLogs: it
+// decompresses the incoming CloudWatch subscription event, peeks logGroup /
+// logStream, picks the matching inner encoding via the router, and delegates
+// the (decompressed) envelope bytes to it.
+func (e *encodingExtension) unmarshalLogsViaRouter(buf []byte) (plog.Logs, error) {
+	envelope, release, err := e.decompressEnvelope(buf)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to decompress CloudWatch event: %w", err)
+	}
+	defer release()
+
+	logGroup := gjson.GetBytes(envelope, "logGroup").String()
+	logStream := gjson.GetBytes(envelope, "logStream").String()
+
+	inner, name, err := e.router.Match(logGroup, logStream)
+	if err != nil {
+		return plog.Logs{}, err
+	}
+
+	logs, err := inner.UnmarshalLogs(envelope)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("route %q: inner encoding failed: %w", name, err)
+	}
+	return logs, nil
+}
+
+// newLogsDecoderViaRouter handles the routing path for NewLogsDecoder. The
+// path is one-shot: read the full envelope, peek routing keys, dispatch to
+// the inner encoding's UnmarshalLogs, and wrap the resulting logs in an
+// adapter that yields them once and then EOF.
+func (e *encodingExtension) newLogsDecoderViaRouter(reader io.Reader) (encoding.LogsDecoder, error) {
+	envelope, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CloudWatch envelope: %w", err)
+	}
+
+	logGroup := gjson.GetBytes(envelope, "logGroup").String()
+	logStream := gjson.GetBytes(envelope, "logStream").String()
+
+	inner, name, err := e.router.Match(logGroup, logStream)
+	if err != nil {
+		return nil, err
+	}
+
+	logs, err := inner.UnmarshalLogs(envelope)
+	if err != nil {
+		return nil, fmt.Errorf("route %q: inner encoding failed: %w", name, err)
+	}
+
+	emitted := false
+	return xstreamencoding.NewLogsDecoderAdapter(
+		func() (plog.Logs, error) {
+			if emitted {
+				return plog.NewLogs(), io.EOF
+			}
+			emitted = true
+			return logs, nil
+		},
+		func() int64 { return int64(len(envelope)) },
+	), nil
+}
+
+// decompressEnvelope returns the gunzipped bytes of buf when buf is gzip
+// compressed, otherwise returns buf as-is.
+func (e *encodingExtension) decompressEnvelope(buf []byte) ([]byte, func(), error) {
+	if !isGzipData(buf) {
+		return buf, func() {}, nil
+	}
+	r, err := e.getGzipReader(buf)
+	if err != nil {
+		return nil, nil, err
+	}
+	gz := r.(*gzip.Reader)
+	release := func() {
+		_ = gz.Close()
+		e.gzipPool.Put(gz)
+	}
+	decompressed, err := io.ReadAll(gz)
+	if err != nil {
+		release()
+		return nil, nil, err
+	}
+	return decompressed, release, nil
 }
 
 func (e *encodingExtension) getGzipReader(buf []byte) (io.Reader, error) {

@@ -323,3 +323,106 @@ func TestStart_RoutesWithMissingInner(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 	assert.Nil(t, e.router)
 }
+
+// recordingInner records the bytes of every UnmarshalLogs call so tests can
+// assert which inner was dispatched and what it received.
+type recordingInner struct {
+	component.StartFunc
+	component.ShutdownFunc
+	received [][]byte
+}
+
+func (r *recordingInner) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	r.received = append(r.received, buf)
+	return plog.NewLogs(), nil
+}
+
+func (*recordingInner) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+	return nil, nil
+}
+
+// startRoutedExtension is a small helper that builds a CW-routing extension
+// wired to two inner extensions (cloudtrail and lambda routes) and starts
+// it against a fake host. Returns the started extension plus the two inner
+// instances so tests can inspect what was dispatched.
+func startRoutedExtension(t *testing.T) (*encodingExtension, *recordingInner, *recordingInner) {
+	t.Helper()
+
+	cloudtrailID := component.MustNewIDWithName("aws_logs_encoding", "cloudtrail_inner")
+	lambdaID := component.MustNewIDWithName("aws_logs_encoding", "lambda_inner")
+
+	cloudtrailInner := &recordingInner{}
+	lambdaInner := &recordingInner{}
+
+	e, err := newExtension(
+		&Config{
+			Format: constants.FormatCloudWatchLogsSubscriptionFilter,
+			CloudWatchRoutes: []subscriptionfilter.CloudWatchRoute{
+				{Name: "cloudtrail", Encoding: cloudtrailID}, // default *_CloudTrail_*
+				{Name: "lambda", Encoding: lambdaID},         // default /aws/lambda/*
+			},
+		},
+		extensiontest.NewNopSettings(extensiontest.NopType),
+	)
+	require.NoError(t, err)
+
+	host := &hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			cloudtrailID: cloudtrailInner,
+			lambdaID:     lambdaInner,
+		},
+	}
+	require.NoError(t, e.Start(t.Context(), host))
+	require.NotNil(t, e.router)
+
+	return e, cloudtrailInner, lambdaInner
+}
+
+func TestUnmarshalLogs_RoutesToMatchedInner(t *testing.T) {
+	t.Parallel()
+
+	e, cloudtrailInner, lambdaInner := startRoutedExtension(t)
+
+	// testdata/cloudwatch_log.json:
+	//   logGroup: /aws/cloudtrail/management
+	//   logStream: 123456789012_CloudTrail_us-east-1
+	// Should match the "cloudtrail" route via its default *_CloudTrail_* pattern.
+	gzipped := readAndCompressLogFile(t, "testdata/cloudwatch_log.json")
+	_, err := e.UnmarshalLogs(gzipped)
+	require.NoError(t, err)
+
+	require.Len(t, cloudtrailInner.received, 1, "cloudtrail inner should have been called once")
+	assert.Empty(t, lambdaInner.received, "lambda inner should not have been called")
+
+	// Inner received decompressed JSON envelope, not the gzipped bytes.
+	assert.True(t, len(cloudtrailInner.received[0]) > 0)
+	assert.False(t, isGzipData(cloudtrailInner.received[0]), "inner should receive decompressed bytes")
+}
+
+func TestNewLogsDecoder_RoutesToMatchedInner(t *testing.T) {
+	t.Parallel()
+
+	e, cloudtrailInner, lambdaInner := startRoutedExtension(t)
+
+	gzipped := readAndCompressLogFile(t, "testdata/cloudwatch_log.json")
+	// NewLogsDecoder takes an io.Reader; the routing path reads it fully,
+	// dispatches once, and returns a one-shot decoder.
+	gz, err := gzip.NewReader(bytes.NewReader(gzipped))
+	require.NoError(t, err)
+	defer gz.Close()
+
+	dec, err := e.NewLogsDecoder(gz)
+	require.NoError(t, err)
+	require.NotNil(t, dec)
+
+	_, err = dec.DecodeLogs()
+	require.NoError(t, err)
+
+	// Second call yields EOF.
+	_, err = dec.DecodeLogs()
+	assert.ErrorIs(t, err, io.EOF)
+
+	require.Len(t, cloudtrailInner.received, 1)
+	assert.Empty(t, lambdaInner.received)
+}
