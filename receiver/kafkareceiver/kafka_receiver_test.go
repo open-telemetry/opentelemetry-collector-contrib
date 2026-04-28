@@ -393,7 +393,11 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 			Value: 1,
 		}}, metricdatatest.IgnoreTimestamp())
 
-		observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+		observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel).
+			// Exclude franz-go internal log messages (logged via the "franz" named logger).
+			// In v1.21.0+, kfake emits an error when fetch offsets responses contain empty
+			// topic names for topic IDs, which is benign in tests.
+			Filter(func(e observer.LoggedEntry) bool { return e.LoggerName != "franz" })
 		logEntries := observedErrorLogs.All()
 		assert.Len(t, logEntries, 2)
 		assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
@@ -533,7 +537,11 @@ func TestReceiver_MessageMarking(t *testing.T) {
 						Value: 1,
 					}}, metricdatatest.IgnoreTimestamp())
 
-					observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
+					observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel).
+						// Exclude franz-go internal log messages (logged via the "franz" named logger).
+						// In v1.21.0+, kfake emits an error when fetch offsets responses contain empty
+						// topic names for topic IDs, which is benign in tests.
+						Filter(func(e observer.LoggedEntry) bool { return e.LoggerName != "franz" })
 					logEntries := observedErrorLogs.All()
 					require.Len(t, logEntries, 2)
 					assert.Equal(t, "failed to unmarshal message", logEntries[0].Message)
