@@ -17,7 +17,7 @@ issues: [47970]
 # Use pipe (|) for multiline entries.
 subtext: |  
   The transform processor function options `With*Functions` and `Default*Functions` now use pointer-based transform context signatures
-  and are no longer deprecates. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
+  and are no longer deprecated. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
   use the new signature.
 
 # If your change doesn't affect end users or the exported elements of any package,
