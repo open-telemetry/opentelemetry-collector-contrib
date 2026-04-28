@@ -87,6 +87,118 @@ extensions:
     format: networkfirewall
 ```
 
+## Routing CloudWatch subscription-filter events to other encodings
+
+When `format: cloudwatch` is set, the extension can route incoming CloudWatch
+Logs subscription-filter events to **different inner encoding extensions** based
+on the event's `logGroup` and/or `logStream`. This lets a single Lambda or
+Firehose receiver subscribed to multiple log groups dispatch each group's events
+to the appropriate decoder, instead of running a separate receiver per group.
+
+Routing is configured via the `cloudwatch_routes` field. Each route is an
+object with:
+
+| Field                | Description                                                                                                                       |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `name`               | Required. Identifies the route for diagnostics and is the lookup key for default patterns.                                        |
+| `encoding`           | Required. The component ID of an inner extension that implements `encoding.LogsUnmarshalerExtension`.                             |
+| `log_group_pattern`  | Optional. Pattern matched against the event's `logGroup`.                                                                         |
+| `log_stream_pattern` | Optional. Pattern matched against the event's `logStream`.                                                                        |
+
+A route must set at least one of `log_group_pattern` / `log_stream_pattern`,
+**or** use a `name` that has a built-in default (see table below). Explicit
+patterns always take precedence over defaults.
+
+### Pattern syntax
+
+Patterns are matched segment-by-segment after splitting on `/`. Each segment
+may be:
+
+- an exact literal — compared by string equality
+- `*` — matches any single segment
+- an affix wildcard within a single segment: `foo*`, `*foo`, or `*foo*`
+
+Mid-segment globs such as `foo*bar` are not supported. The bare pattern `*`
+acts as a catch-all.
+
+### Default patterns
+
+For known names the corresponding default pattern is applied at start time
+when the user supplied none:
+
+| `name`       | Default field        | Default pattern                  |
+|--------------|----------------------|----------------------------------|
+| `vpcflow`    | `log_stream_pattern` | `eni-*`                          |
+| `cloudtrail` | `log_stream_pattern` | `*_CloudTrail_*`                 |
+| `lambda`     | `log_group_pattern`  | `/aws/lambda/*`                  |
+| `waf`        | `log_group_pattern`  | `aws-waf-logs-*`                 |
+| `rds`        | `log_group_pattern`  | `/aws/rds/instance/*/*`          |
+| `eks`        | `log_group_pattern`  | `/aws/eks/*`                     |
+| `apigateway` | `log_group_pattern`  | `API-Gateway-Execution-Logs_*`   |
+
+### Evaluation order
+
+Routes are sorted at start time; declaration order in YAML does not matter.
+The router evaluates routes in this order:
+
+1. Catch-all entries (`*`) are evaluated last.
+2. Routes with a `log_group_pattern` are evaluated before routes that use only
+   `log_stream_pattern`.
+3. Within each group, more-specific patterns (more literal segments, fewer
+   wildcards) come before less-specific ones.
+
+The first matching route wins. If no route matches, the extension returns an
+error.
+
+### Example: routing to built-in formats
+
+```yaml
+extensions:
+  awslogs_encoding/vpcflow:
+    format: vpcflow
+  awslogs_encoding/cloudtrail:
+    format: cloudtrail
+
+  # "Plain" CloudWatch — used as a fallback for events that should be
+  # forwarded as raw bodies without format-specific decoding.
+  awslogs_encoding/cw_default:
+    format: cloudwatch
+
+  # The router. Same format as cw_default, with cloudwatch_routes set.
+  awslogs_encoding/cw_router:
+    format: cloudwatch
+    cloudwatch_routes:
+      - name: vpcflow
+        encoding: awslogs_encoding/vpcflow      # default log_stream_pattern: "eni-*"
+      - name: cloudtrail
+        encoding: awslogs_encoding/cloudtrail   # default log_stream_pattern: "*_CloudTrail_*"
+      - name: lambda
+        encoding: awslogs_encoding/cw_default   # default log_group_pattern: "/aws/lambda/*"
+      - name: catchall
+        log_group_pattern: "*"
+        encoding: awslogs_encoding/cw_default
+
+receivers:
+  awslambda:
+    cloudwatch:
+      encoding: awslogs_encoding/cw_router
+```
+
+### Inner encoding contract
+
+When a route matches, the router hands the **decompressed CloudWatch
+subscription envelope bytes** to the matched inner encoding's `UnmarshalLogs`.
+The inner is responsible for parsing the envelope and producing log records.
+
+The built-in `cloudwatch`, `cloudtrail`, and `vpcflow` formats all accept
+CloudWatch subscription envelopes as input, so they can be wired in directly.
+Any third-party encoding extension that accepts the same envelope format works
+the same way.
+
+The router uses [`tidwall/gjson`](https://github.com/tidwall/gjson) to peek
+`logGroup` and `logStream` from the envelope without fully parsing it. The
+inner encoding parses the envelope itself.
+
 ## Log Format Identification
 
 All logs processed by this extension are automatically tagged with an `encoding.format` attribute at the scope level to identify the source format. This allows you to easily filter and route logs based on their AWS service origin.

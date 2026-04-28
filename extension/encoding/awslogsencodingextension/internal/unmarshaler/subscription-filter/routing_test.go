@@ -286,9 +286,9 @@ func TestNewRouter(t *testing.T) {
 			otherID: &fakeLogsExtension{label: "other"},
 		})
 		routes := []CloudWatchRoute{
-			{Name: "vpcflow", Encoding: innerID},                         // default LogStreamPattern: eni-*
-			{Name: "lambda", Encoding: otherID},                          // default LogGroupPattern: /aws/lambda/*
-			{Name: "catchall", LogGroupPattern: "*", Encoding: innerID},  // catch-all
+			{Name: "vpcflow", Encoding: innerID},                        // default LogStreamPattern: eni-*
+			{Name: "lambda", Encoding: otherID},                         // default LogGroupPattern: /aws/lambda/*
+			{Name: "catchall", LogGroupPattern: "*", Encoding: innerID}, // catch-all
 		}
 		router, err := NewRouter(routes, host, selfID)
 		require.NoError(t, err)
