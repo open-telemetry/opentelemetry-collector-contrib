@@ -2,6 +2,11 @@
 # check-mdatagen-generate.sh
 # Verifies that every package with a metadata.yaml AND mdatagen-generated files
 # has a //go:generate make mdatagen directive wired up via go generate.
+#
+# Sub-packages that do not have their own Makefile are expected to be driven
+# by their parent module's doc.go (e.g. //go:generate make mdatagen MDATAGEN_METADATA_YAML=internal/.../metadata.yaml)
+# and are therefore excluded from this check.
+#
 # This ensures CI catches metadata.yaml changes that were not accompanied by
 # running make mdatagen.
 
@@ -15,6 +20,13 @@ while IFS= read -r metadata_yaml; do
 
   # Only check dirs that contain mdatagen-generated files at the same level
   if ! find "$dir" -maxdepth 1 \( -name "generated_*.go" -o -name "generated_*.md" \) 2>/dev/null | grep -q .; then
+    continue
+  fi
+
+  # Skip sub-packages that don't have their own Makefile — they are driven by
+  # a //go:generate make mdatagen MDATAGEN_METADATA_YAML=... line in the parent
+  # module's doc.go, which is validated separately.
+  if ! [ -f "$dir/Makefile" ]; then
     continue
   fi
 

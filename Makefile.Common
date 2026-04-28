@@ -255,6 +255,7 @@ generate-mdatagen-doc:
 	@set -e; \
 	dir=$(CURDIR); \
 	if ! [ -f "$$dir/metadata.yaml" ]; then exit 0; fi; \
+	if ! [ -f "$$dir/Makefile" ]; then exit 0; fi; \
 	if ! find "$$dir" -maxdepth 1 \( -name "generated_*.go" -o -name "generated_*.md" \) 2>/dev/null | grep -q .; then exit 0; fi; \
 	if grep -rql "go:generate make mdatagen" "$$dir"/*.go 2>/dev/null; then exit 0; fi; \
 	pkg=$$(grep -h "^package " "$$dir"/*.go 2>/dev/null | grep -v "_test" | head -1 | awk '{print $$2}'); \
