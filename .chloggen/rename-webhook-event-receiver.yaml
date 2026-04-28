@@ -1,0 +1,6 @@
+change_type: deprecation
+component: receiver/webhook_event
+note: Rename receiver type from `webhookevent` to `webhook_event`
+issues: [45339]
+subtext:
+change_logs: [user]
