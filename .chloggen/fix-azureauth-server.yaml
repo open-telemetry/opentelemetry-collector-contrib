@@ -1,0 +1,30 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
+component: extension/azure_auth
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Fix server-side authentication bypass by validating bearer tokens as OIDC JWTs with a server-pinned issuer and audience.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [47823]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  Versions v0.124.0 through v0.150.0 accepted any bearer token that matched a token minted from the collector's own identity for a scope chosen by the client `Host` header, allowing authentication bypass and scope confusion.
+  The receiver auth path now verifies the JWT signature against the issuer's JWKS and checks `iss`, `aud`, `exp`, and `nbf`. The audience is pinned from configuration and is never derived from request headers.
+  Breaking change: using `azure_auth` under a receiver `auth:` block now requires the new `server.issuer_url` and `server.audience` settings. Exporter-only usage is unaffected.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: []
