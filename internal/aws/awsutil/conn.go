@@ -10,7 +10,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -32,8 +31,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 		InsecureSkipVerify: noVerify,
 	}
 
-	finalProxyAddress := getProxyAddress(proxyAddress)
-	proxyURL, err := getProxyURL(finalProxyAddress)
+	proxyFunc, err := GetProxyFunc(proxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, err
@@ -41,7 +39,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxIdle,
 		TLSClientConfig:     tls,
-		Proxy:               http.ProxyURL(proxyURL),
+		Proxy:               proxyFunc,
 	}
 
 	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
@@ -58,30 +56,18 @@ func newHTTPClient(logger *zap.Logger, maxIdle, requestTimeout int, noVerify boo
 	return http, err
 }
 
-func getProxyAddress(proxyAddress string) string {
-	var finalProxyAddress string
-	switch {
-	case proxyAddress != "":
-		finalProxyAddress = proxyAddress
-
-	case proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "":
-		finalProxyAddress = os.Getenv("HTTPS_PROXY")
-	default:
-		finalProxyAddress = ""
+// GetProxyFunc returns a proxy function for use in http.Transport.
+// When an explicit proxy address is configured, it returns http.ProxyURL.
+// Otherwise, it returns http.ProxyFromEnvironment which respects NO_PROXY.
+func GetProxyFunc(proxyAddress string) (func(*http.Request) (*url.URL, error), error) {
+	if proxyAddress == "" {
+		return http.ProxyFromEnvironment, nil
 	}
-	return finalProxyAddress
-}
-
-func getProxyURL(finalProxyAddress string) (*url.URL, error) {
-	var proxyURL *url.URL
-	var err error
-	if finalProxyAddress != "" {
-		proxyURL, err = url.Parse(finalProxyAddress)
-	} else {
-		proxyURL = nil
-		err = nil
+	proxyURL, err := url.Parse(proxyAddress)
+	if err != nil {
+		return nil, err
 	}
-	return proxyURL, err
+	return http.ProxyURL(proxyURL), nil
 }
 
 func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings) (aws.Config, error) {

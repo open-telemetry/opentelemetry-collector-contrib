@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	ddsampler "github.com/DataDog/datadog-agent/pkg/trace/sampler"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -281,6 +282,83 @@ func TestToTraces64to128bits(t *testing.T) {
 				assert.Equal(t, expectedTraceID64, span.TraceID().String())
 			}
 		}
+	}
+}
+
+func TestToTracesSamplingPriority(t *testing.T) {
+	newPayload := func(priority ddsampler.SamplingPriority, rootMetrics map[string]float64) *pb.TracerPayload {
+		return &pb.TracerPayload{
+			Chunks: []*pb.TraceChunk{
+				{
+					Priority: int32(priority),
+					Spans: []*pb.Span{
+						{
+							TraceID:  1,
+							SpanID:   1,
+							Service:  "svc",
+							Name:     "root",
+							Resource: "/root",
+							Metrics:  rootMetrics,
+						},
+						{
+							TraceID:  1,
+							SpanID:   2,
+							ParentID: 1,
+							Service:  "svc",
+							Name:     "child",
+							Resource: "/child",
+						},
+					},
+				},
+			},
+		}
+	}
+
+	testCases := []struct {
+		name             string
+		payload          *pb.TracerPayload
+		expectPresent    bool
+		expectedPriority string
+	}{
+		{
+			name: "propagates from span metric",
+			payload: newPayload(ddsampler.PriorityNone, map[string]float64{
+				"_sampling_priority_v1": float64(ddsampler.PriorityUserKeep),
+			}),
+			expectPresent:    true,
+			expectedPriority: fmt.Sprintf("%f", float64(ddsampler.PriorityUserKeep)),
+		},
+		{
+			name:             "propagates from chunk priority",
+			payload:          newPayload(ddsampler.PriorityUserKeep, nil),
+			expectPresent:    true,
+			expectedPriority: fmt.Sprintf("%f", float64(ddsampler.PriorityUserKeep)),
+		},
+		{
+			name:          "absent when unset",
+			payload:       newPayload(ddsampler.PriorityNone, nil),
+			expectPresent: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			traces, err := ToTraces(zap.NewNop(), tc.payload, &http.Request{Header: http.Header{}}, nil)
+			require.NoError(t, err)
+			require.Equal(t, 2, traces.SpanCount())
+
+			for _, rs := range traces.ResourceSpans().All() {
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						samplingPriority, ok := span.Attributes().Get("sampling.priority")
+						assert.Equal(t, tc.expectPresent, ok, "unexpected sampling.priority presence on span %s", span.Name())
+						if tc.expectPresent {
+							assert.Equal(t, tc.expectedPriority, samplingPriority.Str())
+						}
+					}
+				}
+			}
+		})
 	}
 }
 
@@ -723,9 +801,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":          "mydomain.MyDomainService",
-				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -740,10 +818,10 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":          "mydomain.MyDomainService",
-				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
-				"rpc.system":           "grpc",
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
+				"rpc.system.name":          "grpc",
 			},
 		},
 		{
@@ -759,9 +837,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":          "mydomain.MyDomainService",
-				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "2",
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "2",
 			},
 		},
 		{
@@ -777,8 +855,8 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService",
 			map[string]string{
-				"rpc.service":          "mydomain.MyDomainService",
-				"rpc.grpc.status_code": "0",
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -794,9 +872,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":          "mydomain.MyDomainService",
-				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -812,9 +890,9 @@ func TestToTraces(t *testing.T) {
 			},
 			"mydomain.MyDomainService/MyMethod",
 			map[string]string{
-				"rpc.service":          "mydomain.MyDomainService",
-				"rpc.method":           "MyMethod",
-				"rpc.grpc.status_code": "0",
+				"rpc.service":              "mydomain.MyDomainService",
+				"rpc.method":               "MyMethod",
+				"rpc.response.status_code": "0",
 			},
 		},
 		{
@@ -830,11 +908,11 @@ func TestToTraces(t *testing.T) {
 			},
 			"S3/headObject",
 			map[string]string{
-				"rpc.system":     "aws-api",
-				"rpc.service":    "S3",
-				"rpc.method":     "headObject",
-				"aws.s3.bucket":  "my-bucket",
-				"aws.request_id": "1234567890",
+				"rpc.system.name": "aws-api",
+				"rpc.service":     "S3",
+				"rpc.method":      "headObject",
+				"aws.s3.bucket":   "my-bucket",
+				"aws.request_id":  "1234567890",
 			},
 		},
 	}

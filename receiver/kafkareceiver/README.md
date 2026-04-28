@@ -129,9 +129,9 @@ The following settings can be optionally configured:
 - `message_marking`:
   - `after`: (default = false) If true, the messages are marked after the pipeline execution
   - `on_error`: (default = false) If false, only the successfully processed messages are marked. This applies to non-permanent errors.
-    **Note: this can block the entire partition in case a message processing returns a non-permanent error**
+    **Note: when `error_backoff` is enabled, the failed record is automatically retried on the next poll cycle once all retries are exhausted. Without `error_backoff`, the partition remains paused until a rebalance occurs.**
   - `on_permanent_error`: (default = value of `on_error`) If false, messages that generate permanent errors are not marked. If true, messages that generate permanent errors are marked.
-    **Note: this can block the entire partition in case a message processing returns a permanent error**
+    **Note: this can block the entire partition in case a message processing returns a permanent error. Permanent errors are not retried via `error_backoff`, but the uncommitted message will be reprocessed after a rebalance.**
 - `header_extraction`:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record.
@@ -170,7 +170,7 @@ Available only for logs:
 - `raw`: the payload's bytes are inserted as the body of a log record.
 - `text`: the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
 - `json`: the payload is decoded as JSON and inserted as the body of a log record.
-- `azure_resource_logs`: the payload is converted from Azure Resource Logs format to OTel format.
+- `azure_resource_logs` (Deprecated [v0.149.0]: use [`azureencodingextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding/azureencodingextension)): the payload is converted from Azure Resource Logs format to OTel format.
 
 ### Message metadata propagation
 

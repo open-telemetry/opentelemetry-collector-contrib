@@ -61,7 +61,7 @@ service:
     logs:
       receivers: [metricsaslogs]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
     metrics:
       receivers: [otlp]
       processors: []

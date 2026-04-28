@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -341,8 +341,12 @@ func handlePubSubPushRequest[T any](
 	return nil
 }
 
-func loadEncodingExtension[T any](host component.Host, encoding component.ID, signal string) (T, error) {
+func loadEncodingExtension[T any](host component.Host, encodingID *component.ID, signal string) (T, error) {
 	var zero T
+	if encodingID == nil || *encodingID == (component.ID{}) {
+		return zero, errors.New("encoding must be set")
+	}
+	encoding := *encodingID
 	ext, ok := host.GetExtensions()[encoding]
 	if !ok {
 		return zero, fmt.Errorf("extension %q not found", encoding.String())
