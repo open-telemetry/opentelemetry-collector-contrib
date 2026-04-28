@@ -13,7 +13,7 @@ components:
         - routing
         - servicegraph
         - signal_to_metrics
-        - spanmetrics
+        - span_metrics
         - sum
     exporter:
         - alibabacloud_logservice
