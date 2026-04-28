@@ -18,6 +18,11 @@ type Config struct {
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`
 
+	// Storage is the ID of the storage extension to use for resource version persistence.
+	// When set, the receiver will persist the latest resource version and resume from it on restart,
+	// preventing duplicate events. Only valid for watch mode (which is the only mode this receiver uses).
+	Storage *component.ID `mapstructure:"storage"`
+
 	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 
 	// For mocking
