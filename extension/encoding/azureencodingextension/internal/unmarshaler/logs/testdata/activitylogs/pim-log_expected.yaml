@@ -67,50 +67,18 @@ resourceLogs:
               - key: azure.pim.role.assignment.origin.id
                 value:
                   stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/myresourcegroupname/providers/Microsoft.KeyVault/vaults/mykeyvaultname/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000005
-              - key: azure.pim.caller
+              - key: azure.pim.caller.object_id
                 value:
-                  arrayValue:
-                    values:
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: UPN
-                            - key: identity_value
-                              value:
-                                stringValue: ""
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: ObjectID
-                            - key: identity_value
-                              value:
-                                stringValue: 00000000-0000-0000-0000-000000000008
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: Username
-                            - key: identity_value
-                              value:
-                                stringValue: AzureADPIM
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: Name
-                            - key: identity_value
-                              value:
-                                stringValue: AzureADPIM
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: ObjectClass
-                            - key: identity_value
-                              value:
-                                stringValue: User
+                  stringValue: 00000000-0000-0000-0000-000000000008
+              - key: azure.pim.caller.username
+                value:
+                  stringValue: AzureADPIM
+              - key: azure.pim.caller.name
+                value:
+                  stringValue: AzureADPIM
+              - key: azure.pim.caller.object_class
+                value:
+                  stringValue: User
             body: {}
             timeUnixNano: "1775857420265755400"
         scope:
@@ -191,50 +159,21 @@ resourceLogs:
               - key: azure.pim.subject.name
                 value:
                   stringValue: User LastName
-              - key: azure.pim.caller
+              - key: azure.pim.caller.upn
                 value:
-                  arrayValue:
-                    values:
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: UPN
-                            - key: identity_value
-                              value:
-                                stringValue: user@example.com
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: ObjectID
-                            - key: identity_value
-                              value:
-                                stringValue: 00000000-0000-0000-0000-000000000008
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: Username
-                            - key: identity_value
-                              value:
-                                stringValue: User LastName
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: Name
-                            - key: identity_value
-                              value:
-                                stringValue: User LastName
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: ObjectClass
-                            - key: identity_value
-                              value:
-                                stringValue: User
+                  stringValue: user@example.com
+              - key: azure.pim.caller.object_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000008
+              - key: azure.pim.caller.username
+                value:
+                  stringValue: User LastName
+              - key: azure.pim.caller.name
+                value:
+                  stringValue: User LastName
+              - key: azure.pim.caller.object_class
+                value:
+                  stringValue: User
             body: {}
             timeUnixNano: "1775942608718281700"
           - attributes:
@@ -298,50 +237,21 @@ resourceLogs:
               - key: azure.pim.role.assignment.origin.id
                 value:
                   stringValue: /subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.Authorization/roleAssignments/00000000-0000-0000-0000-000000000015
-              - key: azure.pim.caller
+              - key: azure.pim.caller.upn
                 value:
-                  arrayValue:
-                    values:
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: UPN
-                            - key: identity_value
-                              value:
-                                stringValue: user@example.com
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: ObjectID
-                            - key: identity_value
-                              value:
-                                stringValue: 00000000-0000-0000-0000-000000000008
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: Username
-                            - key: identity_value
-                              value:
-                                stringValue: User LastName
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: Name
-                            - key: identity_value
-                              value:
-                                stringValue: User LastName
-                      - kvlistValue:
-                          values:
-                            - key: identity_type
-                              value:
-                                stringValue: ObjectClass
-                            - key: identity_value
-                              value:
-                                stringValue: User
+                  stringValue: user@example.com
+              - key: azure.pim.caller.object_id
+                value:
+                  stringValue: 00000000-0000-0000-0000-000000000008
+              - key: azure.pim.caller.username
+                value:
+                  stringValue: User LastName
+              - key: azure.pim.caller.name
+                value:
+                  stringValue: User LastName
+              - key: azure.pim.caller.object_class
+                value:
+                  stringValue: User
             body: {}
             timeUnixNano: "1775942610421201100"
         scope:

@@ -20,8 +20,9 @@ subtext: |
   standard audit events but carry a different properties payload. All PIM-specific fields
   were silently dropped. This change adds explicit mappings for all known PIM fields:
   generic Azure concepts use cloud.account.id and azure.{tenant,resource}.* attributes,
-  while PIM-specific fields use azure.pim.*. CallerInfo is parsed into a structured slice
-  of {identity_type, identity_value} maps.
+  while PIM-specific fields use azure.pim.*. CallerInfo is projected to flat per-identity
+  attributes (azure.pim.caller.upn, azure.pim.caller.object_id, azure.pim.caller.username,
+  ...) keyed by the lowercased snake_case identity type.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

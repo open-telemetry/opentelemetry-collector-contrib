@@ -112,7 +112,7 @@ const (
 	attributeAzurePIMRoleAssignmentRequestID = "azure.pim.role.assignment.request.id"
 	attributeAzurePIMRoleDefinitionName      = "azure.pim.role.definition.name"
 	attributeAzurePIMRoleDefinitionOriginID  = "azure.pim.role.definition.origin.id"
-	attributeAzurePIMCallerInfo              = "azure.pim.caller"
+	attributeAzurePIMCallerPrefix            = "azure.pim.caller."
 	attributeAzurePIMJustification           = "azure.pim.justification"
 	attributeAzurePIMSubjectID               = "azure.pim.subject.id"
 	attributeAzurePIMSubjectName             = "azure.pim.subject.name"
@@ -183,20 +183,46 @@ func (r *azureAdministrativeLog) PutProperties(attrs pcommon.Map, _ pcommon.Valu
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMActionType, r.Properties.ActionType)
 	unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMRoleAssignmentOriginID, r.Properties.OriginRoleAssignmentID)
 
-	// CallerInfo is a JSON-encoded array of identity entries
+	// CallerInfo is a JSON-encoded array of identity facets describing the same caller
+	// (UPN, ObjectID, Username, Name, ObjectClass, ...). Project each entry to a flat
+	// attribute keyed by the lowercased snake_case identity type so new types added by
+	// Microsoft are captured automatically.
 	if r.Properties.CallerInfo != "" {
 		var callers []pimCallerIdentity
-		if err := gojson.Unmarshal([]byte(r.Properties.CallerInfo), &callers); err == nil && len(callers) > 0 {
-			callerSlice := attrs.PutEmptySlice(attributeAzurePIMCallerInfo)
+		if err := gojson.Unmarshal([]byte(r.Properties.CallerInfo), &callers); err == nil {
 			for _, c := range callers {
-				m := callerSlice.AppendEmpty().SetEmptyMap()
-				m.PutStr("identity_type", c.IdentityType)
-				m.PutStr("identity_value", c.IdentityValue)
+				if c.IdentityType == "" {
+					continue
+				}
+				unmarshaler.AttrPutStrIf(attrs, attributeAzurePIMCallerPrefix+pimCallerKey(c.IdentityType), c.IdentityValue)
 			}
 		}
 	}
 
 	return nil
+}
+
+// pimCallerKey converts a CallerIdentityType (PascalCase, e.g. "ObjectID", "UPN",
+// "Username") into a lowercase snake_case suffix appended to azure.pim.caller.
+// Examples: "UPN" -> "upn", "ObjectID" -> "object_id", "ObjectClass" -> "object_class",
+// "Username" -> "username", "Name" -> "name".
+func pimCallerKey(identityType string) string {
+	var b strings.Builder
+	b.Grow(len(identityType) + 4)
+	runes := []rune(identityType)
+	for i, r := range runes {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			prev := runes[i-1]
+			isPrevLowerOrDigit := (prev >= 'a' && prev <= 'z') || (prev >= '0' && prev <= '9')
+			isPrevUpper := prev >= 'A' && prev <= 'Z'
+			isNextLower := i+1 < len(runes) && runes[i+1] >= 'a' && runes[i+1] <= 'z'
+			if isPrevLowerOrDigit || (isPrevUpper && isNextLower) {
+				b.WriteByte('_')
+			}
+		}
+		b.WriteRune(r)
+	}
+	return strings.ToLower(b.String())
 }
 
 // ------------------------------------------------------------
