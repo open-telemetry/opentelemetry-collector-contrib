@@ -1,5 +1,5 @@
 receivers:
-  tcpcheck:
+  tcp_check:
     endpoint: localhost:80
     collection_interval: 60s
 exporters:
@@ -9,7 +9,7 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [tcpcheck]
+      receivers: [tcp_check]
       exporters: [debug]
   telemetry:
     logs:

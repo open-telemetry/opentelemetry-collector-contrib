@@ -1,0 +1,6 @@
+change_type: deprecation
+component: receiver/tcp_check
+note: Rename receiver type from `tcpcheck` to `tcp_check`
+issues: [45339]
+subtext:
+change_logs: [user]
