@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/xpdata/entity"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
@@ -350,6 +351,72 @@ func TestPathGetSetter(t *testing.T) {
 	}
 }
 
+func TestPathSetterWithEntityRefs(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     ottl.Path[*testContext]
+		newVal   pcommon.Map
+		modified func(resource pcommon.Resource)
+	}{
+		{
+			name: "delete IdKey",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			newVal: func() pcommon.Map {
+				newAttrs := pcommon.NewMap()
+				newAttrs.PutStr("service.name", "my-service")
+				newAttrs.PutStr("service.version", "1.0.0")
+
+				return newAttrs
+			}(),
+			modified: func(resource pcommon.Resource) {
+				resource.Attributes().Remove("host.name")
+				entity.ResourceEntityRefs(resource).RemoveIf(func(e entity.EntityRef) bool {
+					return e.Type() == "host"
+				})
+			},
+		},
+		{
+			name: "delete DescKey",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			newVal: func() pcommon.Map {
+				newAttrs := pcommon.NewMap()
+				newAttrs.PutStr("service.name", "my-service")
+				newAttrs.PutStr("host.name", "server-01")
+
+				return newAttrs
+			}(),
+			modified: func(resource pcommon.Resource) {
+				resource.Attributes().Remove("service.version")
+				entity.ResourceEntityRefs(resource).At(0).DescriptionKeys().RemoveIf(func(dk string) bool {
+					return dk == "service.version"
+				})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := ctxresource.PathGetSetter[*testContext](tt.path)
+			require.NoError(t, err)
+
+			resource := createResourceWithEntityRefs()
+			ctx := newTestContext(resource)
+
+			serr := accessor.Set(t.Context(), ctx, tt.newVal)
+			require.NoError(t, serr)
+
+			expectedResource := createResourceWithEntityRefs()
+			tt.modified(expectedResource)
+
+			require.Equal(t, expectedResource, resource)
+		})
+	}
+}
+
 func createResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("str", "val")
@@ -388,6 +455,28 @@ func createResource() pcommon.Resource {
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("library")
 	il.SetVersion("version")
+
+	return resource
+}
+
+func createResourceWithEntityRefs() pcommon.Resource {
+	resource := pcommon.NewResource()
+
+	resource.Attributes().PutStr("service.name", "my-service")
+	resource.Attributes().PutStr("service.version", "1.0.0")
+	resource.Attributes().PutStr("host.name", "server-01")
+
+	entityRef := entity.ResourceEntityRefs(resource)
+
+	serviceRef := entityRef.AppendEmpty()
+	serviceRef.SetType("service")
+	serviceRef.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+	serviceRef.IdKeys().Append("service.name")
+	serviceRef.DescriptionKeys().Append("service.version")
+
+	hostRef := entityRef.AppendEmpty()
+	hostRef.SetType("host")
+	hostRef.IdKeys().Append("host.name")
 
 	return resource
 }
