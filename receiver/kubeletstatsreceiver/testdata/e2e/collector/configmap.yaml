@@ -31,4 +31,4 @@ data:
           exporters:
           - otlp_grpc
           receivers:
-          - kubeletstats
+          - kubelet_stats
