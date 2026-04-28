@@ -4,7 +4,7 @@ metrics_transform:
       action: update
       new_name: new_name
 
-metricstransform/multiple:
+metrics_transform/multiple:
   transforms:
     - include: name1
       match_type: strict
