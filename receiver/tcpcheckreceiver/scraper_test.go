@@ -218,7 +218,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			scraper := newScraper(cfg, settings)
 
 			// Initialize metrics builder
-			scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
+			scraper.mb = metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings)
 
 			actualMetrics, err := scraper.scrape(t.Context())
 			require.Error(t, err, "expected connection refused error")
@@ -318,7 +318,7 @@ func TestScraper_ErrorEnumCounts(t *testing.T) {
 	scraper := newScraper(cfg, settings)
 
 	// Initialize metrics builder
-	scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
+	scraper.mb = metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), settings)
 
 	// Run a single scrape to collect all errors
 	actualMetrics, err := scraper.scrape(t.Context())

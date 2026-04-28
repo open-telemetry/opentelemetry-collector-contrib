@@ -24,7 +24,7 @@ import (
 // TestDiskScrapeWithRealData validates that the disk scraper can collect actual disk metrics from Windows performance counters.
 func TestDiskScrapeWithRealData(t *testing.T) {
 	config := Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	scraper, err := newDiskScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &config)
 	require.NoError(t, err, "Failed to create disk scraper")

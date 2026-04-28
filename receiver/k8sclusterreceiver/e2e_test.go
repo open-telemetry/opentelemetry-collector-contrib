@@ -129,7 +129,7 @@ func TestE2EClusterScoped(t *testing.T) {
 			pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolume.name", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolume.uid", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.name", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
@@ -229,7 +229,7 @@ func TestE2ENamespaceScoped(t *testing.T) {
 			pmetrictest.ChangeResourceAttributeValue("k8s.job.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
-			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.name", replaceWithStar),
+			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.persistentvolumeclaim.uid", replaceWithStar),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
 			pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
@@ -383,6 +383,9 @@ func shortenNames(value string) string {
 	if strings.HasPrefix(value, "test-k8scluster-receiver-job") {
 		return "test-k8scluster-receiver-job"
 	}
+	if strings.HasPrefix(value, "test-k8scluster-receiver-statefulset-pvc") {
+		return "test-k8scluster-receiver-statefulset-pvc"
+	}
 	return value
 }
 
@@ -410,7 +413,7 @@ func getOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T
 func startUpSink(t *testing.T, consumer any) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-	getOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
+	getOrInsertDefault(t, &cfg.Protocols.GRPC).NetAddr.Endpoint = "0.0.0.0:4317"
 
 	var err error
 	var rcvr component.Component
