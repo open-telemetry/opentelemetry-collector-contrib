@@ -100,7 +100,7 @@ func TestTransformWithoutStorageClass(t *testing.T) {
 }
 
 func newPVCMetricsBuilder() *metadata.MetricsBuilder {
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sPersistentvolumeclaimStatusPhase.Enabled = true
 	mbc.Metrics.K8sPersistentvolumeclaimStorageRequest.Enabled = true
 	mbc.Metrics.K8sPersistentvolumeclaimStorageCapacity.Enabled = true
