@@ -241,6 +241,15 @@
       ]
     },
     {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/twmb/franz-go packages",
+      "matchPackageNames": [
+        "github.com/twmb/franz-go{/,}**"
+      ]
+    },
+    {
       "matchPackageNames": [
         "github.com/vmware/govmomi"
       ],
