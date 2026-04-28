@@ -27,7 +27,7 @@ components:
     - connector/service_graph
     - connector/signal_to_metrics
     - connector/slowsql
-    - connector/spanmetrics
+    - connector/span_metrics
     - connector/sum
     - exporter/alertmanager
     - exporter/alibabacloud_logservice

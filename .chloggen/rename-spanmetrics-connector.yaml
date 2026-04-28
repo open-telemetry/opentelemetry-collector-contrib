@@ -1,0 +1,5 @@
+change_type: deprecation
+component: connector/span_metrics
+note: Rename component type from `spanmetrics` to `span_metrics` to follow snake_case naming convention. The old name is kept as a deprecated alias.
+issues: [47963]
+change_logs: [user]
