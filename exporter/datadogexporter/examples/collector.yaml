@@ -260,10 +260,10 @@ exporters:
       #
       # resource_attributes_as_tags: false
 
-      ## @param instrumentation_scope_metadata_as_tags - string - optional - default: false
-      ## Set to true to add metadata about the instrumentation scope that created a metric.
+      ## @param instrumentation_scope_metadata_as_tags - string - optional - default: true
+      ## Adds metadata about the instrumentation scope that created a metric. Set to false to disable.
       #
-      # instrumentation_scope_metadata_as_tags: false
+      # instrumentation_scope_metadata_as_tags: true
 
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
