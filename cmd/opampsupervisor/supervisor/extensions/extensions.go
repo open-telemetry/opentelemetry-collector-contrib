@@ -14,6 +14,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// TODO: Replace this implementation with 'go.opentelemetry.io/collector/service/extensions' once
+// this issue is completed: https://github.com/open-telemetry/opentelemetry-collector/issues/15216
+
 // Extensions manages the lifecycle of extensions configured in the supervisor.
 type Extensions struct {
 	extensions map[component.ID]extension.Extension
