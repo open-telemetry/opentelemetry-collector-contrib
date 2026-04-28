@@ -45,7 +45,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.57.0
 	go.opentelemetry.io/collector/pdata v1.57.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	google.golang.org/protobuf v1.36.11
 )
 

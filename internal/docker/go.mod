@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.57.0
 	go.opentelemetry.io/collector/confmap v1.57.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.20.0
 )
 

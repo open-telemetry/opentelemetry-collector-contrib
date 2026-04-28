@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.151.0
 	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 )
 
 require (

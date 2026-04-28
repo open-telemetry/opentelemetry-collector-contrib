@@ -23,12 +23,13 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.151.0
 	go.opentelemetry.io/collector/pdata v1.57.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 )
 
 require go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
 
 require (
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
