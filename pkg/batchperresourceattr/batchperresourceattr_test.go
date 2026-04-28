@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -457,6 +458,19 @@ func fillResourceLogs(rs plog.ResourceLogs, kv ...string) {
 	secondLogRecord.SetFlags(plog.LogRecordFlags(rand.Int32()))
 }
 
+func fillProfileSamples(rp pprofile.ResourceProfiles, kv ...string) {
+	for i := 0; i < len(kv); i += 2 {
+		rp.Resource().Attributes().PutStr(kv[i], kv[i+1])
+	}
+	rp.Resource().Attributes().PutInt("__other_key__", 123)
+	sp := rp.ScopeProfiles().AppendEmpty()
+	firstProfile := sp.Profiles().AppendEmpty()
+	firstSample := firstProfile.Samples().AppendEmpty()
+	firstSample.Values().Append(rand.Int64())
+	secondSample := firstProfile.Samples().AppendEmpty()
+	secondSample.Values().Append(rand.Int64())
+}
+
 // ctxTracesSink records the context passed to each ConsumeTraces call.
 type ctxTracesSink struct {
 	contexts []context.Context
@@ -491,6 +505,18 @@ func (*ctxLogsSink) Capabilities() consumer.Capabilities { return consumer.Capab
 func (s *ctxLogsSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	s.contexts = append(s.contexts, ctx)
 	return s.LogsSink.ConsumeLogs(ctx, ld)
+}
+
+// ctxProfilesSink records the context passed to each ConsumeProfiles call.
+type ctxProfilesSink struct {
+	contexts []context.Context
+	consumertest.ProfilesSink
+}
+
+func (*ctxProfilesSink) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
+func (s *ctxProfilesSink) ConsumeProfiles(ctx context.Context, pp pprofile.Profiles) error {
+	s.contexts = append(s.contexts, ctx)
+	return s.ProfilesSink.ConsumeProfiles(ctx, pp)
 }
 
 func TestWithMetadataInjectionTraces(t *testing.T) {
@@ -614,6 +640,37 @@ func TestWithMetadataInjectionLogs(t *testing.T) {
 		sink := &ctxLogsSink{}
 		bpr := NewBatchPerResourceLogs("attr_key", sink, WithMetadataInjection())
 		require.NoError(t, bpr.ConsumeLogs(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 2)
+		vals := []string{
+			client.FromContext(sink.contexts[0]).Metadata.Get("attr_key")[0],
+			client.FromContext(sink.contexts[1]).Metadata.Get("attr_key")[0],
+		}
+		assert.ElementsMatch(t, []string{"a", "b"}, vals)
+	})
+}
+
+func TestWithMetadataInjectionProfiles(t *testing.T) {
+	t.Run("single resource injects metadata", func(t *testing.T) {
+		inBatch := pprofile.NewProfiles()
+		fillProfileSamples(inBatch.ResourceProfiles().AppendEmpty(), "attr_key", "val1")
+
+		sink := &ctxProfilesSink{}
+		bpr := NewMultiBatchPerResourceProfiles([]string{"attr_key"}, sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeProfiles(t.Context(), inBatch))
+
+		require.Len(t, sink.contexts, 1)
+		assert.Equal(t, []string{"val1"}, client.FromContext(sink.contexts[0]).Metadata.Get("attr_key"))
+	})
+
+	t.Run("multiple resources different values each batch gets own metadata", func(t *testing.T) {
+		inBatch := pprofile.NewProfiles()
+		fillProfileSamples(inBatch.ResourceProfiles().AppendEmpty(), "attr_key", "a")
+		fillProfileSamples(inBatch.ResourceProfiles().AppendEmpty(), "attr_key", "b")
+
+		sink := &ctxProfilesSink{}
+		bpr := NewMultiBatchPerResourceProfiles([]string{"attr_key"}, sink, WithMetadataInjection())
+		require.NoError(t, bpr.ConsumeProfiles(t.Context(), inBatch))
 
 		require.Len(t, sink.contexts, 2)
 		vals := []string{
