@@ -24,7 +24,7 @@ components:
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
-    - connector/servicegraph
+    - connector/service_graph
     - connector/signal_to_metrics
     - connector/slowsql
     - connector/span_metrics
