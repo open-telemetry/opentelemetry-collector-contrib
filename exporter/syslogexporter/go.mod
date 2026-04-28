@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/leodido/go-syslog/v4 v4.4.0
+	github.com/leodido/go-syslog/v4 v4.5.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.56.1-0.20260424074859-d91c0edd1da5
 	go.opentelemetry.io/collector/component/componenttest v0.150.1-0.20260424074859-d91c0edd1da5
