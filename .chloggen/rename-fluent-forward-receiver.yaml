@@ -1,6 +1,0 @@
-change_type: deprecation
-component: receiver/fluent_forward
-note: Rename receiver type from `fluentforward` to `fluent_forward`
-issues: [45339]
-subtext:
-change_logs: [user]
