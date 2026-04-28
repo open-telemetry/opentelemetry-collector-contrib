@@ -17,6 +17,7 @@ import (
 
 var defaultContextInferPriority = []string{
 	"log",
+	"exemplar",
 	"datapoint",
 	"metric",
 	"spanevent",

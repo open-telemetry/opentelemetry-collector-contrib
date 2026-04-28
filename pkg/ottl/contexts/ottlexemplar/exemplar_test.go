@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
@@ -334,6 +335,23 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 			require.ErrorContains(t, err, expectError)
 		})
 	}
+}
+
+func TestMarshalLogObjectIncludesDataPoint(t *testing.T) {
+	rm, sm, metric, dp, exemplar := createTelemetry()
+	ctx := NewTransformContextPtr(rm, sm, metric, dp, exemplar)
+	defer ctx.Close()
+
+	encoder := zapcore.NewMapObjectEncoder()
+	require.NoError(t, ctx.MarshalLogObject(encoder))
+
+	datapoint, ok := encoder.Fields["datapoint"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, float64(1.5), datapoint["value_double"])
+
+	attributes, ok := datapoint["attributes"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "dp_val", attributes["dp_attr"])
 }
 
 func createTelemetry() (pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, pmetric.NumberDataPoint, pmetric.Exemplar) {

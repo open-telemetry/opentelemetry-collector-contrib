@@ -4,6 +4,7 @@
 package ctxexemplar_test
 
 import (
+	"encoding/hex"
 	"slices"
 	"testing"
 	"time"
@@ -105,12 +106,36 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "trace_id string",
+			path: &pathtest.Path[*testContext]{
+				N:        "trace_id",
+				NextPath: &pathtest.Path[*testContext]{N: "string"},
+			},
+			orig:   hex.EncodeToString(traceID[:]),
+			newVal: hex.EncodeToString(traceID2[:]),
+			modified: func(exemplar pmetric.Exemplar) {
+				exemplar.SetTraceID(pcommon.TraceID(traceID2))
+			},
+		},
+		{
 			name: "span_id",
 			path: &pathtest.Path[*testContext]{
 				N: "span_id",
 			},
 			orig:   pcommon.SpanID(spanID),
 			newVal: pcommon.SpanID(spanID2),
+			modified: func(exemplar pmetric.Exemplar) {
+				exemplar.SetSpanID(pcommon.SpanID(spanID2))
+			},
+		},
+		{
+			name: "span_id string",
+			path: &pathtest.Path[*testContext]{
+				N:        "span_id",
+				NextPath: &pathtest.Path[*testContext]{N: "string"},
+			},
+			orig:   hex.EncodeToString(spanID[:]),
+			newVal: hex.EncodeToString(spanID2[:]),
 			modified: func(exemplar pmetric.Exemplar) {
 				exemplar.SetSpanID(pcommon.SpanID(spanID2))
 			},
@@ -203,6 +228,9 @@ func TestPathGetSetter(t *testing.T) {
 			exExemplar := createTelemetry()
 			tt.modified(exExemplar)
 			assert.Equal(t, exExemplar, exemplar)
+
+			err = accessor.Set(t.Context(), tCtx, struct{}{})
+			require.Error(t, err)
 		})
 	}
 }

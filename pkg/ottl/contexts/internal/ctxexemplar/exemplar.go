@@ -5,12 +5,13 @@ package ctxexemplar // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"encoding/hex"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
@@ -21,112 +22,180 @@ func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	}
 	switch path.Name() {
 	case "time_unix_nano":
-		return accessExemplarTimeUnixNano[K](), nil
+		return accessTimeUnixNano[K](), nil
 	case "time":
-		return accessExemplarTime[K](), nil
+		return accessTime[K](), nil
 	case "double_value":
-		return accessExemplarDoubleValue[K](), nil
+		return accessDoubleValue[K](), nil
 	case "int_value":
-		return accessExemplarIntValue[K](), nil
+		return accessIntValue[K](), nil
 	case "trace_id":
-		return accessExemplarTraceID[K](), nil
+		nextPath := path.Next()
+		if nextPath != nil {
+			if nextPath.Name() == "string" {
+				return accessStringTraceID[K](), nil
+			}
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
+		}
+		return accessTraceID[K](), nil
 	case "span_id":
-		return accessExemplarSpanID[K](), nil
+		nextPath := path.Next()
+		if nextPath != nil {
+			if nextPath.Name() == "string" {
+				return accessStringSpanID[K](), nil
+			}
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
+		}
+		return accessSpanID[K](), nil
 	case "filtered_attributes":
 		if path.Keys() == nil {
-			return accessExemplarFilteredAttributes[K](), nil
+			return accessFilteredAttributes[K](), nil
 		}
-		return accessExemplarFilteredAttributesKey(path.Keys()), nil
+		return accessFilteredAttributesKey(path.Keys()), nil
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
 }
 
-func accessExemplarTimeUnixNano[K Context]() ottl.StandardGetSetter[K] {
+func accessTimeUnixNano[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetExemplar().Timestamp().AsTime().UnixNano(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newTimestamp, ok := val.(int64); ok {
-				tCtx.GetExemplar().SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTimestamp)))
+			newTimestamp, err := ctxutil.ExpectType[int64](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetExemplar().SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTimestamp)))
 			return nil
 		},
 	}
 }
 
-func accessExemplarTime[K Context]() ottl.StandardGetSetter[K] {
+func accessTime[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetExemplar().Timestamp().AsTime(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newTimestamp, ok := val.(time.Time); ok {
-				tCtx.GetExemplar().SetTimestamp(pcommon.NewTimestampFromTime(newTimestamp))
+			newTimestamp, err := ctxutil.ExpectType[time.Time](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetExemplar().SetTimestamp(pcommon.NewTimestampFromTime(newTimestamp))
 			return nil
 		},
 	}
 }
 
-func accessExemplarDoubleValue[K Context]() ottl.StandardGetSetter[K] {
+func accessDoubleValue[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetExemplar().DoubleValue(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newVal, ok := val.(float64); ok {
-				tCtx.GetExemplar().SetDoubleValue(newVal)
+			newVal, err := ctxutil.ExpectType[float64](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetExemplar().SetDoubleValue(newVal)
 			return nil
 		},
 	}
 }
 
-func accessExemplarIntValue[K Context]() ottl.StandardGetSetter[K] {
+func accessIntValue[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetExemplar().IntValue(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newVal, ok := val.(int64); ok {
-				tCtx.GetExemplar().SetIntValue(newVal)
+			newVal, err := ctxutil.ExpectType[int64](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetExemplar().SetIntValue(newVal)
 			return nil
 		},
 	}
 }
 
-func accessExemplarTraceID[K Context]() ottl.StandardGetSetter[K] {
+func accessTraceID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetExemplar().TraceID(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newTraceID, ok := val.(pcommon.TraceID); ok {
-				tCtx.GetExemplar().SetTraceID(newTraceID)
+			newTraceID, err := ctxutil.ExpectType[pcommon.TraceID](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetExemplar().SetTraceID(newTraceID)
 			return nil
 		},
 	}
 }
 
-func accessExemplarSpanID[K Context]() ottl.StandardGetSetter[K] {
+func accessStringTraceID[K Context]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			id := tCtx.GetExemplar().TraceID()
+			return hex.EncodeToString(id[:]), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			str, err := ctxutil.ExpectType[string](val)
+			if err != nil {
+				return err
+			}
+			id, err := ctxcommon.ParseTraceID(str)
+			if err != nil {
+				return err
+			}
+			tCtx.GetExemplar().SetTraceID(id)
+			return nil
+		},
+	}
+}
+
+func accessSpanID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetExemplar().SpanID(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newSpanID, ok := val.(pcommon.SpanID); ok {
-				tCtx.GetExemplar().SetSpanID(newSpanID)
+			newSpanID, err := ctxutil.ExpectType[pcommon.SpanID](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetExemplar().SetSpanID(newSpanID)
 			return nil
 		},
 	}
 }
 
-func accessExemplarFilteredAttributes[K Context]() ottl.StandardGetSetter[K] {
+func accessStringSpanID[K Context]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			id := tCtx.GetExemplar().SpanID()
+			return hex.EncodeToString(id[:]), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			str, err := ctxutil.ExpectType[string](val)
+			if err != nil {
+				return err
+			}
+			id, err := ctxcommon.ParseSpanID(str)
+			if err != nil {
+				return err
+			}
+			tCtx.GetExemplar().SetSpanID(id)
+			return nil
+		},
+	}
+}
+
+func accessFilteredAttributes[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetExemplar().FilteredAttributes(), nil
@@ -137,7 +206,7 @@ func accessExemplarFilteredAttributes[K Context]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessExemplarFilteredAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessFilteredAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetExemplar().FilteredAttributes(), key)
@@ -146,10 +215,4 @@ func accessExemplarFilteredAttributesKey[K Context](key []ottl.Key[K]) ottl.Stan
 			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetExemplar().FilteredAttributes(), key, val)
 		},
 	}
-}
-
-// ExemplarValueType returns the value type of the exemplar.
-// This is a convenience helper used by the public ottlexemplar context.
-func ExemplarValueType(e pmetric.Exemplar) pmetric.ExemplarValueType {
-	return e.ValueType()
 }
