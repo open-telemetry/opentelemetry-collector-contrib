@@ -12,33 +12,44 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
+func nopFactories() map[component.Type]extension.Factory {
+	return map[component.Type]extension.Factory{
+		extensiontest.NopType: extensiontest.NewNopFactory(),
+	}
+}
+
+func nopConfig(t *testing.T, ids ...component.ID) Config {
+	t.Helper()
+	factory := extensiontest.NewNopFactory()
+	cfg := make(Config, len(ids))
+	for _, id := range ids {
+		cfg[id] = factory.CreateDefaultConfig()
+	}
+	return cfg
+}
+
 func TestNew_EmptyConfig(t *testing.T) {
-	exts, err := New(t.Context(), nil, map[component.Type]extension.Factory{}, componenttest.NewNopTelemetrySettings())
+	exts, err := New(t.Context(), nil, nopFactories(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, exts)
 	require.Empty(t, exts.GetExtensions())
 }
 
 func TestNew_SingleNopExtension(t *testing.T) {
-	factories := map[component.Type]extension.Factory{
-		extensiontest.NopType: extensiontest.NewNopFactory(),
-	}
+	id := component.NewID(extensiontest.NopType)
+	cfg := nopConfig(t, id)
 
-	rawCfg := map[string]any{
-		"nop": map[string]any{},
-	}
-
-	exts, err := New(t.Context(), rawCfg, factories, componenttest.NewNopTelemetrySettings())
+	exts, err := New(t.Context(), cfg, nopFactories(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	got := exts.GetExtensions()
 	require.Len(t, got, 1)
-
-	id := component.NewID(extensiontest.NopType)
 	require.Contains(t, got, id)
 
 	require.NoError(t, exts.Start(t.Context()))
@@ -46,47 +57,35 @@ func TestNew_SingleNopExtension(t *testing.T) {
 }
 
 func TestNew_NamedExtension(t *testing.T) {
-	factories := map[component.Type]extension.Factory{
-		extensiontest.NopType: extensiontest.NewNopFactory(),
-	}
+	id := component.MustNewIDWithName(extensiontest.NopType.String(), "myext")
+	cfg := nopConfig(t, id)
 
-	rawCfg := map[string]any{
-		"nop/myext": map[string]any{},
-	}
-
-	exts, err := New(t.Context(), rawCfg, factories, componenttest.NewNopTelemetrySettings())
+	exts, err := New(t.Context(), cfg, nopFactories(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	got := exts.GetExtensions()
-	expectedID := component.MustNewIDWithName(extensiontest.NopType.String(), "myext")
-	require.Contains(t, got, expectedID)
+	require.Contains(t, exts.GetExtensions(), id)
 }
 
 func TestNew_UnknownFactoryType(t *testing.T) {
-	rawCfg := map[string]any{
-		"doesnotexist": map[string]any{},
-	}
+	// Manually construct a Config bypassing Unmarshal so we exercise the
+	// defensive lookup inside New.
+	id := component.MustNewID("doesnotexist")
+	cfg := Config{id: struct{}{}}
 
-	_, err := New(t.Context(), rawCfg, map[component.Type]extension.Factory{}, componenttest.NewNopTelemetrySettings())
+	_, err := New(t.Context(), cfg, map[component.Type]extension.Factory{}, componenttest.NewNopTelemetrySettings())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown extension type")
 	require.Contains(t, err.Error(), "doesnotexist")
 }
 
 func TestNew_MultipleExtensionsDeterministicOrder(t *testing.T) {
-	factories := map[component.Type]extension.Factory{
-		extensiontest.NopType: extensiontest.NewNopFactory(),
-	}
+	cfg := nopConfig(t,
+		component.MustNewIDWithName(extensiontest.NopType.String(), "c"),
+		component.MustNewIDWithName(extensiontest.NopType.String(), "a"),
+		component.MustNewIDWithName(extensiontest.NopType.String(), "b"),
+	)
 
-	// Use multiple named nop instances; parsing is map-based so insertion order
-	// is non-deterministic, but our Extensions.order must be deterministic.
-	rawCfg := map[string]any{
-		"nop/c": map[string]any{},
-		"nop/a": map[string]any{},
-		"nop/b": map[string]any{},
-	}
-
-	exts, err := New(t.Context(), rawCfg, factories, componenttest.NewNopTelemetrySettings())
+	exts, err := New(t.Context(), cfg, nopFactories(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	ids := make([]string, 0, len(exts.order))
@@ -140,13 +139,12 @@ func TestStart_RollbackOnFailure(t *testing.T) {
 		firstType:  firstFactory,
 		secondType: secondFactory,
 	}
-
-	rawCfg := map[string]any{
-		"first":  map[string]any{},
-		"second": map[string]any{},
+	cfg := Config{
+		component.NewID(firstType):  firstFactory.CreateDefaultConfig(),
+		component.NewID(secondType): secondFactory.CreateDefaultConfig(),
 	}
 
-	exts, err := New(t.Context(), rawCfg, factories, componenttest.NewNopTelemetrySettings())
+	exts, err := New(t.Context(), cfg, factories, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	err = exts.Start(t.Context())
@@ -184,14 +182,13 @@ func TestShutdown_ReverseOrder(t *testing.T) {
 		bType: mkFactory("b"),
 		cType: mkFactory("c"),
 	}
-
-	rawCfg := map[string]any{
-		"a": map[string]any{},
-		"b": map[string]any{},
-		"c": map[string]any{},
+	cfg := Config{
+		component.NewID(aType): &struct{}{},
+		component.NewID(bType): &struct{}{},
+		component.NewID(cType): &struct{}{},
 	}
 
-	exts, err := New(t.Context(), rawCfg, factories, componenttest.NewNopTelemetrySettings())
+	exts, err := New(t.Context(), cfg, factories, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	require.NoError(t, exts.Start(t.Context()))
@@ -199,12 +196,13 @@ func TestShutdown_ReverseOrder(t *testing.T) {
 	require.Equal(t, []string{"c", "b", "a"}, order)
 }
 
-func TestValidateConfigs(t *testing.T) {
+func TestConfig_Unmarshal(t *testing.T) {
 	tests := []struct {
 		name        string
 		rawCfg      map[string]any
 		wantErr     bool
 		errContains string
+		wantIDs     []component.ID
 	}{
 		{
 			name:   "nil config",
@@ -219,12 +217,14 @@ func TestValidateConfigs(t *testing.T) {
 			rawCfg: map[string]any{
 				"nop": map[string]any{},
 			},
+			wantIDs: []component.ID{component.NewID(extensiontest.NopType)},
 		},
 		{
 			name: "valid named nop",
 			rawCfg: map[string]any{
 				"nop/myext": map[string]any{},
 			},
+			wantIDs: []component.ID{component.MustNewIDWithName(extensiontest.NopType.String(), "myext")},
 		},
 		{
 			name: "multiple valid entries",
@@ -232,6 +232,11 @@ func TestValidateConfigs(t *testing.T) {
 				"nop":   map[string]any{},
 				"nop/a": map[string]any{},
 				"nop/b": map[string]any{},
+			},
+			wantIDs: []component.ID{
+				component.NewID(extensiontest.NopType),
+				component.MustNewIDWithName(extensiontest.NopType.String(), "a"),
+				component.MustNewIDWithName(extensiontest.NopType.String(), "b"),
 			},
 		},
 		{
@@ -263,7 +268,8 @@ func TestValidateConfigs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := ValidateConfigs(tc.rawCfg)
+			var cfg Config
+			err := cfg.Unmarshal(confmap.NewFromStringMap(tc.rawCfg))
 			if tc.wantErr {
 				require.Error(t, err)
 				if tc.errContains != "" {
@@ -272,8 +278,46 @@ func TestValidateConfigs(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+			for _, id := range tc.wantIDs {
+				require.Contains(t, cfg, id)
+			}
+			require.Len(t, cfg, len(tc.wantIDs))
 		})
 	}
+}
+
+// TestConfig_TopLevelValidate confirms that xconfmap.Validate walks into a
+// Config map and reports the failing field path with the extension ID, so we
+// don't need to wrap per-extension errors ourselves.
+func TestConfig_TopLevelValidate(t *testing.T) {
+	type parent struct {
+		Extensions Config `mapstructure:"extensions"`
+	}
+
+	id := component.MustNewIDWithName("requiredfield", "primary")
+	p := parent{
+		Extensions: Config{id: &requiredFieldConfig{}},
+	}
+
+	err := xconfmap.Validate(p)
+	require.Error(t, err)
+	// Path should include the extensions key, the component ID, and the field.
+	require.Contains(t, err.Error(), "extensions::requiredfield/primary")
+	require.Contains(t, err.Error(), "field is required")
+}
+
+// requiredFieldConfig is a tiny config type that fails Validate when its
+// required field is empty. It exists only to verify path-prefixed error
+// formatting from xconfmap.Validate.
+type requiredFieldConfig struct {
+	Field string `mapstructure:"field"`
+}
+
+func (c *requiredFieldConfig) Validate() error {
+	if c.Field == "" {
+		return errors.New("field is required")
+	}
+	return nil
 }
 
 // trackingExtension is a minimal extension.Extension used in tests to observe

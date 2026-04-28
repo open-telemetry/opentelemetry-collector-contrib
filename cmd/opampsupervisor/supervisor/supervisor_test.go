@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -130,7 +131,7 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 	cfg, err := config.Load(cfgPath)
 	require.NoError(t, err)
 
-	err = cfg.Validate()
+	err = xconfmap.Validate(cfg)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

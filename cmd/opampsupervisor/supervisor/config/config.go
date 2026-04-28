@@ -37,13 +37,13 @@ import (
 
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
-	Server       OpAMPServer    `mapstructure:"server"`
-	Agent        Agent          `mapstructure:"agent"`
-	Capabilities Capabilities   `mapstructure:"capabilities"`
-	Storage      Storage        `mapstructure:"storage"`
-	Telemetry    Telemetry      `mapstructure:"telemetry"`
-	HealthCheck  HealthCheck    `mapstructure:"healthcheck"`
-	Extensions   map[string]any `mapstructure:"extensions,omitempty"`
+	Server       OpAMPServer       `mapstructure:"server"`
+	Agent        Agent             `mapstructure:"agent"`
+	Capabilities Capabilities      `mapstructure:"capabilities"`
+	Storage      Storage           `mapstructure:"storage"`
+	Telemetry    Telemetry         `mapstructure:"telemetry"`
+	HealthCheck  HealthCheck       `mapstructure:"healthcheck"`
+	Extensions   extensions.Config `mapstructure:"extensions,omitempty"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -78,32 +78,6 @@ func Load(configFile string) (Supervisor, error) {
 	}
 
 	return cfg, nil
-}
-
-// Validate validates the Supervisor configuration
-func (s Supervisor) Validate() error {
-	if err := s.Server.Validate(); err != nil {
-		return err
-	}
-
-	if err := s.Agent.Validate(); err != nil {
-		return err
-	}
-
-	if err := s.HealthCheck.Validate(); err != nil {
-		return err
-	}
-
-	if err := s.Telemetry.Resource.Validate(); err != nil {
-		return fmt.Errorf("invalid telemetry::resource settings: %w", err)
-	}
-
-	// extensions have their own validation in the extensions package
-	if err := extensions.ValidateConfigs(s.Extensions); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 type Storage struct {

@@ -39,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
@@ -225,7 +226,7 @@ func NewSupervisor(ctx context.Context, logger *zap.Logger, cfg config.Superviso
 		return nil, err
 	}
 
-	if err := cfg.Validate(); err != nil {
+	if err := xconfmap.Validate(cfg); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 	s.config = cfg

@@ -10,8 +10,6 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
@@ -34,30 +32,33 @@ func (h *host) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
 }
 
-// New creates and returns a ready-to-start Extensions. Extension instances are
-// created eagerly so that misconfigurations are surfaced before any lifecycle
-// begins. Start must be called to transition the extensions to the running
-// state; Shutdown must be called to stop them.
+// New creates and returns a ready-to-start Extensions from already-validated
+// configs. Extension instances are created eagerly so that factory errors are
+// surfaced before any lifecycle begins. Start must be called to transition the
+// extensions to the running state; Shutdown must be called to stop them.
 func New(
 	ctx context.Context,
-	rawCfg map[string]any,
+	cfg Config,
 	factories map[component.Type]extension.Factory,
 	telemetry component.TelemetrySettings,
 ) (*Extensions, error) {
-	configs, order, err := parseConfigs(rawCfg, factories)
-	if err != nil {
-		return nil, err
+	order := make([]component.ID, 0, len(cfg))
+	for id := range cfg {
+		order = append(order, id)
 	}
+	sortIDs(order)
 
-	exts := make(map[component.ID]extension.Extension, len(configs))
-	hostExts := make(map[component.ID]component.Component, len(configs))
+	exts := make(map[component.ID]extension.Extension, len(cfg))
+	hostExts := make(map[component.ID]component.Component, len(cfg))
 	for _, id := range order {
-		factory := factories[id.Type()]
-		cfg := configs[id]
+		factory, ok := factories[id.Type()]
+		if !ok {
+			return nil, fmt.Errorf("unknown extension type %q for id %q", id.Type(), id)
+		}
 		ext, err := factory.Create(ctx, extension.Settings{
 			ID:                id,
 			TelemetrySettings: telemetry,
-		}, cfg)
+		}, cfg[id])
 		if err != nil {
 			return nil, fmt.Errorf("failed to create extension %q: %w", id, err)
 		}
@@ -117,68 +118,10 @@ func (e *Extensions) GetExtensions() map[component.ID]component.Component {
 	return out
 }
 
-// ValidateConfigs parses the raw extensions config and validates each entry
-// against its factory's config schema, without creating extension instances.
-// It uses the default factory list from Factories(). If extensions are
-// configured but the opampsupervisor.extensions feature gate is disabled,
-// it returns an actionable error naming the gate.
-func ValidateConfigs(rawCfg map[string]any) error {
-	_, _, err := parseConfigs(rawCfg, Factories())
-	return err
-}
-
-// parseConfigs converts the raw extensions map into parsed, validated configs
-// keyed by component.ID. It returns the configs and a deterministic ordering
-// of their IDs.
-func parseConfigs(
-	rawCfg map[string]any,
-	factories map[component.Type]extension.Factory,
-) (map[component.ID]component.Config, []component.ID, error) {
-	if len(rawCfg) == 0 {
-		return nil, nil, nil
-	}
-
-	conf := confmap.NewFromStringMap(rawCfg)
-
-	// Unmarshaling into a map keyed by component.ID triggers
-	// component.ID.UnmarshalText for each YAML key, handling both "type" and
-	// "type/name" forms.
-	ids := make(map[component.ID]map[string]any)
-	if err := conf.Unmarshal(&ids); err != nil {
-		return nil, nil, fmt.Errorf("failed to parse extensions config: %w", err)
-	}
-
-	configs := make(map[component.ID]component.Config, len(ids))
-	order := make([]component.ID, 0, len(ids))
-	for id := range ids {
-		factory, ok := factories[id.Type()]
-		if !ok {
-			return nil, nil, fmt.Errorf("unknown extension type %q for id %q", id.Type(), id)
-		}
-
-		sub, err := conf.Sub(id.String())
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to read config for extension %q: %w", id, err)
-		}
-
-		cfg := factory.CreateDefaultConfig()
-		if err := sub.Unmarshal(&cfg); err != nil {
-			return nil, nil, fmt.Errorf("failed to unmarshal config for extension %q: %w", id, err)
-		}
-
-		if err := xconfmap.Validate(cfg); err != nil {
-			return nil, nil, fmt.Errorf("invalid config for extension %q: %w", id, err)
-		}
-
-		configs[id] = cfg
-		order = append(order, id)
-	}
-
-	sortIDs(order)
-	return configs, order, nil
-}
-
 // sortIDs orders IDs by string form for deterministic startup/shutdown.
+// This doesn't provide protection for dependent relationships between extensions.
+// Once https://github.com/open-telemetry/opentelemetry-collector/issues/15216 is addressed,
+// the majority of this file can be removed and better sorting will be used.
 func sortIDs(ids []component.ID) {
 	// Simple insertion sort: the list is small (a handful of extensions).
 	for i := 1; i < len(ids); i++ {
