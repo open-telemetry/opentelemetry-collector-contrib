@@ -114,6 +114,7 @@ components:
     - extension/opamp
     - extension/opampcustommessages
     - extension/otlp_encoding
+    - extension/pebble_tail_storage
     - extension/pprof
     - extension/redis_storage
     - extension/remotetap
