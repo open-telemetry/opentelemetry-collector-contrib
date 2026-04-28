@@ -12,13 +12,13 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.59.0
 	github.com/DataDog/sketches-go v1.4.8
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.151.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tinylib/msgp v1.6.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -91,7 +91,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.150.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.151.0 // indirect
 	github.com/outcaste-io/ristretto v0.2.3 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect

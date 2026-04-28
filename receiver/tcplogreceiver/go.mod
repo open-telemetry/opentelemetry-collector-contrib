@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplog
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.151.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.0
 	go.opentelemetry.io/collector/confmap v1.57.0
@@ -15,7 +15,7 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0
 	go.opentelemetry.io/collector/component/componenttest v0.151.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.151.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.151.0

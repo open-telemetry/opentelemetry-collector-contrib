@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
 go 1.25.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.150.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.151.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/pdata v1.57.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.151.0
