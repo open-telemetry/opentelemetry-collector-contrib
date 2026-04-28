@@ -39,7 +39,7 @@ components:
         - groupbytrace
         - interval
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -57,7 +57,7 @@ components:
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kubeletstats
         - otelarrow
         - prometheus
