@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
+	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
@@ -53,6 +54,13 @@ type Config struct {
 	VPCFlowLogConfig vpcflowlog.Config `mapstructure:"vpcflow"`
 	// Deprecated: use VPCFlowLogConfig instead. It will be removed in v0.138.0
 	VPCFlowLogConfigV1 vpcflowlog.Config `mapstructure:"vpc_flow_log"`
+
+	// CloudWatchRoutes declares routing rules for CloudWatch Logs
+	// subscription-filter events. Each entry maps a logGroup and/or logStream
+	// pattern (or a known service name) to an inner encoding extension that
+	// decodes matching events. Only valid when Format is set to the
+	// CloudWatch subscription-filter format.
+	CloudWatchRoutes []subscriptionfilter.CloudWatchRoute `mapstructure:"cloudwatch_routes"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -102,6 +110,22 @@ func (cfg *Config) Validate() error {
 			cfg.VPCFlowLogConfigV1.FileFormat,
 			supportedVPCFlowLogFileFormat,
 		))
+	}
+
+	if len(cfg.CloudWatchRoutes) > 0 {
+		switch cfg.Format {
+		case constants.FormatCloudWatchLogsSubscriptionFilter,
+			constants.FormatCloudWatchLogsSubscriptionFilterV1:
+			// valid: routing only applies to the CW subscription-filter format.
+		default:
+			errs = append(errs, fmt.Errorf(
+				"'cloudwatch_routes' is only valid with format %q; got %q",
+				constants.FormatCloudWatchLogsSubscriptionFilter, cfg.Format,
+			))
+		}
+		if err := subscriptionfilter.ValidateRoutes(cfg.CloudWatchRoutes); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	if len(errs) > 0 {
