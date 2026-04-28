@@ -41,6 +41,11 @@ require (
 )
 
 require (
+	go.opentelemetry.io/collector/component/componentstatus v0.150.1-0.20260424074859-d91c0edd1da5
+	go.opentelemetry.io/collector/scraper v0.150.1-0.20260424074859-d91c0edd1da5
+)
+
+require (
 	dario.cat/mergo v1.0.2 // indirect
 	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
@@ -165,7 +170,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.56.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
-	go.opentelemetry.io/collector/scraper v0.150.1-0.20260424074859-d91c0edd1da5 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
