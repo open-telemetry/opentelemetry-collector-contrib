@@ -50,7 +50,7 @@ components:
         - transform
     receiver:
         - file_log
-        - fluentforward
+        - fluent_forward
         - host_metrics
         - http_check
         - jaeger

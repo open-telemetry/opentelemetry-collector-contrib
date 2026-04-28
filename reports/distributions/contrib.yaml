@@ -163,7 +163,7 @@ components:
         - file_log
         - file_stats
         - flinkmetrics
-        - fluentforward
+        - fluent_forward
         - github
         - gitlab
         - googlecloudmonitoring
