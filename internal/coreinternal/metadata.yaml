@@ -10,7 +10,7 @@ status:
 
 feature_gates:
   - id: internal.coreinternal.goldendataset.DontEmitV0NetworkConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, goldendataset no longer generates spans with deprecated
       semconv v1.12.0 attributes (net.host.ip, net.peer.ip, http.host, http.server_name).
@@ -24,7 +24,7 @@ feature_gates:
     from_version: v0.148.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47548
   - id: internal.coreinternal.goldendataset.EmitV1NetworkConventions
-    stage: alpha
+    stage: beta
     description: >-
       When enabled, goldendataset generates spans with network.local.address,
       network.peer.address, and server.address (semconv v1.38.0) instead of
