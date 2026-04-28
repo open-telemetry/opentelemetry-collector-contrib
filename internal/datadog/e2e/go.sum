@@ -255,8 +255,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.77.0-devel.0.20260213154712
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.77.0-devel.0.20260213154712-e02b9359151a/go.mod h1:X1VqFCSjFCH6sGbD2Lcz6BiYlwIR9wkSUIy/40SZAP4=
 github.com/DataDog/datadog-agent/pkg/version v0.77.0-devel.0.20260213154712-e02b9359151a h1:rG0d3TWCGfgzlCTpVX0kilrLNCfOAUj2L9KpI5J7s2A=
 github.com/DataDog/datadog-agent/pkg/version v0.77.0-devel.0.20260213154712-e02b9359151a/go.mod h1:rGiA9exD1TnEwTdgfBrV1kw8DVEtHZPpV5Mt5xl7UPQ=
-github.com/DataDog/datadog-api-client-go/v2 v2.58.0 h1:HPE996Dt3mVX9TWlm7btjcP9exga+fB7LE7lsnMhuUw=
-github.com/DataDog/datadog-api-client-go/v2 v2.58.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.59.0 h1:vCTFSM4OVMX9tgA7Oz0BgsBzr4rLILE+L7ayFCqT80I=
+github.com/DataDog/datadog-api-client-go/v2 v2.59.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.8.3 h1:s58CUJ9s8lezjhTNJO/SxkPBv2qZjS3ktpRSqGF5n0s=
 github.com/DataDog/datadog-go/v5 v5.8.3/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
@@ -661,8 +661,8 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hectane/go-acl v0.0.0-20230225031251-cdfc9e3acf94 h1:0G5JVG0aJDpWvH1r8idd+wbPcAH14UqIuUMepx3v9rE=
 github.com/hectane/go-acl v0.0.0-20230225031251-cdfc9e3acf94/go.mod h1:MvF7bZQy5lD2WcLXjFytRVvnTrFvrjo/qGka1MIBOPE=
-github.com/hetznercloud/hcloud-go/v2 v2.37.0 h1:PMnuOA8pL8aHLLPp6nnnCTo2Xk2tqu4dAfYsC3bWdT0=
-github.com/hetznercloud/hcloud-go/v2 v2.37.0/go.mod h1:zaDOCKmpnI86ftoCpUpaiYaw9Wew1ib1AcXTh96deYI=
+github.com/hetznercloud/hcloud-go/v2 v2.38.0 h1:bJL4O5Zd8iF+vDRzeAbmsMcxKhn/sf/HUtu2jl/bFl0=
+github.com/hetznercloud/hcloud-go/v2 v2.38.0/go.mod h1:BHmbGdh59t0CazoUEFvbdp6PyV+gwnF0fl9D4Bdgqq0=
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
