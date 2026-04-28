@@ -356,7 +356,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `enabled` (default=true): Enable queueing and batching behaviour.
   - `num_consumers` (default=10): Number of consumers that dequeue batches.
   - `wait_for_result` (default=false): If `true`, blocks incoming requests until processed.
-  - `block_on_overflow` (default=false): If `true`, blocks the request until the queue has space.
+  - `block_on_overflow` (default=true): If `true`, blocks the request until the queue has space.
   - `sizer` (default=requests): Measure queueing by requests.
   - `queue_size` (default=10): Maximum size the queue can accept.
   - `batch`:
