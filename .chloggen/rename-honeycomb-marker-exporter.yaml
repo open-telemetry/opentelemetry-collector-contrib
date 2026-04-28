@@ -1,0 +1,6 @@
+change_type: deprecation
+component: exporter/honeycomb_marker
+note: Rename exporter type from `honeycombmarker` to `honeycomb_marker`
+issues: [45339]
+subtext:
+change_logs: [user]
