@@ -713,6 +713,17 @@ SCHEMA_DIRS := $(shell find $(CURDIR) -path "*testdata*" -prune -o -path "*inter
 generate-schemas:
 	@$(foreach dir,$(SCHEMA_DIRS), cd $(SRC_ROOT)/cmd/schemagen && go run . $(abspath $(dir)) -o $(abspath $(dir));)
 
+# generate-mdatagen-docs runs the per-component generate-mdatagen-doc target (defined in
+# Makefile.Common) across all modules to ensure every component that has a metadata.yaml
+# and mdatagen-generated files has a doc.go with //go:generate make mdatagen wired up.
+.PHONY: generate-mdatagen-docs
+generate-mdatagen-docs:
+	$(MAKE) for-all CMD="make generate-mdatagen-doc"
+
+.PHONY: check-mdatagen-generate
+check-mdatagen-generate:
+	@$(SRC_ROOT)/.github/workflows/scripts/check-mdatagen-generate.sh $(SRC_ROOT)
+
 .PHONY: checks
 checks:
 	$(MAKE) checkdoc
