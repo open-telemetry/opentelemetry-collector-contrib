@@ -164,7 +164,7 @@ exporters:
   nop:
 
 connectors:
-  spanmetrics:
+  span_metrics:
     histogram:
       dimensions:
         - name: url.scheme
@@ -200,9 +200,9 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      exporters: [spanmetrics]
+      exporters: [span_metrics]
     metrics:
-      receivers: [spanmetrics]
+      receivers: [span_metrics]
       exporters: [nop]
 ```
 
@@ -230,16 +230,16 @@ exporters:
       enabled: true
 
 connectors:
-  spanmetrics:
+  span_metrics:
     namespace: span.metrics
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [spanmetrics]
+      exporters: [span_metrics]
     metrics:
-      receivers: [spanmetrics]
+      receivers: [span_metrics]
       exporters: [prometheusremotewrite]
 ```
 
@@ -283,7 +283,7 @@ To reduce the risk of conflicting writes:
 * Add `resource_metrics_key_attributes` to your configuration.
 ```
 connectors:
-  spanmetrics:
+  span_metrics:
     resource_metrics_key_attributes:
       - service.name
       - telemetry.sdk.language
@@ -348,7 +348,7 @@ processors:
   ...
 
 connectors:
-  spanmetrics:
+  span_metrics:
 
 exporters:
   otlp_http/observability-backend:
@@ -359,9 +359,9 @@ service:
     traces:
       receivers: [otlp]
       processors: [transform/sanitize_spans, ...]
-      exporters: [otlp_http/observability-backend, spanmetrics]
+      exporters: [otlp_http/observability-backend, span_metrics]
     metrics:
-      receivers: [otlp, spanmetrics]
+      receivers: [otlp, span_metrics]
       processors: [...]
       exporters: [otlp_http/observability-backend]
     # ...
@@ -411,7 +411,7 @@ processors:
   ...
 
 connectors:
-  spanmetrics:
+  span_metrics:
 
 exporters:
   otlp_http/observability-backend:
@@ -422,9 +422,9 @@ service:
     traces:
       receivers: [otlp]
       processors: [transform/sanitize_spans, ...]
-      exporters: [otlp_http/observability-backend, spanmetrics]
+      exporters: [otlp_http/observability-backend, span_metrics]
     metrics:
-      receivers: [otlp, spanmetrics]
+      receivers: [otlp, span_metrics]
       processors: [...]
       exporters: [otlp_http/observability-backend]
     # ...
