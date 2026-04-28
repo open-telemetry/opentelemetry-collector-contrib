@@ -39,7 +39,7 @@ components:
         - googlecloud
         - googlecloudpubsub
         - googlemanagedprometheus
-        - honeycombmarker
+        - honeycomb_marker
         - influxdb
         - kafka
         - loadbalancing

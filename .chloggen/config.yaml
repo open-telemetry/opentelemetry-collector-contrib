@@ -54,7 +54,7 @@ components:
     - exporter/googlecloud
     - exporter/googlecloudpubsub
     - exporter/googlemanagedprometheus
-    - exporter/honeycombmarker
+    - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka
     - exporter/loadbalancing
