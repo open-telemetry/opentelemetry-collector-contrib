@@ -1,5 +1,6 @@
 display_name: Redfish Receiver
 type: redfish
+reaggregation_enabled: true
 
 description: |
   This receiver fetches metrics for a server running a [Redfish](https://en.wikipedia.org/wiki/Redfish_(specification))
@@ -25,63 +26,83 @@ resource_attributes:
 attributes:
   chassis.asset_tag:
     description: Chassis asset tag.
+    requirement_level: recommended
     type: string
   chassis.chassis_type:
     description: Chassis type.
+    requirement_level: recommended
     type: string
   chassis.id:
     description: Chassis id.
+    requirement_level: recommended
     type: string
   chassis.manufacturer:
     description: Chassis manufacturer.
+    requirement_level: recommended
     type: string
   chassis.model:
     description: Chassis model.
+    requirement_level: recommended
     type: string
   chassis.name:
     description: Chassis name.
+    requirement_level: recommended
     type: string
   chassis.serial_number:
     description: Chassis serial number.
+    requirement_level: recommended
     type: string
   chassis.sku:
     description: Chassis sku.
+    requirement_level: recommended
     type: string
   fan.name:
     description: Fan name.
+    requirement_level: recommended
     type: string
   fan.reading_units:
     description: Fan reading units.
+    requirement_level: recommended
     type: string
   system.asset_tag:
     description: System asset tag.
+    requirement_level: recommended
     type: string
   system.bios_version:
     description: System bios version.
+    requirement_level: recommended
     type: string
   system.id:
     description: System id.
+    requirement_level: recommended
     type: string
   system.manufacturer:
     description: System manufacturer.
+    requirement_level: recommended
     type: string
   system.model:
     description: System model.
+    requirement_level: recommended
     type: string
   system.name:
     description: System name.
+    requirement_level: recommended
     type: string
   system.serial_number:
     description: System serial number.
+    requirement_level: recommended
     type: string
   system.sku:
     description: System sku.
+    requirement_level: recommended
     type: string
   system.system_type:
     description: System type.
+    requirement_level: recommended
     type: string
   temperature.name:
     description: Temperature name.
+    requirement_level: recommended
     type: string
 
 metrics:
