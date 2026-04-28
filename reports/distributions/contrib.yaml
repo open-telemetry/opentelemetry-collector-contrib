@@ -11,7 +11,7 @@ components:
         - otlpjson
         - roundrobin
         - routing
-        - servicegraph
+        - service_graph
         - signal_to_metrics
         - span_metrics
         - sum

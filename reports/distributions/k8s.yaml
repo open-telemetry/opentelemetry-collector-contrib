@@ -9,7 +9,7 @@ components:
         - otlpjson
         - roundrobin
         - routing
-        - servicegraph
+        - service_graph
     exporter:
         - file
         - loadbalancing
