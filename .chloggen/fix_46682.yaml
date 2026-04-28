@@ -17,8 +17,8 @@ issues: [46682]
 # Use pipe (|) for multiline entries.
 subtext: |
   This changes the default behavior to emit the new semantic convention attributes instead of the old deprecated ones.
-  The Zipkin translator will now use network.local.address (replacing net.host.ip), network.peer.address (replacing net.peer.ip),
-  and service.peer.name (replacing peer.service) by default when emitting spans.
+  The Zipkin translator will now use `network.local.address` (replacing `net.host.ip`), `network.peer.address` (replacing `net.peer.ip`),
+  and `service.peer.name` (replacing `peer.service`) by default when emitting spans.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
