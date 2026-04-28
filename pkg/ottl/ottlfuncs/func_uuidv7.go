@@ -26,5 +26,5 @@ func createUUIDv7Function[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl
 }
 
 func NewUUIDv7Factory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("UUIDv7", nil, createUUIDv7Function[K])
+	return ottl.NewFactory("UUIDv7", nil, createUUIDv7Function[K], ottl.NonDeterministicConverter[K]())
 }

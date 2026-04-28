@@ -12,7 +12,7 @@ import (
 
 // Deprecated: [v0.142.0] use NewIsRootSpanFactoryNew.
 func NewIsRootSpanFactory() ottl.Factory[ottlspan.TransformContext] {
-	return ottl.NewFactory("IsRootSpan", nil, createIsRootSpanFunctionLegacy)
+	return ottl.NewFactory("IsRootSpan", nil, createIsRootSpanFunctionLegacy, ottl.NonDeterministicConverter[ottlspan.TransformContext]())
 }
 
 func createIsRootSpanFunctionLegacy(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
@@ -22,7 +22,7 @@ func createIsRootSpanFunctionLegacy(_ ottl.FunctionContext, _ ottl.Arguments) (o
 }
 
 func NewIsRootSpanFactoryNew() ottl.Factory[*ottlspan.TransformContext] {
-	return ottl.NewFactory("IsRootSpan", nil, createIsRootSpanFunction)
+	return ottl.NewFactory("IsRootSpan", nil, createIsRootSpanFunction, ottl.NonDeterministicConverter[*ottlspan.TransformContext]())
 }
 
 func createIsRootSpanFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[*ottlspan.TransformContext], error) {

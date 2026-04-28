@@ -591,7 +591,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newFunctionCall(tt.inv)
+			_, _, err := p.newFunctionCall(tt.inv)
 			t.Log(err)
 			assert.Error(t, err)
 		})
@@ -1909,7 +1909,7 @@ func Test_NewFunctionCall(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fn, err := p.newFunctionCall(tt.inv)
+			fn, _, err := p.newFunctionCall(tt.inv)
 			require.NoError(t, err)
 
 			result, err := fn.Eval(t.Context(), nil)
@@ -1996,12 +1996,12 @@ func Test_ArgumentsNotMutated(t *testing.T) {
 		},
 	}
 
-	fn, err := p.newFunctionCall(invWithOptArg)
+	fn, _, err := p.newFunctionCall(invWithOptArg)
 	require.NoError(t, err)
 	res, _ := fn.Eval(t.Context(), nil)
 	require.Equal(t, 4, res)
 
-	fn, err = p.newFunctionCall(invWithoutOptArg)
+	fn, _, err = p.newFunctionCall(invWithoutOptArg)
 	require.NoError(t, err)
 	res, _ = fn.Eval(t.Context(), nil)
 	require.Equal(t, 2, res)
@@ -3037,4 +3037,226 @@ func Test_Optional_GetOr(t *testing.T) {
 
 	setOpt := NewTestingOptional[string]("foo")
 	assert.Equal(t, "foo", setOpt.GetOr("bar"))
+}
+
+func Test_NonDeterministicConverter_PreventsConstantFolding(t *testing.T) {
+	callCount := 0
+
+	// A factory with no arguments and no NonDeterministicConverter option.
+	// Because all converters are deterministic by default, newFunctionCall
+	// should report canFold=true when there are no arguments (trivially
+	// "all-literal").
+	deterministicFactory := NewFactory(
+		"Testing_deterministic",
+		nil,
+		func(FunctionContext, Arguments) (ExprFunc[any], error) {
+			return func(context.Context, any) (any, error) {
+				callCount++
+				return callCount, nil
+			}, nil
+		},
+	)
+
+	// A factory with NonDeterministicConverter. Even though it has no
+	// arguments, newFunctionCall should report canFold=false so the
+	// parser never evaluates it at parse time.
+	nonDeterministicFactory := NewFactory(
+		"Testing_nondeterministic",
+		nil,
+		func(FunctionContext, Arguments) (ExprFunc[any], error) {
+			return func(context.Context, any) (any, error) {
+				callCount++
+				return callCount, nil
+			}, nil
+		},
+		NonDeterministicConverter[any](),
+	)
+
+	p, _ := NewParser(
+		CreateFactoryMap(deterministicFactory, nonDeterministicFactory),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	// Deterministic converter with no arguments → canFold must be true.
+	_, canFold, err := p.newFunctionCall(editor{
+		Function:  "Testing_deterministic",
+		Arguments: []argument{},
+	})
+	require.NoError(t, err)
+	assert.True(t, canFold, "deterministic converter with no args should be foldable")
+
+	// Non-deterministic converter with no arguments → canFold must be false.
+	_, canFold, err = p.newFunctionCall(editor{
+		Function:  "Testing_nondeterministic",
+		Arguments: []argument{},
+	})
+	require.NoError(t, err)
+	assert.False(t, canFold, "non-deterministic converter should never be foldable")
+}
+
+func Test_NonDeterministicConverter_PanicsForEditor(t *testing.T) {
+	// NonDeterministicConverter must only be used with converters (uppercase
+	// name). Applying it to an editor (lowercase name) should panic at
+	// factory creation time.
+	assert.Panics(t, func() {
+		NewFactory[any](
+			"lowercase_editor",
+			nil,
+			func(FunctionContext, Arguments) (ExprFunc[any], error) {
+				return func(context.Context, any) (any, error) { return nil, nil }, nil
+			},
+			NonDeterministicConverter[any](),
+		)
+	})
+}
+
+func Test_tryFoldConstant_RecoversPanic(t *testing.T) {
+	// A deterministic converter that panics when called with a zero-value
+	// context (simulating converters that dereference the transform context).
+	// tryFoldConstant must recover and fall back to runtime evaluation.
+	panicFactory := NewFactory(
+		"Testing_panicker",
+		nil,
+		func(FunctionContext, Arguments) (ExprFunc[any], error) {
+			return func(_ context.Context, tCtx any) (any, error) {
+				// Force a nil dereference to simulate accessing span/metric context
+				_ = tCtx.(string)
+				return "unreachable", nil
+			}, nil
+		},
+	)
+
+	p, _ := NewParser(
+		CreateFactoryMap(panicFactory),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	reader, err := p.newGetter(value{
+		Literal: &mathExprLiteral{
+			Converter: &converter{
+				Function: "Testing_panicker",
+			},
+		},
+	})
+	require.NoError(t, err)
+	// Folding should have failed (panic recovered), so the result
+	// is NOT a literal — it remains an exprGetter for runtime evaluation.
+	_, isLiteral := reader.(literalGetter)
+	assert.False(t, isLiteral, "panicking converter should not be folded to a literal")
+}
+
+func Test_MixedLiteralSliceArgs_PreventsConstantFolding(t *testing.T) {
+	type sliceArgs struct {
+		Values []Getter[any]
+	}
+
+	sliceFactory := NewFactory(
+		"Testing_slicefn",
+		&sliceArgs{},
+		func(_ FunctionContext, oArgs Arguments) (ExprFunc[any], error) {
+			args := oArgs.(*sliceArgs)
+			return func(_ context.Context, _ any) (any, error) {
+				return len(args.Values), nil
+			}, nil
+		},
+	)
+
+	p, _ := NewParser(
+		CreateFactoryMap(sliceFactory),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	// Mix a literal string with a path reference — the path makes
+	// the overall argument list non-literal.
+	_, canFold, err := p.newFunctionCall(editor{
+		Function: "Testing_slicefn",
+		Arguments: []argument{
+			{
+				Value: value{
+					List: &list{
+						Values: []value{
+							{
+								String: ottltest.Strp("literal"),
+							},
+							{
+								Literal: &mathExprLiteral{
+									Path: &path{
+										Fields: []field{
+											{Name: "name"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	assert.False(t, canFold, "slice with mixed literal and path args should not be foldable")
+
+	// All-literal slice should be foldable.
+	_, canFold, err = p.newFunctionCall(editor{
+		Function: "Testing_slicefn",
+		Arguments: []argument{
+			{
+				Value: value{
+					List: &list{
+						Values: []value{
+							{
+								String: ottltest.Strp("a"),
+							},
+							{
+								String: ottltest.Strp("b"),
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	assert.True(t, canFold, "slice with all-literal args should be foldable")
+}
+
+func Test_ConstantFolding_ProducesLiteralGetter(t *testing.T) {
+	foldableFactory := NewFactory(
+		"Testing_foldable",
+		nil,
+		func(FunctionContext, Arguments) (ExprFunc[any], error) {
+			return func(context.Context, any) (any, error) {
+				return "folded_value", nil
+			}, nil
+		},
+	)
+
+	p, _ := NewParser(
+		CreateFactoryMap(foldableFactory),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	reader, err := p.newGetter(value{
+		Literal: &mathExprLiteral{
+			Converter: &converter{
+				Function: "Testing_foldable",
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	_, isLiteral := reader.(literalGetter)
+	assert.True(t, isLiteral, "deterministic converter with no args should fold to a literalGetter")
+
+	val, err := reader.Get(t.Context(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, "folded_value", val)
 }

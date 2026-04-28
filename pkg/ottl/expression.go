@@ -1165,14 +1165,46 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 }
 
 func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
-	call, err := p.newFunctionCall(editor(c))
+	call, canFold, err := p.newFunctionCall(editor(c))
 	if err != nil {
 		return nil, err
 	}
-	return &exprGetter[K]{
+
+	exprG := &exprGetter[K]{
 		expr: call,
 		keys: c.Keys,
-	}, nil
+	}
+
+	if canFold && len(c.Keys) == 0 {
+		// If the converter is deterministic and all its arguments are literals,
+		// we can evaluate it statically at parse time. We skip folding when keys
+		// are present because the returned value might not support extracting
+		// literal keys at parse time easily.
+		// We also skip folding when the result is nil, as that typically indicates
+		// the converter needs actual runtime context to produce a meaningful value.
+		if val, ok := tryFoldConstant(exprG); ok {
+			return newLiteral[K, any](val), nil
+		}
+	}
+
+	return exprG, nil
+}
+
+// tryFoldConstant attempts to evaluate a getter at parse time for constant
+// folding. It calls the getter with a zero-value context and recovers from
+// any panics that may occur when the converter accesses the transform context.
+func tryFoldConstant[K any](g Getter[K]) (val any, ok bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			val = nil
+			ok = false
+		}
+	}()
+	v, err := g.Get(context.Background(), *new(K))
+	if err != nil || v == nil {
+		return nil, false
+	}
+	return v, true
 }
 
 // TimeGetter is a Getter that must return a time.Time.

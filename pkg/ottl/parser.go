@@ -152,7 +152,7 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	function, err := p.newFunctionCall(parsed.Editor)
+	function, _, err := p.newFunctionCall(parsed.Editor)
 	if err != nil {
 		return nil, err
 	}
