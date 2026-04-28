@@ -360,4 +360,3 @@ func TestCputicksEmitter_ZeroDelta(t *testing.T) {
 	}
 	t.Fatal("system.cpu.utilization metric not found")
 }
-
