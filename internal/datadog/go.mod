@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.16
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.22
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.298.0
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.299.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.150.0
