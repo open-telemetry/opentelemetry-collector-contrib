@@ -1,7 +1,7 @@
 github.com/IBM/sarama v1.47.0 h1:GcQFEd12+KzfPYeLgN69Fh7vLCtYRhVIx0rO4TZO318=
 github.com/IBM/sarama v1.47.0/go.mod h1:7gLLIU97nznOmA6TX++Qds+DRxH89P2XICY2KAQUzAY=
-github.com/apache/thrift v0.22.0 h1:r7mTJdj51TMDe6RtcmNdQxgn9XcyfGDOzegMDRg47uc=
-github.com/apache/thrift v0.22.0/go.mod h1:1e7J/O1Ae6ZQMTYdy9xa3w9k+XHWPfRvdPyJeynQ+/g=
+github.com/apache/thrift v0.23.0 h1:wKR6YnefQSEnxpEfmgTPuJibNG4bF0p2TK34tHLWi3s=
+github.com/apache/thrift v0.23.0/go.mod h1:zPt6WxgvTOM6hF92y8C+MkEM5LMxZuk4JcQOiU4Esvs=
 github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 h1:2jAwFwA0Xgcx94dUId+K24yFabsKYDtAhCgyMit6OqE=
 github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4/go.mod h1:MVYeeOhILFFemC/XlYTClvBjYZrg/EPd3ts885KrNTI=
 github.com/aws/aws-sdk-go-v2 v1.36.4 h1:GySzjhVvx0ERP6eyfAbAuAXLtAda5TEy19E5q5W8I9E=

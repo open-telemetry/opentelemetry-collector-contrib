@@ -47,7 +47,7 @@ require (
 
 require (
 	github.com/IBM/sarama v1.47.0 // indirect
-	github.com/apache/thrift v0.22.0 // indirect
+	github.com/apache/thrift v0.23.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.16 // indirect
