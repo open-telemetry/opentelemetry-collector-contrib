@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 )
@@ -92,6 +93,8 @@ type ResourceAttrsToS3 struct {
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+
 	QueueSettings   configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	TimeoutSettings exporterhelper.TimeoutConfig                             `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	S3Uploader      S3UploaderConfig                                         `mapstructure:"s3uploader"`
