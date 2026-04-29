@@ -56,7 +56,7 @@ func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *c
 func newGopsutilEmitter(times func(context.Context, bool) ([]cpu.TimesStat, error)) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
 	calc := &ucal.CPUUtilizationCalculator{}
 	return func(ctx context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
-		cpuTimes, err := times(ctx, true)
+		cpuTimes, err := times(ctx, true /*percpu=*/)
 		if err != nil {
 			return err
 		}
