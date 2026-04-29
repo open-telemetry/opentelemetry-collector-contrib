@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/prometheus_remote_write
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add warning logging when dropping histograms with invalid schema values
+note: Add debug logging when dropping histograms with invalid schema values
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48027]

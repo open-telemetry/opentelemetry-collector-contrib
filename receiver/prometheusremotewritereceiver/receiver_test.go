@@ -2463,9 +2463,9 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 	})
 }
 
-// TestInvalidSchemaLogging verifies that invalid histogram schemas trigger warning logs
+// TestInvalidSchemaLogging verifies that invalid histogram schemas trigger debug logs
 func TestInvalidSchemaLogging(t *testing.T) {
-	core, obs := observer.New(zapcore.WarnLevel)
+	core, obs := observer.New(zapcore.DebugLevel)
 	logger := zap.New(core)
 
 	factory := NewFactory()
@@ -2526,9 +2526,9 @@ func TestInvalidSchemaLogging(t *testing.T) {
 	assert.Equal(t, 0, metrics.MetricCount())
 	assert.Equal(t, 0, stats.Histograms)
 
-	// Verify that warning log was emitted for the invalid schema
+	// Verify that debug log was emitted for the invalid schema
 	logs := obs.All()
-	require.Len(t, logs, 1, "Expected 1 warning log for invalid schema")
+	require.Len(t, logs, 1, "Expected 1 debug log for invalid schema")
 
 	// Check log entry
 	assert.Equal(t, "Dropping histogram with invalid schema", logs[0].Message)
