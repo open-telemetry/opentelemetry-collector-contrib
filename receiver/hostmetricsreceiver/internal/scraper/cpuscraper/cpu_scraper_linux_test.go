@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/cputicks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -176,57 +178,16 @@ func TestCputicksEmitter_Utilization(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 2, md.MetricCount())
-	metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
-	findMetric := func(name string) pmetric.Metric {
-		for _, m := range metrics.All() {
-			if m.Name() == name {
-				return m
-			}
-		}
-		t.Fatalf("metric not found: %s", name)
-		return pmetric.Metric{}
-	}
-
-	findDP := func(metric pmetric.Metric, cpuName, state string) float64 {
-		var dp pmetric.NumberDataPointSlice
-		switch metric.Type() {
-		case pmetric.MetricTypeSum:
-			dp = metric.Sum().DataPoints()
-		case pmetric.MetricTypeGauge:
-			dp = metric.Gauge().DataPoints()
-		}
-		for i := range dp.Len() {
-			p := dp.At(i)
-			cpuAttr, _ := p.Attributes().Get("cpu")
-			stateAttr, _ := p.Attributes().Get("state")
-			if cpuAttr.Str() == cpuName && stateAttr.Str() == state {
-				return p.DoubleValue()
-			}
-		}
-		t.Fatalf("datapoint not found: metric=%s cpu=%s state=%s", metric.Name(), cpuName, state)
-		return 0
-	}
-
-	timeMetric := findMetric("system.cpu.time")
-	assert.InDelta(t, 3.0, findDP(timeMetric, "cpu0", "user"), 0.001)
-	assert.InDelta(t, 0.75, findDP(timeMetric, "cpu0", "nice"), 0.001)
-	assert.InDelta(t, 1.5, findDP(timeMetric, "cpu0", "system"), 0.001)
-	assert.InDelta(t, 6.0, findDP(timeMetric, "cpu0", "idle"), 0.001)
-	assert.InDelta(t, 0.75, findDP(timeMetric, "cpu0", "wait"), 0.001)
-	assert.InDelta(t, 0.75, findDP(timeMetric, "cpu0", "interrupt"), 0.001)
-	assert.InDelta(t, 0.75, findDP(timeMetric, "cpu0", "softirq"), 0.001)
-	assert.InDelta(t, 1.5, findDP(timeMetric, "cpu0", "steal"), 0.001)
-
-	utilMetric := findMetric("system.cpu.utilization")
-	assert.InDelta(t, 0.2, findDP(utilMetric, "cpu0", "user"), 0.001)
-	assert.InDelta(t, 0.05, findDP(utilMetric, "cpu0", "nice"), 0.001)
-	assert.InDelta(t, 0.1, findDP(utilMetric, "cpu0", "system"), 0.001)
-	assert.InDelta(t, 0.4, findDP(utilMetric, "cpu0", "idle"), 0.001)
-	assert.InDelta(t, 0.05, findDP(utilMetric, "cpu0", "wait"), 0.001)
-	assert.InDelta(t, 0.05, findDP(utilMetric, "cpu0", "interrupt"), 0.001)
-	assert.InDelta(t, 0.05, findDP(utilMetric, "cpu0", "softirq"), 0.001)
-	assert.InDelta(t, 0.1, findDP(utilMetric, "cpu0", "steal"), 0.001)
+	expectedFile := filepath.Join("testdata", "cputicks_utilization_expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, md,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	))
 }
 
 func TestCputicksEmitter_NewCPUAppears(t *testing.T) {
