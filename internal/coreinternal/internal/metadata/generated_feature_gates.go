@@ -8,7 +8,7 @@ import (
 
 var InternalCoreinternalGoldendatasetDontEmitV0NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.DontEmitV0NetworkConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, goldendataset no longer generates spans with deprecated semconv v1.12.0 attributes (net.host.ip, net.peer.ip, http.host, http.server_name)."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
@@ -24,7 +24,7 @@ var InternalCoreinternalGoldendatasetDontEmitV0RPCConventionsFeatureGate = featu
 
 var InternalCoreinternalGoldendatasetEmitV1NetworkConventionsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"internal.coreinternal.goldendataset.EmitV1NetworkConventions",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, goldendataset generates spans with network.local.address, network.peer.address, and server.address (semconv v1.38.0) instead of the deprecated net.host.ip, net.peer.ip, http.host, http.server_name (semconv v1.12.0). Enable together with pkg.translator.zipkin.EmitV1NetworkConventions for consistent round-trip translation in tests."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/45076"),
 	featuregate.WithRegisterFromVersion("v0.147.0"),
