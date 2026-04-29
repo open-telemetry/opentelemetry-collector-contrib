@@ -153,6 +153,7 @@ func (r *awss3Receiver) receiveBytes(ctx context.Context, key string, data []byt
 				err = closeErr
 			}
 		}()
+		key = strings.TrimSuffix(key, ".zst")
 		data, err = io.ReadAll(decompressedReader)
 		if err != nil {
 			return err
