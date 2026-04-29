@@ -72,6 +72,9 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["sqlserver.database.latency"] = mb.metricSqlserverDatabaseLatency.config.AggregationStrategy
 			aggMap["sqlserver.database.operations"] = mb.metricSqlserverDatabaseOperations.config.AggregationStrategy
 			aggMap["sqlserver.database.tempdb.space"] = mb.metricSqlserverDatabaseTempdbSpace.config.AggregationStrategy
+			aggMap["sqlserver.memory.area"] = mb.metricSqlserverMemoryArea.config.AggregationStrategy
+			aggMap["sqlserver.memory.cache.object.count"] = mb.metricSqlserverMemoryCacheObjectCount.config.AggregationStrategy
+			aggMap["sqlserver.memory.page.count"] = mb.metricSqlserverMemoryPageCount.config.AggregationStrategy
 			aggMap["sqlserver.os.wait.duration"] = mb.metricSqlserverOsWaitDuration.config.AggregationStrategy
 			aggMap["sqlserver.page.life_expectancy"] = mb.metricSqlserverPageLifeExpectancy.config.AggregationStrategy
 			aggMap["sqlserver.page.operation.rate"] = mb.metricSqlserverPageOperationRate.config.AggregationStrategy
@@ -174,7 +177,25 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverLogoutRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverMemoryAreaDataPoint(ts, 1, AttributeMemoryAreaTarget)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverMemoryAreaDataPoint(ts, 3, AttributeMemoryAreaTotal)
+			}
+
+			allMetricsCount++
+			mb.RecordSqlserverMemoryCacheObjectCountDataPoint(ts, 1, AttributeCacheStateInUse)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverMemoryCacheObjectCountDataPoint(ts, 3, AttributeCacheStateTotal)
+			}
+
+			allMetricsCount++
 			mb.RecordSqlserverMemoryGrantsPendingCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverMemoryPageCountDataPoint(ts, 1, AttributePagePoolCache)
+			if tt.name == "reaggregate_set" {
+				mb.RecordSqlserverMemoryPageCountDataPoint(ts, 3, AttributePagePoolTotal)
+			}
 
 			allMetricsCount++
 			mb.RecordSqlserverMemoryUsageDataPoint(ts, 1)
@@ -306,6 +327,9 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricSqlserverDatabaseLatency.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseOperations.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverDatabaseTempdbSpace.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverMemoryArea.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverMemoryCacheObjectCount.aggDataPoints)
+				assert.Empty(t, mb.metricSqlserverMemoryPageCount.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverOsWaitDuration.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverPageLifeExpectancy.aggDataPoints)
 				assert.Empty(t, mb.metricSqlserverPageOperationRate.aggDataPoints)
@@ -806,6 +830,86 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "sqlserver.memory.area":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.memory.area"], "Found a duplicate in the metrics slice: sqlserver.memory.area")
+						validatedMetrics["sqlserver.memory.area"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of memory used by the SQL Server memory area.", mi.Description())
+						assert.Equal(t, "KBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						memoryAreaAttrVal, ok := dp.Attributes().Get("memory.area")
+						assert.True(t, ok)
+						assert.Equal(t, "target", memoryAreaAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.memory.area"], "Found a duplicate in the metrics slice: sqlserver.memory.area")
+						validatedMetrics["sqlserver.memory.area"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Amount of memory used by the SQL Server memory area.", mi.Description())
+						assert.Equal(t, "KBy", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.memory.area"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("memory.area")
+						assert.False(t, ok)
+					}
+				case "sqlserver.memory.cache.object.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.memory.cache.object.count"], "Found a duplicate in the metrics slice: sqlserver.memory.cache.object.count")
+						validatedMetrics["sqlserver.memory.cache.object.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of cache objects in the SQL Server cache.", mi.Description())
+						assert.Equal(t, "{objects}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						cacheStateAttrVal, ok := dp.Attributes().Get("cache.state")
+						assert.True(t, ok)
+						assert.Equal(t, "in_use", cacheStateAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.memory.cache.object.count"], "Found a duplicate in the metrics slice: sqlserver.memory.cache.object.count")
+						validatedMetrics["sqlserver.memory.cache.object.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of cache objects in the SQL Server cache.", mi.Description())
+						assert.Equal(t, "{objects}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.memory.cache.object.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("cache.state")
+						assert.False(t, ok)
+					}
 				case "sqlserver.memory.grants.pending.count":
 					assert.False(t, validatedMetrics["sqlserver.memory.grants.pending.count"], "Found a duplicate in the metrics slice: sqlserver.memory.grants.pending.count")
 					validatedMetrics["sqlserver.memory.grants.pending.count"] = true
@@ -820,6 +924,46 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.memory.page.count":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["sqlserver.memory.page.count"], "Found a duplicate in the metrics slice: sqlserver.memory.page.count")
+						validatedMetrics["sqlserver.memory.page.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of pages in the SQL Server buffer pool.", mi.Description())
+						assert.Equal(t, "{pages}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						pagePoolAttrVal, ok := dp.Attributes().Get("page.pool")
+						assert.True(t, ok)
+						assert.Equal(t, "cache", pagePoolAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["sqlserver.memory.page.count"], "Found a duplicate in the metrics slice: sqlserver.memory.page.count")
+						validatedMetrics["sqlserver.memory.page.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "Number of pages in the SQL Server buffer pool.", mi.Description())
+						assert.Equal(t, "{pages}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["sqlserver.memory.page.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("page.pool")
+						assert.False(t, ok)
+					}
 				case "sqlserver.memory.usage":
 					assert.False(t, validatedMetrics["sqlserver.memory.usage"], "Found a duplicate in the metrics slice: sqlserver.memory.usage")
 					validatedMetrics["sqlserver.memory.usage"] = true

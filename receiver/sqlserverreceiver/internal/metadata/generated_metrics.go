@@ -22,6 +22,32 @@ const (
 	AggregationStrategyMax = "max"
 )
 
+// AttributeCacheState specifies the value cache.state attribute.
+type AttributeCacheState int
+
+const (
+	_ AttributeCacheState = iota
+	AttributeCacheStateInUse
+	AttributeCacheStateTotal
+)
+
+// String returns the string representation of the AttributeCacheState.
+func (av AttributeCacheState) String() string {
+	switch av {
+	case AttributeCacheStateInUse:
+		return "in_use"
+	case AttributeCacheStateTotal:
+		return "total"
+	}
+	return ""
+}
+
+// MapAttributeCacheState is a helper map of string to AttributeCacheState attribute value.
+var MapAttributeCacheState = map[string]AttributeCacheState{
+	"in_use": AttributeCacheStateInUse,
+	"total":  AttributeCacheStateTotal,
+}
+
 // AttributeDatabaseStatus specifies the value database.status attribute.
 type AttributeDatabaseStatus int
 
@@ -90,6 +116,52 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
+// AttributeMemoryArea specifies the value memory.area attribute.
+type AttributeMemoryArea int
+
+const (
+	_ AttributeMemoryArea = iota
+	AttributeMemoryAreaTarget
+	AttributeMemoryAreaTotal
+	AttributeMemoryAreaSQLCache
+	AttributeMemoryAreaOptimizer
+	AttributeMemoryAreaConnection
+	AttributeMemoryAreaGrantedWorkspace
+	AttributeMemoryAreaMaxWorkspace
+)
+
+// String returns the string representation of the AttributeMemoryArea.
+func (av AttributeMemoryArea) String() string {
+	switch av {
+	case AttributeMemoryAreaTarget:
+		return "target"
+	case AttributeMemoryAreaTotal:
+		return "total"
+	case AttributeMemoryAreaSQLCache:
+		return "sql_cache"
+	case AttributeMemoryAreaOptimizer:
+		return "optimizer"
+	case AttributeMemoryAreaConnection:
+		return "connection"
+	case AttributeMemoryAreaGrantedWorkspace:
+		return "granted_workspace"
+	case AttributeMemoryAreaMaxWorkspace:
+		return "max_workspace"
+	}
+	return ""
+}
+
+// MapAttributeMemoryArea is a helper map of string to AttributeMemoryArea attribute value.
+var MapAttributeMemoryArea = map[string]AttributeMemoryArea{
+	"target":            AttributeMemoryAreaTarget,
+	"total":             AttributeMemoryAreaTotal,
+	"sql_cache":         AttributeMemoryAreaSQLCache,
+	"optimizer":         AttributeMemoryAreaOptimizer,
+	"connection":        AttributeMemoryAreaConnection,
+	"granted_workspace": AttributeMemoryAreaGrantedWorkspace,
+	"max_workspace":     AttributeMemoryAreaMaxWorkspace,
+}
+
 // AttributePageOperations specifies the value page.operations attribute.
 type AttributePageOperations int
 
@@ -114,6 +186,52 @@ func (av AttributePageOperations) String() string {
 var MapAttributePageOperations = map[string]AttributePageOperations{
 	"read":  AttributePageOperationsRead,
 	"write": AttributePageOperationsWrite,
+}
+
+// AttributePagePool specifies the value page.pool attribute.
+type AttributePagePool int
+
+const (
+	_ AttributePagePool = iota
+	AttributePagePoolCache
+	AttributePagePoolTotal
+	AttributePagePoolTarget
+	AttributePagePoolDatabase
+	AttributePagePoolStolen
+	AttributePagePoolReserved
+	AttributePagePoolFree
+)
+
+// String returns the string representation of the AttributePagePool.
+func (av AttributePagePool) String() string {
+	switch av {
+	case AttributePagePoolCache:
+		return "cache"
+	case AttributePagePoolTotal:
+		return "total"
+	case AttributePagePoolTarget:
+		return "target"
+	case AttributePagePoolDatabase:
+		return "database"
+	case AttributePagePoolStolen:
+		return "stolen"
+	case AttributePagePoolReserved:
+		return "reserved"
+	case AttributePagePoolFree:
+		return "free"
+	}
+	return ""
+}
+
+// MapAttributePagePool is a helper map of string to AttributePagePool attribute value.
+var MapAttributePagePool = map[string]AttributePagePool{
+	"cache":    AttributePagePoolCache,
+	"total":    AttributePagePoolTotal,
+	"target":   AttributePagePoolTarget,
+	"database": AttributePagePoolDatabase,
+	"stolen":   AttributePagePoolStolen,
+	"reserved": AttributePagePoolReserved,
+	"free":     AttributePagePoolFree,
 }
 
 // AttributeReplicaDirection specifies the value replica.direction attribute.
@@ -287,8 +405,17 @@ var MetricsInfo = metricsInfo{
 	SqlserverLogoutRate: metricInfo{
 		Name: "sqlserver.logout.rate",
 	},
+	SqlserverMemoryArea: metricInfo{
+		Name: "sqlserver.memory.area",
+	},
+	SqlserverMemoryCacheObjectCount: metricInfo{
+		Name: "sqlserver.memory.cache.object.count",
+	},
 	SqlserverMemoryGrantsPendingCount: metricInfo{
 		Name: "sqlserver.memory.grants.pending.count",
+	},
+	SqlserverMemoryPageCount: metricInfo{
+		Name: "sqlserver.memory.page.count",
 	},
 	SqlserverMemoryUsage: metricInfo{
 		Name: "sqlserver.memory.usage",
@@ -396,7 +523,10 @@ type metricsInfo struct {
 	SqlserverLockWaitTimeAvg                    metricInfo
 	SqlserverLoginRate                          metricInfo
 	SqlserverLogoutRate                         metricInfo
+	SqlserverMemoryArea                         metricInfo
+	SqlserverMemoryCacheObjectCount             metricInfo
 	SqlserverMemoryGrantsPendingCount           metricInfo
+	SqlserverMemoryPageCount                    metricInfo
 	SqlserverMemoryUsage                        metricInfo
 	SqlserverOsWaitDuration                     metricInfo
 	SqlserverPageBufferCacheFreeListStallsRate  metricInfo
@@ -1762,6 +1892,184 @@ func newMetricSqlserverLogoutRate(cfg SqlserverLogoutRateMetricConfig) metricSql
 	return m
 }
 
+type metricSqlserverMemoryArea struct {
+	data          pmetric.Metric                  // data buffer for generated metric.
+	config        SqlserverMemoryAreaMetricConfig // metric config provided by user.
+	capacity      int                             // max observed number of data points added to the metric.
+	aggDataPoints []int64                         // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.memory.area metric with initial data.
+func (m *metricSqlserverMemoryArea) init() {
+	m.data.SetName("sqlserver.memory.area")
+	m.data.SetDescription("Amount of memory used by the SQL Server memory area.")
+	m.data.SetUnit("KBy")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverMemoryArea) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryAreaAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryAreaMetricAttributeKeyMemoryArea) {
+		dp.Attributes().PutStr("memory.area", memoryAreaAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverMemoryArea) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverMemoryArea) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverMemoryArea(cfg SqlserverMemoryAreaMetricConfig) metricSqlserverMemoryArea {
+	m := metricSqlserverMemoryArea{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverMemoryCacheObjectCount struct {
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        SqlserverMemoryCacheObjectCountMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.memory.cache.object.count metric with initial data.
+func (m *metricSqlserverMemoryCacheObjectCount) init() {
+	m.data.SetName("sqlserver.memory.cache.object.count")
+	m.data.SetDescription("Number of cache objects in the SQL Server cache.")
+	m.data.SetUnit("{objects}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverMemoryCacheObjectCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryCacheObjectCountMetricAttributeKeyCacheState) {
+		dp.Attributes().PutStr("cache.state", cacheStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverMemoryCacheObjectCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverMemoryCacheObjectCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverMemoryCacheObjectCount(cfg SqlserverMemoryCacheObjectCountMetricConfig) metricSqlserverMemoryCacheObjectCount {
+	m := metricSqlserverMemoryCacheObjectCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverMemoryGrantsPendingCount struct {
 	data     pmetric.Metric                                // data buffer for generated metric.
 	config   SqlserverMemoryGrantsPendingCountMetricConfig // metric config provided by user.
@@ -1806,6 +2114,95 @@ func (m *metricSqlserverMemoryGrantsPendingCount) emit(metrics pmetric.MetricSli
 
 func newMetricSqlserverMemoryGrantsPendingCount(cfg SqlserverMemoryGrantsPendingCountMetricConfig) metricSqlserverMemoryGrantsPendingCount {
 	m := metricSqlserverMemoryGrantsPendingCount{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverMemoryPageCount struct {
+	data          pmetric.Metric                       // data buffer for generated metric.
+	config        SqlserverMemoryPageCountMetricConfig // metric config provided by user.
+	capacity      int                                  // max observed number of data points added to the metric.
+	aggDataPoints []int64                              // slice containing number of aggregated datapoints at each index
+}
+
+// init fills sqlserver.memory.page.count metric with initial data.
+func (m *metricSqlserverMemoryPageCount) init() {
+	m.data.SetName("sqlserver.memory.page.count")
+	m.data.SetDescription("Number of pages in the SQL Server buffer pool.")
+	m.data.SetUnit("{pages}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSqlserverMemoryPageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pagePoolAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SqlserverMemoryPageCountMetricAttributeKeyPagePool) {
+		dp.Attributes().PutStr("page.pool", pagePoolAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverMemoryPageCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverMemoryPageCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetIntValue(m.data.Gauge().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverMemoryPageCount(cfg SqlserverMemoryPageCountMetricConfig) metricSqlserverMemoryPageCount {
+	m := metricSqlserverMemoryPageCount{config: cfg}
 
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
@@ -3448,7 +3845,10 @@ type MetricsBuilder struct {
 	metricSqlserverLockWaitTimeAvg                    metricSqlserverLockWaitTimeAvg
 	metricSqlserverLoginRate                          metricSqlserverLoginRate
 	metricSqlserverLogoutRate                         metricSqlserverLogoutRate
+	metricSqlserverMemoryArea                         metricSqlserverMemoryArea
+	metricSqlserverMemoryCacheObjectCount             metricSqlserverMemoryCacheObjectCount
 	metricSqlserverMemoryGrantsPendingCount           metricSqlserverMemoryGrantsPendingCount
+	metricSqlserverMemoryPageCount                    metricSqlserverMemoryPageCount
 	metricSqlserverMemoryUsage                        metricSqlserverMemoryUsage
 	metricSqlserverOsWaitDuration                     metricSqlserverOsWaitDuration
 	metricSqlserverPageBufferCacheFreeListStallsRate  metricSqlserverPageBufferCacheFreeListStallsRate
@@ -3523,7 +3923,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSqlserverLockWaitTimeAvg:                    newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
 		metricSqlserverLoginRate:                          newMetricSqlserverLoginRate(mbc.Metrics.SqlserverLoginRate),
 		metricSqlserverLogoutRate:                         newMetricSqlserverLogoutRate(mbc.Metrics.SqlserverLogoutRate),
+		metricSqlserverMemoryArea:                         newMetricSqlserverMemoryArea(mbc.Metrics.SqlserverMemoryArea),
+		metricSqlserverMemoryCacheObjectCount:             newMetricSqlserverMemoryCacheObjectCount(mbc.Metrics.SqlserverMemoryCacheObjectCount),
 		metricSqlserverMemoryGrantsPendingCount:           newMetricSqlserverMemoryGrantsPendingCount(mbc.Metrics.SqlserverMemoryGrantsPendingCount),
+		metricSqlserverMemoryPageCount:                    newMetricSqlserverMemoryPageCount(mbc.Metrics.SqlserverMemoryPageCount),
 		metricSqlserverMemoryUsage:                        newMetricSqlserverMemoryUsage(mbc.Metrics.SqlserverMemoryUsage),
 		metricSqlserverOsWaitDuration:                     newMetricSqlserverOsWaitDuration(mbc.Metrics.SqlserverOsWaitDuration),
 		metricSqlserverPageBufferCacheFreeListStallsRate:  newMetricSqlserverPageBufferCacheFreeListStallsRate(mbc.Metrics.SqlserverPageBufferCacheFreeListStallsRate),
@@ -3687,7 +4090,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSqlserverLockWaitTimeAvg.emit(ils.Metrics())
 	mb.metricSqlserverLoginRate.emit(ils.Metrics())
 	mb.metricSqlserverLogoutRate.emit(ils.Metrics())
+	mb.metricSqlserverMemoryArea.emit(ils.Metrics())
+	mb.metricSqlserverMemoryCacheObjectCount.emit(ils.Metrics())
 	mb.metricSqlserverMemoryGrantsPendingCount.emit(ils.Metrics())
+	mb.metricSqlserverMemoryPageCount.emit(ils.Metrics())
 	mb.metricSqlserverMemoryUsage.emit(ils.Metrics())
 	mb.metricSqlserverOsWaitDuration.emit(ils.Metrics())
 	mb.metricSqlserverPageBufferCacheFreeListStallsRate.emit(ils.Metrics())
@@ -3881,9 +4287,24 @@ func (mb *MetricsBuilder) RecordSqlserverLogoutRateDataPoint(ts pcommon.Timestam
 	mb.metricSqlserverLogoutRate.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSqlserverMemoryAreaDataPoint adds a data point to sqlserver.memory.area metric.
+func (mb *MetricsBuilder) RecordSqlserverMemoryAreaDataPoint(ts pcommon.Timestamp, val int64, memoryAreaAttributeValue AttributeMemoryArea) {
+	mb.metricSqlserverMemoryArea.recordDataPoint(mb.startTime, ts, val, memoryAreaAttributeValue.String())
+}
+
+// RecordSqlserverMemoryCacheObjectCountDataPoint adds a data point to sqlserver.memory.cache.object.count metric.
+func (mb *MetricsBuilder) RecordSqlserverMemoryCacheObjectCountDataPoint(ts pcommon.Timestamp, val int64, cacheStateAttributeValue AttributeCacheState) {
+	mb.metricSqlserverMemoryCacheObjectCount.recordDataPoint(mb.startTime, ts, val, cacheStateAttributeValue.String())
+}
+
 // RecordSqlserverMemoryGrantsPendingCountDataPoint adds a data point to sqlserver.memory.grants.pending.count metric.
 func (mb *MetricsBuilder) RecordSqlserverMemoryGrantsPendingCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSqlserverMemoryGrantsPendingCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverMemoryPageCountDataPoint adds a data point to sqlserver.memory.page.count metric.
+func (mb *MetricsBuilder) RecordSqlserverMemoryPageCountDataPoint(ts pcommon.Timestamp, val int64, pagePoolAttributeValue AttributePagePool) {
+	mb.metricSqlserverMemoryPageCount.recordDataPoint(mb.startTime, ts, val, pagePoolAttributeValue.String())
 }
 
 // RecordSqlserverMemoryUsageDataPoint adds a data point to sqlserver.memory.usage metric.

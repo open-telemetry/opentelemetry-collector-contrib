@@ -50,8 +50,17 @@ all_set:
       enabled: true
     sqlserver.logout.rate:
       enabled: true
+    sqlserver.memory.area:
+      enabled: true
+      attributes: ["memory.area"]
+    sqlserver.memory.cache.object.count:
+      enabled: true
+      attributes: ["cache.state"]
     sqlserver.memory.grants.pending.count:
       enabled: true
+    sqlserver.memory.page.count:
+      enabled: true
+      attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: true
     sqlserver.os.wait.duration:
@@ -183,8 +192,17 @@ reaggregate_set:
       enabled: true
     sqlserver.logout.rate:
       enabled: true
+    sqlserver.memory.area:
+      enabled: true
+      attributes: []
+    sqlserver.memory.cache.object.count:
+      enabled: true
+      attributes: []
     sqlserver.memory.grants.pending.count:
       enabled: true
+    sqlserver.memory.page.count:
+      enabled: true
+      attributes: []
     sqlserver.memory.usage:
       enabled: true
     sqlserver.os.wait.duration:
@@ -316,8 +334,17 @@ none_set:
       enabled: false
     sqlserver.logout.rate:
       enabled: false
+    sqlserver.memory.area:
+      enabled: false
+      attributes: ["memory.area"]
+    sqlserver.memory.cache.object.count:
+      enabled: false
+      attributes: ["cache.state"]
     sqlserver.memory.grants.pending.count:
       enabled: false
+    sqlserver.memory.page.count:
+      enabled: false
+      attributes: ["page.pool"]
     sqlserver.memory.usage:
       enabled: false
     sqlserver.os.wait.duration:

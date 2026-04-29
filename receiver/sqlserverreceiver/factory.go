@@ -274,7 +274,10 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverLockWaitRate.Enabled ||
 		metrics.SqlserverLoginRate.Enabled ||
 		metrics.SqlserverLogoutRate.Enabled ||
+		metrics.SqlserverMemoryArea.Enabled ||
+		metrics.SqlserverMemoryCacheObjectCount.Enabled ||
 		metrics.SqlserverMemoryGrantsPendingCount.Enabled ||
+		metrics.SqlserverMemoryPageCount.Enabled ||
 		metrics.SqlserverMemoryUsage.Enabled ||
 		metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled ||
 		metrics.SqlserverPageBufferCacheHitRatio.Enabled ||

@@ -256,6 +256,52 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.memory.area:
+        description: "SqlserverMemoryAreaMetricConfig provides config for the sqlserver.memory.area metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "memory.area"
+            default:
+              - "memory.area"
+      sqlserver.memory.cache.object.count:
+        description: "SqlserverMemoryCacheObjectCountMetricConfig provides config for the sqlserver.memory.cache.object.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "cache.state"
+            default:
+              - "cache.state"
       sqlserver.memory.grants.pending.count:
         description: "SqlserverMemoryGrantsPendingCountMetricConfig provides config for the sqlserver.memory.grants.pending.count metric."
         type: object
@@ -263,6 +309,29 @@ $defs:
           enabled:
             type: boolean
             default: false
+      sqlserver.memory.page.count:
+        description: "SqlserverMemoryPageCountMetricConfig provides config for the sqlserver.memory.page.count metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "page.pool"
+            default:
+              - "page.pool"
       sqlserver.memory.usage:
         description: "SqlserverMemoryUsageMetricConfig provides config for the sqlserver.memory.usage metric."
         type: object

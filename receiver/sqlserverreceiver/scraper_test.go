@@ -56,7 +56,10 @@ func configureAllScraperMetricsAndEvents(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverLockWaitTimeAvg.Enabled = enabled
 	cfg.Metrics.SqlserverLoginRate.Enabled = enabled
 	cfg.Metrics.SqlserverLogoutRate.Enabled = enabled
+	cfg.Metrics.SqlserverMemoryArea.Enabled = enabled
+	cfg.Metrics.SqlserverMemoryCacheObjectCount.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryGrantsPendingCount.Enabled = enabled
+	cfg.Metrics.SqlserverMemoryPageCount.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryUsage.Enabled = enabled
 	cfg.Metrics.SqlserverOsWaitDuration.Enabled = enabled
 	cfg.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = enabled

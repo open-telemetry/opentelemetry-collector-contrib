@@ -598,6 +598,102 @@ func (ms *SqlserverLogoutRateMetricConfig) Unmarshal(parser *confmap.Conf) error
 	return nil
 }
 
+// SqlserverMemoryAreaMetricAttributeKey specifies the key of an attribute for the sqlserver.memory.area metric.
+type SqlserverMemoryAreaMetricAttributeKey string
+
+const (
+	SqlserverMemoryAreaMetricAttributeKeyMemoryArea SqlserverMemoryAreaMetricAttributeKey = "memory.area"
+)
+
+// SqlserverMemoryAreaMetricConfig provides config for the sqlserver.memory.area metric.
+type SqlserverMemoryAreaMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                  `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverMemoryAreaMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverMemoryAreaMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverMemoryAreaMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverMemoryAreaMetricAttributeKeyMemoryArea:
+		default:
+			return fmt.Errorf("metric sqlserver.memory.area doesn't have an attribute %v, valid attributes: [memory.area]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
+// SqlserverMemoryCacheObjectCountMetricAttributeKey specifies the key of an attribute for the sqlserver.memory.cache.object.count metric.
+type SqlserverMemoryCacheObjectCountMetricAttributeKey string
+
+const (
+	SqlserverMemoryCacheObjectCountMetricAttributeKeyCacheState SqlserverMemoryCacheObjectCountMetricAttributeKey = "cache.state"
+)
+
+// SqlserverMemoryCacheObjectCountMetricConfig provides config for the sqlserver.memory.cache.object.count metric.
+type SqlserverMemoryCacheObjectCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                              `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverMemoryCacheObjectCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverMemoryCacheObjectCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverMemoryCacheObjectCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverMemoryCacheObjectCountMetricAttributeKeyCacheState:
+		default:
+			return fmt.Errorf("metric sqlserver.memory.cache.object.count doesn't have an attribute %v, valid attributes: [cache.state]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
+	return nil
+}
+
 // SqlserverMemoryGrantsPendingCountMetricConfig provides config for the sqlserver.memory.grants.pending.count metric.
 type SqlserverMemoryGrantsPendingCountMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -615,6 +711,54 @@ func (ms *SqlserverMemoryGrantsPendingCountMetricConfig) Unmarshal(parser *confm
 	}
 
 	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SqlserverMemoryPageCountMetricAttributeKey specifies the key of an attribute for the sqlserver.memory.page.count metric.
+type SqlserverMemoryPageCountMetricAttributeKey string
+
+const (
+	SqlserverMemoryPageCountMetricAttributeKeyPagePool SqlserverMemoryPageCountMetricAttributeKey = "page.pool"
+)
+
+// SqlserverMemoryPageCountMetricConfig provides config for the sqlserver.memory.page.count metric.
+type SqlserverMemoryPageCountMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+
+	AggregationStrategy string                                       `mapstructure:"aggregation_strategy"`
+	EnabledAttributes   []SqlserverMemoryPageCountMetricAttributeKey `mapstructure:"attributes"`
+}
+
+func (ms *SqlserverMemoryPageCountMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+func (ms *SqlserverMemoryPageCountMetricConfig) Validate() error {
+	for _, val := range ms.EnabledAttributes {
+		switch val {
+		case SqlserverMemoryPageCountMetricAttributeKeyPagePool:
+		default:
+			return fmt.Errorf("metric sqlserver.memory.page.count doesn't have an attribute %v, valid attributes: [page.pool]", val)
+		}
+	}
+
+	switch ms.AggregationStrategy {
+	case AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax:
+	default:
+		return fmt.Errorf("invalid aggregation strategy %q, valid strategies: [%s, %s, %s, %s]", ms.AggregationStrategy, AggregationStrategySum, AggregationStrategyAvg, AggregationStrategyMin, AggregationStrategyMax)
+	}
+
 	return nil
 }
 
@@ -1352,7 +1496,10 @@ type MetricsConfig struct {
 	SqlserverLockWaitTimeAvg                    SqlserverLockWaitTimeAvgMetricConfig                    `mapstructure:"sqlserver.lock.wait_time.avg"`
 	SqlserverLoginRate                          SqlserverLoginRateMetricConfig                          `mapstructure:"sqlserver.login.rate"`
 	SqlserverLogoutRate                         SqlserverLogoutRateMetricConfig                         `mapstructure:"sqlserver.logout.rate"`
+	SqlserverMemoryArea                         SqlserverMemoryAreaMetricConfig                         `mapstructure:"sqlserver.memory.area"`
+	SqlserverMemoryCacheObjectCount             SqlserverMemoryCacheObjectCountMetricConfig             `mapstructure:"sqlserver.memory.cache.object.count"`
 	SqlserverMemoryGrantsPendingCount           SqlserverMemoryGrantsPendingCountMetricConfig           `mapstructure:"sqlserver.memory.grants.pending.count"`
+	SqlserverMemoryPageCount                    SqlserverMemoryPageCountMetricConfig                    `mapstructure:"sqlserver.memory.page.count"`
 	SqlserverMemoryUsage                        SqlserverMemoryUsageMetricConfig                        `mapstructure:"sqlserver.memory.usage"`
 	SqlserverOsWaitDuration                     SqlserverOsWaitDurationMetricConfig                     `mapstructure:"sqlserver.os.wait.duration"`
 	SqlserverPageBufferCacheFreeListStallsRate  SqlserverPageBufferCacheFreeListStallsRateMetricConfig  `mapstructure:"sqlserver.page.buffer_cache.free_list.stalls.rate"`
@@ -1460,8 +1607,23 @@ func DefaultMetricsConfig() MetricsConfig {
 		SqlserverLogoutRate: SqlserverLogoutRateMetricConfig{
 			Enabled: false,
 		},
+		SqlserverMemoryArea: SqlserverMemoryAreaMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverMemoryAreaMetricAttributeKey{SqlserverMemoryAreaMetricAttributeKeyMemoryArea},
+		},
+		SqlserverMemoryCacheObjectCount: SqlserverMemoryCacheObjectCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverMemoryCacheObjectCountMetricAttributeKey{SqlserverMemoryCacheObjectCountMetricAttributeKeyCacheState},
+		},
 		SqlserverMemoryGrantsPendingCount: SqlserverMemoryGrantsPendingCountMetricConfig{
 			Enabled: false,
+		},
+		SqlserverMemoryPageCount: SqlserverMemoryPageCountMetricConfig{
+			Enabled:             false,
+			AggregationStrategy: AggregationStrategyAvg,
+			EnabledAttributes:   []SqlserverMemoryPageCountMetricAttributeKey{SqlserverMemoryPageCountMetricAttributeKeyPagePool},
 		},
 		SqlserverMemoryUsage: SqlserverMemoryUsageMetricConfig{
 			Enabled: false,

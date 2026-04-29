@@ -439,6 +439,22 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const userConnCount = "User Connections"
 	const usedMemory = "Used memory (KB)"
 	const versionStoreSize = "Version Store Size (KB)"
+	const sqlCacheMemory = "SQL Cache Memory (KB)"
+	const optimizerMemory = "Optimizer Memory (KB)"
+	const connectionMemory = "Connection Memory (KB)"
+	const grantedWorkspaceMemory = "Granted Workspace Memory (KB)"
+	const maximumWorkspaceMemory = "Maximum Workspace Memory (KB)"
+	const targetServerMemory = "Target Server Memory (KB)"
+	const totalServerMemory = "Total Server Memory (KB)"
+	const cachePages = "Cache Pages"
+	const totalPages = "Total Pages"
+	const targetPages = "Target Pages"
+	const databasePages = "Database pages"
+	const stolenPages = "Stolen Pages"
+	const reservedPages = "Reserved Pages"
+	const freePages = "Free Pages"
+	const cacheObjectCounts = "Cache Object Counts"
+	const cacheObjectsInUse = "Cache Objects in use"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -692,6 +708,134 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDatabaseTempdbVersionStoreSizeDataPoint(now, val.(float64))
+			}
+		case sqlCacheMemory:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, sqlCacheMemory)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaSQLCache)
+			}
+		case optimizerMemory:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, optimizerMemory)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaOptimizer)
+			}
+		case connectionMemory:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, connectionMemory)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaConnection)
+			}
+		case grantedWorkspaceMemory:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, grantedWorkspaceMemory)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaGrantedWorkspace)
+			}
+		case maximumWorkspaceMemory:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, maximumWorkspaceMemory)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaMaxWorkspace)
+			}
+		case targetServerMemory:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, targetServerMemory)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaTarget)
+			}
+		case totalServerMemory:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, totalServerMemory)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryAreaDataPoint(now, val.(int64), metadata.AttributeMemoryAreaTotal)
+			}
+		case cachePages:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, cachePages)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolCache)
+			}
+		case totalPages:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, totalPages)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolTotal)
+			}
+		case targetPages:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, targetPages)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolTarget)
+			}
+		case databasePages:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, databasePages)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolDatabase)
+			}
+		case stolenPages:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, stolenPages)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolStolen)
+			}
+		case reservedPages:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, reservedPages)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolReserved)
+			}
+		case freePages:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freePages)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryPageCountDataPoint(now, val.(int64), metadata.AttributePagePoolFree)
+			}
+		case cacheObjectCounts:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, cacheObjectCounts)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryCacheObjectCountDataPoint(now, val.(int64), metadata.AttributeCacheStateTotal)
+			}
+		case cacheObjectsInUse:
+			val, err := retrieveInt(row, valueKey)
+			if err != nil {
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, cacheObjectsInUse)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverMemoryCacheObjectCountDataPoint(now, val.(int64), metadata.AttributeCacheStateInUse)
 			}
 		}
 

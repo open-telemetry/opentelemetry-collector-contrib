@@ -405,6 +405,38 @@ Total number of logouts.
 | ---- | ----------- | ---------- | --------- |
 | “{logouts}/s” | Gauge | Double | Development |
 
+### sqlserver.memory.area
+
+Amount of memory used by the SQL Server memory area.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| KBy | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| memory.area | The functional area of SQL Server memory. | Str: ``target``, ``total``, ``sql_cache``, ``optimizer``, ``connection``, ``granted_workspace``, ``max_workspace`` | Recommended | - |
+
+### sqlserver.memory.cache.object.count
+
+Number of cache objects in the SQL Server cache.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {objects} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cache.state | The state of the cache objects. | Str: ``in_use``, ``total`` | Recommended | - |
+
 ### sqlserver.memory.grants.pending.count
 
 Total number of memory grants pending.
@@ -412,6 +444,22 @@ Total number of memory grants pending.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | “{grants}” | Sum | Int | Cumulative | false | Development |
+
+### sqlserver.memory.page.count
+
+Number of pages in the SQL Server buffer pool.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {pages} | Gauge | Int | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| page.pool | The type of page pool in the SQL Server buffer manager. | Str: ``cache``, ``total``, ``target``, ``database``, ``stolen``, ``reserved``, ``free`` | Recommended | - |
 
 ### sqlserver.memory.usage
 
