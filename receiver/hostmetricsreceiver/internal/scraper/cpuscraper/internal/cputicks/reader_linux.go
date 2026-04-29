@@ -7,7 +7,6 @@ package cputicks // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,7 +33,7 @@ func NewReader(rootPath string, ticksPerSecond uint64) *Reader {
 
 func (r *Reader) TicksPerSecond() uint64 { return r.ticksPerSecond }
 
-func (r *Reader) ReadAll(_ context.Context) ([]Stat, error) {
+func (r *Reader) ReadAll() ([]Stat, error) {
 	f, err := os.Open(r.path)
 	if err != nil {
 		return nil, fmt.Errorf("cputicks: %w", err)

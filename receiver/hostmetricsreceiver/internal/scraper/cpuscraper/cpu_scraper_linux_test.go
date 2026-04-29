@@ -6,7 +6,6 @@
 package cpuscraper
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -290,12 +289,12 @@ func TestCputicksEmitter_CPUDisappears(t *testing.T) {
 
 // mockTickReader implements tickReader for testing.
 type mockTickReader struct {
-	readAll        func(context.Context) ([]cputicks.Stat, error)
+	readAll        func() ([]cputicks.Stat, error)
 	ticksPerSecond uint64
 }
 
-func (m *mockTickReader) ReadAll(ctx context.Context) ([]cputicks.Stat, error) {
-	return m.readAll(ctx)
+func (m *mockTickReader) ReadAll() ([]cputicks.Stat, error) {
+	return m.readAll()
 }
 
 func (m *mockTickReader) TicksPerSecond() uint64 { return m.ticksPerSecond }
@@ -303,7 +302,7 @@ func (m *mockTickReader) TicksPerSecond() uint64 { return m.ticksPerSecond }
 func TestCputicksEmitter_ReadError(t *testing.T) {
 	readErr := errors.New("disk I/O error")
 	reader := &mockTickReader{
-		readAll:        func(context.Context) ([]cputicks.Stat, error) { return nil, readErr },
+		readAll:        func() ([]cputicks.Stat, error) { return nil, readErr },
 		ticksPerSecond: 100,
 	}
 
@@ -326,7 +325,7 @@ func TestCputicksEmitter_ZeroDelta(t *testing.T) {
 		{CPU: "cpu0", User: 100, Nice: 25, System: 50, Idle: 200, Iowait: 25, Irq: 25, Softirq: 25, Steal: 50},
 	}
 	reader := &mockTickReader{
-		readAll:        func(context.Context) ([]cputicks.Stat, error) { return sameTicks, nil },
+		readAll:        func() ([]cputicks.Stat, error) { return sameTicks, nil },
 		ticksPerSecond: 100,
 	}
 

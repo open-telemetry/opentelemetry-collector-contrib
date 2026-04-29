@@ -37,7 +37,7 @@ const defaultTicksPerSecond = 100
 // tickReader reads per-CPU tick counts from the operating system.
 // Defined at the consumer for testability.
 type tickReader interface {
-	ReadAll(ctx context.Context) ([]cputicks.Stat, error)
+	ReadAll() ([]cputicks.Stat, error)
 	TicksPerSecond() uint64
 }
 
@@ -60,7 +60,7 @@ func newCputicksEmitter(reader tickReader) func(context.Context, pcommon.Timesta
 	tickDuration := time.Second / time.Duration(reader.TicksPerSecond())
 	var prevTicks map[string]cputicks.Stat
 	return func(ctx context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
-		ticks, err := reader.ReadAll(ctx)
+		ticks, err := reader.ReadAll()
 		if err != nil {
 			return err
 		}

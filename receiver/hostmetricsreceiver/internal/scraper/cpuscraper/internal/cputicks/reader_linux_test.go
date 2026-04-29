@@ -89,7 +89,7 @@ processes 12345
 			require.NoError(t, os.WriteFile(path, []byte(tt.content), 0o600))
 
 			r := &Reader{path: path, ticksPerSecond: 100}
-			actual, err := r.ReadAll(t.Context())
+			actual, err := r.ReadAll()
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr)
@@ -103,7 +103,7 @@ processes 12345
 
 func TestReadAll_FileNotFound(t *testing.T) {
 	r := &Reader{path: "/nonexistent/stat", ticksPerSecond: 100}
-	_, err := r.ReadAll(t.Context())
+	_, err := r.ReadAll()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cputicks:")
 }
@@ -118,7 +118,7 @@ func TestNewReader_RootPath(t *testing.T) {
 
 	r := NewReader(root, 100)
 	assert.Equal(t, uint64(100), r.TicksPerSecond())
-	ticks, err := r.ReadAll(t.Context())
+	ticks, err := r.ReadAll()
 	require.NoError(t, err)
 	require.Len(t, ticks, 1)
 	assert.Equal(t, Stat{CPU: "cpu0", User: 10, Nice: 20, System: 30, Idle: 40, Iowait: 5, Irq: 6, Softirq: 7, Steal: 8, Guest: 9, GuestNice: 1}, ticks[0])
@@ -129,7 +129,7 @@ func TestReadAll_RealProcStat(t *testing.T) {
 		t.Skip("/proc/stat not available")
 	}
 	r := NewReader("", 100)
-	ticks, err := r.ReadAll(t.Context())
+	ticks, err := r.ReadAll()
 	require.NoError(t, err)
 	require.NotEmpty(t, ticks, "expected at least one CPU")
 	for _, tick := range ticks {
@@ -146,7 +146,7 @@ func BenchmarkReadAll(b *testing.B) {
 
 	b.ResetTimer()
 	for range b.N {
-		_, err := r.ReadAll(b.Context())
+		_, err := r.ReadAll()
 		if err != nil {
 			b.Fatal(err)
 		}
