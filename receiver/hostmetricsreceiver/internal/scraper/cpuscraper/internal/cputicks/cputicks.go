@@ -21,7 +21,10 @@ type Stat struct {
 	GuestNice uint64
 }
 
+// Total returns the sum of all CPU tick fields.
+// Guest and GuestNice are excluded because the Linux kernel already
+// accounts them inside User and Nice respectively.
 func (s Stat) Total() uint64 {
 	return s.User + s.Nice + s.System + s.Idle + s.Iowait +
-		s.Irq + s.Softirq + s.Steal + s.Guest + s.GuestNice
+		s.Irq + s.Softirq + s.Steal
 }

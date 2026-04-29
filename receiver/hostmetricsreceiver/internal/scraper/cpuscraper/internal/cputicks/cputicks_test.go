@@ -16,7 +16,7 @@ func TestTotal(t *testing.T) {
 		User: 10, Nice: 20, System: 30, Idle: 40, Iowait: 5,
 		Irq: 6, Softirq: 7, Steal: 8, Guest: 9, GuestNice: 1,
 	}
-	assert.Equal(t, uint64(136), tick.Total())
+	assert.Equal(t, uint64(126), tick.Total())
 }
 
 func TestTotal_Zero(t *testing.T) {
