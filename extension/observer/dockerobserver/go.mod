@@ -3,21 +3,21 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.25.0
 
 require (
-	github.com/moby/moby/api v1.54.1
-	github.com/moby/moby/client v0.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.150.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.150.0
+	github.com/moby/moby/api v1.54.2
+	github.com/moby/moby/client v0.4.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.151.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
-	go.opentelemetry.io/collector/component v1.56.0
-	go.opentelemetry.io/collector/component/componenttest v0.150.0
-	go.opentelemetry.io/collector/confmap v1.56.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.150.0
-	go.opentelemetry.io/collector/extension v1.56.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.150.0
+	go.opentelemetry.io/collector/component v1.57.0
+	go.opentelemetry.io/collector/component/componenttest v0.151.0
+	go.opentelemetry.io/collector/confmap v1.57.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.151.0
+	go.opentelemetry.io/collector/extension v1.57.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.151.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.20.0
 )
 
@@ -34,7 +34,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/go-connections v0.6.0 // indirect
+	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -76,12 +76,12 @@ require (
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.56.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.56.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.56.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.56.0 // indirect
-	go.opentelemetry.io/collector/internal/componentalias v0.150.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.56.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.57.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.57.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.57.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.57.0 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.151.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.57.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect

@@ -16,6 +16,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
+func TestMetricAttributesEmptyType(t *testing.T) {
+	transformer := MetricAttributes{
+		AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+			"old": "new",
+		}),
+	}
+	metric := pmetric.NewMetric() // MetricTypeEmpty by default
+	err := transformer.Do(migrate.StateSelectorApply, metric)
+	assert.NoError(t, err, "MetricTypeEmpty should be skipped, not error")
+}
+
 func TestAttributeTransformers(t *testing.T) {
 	attrChange := migrate.NewAttributeChangeSet(map[string]string{
 		"service_version": "service.version",

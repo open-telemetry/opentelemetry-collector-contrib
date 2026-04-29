@@ -1,20 +1,4 @@
 $defs:
-  deprecated_batch_config:
-    type: object
-    properties:
-      enabled:
-        type: boolean
-      flush_timeout:
-        type: string
-        format: duration
-      max_size:
-        type: integer
-        x-customType: int64
-      min_size:
-        type: integer
-        x-customType: int64
-      sizer:
-        $ref: go.opentelemetry.io/collector/exporter/exporterhelper.request_sizer_type
   hec_heartbeat:
     description: HecHeartbeat defines the heartbeat information for the exporter
     type: object
@@ -46,9 +30,6 @@ $defs:
 description: Config defines configuration for Splunk exporter.
 type: object
 properties:
-  batcher:
-    description: DeprecatedBatcher is the deprecated batcher configuration.
-    $ref: deprecated_batch_config
   disable_compression:
     description: Disable GZip compression. Defaults to false.
     type: boolean

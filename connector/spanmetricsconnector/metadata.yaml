@@ -1,4 +1,5 @@
-type: spanmetrics
+type: span_metrics
+deprecated_type: spanmetrics
 display_name: Span Metrics Connector
 
 status:

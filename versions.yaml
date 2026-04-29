@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.150.0
+    version: v0.151.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
@@ -126,6 +126,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
@@ -196,7 +197,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/drainprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/lookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
