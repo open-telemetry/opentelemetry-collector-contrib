@@ -42,6 +42,22 @@ an error for if the receiver's configuration YAML/code contains any of the follo
 - [x] remote_write
 - [x] rule_files
 
+## External Dependencies
+
+This receiver uses the scrape manager and parser implementation from
+[`prometheus/prometheus`](https://github.com/prometheus/prometheus). Compatibility with Prometheus scrape behavior follows the version pinned in [`go.mod`](./go.mod).
+
+Supported scrape protocol and exposition formats are those accepted by the Prometheus scrape configuration:
+
+- `PrometheusProto`
+- `OpenMetricsText1.0.0`
+- `OpenMetricsText0.0.1`
+- `PrometheusText1.0.0`
+- `PrometheusText0.0.4`
+
+If `fallback_scrape_protocol` is not set, the receiver defaults it to `PrometheusText0.0.4` for compatibility with targets that do not return a proper content type.
+
+For native histogram details and protocol requirements, see [Prometheus native histograms](#prometheus-native-histograms).
 
 ## Getting Started
 
