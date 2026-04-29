@@ -1,0 +1,4 @@
+change_type: new_component
+component: cardinalityguardianprocessor
+note: Add cardinalityguardianprocessor scaffolding.
+issues: [47368]
