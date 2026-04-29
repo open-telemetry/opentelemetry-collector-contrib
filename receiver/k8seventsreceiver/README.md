@@ -35,12 +35,18 @@ new events.
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
+- `storage` (default: none): specifies the storage extension to use for persisting the latest resourceVersion. When configured, the receiver persists the resourceVersion after processing each watch event. On restart, the receiver resumes from the persisted resourceVersion, preventing duplicate events.
+  > **Important storage considerations:**
+  > - **Local or node-pinned volumes** (`hostPath`, local PV): the collector pod becomes tied to a specific node. If that node fails or the pod is rescheduled elsewhere, the persisted data will not be accessible and persistence will not work correctly.
+  > - **Network-attached volumes** (`ReadWriteMany`): the volume is accessible from any node, so the collector pod can be freely rescheduled or fail over to a different node while still resuming from the correct resourceVersion. This is the recommended approach, especially when used with `k8s_leader_elector`.
+  > - **Block volumes** (`ReadWriteOnce`): supported for single-replica deployments where restarts are graceful. Not recommended with leader election across multiple nodes, as Kubernetes may take 30–90 seconds to detach and reattach the volume after a node failure.
 
 Examples:
 
 ```yaml
   k8s_events:
     auth_type: kubeConfig
+    storage: file_storage
     k8s_leader_elector: k8s_leader_elector
     namespaces: [default, my_namespace]
 ```
@@ -70,9 +76,16 @@ metadata:
     app: otelcontribcol
 data:
   config.yaml: |
+    extensions:
+      file_storage:
+        directory: /var/lib/otelcol/storage
+
     receivers:
       k8s_events:
+        auth_type: serviceAccount
+        storage: file_storage
         namespaces: [default, my_namespace]
+
     exporters:
       otlp_grpc:
         endpoint: <OTLP_ENDPOINT>
@@ -80,6 +93,7 @@ data:
           insecure: true
 
     service:
+      extensions: [file_storage]
       pipelines:
         logs:
           receivers: [k8s_events]
@@ -200,6 +214,17 @@ Create a [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/
 
 ```bash
 <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: otelcontribcol-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -226,11 +251,16 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/config
+        - name: storage
+          mountPath: /var/lib/otelcol/storage
         imagePullPolicy: IfNotPresent
       volumes:
         - name: config
           configMap:
             name: otelcontribcol
+        - name: storage
+          persistentVolumeClaim:
+            claimName: otelcontribcol-storage
 EOF
 ```
 

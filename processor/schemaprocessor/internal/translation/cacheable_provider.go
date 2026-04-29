@@ -34,7 +34,7 @@ type CacheableProvider struct {
 // NewCacheableProvider creates a new CacheableProvider.
 // The cooldown parameter is the time to wait before retrying a failed call.
 // The limit parameter is the number of failed calls to allow before setting the cooldown period.
-func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) Provider {
+func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) *CacheableProvider {
 	return &CacheableProvider{
 		provider: provider,
 		cache:    cache.New(cache.NoExpiration, cache.NoExpiration),
@@ -50,16 +50,18 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 	}
 
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	// Check if the key is in the cache again in case it was added while waiting for the lock.
 	if value, found := p.cache.Get(key); found {
+		p.mu.Unlock()
 		return value.(string), nil
 	}
 
 	// Check if the function is currently rate-limited
 	if time.Now().Before(p.resetTime) {
-		return "", fmt.Errorf("rate limited, last error: %w", p.lastErr)
+		lastErr := p.lastErr
+		p.mu.Unlock()
+		return "", fmt.Errorf("rate limited, last error: %w", lastErr)
 	}
 
 	// After the cooldown expires, allow one retry but keep the count so the
@@ -69,7 +71,14 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 	}
 	p.callcount++
 
+	// Release the lock before the HTTP call so other goroutines are not blocked
+	// for the duration of the network request.
+	p.mu.Unlock()
+
 	v, err := p.provider.Retrieve(ctx, key)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if err != nil {
 		p.lastErr = err
 		// If the call limit is reached, set the cooldown period
