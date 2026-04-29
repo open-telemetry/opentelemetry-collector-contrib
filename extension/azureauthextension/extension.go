@@ -16,6 +16,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
@@ -23,10 +24,32 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var errServerAuthConfigRequired = errors.New("azure_auth server authentication requires server.issuer_url and server.audience")
+
+type configServer struct {
+	issuerURL string
+	audience  string
+}
+
+type tokenVerifier interface {
+	Verify(context.Context, string) error
+}
+
+type oidcTokenVerifier struct {
+	verifier *oidc.IDTokenVerifier
+}
+
+func (v *oidcTokenVerifier) Verify(ctx context.Context, rawToken string) error {
+	_, err := v.verifier.Verify(ctx, rawToken)
+	return err
+}
+
 type authenticator struct {
 	credential azcore.TokenCredential
 	logger     *zap.Logger
 	scopes     []string
+	server     configServer
+	verifier   tokenVerifier
 }
 
 type tokenSource interface {
@@ -107,10 +130,20 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		}
 	}
 
+	serverCfg := configServer{}
+	if cfg.Server.HasValue() {
+		s := cfg.Server.Get()
+		serverCfg = configServer{
+			issuerURL: s.IssuerURL,
+			audience:  s.Audience,
+		}
+	}
+
 	return &authenticator{
 		credential: credential,
 		logger:     logger,
 		scopes:     cfg.Scopes,
+		server:     serverCfg,
 	}, nil
 }
 
@@ -129,7 +162,20 @@ func getCertificateAndKey(filename string) (*x509.Certificate, crypto.PrivateKey
 	return certs[0], privateKey, nil
 }
 
-func (*authenticator) Start(context.Context, component.Host) error {
+func (a *authenticator) Start(ctx context.Context, _ component.Host) error {
+	if a.server.issuerURL == "" || a.server.audience == "" {
+		return nil
+	}
+
+	provider, err := oidc.NewProvider(ctx, a.server.issuerURL)
+	if err != nil {
+		return fmt.Errorf("azure_auth: failed to initialize OIDC provider for %q: %w", a.server.issuerURL, err)
+	}
+	a.verifier = &oidcTokenVerifier{
+		verifier: provider.Verifier(&oidc.Config{
+			ClientID: a.server.audience,
+		}),
+	}
 	return nil
 }
 
@@ -211,10 +257,6 @@ func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]s
 	if err != nil {
 		return ctx, err
 	}
-	host, err := getHeaderValue("Host", headers)
-	if err != nil {
-		return ctx, err
-	}
 
 	authFormat := strings.Split(auth, " ")
 	if len(authFormat) != 2 {
@@ -223,14 +265,14 @@ func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]s
 	if authFormat[0] != "Bearer" {
 		return ctx, fmt.Errorf(`expected "Bearer" as schema, got %q`, authFormat[0])
 	}
+	if a.verifier == nil {
+		return ctx, errServerAuthConfigRequired
+	}
 
-	token, err := a.getTokenForHost(ctx, host)
-	if err != nil {
-		return ctx, err
+	if err = a.verifier.Verify(ctx, authFormat[1]); err != nil {
+		return ctx, fmt.Errorf("unauthorized: invalid token: %w", err)
 	}
-	if authFormat[1] != token {
-		return ctx, errors.New("unauthorized: invalid token")
-	}
+
 	return ctx, nil
 }
 

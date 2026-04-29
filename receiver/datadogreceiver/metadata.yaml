@@ -11,7 +11,8 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [boostchicken, gouthamve, MovieStoreGuy]
+    active: [boostchicken, MovieStoreGuy]
+    emeritus: [gouthamve]
 
 tests:
   skip_lifecycle: true # Skip lifecycle tests since there are multiple receivers that run on the same port

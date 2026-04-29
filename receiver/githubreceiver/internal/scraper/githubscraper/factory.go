@@ -7,7 +7,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 
@@ -22,6 +24,7 @@ const (
 	defaultConcurrencyLimit     = 50
 	defaultHTTPTimeout          = 15 * time.Second
 	defaultMergedPRLookbackDays = 30
+	defaultMaxRetries           = 10
 )
 
 type Factory struct{}
@@ -33,7 +36,17 @@ func (*Factory) CreateDefaultConfig() internal.Config {
 		ClientConfig:         clientConfig,
 		ConcurrencyLimit:     defaultConcurrencyLimit, // Default to 50 concurrent goroutines
 		MergedPRLookbackDays: defaultMergedPRLookbackDays,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
+		RetryConfig: RetryConfig{
+			BackOffConfig: configretry.BackOffConfig{
+				Enabled:             true,
+				InitialInterval:     1 * time.Second,
+				RandomizationFactor: backoff.DefaultRandomizationFactor,
+				Multiplier:          backoff.DefaultMultiplier,
+				MaxInterval:         30 * time.Second,
+			},
+			MaxRetries: defaultMaxRetries,
+		},
 	}
 }
 

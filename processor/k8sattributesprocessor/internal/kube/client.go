@@ -749,6 +749,7 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 	c.deleteMut.Unlock()
 
 	c.m.Lock()
+	deleted := false
 	for i := range toDelete {
 		d := toDelete[i]
 		if p, ok := c.Pods[d.id]; ok {
@@ -756,9 +757,15 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 			// and the underlying state (ip<>pod mapping) has not changed.
 			if p.PodUID == d.podUID {
 				delete(c.Pods, d.id)
+				deleted = true
 			}
 		}
 	}
+
+	if deleted {
+		c.compactPodMap()
+	}
+
 	podTableSize := len(c.Pods)
 	if !metadata.ProcessorK8sattributesTelemetryDisableOldFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
@@ -767,6 +774,12 @@ func (c *WatchClient) deleteLoopProcessing(gracePeriod time.Duration) {
 		c.telemetryBuilder.K8sWatcherPodCacheSize.Record(context.Background(), int64(podTableSize))
 	}
 	c.m.Unlock()
+}
+
+func (c *WatchClient) compactPodMap() {
+	newMap := make(map[PodIdentifier]*Pod, len(c.Pods))
+	maps.Copy(newMap, c.Pods)
+	c.Pods = newMap
 }
 
 // GetPod takes an IP address or Pod UID and returns the pod the identifier is associated with.
@@ -1021,15 +1034,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	for _, r := range c.Rules.Annotations {
-		if !disableLegacy {
-			r.extractFromPodMetadata(pod.Annotations, tags, K8SPodAnnotations)
-		}
-		if enableStable {
-			r.extractFromPodMetadata(pod.Annotations, tags, conventions.K8SPodAnnotation)
-		}
-	}
-
 	if c.Rules.ServiceName {
 		copyLabel(pod, tags, "app.kubernetes.io/name", conventions.ServiceNameKey)
 		// app.kubernetes.io/instance has a higher precedence than app.kubernetes.io/name
@@ -1038,6 +1042,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.ServiceVersion {
 		copyLabel(pod, tags, "app.kubernetes.io/version", conventions.ServiceVersionKey)
+	}
+
+	// Annotations are processed after labels so that OTel annotations
+	// (e.g. resource.opentelemetry.io/service.name) take precedence over
+	// well-known Kubernetes labels (e.g. app.kubernetes.io/name).
+	for _, r := range c.Rules.Annotations {
+		if !disableLegacy {
+			r.extractFromPodMetadata(pod.Annotations, tags, K8SPodAnnotations)
+		}
+		if enableStable {
+			r.extractFromPodMetadata(pod.Annotations, tags, conventions.K8SPodAnnotation)
+		}
 	}
 
 	return tags
