@@ -94,7 +94,7 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 1
-              - key: oracledb.seconds_in_wait
+              - key: oracledb.wait.duration
                 value:
                   intValue: "0"
             body: {}

@@ -94,25 +94,25 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 15
-              - key: oracledb.blocking_session
+              - key: oracledb.blocker.session.id
                 value:
                   stringValue: "100"
-              - key: oracledb.final_blocking_session
+              - key: oracledb.blocker.root_session.id
                 value:
                   stringValue: "100"
-              - key: oracledb.blocking_session_status
+              - key: oracledb.blocker.session_relationship.state
                 value:
                   stringValue: VALID
-              - key: oracledb.seconds_in_wait
+              - key: oracledb.wait.duration
                 value:
                   intValue: "15"
-              - key: oracledb.lock_type
+              - key: oracledb.lock.type
                 value:
                   stringValue: TX
-              - key: oracledb.lock_id1
+              - key: oracledb.lock.id1
                 value:
                   stringValue: "131074"
-              - key: oracledb.lock_id2
+              - key: oracledb.lock.id2
                 value:
                   stringValue: "1234"
             body: {}

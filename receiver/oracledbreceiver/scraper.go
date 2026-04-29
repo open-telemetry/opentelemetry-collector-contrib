@@ -837,14 +837,14 @@ func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
 				attrs := logRecord.Attributes()
 
 				// Remove blocking_session when empty or "0" — means session is not blocked
-				blockingSessionAttr, hasBlockingSession := attrs.Get("oracledb.blocking_session")
-				if !hasBlockingSession || blockingSessionAttr.Str() == "" || blockingSessionAttr.Str() == "0" {
-					attrs.Remove("oracledb.blocking_session")
-					attrs.Remove("oracledb.final_blocking_session")
-					attrs.Remove("oracledb.blocking_session_status")
-					attrs.Remove("oracledb.lock_type")
-					attrs.Remove("oracledb.lock_id1")
-					attrs.Remove("oracledb.lock_id2")
+				blockerSessionAttr, hasBlockerSession := attrs.Get("oracledb.blocker.session.id")
+				if !hasBlockerSession || blockerSessionAttr.Str() == "" || blockerSessionAttr.Str() == "0" {
+					attrs.Remove("oracledb.blocker.session.id")
+					attrs.Remove("oracledb.blocker.root_session.id")
+					attrs.Remove("oracledb.blocker.session_relationship.state")
+					attrs.Remove("oracledb.lock.type")
+					attrs.Remove("oracledb.lock.id1")
+					attrs.Remove("oracledb.lock.id2")
 				}
 			}
 		}

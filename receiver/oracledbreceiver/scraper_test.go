@@ -438,16 +438,16 @@ func TestSamplesQuery(t *testing.T) {
 
 			if test.checkBlockingAttr {
 				lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-				blockingSID, hasBlockingSID := lr.Attributes().Get("oracledb.blocking_session")
-				assert.True(t, hasBlockingSID, "blocking_session attribute must be present for a blocked session")
-				assert.Equal(t, "100", blockingSID.Str())
+				blockerSID, hasBlockerSID := lr.Attributes().Get("oracledb.blocker.session.id")
+				assert.True(t, hasBlockerSID, "blocker.session.id attribute must be present for a blocked session")
+				assert.Equal(t, "100", blockerSID.Str())
 
-				_, hasBlockingStatus := lr.Attributes().Get("oracledb.blocking_session_status")
-				assert.True(t, hasBlockingStatus, "blocking_session_status attribute must be present for a blocked session")
+				_, hasBlockerState := lr.Attributes().Get("oracledb.blocker.session_relationship.state")
+				assert.True(t, hasBlockerState, "blocker.session_relationship.state attribute must be present for a blocked session")
 
-				secondsInWait, hasSecondsInWait := lr.Attributes().Get("oracledb.seconds_in_wait")
-				assert.True(t, hasSecondsInWait, "seconds_in_wait attribute must be present for a blocked session")
-				assert.Equal(t, int64(15), secondsInWait.Int())
+				waitDuration, hasWaitDuration := lr.Attributes().Get("oracledb.wait.duration")
+				assert.True(t, hasWaitDuration, "wait.duration attribute must be present for a blocked session")
+				assert.Equal(t, int64(15), waitDuration.Int())
 			}
 
 			// Uncomment line below to re-generate expected golden files.
@@ -495,33 +495,33 @@ func TestSanitizeQuerySampleOptionalAttributes(t *testing.T) {
 			lr := sl.LogRecords().AppendEmpty()
 			lr.SetEventName("db.server.query_sample")
 			attrs := lr.Attributes()
-			attrs.PutStr("oracledb.blocking_session", tc.blockingSID)
-			attrs.PutStr("oracledb.final_blocking_session", "42")
-			attrs.PutStr("oracledb.blocking_session_status", "VALID")
-			attrs.PutInt("oracledb.seconds_in_wait", 10)
-			attrs.PutStr("oracledb.lock_type", "TX")
-			attrs.PutStr("oracledb.lock_id1", "131074")
-			attrs.PutStr("oracledb.lock_id2", "1234")
+			attrs.PutStr("oracledb.blocker.session.id", tc.blockingSID)
+			attrs.PutStr("oracledb.blocker.root_session.id", "42")
+			attrs.PutStr("oracledb.blocker.session_relationship.state", "VALID")
+			attrs.PutInt("oracledb.wait.duration", 10)
+			attrs.PutStr("oracledb.lock.type", "TX")
+			attrs.PutStr("oracledb.lock.id1", "131074")
+			attrs.PutStr("oracledb.lock.id2", "1234")
 
 			sanitizeQuerySampleOptionalAttributes(logs)
 
-			_, hasBlockingSID := lr.Attributes().Get("oracledb.blocking_session")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockingSID, "oracledb.blocking_session presence mismatch")
+			_, hasBlockerSID := lr.Attributes().Get("oracledb.blocker.session.id")
+			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockerSID, "oracledb.blocker.session.id presence mismatch")
 
-			_, hasBlockingStatus := lr.Attributes().Get("oracledb.blocking_session_status")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockingStatus, "oracledb.blocking_session_status presence mismatch")
+			_, hasBlockerState := lr.Attributes().Get("oracledb.blocker.session_relationship.state")
+			assert.Equal(t, tc.expectBlockingAttrPresent, hasBlockerState, "oracledb.blocker.session_relationship.state presence mismatch")
 
-			_, hasSecondsInWait := lr.Attributes().Get("oracledb.seconds_in_wait")
-			assert.True(t, hasSecondsInWait, "oracledb.seconds_in_wait should always be present")
+			_, hasWaitDuration := lr.Attributes().Get("oracledb.wait.duration")
+			assert.True(t, hasWaitDuration, "oracledb.wait.duration should always be present")
 
-			_, hasLockType := lr.Attributes().Get("oracledb.lock_type")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockType, "oracledb.lock_type presence mismatch")
+			_, hasLockType := lr.Attributes().Get("oracledb.lock.type")
+			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockType, "oracledb.lock.type presence mismatch")
 
-			_, hasLockID1 := lr.Attributes().Get("oracledb.lock_id1")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockID1, "oracledb.lock_id1 presence mismatch")
+			_, hasLockID1 := lr.Attributes().Get("oracledb.lock.id1")
+			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockID1, "oracledb.lock.id1 presence mismatch")
 
-			_, hasLockID2 := lr.Attributes().Get("oracledb.lock_id2")
-			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockID2, "oracledb.lock_id2 presence mismatch")
+			_, hasLockID2 := lr.Attributes().Get("oracledb.lock.id2")
+			assert.Equal(t, tc.expectBlockingAttrPresent, hasLockID2, "oracledb.lock.id2 presence mismatch")
 		})
 	}
 }
