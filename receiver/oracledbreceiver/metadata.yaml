@@ -57,6 +57,12 @@ attributes:
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
+  oracledb.blocking_session:
+    description: The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked.
+    type: string
+  oracledb.blocking_session_status:
+    description: The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN).
+    type: string
   oracledb.buffer_gets:
     description: Number of logical reads (i.e., buffer cache accesses) performed by a query (reporting delta).
     type: int
@@ -100,6 +106,18 @@ attributes:
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
+  oracledb.final_blocking_session:
+    description: The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking.
+    type: string
+  oracledb.lock_id1:
+    description: The first identifier of the lock resource from V$LOCK. Its meaning depends on the lock type (e.g., object ID for TM locks, USN+slot for TX locks).
+    type: string
+  oracledb.lock_id2:
+    description: The second identifier of the lock resource from V$LOCK. Its meaning depends on the lock type (e.g., sequence number for TX locks).
+    type: string
+  oracledb.lock_type:
+    description: The type of lock the session is requesting from V$LOCK (e.g., TX for row lock, TM for table lock).
+    type: string
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
     type: string
@@ -148,6 +166,9 @@ attributes:
   oracledb.schemaname:
     description: Oracle schema under which SQL statements are being executed
     type: string
+  oracledb.seconds_in_wait:
+    description: The number of seconds this session has been waiting for the current wait event.
+    type: int
   oracledb.serial:
     description: Serial number associated with a session.
     type: string
@@ -219,6 +240,13 @@ events:
       - oracledb.procedure_type
       - oracledb.osuser
       - oracledb.duration_sec
+      - oracledb.blocking_session
+      - oracledb.final_blocking_session
+      - oracledb.blocking_session_status
+      - oracledb.seconds_in_wait
+      - oracledb.lock_type
+      - oracledb.lock_id1
+      - oracledb.lock_id2
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).

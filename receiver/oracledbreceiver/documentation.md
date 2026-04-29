@@ -432,6 +432,13 @@ sample query
 | oracledb.procedure_type | Type of the database object that a query is accessing. | Any Str | - |
 | oracledb.osuser | Name of the operating system user that initiated or is running the Oracle database session. | Any Str | - |
 | oracledb.duration_sec | Total time taken by a database query to execute. | Any Double | - |
+| oracledb.blocking_session | The session ID (SID) of the immediate blocker of this session. Empty string when the session is not blocked. | Any Str | - |
+| oracledb.final_blocking_session | The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking. | Any Str | - |
+| oracledb.blocking_session_status | The status of the blocking session relationship (e.g. VALID, NOT IN WAIT, GLOBAL, NO HOLDER, UNKNOWN). | Any Str | - |
+| oracledb.seconds_in_wait | The number of seconds this session has been waiting for the current wait event. | Any Int | - |
+| oracledb.lock_type | The type of lock the session is requesting from V$LOCK (e.g., TX for row lock, TM for table lock). | Any Str | - |
+| oracledb.lock_id1 | The first identifier of the lock resource from V$LOCK. Its meaning depends on the lock type (e.g., object ID for TM locks, USN+slot for TX locks). | Any Str | - |
+| oracledb.lock_id2 | The second identifier of the lock resource from V$LOCK. Its meaning depends on the lock type (e.g., sequence number for TX locks). | Any Str | - |
 
 ### db.server.top_query
 

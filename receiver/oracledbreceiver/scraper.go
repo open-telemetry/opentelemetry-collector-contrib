@@ -741,6 +741,14 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const waitclass = "WAIT_CLASS"
 	const port = "PORT"
 	const serviceName = "SERVICE_NAME"
+	// Blocking session columns
+	const blockingSession = "BLOCKING_SESSION"
+	const finalBlockingSession = "FINAL_BLOCKING_SESSION"
+	const blockingSessionStatus = "BLOCKING_SESSION_STATUS"
+	const secondsInWait = "SECONDS_IN_WAIT"
+	const lockType = "LOCK_TYPE"
+	const lockID1 = "LOCK_ID1"
+	const lockID2 = "LOCK_ID2"
 
 	var scrapeErrors []error
 
@@ -784,6 +792,14 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			objID, _ = strconv.ParseInt(row[objectID], 10, 64)
 		}
 
+		var secondsInWaitVal int64
+		if row[secondsInWait] != "" {
+			secondsInWaitVal, err = strconv.ParseInt(row[secondsInWait], 10, 64)
+			if err != nil {
+				scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for SECONDS_IN_WAIT, value was %s: %w", row[secondsInWait], err))
+			}
+		}
+
 		queryContext := propagator.Extract(context.Background(), propagation.MapCarrier{
 			"traceparent": row[action],
 		})
@@ -791,12 +807,48 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 		s.lb.RecordDbServerQuerySampleEvent(queryContext, timestamp, obfuscatedSQL, dbSystemNameVal, row[username], row[serviceName], row[hostName],
 			clientPort, row[hostName], clientPort, queryPlanHashVal, row[sqlID], row[sqlChildNumber], row[childAddress], row[sid], row[serialNumber], row[process],
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], objID, row[objectName], row[objectType],
-			row[osUser], queryDuration)
+			row[osUser], queryDuration,
+			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], secondsInWaitVal,
+			row[lockType], row[lockID1], row[lockID2])
 	}
 
-	s.lb.Emit(metadata.WithLogsResource(rb.Emit())).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+	emittedLogs := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
+	sanitizeQuerySampleOptionalAttributes(emittedLogs)
+	emittedLogs.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 
 	return errors.Join(scrapeErrors...)
+}
+
+// sanitizeQuerySampleOptionalAttributes removes blocking-related attributes from
+// db.server.query_sample log records when there is no active blocking relationship.
+// This keeps the signal clean: absent attributes mean "not blocked", rather than
+// emitting zero/empty values that could mislead consumers.
+func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
+	resourceLogs := logs.ResourceLogs()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logRecords := scopeLogs.At(j).LogRecords()
+			for k := 0; k < logRecords.Len(); k++ {
+				logRecord := logRecords.At(k)
+				if logRecord.EventName() != "db.server.query_sample" {
+					continue
+				}
+				attrs := logRecord.Attributes()
+
+				// Remove blocking_session when empty or "0" — means session is not blocked
+				blockingSessionAttr, hasBlockingSession := attrs.Get("oracledb.blocking_session")
+				if !hasBlockingSession || blockingSessionAttr.Str() == "" || blockingSessionAttr.Str() == "0" {
+					attrs.Remove("oracledb.blocking_session")
+					attrs.Remove("oracledb.final_blocking_session")
+					attrs.Remove("oracledb.blocking_session_status")
+					attrs.Remove("oracledb.lock_type")
+					attrs.Remove("oracledb.lock_id1")
+					attrs.Remove("oracledb.lock_id2")
+				}
+			}
+		}
+	}
 }
 
 func asFloatInSeconds(value int64) float64 {

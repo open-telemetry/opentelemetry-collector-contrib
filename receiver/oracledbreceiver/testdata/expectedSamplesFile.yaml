@@ -94,6 +94,9 @@ resourceLogs:
               - key: oracledb.duration_sec
                 value:
                   doubleValue: 1
+              - key: oracledb.seconds_in_wait
+                value:
+                  intValue: "0"
             body: {}
             eventName: db.server.query_sample
             spanId: a7ad6b7169203331
