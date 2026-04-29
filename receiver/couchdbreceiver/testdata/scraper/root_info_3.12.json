@@ -1,0 +1,13 @@
+{
+  "couchdb": "Welcome",
+  "version":"3.1.2",
+  "git_sha":"572b68e72",
+  "uuid": "1234-5678-9012",
+  "features": [
+    "feature1",
+    "feature2"
+  ],
+  "vendor": {
+    "name": "The Apache Software Foundation"
+  }
+}

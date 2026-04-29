@@ -24,7 +24,7 @@ type couchdbScraper struct {
 	config             *Config
 	settings           component.TelemetrySettings
 	mb                 *metadata.MetricsBuilder
-	resourceAttributes *couchDbResourceAttributes
+	resourceAttributes couchDbResourceAttributes
 }
 
 type couchDbResourceAttributes struct {
@@ -35,14 +35,10 @@ type couchDbResourceAttributes struct {
 
 func newCouchdbScraper(settings receiver.Settings, config *Config) *couchdbScraper {
 	return &couchdbScraper{
-		settings: settings.TelemetrySettings,
-		config:   config,
-		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		resourceAttributes: &couchDbResourceAttributes{
-			couchDbVersion:    "",
-			serviceInstanceID: "",
-			serviceName:       "",
-		},
+		settings:           settings.TelemetrySettings,
+		config:             config,
+		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		resourceAttributes: couchDbResourceAttributes{},
 	}
 }
 
@@ -65,10 +61,6 @@ func (c *couchdbScraper) scrapeResourceAttributes() error {
 
 	rootInfo, err := c.client.GetRootInfo()
 	if err != nil {
-		c.settings.Logger.Error("Failed to fetch couchdb root info",
-			zap.String("endpoint", c.config.Endpoint),
-			zap.Error(err),
-		)
 		return fmt.Errorf("failed to fetch couchdb root info: %w", err)
 	}
 
@@ -122,7 +114,7 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if c.resourceAttributes.serviceInstanceID == "" {
 		err = c.scrapeResourceAttributes()
 		if err != nil {
-			c.settings.Logger.Error("Unable to refetch couchdb info for resource attributes",
+			c.settings.Logger.Error("Unable to fetch couchdb info for resource attributes",
 				zap.String("endpoint", c.config.Endpoint),
 				zap.Error(err),
 			)
@@ -131,9 +123,15 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	rb := c.mb.NewResourceBuilder()
 	rb.SetCouchdbNodeName(c.config.Endpoint)
-	rb.SetServiceInstanceID(c.resourceAttributes.serviceInstanceID)
-	rb.SetServiceName(c.resourceAttributes.serviceName)
-	rb.SetCouchdbVersion(c.resourceAttributes.couchDbVersion)
+	if c.resourceAttributes.serviceInstanceID != "" {
+		rb.SetServiceInstanceID(c.resourceAttributes.serviceInstanceID)
+	}
+	if c.resourceAttributes.serviceName != "" {
+		rb.SetServiceName(c.resourceAttributes.serviceName)
+	}
+	if c.resourceAttributes.couchDbVersion != "" {
+		rb.SetCouchdbVersion(c.resourceAttributes.couchDbVersion)
+	}
 
 	return c.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }

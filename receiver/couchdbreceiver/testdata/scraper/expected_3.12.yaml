@@ -10,6 +10,9 @@ resourceMetrics:
         - key: service.name
           value:
               stringValue: "couchdb@1.2.3.4"
+        - key: couchdb.version
+          value:
+              stringValue: "3.1.2"
     scopeMetrics:
       - metrics:
           - description: The average duration of a served request.

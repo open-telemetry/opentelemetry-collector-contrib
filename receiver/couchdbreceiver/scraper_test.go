@@ -33,12 +33,13 @@ func TestScrape(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
+	cfg.ResourceAttributes.CouchdbVersion.Enabled = true
 	require.NoError(t, xconfmap.Validate(cfg))
 
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
-		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info_2.31.json"))
 		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
@@ -46,7 +47,8 @@ func TestScrape(t *testing.T) {
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
+		// NOTE: expected_2.31.yaml should be almost identical to expected_3.12.yaml, with the one exception of the couchdb.verison resource attribute
+		expectedFile := filepath.Join("testdata", "scraper", "expected_2.31.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
@@ -57,7 +59,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
-		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info_3.12.json"))
 		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
@@ -65,7 +67,7 @@ func TestScrape(t *testing.T) {
 		actualMetrics, err := scraper.scrape(t.Context())
 		require.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
+		expectedFile := filepath.Join("testdata", "scraper", "expected_3.12.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
@@ -76,7 +78,7 @@ func TestScrape(t *testing.T) {
 	t.Run("scrape returns nothing", func(t *testing.T) {
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(map[string]any{}, nil)
-		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info_3.5.0.json"))
 		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.client = mockClient
@@ -104,7 +106,7 @@ func TestScrape(t *testing.T) {
 		settings.Logger = zap.New(obs)
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats(""))
-		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info_3.5.0.json"))
 		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(settings, cfg)
 		scraper.client = mockClient
@@ -135,7 +137,7 @@ func TestScrape(t *testing.T) {
 
 		mockClient := new(mockClient)
 		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
-		mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+		mockClient.On("GetRootInfo").Return(getStats("root_info_3.5.0.json"))
 		mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(metadata.Type), cfgAll)
 		scraper.client = mockClient
@@ -183,7 +185,7 @@ func TestStart(t *testing.T) {
 func TestMetricSettings(t *testing.T) {
 	mockClient := new(mockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
-	mockClient.On("GetRootInfo").Return(getStats("root_info.json"))
+	mockClient.On("GetRootInfo").Return(getStats("root_info_3.5.0.json"))
 	mockClient.On("GetNodeInfo", "_local").Return(getStats("node_info.json"))
 	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics = metadata.MetricsConfig{
