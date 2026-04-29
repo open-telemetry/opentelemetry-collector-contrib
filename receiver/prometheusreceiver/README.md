@@ -246,37 +246,12 @@ Attributes.
 
 ### Resource Attribute Mapping
 
-In addition to attributes derived from `target_info`, this receiver maps scrape target metadata
-to OpenTelemetry resource attributes:
+In addition to attributes derived from `target_info`, this receiver maps scrape target metadata to OpenTelemetry resource attributes. These mappings follow OpenTelemetry semantic conventions.
 
-- `job` -> `service.name`
-- `instance` -> `service.instance.id`
-- `instance` host -> `server.address` (when the host is present and discernible)
-- `instance` port -> `server.port` (when the port is present)
-- `__scheme__` -> `url.scheme`
+For the current detailed mapping list, see [`resource_attribute_mapping.md`](./resource_attribute_mapping.md).
 
-When Kubernetes service discovery metadata is present, the receiver maps:
-
-- `__meta_kubernetes_pod_name` -> `k8s.pod.name`
-- `__meta_kubernetes_pod_uid` -> `k8s.pod.uid`
-- `__meta_kubernetes_pod_container_name` -> `k8s.container.name`
-- `__meta_kubernetes_namespace` -> `k8s.namespace.name`
-- `__meta_kubernetes_pod_node_name` -> `k8s.node.name`
-- `__meta_kubernetes_node_name` -> `k8s.node.name`
-- `__meta_kubernetes_endpoint_node_name` -> `k8s.node.name`
-
-When both `__meta_kubernetes_pod_controller_kind` and
-`__meta_kubernetes_pod_controller_name` are present, the receiver sets one of
-the following attributes based on the controller kind value, using the
-controller name as the attribute value:
-
-- `k8s.replicaset.name`
-- `k8s.daemonset.name`
-- `k8s.statefulset.name`
-- `k8s.job.name`
-- `k8s.cronjob.name`
-
-See the mapping implementation in [`internal/prom_to_otlp.go`](./internal/prom_to_otlp.go).
+We are incrementally adding mappings for additional Prometheus service discovery labels and
+welcome contributions aligned with OpenTelemetry semantic conventions.
 
 ## Scrape Metadata Metrics
 
