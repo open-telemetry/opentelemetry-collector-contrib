@@ -4,10 +4,12 @@
 package reader
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -438,6 +440,116 @@ func TestReadToEnd_OffsetPreservedOnEmitError(t *testing.T) {
 		assert.Equal(t, int64(successfulLines)*lineWidth, r.Offset,
 			"offset must stop at the end of the last successful batch, not at EOF")
 	})
+}
+
+// TestReadToEnd_RecordNumRolledBackOnEmitError pins that when emitFunc rejects
+// a batch, RecordNum is rewound by the size of that batch so the next poll
+// re-reads the same bytes and assigns the same record_number values to those
+// records (instead of skipping the failed batch's IDs and producing a gap).
+func TestReadToEnd_RecordNumRolledBackOnEmitError(t *testing.T) {
+	errEmit := errors.New("emit failed")
+
+	t.Run("eof_path", func(t *testing.T) {
+		tempDir := t.TempDir()
+		temp := filetest.OpenTemp(t, tempDir)
+		filetest.WriteString(t, temp, "line1\nline2\nline3\n")
+
+		f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+			return errEmit
+		})
+		fp, err := f.NewFingerprint(temp)
+		require.NoError(t, err)
+		r, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+		require.NoError(t, err)
+		defer r.Close()
+
+		r.ReadToEnd(t.Context())
+		assert.Equal(t, int64(0), r.RecordNum,
+			"RecordNum must be rewound when an EOF emit fails so the retry assigns the same values")
+	})
+
+	t.Run("batch_full_path", func(t *testing.T) {
+		const totalLines = DefaultMaxBatchSize * 2
+		tempDir := t.TempDir()
+		temp := filetest.OpenTemp(t, tempDir)
+		var buf strings.Builder
+		for i := range totalLines {
+			fmt.Fprintf(&buf, "line%04d\n", i)
+		}
+		filetest.WriteString(t, temp, buf.String())
+
+		f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+			return errEmit
+		})
+		fp, err := f.NewFingerprint(temp)
+		require.NoError(t, err)
+		r, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+		require.NoError(t, err)
+		defer r.Close()
+
+		r.ReadToEnd(t.Context())
+		assert.Equal(t, int64(0), r.RecordNum,
+			"RecordNum must be rewound when a mid-loop emit fails")
+	})
+}
+
+// TestReadToEnd_DeleteAtEOFSkippedOnEmitError pins that delete_after_read does
+// not delete the source file when the trailing emit fails. The retried poll
+// needs the file on disk; deleting at EOF before emit succeeds turns an emit
+// error into permanent data loss.
+func TestReadToEnd_DeleteAtEOFSkippedOnEmitError(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "line1\nline2\nline3\n")
+
+	f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+		return errors.New("emit failed")
+	})
+	f.DeleteAtEOF = true
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
+	require.NoError(t, err)
+	defer r.Close()
+
+	r.ReadToEnd(t.Context())
+
+	_, statErr := os.Stat(temp.Name())
+	assert.NoError(t, statErr,
+		"file must still exist after emit error so the next poll can re-read it")
+}
+
+// TestReadToEnd_GzipOffsetPreservedOnEmitError pins that for gzip-compressed
+// files the deferred `Offset = currentEOF` jump in ReadToEnd is skipped when
+// emitFunc returns an error. Without this gating the compressed-file offset
+// would advance to EOF and the rejected batch would be silently lost on the
+// next poll (the original concern paulojmdias raised in review).
+func TestReadToEnd_GzipOffsetPreservedOnEmitError(t *testing.T) {
+	tempDir := t.TempDir()
+	gzipPath := filepath.Join(tempDir, "test.log.gz")
+	gzipFile, err := os.Create(gzipPath)
+	require.NoError(t, err)
+	gw := gzip.NewWriter(gzipFile)
+	_, err = gw.Write([]byte("line1\nline2\nline3\n"))
+	require.NoError(t, err)
+	require.NoError(t, gw.Close())
+	require.NoError(t, gzipFile.Close())
+
+	f := newTestFactory(t, func(context.Context, [][]byte, map[string]any, int64, []int64) error {
+		return errors.New("emit failed")
+	})
+	f.Compression = "gzip"
+	opened := filetest.OpenFile(t, gzipPath)
+	fp, err := f.NewFingerprint(opened)
+	require.NoError(t, err)
+	r, err := f.NewReader(opened, fp)
+	require.NoError(t, err)
+	defer r.Close()
+
+	r.ReadToEnd(t.Context())
+
+	assert.Equal(t, int64(0), r.Offset,
+		"gzip Offset must not jump to currentEOF when the emit failed; it would silently skip the rejected batch")
 }
 
 func BenchmarkFileRead(b *testing.B) {

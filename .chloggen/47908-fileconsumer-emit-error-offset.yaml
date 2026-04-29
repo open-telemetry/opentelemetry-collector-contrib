@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: pkg/stanza
+component: pkg/stanza/fileconsumer
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "fileconsumer no longer advances the read offset past tokens whose batch was rejected by emitFunc, preventing silent data loss when emit returns an error."
