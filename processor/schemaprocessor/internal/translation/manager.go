@@ -32,6 +32,8 @@ type Manager interface {
 type manager struct {
 	log              *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
+	cooldown         time.Duration
+	limit            int
 
 	rw            sync.RWMutex
 	providers     []Provider
@@ -43,7 +45,7 @@ var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
 // of schema
-func NewManager(targetSchemaURLS []string, log *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder, providers ...Provider) (Manager, error) {
+func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Duration, limit int, telemetryBuilder *metadata.TelemetryBuilder, providers ...Provider) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
@@ -60,6 +62,8 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, telemetryBuilder *me
 	m := &manager{
 		log:              log,
 		telemetryBuilder: telemetryBuilder,
+		cooldown:         cooldown,
+		limit:            limit,
 		match:            match,
 		translatorMap:    make(map[string]*translator),
 	}
@@ -74,7 +78,7 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, telemetryBuilder *me
 
 // newCacheableProvider wraps p with a CacheableProvider wired to the manager's telemetry.
 func (m *manager) newCacheableProvider(p Provider) Provider {
-	return NewCacheableProvider(p, 5*time.Minute, 5, m.telemetryBuilder)
+	return NewCacheableProvider(p, m.cooldown, m.limit, m.telemetryBuilder)
 }
 
 func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Translation, error) {
