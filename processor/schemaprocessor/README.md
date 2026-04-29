@@ -17,7 +17,7 @@ On a match, the processor will fetch the schema translation file (if not cached)
 required to export as the target semantic convention version.
 
 Furthermore, it is also possible for organisations and vendors to publish their own semantic conventions and be used by this processor,
-be sure to follow [schema overview](https://opentelemetry.io/docs/reference/specification/schemas/overview/) for all the details.
+be sure to follow [schema overview](https://opentelemetry.io/docs/specs/otel/schemas/) for all the details.
 
 ## Configuration
 
@@ -108,7 +108,7 @@ return an error immediately.
 
 ## Schema Formats
 
-A [schema URL](https://opentelemetry.io/docs/reference/specification/schemas/overview/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
+A [schema URL](https://opentelemetry.io/docs/specs/otel/schemas/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
 
 ```text
 |                       Schema URL                           |
