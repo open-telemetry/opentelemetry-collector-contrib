@@ -97,16 +97,16 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 }
 
 func setResourcePoolMemoryUsageAttrFeatureGate(t *testing.T, val bool) {
-	wasEnabled := enableResourcePoolMemoryUsageAttr.IsEnabled()
+	wasEnabled := metadata.ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(
-		enableResourcePoolMemoryUsageAttr.ID(),
+		metadata.ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate.ID(),
 		val,
 	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		err := featuregate.GlobalRegistry().Set(
-			enableResourcePoolMemoryUsageAttr.ID(),
+			metadata.ReceiverVcenterResourcePoolMemoryUsageAttributeFeatureGate.ID(),
 			wasEnabled,
 		)
 		require.NoError(t, err)
