@@ -73,6 +73,7 @@ func TestLogExporterStart(t *testing.T) {
 			"ok",
 			func() *logExporterImp {
 				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,

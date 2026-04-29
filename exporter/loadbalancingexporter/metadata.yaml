@@ -96,4 +96,5 @@ tests:
         # Ignore goroutines spawned by net.Resolver for DNS lookups on Windows
         # These can remain in syscall state during test cleanup
         - internal/poll.runtime_pollWait
+        - syscall.SyscallN
         - syscall.Syscall6

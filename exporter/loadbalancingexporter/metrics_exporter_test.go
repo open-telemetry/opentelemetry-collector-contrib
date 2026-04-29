@@ -110,6 +110,7 @@ func TestMetricsExporterStart(t *testing.T) {
 			"ok",
 			func() *metricExporterImp {
 				p, _ := newMetricsExporter(ts, serviceBasedRoutingConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,
@@ -326,6 +327,86 @@ func TestSplitMetrics(t *testing.T) {
 			compareMetricsMaps(t, expectedOutput, output)
 		})
 	}
+}
+
+func TestSplitMetricsByAttributes_StableEncodingAvoidsConcatenationCollisions(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(aValue, bValue string) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("a", aValue)
+		rm.Resource().Attributes().PutStr("b", bValue)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric("foo", "bar")
+	buildResourceMetric("foob", "ar")
+
+	out := splitMetricsByAttributes(md, []string{"a", "b"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "a=foo|b=bar|")
+	assert.Contains(t, out, "a=foob|b=ar|")
+}
+
+func TestSplitMetricsByAttributes_StableEncodingIncludesMissingAttributes(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource_key", "res1")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test.metric")
+
+	sum := metric.SetEmptySum()
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	sum.SetIsMonotonic(false)
+
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetIntValue(1)
+	dp.Attributes().PutStr("aaa", "dp1")
+
+	out := splitMetricsByAttributes(md, []string{"resource_key", "missing", "aaa"})
+	require.Len(t, out, 1)
+	assert.Contains(t, out, "resource_key=res1|missing=|aaa=dp1|")
+}
+
+func TestSplitMetricsByAttributes_NonStringValues(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(shard int64) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutInt("shard", shard)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric(1)
+	buildResourceMetric(2)
+
+	out := splitMetricsByAttributes(md, []string{"shard"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "shard=1|")
+	assert.Contains(t, out, "shard=2|")
 }
 
 func TestConsumeMetrics_SingleEndpoint(t *testing.T) {

@@ -124,7 +124,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data.
 * loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
-* The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`.
+* The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`. For both traces and metrics, keys are encoded in configured order as `name=value|name=value|`, and missing attributes are encoded as `name=|`. Non-string values are deterministically stringified.
 
 Simple example
 
