@@ -6,6 +6,7 @@ package schemaprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 
@@ -24,6 +25,14 @@ var (
 // Config defines the user provided values for the Schema Processor
 type Config struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
+
+	// CacheCooldown is the duration to wait before retrying schema fetches
+	// after the retry limit has been reached. Defaults to 5 minutes.
+	CacheCooldown time.Duration `mapstructure:"cache_cooldown"`
+
+	// CacheRetryLimit is the number of consecutive failed schema fetch
+	// attempts allowed before enforcing the cooldown period. Defaults to 5.
+	CacheRetryLimit int `mapstructure:"cache_retry_limit"`
 
 	// PreCache is a list of schema URLs that are downloaded
 	// and cached at the start of the collector runtime
@@ -57,6 +66,12 @@ type MigrationEntry struct {
 }
 
 func (c *Config) Validate() error {
+	if c.CacheCooldown < 0 {
+		return errors.New("cache_cooldown must not be negative")
+	}
+	if c.CacheRetryLimit < 0 {
+		return errors.New("cache_retry_limit must not be negative")
+	}
 	for _, schemaURL := range c.Prefetch {
 		_, _, err := translation.GetFamilyAndVersion(schemaURL)
 		if err != nil {

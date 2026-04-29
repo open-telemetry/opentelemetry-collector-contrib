@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,8 @@ func TestRequestTranslation(t *testing.T) {
 	m, err := NewManager(
 		[]string{schemaURL},
 		zaptest.NewLogger(t),
+		5*time.Minute,
+		5,
 		nil,
 		NewHTTPProvider(s.Client()),
 	)
@@ -106,6 +109,8 @@ versions:
 	m, err := NewManager(
 		[]string{targetURL},
 		zaptest.NewLogger(t),
+		5*time.Minute,
+		5,
 		nil,
 		NewHTTPProvider(s.Client()),
 	)
@@ -146,6 +151,8 @@ func TestManagerError(t *testing.T) {
 	m, err := NewManager(
 		[]string{"http://localhost/1.1.0"},
 		zaptest.NewLogger(t),
+		5*time.Minute,
+		5,
 		nil,
 		&errorProvider{},
 	)
