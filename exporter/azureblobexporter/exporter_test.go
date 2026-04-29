@@ -619,6 +619,7 @@ func TestCompression(t *testing.T) {
 // decompressData decompresses data based on the compression type and returns the decompressed data
 // along with a closer function that should be deferred (or nil if no special closing needed)
 func decompressData(t *testing.T, compressedData []byte, compression configcompression.Type) ([]byte, func()) {
+	t.Helper()
 	switch compression {
 	case configcompression.TypeGzip:
 		reader, err := gzip.NewReader(bytes.NewReader(compressedData))
