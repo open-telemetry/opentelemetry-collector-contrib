@@ -269,6 +269,12 @@ k8s_attributes/all_metadata_fields:
       - service.instance.id
       - k8s.cluster.uid
 
+k8s_attributes/both_container_image_tags:
+  extract:
+    metadata:
+      - container.image.tag
+      - container.image.tags
+
 k8s_attributes/bad_metadata_field:
   extract:
     metadata:

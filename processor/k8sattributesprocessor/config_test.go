@@ -345,6 +345,19 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "both_container_image_tags"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Extract: ExtractConfig{
+					Metadata: []string{
+						"container.image.tag", "container.image.tags",
+					},
+				},
+				Exclude:                defaultExcludes,
+				WaitForMetadataTimeout: 10 * time.Second,
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "bad_metadata_field"),
 		},
 	}
