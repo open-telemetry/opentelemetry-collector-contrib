@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
 )
 
-func NewFactory() xconnector.Factory {
+func NewFactory() connector.Factory {
 	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
