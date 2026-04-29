@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -79,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -124,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.PodMetricGroup,
 					kubelet.NodeMetricGroup,
 				},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -144,7 +144,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.NodeMetricGroup,
 					kubelet.VolumeMetricGroup,
 				},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -168,7 +168,7 @@ func TestLoadConfig(t *testing.T) {
 					kubelet.NodeMetricGroup,
 				},
 				K8sAPIConfig:         &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 		{

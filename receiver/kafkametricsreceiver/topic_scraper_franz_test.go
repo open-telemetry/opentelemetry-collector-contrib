@@ -23,7 +23,7 @@ func franzTopicsTestConfig(t *testing.T) Config {
 	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "topic-a"))
 	cfg := Config{
 		ClientConfig:         clientCfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		ClusterAlias:         "franz-topics",
 		TopicMatch:           ".*", // allow our seeded topic
 	}

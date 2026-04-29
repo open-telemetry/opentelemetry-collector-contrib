@@ -22,6 +22,7 @@ import (
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
@@ -200,6 +201,8 @@ func getEvent(eventType string) *corev1.Event {
 			Component: "testComponent",
 			Host:      "testHost",
 		},
+		ReportingController: "some-controller",
+		ReportingInstance:   "some-instance",
 	}
 }
 
@@ -318,6 +321,100 @@ func TestAllowEventWithZeroTimestamp(t *testing.T) {
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
 	assert.False(t, shouldAllowEvent)
+}
+
+// TestReceiverStorageInitialization tests that storage client is initialized when storage is configured
+func TestReceiverStorageInitialization(t *testing.T) {
+	tests := []struct {
+		name                string
+		storageID           *component.ID
+		expectStorageClient bool
+	}{
+		{
+			name:                "storage configured",
+			storageID:           ptr(storagetest.NewStorageID("file_storage")),
+			expectStorageClient: true,
+		},
+		{
+			name:                "no storage configured",
+			storageID:           nil,
+			expectStorageClient: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scheme := runtime.NewScheme()
+			_ = corev1.AddToScheme(scheme)
+
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.Storage = tt.storageID
+			rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+				return fake.NewClientset(), nil
+			}
+			rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+				return dynamicfake.NewSimpleDynamicClient(scheme), nil
+			}
+
+			r, err := newReceiver(
+				receivertest.NewNopSettings(metadata.Type),
+				rCfg,
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+
+			host := componenttest.NewNopHost()
+			if tt.storageID != nil {
+				host = storagetest.NewStorageHost().WithInMemoryStorageExtension("file_storage")
+			}
+
+			err = r.Start(t.Context(), host)
+			require.NoError(t, err)
+
+			recv := r.(*k8seventsReceiver)
+			if tt.expectStorageClient {
+				assert.NotNil(t, recv.storageClient, "storage client should be initialized")
+			} else {
+				assert.Nil(t, recv.storageClient, "storage client should be nil when not configured")
+			}
+
+			require.NoError(t, r.Shutdown(t.Context()))
+		})
+	}
+}
+
+// TestStartWithStorageExtensionNotFound tests that Start returns an error when the storage extension is not found
+func TestStartWithStorageExtensionNotFound(t *testing.T) {
+	scheme := runtime.NewScheme()
+	_ = corev1.AddToScheme(scheme)
+
+	storageID := ptr(storagetest.NewStorageID("file_storage"))
+
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.Storage = storageID
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewClientset(), nil
+	}
+	rCfg.makeDynamicClient = func(k8sconfig.APIConfig) (dynamic.Interface, error) {
+		return dynamicfake.NewSimpleDynamicClient(scheme), nil
+	}
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+
+	// Use a host without the storage extension
+	err = r.Start(t.Context(), componenttest.NewNopHost())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get storage client")
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
 
 // TestStartWatchersMultipleNamespaces tests watching multiple namespaces

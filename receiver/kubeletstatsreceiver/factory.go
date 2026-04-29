@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 

@@ -1,5 +1,7 @@
 display_name: SSH Check Receiver
-type: sshcheck
+type: ssh_check
+deprecated_type: sshcheck
+reaggregation_enabled: true
 
 description: This receiver creates stats by connecting to an SSH server which may be an SFTP server.
 
@@ -21,6 +23,7 @@ resource_attributes:
 attributes:
   error.message:
     description: Error message recorded during check
+    requirement_level: recommended
     type: string
 
 metrics:
