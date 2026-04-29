@@ -31,6 +31,7 @@ var useCPUTicks = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterFromVersion("v0.152.0"),
 )
 
+// USER_HZ: hardcoded at 100 in the Linux kernel since 2.6 for /proc/stat ABI stability.
 const defaultTicksPerSecond = 100
 
 // tickReader reads per-CPU tick counts from the operating system.
