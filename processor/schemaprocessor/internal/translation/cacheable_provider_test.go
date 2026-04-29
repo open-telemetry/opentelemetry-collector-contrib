@@ -68,8 +68,7 @@ func TestCacheableProviderCounters(t *testing.T) {
 			tb, err := metadata.NewTelemetryBuilder(metadatatest.NewSettings(testTel).TelemetrySettings)
 			require.NoError(t, err)
 
-			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5)
-			cp.telemetryBuilder = tb
+			cp := NewCacheableProvider(&staticProvider{value: "result"}, 0, 5, tb)
 
 			for _, key := range tt.retrievals {
 				_, err := cp.Retrieve(t.Context(), key)
@@ -106,7 +105,8 @@ func (p *alwaysErrorProvider) Retrieve(_ context.Context, _ string) (string, err
 // than allowing another burst of `limit` calls through.
 func TestCacheableProviderRateLimit(t *testing.T) {
 	provider := &alwaysErrorProvider{}
-	cp := NewCacheableProvider(provider, time.Hour, 3)
+	tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	cp := NewCacheableProvider(provider, time.Hour, 3, tb).(*CacheableProvider)
 
 	// Exhaust the limit: 3 calls should reach the provider.
 	for range 3 {
@@ -155,12 +155,13 @@ func TestCacheableProvider(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a new cacheable provider
-			provider := NewCacheableProvider(&firstErrorProvider{}, 0*time.Nanosecond, tt.limit)
+			tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+			provider := NewCacheableProvider(&firstErrorProvider{}, 0*time.Nanosecond, tt.limit, tb)
 
 			var p string
 			var err error
 			for i := 0; i < tt.retry; i++ {
-				p, err = provider.Retrieve(t.Context(), "key")
+				_, err := provider.Retrieve(t.Context(), "key")
 				if err == nil {
 					break
 				}
