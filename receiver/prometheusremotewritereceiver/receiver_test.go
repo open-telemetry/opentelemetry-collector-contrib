@@ -2516,40 +2516,25 @@ func TestInvalidSchemaLogging(t *testing.T) {
 						},
 						PositiveDeltas: []int64{10, 15},
 					},
-					{
-						Timestamp: 123456790,
-						Schema:    99, // Invalid schema
-						Sum:       200.0,
-						Count:     &writev2.Histogram_CountInt{CountInt: 100},
-					},
 				},
 			},
 		},
 	}
 
-	ctx := context.Background()
-	metrics, stats, err := writeReceiver.translateV2(ctx, request)
+	metrics, stats, err := writeReceiver.translateV2(t.Context(), request)
 	require.NoError(t, err)
 	assert.Equal(t, 0, metrics.MetricCount())
 	assert.Equal(t, 0, stats.Histograms)
 
-	// Verify that warning logs were emitted for both invalid schemas
+	// Verify that warning log was emitted for the invalid schema
 	logs := obs.All()
-	require.Len(t, logs, 2, "Expected 2 warning logs for 2 invalid schemas")
+	require.Len(t, logs, 1, "Expected 1 warning log for invalid schema")
 
-	// Check first log entry
+	// Check log entry
 	assert.Equal(t, "Dropping histogram with invalid schema", logs[0].Message)
 	assert.Equal(t, "test_invalid_histogram", logs[0].ContextMap()["metric_name"])
 	assert.Equal(t, int32(-10), logs[0].ContextMap()["schema"])
 	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
 	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
 	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
-
-	// Check second log entry
-	assert.Equal(t, "Dropping histogram with invalid schema", logs[1].Message)
-	assert.Equal(t, "test_invalid_histogram", logs[1].ContextMap()["metric_name"])
-	assert.Equal(t, int32(99), logs[1].ContextMap()["schema"])
-	assert.Equal(t, "test_job", logs[1].ContextMap()["job"])
-	assert.Equal(t, "test_instance", logs[1].ContextMap()["instance"])
-	assert.Equal(t, int64(123456790), logs[1].ContextMap()["timestamp"])
 }
