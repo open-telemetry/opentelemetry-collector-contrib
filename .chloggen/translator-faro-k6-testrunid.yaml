@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: pkg/translator/faro
+component: pkg/faro
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Emit `k6_testRunId` in the log body when `meta.k6.testRunId` is present in the Faro payload.
