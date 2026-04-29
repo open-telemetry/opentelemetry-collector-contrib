@@ -1,7 +1,7 @@
 change_type: enhancement
 component: receiver/sqlserver
 note: Add Memory Manager metrics (memory areas, page pools, cache objects) consolidating 16 db-agent samplers into 3 OTLP metrics.
-issues: []
+issues: [48032]
 subtext: |
   Added three new opt-in metrics:
   - `sqlserver.memory.area` with `memory.area` attribute (target, total, sql_cache, optimizer, connection, granted_workspace, max_workspace)
