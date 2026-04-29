@@ -11,9 +11,9 @@ components:
         - otlpjson
         - roundrobin
         - routing
-        - servicegraph
+        - service_graph
         - signal_to_metrics
-        - spanmetrics
+        - span_metrics
         - sum
     exporter:
         - alibabacloud_logservice
@@ -39,7 +39,7 @@ components:
         - googlecloud
         - googlecloudpubsub
         - googlemanagedprometheus
-        - honeycombmarker
+        - honeycomb_marker
         - influxdb
         - kafka
         - loadbalancing
@@ -112,7 +112,7 @@ components:
         - interval
         - isolationforest
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metric_start_time
         - metricsgeneration
         - metricstransform
@@ -163,7 +163,7 @@ components:
         - file_log
         - file_stats
         - flinkmetrics
-        - fluentforward
+        - fluent_forward
         - github
         - gitlab
         - googlecloudmonitoring
@@ -179,7 +179,7 @@ components:
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kafka
         - kafkametrics
         - kubeletstats

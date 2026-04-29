@@ -75,6 +75,15 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+
+			// StartTimestamp must equal the data point timestamp, not mb.startTime.
+			// When the batch API is used, ts comes from Azure's aggregation window
+			// (potentially hours in the past), while mb.startTime is the scrape
+			// time. Setting StartTimestamp=mb.startTime > ts violates the OTel spec.
+			dp := rm.ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0)
+			assert.Equal(t, ts, dp.StartTimestamp(),
+				"StartTimestamp must equal the data point Timestamp, not mb.startTime")
+			assert.Equal(t, ts, dp.Timestamp())
 		})
 	}
 }
