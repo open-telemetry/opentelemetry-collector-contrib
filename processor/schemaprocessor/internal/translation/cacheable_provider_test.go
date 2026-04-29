@@ -6,6 +6,7 @@ package translation
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -18,6 +19,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadatatest"
 )
+
+// slowProvider simulates a slow HTTP fetch with a fixed delay.
+type slowProvider struct {
+	delay time.Duration
+}
+
+func (p *slowProvider) Retrieve(_ context.Context, key string) (string, error) {
+	time.Sleep(p.delay)
+	return key, nil
+}
 
 type firstErrorProvider struct {
 	cnt int
@@ -87,6 +98,42 @@ func TestCacheableProviderCounters(t *testing.T) {
 			}
 			require.NoError(t, testTel.Shutdown(t.Context()))
 		})
+	}
+}
+
+// BenchmarkCacheableProviderConcurrentFetch measures throughput of concurrent fetches
+// for distinct keys. With the lock released during the HTTP call, goroutines can fetch
+// in parallel rather than serializing behind the mutex.
+//
+// With a 1ms provider delay and 10 goroutines each doing 100 fetches:
+//   - Lock released before fetch: ~100ms total (goroutines overlap)
+//   - Lock held during fetch:     ~1000ms total (goroutines serialize)
+func BenchmarkCacheableProviderConcurrentFetch(b *testing.B) {
+	tb, _ := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+
+	const (
+		goroutines    = 10
+		fetchesPerG   = 100
+		providerDelay = time.Millisecond
+	)
+
+	for range b.N {
+		cp := NewCacheableProvider(&slowProvider{delay: providerDelay}, time.Minute, 10, tb)
+		var wg sync.WaitGroup
+		for g := range goroutines {
+			wg.Add(1)
+			go func(base int) {
+				defer wg.Done()
+				for i := range fetchesPerG {
+					key := "key-" + strconv.Itoa(base*fetchesPerG+i)
+					_, err := cp.Retrieve(b.Context(), key)
+					if err != nil {
+						b.Error(err)
+					}
+				}
+			}(g)
+		}
+		wg.Wait()
 	}
 }
 
@@ -161,7 +208,7 @@ func TestCacheableProvider(t *testing.T) {
 			var p string
 			var err error
 			for i := 0; i < tt.retry; i++ {
-				_, err := provider.Retrieve(t.Context(), "key")
+				p, err = provider.Retrieve(t.Context(), "key")
 				if err == nil {
 					break
 				}
