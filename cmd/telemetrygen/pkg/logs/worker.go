@@ -139,7 +139,11 @@ func (w *worker) flushBuffer(exporter sdklog.Exporter) {
 	}
 
 	if err := exporter.Export(context.Background(), w.batchBuffer); err != nil {
-		w.logger.Error("failed to export batched logs", zap.Error(err))
+		if w.allowFailures {
+			w.logger.Error("exporter failed, continuing due to --allow-export-failures", zap.Error(err))
+		} else {
+			w.logger.Fatal("failed to export batched logs", zap.Error(err))
+		}
 	} else {
 		w.logger.Debug("exported batched logs", zap.Int("count", len(w.batchBuffer)))
 	}
