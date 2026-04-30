@@ -451,6 +451,18 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				sum.SetIsMonotonic(true)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "counter")
+			case writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
+				// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#otlp-to-prometheus
+				// Info and StateSet metrics MUST be converted to an OTLP Non-Monotonic Sum.
+				metric = setMetric(scope, metricName, unit, description)
+				sum := metric.SetEmptySum()
+				sum.SetIsMonotonic(false)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_INFO {
+					metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "info")
+				} else {
+					metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "stateset")
+				}
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
 				// Drop summary series as we will not handle them.
 				continue
@@ -468,7 +480,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE, writev2.Metadata_METRIC_TYPE_UNSPECIFIED:
 			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts, &stats)
-		case writev2.Metadata_METRIC_TYPE_COUNTER:
+		case writev2.Metadata_METRIC_TYPE_COUNTER, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts, &stats)
 			key := exemplarKey{
 				ScopeName:    si.Name,
@@ -535,7 +547,15 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 		case -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8:
 			histogramType = "exponential"
 		default:
-			// Skip invalid schema
+			// Skip invalid schema - log at debug level for details
+			prw.settings.Logger.Debug(
+				"Dropping histogram with invalid schema",
+				zapcore.Field{Key: "metric_name", Type: zapcore.StringType, String: metricName},
+				zapcore.Field{Key: "schema", Type: zapcore.Int32Type, Integer: int64(histogram.Schema)},
+				zapcore.Field{Key: "job", Type: zapcore.StringType, String: ls.Get("job")},
+				zapcore.Field{Key: "instance", Type: zapcore.StringType, String: ls.Get("instance")},
+				zapcore.Field{Key: "timestamp", Type: zapcore.Int64Type, Integer: histogram.Timestamp},
+			)
 			continue
 		}
 		// Create resource if needed (only for the first valid histogram)
