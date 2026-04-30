@@ -5,7 +5,6 @@ package pebbletailstorageextension // import "github.com/open-telemetry/opentele
 
 import (
 	"bytes"
-	"path/filepath"
 
 	"github.com/cockroachdb/pebble/v2"
 	"github.com/cockroachdb/pebble/v2/bloom"
@@ -38,7 +37,7 @@ func newPebbleDB(storageDir string, logger *zap.Logger) (*pebble.DB, error) {
 		FilterType:   pebble.TableFilter,
 	}
 
-	return pebble.Open(filepath.Join(storageDir, "tailstorage"), opts)
+	return pebble.Open(storageDir, opts)
 }
 
 func traceKeyComparer() *pebble.Comparer {

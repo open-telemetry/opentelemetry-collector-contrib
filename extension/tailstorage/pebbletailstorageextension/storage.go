@@ -6,6 +6,7 @@ package pebbletailstorageextension // import "github.com/open-telemetry/opentele
 import (
 	"bytes"
 	"encoding/binary"
+	"path/filepath"
 	"sync/atomic"
 
 	"github.com/cockroachdb/pebble/v2"
@@ -17,6 +18,9 @@ import (
 const (
 	traceIDSeparator byte = ':'
 	traceIDBytes          = len(pcommon.TraceID{})
+
+	// storageVersion is a version to support evolution.
+	storageVersion = "v0"
 )
 
 type storage struct {
@@ -32,7 +36,7 @@ func newStorage(storageDir string, logger *zap.Logger) (*storage, error) {
 		logger = zap.NewNop()
 	}
 
-	db, err := newPebbleDB(storageDir, logger)
+	db, err := newPebbleDB(filepath.Join(storageDir, storageVersion), logger)
 	if err != nil {
 		return nil, err
 	}
