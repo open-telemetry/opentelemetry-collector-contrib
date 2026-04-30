@@ -34,6 +34,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -2678,6 +2681,98 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{Confirmed: true, Histograms: 1},
 		},
+		{
+			name: "info metric - converted to non-monotonic sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "build_info", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"version", "v1.0.0", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("build_info")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "info")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(false)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("version", "v1.0.0")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
+		{
+			name: "stateset metric - converted to non-monotonic sum",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "my_feature_flag", // 1, 2
+					"job", "test_job", // 3, 4
+					"instance", "test_instance", // 5, 6
+					"my_feature_flag", "enabled", // 7, 8
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_STATESET},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1, StartTimestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "test_job")
+				rm.Resource().Attributes().PutStr("service.instance.id", "test_instance")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("my_feature_flag")
+				m.SetUnit("")
+				m.SetDescription("")
+				m.Metadata().PutStr(prometheus.MetricMetadataTypeKey, "stateset")
+				sum := m.SetEmptySum()
+				sum.SetIsMonotonic(false)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("my_feature_flag", "enabled")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{
+				Confirmed: true,
+				Samples:   1,
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
@@ -3244,4 +3339,80 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "permanent failure")
 	})
+}
+
+// TestInvalidSchemaLogging verifies that invalid histogram schemas trigger debug logs
+func TestInvalidSchemaLogging(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver)
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	request := &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_invalid_histogram",
+			"job", "test_job",
+			"instance", "test_instance",
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Metadata: writev2.Metadata{
+					Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+				},
+				Histograms: []writev2.Histogram{
+					{
+						Timestamp: 123456789,
+						Schema:    -10, // Invalid schema
+						Sum:       100.5,
+						Count:     &writev2.Histogram_CountInt{CountInt: 50},
+						PositiveSpans: []writev2.BucketSpan{
+							{Offset: 0, Length: 2},
+						},
+						PositiveDeltas: []int64{10, 15},
+					},
+				},
+			},
+		},
+	}
+
+	metrics, stats, err := writeReceiver.translateV2(t.Context(), request)
+	require.NoError(t, err)
+	assert.Equal(t, 0, metrics.MetricCount())
+	assert.Equal(t, 0, stats.Histograms)
+
+	// Verify that debug log was emitted for the invalid schema
+	logs := obs.All()
+	require.Len(t, logs, 1, "Expected 1 debug log for invalid schema")
+
+	// Check log entry
+	assert.Equal(t, "Dropping histogram with invalid schema", logs[0].Message)
+	assert.Equal(t, "test_invalid_histogram", logs[0].ContextMap()["metric_name"])
+	assert.Equal(t, int32(-10), logs[0].ContextMap()["schema"])
+	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
+	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
+	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
 }

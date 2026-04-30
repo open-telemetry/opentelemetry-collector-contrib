@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 )
 
 // CacheableProvider is a provider that caches the result of another provider.
@@ -29,38 +31,44 @@ type CacheableProvider struct {
 	lastErr error
 	// resetTime is the time when the rate limit will be reset
 	resetTime time.Time
+	// telemetryBuilder is used to record cache hit/miss metrics
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // NewCacheableProvider creates a new CacheableProvider.
 // The cooldown parameter is the time to wait before retrying a failed call.
 // The limit parameter is the number of failed calls to allow before setting the cooldown period.
-func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) Provider {
+func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int, telemetryBuilder *metadata.TelemetryBuilder) Provider {
 	return &CacheableProvider{
-		provider: provider,
-		// TODO make cache configurable
-		cache:    cache.New(cache.NoExpiration, cache.NoExpiration),
-		cooldown: cooldown,
-		limit:    limit,
+		provider:         provider,
+		cache:            cache.New(cache.NoExpiration, cache.NoExpiration),
+		cooldown:         cooldown,
+		limit:            limit,
+		telemetryBuilder: telemetryBuilder,
 	}
 }
 
 func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, error) {
 	// Check if the key is in the cache.
 	if value, found := p.cache.Get(key); found {
+		p.telemetryBuilder.ProcessorSchemaCacheHits.Add(ctx, 1)
 		return value.(string), nil
 	}
 
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	// Check if the key is in the cache again in case it was added while waiting for the lock.
 	if value, found := p.cache.Get(key); found {
+		p.mu.Unlock()
+		p.telemetryBuilder.ProcessorSchemaCacheHits.Add(ctx, 1)
 		return value.(string), nil
 	}
 
 	// Check if the function is currently rate-limited
 	if time.Now().Before(p.resetTime) {
-		return "", fmt.Errorf("rate limited, last error: %w", p.lastErr)
+		lastErr := p.lastErr
+		p.mu.Unlock()
+		return "", fmt.Errorf("rate limited, last error: %w", lastErr)
 	}
 
 	// After the cooldown expires, allow one retry but keep the count so the
@@ -70,7 +78,15 @@ func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, e
 	}
 	p.callcount++
 
+	// Release the lock before the HTTP call so other goroutines are not blocked
+	// for the duration of the network request.
+	p.mu.Unlock()
+
+	p.telemetryBuilder.ProcessorSchemaCacheMisses.Add(ctx, 1)
 	v, err := p.provider.Retrieve(ctx, key)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if err != nil {
 		p.lastErr = err
 		// If the call limit is reached, set the cooldown period

@@ -7,6 +7,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -198,7 +199,7 @@ func (m *mySQLScraper) scrapeTopQueryFunc(_ context.Context) (plog.Logs, error) 
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	if m.lastExecutionTimestamp.Add(m.config.TopQueryCollection.CollectionInterval).After(now.AsTime()) {
+	if int(math.Ceil(time.Since(m.lastExecutionTimestamp).Seconds())) < int(m.config.TopQueryCollection.CollectionInterval.Seconds()) {
 		m.logger.Debug("Skipping top queries scrape, not enough time has passed since last execution")
 	} else {
 		m.scrapeTopQueries(now, errs)
@@ -838,6 +839,7 @@ func (m *mySQLScraper) scrapeQuerySamples(_ context.Context, now pcommon.Timesta
 			sample.waitEvent,
 			sample.sessionStatus,
 			sample.sessionID,
+			sample.statementTimerWait,
 			sample.waitTime,
 			clientAddress,
 			clientPort,
@@ -923,6 +925,13 @@ func (m *mySQLScraper) cacheAndDiff(schemaName, digest, column string, val int64
 	if val > cached {
 		m.cache.Add(key, val)
 		return true, val - cached
+	}
+
+	// val < cached means the DB counter was reset (e.g. after a DB restart).
+	// Treat the current value as the full diff since the reset and refresh the cache.
+	if val < cached {
+		m.cache.Add(key, val)
+		return true, val
 	}
 
 	return true, 0

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -294,6 +295,73 @@ func TestSyncBulkIndexerRequestRetriesMetric(t *testing.T) {
 					),
 				},
 			}, metricdatatest.IgnoreTimestamp())
+		})
+	}
+}
+
+func TestSyncBulkIndexerFlushErrorPermanence(t *testing.T) {
+	tests := []struct {
+		name               string
+		responseStatusCode int
+		retryOnStatus      []int
+		wantPermanent      bool
+	}{
+		{
+			name:               "non-retryable status is permanent",
+			responseStatusCode: http.StatusUnauthorized,
+			retryOnStatus:      []int{http.StatusTooManyRequests},
+			wantPermanent:      true,
+		},
+		{
+			name:               "retryable status is not permanent",
+			responseStatusCode: http.StatusTooManyRequests,
+			retryOnStatus:      []int{http.StatusTooManyRequests},
+			wantPermanent:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{NumConsumers: 1}),
+				Retry: RetrySettings{
+					Enabled:       false,
+					RetryOnStatus: tt.retryOnStatus,
+				},
+			}
+
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{RoundTripFunc: func(*http.Request) (*http.Response, error) {
+					return &http.Response{
+						Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+						Body:       io.NopCloser(strings.NewReader(`{"error":"boom"}`)),
+						StatusCode: tt.responseStatusCode,
+					}, nil
+				}},
+			})
+			require.NoError(t, err)
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(
+				metadatatest.NewSettings(ct).TelemetrySettings,
+			)
+			require.NoError(t, err)
+
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop(), nil)
+
+			session := bi.StartSession(t.Context())
+			require.NoError(t, session.Add(t.Context(), "foo", "", "", strings.NewReader(`{"foo":"bar"}`), nil, docappender.ActionCreate))
+
+			err = session.Flush(t.Context())
+			require.Error(t, err)
+			assert.Equal(t, tt.wantPermanent, consumererror.IsPermanent(err))
+
+			var flushErr docappender.ErrorFlushFailed
+			assert.ErrorAs(t, err, &flushErr)
+
+			session.End()
+			assert.NoError(t, bi.Close(t.Context()))
 		})
 	}
 }
