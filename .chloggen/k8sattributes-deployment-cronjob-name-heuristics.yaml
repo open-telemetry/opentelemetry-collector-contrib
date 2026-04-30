@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/k8s_attributes
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Improve deployment and cronjob name extraction heuristics
+note: Improve deployment name extraction heuristic when deployment_name_from_replicaset is enabled
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [44831]
@@ -16,9 +16,9 @@ issues: [44831]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Deployment and CronJob name heuristics are now used by default when the workload informers that supply those names are not running,
-  so the processor avoids starting informers only to resolve those names. That reduces Kubernetes API traffic and memory use.
-  When a relevant informer is enabled (for example for k8s.deployment.uid), API-backed metadata overrides the heuristics.
+  When `deployment_name_from_replicaset` is true and the ReplicaSet informer is not used for deployment names only,
+  the processor derives `k8s.deployment.name` using the pod-template-hash label and ReplicaSet naming rules.
+  When a ReplicaSet informer is running (for example for `k8s.deployment.uid`), API-backed metadata takes precedence.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
@@ -28,5 +28,3 @@ subtext: |
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
 change_logs: [user]
-
-

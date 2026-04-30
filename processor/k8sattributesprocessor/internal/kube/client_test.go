@@ -640,13 +640,12 @@ func TestExtractionRules(t *testing.T) {
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
 
-	jobCronSuffixMinutes := int64(27667920)
 	pod := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "auth-service-abc12-xyz3",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace:         "ns1",
-			CreationTimestamp: meta_v1.NewTime(time.Unix(jobCronSuffixMinutes*60, 0)),
+			CreationTimestamp: meta_v1.Now(),
 			Labels: map[string]string{
 				"label1": "lv1",
 				"label2": "k1=v1 k5=v5 extra!",
@@ -4022,7 +4021,9 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 					Controller: &isNotController,
 				},
 			},
-			want: map[string]string{},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
 		},
 		{
 			name: "multiple_owners_only_controller_counts",
@@ -4047,7 +4048,7 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"k8s.cronjob.name": "cj-controller",
+				"k8s.cronjob.name": "my-cronjob",
 				"k8s.cronjob.uid":  "cron-uid-222",
 			},
 		},
@@ -4066,7 +4067,9 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 					Controller: &isController,
 				},
 			},
-			want: map[string]string{},
+			want: map[string]string{
+				"k8s.cronjob.name": "my-cronjob",
+			},
 		},
 	}
 
@@ -4185,51 +4188,6 @@ func TestExtractDeploymentNameFromReplicaSet(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
-}
-
-func TestExtractCronJobNameFromJobOwner(t *testing.T) {
-	c, _ := newTestClient(t)
-
-	const jobName = "ab-12345678"
-	const suffixMinutes int64 = 12345678
-	ref := meta_v1.OwnerReference{Name: jobName}
-
-	t.Run("match_when_pod_time_aligns_with_suffix", func(t *testing.T) {
-		pod := &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				CreationTimestamp: meta_v1.NewTime(time.Unix(suffixMinutes*60, 0)),
-			},
-		}
-		assert.Equal(t, "ab", c.extractCronJobNameFromJobOwner(ref, pod))
-	})
-
-	t.Run("match_within_skew_boundary", func(t *testing.T) {
-		pod := &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				CreationTimestamp: meta_v1.NewTime(time.Unix((suffixMinutes+cronJobSuffixTimeSkewMinutes)*60, 0)),
-			},
-		}
-		assert.Equal(t, "ab", c.extractCronJobNameFromJobOwner(ref, pod))
-	})
-
-	t.Run("no_match_beyond_skew", func(t *testing.T) {
-		pod := &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				CreationTimestamp: meta_v1.NewTime(time.Unix((suffixMinutes+cronJobSuffixTimeSkewMinutes+1)*60, 0)),
-			},
-		}
-		assert.Empty(t, c.extractCronJobNameFromJobOwner(ref, pod))
-	})
-
-	t.Run("no_match_invalid_job_name_shape", func(t *testing.T) {
-		pod := &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				CreationTimestamp: meta_v1.NewTime(time.Unix(suffixMinutes*60, 0)),
-			},
-		}
-		badRef := meta_v1.OwnerReference{Name: "notenoughdigits"}
-		assert.Empty(t, c.extractCronJobNameFromJobOwner(badRef, pod))
-	})
 }
 
 // trackableInformer is a mock informer that tracks if Run has been called.

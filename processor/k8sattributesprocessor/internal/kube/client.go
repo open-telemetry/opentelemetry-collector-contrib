@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -97,17 +96,7 @@ type WatchClient struct {
 
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
-// time-hash-int is the unix timestamp in minutes of the job creation time
-// 8 digits will last until 2160, we are safe for a while
-// K8S code ref: https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/cronjob/utils.go#L246-L247
-var cronJobRegex = regexp.MustCompile(`^(.*)-(\d{8})$`)
-
-// cronJobSuffixTimeSkewMinutes is the maximum allowed difference
-// in minutes between pod creation time and the timestamp suffix
-// in the job name (created by cronjob)
-// If the suffix falls outside of the range, it is assumed that it's not a cronjob
-// (i.e. the suffix is human generated, like a date 20260407)
-const cronJobSuffixTimeSkewMinutes int64 = 60 * 24 // 1 day
+var cronJobRegex = regexp.MustCompile(`^(.*)-\d+$`)
 
 // podTemplateHashLabel contains the label that K8s Deployment
 // controller adds to ReplicaSets to ensure that child ReplicaSets
@@ -996,24 +985,15 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[string(conventions.ServiceNameKey)] = ref.Name
 				}
 				if c.Rules.CronJobName || c.Rules.ServiceName {
-					var cronjobName string
-					// Attempt to use the Job informer when it is running (e.g. k8s.cronjob.uid or from: job
-					// label/annotation extraction). Otherwise fall back to heuristics on the Job name suffix.
-					if job, ok := c.GetJob(string(ref.UID)); ok {
-						cronjobName = job.CronJob.Name
-						c.logger.Debug("used CronJob informer to get CronJob name", zap.String("cronjob", cronjobName))
-					} else {
-						cronjobName = c.extractCronJobNameFromJobOwner(ref, pod)
-						c.logger.Debug("used heuristics for cronjob name", zap.String("cronjob", cronjobName))
-					}
-
-					if cronjobName != "" {
+					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+					if len(parts) == 2 {
+						name := parts[1]
 						if c.Rules.CronJobName {
-							tags[string(conventions.K8SCronJobNameKey)] = cronjobName
+							tags[string(conventions.K8SCronJobNameKey)] = name
 						}
 						if c.Rules.ServiceName {
 							// cronjob name wins over job name
-							tags[string(conventions.ServiceNameKey)] = cronjobName
+							tags[string(conventions.ServiceNameKey)] = name
 						}
 					}
 				}
@@ -1089,10 +1069,9 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	// there's room to optimize this further, it's kept this way for simplicity
 	transformedPod := api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:              pod.GetName(),
-			Namespace:         pod.GetNamespace(),
-			UID:               pod.GetUID(),
-			CreationTimestamp: pod.GetCreationTimestamp(), // Used to identify cron-job
+			Name:      pod.GetName(),
+			Namespace: pod.GetNamespace(),
+			UID:       pod.GetUID(),
 		},
 		Status: api_v1.PodStatus{
 			PodIP:     pod.Status.PodIP,
@@ -2008,35 +1987,6 @@ func ignoreDeletedFinalStateUnknown(obj any) any {
 func automaticServiceInstanceID(pod *api_v1.Pod, containerName string) string {
 	resNames := []string{pod.Namespace, pod.Name, containerName}
 	return strings.Join(resNames, ".")
-}
-
-// extractCronJobNameFromJobOwner returns the CronJob name for a Job owner reference using
-// a heuristic that checks if the job name suffix is a valid timestamp closely matching the pod creation time.
-// If it matches, then the suffix is assumed to be the job creation time, and the prefix is then the CronJob name.
-func (c *WatchClient) extractCronJobNameFromJobOwner(ref meta_v1.OwnerReference, pod *api_v1.Pod) string {
-	// Regex checks specifically for 8 digits at the end (Kubernetes CronJob job suffix is a
-	// time value in minutes).
-	parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
-	if len(parts) != 3 {
-		return ""
-	}
-	suffixMinutes, err := strconv.ParseInt(parts[2], 10, 64)
-	if err != nil {
-		c.logger.Debug("failed to parse cronjob timestamp", zap.Error(err))
-		// assume not a cronjob
-		return ""
-	}
-	podMinutes := pod.GetCreationTimestamp().Unix() / 60
-	diff := podMinutes - suffixMinutes
-	if diff < 0 {
-		diff = -diff
-	}
-	if diff > cronJobSuffixTimeSkewMinutes {
-		// assume not a cronjob
-		return ""
-	}
-
-	return parts[1]
 }
 
 // extractDeploymentNameFromReplicaSet attempts to extract deployment name from replicaset name

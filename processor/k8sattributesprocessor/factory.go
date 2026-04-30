@@ -45,8 +45,7 @@ func createDefaultConfig() component.Config {
 		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		Exclude:   defaultExcludes,
 		Extract: ExtractConfig{
-			Metadata:                     enabledAttributes(),
-			DeploymentNameFromReplicaSet: true, // Deprecate in future release
+			Metadata: enabledAttributes(),
 		},
 		WaitForMetadataTimeout: 10 * time.Second,
 	}

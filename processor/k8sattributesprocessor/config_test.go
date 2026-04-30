@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 				Exclude:   ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 			},
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 						{TagName: "l1", Key: "label1", From: "pod"},
 						{TagName: "l2", Key: "label2", From: kube.MetadataFromPod},
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Filter: FilterConfig{
 					Namespace:      "ns2",
@@ -179,7 +179,7 @@ func TestLoadConfig(t *testing.T) {
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
 					OtelAnnotations:              true,
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -191,7 +191,7 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadata:        true,
@@ -205,7 +205,7 @@ func TestLoadConfig(t *testing.T) {
 				Passthrough: true,
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -217,7 +217,7 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Filter: FilterConfig{
 					Labels: []FieldFilterConfig{
@@ -234,7 +234,7 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Extract: ExtractConfig{
 					Metadata:                     enabledAttributes(),
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Filter: FilterConfig{
 					Labels: []FieldFilterConfig{
@@ -257,7 +257,7 @@ func TestLoadConfig(t *testing.T) {
 					Annotations: []FieldExtractConfig{
 						{TagName: "ns_annotation", Key: "owner", From: "namespace"},
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -272,7 +272,7 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "node_label", Key: "node-role", From: "node"},
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -287,7 +287,7 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "deployment_label", Key: "app", From: "deployment"},
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -302,7 +302,7 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "statefulset_label", Key: "app", From: "statefulset"},
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -317,7 +317,7 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "daemonset_label", Key: "app", From: "daemonset"},
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -332,7 +332,7 @@ func TestLoadConfig(t *testing.T) {
 					Labels: []FieldExtractConfig{
 						{TagName: "job_label", Key: "app", From: "job"},
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
@@ -353,7 +353,7 @@ func TestLoadConfig(t *testing.T) {
 						"container.image.repo_digests", "service.namespace", "service.name",
 						"service.version", "service.instance.id", "k8s.cluster.uid",
 					},
-					DeploymentNameFromReplicaSet: true,
+					DeploymentNameFromReplicaSet: false,
 				},
 				Exclude:                defaultExcludes,
 				WaitForMetadataTimeout: 10 * time.Second,
