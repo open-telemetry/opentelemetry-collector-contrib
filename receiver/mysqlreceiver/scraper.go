@@ -154,11 +154,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeReplicaStatusStats(now)
 
 	rb := m.mb.NewResourceBuilder()
-	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
-	if m.detectedVersion.version != nil {
-		rb.SetDbSystemName(m.detectedVersion.productString())
-		rb.SetDbSystemVersion(m.detectedVersion.version.String())
-	}
+	m.setResourceAttributes(rb)
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
@@ -168,13 +164,17 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 // endpoint, applies resource-level version attributes, and returns the result.
 func (m *mySQLScraper) emitLogs(errs *scrapererror.ScrapeErrors) (plog.Logs, error) {
 	rb := m.lb.NewResourceBuilder()
+	m.setResourceAttributes(rb)
+	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
+	return logs, errs.Combine()
+}
+
+func (m *mySQLScraper) setResourceAttributes(rb *metadata.ResourceBuilder) {
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
 	if m.detectedVersion.version != nil {
 		rb.SetDbSystemName(m.detectedVersion.productString())
 		rb.SetDbSystemVersion(m.detectedVersion.version.String())
 	}
-	logs := m.lb.Emit(metadata.WithLogsResource(rb.Emit()))
-	return logs, errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeTopQueryFunc(_ context.Context) (plog.Logs, error) {

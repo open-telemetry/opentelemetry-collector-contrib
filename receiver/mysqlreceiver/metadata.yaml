@@ -16,11 +16,11 @@ reaggregation_enabled: true
 
 resource_attributes:
   db.system.name:
-    description: The database product of the instance.
+    description: The database product of the instance. Examples include "mysql" and "mariadb".
     enabled: false
     type: string
   db.system.version:
-    description: The database version of the instance.
+    description: The database version of the instance. Examples include "8.0.34" and "10.11.7-MariaDB".
     enabled: false
     type: string
   mysql.instance.endpoint:
