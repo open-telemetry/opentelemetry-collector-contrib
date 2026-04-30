@@ -198,8 +198,23 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 	}
 
 	ld := plog.NewLogs()
-	lr := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	rl := ld.ResourceLogs().AppendEmpty()
+	pp.ResourceProfiles().At(0).Resource().Attributes().CopyTo(rl.Resource().Attributes())
+
+	firstProfile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("otel.profiling")
+	sl.Scope().SetVersion("0.1.0")
+	lr := sl.LogRecords().AppendEmpty()
 	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	lr.SetTimestamp(firstProfile.Time())
+	lr.Attributes().PutStr("com.splunk.sourcetype", "otel.profiling")
+	sampleType := pp.Dictionary().StringTable().At(int(firstProfile.SampleType().TypeStrindex()))
+	lr.Attributes().PutStr("profiling.data.type", sampleType)
+	lr.Attributes().PutStr("profiling.data.format", "pprof-gzip-base64")
+	lr.Attributes().PutInt("profiling.data.total.frame.count", int64(firstProfile.Samples().Len()))
+	// TODO find whether it is continuous or snapshot
+	lr.Attributes().PutStr("profiling.instrumentation.source", "continuous")
 
 	return c.pushLogDataInBatches(ctx, ld, localHeaders)
 }
