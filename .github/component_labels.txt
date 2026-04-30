@@ -185,6 +185,7 @@ processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
 processor/drainprocessor processor/drain
 processor/filterprocessor processor/filter
+processor/genainormalizerprocessor processor/genainormalizer
 processor/geoipprocessor processor/geoip
 processor/groupbyattrsprocessor processor/groupbyattrs
 processor/groupbytraceprocessor processor/groupbytrace

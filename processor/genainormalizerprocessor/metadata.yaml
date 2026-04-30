@@ -1,0 +1,17 @@
+display_name: GenAI Normalizer Processor
+type: genainormalizer
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: []
+  codeowners:
+    active: [kylehounslow, vamsimanohar, ps48]
+
+tests:
+  config:
+    profiles:
+      - openinference
+      - openllmetry
+    remove_originals: true

@@ -3,3 +3,5 @@ steven-freed
 garrett-splunk
 robertgustafsonsplunk
 Mrod1598
+kylehounslow
+vamsimanohar
