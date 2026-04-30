@@ -442,6 +442,38 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- | --------- |
 | 1 | Gauge | Double | Development |
 
+### k8s.node.system_container.cpu.time
+
+Total cumulative CPU time (sum of all cores) spent by the system container since its creation
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+### k8s.node.system_container.cpu.usage
+
+Total CPU usage (sum of all cores per second) averaged over the sample window for the system container
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| {cpu} | Gauge | Double | Development |
+
+### k8s.node.system_container.memory.usage
+
+System container memory usage
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
+### k8s.node.system_container.memory.working_set
+
+System container memory working_set
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| By | Gauge | Int | Development |
+
 ### k8s.node.uptime
 
 The time since the node started
@@ -527,6 +559,7 @@ The number of used bytes in the pod volume.
 | k8s.container.name | Container name used by container runtime | Any Str | true | - |
 | k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true | - |
 | k8s.node.name | The name of the Node | Any Str | true | - |
+| k8s.node.system_container.name | The name of the system container | Any Str | true | - |
 | k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true | - |
 | k8s.pod.name | The name of the Pod | Any Str | true | - |
 | k8s.pod.uid | The UID of the Pod | Any Str | true | - |

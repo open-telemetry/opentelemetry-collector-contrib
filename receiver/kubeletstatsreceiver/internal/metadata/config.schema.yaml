@@ -221,6 +221,34 @@ $defs:
           enabled:
             type: boolean
             default: true
+      k8s.node.system_container.cpu.time:
+        description: "K8sNodeSystemContainerCPUTimeMetricConfig provides config for the k8s.node.system_container.cpu.time metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.node.system_container.cpu.usage:
+        description: "K8sNodeSystemContainerCPUUsageMetricConfig provides config for the k8s.node.system_container.cpu.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.node.system_container.memory.usage:
+        description: "K8sNodeSystemContainerMemoryUsageMetricConfig provides config for the k8s.node.system_container.memory.usage metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      k8s.node.system_container.memory.working_set:
+        description: "K8sNodeSystemContainerMemoryWorkingSetMetricConfig provides config for the k8s.node.system_container.memory.working_set metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       k8s.node.uptime:
         description: "K8sNodeUptimeMetricConfig provides config for the k8s.node.uptime metric."
         type: object
@@ -552,6 +580,23 @@ $defs:
               $ref: go.opentelemetry.io/collector/filter.config
       k8s.node.name:
         description: ResourceAttributeConfig provides common config for a k8s.node.name resource attribute.
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          metrics_include:
+            description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+          metrics_exclude:
+            description: "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
+            type: array
+            items:
+              $ref: go.opentelemetry.io/collector/filter.config
+      k8s.node.system_container.name:
+        description: ResourceAttributeConfig provides common config for a k8s.node.system_container.name resource attribute.
         type: object
         properties:
           enabled:
