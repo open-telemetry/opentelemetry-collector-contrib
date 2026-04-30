@@ -42,7 +42,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	e.db, err = internal.NewClickhouseClientFromOptions(opt)
+	e.db, err = internal.NewClickhouseClientFromOptions(opt, e.cfg.shouldCreateSchema())
 	if err != nil {
 		return err
 	}
