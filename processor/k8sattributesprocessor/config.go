@@ -90,7 +90,7 @@ func (cfg *Config) Validate() error {
 			string(conventions.K8SCronJobNameKey), string(conventions.K8SCronJobUIDKey),
 			string(conventions.K8SNodeNameKey), string(conventions.K8SNodeUIDKey),
 			string(conventions.K8SContainerNameKey), string(conventions.ContainerIDKey),
-			string(conventions.ContainerImageNameKey), containerImageTag,
+			string(conventions.ContainerImageNameKey), containerImageTag, string(conventions.ContainerImageTagsKey),
 			string(conventions.ServiceNamespaceKey), string(conventions.ServiceNameKey),
 			string(conventions.ServiceVersionKey), string(conventions.ServiceInstanceIDKey),
 			string(conventions.ContainerImageRepoDigestsKey), string(conventions.K8SClusterUIDKey):

@@ -313,7 +313,7 @@ receiver/macosunifiedloggingreceiver/                            @open-telemetry
 receiver/memcachedreceiver/                                      @open-telemetry/collector-contrib-approvers @jsirianni
 receiver/mongodbatlasreceiver/                                   @open-telemetry/collector-contrib-approvers @justinianvoss22 @dyl10s @ishleenk17
 receiver/mongodbreceiver/                                        @open-telemetry/collector-contrib-approvers @justinianvoss22 @dyl10s @ishleenk17
-receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers @antonblock @ishleenk17
+receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers @antonblock @ishleenk17 @cjksplunk
 receiver/namedpipereceiver/                                      @open-telemetry/collector-contrib-approvers @sinkingpoint
 receiver/netflowreceiver/                                        @open-telemetry/collector-contrib-approvers @evan-bradley @dlopes7
 receiver/nginxreceiver/                                          @open-telemetry/collector-contrib-approvers @colelaven @ishleenk17
