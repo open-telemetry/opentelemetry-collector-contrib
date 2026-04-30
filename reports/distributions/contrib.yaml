@@ -11,7 +11,7 @@ components:
         - otlpjson
         - roundrobin
         - routing
-        - servicegraph
+        - service_graph
         - signal_to_metrics
         - span_metrics
         - sum
@@ -39,7 +39,7 @@ components:
         - googlecloud
         - googlecloudpubsub
         - googlemanagedprometheus
-        - honeycombmarker
+        - honeycomb_marker
         - influxdb
         - kafka
         - loadbalancing
@@ -163,7 +163,7 @@ components:
         - file_log
         - file_stats
         - flinkmetrics
-        - fluentforward
+        - fluent_forward
         - github
         - gitlab
         - googlecloudmonitoring
