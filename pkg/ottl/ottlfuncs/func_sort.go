@@ -241,7 +241,7 @@ func makeConvertedCopy[T targetType](slice pcommon.Slice, converter func(idx int
 	return out
 }
 
-func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) []any {
+func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) pcommon.Slice {
 	slices.SortFunc(cvs, func(a, b convertedValue[T]) int {
 		if order == sortDesc {
 			return cmp.Compare(b.value, a.value)
@@ -249,9 +249,11 @@ func sortConvertedSlice[T targetType](cvs []convertedValue[T], order string) []a
 		return cmp.Compare(a.value, b.value)
 	})
 
-	out := make([]any, 0, len(cvs))
+	out := pcommon.NewSlice()
+	out.EnsureCapacity(len(cvs))
+
 	for _, cv := range cvs {
-		out = append(out, cv.originalValue)
+		out.AppendEmpty().FromRaw(cv.originalValue)
 	}
 
 	return out
