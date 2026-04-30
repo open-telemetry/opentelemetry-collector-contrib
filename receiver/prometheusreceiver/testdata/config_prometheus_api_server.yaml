@@ -8,15 +8,15 @@ prometheus/withAPIEnabled:
       - job_name: 'demo'
         scrape_interval: 5s
         fallback_scrape_protocol: "PrometheusText1.0.0"
-prometheus/withAPIDisabled:
-  api_server:
-    enabled: false
+prometheus/withoutAPI:
   config:
     scrape_configs:
       - job_name: 'demo'
         scrape_interval: 5s
         fallback_scrape_protocol: "PrometheusText1.0.0"
-prometheus/withoutAPI:
+prometheus/withAPIUsingDefaults:
+  api_server:
+    enabled: true
   config:
     scrape_configs:
       - job_name: 'demo'
@@ -25,6 +25,8 @@ prometheus/withoutAPI:
 prometheus/withInvalidAPIConfig:
   api_server:
     enabled: true
+    server_config:
+      transport: "invalid"
   config:
     scrape_configs:
       - job_name: 'demo'

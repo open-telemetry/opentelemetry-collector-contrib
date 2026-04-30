@@ -1,0 +1,14 @@
+$defs:
+  config:
+    type: object
+    properties:
+      enabled:
+        x-pointer: true
+        type: boolean
+      lookback_delta:
+        type: string
+        format: duration
+      max_connections:
+        type: integer
+      server_config:
+        $ref: go.opentelemetry.io/collector/config/confighttp.server_config

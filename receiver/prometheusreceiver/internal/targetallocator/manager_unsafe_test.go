@@ -737,7 +737,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 			baseCfg, err := promconfig.Load("", nil)
 			require.NoError(t, err)
-			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, baseCfg, &sync.RWMutex{})
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -943,7 +943,7 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	baseCfg, err := promconfig.Load("", nil)
 	require.NoError(t, err)
 	baseCfg.ScrapeConfigs = initialScrapeConfigs
-	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, baseCfg, &sync.RWMutex{})
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()
