@@ -190,6 +190,25 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		case pcommon.Map:
 			target := evaluated.AppendEmpty().SetEmptyMap()
 			tVal.CopyTo(target)
+		case []any:
+			target := evaluated.AppendEmpty().SetEmptySlice()
+			target.EnsureCapacity(len(tVal))
+			for _, el := range tVal {
+				switch typedEl := el.(type) {
+				case pcommon.Slice:
+					s := target.AppendEmpty().SetEmptySlice()
+					typedEl.CopyTo(s)
+				case pcommon.Map:
+					m := target.AppendEmpty().SetEmptyMap()
+					typedEl.CopyTo(m)
+				default:
+					err := target.AppendEmpty().FromRaw(el)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+
 		default:
 			err := evaluated.AppendEmpty().FromRaw(tVal)
 			if err != nil {
@@ -234,6 +253,24 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		case pcommon.Slice:
 			target := result.PutEmpty(k).SetEmptySlice()
 			typedVal.CopyTo(target)
+		case []any:
+			target := result.PutEmpty(k).SetEmptySlice()
+			target.EnsureCapacity(len(typedVal))
+			for _, el := range typedVal {
+				switch typedEl := el.(type) {
+				case pcommon.Map:
+					m := target.AppendEmpty().SetEmptyMap()
+					typedEl.CopyTo(m)
+				case pcommon.Slice:
+					s := target.AppendEmpty().SetEmptySlice()
+					typedEl.CopyTo(s)
+				default:
+					err := target.AppendEmpty().FromRaw(el)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
 		default:
 			err := result.PutEmpty(k).FromRaw(val)
 			if err != nil {
