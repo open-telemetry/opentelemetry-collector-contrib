@@ -510,6 +510,9 @@ receiver_creator/logs:
     # with `io.opentelemetry.discovery.logs/enabled: "false"`)
     # default_annotations:
     #   io.opentelemetry.discovery.logs/enabled: "true"
+    #
+    # Define the default file_log configuration
+    # default_file_log_config: {}
 ```
 
 See below for the supported annotations that user can define to automatically enable receivers to start
@@ -578,7 +581,7 @@ By default `"false"`.
 
 #### Define configuration
 
-The default configuration for the `file_log` receiver is the following:
+The default configuration for the `file_log` receiver is the following (configurable via `default_file_log_config`):
 
 ```yaml
 include:

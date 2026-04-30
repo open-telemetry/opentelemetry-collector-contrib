@@ -132,6 +132,7 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
+      - extension/tailstorage/pebbletailstorage
       - internal/aws
       - internal/collectd
       - internal/common
@@ -194,7 +195,7 @@ body:
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
-      - processor/dnslookup
+      - processor/drain
       - processor/filter
       - processor/geoip
       - processor/groupbyattrs
