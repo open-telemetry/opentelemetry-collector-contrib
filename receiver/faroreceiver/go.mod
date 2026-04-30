@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/farore
 go 1.25.0
 
 require (
-	github.com/grafana/faro/pkg/go v0.0.0-20260417105458-85a56593ffb0
+	github.com/grafana/faro/pkg/go v0.0.0-20260427090633-bb5f9417df83
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component/componentstatus v0.151.0
 	go.opentelemetry.io/collector/config/confighttp v0.151.0
