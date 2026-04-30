@@ -1,0 +1,6 @@
+description: Config has the configuration for the MCP extension.
+type: object
+properties:
+  http:
+    x-pointer: true
+    $ref: go.opentelemetry.io/collector/config/confighttp.server_config
