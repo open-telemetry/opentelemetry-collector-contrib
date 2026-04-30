@@ -1,0 +1,16 @@
+display_name: Pebble Tail Storage Extension
+type: pebble_tail_storage
+
+description: Stores pending trace data for tail sampling in a local Pebble database.
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [carsonip, jmacd, axw]
+
+tests:
+  config:
+    directory: /tmp/pebble-tail-storage

@@ -24,10 +24,10 @@ components:
     - connector/otlpjson
     - connector/roundrobin
     - connector/routing
-    - connector/servicegraph
+    - connector/service_graph
     - connector/signal_to_metrics
     - connector/slowsql
-    - connector/spanmetrics
+    - connector/span_metrics
     - connector/sum
     - exporter/alertmanager
     - exporter/alibabacloud_logservice
@@ -54,7 +54,7 @@ components:
     - exporter/googlecloud
     - exporter/googlecloudpubsub
     - exporter/googlemanagedprometheus
-    - exporter/honeycombmarker
+    - exporter/honeycomb_marker
     - exporter/influxdb
     - exporter/kafka
     - exporter/loadbalancing
@@ -114,6 +114,7 @@ components:
     - extension/opamp
     - extension/opampcustommessages
     - extension/otlp_encoding
+    - extension/pebble_tail_storage
     - extension/pprof
     - extension/redis_storage
     - extension/remotetap
@@ -261,7 +262,7 @@ components:
     - receiver/file_log
     - receiver/file_stats
     - receiver/flinkmetrics
-    - receiver/fluentforward
+    - receiver/fluent_forward
     - receiver/github
     - receiver/gitlab
     - receiver/googlecloudmonitoring
