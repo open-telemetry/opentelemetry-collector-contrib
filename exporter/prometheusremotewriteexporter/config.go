@@ -6,7 +6,6 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"go.opentelemetry.io/collector/component"
@@ -25,12 +24,6 @@ type Config struct {
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
-	// ExporterTimeout specifies the timeout for the exporter operations.
-	// When set, this value takes precedence over the timeout field for exporter timeout.
-	// This field allows independent configuration of exporter timeout and HTTP client timeout.
-	// If not set, the timeout field is used for the exporter timeout (backward compatible behavior).
-	ExporterTimeout time.Duration `mapstructure:"exporter_timeout"`
-
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
 	Namespace string `mapstructure:"namespace"`
@@ -44,7 +37,7 @@ type Config struct {
 
 	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// HTTP defines the HTTP client configuration in a nested block.
-	// When the UseHTTPConfigField feature gate is enabled, this field takes precedence over the squashed ClientConfig.
+	// This field takes precedence over the squashed ClientConfig.
 	HTTP *confighttp.ClientConfig `mapstructure:"http"`
 	// maximum size in bytes of time series batch sent to remote storage
 	MaxBatchSizeBytes int `mapstructure:"max_batch_size_bytes"`
@@ -130,20 +123,14 @@ type RemoteWriteQueue struct {
 
 var _ component.Config = (*Config)(nil)
 
-// Unmarshal unmarshals the configuration and handles timeout precedence.
-// This ensures that ExporterTimeout can override TimeoutSettings.Timeout, allowing
-// independent configuration of exporter timeout and HTTP client timeout.
+// Unmarshal unmarshals the configuration and handles HTTP config precedence.
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(cfg); err != nil {
 		return err
 	}
 
-	// Handle ExporterTimeout precedence:
-	// If ExporterTimeout is explicitly set (> 0), use it for exporter timeout.
-	// Otherwise, TimeoutSettings.Timeout already has the value from squashed unmarshal
-	// (which may be from the root-level "timeout" field or default).
-	// Handle HTTP config precedence when feature gate is enabled
-	if useHTTPConfigFieldFeatureGate.IsEnabled() && cfg.HTTP != nil {
+	// Handle HTTP config precedence: if HTTP is set, use it for ClientConfig
+	if cfg.HTTP != nil {
 		cfg.ClientConfig = *cfg.HTTP
 	}
 
