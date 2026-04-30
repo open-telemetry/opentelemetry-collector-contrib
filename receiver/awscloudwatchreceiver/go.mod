@@ -22,8 +22,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.57.0
 	go.opentelemetry.io/collector/receiver v1.57.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.151.0
-	go.opentelemetry.io/collector/scraper v0.150.1-0.20260424074859-d91c0edd1da5
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.150.1-0.20260424074859-d91c0edd1da5
+	go.opentelemetry.io/collector/scraper v0.151.0
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.151.0
 	go.opentelemetry.io/otel v1.43.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
