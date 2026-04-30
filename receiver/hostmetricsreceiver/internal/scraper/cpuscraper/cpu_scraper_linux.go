@@ -51,7 +51,7 @@ func newCPUEmitter(cfg *Config) func(context.Context, pcommon.Timestamp, *metada
 func newCputicksEmitter(reader tickReader) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
 	tickDuration := time.Second / time.Duration(reader.TicksPerSecond())
 	var prevTicks map[string]cputicks.Stat
-	return func(ctx context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
+	return func(_ context.Context, now pcommon.Timestamp, mb *metadata.MetricsBuilder) error {
 		ticks, err := reader.ReadAll()
 		if err != nil {
 			return err
