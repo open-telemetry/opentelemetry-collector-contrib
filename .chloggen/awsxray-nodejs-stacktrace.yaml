@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/filelog)
-component: awsxrayexporter
+component: exporter/awsxray
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Parse JavaScript stack traces for `nodejs` and `webjs` language values so AWS X-Ray shows structured exception frames instead of the raw stack string.
