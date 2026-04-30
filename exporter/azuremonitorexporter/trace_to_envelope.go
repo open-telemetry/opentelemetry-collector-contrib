@@ -16,7 +16,6 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
@@ -521,7 +520,6 @@ func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDepende
 
 // Returns the RPC status code as a string
 func getRPCStatusCodeAsString(rpcAttributes *rpcAttributes) (statusCodeAsString string) {
-	// Honor the attribute rpc.grpc.status_code if there
 	if rpcAttributes.RPCGRPCStatusCode != 0 {
 		return strconv.FormatInt(rpcAttributes.RPCGRPCStatusCode, 10)
 	}
@@ -676,7 +674,7 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 	}
 
 	// RPC
-	if _, exists := attributeMap.Get(string(conventionsv138.RPCSystemKey)); exists {
+	if _, exists := attributeMap.Get(string(conventions.RPCSystemNameKey)); exists {
 		return rpcSpanType
 	}
 
