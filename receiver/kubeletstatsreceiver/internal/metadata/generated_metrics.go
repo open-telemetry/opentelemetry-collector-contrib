@@ -1949,9 +1949,9 @@ func newMetricK8sNodeNetworkIo(cfg K8sNodeNetworkIoMetricConfig) metricK8sNodeNe
 }
 
 type metricK8sNodeSystemContainerCPUTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                            // data buffer for generated metric.
+	config   K8sNodeSystemContainerCPUTimeMetricConfig // metric config provided by user.
+	capacity int                                       // max observed number of data points added to the metric.
 }
 
 // init fills k8s.node.system_container.cpu.time metric with initial data.
@@ -1990,7 +1990,7 @@ func (m *metricK8sNodeSystemContainerCPUTime) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricK8sNodeSystemContainerCPUTime(cfg MetricConfig) metricK8sNodeSystemContainerCPUTime {
+func newMetricK8sNodeSystemContainerCPUTime(cfg K8sNodeSystemContainerCPUTimeMetricConfig) metricK8sNodeSystemContainerCPUTime {
 	m := metricK8sNodeSystemContainerCPUTime{config: cfg}
 
 	if cfg.Enabled {
@@ -2001,9 +2001,9 @@ func newMetricK8sNodeSystemContainerCPUTime(cfg MetricConfig) metricK8sNodeSyste
 }
 
 type metricK8sNodeSystemContainerCPUUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   K8sNodeSystemContainerCPUUsageMetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
 }
 
 // init fills k8s.node.system_container.cpu.usage metric with initial data.
@@ -2040,7 +2040,7 @@ func (m *metricK8sNodeSystemContainerCPUUsage) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricK8sNodeSystemContainerCPUUsage(cfg MetricConfig) metricK8sNodeSystemContainerCPUUsage {
+func newMetricK8sNodeSystemContainerCPUUsage(cfg K8sNodeSystemContainerCPUUsageMetricConfig) metricK8sNodeSystemContainerCPUUsage {
 	m := metricK8sNodeSystemContainerCPUUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2051,9 +2051,9 @@ func newMetricK8sNodeSystemContainerCPUUsage(cfg MetricConfig) metricK8sNodeSyst
 }
 
 type metricK8sNodeSystemContainerMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   K8sNodeSystemContainerMemoryUsageMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
 }
 
 // init fills k8s.node.system_container.memory.usage metric with initial data.
@@ -2090,7 +2090,7 @@ func (m *metricK8sNodeSystemContainerMemoryUsage) emit(metrics pmetric.MetricSli
 	}
 }
 
-func newMetricK8sNodeSystemContainerMemoryUsage(cfg MetricConfig) metricK8sNodeSystemContainerMemoryUsage {
+func newMetricK8sNodeSystemContainerMemoryUsage(cfg K8sNodeSystemContainerMemoryUsageMetricConfig) metricK8sNodeSystemContainerMemoryUsage {
 	m := metricK8sNodeSystemContainerMemoryUsage{config: cfg}
 
 	if cfg.Enabled {
@@ -2101,9 +2101,9 @@ func newMetricK8sNodeSystemContainerMemoryUsage(cfg MetricConfig) metricK8sNodeS
 }
 
 type metricK8sNodeSystemContainerMemoryWorkingSet struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                                     // data buffer for generated metric.
+	config   K8sNodeSystemContainerMemoryWorkingSetMetricConfig // metric config provided by user.
+	capacity int                                                // max observed number of data points added to the metric.
 }
 
 // init fills k8s.node.system_container.memory.working_set metric with initial data.
@@ -2140,7 +2140,7 @@ func (m *metricK8sNodeSystemContainerMemoryWorkingSet) emit(metrics pmetric.Metr
 	}
 }
 
-func newMetricK8sNodeSystemContainerMemoryWorkingSet(cfg MetricConfig) metricK8sNodeSystemContainerMemoryWorkingSet {
+func newMetricK8sNodeSystemContainerMemoryWorkingSet(cfg K8sNodeSystemContainerMemoryWorkingSetMetricConfig) metricK8sNodeSystemContainerMemoryWorkingSet {
 	m := metricK8sNodeSystemContainerMemoryWorkingSet{config: cfg}
 
 	if cfg.Enabled {

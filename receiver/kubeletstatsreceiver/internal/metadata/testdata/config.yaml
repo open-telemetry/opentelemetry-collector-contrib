@@ -65,6 +65,14 @@ all_set:
     k8s.node.network.io:
       enabled: true
       attributes: ["interface","direction"]
+    k8s.node.system_container.cpu.time:
+      enabled: true
+    k8s.node.system_container.cpu.usage:
+      enabled: true
+    k8s.node.system_container.memory.usage:
+      enabled: true
+    k8s.node.system_container.memory.working_set:
+      enabled: true
     k8s.node.uptime:
       enabled: true
     k8s.pod.cpu.node.utilization:
@@ -139,6 +147,8 @@ all_set:
     k8s.namespace.name:
       enabled: true
     k8s.node.name:
+      enabled: true
+    k8s.node.system_container.name:
       enabled: true
     k8s.persistentvolumeclaim.name:
       enabled: true
@@ -218,6 +228,14 @@ reaggregate_set:
     k8s.node.network.io:
       enabled: true
       attributes: []
+    k8s.node.system_container.cpu.time:
+      enabled: true
+    k8s.node.system_container.cpu.usage:
+      enabled: true
+    k8s.node.system_container.memory.usage:
+      enabled: true
+    k8s.node.system_container.memory.working_set:
+      enabled: true
     k8s.node.uptime:
       enabled: true
     k8s.pod.cpu.node.utilization:
@@ -292,6 +310,8 @@ reaggregate_set:
     k8s.namespace.name:
       enabled: true
     k8s.node.name:
+      enabled: true
+    k8s.node.system_container.name:
       enabled: true
     k8s.persistentvolumeclaim.name:
       enabled: true
@@ -371,6 +391,14 @@ none_set:
     k8s.node.network.io:
       enabled: false
       attributes: ["interface","direction"]
+    k8s.node.system_container.cpu.time:
+      enabled: false
+    k8s.node.system_container.cpu.usage:
+      enabled: false
+    k8s.node.system_container.memory.usage:
+      enabled: false
+    k8s.node.system_container.memory.working_set:
+      enabled: false
     k8s.node.uptime:
       enabled: false
     k8s.pod.cpu.node.utilization:
@@ -446,6 +474,8 @@ none_set:
       enabled: false
     k8s.node.name:
       enabled: false
+    k8s.node.system_container.name:
+      enabled: false
     k8s.persistentvolumeclaim.name:
       enabled: false
     k8s.pod.name:
@@ -493,6 +523,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.system_container.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -558,6 +592,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.node.name-val"
+    k8s.node.system_container.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.system_container.name-val"
     k8s.persistentvolumeclaim.name:
       enabled: true
       metrics_exclude:
