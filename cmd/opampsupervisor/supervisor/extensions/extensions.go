@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -45,11 +47,9 @@ func New(
 	factories map[component.Type]extension.Factory,
 	telemetry component.TelemetrySettings,
 ) (*Extensions, error) {
-	order := make([]component.ID, 0, len(cfg))
-	for id := range cfg {
-		order = append(order, id)
-	}
-	sortIDs(order)
+	order := slices.SortedFunc(maps.Keys(cfg), func(a, b component.ID) int {
+		return strings.Compare(a.String(), b.String())
+	})
 
 	exts := make(map[component.ID]extension.Extension, len(cfg))
 	hostExts := make(map[component.ID]component.Component, len(cfg))
@@ -121,15 +121,3 @@ func (e *Extensions) GetExtensions() map[component.ID]component.Component {
 	return out
 }
 
-// sortIDs orders IDs by string form for deterministic startup/shutdown.
-// This doesn't provide protection for dependent relationships between extensions.
-// Once https://github.com/open-telemetry/opentelemetry-collector/issues/15216 is addressed,
-// the majority of this file can be removed and better sorting will be used.
-func sortIDs(ids []component.ID) {
-	// Simple insertion sort: the list is small (a handful of extensions).
-	for i := 1; i < len(ids); i++ {
-		for j := i; j > 0 && ids[j-1].String() > ids[j].String(); j-- {
-			ids[j], ids[j-1] = ids[j-1], ids[j]
-		}
-	}
-}
