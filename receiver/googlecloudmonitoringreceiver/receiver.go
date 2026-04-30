@@ -154,8 +154,13 @@ func (mr *monitoringReceiver) initializeClient(ctx context.Context) error {
 		return fmt.Errorf("failed to find default credentials: %w", err)
 	}
 
+	opts := []option.ClientOption{option.WithCredentials(creds)}
+	if mr.config.Endpoint != "" {
+		opts = append(opts, option.WithEndpoint(mr.config.Endpoint))
+	}
+
 	// Attempt to create the monitoring client
-	client, err := monitoring.NewMetricClient(ctx, option.WithCredentials(creds))
+	client, err := monitoring.NewMetricClient(ctx, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create a monitoring client: %w", err)
 	}
