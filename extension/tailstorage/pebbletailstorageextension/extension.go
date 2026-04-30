@@ -38,31 +38,19 @@ func (e *pebbleTailStorageExtension) Start(_ context.Context, _ component.Host) 
 }
 
 func (e *pebbleTailStorageExtension) Shutdown(_ context.Context) error {
-	if e.storage == nil {
-		return nil
-	}
 	err := e.storage.Close()
 	e.storage = nil
 	return err
 }
 
 func (e *pebbleTailStorageExtension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
-	if e.storage == nil {
-		return
-	}
 	e.storage.Append(traceID, rss)
 }
 
 func (e *pebbleTailStorageExtension) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
-	if e.storage == nil {
-		return ptrace.NewTraces(), false
-	}
 	return e.storage.Take(traceID)
 }
 
 func (e *pebbleTailStorageExtension) Delete(traceID pcommon.TraceID) {
-	if e.storage == nil {
-		return
-	}
 	e.storage.Delete(traceID)
 }
