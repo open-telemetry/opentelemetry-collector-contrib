@@ -13,22 +13,14 @@ import (
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/tklauser/go-sysconf"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
+	hostmetricsmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/cputicks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
-)
-
-var useCPUTicks = featuregate.GlobalRegistry().MustRegister(
-	"receiver.hostmetricsreceiver.UseCPUTicks",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Use raw uint64 CPU tick counts from /proc/stat instead of gopsutil for improved precision in CPU time and utilization metrics."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/46177"),
-	featuregate.WithRegisterFromVersion("v0.152.0"),
 )
 
 // USER_HZ: hardcoded at 100 in the Linux kernel since 2.6 for /proc/stat ABI stability.
@@ -50,7 +42,7 @@ func clockTicksPerSecond() uint64 {
 }
 
 func newCPUEmitter(cfg *Config) func(context.Context, pcommon.Timestamp, *metadata.MetricsBuilder) error {
-	if useCPUTicks.IsEnabled() {
+	if hostmetricsmetadata.ReceiverHostmetricsreceiverUseCPUTicksFeatureGate.IsEnabled() {
 		return newCputicksEmitter(cputicks.NewReader(cfg.rootPath, clockTicksPerSecond()))
 	}
 	return newGopsutilEmitter(cpu.TimesWithContext)
