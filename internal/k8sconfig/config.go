@@ -50,6 +50,15 @@ const (
 	AuthTypeTLS AuthType = "tls"
 )
 
+const (
+	// DefaultKubeAPIQPS is the default number of queries per second to the Kubernetes API.
+	// Matches client-go's built-in default.
+	DefaultKubeAPIQPS float32 = 5
+	// DefaultKubeAPIBurst is the default burst limit for requests to the Kubernetes API.
+	// Matches client-go's built-in default.
+	DefaultKubeAPIBurst int = 10
+)
+
 var authTypes = map[AuthType]bool{
 	AuthTypeNone:           true,
 	AuthTypeServiceAccount: true,
@@ -67,12 +76,28 @@ type APIConfig struct {
 
 	// When using auth_type `kubeConfig`, override the current context.
 	Context string `mapstructure:"context"`
+
+	// KubeAPIQPS is the maximum number of queries per second to the Kubernetes API.
+	// Uses client-go's default (5) if unset. Increase if you see client-side throttling warnings.
+	KubeAPIQPS float32 `mapstructure:"kube_api_qps"`
+
+	// KubeAPIBurst is the maximum burst of requests to the Kubernetes API.
+	// Uses client-go's default (10) if unset. Increase if you see client-side throttling warnings.
+	KubeAPIBurst int `mapstructure:"kube_api_burst"`
 }
 
 // Validate validates the K8s API config
 func (c APIConfig) Validate() error {
 	if !authTypes[c.AuthType] {
 		return fmt.Errorf("invalid authType for kubernetes: %v", c.AuthType)
+	}
+
+	if c.KubeAPIQPS < 0 {
+		return errors.New("kube_api_qps must be greater than 0")
+	}
+
+	if c.KubeAPIBurst < 0 {
+		return errors.New("kube_api_burst must be greater than 0")
 	}
 
 	return nil
@@ -126,6 +151,13 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 			t.Proxy = nil
 		}
 		return rt
+	}
+
+	if apiConf.KubeAPIQPS > 0 {
+		authConf.QPS = apiConf.KubeAPIQPS
+	}
+	if apiConf.KubeAPIBurst > 0 {
+		authConf.Burst = apiConf.KubeAPIBurst
 	}
 
 	return authConf, nil

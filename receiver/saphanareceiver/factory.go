@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 			Insecure: true,
 		},
 		ControllerConfig:     scs,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 

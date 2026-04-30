@@ -15,7 +15,7 @@ $defs:
     properties:
       api:
         description: API defines the settings for calling Datadog with the proxied requests
-        $ref: github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config.api_config
+        $ref: /pkg/datadog/config.api_config
 type: object
 properties:
   intake:
