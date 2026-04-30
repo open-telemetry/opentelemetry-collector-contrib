@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -116,6 +117,7 @@ func (d *dbDialect) Close() error {
 
 // newDBDialect creates a new DB dialect which is just a set of DB-specific queries/prepared statements
 func newDBDialect(driverName, tableName string) *dbDialect {
+	quotedTableName := quoteTableIdentifier(driverName, tableName)
 	queries := getDialectQueries(driverName)
 
 	var aggSize int
@@ -129,14 +131,24 @@ func newDBDialect(driverName, tableName string) *dbDialect {
 	}
 	return &dbDialect{
 		Queries: sqlQuerySet{
-			QueryCreateTable:     fmt.Sprintf(queries.QueryCreateTable, tableName),
-			QueryGetRow:          fmt.Sprintf(queries.QueryGetRow, tableName),
-			QuerySetRow:          fmt.Sprintf(queries.QuerySetRow, tableName),
-			QueryDeleteRow:       fmt.Sprintf(queries.QueryDeleteRow, tableName),
-			QueryGetMultiRows:    fmt.Sprintf(queries.QueryGetMultiRows, tableName),
-			QuerySetMultiRows:    fmt.Sprintf(queries.QuerySetMultiRows, tableName),
-			QueryDeleteMultiRows: fmt.Sprintf(queries.QueryDeleteMultiRows, tableName),
+			QueryCreateTable:     fmt.Sprintf(queries.QueryCreateTable, quotedTableName),
+			QueryGetRow:          fmt.Sprintf(queries.QueryGetRow, quotedTableName),
+			QuerySetRow:          fmt.Sprintf(queries.QuerySetRow, quotedTableName),
+			QueryDeleteRow:       fmt.Sprintf(queries.QueryDeleteRow, quotedTableName),
+			QueryGetMultiRows:    fmt.Sprintf(queries.QueryGetMultiRows, quotedTableName),
+			QuerySetMultiRows:    fmt.Sprintf(queries.QuerySetMultiRows, quotedTableName),
+			QueryDeleteMultiRows: fmt.Sprintf(queries.QueryDeleteMultiRows, quotedTableName),
 		},
 		MaxAggregationSize: aggSize,
+	}
+}
+
+func quoteTableIdentifier(driverName, tableName string) string {
+	switch driverName {
+	case driverPostgreSQL, driverSQLite:
+		escaped := strings.ReplaceAll(tableName, `"`, `""`)
+		return `"` + escaped + `"`
+	default:
+		return tableName
 	}
 }

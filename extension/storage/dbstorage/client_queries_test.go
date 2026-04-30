@@ -46,12 +46,25 @@ func Test_dbDialect_Prepare(t *testing.T) {
 func Test_newDBDialect(t *testing.T) {
 	t.Run("Should substitute table name on Dialect creation", func(t *testing.T) {
 		got := newDBDialect(driverPostgreSQL, testTableName)
-		assert.Contains(t, got.Queries.QueryCreateTable, testTableName)
-		assert.Contains(t, got.Queries.QueryGetRow, testTableName)
-		assert.Contains(t, got.Queries.QuerySetRow, testTableName)
-		assert.Contains(t, got.Queries.QueryDeleteRow, testTableName)
-		assert.Contains(t, got.Queries.QueryGetMultiRows, testTableName)
-		assert.Contains(t, got.Queries.QuerySetMultiRows, testTableName)
-		assert.Contains(t, got.Queries.QueryDeleteMultiRows, testTableName)
+		assert.Contains(t, got.Queries.QueryCreateTable, `"`+testTableName+`"`)
+		assert.Contains(t, got.Queries.QueryGetRow, `"`+testTableName+`"`)
+		assert.Contains(t, got.Queries.QuerySetRow, `"`+testTableName+`"`)
+		assert.Contains(t, got.Queries.QueryDeleteRow, `"`+testTableName+`"`)
+		assert.Contains(t, got.Queries.QueryGetMultiRows, `"`+testTableName+`"`)
+		assert.Contains(t, got.Queries.QuerySetMultiRows, `"`+testTableName+`"`)
+		assert.Contains(t, got.Queries.QueryDeleteMultiRows, `"`+testTableName+`"`)
 	})
+
+	t.Run("Should keep table name unquoted for generic driver", func(t *testing.T) {
+		got := newDBDialect("unknown", testTableName)
+		assert.Contains(t, got.Queries.QueryCreateTable, testTableName)
+		assert.NotContains(t, got.Queries.QueryCreateTable, `"`+testTableName+`"`)
+	})
+}
+
+func Test_quoteTableIdentifier(t *testing.T) {
+	assert.Equal(t, `"receiver_a"`, quoteTableIdentifier(driverPostgreSQL, "receiver_a"))
+	assert.Equal(t, `"receiver_a"`, quoteTableIdentifier(driverSQLite, "receiver_a"))
+	assert.Equal(t, "receiver_a", quoteTableIdentifier("unknown", "receiver_a"))
+	assert.Equal(t, `"with""quote"`, quoteTableIdentifier(driverPostgreSQL, `with"quote`))
 }
