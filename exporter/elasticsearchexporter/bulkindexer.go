@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
@@ -250,6 +252,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 			ctx,
 			s.bi,
 			s.s.flushTimeout,
+			s.s.retryConfig.RetryOnStatus,
 			s.s.metadataKeys,
 			s.s.telemetryBuilder,
 			s.s.logger,
@@ -287,6 +290,7 @@ func flushBulkIndexer(
 	ctx context.Context,
 	bi *docappender.BulkIndexer,
 	timeout time.Duration,
+	retryOnStatus []int,
 	tMetaKeys []string,
 	tb *metadata.TelemetryBuilder,
 	logger *zap.Logger,
@@ -475,7 +479,15 @@ func flushBulkIndexer(
 			metric.WithAttributeSet(defaultAttrsSet),
 		)
 	}
+	var bulkFailedErr docappender.ErrorFlushFailed
+	if errors.As(err, &bulkFailedErr) && !retryableStatusCode(bulkFailedErr.StatusCode(), retryOnStatus) {
+		return consumererror.NewPermanent(err)
+	}
 	return err
+}
+
+func retryableStatusCode(statusCode int, retryOnStatus []int) bool {
+	return slices.Contains(retryOnStatus, statusCode)
 }
 
 func getAttributesFromMetadataKeys(ctx context.Context, keys []string) []attribute.KeyValue {
