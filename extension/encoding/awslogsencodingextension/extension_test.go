@@ -396,7 +396,7 @@ func TestUnmarshalLogs_RoutesToMatchedInner(t *testing.T) {
 	assert.Empty(t, lambdaInner.received, "lambda inner should not have been called")
 
 	// Inner received decompressed JSON envelope, not the gzipped bytes.
-	assert.True(t, len(cloudtrailInner.received[0]) > 0)
+	assert.NotEmpty(t, cloudtrailInner.received[0])
 	assert.False(t, isGzipData(cloudtrailInner.received[0]), "inner should receive decompressed bytes")
 }
 

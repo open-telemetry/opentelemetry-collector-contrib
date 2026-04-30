@@ -242,11 +242,11 @@ type fakeLogsExtension struct {
 	label string
 }
 
-func (f *fakeLogsExtension) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+func (*fakeLogsExtension) UnmarshalLogs(_ []byte) (plog.Logs, error) {
 	return plog.NewLogs(), nil
 }
 
-func (f *fakeLogsExtension) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
+func (*fakeLogsExtension) NewLogsDecoder(_ io.Reader, _ ...encoding.DecoderOption) (encoding.LogsDecoder, error) {
 	return nil, nil
 }
 
