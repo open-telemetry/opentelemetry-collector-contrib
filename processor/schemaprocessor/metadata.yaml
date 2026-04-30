@@ -7,7 +7,82 @@ status:
     development: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [MovieStoreGuy, ankitpatel96, dineshg13]
+    active: [MovieStoreGuy, ankitpatel96, dineshg13, MikeGoldsmith]
+
+telemetry:
+  metrics:
+    processor_schema_cache.hits:
+      enabled: true
+      description: Number of schema cache hits
+      unit: "{requests}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_cache.misses:
+      enabled: true
+      description: Number of schema cache misses
+      unit: "{requests}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_logs.failed:
+      enabled: true
+      description: Number of log scope translation requests that failed
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_logs.skipped:
+      enabled: true
+      description: Number of log scope translation requests skipped because no schema URL was present on the scope or its resource
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_metrics.failed:
+      enabled: true
+      description: Number of metric scope translation requests that failed
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_metrics.skipped:
+      enabled: true
+      description: Number of metric scope translation requests skipped because no schema URL was present on the scope or its resource
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_resource.failed:
+      enabled: true
+      description: Number of resource translation requests that failed
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_traces.failed:
+      enabled: true
+      description: Number of trace scope translation requests that failed
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
+    processor_schema_traces.skipped:
+      enabled: true
+      description: Number of trace scope translation requests skipped because no schema URL was present on the scope or its resource
+      unit: "{translations}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development
 
 tests:
   config:

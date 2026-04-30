@@ -8,45 +8,24 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
-// Currently only v1.37.0 is supported
-const supportedSemconvVersion = "1.37.0"
+var (
+	minKnownSemConvVersion = semver.MustParse("1.37.0")
+	maxKnownSemConvVersion = semver.MustParse("1.40.0")
+)
 
 type setSemconvSpanNameArguments struct {
 	SemconvVersion            string
 	OriginalSpanNameAttribute ottl.Optional[string]
-}
-
-func NewSetSemconvSpanNameFactoryLegacy() ottl.Factory[ottlspan.TransformContext] {
-	return ottl.NewFactory("set_semconv_span_name", &setSemconvSpanNameArguments{}, createSetSemconvSpanNameFunctionLegacy)
-}
-
-func createSetSemconvSpanNameFunctionLegacy(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlspan.TransformContext], error) {
-	args, ok := oArgs.(*setSemconvSpanNameArguments)
-
-	if !ok {
-		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
-	}
-	if args.SemconvVersion != supportedSemconvVersion {
-		return nil, fmt.Errorf("unsupported semconv version: %s, supported version: %s", args.SemconvVersion, supportedSemconvVersion)
-	}
-
-	if !args.OriginalSpanNameAttribute.IsEmpty() && args.OriginalSpanNameAttribute.Get() == "" {
-		return nil, errors.New("originalSpanNameAttribute cannot be an empty string")
-	}
-
-	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
-		return nil, nil
-	}, nil
 }
 
 func NewSetSemconvSpanNameFactory() ottl.Factory[*ottlspan.TransformContext] {
@@ -54,23 +33,32 @@ func NewSetSemconvSpanNameFactory() ottl.Factory[*ottlspan.TransformContext] {
 }
 
 func createSetSemconvSpanNameFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[*ottlspan.TransformContext], error) {
-	args, ok := oArgs.(*setSemconvSpanNameArguments)
-
-	if !ok {
-		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
+	args, err := parseSemconvSpanNameArguments(oArgs)
+	if err != nil {
+		return nil, err
 	}
-	if args.SemconvVersion != supportedSemconvVersion {
-		return nil, fmt.Errorf("unsupported semconv version: %s, supported version: %s", args.SemconvVersion, supportedSemconvVersion)
-	}
-
-	if !args.OriginalSpanNameAttribute.IsEmpty() && args.OriginalSpanNameAttribute.Get() == "" {
-		return nil, errors.New("originalSpanNameAttribute cannot be an empty string")
-	}
-
 	return func(_ context.Context, tCtx *ottlspan.TransformContext) (any, error) {
 		setSemconvSpanName(args.OriginalSpanNameAttribute, tCtx.GetSpan())
 		return nil, nil
 	}, nil
+}
+
+func parseSemconvSpanNameArguments(oArgs ottl.Arguments) (*setSemconvSpanNameArguments, error) {
+	args, ok := oArgs.(*setSemconvSpanNameArguments)
+	if !ok {
+		return nil, errors.New("NewSetSemconvSpanNameFactory args must be of type *setSemconvSpanNameArguments")
+	}
+	semconvVersion, err := semver.NewVersion(args.SemconvVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse semconv version %q: %w", args.SemconvVersion, err)
+	}
+	if semconvVersion.LessThan(minKnownSemConvVersion) || semconvVersion.GreaterThan(maxKnownSemConvVersion) {
+		return nil, fmt.Errorf("unsupported semconv version %q: must be between %s and %s", args.SemconvVersion, minKnownSemConvVersion, maxKnownSemConvVersion)
+	}
+	if !args.OriginalSpanNameAttribute.IsEmpty() && args.OriginalSpanNameAttribute.Get() == "" {
+		return nil, errors.New("originalSpanNameAttribute cannot be an empty string")
+	}
+	return args, nil
 }
 
 func setSemconvSpanName(originalSpanNameAttribute ottl.Optional[string], span ptrace.Span) {
@@ -142,9 +130,9 @@ func httpSpanName(span ptrace.Span, subject attribute.Key) string {
 
 // https://opentelemetry.io/docs/specs/semconv/rpc/rpc-spans/
 func rpcSpanName(span ptrace.Span) string {
-	if system, ok := span.Attributes().Get(string(conventions.RPCSystemKey)); ok {
+	if system, ok := attributeValue(span, conventions.RPCSystemNameKey, "rpc.system"); ok {
 		method, okMethod := attributeValue(span, conventions.RPCMethodKey, "rpc.grpc.method")
-		service, okService := attributeValue(span, conventions.RPCServiceKey, "rpc.grpc.service")
+		service, okService := attributeValue(span, "rpc.service", "rpc.grpc.service")
 
 		if okMethod && okService {
 			return service.AsString() + "/" + method.AsString()

@@ -32,7 +32,7 @@ func createDefaultConfig() component.Config {
 	clientConfig.Endpoint = defaultEndpoint
 	clientConfig.Timeout = 1 * time.Minute
 	return &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		ClientConfig:         clientConfig,
 	}
