@@ -163,9 +163,9 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			if tt.enableSendingRW2 {
-				oldValue := enableSendingRW2FeatureGate.IsEnabled()
-				testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, true)
-				defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
+				oldValue := metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate.IsEnabled()
+				testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, true)
+				defer testutil.SetFeatureGateForTest(t, metadata.ExporterPrometheusremotewritexporterEnableSendingRW2FeatureGate, oldValue)
 			}
 
 			factory := NewFactory()
