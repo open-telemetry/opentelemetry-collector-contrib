@@ -14,8 +14,9 @@ status:
 feature_gates:
   - id: "processor.tailsamplingprocessor.disableinvertdecisions"
     description: When enabled, sampling policy 'invert_match' will result in a SAMPLED or NOT SAMPLED decision instead of INVERT SAMPLED or INVERT NOT SAMPLED.
-    stage: beta
+    stage: stable
     from_version: v0.126.0
+    to_version: v0.152.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39833
 
   - id: "processor.tailsamplingprocessor.metricstatcountspanssampled"
