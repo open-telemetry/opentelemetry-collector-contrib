@@ -7,7 +7,7 @@ components:
         - exceptions
         - failover
         - otlpjson
-        - roundrobin
+        - round_robin
         - routing
         - service_graph
     exporter:
