@@ -280,7 +280,7 @@ The upper limit for a particular resource in a specific namespace. Will only be 
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### k8s.resource_quota.used
 
@@ -294,7 +294,7 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### k8s.statefulset.current_pods
 
@@ -341,7 +341,7 @@ The upper limit for a particular resource in a specific namespace.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | k8s.namespace.name | The k8s namespace name. | Any Str | Recommended | - |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### openshift.appliedclusterquota.used
 
@@ -356,7 +356,7 @@ The usage for a particular resource in a specific namespace.
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | k8s.namespace.name | The k8s namespace name. | Any Str | Recommended | - |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### openshift.clusterquota.limit
 
@@ -370,7 +370,7 @@ The configured upper limit for a particular resource.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ### openshift.clusterquota.used
 
@@ -384,7 +384,7 @@ The usage for a particular resource with a configured limit.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| resource | the name of the resource on which the quota is applied | Any Str | Recommended | - |
+| resource | the name of the resource on which the quota is applied | Any Str | Required | - |
 
 ## Optional Metrics
 
@@ -408,7 +408,7 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | Recommended | - |
+| k8s.container.status.reason | The reason of the current container status. | Str: ``ContainerCreating``, ``CrashLoopBackOff``, ``CreateContainerConfigError``, ``ErrImagePull``, ``ImagePullBackOff``, ``OOMKilled``, ``Completed``, ``Error``, ``ContainerCannotRun`` | Required | - |
 
 ### k8s.container.status.state
 
@@ -422,7 +422,7 @@ Experimental metric, may experience breaking changes. Describes the number of K8
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | Recommended | - |
+| k8s.container.status.state | The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details. | Str: ``terminated``, ``running``, ``waiting`` | Required | - |
 
 ### k8s.node.condition
 
@@ -436,7 +436,7 @@ The condition of a particular Node.
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | Recommended | - |
+| condition | the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure | Any Str | Required | - |
 
 ### k8s.persistentvolume.status.phase
 
@@ -450,7 +450,7 @@ The current phase of the PersistentVolume (1 for the current phase, 0 for others
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| k8s.persistentvolume.status.phase | The phase of the PersistentVolume. | Str: ``Pending``, ``Available``, ``Bound``, ``Released``, ``Failed`` | Recommended | - |
+| k8s.persistentvolume.status.phase | The phase of the PersistentVolume. | Str: ``Pending``, ``Available``, ``Bound``, ``Released``, ``Failed`` | Required | - |
 
 ### k8s.persistentvolume.storage.capacity
 
@@ -472,7 +472,7 @@ The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for o
 
 | Name | Description | Values | Requirement Level | Semantic Convention |
 | ---- | ----------- | ------ | ----------------- | ------------------- |
-| k8s.persistentvolumeclaim.status.phase | The phase of the PersistentVolumeClaim. | Str: ``Pending``, ``Bound``, ``Lost`` | Recommended | - |
+| k8s.persistentvolumeclaim.status.phase | The phase of the PersistentVolumeClaim. | Str: ``Pending``, ``Bound``, ``Lost`` | Required | - |
 
 ### k8s.persistentvolumeclaim.storage.capacity
 
