@@ -1,0 +1,42 @@
+SELECT TOP(@top)
+  REPLACE(@@SERVERNAME,'\\',':') AS [sql_instance],
+  HOST_NAME() AS [computer_name],
+  DB_NAME(s.database_id) AS db_name,
+  ISNULL(c.client_net_address, '') as client_address,
+  ISNULL(c.client_tcp_port, '') AS client_port,
+  CONVERT(NVARCHAR, TODATETIMEOFFSET(s.last_request_start_time, DATEPART(TZOFFSET, SYSDATETIMEOFFSET())), 126) AS query_start,
+  s.session_id,
+  s.STATUS AS session_status,
+  '' AS request_status,
+  ISNULL(s.host_name, '') AS host_name,
+  'IDLE_BLOCKER' AS command,
+  ISNULL(o.TEXT, '') AS statement_text,
+  CAST(0 AS SMALLINT) AS blocking_session_id,
+  '' AS blocking_start_time,
+  '' AS wait_type,
+  CAST(0 AS INT) AS wait_time,
+  '' AS wait_resource,
+  ISNULL(s.open_transaction_count, 0) AS open_transaction_count,
+  CAST(0 AS BIGINT) AS transaction_id,
+  CAST(0 AS REAL) AS percent_complete,
+  CAST(0 AS BIGINT) AS estimated_completion_time,
+  ISNULL(s.cpu_time, 0) AS cpu_time,
+  CAST(0 AS INT) AS total_elapsed_time,
+  ISNULL(s.reads, 0) AS reads,
+  ISNULL(s.writes, 0) AS writes,
+  ISNULL(s.logical_reads, 0) AS logical_reads,
+  ISNULL(s.transaction_isolation_level, 0) AS transaction_isolation_level,
+  ISNULL(s.lock_timeout, 0) AS lock_timeout,
+  ISNULL(s.deadlock_priority, 0) AS deadlock_priority,
+  CAST(0 AS BIGINT) AS row_count,
+  CONVERT(VARBINARY, '') AS query_hash,
+  CONVERT(VARBINARY, '') AS query_plan_hash,
+  CONVERT(VARBINARY, '') AS context_info,
+  s.login_name AS username,
+  '' AS procedure_id,
+  '' AS procedure_name
+FROM sys.dm_exec_sessions s
+LEFT JOIN sys.dm_exec_connections c ON s.session_id = c.session_id
+OUTER APPLY sys.dm_exec_sql_text(c.most_recent_sql_handle) AS o
+WHERE s.session_id IN (%s);
+
