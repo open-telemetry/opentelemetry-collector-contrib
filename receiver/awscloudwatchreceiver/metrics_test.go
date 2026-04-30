@@ -115,25 +115,6 @@ func TestParseQueryID(t *testing.T) {
 	}
 }
 
-func TestToServiceAttributes(t *testing.T) {
-	// toServiceAttributes has been removed; this test validates the metric name format instead.
-	cases := []struct {
-		namespace  string
-		metricName string
-		wantName   string
-	}{
-		{"AWS/EC2", "CPUUtilization", "amazonaws.com/AWS/EC2/CPUUtilization"},
-		{"AWS/ApplicationELB", "RequestCount", "amazonaws.com/AWS/ApplicationELB/RequestCount"},
-		{"CustomNamespace", "MyMetric", "amazonaws.com/CustomNamespace/MyMetric"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.namespace, func(t *testing.T) {
-			got := "amazonaws.com/" + tc.namespace + "/" + tc.metricName
-			require.Equal(t, tc.wantName, got)
-		})
-	}
-}
-
 // --- conversion tests ---
 
 func TestConvertGetMetricDataToPdata_Empty(t *testing.T) {

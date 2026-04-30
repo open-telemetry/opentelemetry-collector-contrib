@@ -494,6 +494,15 @@ func TestValidateMetricsConfig(t *testing.T) {
 			expectedErr: errInvalidMetricsDelay,
 		},
 		{
+			name: "collection_interval less than period",
+			config: withMetrics(MetricsConfig{
+				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Minute},
+				Period:           5 * time.Minute,
+				Queries:          []MetricQuery{{Namespace: "AWS/EC2", MetricName: "CPUUtilization"}},
+			}),
+			expectedErr: errCollectionIntervalLessThanPeriod,
+		},
+		{
 			name: "metric missing namespace",
 			config: withMetrics(MetricsConfig{
 				Queries: []MetricQuery{{MetricName: "CPUUtilization"}},

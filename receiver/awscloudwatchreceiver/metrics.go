@@ -448,16 +448,8 @@ func (s *cloudWatchMetricsScraper) convertGetMetricDataToPdata(results []types.M
 						dp.SetStartTimestamp(tsNano - periodNano)
 					}
 					dp.SetDoubleValue(statMaps[i][si][ts])
-					attrs := dp.Attributes()
-					attrs.PutStr("Namespace", q.Namespace)
-					attrs.PutStr("MetricName", q.MetricName)
-					attrs.PutStr("stat", statName)
-					if len(q.Dimensions) > 0 {
-						dimsMap := attrs.PutEmptyMap("Dimensions")
-						for k, v := range q.Dimensions {
-							dimsMap.PutStr(k, v)
-						}
-					}
+					applyQueryAttrs(dp.Attributes(), q)
+					dp.Attributes().PutStr("stat", statName)
 				}
 			}
 		}

@@ -119,6 +119,7 @@ var (
 	errMetricsAndDiscoveryConfigured    = errors.New("metrics and discovery are mutually exclusive; set one or the other")
 	errInvalidDiscoveryLimit            = errors.New("metrics discovery limit must be greater than 0")
 	errEmptyStatName                    = errors.New("stat name must not be empty")
+	errCollectionIntervalLessThanPeriod = errors.New("metrics collection_interval must be greater than or equal to period")
 )
 
 // Validate overrides the embedded ControllerConfig.Validate so that a zero CollectionInterval
@@ -159,6 +160,10 @@ func (c *Config) validateMetricsDurations() error {
 	}
 	if c.Metrics.Delay != 0 && c.Metrics.Delay < time.Second {
 		return errInvalidMetricsDelay
+	}
+	if c.Metrics.CollectionInterval > 0 && c.Metrics.Period > 0 &&
+		c.Metrics.CollectionInterval < c.Metrics.Period {
+		return errCollectionIntervalLessThanPeriod
 	}
 	return nil
 }
