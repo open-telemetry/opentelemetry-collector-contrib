@@ -41,7 +41,8 @@ func createTracesProcessor(
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTraces(ctx, set, cfg, next, processTraces,
+	p := newGenaiNormalizerProcessor(c)
+	return processorhelper.NewTraces(ctx, set, cfg, next, p.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }
