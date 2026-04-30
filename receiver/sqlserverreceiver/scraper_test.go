@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -22,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -748,6 +750,186 @@ func removeAttributeFromAllLogRecords(logs plog.Logs, key string) {
 			}
 		}
 	}
+}
+
+type queryRowsFuncClient struct {
+	queryRowsFunc func(context.Context, ...any) ([]sqlquery.StringMap, error)
+}
+
+func (c queryRowsFuncClient) QueryRows(ctx context.Context, args ...any) ([]sqlquery.StringMap, error) {
+	return c.queryRowsFunc(ctx, args...)
+}
+
+func setupQuerySampleScraper(t *testing.T, logger *zap.Logger) *sqlServerScraperHelper {
+	t.Helper()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	enableSQLServerResourceAttributesForTests(&cfg.LogsBuilderConfig.ResourceAttributes)
+	configureAllScraperMetricsAndEvents(cfg, false)
+	cfg.Events.DbServerQuerySample.Enabled = true
+	assert.NoError(t, cfg.Validate())
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	if logger != nil {
+		settings.Logger = logger
+	}
+
+	scrapers := setupSQLServerLogsScrapers(settings, cfg)
+	assert.Len(t, scrapers, 1)
+	return scrapers[0]
+}
+
+func buildQuerySampleRow(sessionID, blockingSessionID, command, statement string) sqlquery.StringMap {
+	return sqlquery.StringMap{
+		"sql_instance":                "sqlserver",
+		"computer_name":               "DESKTOP-GHAEGRD",
+		"db_name":                     "master",
+		"client_address":              "172.19.0.1",
+		"client_port":                 "59286",
+		"query_start":                 "2025-02-12T16:37:54.843+08:00",
+		"session_id":                  sessionID,
+		"session_status":              "running",
+		"request_status":              "running",
+		"host_name":                   "DESKTOP-GHAEGRD",
+		"command":                     command,
+		"statement_text":              statement,
+		"blocking_session_id":         blockingSessionID,
+		"wait_type":                   "",
+		"wait_time":                   "0",
+		"wait_resource":               "",
+		"open_transaction_count":      "0",
+		"transaction_id":              "11089",
+		"percent_complete":            "0",
+		"estimated_completion_time":   "0",
+		"cpu_time":                    "6",
+		"total_elapsed_time":          "6",
+		"reads":                       "0",
+		"writes":                      "0",
+		"logical_reads":               "38",
+		"transaction_isolation_level": "2",
+		"lock_timeout":                "-1",
+		"deadlock_priority":           "0",
+		"row_count":                   "1",
+		"query_hash":                  "0x70A3B130B1048D4D",
+		"query_plan_hash":             "0x140210F64B788CB9",
+		"context_info":                "",
+		"username":                    "sa",
+		"procedure_id":                "0",
+		"procedure_name":              "",
+		"blocking_start_time":         "",
+	}
+}
+
+func buildIdleBlockerRow(sessionID string) sqlquery.StringMap {
+	row := buildQuerySampleRow(sessionID, "0", "IDLE_BLOCKER", "SELECT 1")
+	row["session_status"] = "sleeping"
+	row["request_status"] = ""
+	return row
+}
+
+func TestRecordDatabaseSampleQueryFetchesIdleBlockers(t *testing.T) {
+	scraper := setupQuerySampleScraper(t, nil)
+	scraper.db = &sql.DB{}
+
+	mainRows := []sqlquery.StringMap{buildQuerySampleRow("60", "77", "SELECT", "SELECT 2")}
+	idleRows := []sqlquery.StringMap{buildIdleBlockerRow("77")}
+
+	idleQueryCalls := 0
+	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		return mainRows, nil
+	}}
+	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+		expectedQuery := fmt.Sprintf(getSQLServerIdleBlockingSessionsQuery(), "77")
+		assert.Equal(t, expectedQuery, query)
+		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
+			idleQueryCalls++
+			assert.Equal(t, []any{
+				sql.Named("top", scraper.config.MaxRowsPerQuery),
+			}, args)
+			return idleRows, nil
+		}}
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, actualLogs.LogRecordCount())
+	assert.Equal(t, 1, idleQueryCalls)
+
+	foundIdleBlocker := false
+	records := actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	for i := 0; i < records.Len(); i++ {
+		attrs := records.At(i).Attributes()
+		command, ok := attrs.Get("sqlserver.command")
+		if ok && command.Str() == "IDLE_BLOCKER" {
+			foundIdleBlocker = true
+			sessionID, hasSessionID := attrs.Get("sqlserver.session_id")
+			assert.True(t, hasSessionID)
+			assert.Equal(t, int64(77), sessionID.Int())
+			_, hasBlockingStartTime := attrs.Get("sqlserver.blocking.start_time")
+			assert.False(t, hasBlockingStartTime)
+		}
+	}
+	assert.True(t, foundIdleBlocker)
+}
+
+func TestRecordDatabaseSampleQueryDoesNotFetchIdleBlockersWhenNoneMissing(t *testing.T) {
+	scraper := setupQuerySampleScraper(t, nil)
+	scraper.db = &sql.DB{}
+
+	mainRows := []sqlquery.StringMap{
+		buildQuerySampleRow("60", "61", "SELECT", "SELECT 2"),
+		buildQuerySampleRow("61", "0", "SELECT", "SELECT 3"),
+	}
+
+	providerCalls := 0
+	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		return mainRows, nil
+	}}
+	scraper.clientProviderFunc = func(_ sqlquery.Db, _ string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+		providerCalls++
+		return queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+			return nil, nil
+		}}
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, actualLogs.LogRecordCount())
+	assert.Equal(t, 0, providerCalls)
+}
+
+func TestRecordDatabaseSampleQueryIdleBlockerQueryFailureDoesNotFailScrape(t *testing.T) {
+	core, observedLogs := observer.New(zap.WarnLevel)
+	scraper := setupQuerySampleScraper(t, zap.New(core))
+	scraper.db = &sql.DB{}
+
+	mainRows := []sqlquery.StringMap{buildQuerySampleRow("60", "77", "SELECT", "SELECT 2")}
+
+	idleQueryCalls := 0
+	scraper.client = queryRowsFuncClient{queryRowsFunc: func(context.Context, ...any) ([]sqlquery.StringMap, error) {
+		return mainRows, nil
+	}}
+	scraper.clientProviderFunc = func(_ sqlquery.Db, query string, _ *zap.Logger, _ sqlquery.TelemetryConfig) sqlquery.DbClient {
+		expectedQuery := fmt.Sprintf(getSQLServerIdleBlockingSessionsQuery(), "77")
+		assert.Equal(t, expectedQuery, query)
+		return queryRowsFuncClient{queryRowsFunc: func(_ context.Context, args ...any) ([]sqlquery.StringMap, error) {
+			idleQueryCalls++
+			assert.Equal(t, []any{
+				sql.Named("top", scraper.config.MaxRowsPerQuery),
+			}, args)
+			return nil, errors.New("idle blocker query failed")
+		}}
+	}
+
+	actualLogs, err := scraper.ScrapeLogs(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, actualLogs.LogRecordCount())
+	assert.Equal(t, 1, idleQueryCalls)
+	assert.Equal(t, 1, observedLogs.FilterMessageSnippet("problems encountered getting idle blocker log rows").Len())
 }
 
 // TestMultiStatementProcNoDuplicateRows validates that a stored procedure

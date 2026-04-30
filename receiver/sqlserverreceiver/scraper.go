@@ -1120,6 +1120,60 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 
+	activeSessionIDs := make(map[int64]struct{})
+	blockingSessionIDs := make(map[int64]struct{})
+	for _, row := range rows {
+		sessionVal, parseErr := retrieveInt(row, sessionID)
+		if parseErr == nil {
+			activeSessionIDs[sessionVal.(int64)] = struct{}{}
+		}
+
+		blockingVal, parseErr := retrieveInt(row, blockingSessionID)
+		if parseErr == nil && blockingVal.(int64) > 0 {
+			blockingSessionIDs[blockingVal.(int64)] = struct{}{}
+		}
+	}
+
+	missingBlockingSessionIDs := make(map[int64]struct{})
+	for blockerSessionID := range blockingSessionIDs {
+		if _, ok := activeSessionIDs[blockerSessionID]; !ok {
+			missingBlockingSessionIDs[blockerSessionID] = struct{}{}
+		}
+	}
+
+	if len(missingBlockingSessionIDs) > 0 && s.db != nil {
+		idleBlockingQuery := fmt.Sprintf(
+			getSQLServerIdleBlockingSessionsQuery(),
+			formatSQLServerSessionIDsParam(missingBlockingSessionIDs),
+		)
+		idleBlockingClient := s.clientProviderFunc(
+			sqlquery.DbWrapper{Db: s.db},
+			idleBlockingQuery,
+			s.logger,
+			s.telemetry,
+		)
+
+		idleRows, idleErr := idleBlockingClient.QueryRows(
+			ctx,
+			sql.Named("top", s.config.MaxRowsPerQuery),
+		)
+		if idleErr != nil {
+			s.logger.Warn("problems encountered getting idle blocker log rows", zap.Error(idleErr))
+		}
+		if idleErr == nil || errors.Is(idleErr, sqlquery.ErrNullValueWarning) {
+			for _, idleRow := range idleRows {
+				idleSessionVal, parseErr := retrieveInt(idleRow, sessionID)
+				if parseErr == nil {
+					if _, ok := missingBlockingSessionIDs[idleSessionVal.(int64)]; ok {
+						rows = append(rows, idleRow)
+					}
+				} else {
+					s.logger.Debug("failed to parse idle blocker session id", zap.String("column", sessionID), zap.String("value", idleRow[sessionID]), zap.Error(parseErr))
+				}
+			}
+		}
+	}
+
 	var errs []error
 
 	resourcesAdded := false
