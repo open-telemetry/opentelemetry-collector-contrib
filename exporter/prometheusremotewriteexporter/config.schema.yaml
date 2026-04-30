@@ -45,6 +45,10 @@ properties:
     type: object
     additionalProperties:
       type: string
+  http:
+    description: HTTP defines the HTTP client configuration in a nested block. When the UseHTTPConfigField feature gate is enabled, this field takes precedence over the squashed ClientConfig.
+    x-pointer: true
+    $ref: go.opentelemetry.io/collector/config/confighttp.client_config
   max_batch_request_parallelism:
     description: maximum amount of parallel requests to do when handling large batch request
     x-pointer: true

@@ -42,6 +42,12 @@ var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
 )
 
+var useHTTPConfigFieldFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.UseHTTPConfigField",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter uses the 'http' config field. When disabled, the exporter uses the flat config fields (backward compatible)."),
+)
+
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
