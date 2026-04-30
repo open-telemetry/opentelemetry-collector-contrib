@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/go-logfmt/logfmt v0.6.1
-	github.com/grafana/faro/pkg/go v0.0.0-20260417105458-85a56593ffb0
+	github.com/grafana/faro/pkg/go v0.0.0-20260427090633-bb5f9417df83
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.151.0
 	github.com/stretchr/testify v1.11.1
