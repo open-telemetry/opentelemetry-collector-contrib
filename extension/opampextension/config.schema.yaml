@@ -16,9 +16,6 @@ $defs:
       accepts_restart_command:
         description: 'AcceptsRestartCommand enables the OpAMP AcceptsRestartCommand Capability (default: false)'
         type: boolean
-      reports_heartbeat:
-        description: 'ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability. When enabled, the server can adjust the agent''s heartbeat interval via ConnectionSettingsOffers. (default: true)'
-        type: boolean
       reports_available_components:
         description: 'ReportsAvailableComponents enables the OpAMP ReportsAvailableComponents Capability (default: true)'
         type: boolean
@@ -27,6 +24,9 @@ $defs:
         type: boolean
       reports_health:
         description: 'ReportsHealth enables the OpAMP ReportsHealth Capability. (default: true)'
+        type: boolean
+      reports_heartbeat:
+        description: 'ReportsHeartbeat enables the OpAMP ReportsHeartbeat Capability. When enabled, the server can adjust the agent''s heartbeat interval via ConnectionSettingsOffers. (default: true)'
         type: boolean
   op_amp_server:
     description: OpAMPServer contains the OpAMP transport configuration.
