@@ -4,7 +4,6 @@
 package pebbletailstorageextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tailstorage/pebbletailstorageextension"
 
 import (
-	"bytes"
 	"encoding/binary"
 	"path/filepath"
 	"sync/atomic"
@@ -65,19 +64,19 @@ func (s *storage) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
 	}
 
 	key := traceEntryKey(traceID, s.nextSeq.Add(1))
-	if err := s.db.Set(key, data, pebble.NoSync); err != nil {
+	if err := s.db.Set(key[:], data, pebble.NoSync); err != nil {
 		s.logger.Warn("failed to append trace payload to tail storage", zap.Error(err))
 	}
 }
 
 func (s *storage) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
 	prefix := tracePrefix(traceID)
-	out := s.readByTracePrefix(prefix)
+	out := s.readByTracePrefix(prefix[:])
 	if out.ResourceSpans().Len() == 0 {
 		return ptrace.NewTraces(), false
 	}
 	end := tracePrefixUpperBound(prefix)
-	if err := s.db.DeleteRange(prefix, end, pebble.NoSync); err != nil {
+	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
 		s.logger.Warn("failed to delete taken trace payload range from tail storage", zap.Error(err))
 	}
 	return out, true
@@ -88,7 +87,7 @@ func (s *storage) Delete(traceID pcommon.TraceID) {
 	// Delete all entries for the trace in one range operation instead of
 	// iterating keys and deleting one-by-one.
 	end := tracePrefixUpperBound(prefix)
-	if err := s.db.DeleteRange(prefix, end, pebble.NoSync); err != nil {
+	if err := s.db.DeleteRange(prefix[:], end[:], pebble.NoSync); err != nil {
 		s.logger.Warn("failed to delete trace payload range from tail storage", zap.Error(err))
 	}
 }
@@ -134,23 +133,23 @@ func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
 	return result
 }
 
-func tracePrefix(traceID pcommon.TraceID) []byte {
-	prefix := make([]byte, traceIDBytes+1)
-	copy(prefix[:traceIDBytes], traceID[:])
+func tracePrefix(traceID pcommon.TraceID) [traceIDBytes + 1]byte {
+	var prefix [traceIDBytes + 1]byte
+	copy(prefix[:], traceID[:])
 	prefix[traceIDBytes] = traceIDSeparator
 	return prefix
 }
 
-func tracePrefixUpperBound(prefix []byte) []byte {
-	upper := bytes.Clone(prefix)
+func tracePrefixUpperBound(prefix [traceIDBytes + 1]byte) [traceIDBytes + 1]byte {
+	upper := prefix // copy
 	upper[len(upper)-1]++
 	return upper
 }
 
-func traceEntryKey(traceID pcommon.TraceID, seq uint64) []byte {
+func traceEntryKey(traceID pcommon.TraceID, seq uint64) [traceIDBytes + 1 + 8]byte {
 	var key [traceIDBytes + 1 + 8]byte
-	copy(key[:traceIDBytes], traceID[:])
+	copy(key[:], traceID[:])
 	key[traceIDBytes] = traceIDSeparator
 	binary.BigEndian.PutUint64(key[traceIDBytes+1:], seq)
-	return key[:]
+	return key
 }
