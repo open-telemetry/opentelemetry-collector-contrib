@@ -9,6 +9,18 @@ status:
   codeowners:
     active: [wangzlei, srprash]
 
+feature_gates:
+  - id: exporter.awsxray.skiptimestampvalidation
+    description: "Remove XRay's timestamp validation on first 32 bits of trace ID"
+    stage: beta
+    from_version: "v0.84.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/26041
+  - id: exporter.xray.allowDot
+    description: "X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled."
+    stage: beta
+    from_version: "v0.97.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31732
+
 tests:
   config:
     region: 'us-west-2'
