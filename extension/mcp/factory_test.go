@@ -10,19 +10,18 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		HTTP: configoptional.Default(confighttp.ServerConfig{
+		confighttp.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  "localhost:8080",
 				Transport: confignet.TransportTypeTCP,
 			},
-		}),
+		},
 	}
 
 	// test

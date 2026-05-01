@@ -19,7 +19,6 @@ This extension runs the OpenTelemetry MCP server which enables LLM to efficientl
 ```yaml
 extensions:
   mcp:
-    http:
-      endpoint: 0.0.0.0:8080
+    endpoint: 0.0.0.0:8080
 ```
 

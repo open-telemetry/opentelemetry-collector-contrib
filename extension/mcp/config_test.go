@@ -18,7 +18,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc:     "no configuration",
 			cfg:      Config{},
-			expected: errAtLeastOneProtocol,
+			expected: errHTTPEndpointRequired,
 		},
 	}
 	for _, tC := range testCases {

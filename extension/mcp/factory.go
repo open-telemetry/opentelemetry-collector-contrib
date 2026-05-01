@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/metadata"
@@ -27,12 +26,12 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTP: configoptional.Default(confighttp.ServerConfig{
+		confighttp.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  "localhost:8080",
 				Transport: confignet.TransportTypeTCP,
 			},
-		}),
+		},
 	}
 }
 

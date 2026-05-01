@@ -37,24 +37,22 @@ func (*mcpExtension) handleRequest(_ http.ResponseWriter, _ *http.Request) {}
 
 func (mcpe *mcpExtension) Start(ctx context.Context, host component.Host) error {
 	var err error
-	if mcpe.cfg.HTTP.Get() != nil {
-		mcpe.server, err = mcpe.cfg.HTTP.Get().ToServer(ctx, host.GetExtensions(), mcpe.settings, http.HandlerFunc(mcpe.handleRequest))
-		if err != nil {
-			return err
-		}
-
-		mcpe.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", mcpe.cfg.HTTP.Get().NetAddr.Endpoint))
-		var listener net.Listener
-		if listener, err = mcpe.cfg.HTTP.Get().ToListener(ctx); err != nil {
-			return err
-		}
-
-		mcpe.shutdownWG.Go(func() {
-			if err := mcpe.server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			}
-		})
+	mcpe.server, err = mcpe.cfg.ToServer(ctx, host.GetExtensions(), mcpe.settings, http.HandlerFunc(mcpe.handleRequest))
+	if err != nil {
+		return err
 	}
+
+	mcpe.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", mcpe.cfg.NetAddr.Endpoint))
+	var listener net.Listener
+	if listener, err = mcpe.cfg.ToListener(ctx); err != nil {
+		return err
+	}
+
+	mcpe.shutdownWG.Go(func() {
+		if err := mcpe.server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+		}
+	})
 
 	return nil
 }
