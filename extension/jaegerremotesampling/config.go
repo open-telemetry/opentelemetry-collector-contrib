@@ -99,7 +99,7 @@ func extractPort(endpoint string) (string, error) {
 	}
 
 	// Normalize the port so comparisons do not miss equivalent values like "08080" or service names.
-	if portNumber, err := strconv.Atoi(port); err == nil {
+	if portNumber, parseErr := strconv.Atoi(port); parseErr == nil {
 		if portNumber < 0 || portNumber > 65535 {
 			return "", fmt.Errorf("invalid port %q: out of range", port)
 		}
