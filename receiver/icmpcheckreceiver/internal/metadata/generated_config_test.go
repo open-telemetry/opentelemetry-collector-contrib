@@ -20,25 +20,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PingLossRatio: MetricConfig{
+					PingLossRatio: PingLossRatioMetricConfig{
 						Enabled: true,
 					},
-					PingRttAvg: MetricConfig{
+					PingRttAvg: PingRttAvgMetricConfig{
 						Enabled: true,
 					},
-					PingRttMax: MetricConfig{
+					PingRttMax: PingRttMaxMetricConfig{
 						Enabled: true,
 					},
-					PingRttMin: MetricConfig{
+					PingRttMin: PingRttMinMetricConfig{
 						Enabled: true,
 					},
-					PingRttStddev: MetricConfig{
+					PingRttStddev: PingRttStddevMetricConfig{
 						Enabled: true,
 					},
 				},
@@ -52,19 +52,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					PingLossRatio: MetricConfig{
+					PingLossRatio: PingLossRatioMetricConfig{
 						Enabled: false,
 					},
-					PingRttAvg: MetricConfig{
+					PingRttAvg: PingRttAvgMetricConfig{
 						Enabled: false,
 					},
-					PingRttMax: MetricConfig{
+					PingRttMax: PingRttMaxMetricConfig{
 						Enabled: false,
 					},
-					PingRttMin: MetricConfig{
+					PingRttMin: PingRttMinMetricConfig{
 						Enabled: false,
 					},
-					PingRttStddev: MetricConfig{
+					PingRttStddev: PingRttStddevMetricConfig{
 						Enabled: false,
 					},
 				},
@@ -78,7 +78,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(PingLossRatioMetricConfig{}, PingRttAvgMetricConfig{}, PingRttMaxMetricConfig{}, PingRttMinMetricConfig{}, PingRttStddevMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -89,7 +89,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

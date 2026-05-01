@@ -145,7 +145,7 @@ func TestStart(t *testing.T) {
 func TestMetricSettings(t *testing.T) {
 	mockClient := new(mockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics = metadata.MetricsConfig{
 		CouchdbAverageRequestTime: metadata.MetricConfig{Enabled: false},
 		CouchdbDatabaseOpen:       metadata.MetricConfig{Enabled: false},

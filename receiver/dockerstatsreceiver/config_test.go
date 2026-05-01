@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 						InsecureSkipVerify: true,
 					}),
 				},
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 					"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
 				},
 				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
-					m := metadata.DefaultMetricsBuilderConfig()
+					m := metadata.NewDefaultMetricsBuilderConfig()
 					m.Metrics.ContainerCPUUsageSystem.Enabled = false
 					m.Metrics.ContainerMemoryTotalRss.Enabled = true
 					return m

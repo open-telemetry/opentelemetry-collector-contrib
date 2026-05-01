@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v84/github"
+	"github.com/google/go-github/v85/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -174,7 +174,7 @@ func TestScrape(t *testing.T) {
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 
-			cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+			cfg := &Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()}
 
 			ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"

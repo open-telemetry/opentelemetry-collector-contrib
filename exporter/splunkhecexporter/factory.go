@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -103,7 +102,6 @@ func createTracesExporter(
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	showDeprecationWarnings(cfg, set.Logger)
 	c := newTracesClient(set, cfg)
 
 	e, err := exporterhelper.NewTraces(
@@ -140,7 +138,6 @@ func createMetricsExporter(
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	showDeprecationWarnings(cfg, set.Logger)
 	c := newMetricsClient(set, cfg)
 
 	e, err := exporterhelper.NewMetrics(
@@ -177,7 +174,6 @@ func createLogsExporter(
 	config component.Config,
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
-	showDeprecationWarnings(cfg, set.Logger)
 	c := newLogsClient(set, cfg)
 
 	logsExporter, err := exporterhelper.NewLogs(
@@ -240,10 +236,4 @@ func hecQueueSettings(qs configoptional.Optional[exporterhelper.QueueBatchConfig
 	}
 	qCopy.Batch = configoptional.Some(bCopy)
 	return configoptional.Some(qCopy)
-}
-
-func showDeprecationWarnings(cfg *Config, logger *zap.Logger) {
-	if cfg.DeprecatedBatcher.isSet {
-		logger.Warn("The 'batcher' field is deprecated and will be removed in a future release. Use 'sending_queue::batch' instead.")
-	}
 }

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -41,7 +42,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	newCmdFunc, err := c.buildNewCmdFunc()
+	newCmdFunc, err := c.buildNewCmdFunc(inputOperator.Logger())
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +189,7 @@ func (c Config) buildMatchesConfig() ([]string, error) {
 	return matches, nil
 }
 
-func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd, error) {
+func (c Config) buildNewCmdFunc(logger *zap.Logger) (func(ctx context.Context, cursor []byte) cmd, error) {
 	args, err := c.buildArgs()
 	if err != nil {
 		return nil, err
@@ -207,6 +208,16 @@ func (c Config) buildNewCmdFunc() (func(ctx context.Context, cursor []byte) cmd,
 				Chroot: c.RootPath,
 			}
 		}
+
+		logCmd := fmt.Sprintf("Journalctl command: '%s %s'.",
+			c.JournalctlPath,
+			strings.Join(journalArgs, " "))
+
+		if c.RootPath != "" {
+			logCmd = fmt.Sprintf("%s Chroot: %q", logCmd, c.RootPath)
+		}
+
+		logger.Info(logCmd)
 		return cmd
 	}, nil
 }

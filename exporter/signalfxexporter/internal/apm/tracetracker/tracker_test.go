@@ -119,6 +119,56 @@ func (c *correlationTestClient) getCorrelations() []*correlations.Correlation {
 
 var _ correlations.CorrelationClient = &correlationTestClient{}
 
+func TestEnvironmentAttributePriority(t *testing.T) {
+	hostIDDims := map[string]string{"host": "test"}
+
+	tests := []struct {
+		name    string
+		attrs   map[string]string
+		wantEnv string
+	}{
+		{
+			name:    "deployment.environment.name takes precedence",
+			attrs:   map[string]string{"deployment.environment.name": "new-env", "deployment.environment": "old-env", "environment": "sfx-env"},
+			wantEnv: "new-env",
+		},
+		{
+			name:    "deployment.environment used when name absent",
+			attrs:   map[string]string{"deployment.environment": "old-env", "environment": "sfx-env"},
+			wantEnv: "old-env",
+		},
+		{
+			name:    "environment used when both deployment attrs absent",
+			attrs:   map[string]string{"environment": "sfx-env"},
+			wantEnv: "sfx-env",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			correlationClient := &correlationTestClient{}
+			a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, DefaultDimsToSyncSource)
+
+			fakeTraces := ptrace.NewTraces()
+			newResourceWithAttrs(hostIDDims, tt.attrs).
+				CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+			a.ProcessTraces(t.Context(), fakeTraces)
+
+			cors := correlationClient.getCorrelations()
+			var envCors []*correlations.Correlation
+			for _, c := range cors {
+				if c.Type == correlations.Environment {
+					envCors = append(envCors, c)
+				}
+			}
+			assert.NotEmpty(t, envCors, "expected environment correlations")
+			for _, c := range envCors {
+				assert.Equal(t, tt.wantEnv, c.Value)
+			}
+		})
+	}
+}
+
 func TestCorrelationEmptyEnvironment(t *testing.T) {
 	var wg sync.WaitGroup
 	correlationClient := &correlationTestClient{

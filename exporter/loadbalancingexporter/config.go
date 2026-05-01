@@ -51,6 +51,8 @@ type Config struct {
 	// For traces, attributes can come from resource, scope, or span, plus the pseudo attributes "span.kind" and
 	// "span.name".
 	// For metrics, attributes can come from resource, scope, or datapoint attributes.
+	// Keys are encoded as "name=value|name=value|" in the order configured. Missing attributes are encoded as "name=|".
+	// Non-string values are deterministically stringified.
 	RoutingAttributes []string `mapstructure:"routing_attributes"`
 }
 

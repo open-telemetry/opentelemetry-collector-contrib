@@ -7,6 +7,69 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.151.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/splunk_hec`: Remove deprecated `batcher` config field. Use `sending_queue::batch` instead. (#47737)
+- `pkg/ottl`: OTTL API breaking change in `ottlscope.NewTransformContextPtr`: the function signature now requires schema URL items for scope and resource. (#47784)
+  What changed:
+  - Old: NewTransformContextPtr(instrumentationScope, resource, schemaURLItem, options...)
+  - New: NewTransformContextPtr(instrumentationScope, resource, scopeSchemaURLItem, resourceSchemaURLItem, options...)
+  
+  Migration:
+  - If you previously passed one shared schema URL item, pass it to both new parameters.
+  - If scope and resource schema URLs differ, pass distinct items for each.
+  
+  Example migration:
+  - Before:
+    tCtx := ottlscope.NewTransformContextPtr(scope, resource, schemaURLItem)
+  - After (independent items):
+    tCtx := ottlscope.NewTransformContextPtr(scope, resource, scopeSchemaURLItem, resourceSchemaURLItem)
+  
+- `pkg/stanza`: Remove deprecated packages `pkg/stanza/errors`, `pkg/stanza/operator/parser/json` and `pkg/stanza/operator/parser/time`. (#45006)
+  These packages were renamed to `pkg/stanza/stanzaerrors`, `pkg/stanza/operator/parser/jsonparser` and `pkg/stanza/operator/parser/timeparser`.
+- `processor/filter`: Change `With*Functions` and `Default*Functions` to use pointer-based transform context signatures (#47975)
+  The filter processor function options `With*Functions` and `Default*Functions` now use pointer-based transform context signatures
+  and are no longer deprecated. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
+  use the new signature.
+  
+- `processor/transform`: Change `With*Functions` and `Default*Functions` to use pointer-based transform context signatures (#47970)
+  The transform processor function options `With*Functions` and `Default*Functions` now use pointer-based transform context signatures
+  and are no longer deprecated. As a result, they are not compatible with older non-pointer signatures anymore and must be updated to 
+  use the new signature.
+  
+- `receiver/prometheus`: Remove `receiver.prometheusreceiver.EnableNativeHistograms`, `receiver.prometheusreceiver.RemoveStartTimeAdjustment` and `receiver.prometheusreceiver.UseCreatedMetric` feature gates. (#40606)
+
+### 🚩 Deprecations 🚩
+
+- `processor/filter`: Deprecate custom function options suffixed with `New` in favor of the existing pointer-based options (#47975)
+  The `With*FunctionsNew` and `Default*FunctionsNew` variants are now deprecated and will be removed in a future release.
+  If you register custom filter processor functions, migrate:
+    - `With*FunctionsNew` -> `With*Functions`
+    - `Default*FunctionsNew` -> `Default*Functions`
+  
+- `processor/transform`: Deprecate custom function options suffixed with `New` in favor of the existing pointer-based options (#47970)
+  The `With*FunctionsNew` and `Default*FunctionsNew` variants are now deprecated and will be removed in a future release.
+  If you register custom transform processor functions, migrate:
+    - `With*FunctionsNew` -> `With*Functions`
+    - `Default*FunctionsNew` -> `Default*Functions`
+  
+
+### 💡 Enhancements 💡
+
+- `exporter/awss3`: Add support for retry_on_failure (#47592)
+- `internal/aws`: Migrate internal AWS proxy module from AWS SDK Go v1 to v2 (#40461, #37728)
+  This removes the dependency on the deprecated `github.com/aws/aws-sdk-go` (v1)
+  and migrates to `github.com/aws/aws-sdk-go-v2`.
+  
+- `pkg/batchperresourceattr`: Add `WithMetadataInjection()` option to inject batched resource attribute values as `client.Metadata` into the context passed to the next consumer. (#47695)
+- `receiver/chrony`: Enables dynamic metric reaggregation in the Chrony receiver. This does not break existing configuration files. (#46350)
+- `receiver/redfish`: Enables dynamic metric reaggregation in the Redfish receiver. This does not break existing configuration files. (#46375)
+- `receiver/ssh_check`: Enables dynamic metric reaggregation in the SSH Check receiver. This does not break existing configuration files. (#46380)
+
+<!-- previous-version -->
+
 ## v0.150.0
 
 ### 🛑 Breaking changes 🛑

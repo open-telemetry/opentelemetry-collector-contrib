@@ -702,6 +702,7 @@ This provides real-time visibility into active queries, helping users monitor da
 | mysql.wait_type | The name of the instrument that produced the event. | Any Str | - |
 | mysql.session.status | Simplified session status, either 'waiting', 'running' or 'other'. | Any Str | - |
 | mysql.session.id | The unique identifier for the session associated with the event. | Any Int | - |
+| mysql.events_statements_current.timer_wait | Elapsed time the current statement has been executing, in seconds. | Any Double | - |
 | mysql.events_waits_current.timer_wait | Timing information for the event, indicating elapsed time the event waited in seconds. | Any Double | - |
 | client.address | Hostname or address of the client. | Any Str | - |
 | client.port | TCP port used by the client. | Any Int | - |

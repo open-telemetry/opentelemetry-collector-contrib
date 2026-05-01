@@ -11,6 +11,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -35,8 +36,10 @@ func (noopBatch) Close() error                    { return nil }
 // noopConn implements driver.Conn, returning noopBatch for PrepareBatch.
 type noopConn struct{}
 
-func (noopConn) Contributors() []string                                           { return nil }
-func (noopConn) ServerVersion() (*driver.ServerVersion, error)                    { return nil, nil }
+func (noopConn) Contributors() []string { return nil }
+func (noopConn) ServerVersion() (*driver.ServerVersion, error) {
+	return &driver.ServerVersion{Version: proto.Version{Major: 25, Minor: 8}}, nil
+}
 func (noopConn) Select(_ context.Context, _ any, _ string, _ ...any) error        { return nil }
 func (noopConn) Query(_ context.Context, _ string, _ ...any) (driver.Rows, error) { return nil, nil }
 func (noopConn) QueryRow(_ context.Context, _ string, _ ...any) driver.Row        { return nil }

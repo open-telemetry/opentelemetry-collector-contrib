@@ -16,7 +16,7 @@ import (
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings(processortest.NopType)
-	set.ID = component.NewID(component.MustNewType("logdedup"))
+	set.ID = component.NewID(component.MustNewType("log_dedup"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }

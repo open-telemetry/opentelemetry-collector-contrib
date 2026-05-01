@@ -84,6 +84,13 @@ func (rb *ResourceBuilder) SetK8sNodeName(val string) {
 	}
 }
 
+// SetK8sNodeSystemContainerName sets provided value as "k8s.node.system_container.name" attribute.
+func (rb *ResourceBuilder) SetK8sNodeSystemContainerName(val string) {
+	if rb.config.K8sNodeSystemContainerName.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.system_container.name", val)
+	}
+}
+
 // SetK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute.
 func (rb *ResourceBuilder) SetK8sPersistentvolumeclaimName(val string) {
 	if rb.config.K8sPersistentvolumeclaimName.Enabled {

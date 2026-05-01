@@ -17,6 +17,7 @@ This extension unmarshalls logs encoded in formats produced by AWS services.
 This extension unmarshals logs encoded in formats produced by AWS services, including:
  - [Amazon CloudWatch Logs Subscription Filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html).
  - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
+   - Includes support for Transit Gateway (TGW) flow logs, which use the same VPC flow log format.
    - Parquet support still to be added.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
@@ -48,13 +49,15 @@ extensions:
     vpcflow:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
-      file_format: plain-text 
+      file_format: plain-text
       # Optional: format of the VPC flow log. Used when processing VPC flow logs arriving through CloudWatch Logs subscription filters. 
       # Ignored when decoding VPC flow logs sent to S3, which include the format as a file header.
       # Accepts a space delimited list of fields in the VPC flow log.
-      # When unset, built-in default is used matching fields of Version 2 VPC flow logs format.
+      # When unset, built-in default auto-detects VPC (version 2 fields) vs. TGW (version 2-6 fields).
       format: version interface-id srcaddr dstaddr
 ```
+
+**Note**: [Transit Gateway (TGW) flow logs](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html) are also supported.
 
 Example for S3 access logs:
 ```yaml
@@ -176,8 +179,13 @@ otelcol --config=config.yaml --feature-gates --feature-gates=<FEATURE_GATE_ID>
 The extension implements streaming support which allows processing of input data to be processed without loading entire logs into memory.
 The implementation follows `encoding.LogsDecoderExtension` contract and streamed unmarhaling is exposed through `NewLogsDecoder`.
 
-Note that, unlike non-streaming unmarshaling, caller is expected to detect and perform decompression operations (e.g. un-gzip).
-This allows streaming implementation to work independently of compression algorithms and buffer sizes.
+Caller is expected to detect and perform decompression operations (e.g. un-gzip) before invoking the extension.
+
+> [!WARNING]
+> Transparent gzip decompression inside `aws_logs_encoding` is deprecated and will be removed in a future release.
+> This currently only affects the non-streaming `UnmarshalLogs` API for backward compatibility. Receivers should decompress payloads before passing data to the extension.
+
+This allows the implementation to work independently of compression algorithms and buffer sizes.
 
 The table below summarizes streaming support details for each log type, along with the offset tracking mechanism,
 
@@ -198,7 +206,7 @@ The table below summarizes streaming support details for each log type, along wi
 
 ### VPC flow log record fields
 
-[VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
+[VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) and [Transit Gateway flow log record fields](https://docs.aws.amazon.com/vpc/latest/tgw/tgw-flow-logs.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
 | Flow log field               | Attribute in OpenTelemetry log                                                                        |
 |------------------------------|-------------------------------------------------------------------------------------------------------|
@@ -213,6 +221,10 @@ The table below summarizes streaming support details for each log type, along wi
 | `dstport`                    | `destination.port`                                                                                    |
 | `protocol`                   | `network.protocol.name`                                                                               |
 | `packets`                    | `aws.vpc.flow.packets`                                                                                |
+| `packets-lost-no-route`      | `aws.vpc.flow.packets_lost_no_route`                                                                  |
+| `packets-lost-blackhole`     | `aws.vpc.flow.packets_lost_blackhole`                                                                 |
+| `packets-lost-mtu-exceeded`  | `aws.vpc.flow.packets_lost_mtu_exceeded`                                                              |
+| `packets-lost-ttl-expired`   | `aws.vpc.flow.packets_lost_ttl_expired`                                                               |
 | `bytes`                      | `aws.vpc.flow.bytes`                                                                                  |
 | `start`                      | `aws.vpc.flow.start`                                                                                  |
 | `end`                        | Log timestamp                                                                                         |
@@ -242,6 +254,18 @@ The table below summarizes streaming support details for each log type, along wi
 | `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
+| `tgw-id`                     | `aws.tgw.id`                                                                                          |
+| `transit-gateway-id`         | `aws.tgw.id`                                                                                          |
+| `tgw-attachment-id`          | `aws.tgw.attachment.id`                                                                               |
+| `tgw-src-vpc-id`             | `aws.tgw.source.vpc.id`                                                                               |
+| `tgw-dst-vpc-id`             | `aws.tgw.destination.vpc.id`                                                                          |
+| `tgw-src-subnet-id`          | `aws.tgw.source.vpc.subnet.id`                                                                        |
+| `tgw-dst-subnet-id`          | `aws.tgw.destination.vpc.subnet.id`                                                                   |
+| `tgw-src-eni`                | `aws.tgw.source.eni.id`                                                                               |
+| `tgw-dst-eni`                | `aws.tgw.destination.eni.id`                                                                          |
+| `tgw-src-az-id`              | `aws.tgw.source.az.id`                                                                                |
+| `tgw-dst-az-id`              | `aws.tgw.destination.az.id`                                                                           |
+| `tgw-pair-attachment-id`     | `aws.tgw.attachment.pair.id`                                                                          |
 
 ### S3 access log record fields
 

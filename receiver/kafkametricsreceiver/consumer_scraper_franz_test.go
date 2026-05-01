@@ -23,7 +23,7 @@ func franzConsumerTestConfig(t *testing.T) Config {
 	_, clientCfg := kafkatest.NewCluster(t, kfake.SeedTopics(1, "meta-topic"))
 	cfg := Config{
 		ClientConfig:         clientCfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		ClusterAlias:         "test-cluster-franz",
 		// Use permissive filters so ListEndOffsets/ListStartOffsets have topics.
 		TopicMatch: ".*",

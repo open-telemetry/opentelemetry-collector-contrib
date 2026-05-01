@@ -46,7 +46,7 @@ func TestConvertPprofToPprofile(t *testing.T) {
 			default:
 				t.Fatalf("expected error '%s' but got '%s'", tc.expectedError, err)
 			}
-			roundTrip, err := convertPprofileToPprof(pprofile)
+			roundTrip, err := ConvertPprofileToPprof(pprofile)
 			require.NoError(t, err)
 			if diff := cmp.Diff(p.String(), roundTrip.String()); diff != "" {
 				t.Fatalf("round-trip profile mismatch (-want +got):\n%s", diff)
@@ -765,7 +765,7 @@ func TestConvertMultipleSampleTypes(t *testing.T) {
 	}
 
 	// Verify round-trip conversion
-	roundTrip, err := convertPprofileToPprof(pprofiles)
+	roundTrip, err := ConvertPprofileToPprof(pprofiles)
 	require.NoError(t, err)
 	require.NotNil(t, roundTrip)
 
@@ -858,7 +858,7 @@ func TestDefaultSampleTypeConvention(t *testing.T) {
 	require.Equal(t, int64(300), thirdProfile.Samples().At(0).Values().At(0))
 
 	// Verify round-trip conversion preserves order
-	roundTrip, err := convertPprofileToPprof(pprofiles)
+	roundTrip, err := ConvertPprofileToPprof(pprofiles)
 	require.NoError(t, err)
 	require.NotNil(t, roundTrip)
 

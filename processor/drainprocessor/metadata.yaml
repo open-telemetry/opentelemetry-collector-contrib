@@ -1,0 +1,32 @@
+type: drain
+display_name: Drain Processor
+description: The Drain Processor applies the Drain log clustering algorithm to log records as they pass through the pipeline, deriving a template string (e.g. "user <*> logged in from <*>") and attaching it as an attribute on each record.
+
+status:
+  class: processor
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [MikeGoldsmith, atoulme, martinjt]
+
+tests:
+  config:
+
+telemetry:
+  metrics:
+    processor_drain_clusters_active:
+      enabled: true
+      description: Current number of active clusters in the Drain parse tree.
+      unit: "{clusters}"
+      gauge:
+        value_type: int
+      stability: development
+    processor_drain_log_records_annotated:
+      enabled: true
+      description: Number of log records successfully annotated with a template.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+      stability: development

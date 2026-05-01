@@ -1,4 +1,5 @@
-type: honeycombmarker
+type: honeycomb_marker
+deprecated_type: honeycombmarker
 display_name: Honeycomb Marker Exporter
 
 status:

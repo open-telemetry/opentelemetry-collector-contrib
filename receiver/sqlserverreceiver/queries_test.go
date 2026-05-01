@@ -140,3 +140,21 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSQLServerIdleBlockingSessionsQuery(t *testing.T) {
+	expectedBytes, err := os.ReadFile(path.Join(".", "testdata", "testIdleBlockerQuerySampleQuery.txt"))
+	require.NoError(t, err)
+
+	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
+	actual := strings.ReplaceAll(getSQLServerIdleBlockingSessionsQuery(), "\r\n", "\n")
+	require.Equal(t, expected, actual)
+}
+
+func TestFormatSQLServerSessionIDsParam(t *testing.T) {
+	actual := formatSQLServerSessionIDsParam(map[int64]struct{}{
+		91: {},
+		60: {},
+		77: {},
+	})
+	require.Equal(t, "60,77,91", actual)
+}

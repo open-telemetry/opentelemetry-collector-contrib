@@ -1,11 +1,11 @@
-honeycombmarker:
+honeycomb_marker:
   api_key: "test-apikey"
   markers:
     - type: "fooType"
       rules:
         log_conditions:
           - body == "test"
-honeycombmarker/all_fields:
+honeycomb_marker/all_fields:
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
   sending_queue:
@@ -29,7 +29,7 @@ honeycombmarker/all_fields:
         log_conditions:
           - body == "test"
 
-honeycombmarker/bad_syntax_log:
+honeycomb_marker/bad_syntax_log:
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
   markers:
@@ -42,7 +42,7 @@ honeycombmarker/bad_syntax_log:
           - body == "test"
           - set(attributes["body"], body)
 
-honeycombmarker/no_conditions:
+honeycomb_marker/no_conditions:
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
   markers:
@@ -52,7 +52,7 @@ honeycombmarker/no_conditions:
       dataset_slug: "__all__"
       rules:
 
-honeycombmarker/no_api_key:
+honeycomb_marker/no_api_key:
   api_key: ""
   api_url: "https://api.testhost.io"
   markers:
@@ -64,12 +64,12 @@ honeycombmarker/no_api_key:
         log_conditions:
           - body == "test"
 
-honeycombmarker/no_markers_supplied:
+honeycomb_marker/no_markers_supplied:
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
   markers:
 
-honeycombmarker/no_dataset_slug:
+honeycomb_marker/no_dataset_slug:
   api_key: "test-apikey"
   api_url: "https://api.testhost.io"
   markers:
