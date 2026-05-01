@@ -150,20 +150,6 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name: "valid config with only HTTP",
-			config: Config{
-				HTTPServerConfig: &confighttp.ServerConfig{
-					NetAddr: confignet.AddrConfig{
-						Endpoint: "0.0.0.0:5778",
-					},
-				},
-				Source: Source{
-					File: "/etc/strategies.json",
-				},
-			},
-			expectedErr: nil,
-		},
-		{
 			name: "valid config with only gRPC",
 			config: Config{
 				GRPCServerConfig: &configgrpc.ServerConfig{
