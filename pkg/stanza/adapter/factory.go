@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	xrcvr "go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/metadata"
@@ -27,11 +28,15 @@ type LogReceiverType interface {
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
-func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rcvr.Factory {
-	return rcvr.NewFactory(
+func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel, opts ...xrcvr.FactoryOption) rcvr.Factory {
+	allOpts := []xrcvr.FactoryOption{
+		xrcvr.WithLogs(createLogsReceiver(logReceiverType), sl),
+	}
+	allOpts = append(allOpts, opts...)
+	return xrcvr.NewFactory(
 		logReceiverType.Type(),
 		logReceiverType.CreateDefaultConfig,
-		rcvr.WithLogs(createLogsReceiver(logReceiverType), sl),
+		allOpts...,
 	)
 }
 

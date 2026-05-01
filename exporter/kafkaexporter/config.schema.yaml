@@ -1,4 +1,25 @@
 $defs:
+  record_partitioner_config:
+    description: RecordPartitionerConfig configures the strategy used to assign Kafka records to partitions. At most one field should be set.
+    type: object
+    properties:
+      extension:
+        description: Extension is the component ID of an extension implementing RecordPartitionerExtension. Setting this field delegates partition assignment to that extension.
+        x-pointer: true
+        type: string
+        x-customType: go.opentelemetry.io/collector/component.ID
+      least_backup:
+        description: LeastBackup routes each record to the partition with the fewest buffered records.
+        x-pointer: true
+        type: object
+      round_robin:
+        description: RoundRobin distributes records evenly across all available partitions in round-robin order.
+        x-pointer: true
+        type: object
+      sticky_key:
+        description: StickyKey uses StickyKeyPartitioner. When a record key is set, the partition is derived from the key hash.
+        x-pointer: true
+        $ref: sticky_key_partitioner_config
   signal_config:
     description: SignalConfig holds signal-specific configuration for the Kafka exporter.
     type: object
@@ -11,6 +32,13 @@ $defs:
         type: string
       topic_from_metadata_key:
         description: TopicFromMetadataKey holds the name of the metadata key to use as the topic name for this signal type. If this is set, it takes precedence over the topic name set in the topic field.
+        type: string
+  sticky_key_partitioner_config:
+    description: StickyKeyPartitionerConfig configures the StickyKeyPartitioner.
+    type: object
+    properties:
+      hasher:
+        description: 'Hasher is the hash algorithm used for key-based partition assignment. Valid values: "sarama_compat" (default). - "sarama_compat": Sarama-compatible FNV-1a hashing (SaramaCompatHasher). - "murmur2": Murmur2 hashing.'
         type: string
 description: Config defines configuration for Kafka exporter.
 type: object
@@ -43,6 +71,12 @@ properties:
   profiles:
     description: Profiles holds configuration about how profiles should be sent to Kafka.
     $ref: signal_config
+  record_headers:
+    description: RecordHeaders sets static headers on every outgoing Kafka record.
+    $ref: go.opentelemetry.io/collector/config/configopaque.map_list
+  record_partitioner:
+    description: RecordPartitioner configures how Kafka records are assigned to partitions. The default ("sarama_compatible") retains the legacy Sarama-compatible hashing behavior. Set to "sticky", "round_robin", or "least_backup" to use one of the built-in franz-go partitioners, or "extension" to delegate to a custom extension.
+    $ref: record_partitioner_config
   sending_queue:
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config

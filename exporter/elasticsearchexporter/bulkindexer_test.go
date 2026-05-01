@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -298,6 +299,73 @@ func TestSyncBulkIndexerRequestRetriesMetric(t *testing.T) {
 	}
 }
 
+func TestSyncBulkIndexerFlushErrorPermanence(t *testing.T) {
+	tests := []struct {
+		name               string
+		responseStatusCode int
+		retryOnStatus      []int
+		wantPermanent      bool
+	}{
+		{
+			name:               "non-retryable status is permanent",
+			responseStatusCode: http.StatusUnauthorized,
+			retryOnStatus:      []int{http.StatusTooManyRequests},
+			wantPermanent:      true,
+		},
+		{
+			name:               "retryable status is not permanent",
+			responseStatusCode: http.StatusTooManyRequests,
+			retryOnStatus:      []int{http.StatusTooManyRequests},
+			wantPermanent:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{NumConsumers: 1}),
+				Retry: RetrySettings{
+					Enabled:       false,
+					RetryOnStatus: tt.retryOnStatus,
+				},
+			}
+
+			esClient, err := elastictransport.New(elastictransport.Config{
+				URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+				Transport: &mockTransport{RoundTripFunc: func(*http.Request) (*http.Response, error) {
+					return &http.Response{
+						Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+						Body:       io.NopCloser(strings.NewReader(`{"error":"boom"}`)),
+						StatusCode: tt.responseStatusCode,
+					}, nil
+				}},
+			})
+			require.NoError(t, err)
+
+			ct := componenttest.NewTelemetry()
+			tb, err := metadata.NewTelemetryBuilder(
+				metadatatest.NewSettings(ct).TelemetrySettings,
+			)
+			require.NoError(t, err)
+
+			bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.NewNop(), nil)
+
+			session := bi.StartSession(t.Context())
+			require.NoError(t, session.Add(t.Context(), "foo", "", "", strings.NewReader(`{"foo":"bar"}`), nil, docappender.ActionCreate))
+
+			err = session.Flush(t.Context())
+			require.Error(t, err)
+			assert.Equal(t, tt.wantPermanent, consumererror.IsPermanent(err))
+
+			var flushErr docappender.ErrorFlushFailed
+			assert.ErrorAs(t, err, &flushErr)
+
+			session.End()
+			assert.NoError(t, bi.Close(t.Context()))
+		})
+	}
+}
+
 func TestBulkIndexerLogsStatusCode(t *testing.T) {
 	responseBody := `{"errors": true, "items":[
 		{"create":{"_index":"foo-200","status":200}},
@@ -527,4 +595,49 @@ func newBenchBulkIndexerConfig(tb testing.TB, compressionLevel int) docappender.
 		Client:           client,
 		CompressionLevel: compressionLevel,
 	}
+}
+
+func TestSyncBulkIndexer_SuppressConflictErrors(t *testing.T) {
+	responseBody := `{"items":[{"create":{"_index":"foo","status":409,"error":{"type":"version_conflict_engine_exception","reason":"document already exists"}}}]}`
+
+	cfg := Config{
+		QueueBatchConfig: configoptional.Default(exporterhelper.QueueBatchConfig{
+			NumConsumers: 1,
+		}),
+		SuppressConflictErrors: true,
+	}
+
+	esClient, err := elastictransport.New(elastictransport.Config{
+		URLs: []*url.URL{{Scheme: "http", Host: "localhost:9200"}},
+		Transport: &mockTransport{
+			RoundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body:       io.NopCloser(strings.NewReader(responseBody)),
+					StatusCode: http.StatusOK,
+				}, nil
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	ct := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(
+		metadatatest.NewSettings(ct).TelemetrySettings,
+	)
+	require.NoError(t, err)
+
+	core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
+	bi := newSyncBulkIndexer(esClient, &cfg, false, tb, zap.New(core), nil)
+
+	ctx := t.Context()
+	session := bi.StartSession(ctx)
+	require.NoError(t, session.Add(ctx, "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+
+	require.NoError(t, session.Flush(ctx))
+	session.End()
+	require.NoError(t, bi.Close(ctx))
+
+	messages := observed.FilterMessage("failed to index document")
+	assert.Equal(t, 0, messages.Len(), "expected no error logs for version_conflict_engine_exception when SuppressConflictErrors is true")
 }

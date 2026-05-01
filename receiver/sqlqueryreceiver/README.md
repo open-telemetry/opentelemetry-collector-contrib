@@ -44,6 +44,7 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
 
 - `datasource` (required): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This value is used instead of the individual connection parameters listed above and does not perform any special character escaping. This is a driver-specific string usually consisting of at least a database name and connection information. This is sometimes referred to as the "connection string" in driver documentation. Examples:
 
+  - [clickhouse](https://github.com/clickhouse/clickhouse-go) - `clickhouse://username:userpassword@localhost:9000/default?dial_timeout=200ms&read_timeout=30s&max_execution_time=60`
   - [hdb](https://github.com/SAP/go-hdb) - `hdb://<USER>:<PASSWORD>@something.hanacloud.ondemand.com:443?TLSServerName=something.hanacloud.ondemand.com`
   - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
   - [oracle](https://github.com/sijms/go-ora) - `oracle://username:user_password@localhost:1521/FREEPDB1`
@@ -54,7 +55,7 @@ The SQL Query Receiver uses custom SQL queries to generate logs and/or metrics f
 
 **Other configuration fields:**
 - `driver` (required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
-  HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase).
+  HANA), _oracle_ (Oracle DB), _tds_ (SapASE/Sybase), _clickhouse_.
 - `queries` (required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
@@ -81,6 +82,7 @@ Additionally, each `query` section supports the following properties:
   See the below section [Tracking processed results](#tracking-processed-results).
 - `tracking_start_value` (optional, default `""`) Applies only to logs. In case of a parameterized query, defines the initial value for the parameter.
   See the below section [Tracking processed results](#tracking-processed-results).
+- `ignore_null_values` (optional, default `false`) When set to `true`, suppresses warning logs about NULL values encountered in query result columns. This is useful when queries return NULL in columns that are not referenced in the metric or log configuration.
 - `attribute_columns`(optional): a list of column names in the returned dataset used to set attributes on the signal.
   These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 
@@ -313,8 +315,8 @@ This produces three separate metrics (`pgbouncer.lists.pools`, `pgbouncer.lists.
 
 #### NULL values
 
-Avoid queries that produce any NULL values. If a query produces a NULL value, a warning will be logged. Furthermore,
-if a configuration references the column that produces a NULL value, an additional error will be logged. However, in
+If a query produces a NULL value, a warning will be logged unless `ignore_null_values` is set to true. Furthermore,
+if a configuration references the column that produces a NULL value, an error will always be logged. However, in
 either case, the receiver will continue to operate.
 
 #### Oracle DB Driver Example

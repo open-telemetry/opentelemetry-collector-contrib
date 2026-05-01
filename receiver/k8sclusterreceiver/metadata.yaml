@@ -17,6 +17,8 @@ status:
 
 sem_conv_version: 1.18.0
 
+reaggregation_enabled: true
+
 entities:
   - type: k8s.namespace
     brief: A Kubernetes namespace
@@ -46,9 +48,8 @@ entities:
       - ref: k8s.deployment.uid
     description:
       - ref: k8s.deployment.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.replicaset
     brief: A Kubernetes replicaset
@@ -57,9 +58,8 @@ entities:
       - ref: k8s.replicaset.uid
     description:
       - ref: k8s.replicaset.name
-    relationships:
-      - type: managed_by
-        target: k8s.deployment
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.statefulset
     brief: A Kubernetes statefulset
@@ -68,9 +68,8 @@ entities:
       - ref: k8s.statefulset.uid
     description:
       - ref: k8s.statefulset.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.daemonset
     brief: A Kubernetes daemonset
@@ -79,9 +78,8 @@ entities:
       - ref: k8s.daemonset.uid
     description:
       - ref: k8s.daemonset.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.cronjob
     brief: A Kubernetes cronjob
@@ -90,9 +88,8 @@ entities:
       - ref: k8s.cronjob.uid
     description:
       - ref: k8s.cronjob.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.job
     brief: A Kubernetes job
@@ -101,11 +98,8 @@ entities:
       - ref: k8s.job.uid
     description:
       - ref: k8s.job.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
-      - type: managed_by
-        target: k8s.cronjob
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.pod
     brief: A Kubernetes pod
@@ -115,21 +109,9 @@ entities:
     description:
       - ref: k8s.pod.name
       - ref: k8s.pod.qos_class
-    relationships:
-      - type: scheduled_on
-        target: k8s.node
-      - type: part_of
-        target: k8s.namespace
-      - type: managed_by
-        target: k8s.replicaset
-      - type: managed_by
-        target: k8s.statefulset
-      - type: managed_by
-        target: k8s.daemonset
-      - type: managed_by
-        target: k8s.job
-      - type: managed_by
-        target: k8s.replicationcontroller
+    extra_attributes:
+      - ref: k8s.namespace.name
+      - ref: k8s.node.name
 
   - type: k8s.container
     brief: A Kubernetes container
@@ -141,9 +123,20 @@ entities:
       - ref: container.image.name
       - ref: container.image.tag
       - ref: k8s.container.status.last_terminated_reason
-    relationships:
-      - type: child_of
-        target: k8s.pod
+    # TODO: Use "relationships" instead of "extra_attribu˝˝tes" here.
+    # Currently, k8s.container does not inherit all descriptive attributes from
+    # the k8s.pod entity (for example, k8s.pod.qos_class is not emitted). To define
+    # a related entity here instead of using extra_attributes, we would need to either:
+    # - start explicitly emitting k8s.container metrics with the k8s.pod.qos_class attribute, or
+    # - make the related-entity description configurable.
+      # relationships:
+      #   target: k8s.pod
+      # - type: child_of
+    extra_attributes:
+      - ref: k8s.pod.uid
+      - ref: k8s.pod.name
+      - ref: k8s.namespace.name
+      - ref: k8s.node.name
 
   - type: k8s.replicationcontroller
     brief: A Kubernetes replication controller
@@ -152,9 +145,8 @@ entities:
       - ref: k8s.replicationcontroller.uid
     description:
       - ref: k8s.replicationcontroller.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: k8s.resourcequota
     brief: A Kubernetes resource quota
@@ -163,10 +155,13 @@ entities:
       - ref: k8s.resourcequota.uid
     description:
       - ref: k8s.resourcequota.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
+  # TODO: k8s.service uses the old ResourceBuilder API (not ForK8sService) because
+  # k8s.service.traffic_distribution is an optional field (nil pointer in the K8s API) and
+  # mdatagen-generated copyToResource unconditionally emits enabled string attributes even when
+  # never set. Switch to the entity API once mdatagen supports optional/omitempty string attributes.
   - type: k8s.service
     brief: A Kubernetes service
     stability: development
@@ -176,10 +171,30 @@ entities:
       - ref: k8s.service.name
       - ref: k8s.service.type
       - ref: k8s.service.publish_not_ready_addresses
+    extra_attributes:
+      - ref: k8s.namespace.name
       - ref: k8s.service.traffic_distribution
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+
+  - type: k8s.persistentvolume
+    brief: A Kubernetes PersistentVolume object.
+    stability: development
+    identity:
+      - ref: k8s.persistentvolume.uid
+    description:
+      - ref: k8s.persistentvolume.name
+      - ref: k8s.storageclass.name
+      - ref: k8s.persistentvolume.reclaim_policy
+
+  - type: k8s.persistentvolumeclaim
+    brief: A Kubernetes PersistentVolumeClaim object.
+    stability: development
+    identity:
+      - ref: k8s.persistentvolumeclaim.uid
+    description:
+      - ref: k8s.persistentvolumeclaim.name
+    extra_attributes:
+      - ref: k8s.namespace.name
+      - ref: k8s.storageclass.name
 
   - type: k8s.hpa
     brief: A Kubernetes horizontal pod autoscaler
@@ -191,9 +206,8 @@ entities:
       - ref: k8s.hpa.scaletargetref.apiversion
       - ref: k8s.hpa.scaletargetref.kind
       - ref: k8s.hpa.scaletargetref.name
-    relationships:
-      - type: part_of
-        target: k8s.namespace
+    extra_attributes:
+      - ref: k8s.namespace.name
 
   - type: openshift.clusterquota
     brief: An OpenShift cluster resource quota
@@ -329,6 +343,35 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.persistentvolume.name:
+    description: The name of the PersistentVolume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.reclaim_policy:
+    description: The reclaim policy of the PersistentVolume.
+    type: string
+    enabled: false
+    enum:
+      - Delete
+      - Recycle
+      - Retain
+
+  k8s.persistentvolume.uid:
+    description: The UID of the PersistentVolume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.name:
+    description: The name of the PersistentVolumeClaim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.uid:
+    description: The UID of the PersistentVolumeClaim.
+    type: string
+    enabled: true
+
   k8s.pod.name:
     description: The k8s pod name.
     type: string
@@ -409,6 +452,11 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.storageclass.name:
+    description: The name of the StorageClass.
+    type: string
+    enabled: true
+
   openshift.clusterquota.name:
     description: The k8s ClusterResourceQuota name.
     type: string
@@ -433,9 +481,11 @@ attributes:
   condition:
     description: "the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure"
     type: string
+    requirement_level: required
   k8s.container.status.reason:
     description: The reason of the current container status.
     type: string
+    requirement_level: required
     enum:
       - ContainerCreating
       - CrashLoopBackOff
@@ -449,6 +499,7 @@ attributes:
   k8s.container.status.state:
     description: The state of the container (terminated, running, waiting). See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/#containerstate-v1-core for details.
     type: string
+    requirement_level: required
     enum:
       - terminated
       - running
@@ -456,9 +507,29 @@ attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
     type: string
+    requirement_level: recommended
+  k8s.persistentvolume.status.phase:
+    description: The phase of the PersistentVolume.
+    type: string
+    requirement_level: required
+    enum:
+      - Pending
+      - Available
+      - Bound
+      - Released
+      - Failed
+  k8s.persistentvolumeclaim.status.phase:
+    description: The phase of the PersistentVolumeClaim.
+    type: string
+    requirement_level: required
+    enum:
+      - Pending
+      - Bound
+      - Lost
   k8s.service.endpoint.address_type:
     description: The address type of the endpoint.
     type: string
+    requirement_level: recommended
     enum:
       - IPv4
       - IPv6
@@ -466,6 +537,7 @@ attributes:
   k8s.service.endpoint.condition:
     description: The condition of the service endpoint.
     type: string
+    requirement_level: recommended
     enum:
       - ready
       - serving
@@ -473,9 +545,11 @@ attributes:
   k8s.service.endpoint.zone:
     description: The zone of the service endpoint, typically corresponding to a failure domain.
     type: string
+    requirement_level: recommended
   resource:
     description: the name of the resource on which the quota is applied
     type: string
+    requirement_level: required
 
 metrics:
   k8s.container.cpu_limit:
@@ -742,6 +816,65 @@ metrics:
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+
+  k8s.persistentvolume.status.phase:
+    enabled: false
+    description: The current phase of the PersistentVolume (1 for the current phase, 0 for others).
+    unit: "{persistentvolume}"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes:
+      - k8s.persistentvolume.status.phase
+    entity: k8s.persistentvolume
+
+  k8s.persistentvolume.storage.capacity:
+    enabled: false
+    description: The storage capacity of the PersistentVolume.
+    unit: "By"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    entity: k8s.persistentvolume
+
+  k8s.persistentvolumeclaim.status.phase:
+    enabled: false
+    description: The current phase of the PersistentVolumeClaim (1 for the current phase, 0 for others).
+    unit: "{persistentvolumeclaim}"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes:
+      - k8s.persistentvolumeclaim.status.phase
+    entity: k8s.persistentvolumeclaim
+
+  k8s.persistentvolumeclaim.storage.capacity:
+    enabled: false
+    description: The actual storage capacity provisioned for the PersistentVolumeClaim. Only available when bound.
+    unit: "By"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    entity: k8s.persistentvolumeclaim
+
+  k8s.persistentvolumeclaim.storage.request:
+    enabled: false
+    description: The storage requested by the PersistentVolumeClaim.
+    unit: "By"
+    stability: development
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    entity: k8s.persistentvolumeclaim
 
   k8s.pod.phase:
     enabled: true

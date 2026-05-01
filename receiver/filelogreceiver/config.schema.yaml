@@ -1,4 +1,4 @@
-description: FileLogConfig defines configuration for the filelog receiver
+description: FileLogConfig defines configuration for the file_log receiver
 type: object
 allOf:
   - $ref: /pkg/stanza/operator/input/file.config

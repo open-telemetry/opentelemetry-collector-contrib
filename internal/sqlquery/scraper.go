@@ -79,7 +79,9 @@ func (s *Scraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 		if !errors.Is(err, ErrNullValueWarning) {
 			return out, fmt.Errorf("scraper: %w", err)
 		}
-		s.Logger.Warn("problems encountered getting metric rows", zap.Error(err))
+		if !s.Query.IgnoreNullValues {
+			s.Logger.Warn("problems encountered getting metric rows", zap.Error(err))
+		}
 	}
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	rms := out.ResourceMetrics()
@@ -135,6 +137,9 @@ func BuildDataSourceString(config Config) (string, error) {
 
 	var connStr string
 	switch config.Driver {
+	case DriverClickHouse:
+		// ClickHouse connection string format: clickhouse://user:pass@host:port/db?param1=value1&param2=value2
+		connStr = fmt.Sprintf("clickhouse://%s%s:%d/%s", auth, config.Host, config.Port, config.Database)
 	case DriverHDB:
 		// HDB connection string format: hdb://user:pass@host:port?param1=value1
 		connStr = fmt.Sprintf("hdb://%s%s:%d", auth, config.Host, config.Port)

@@ -242,6 +242,20 @@ func TestSeverityParser(t *testing.T) {
 			overwriteText: true,
 		},
 		{
+			name:     "custom-int64",
+			sample:   int64(1234),
+			mapping:  map[string]any{"error": 1234},
+			expected: entry.Error,
+		},
+		{
+			name:          "custom-int64-overwrite-text",
+			sample:        int64(1234),
+			mapping:       map[string]any{"error": 1234},
+			expected:      entry.Error,
+			expectedText:  "ERROR",
+			overwriteText: true,
+		},
+		{
 			name:     "mixed-list-string",
 			sample:   "ThiS Is BaD",
 			mapping:  map[string]any{"error": []any{"NOOOOOOO", "this is bad", 1234}},
