@@ -33,7 +33,7 @@ func newExtension(cfg *Config, telemetry component.TelemetrySettings) *mcpExtens
 	return jrse
 }
 
-func (mcpe *mcpExtension) handleRequest(rw http.ResponseWriter, req *http.Request) {}
+func (*mcpExtension) handleRequest(_ http.ResponseWriter, _ *http.Request) {}
 
 func (mcpe *mcpExtension) Start(ctx context.Context, host component.Host) error {
 	var err error

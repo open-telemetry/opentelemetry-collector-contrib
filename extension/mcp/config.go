@@ -11,9 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 )
 
-var (
-	errAtLeastOneProtocol = errors.New("no protocols selected")
-)
+var errAtLeastOneProtocol = errors.New("no protocols selected")
 
 // Config represents the extension config settings within the collector's config.yaml
 type Config struct {
