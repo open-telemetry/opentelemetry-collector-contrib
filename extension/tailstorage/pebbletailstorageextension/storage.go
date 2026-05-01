@@ -136,18 +136,18 @@ func (s *storage) readByTracePrefix(prefix []byte) ptrace.Traces {
 func tracePrefix(traceID pcommon.TraceID) (prefix [traceIDBytes + 1]byte) {
 	copy(prefix[:], traceID[:])
 	prefix[traceIDBytes] = traceIDSeparator
-	return
+	return prefix
 }
 
 func tracePrefixUpperBound(prefix [traceIDBytes + 1]byte) (upper [traceIDBytes + 1]byte) {
 	upper = prefix // copy
 	upper[len(upper)-1]++
-	return
+	return upper
 }
 
 func traceEntryKey(traceID pcommon.TraceID, seq uint64) (key [traceIDBytes + 1 + 8]byte) {
 	copy(key[:], traceID[:])
 	key[traceIDBytes] = traceIDSeparator
 	binary.BigEndian.PutUint64(key[traceIDBytes+1:], seq)
-	return
+	return key
 }
