@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
@@ -18,13 +20,18 @@ import (
 )
 
 type drainProcessor struct {
-	config    *Config
-	logger    *zap.Logger
-	telemetry *metadata.TelemetryBuilder
+	config      *Config
+	componentID component.ID
+	logger      *zap.Logger
+	telemetry   *metadata.TelemetryBuilder
 
 	mu       sync.Mutex
 	drain    *internaldrain.Drain
 	warmedUp bool // true when WarmupMinClusters == 0 or cluster count has reached the threshold
+
+	storageClient    storage.Client
+	stopSave         context.CancelFunc // cancels periodic save goroutine
+	lastSnapshotHash uint64
 }
 
 func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, error) {
@@ -45,13 +52,13 @@ func newDrainProcessor(set processor.Settings, cfg *Config) (*drainProcessor, er
 	}
 
 	p := &drainProcessor{
-		config:    cfg,
-		logger:    set.Logger,
-		telemetry: tel,
-		drain:     d,
-		warmedUp:  cfg.WarmupMinClusters == 0,
+		config:      cfg,
+		componentID: set.ID,
+		logger:      set.Logger,
+		telemetry:   tel,
+		drain:       d,
+		warmedUp:    cfg.WarmupMinClusters == 0,
 	}
-	p.seed()
 	return p, nil
 }
 
