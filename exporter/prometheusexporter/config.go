@@ -10,8 +10,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -21,7 +21,7 @@ type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
 
 	// QueueBatchConfig defines the queue configuration.
-	QueueBatchConfig exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueBatchConfig configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`
@@ -84,11 +84,4 @@ const (
 
 	// noTranslation bypasses all metric and label name translation, passing them through unaltered
 	noTranslation translationStrategy = "NoTranslation"
-)
-
-var disableAddMetricSuffixesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusexporter.DisableAddMetricSuffixes",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, the deprecated add_metric_suffixes configuration option is ignored and translation_strategy is always used"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-specification/pull/4533"),
 )

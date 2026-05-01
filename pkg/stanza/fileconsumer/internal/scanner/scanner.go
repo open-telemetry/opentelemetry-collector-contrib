@@ -6,9 +6,10 @@ package scanner // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 
-	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/stanzaerrors"
 )
 
 const DefaultBufferSize = 16 * 1024
@@ -20,13 +21,29 @@ type Scanner struct {
 }
 
 // New creates a new positional scanner
-func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc bufio.SplitFunc) *Scanner {
+func New(r io.Reader, maxLogSize int, buf []byte, startOffset int64, splitFunc bufio.SplitFunc, isGzip bool) *Scanner {
 	s := &Scanner{Scanner: bufio.NewScanner(r), pos: startOffset}
 	s.Buffer(buf, maxLogSize)
-	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		advance, token, err = splitFunc(data, atEOF)
-		s.pos += int64(advance)
-		return advance, token, err
+	var scanFunc bufio.SplitFunc
+	if !isGzip {
+		scanFunc = func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			advance, token, err = splitFunc(data, atEOF)
+			s.pos += int64(advance)
+			return advance, token, err
+		}
+	} else {
+		scanFunc = func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			advance, token, err = splitFunc(data, atEOF)
+			// flush data if there are no more tokens but there is still data left
+			// this is because gzip reader reads the entire compressed stream in one go
+			if advance == 0 && token == nil && atEOF && len(data) > 0 {
+				advance = len(data)
+				token = data
+			}
+
+			s.pos += int64(advance)
+			return advance, token, err
+		}
 	}
 	s.Split(scanFunc)
 	return s
@@ -43,7 +60,7 @@ func (s *Scanner) Error() error {
 		return stanzaerrors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
 	}
 	if err != nil {
-		return stanzaerrors.Wrap(err, "scanner error")
+		return fmt.Errorf("scanner error: %w", err)
 	}
 	return nil
 }

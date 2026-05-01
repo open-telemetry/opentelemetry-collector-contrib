@@ -6,10 +6,9 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -31,6 +30,7 @@ type TelemetryBuilder struct {
 	ElasticsearchDocsProcessed            metric.Int64Counter
 	ElasticsearchDocsReceived             metric.Int64Counter
 	ElasticsearchDocsRetried              metric.Int64Counter
+	ElasticsearchDocsRetriedHTTPRequest   metric.Int64Counter
 	ElasticsearchFlushedBytes             metric.Int64Counter
 	ElasticsearchFlushedUncompressedBytes metric.Int64Counter
 }
@@ -92,6 +92,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ElasticsearchDocsRetried, err = builder.meter.Int64Counter(
 		"otelcol.elasticsearch.docs.retried",
 		metric.WithDescription("Count of document retries. [Alpha]"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ElasticsearchDocsRetriedHTTPRequest, err = builder.meter.Int64Counter(
+		"otelcol.elasticsearch.docs.retried_http_request",
+		metric.WithDescription("Count of documents retried due to HTTP request-level failures. [Alpha]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)

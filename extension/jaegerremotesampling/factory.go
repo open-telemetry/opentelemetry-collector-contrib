@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
@@ -32,7 +31,10 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerConfig: &confighttp.ServerConfig{
-			Endpoint: testutil.EndpointForPort(5778),
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  testutil.EndpointForPort(5778),
+				Transport: confignet.TransportTypeTCP,
+			},
 		},
 		GRPCServerConfig: &configgrpc.ServerConfig{
 			NetAddr: confignet.AddrConfig{
@@ -51,16 +53,6 @@ func logDeprecation(logger *zap.Logger) {
 		logger.Warn("jaegerremotesampling extension will deprecate Thrift-gen and replace it with Proto-gen to be compatible with jaeger 1.42.0 and higher. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/18485 for more details.")
 	})
 }
-
-//nolint:unused
-var protoGate = featuregate.GlobalRegistry().MustRegister(
-	"extension.jaegerremotesampling.replaceThriftWithProto",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription(
-		"When enabled, the jaegerremotesampling will use Proto-gen over Thrift-gen.",
-	),
-	featuregate.WithRegisterToVersion("0.92.0"),
-)
 
 func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	logDeprecation(set.Logger)

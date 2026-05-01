@@ -18,9 +18,9 @@ import (
 type Config struct {
 	config.Config
 	NumLogs        int
-	Body           string
 	SeverityText   string
 	SeverityNumber int32
+	Body           string
 	TraceID        string
 	SpanID         string
 }

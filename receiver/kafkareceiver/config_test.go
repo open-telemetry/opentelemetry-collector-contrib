@@ -32,44 +32,6 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
-			expected: &Config{
-				ClientConfig: func() configkafka.ClientConfig {
-					config := configkafka.NewDefaultClientConfig()
-					return config
-				}(),
-				ConsumerConfig: func() configkafka.ConsumerConfig {
-					config := configkafka.NewDefaultConsumerConfig()
-					return config
-				}(),
-				Logs: TopicEncodingConfig{
-					// if deprecated topic is set and topics is not set
-					// give precedence to topic
-					topicAlias: "legacy_logs",
-					Topics:     []string{"legacy_logs"},
-					Encoding:   "otlp_proto",
-				},
-				Metrics: TopicEncodingConfig{
-					topicAlias: "legacy_metric",
-					Topics:     []string{"legacy_metric"},
-					Encoding:   "otlp_proto",
-				},
-				Traces: TopicEncodingConfig{
-					topicAlias: "legacy_spans",
-					Topics:     []string{"legacy_spans"},
-					Encoding:   "otlp_proto",
-				},
-				Profiles: TopicEncodingConfig{
-					topicAlias: "legacy_profile",
-					Topics:     []string{"legacy_profile"},
-					Encoding:   "otlp_proto",
-				},
-				ErrorBackOff: configretry.BackOffConfig{
-					Enabled: false,
-				},
-			},
-		},
-		{
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				ClientConfig: func() configkafka.ClientConfig {
@@ -99,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 					return config
 				}(),
 				Logs: TopicEncodingConfig{
-					Topics:   []string{"logs"}, // topics is given precedence if it is set
+					Topics:   []string{"logs"},
 					Encoding: "direct",
 				},
 				Metrics: TopicEncodingConfig{
@@ -276,6 +238,36 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "conn_idle_timeout"),
+			expected: &Config{
+				ClientConfig: func() configkafka.ClientConfig {
+					config := configkafka.NewDefaultClientConfig()
+					config.ConnIdleTimeout = 5 * time.Minute
+					return config
+				}(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topics:   []string{"otlp_logs"},
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topics:   []string{"otlp_metrics"},
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topics:   []string{"otlp_spans"},
+					Encoding: "otlp_proto",
+				},
+				Profiles: TopicEncodingConfig{
+					Topics:   []string{"otlp_profiles"},
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -344,28 +336,6 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: "traces.exclude_topics is configured but none of the configured traces.topics use regex pattern (must start with '^')",
 		},
 		{
-			name: "invalid config when both topic and topics are set",
-			config: &Config{
-				Logs: TopicEncodingConfig{
-					Topic:    "legacy_log",
-					Topics:   []string{"logs"},
-					Encoding: "otlp_proto",
-				},
-			},
-			expectedErr: "both logs.topic and logs.topics cannot be set",
-		},
-		{
-			name: "invalid config when both exclude_topic and exclude_topics are set",
-			config: &Config{
-				Logs: TopicEncodingConfig{
-					ExcludeTopic:  "^logs-[invalid(regex",
-					ExcludeTopics: []string{"^logs-[invalid(regex"},
-					Encoding:      "otlp_proto",
-				},
-			},
-			expectedErr: "both logs.exclude_topic and logs.exclude_topics cannot be set",
-		},
-		{
 			name: "invalid config with non-regex topic and exclude_topic for profiles",
 			config: &Config{
 				Profiles: TopicEncodingConfig{
@@ -396,6 +366,50 @@ func TestConfigValidate(t *testing.T) {
 				},
 			},
 			expectedErr: "logs.exclude_topic contains invalid regex pattern",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for logs",
+			config: &Config{
+				Logs: TopicEncodingConfig{
+					Topics:        []string{"^logs-.*"},
+					ExcludeTopics: []string{""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "logs.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for metrics",
+			config: &Config{
+				Metrics: TopicEncodingConfig{
+					Topics:        []string{"^metrics-.*"},
+					ExcludeTopics: []string{"", "^metrics-test$"},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "metrics.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for traces",
+			config: &Config{
+				Traces: TopicEncodingConfig{
+					Topics:        []string{"^traces-.*"},
+					ExcludeTopics: []string{"^traces-test$", ""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "traces.exclude_topics contains empty string",
+		},
+		{
+			name: "invalid config with empty string in exclude_topics for profiles",
+			config: &Config{
+				Profiles: TopicEncodingConfig{
+					Topics:        []string{"^profiles-.*"},
+					ExcludeTopics: []string{""},
+					Encoding:      "otlp_proto",
+				},
+			},
+			expectedErr: "profiles.exclude_topics contains empty string",
 		},
 	}
 

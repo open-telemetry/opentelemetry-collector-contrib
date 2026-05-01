@@ -37,7 +37,7 @@ type count struct {
 	metricsMetricDefs    map[string]metricDef[*ottlmetric.TransformContext]
 	dataPointsMetricDefs map[string]metricDef[*ottldatapoint.TransformContext]
 	logsMetricDefs       map[string]metricDef[*ottllog.TransformContext]
-	profilesMetricDefs   map[string]metricDef[ottlprofile.TransformContext]
+	profilesMetricDefs   map[string]metricDef[*ottlprofile.TransformContext]
 }
 
 func (*count) Capabilities() consumer.Capabilities {
@@ -62,14 +62,14 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 				span := scopeSpan.Spans().At(k)
 				spansCounter.updateTimestamp(span.StartTimestamp())
 				spansCounter.updateTimestamp(span.EndTimestamp())
-				sCtx := ottlspan.NewTransformContextPtr(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+				sCtx := ottlspan.NewTransformContextPtr(resourceSpan, scopeSpan, span)
 				multiError = errors.Join(multiError, spansCounter.update(ctx, span.Attributes(), scopeAttrs, resourceAttrs, sCtx))
 				sCtx.Close()
 
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					spanEventsCounter.updateTimestamp(event.Timestamp())
-					eCtx := ottlspanevent.NewTransformContextPtr(event, span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
+					eCtx := ottlspanevent.NewTransformContextPtr(resourceSpan, scopeSpan, span, event)
 					multiError = errors.Join(multiError, spanEventsCounter.update(ctx, event.Attributes(), scopeAttrs, resourceAttrs, eCtx))
 					eCtx.Close()
 				}
@@ -205,7 +205,7 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
 				logRecord := scopeLogs.LogRecords().At(k)
 				counter.updateTimestamp(logRecord.Timestamp())
-				lCtx := ottllog.NewTransformContextPtr(logRecord, scopeLogs.Scope(), resourceLog.Resource(), scopeLogs, resourceLog)
+				lCtx := ottllog.NewTransformContextPtr(resourceLog, scopeLogs, logRecord)
 				multiError = errors.Join(multiError, counter.update(ctx, logRecord.Attributes(), scopeAttrs, resourceAttrs, lCtx))
 				lCtx.Close()
 			}
@@ -237,7 +237,7 @@ func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
 	for i := 0; i < ld.ResourceProfiles().Len(); i++ {
 		resourceProfile := ld.ResourceProfiles().At(i)
 		resourceAttrs := resourceProfile.Resource().Attributes()
-		counter := newCounter[ottlprofile.TransformContext](c.profilesMetricDefs)
+		counter := newCounter[*ottlprofile.TransformContext](c.profilesMetricDefs)
 
 		for j := 0; j < resourceProfile.ScopeProfiles().Len(); j++ {
 			scopeProfile := resourceProfile.ScopeProfiles().At(j)
@@ -246,9 +246,10 @@ func (c *count) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error
 			for k := 0; k < scopeProfile.Profiles().Len(); k++ {
 				profile := scopeProfile.Profiles().At(k)
 				counter.updateTimestamp(profile.Time())
-				pCtx := ottlprofile.NewTransformContext(profile, ld.Dictionary(), scopeProfile.Scope(), resourceProfile.Resource(), scopeProfile, resourceProfile)
+				pCtx := ottlprofile.NewTransformContextPtr(resourceProfile, scopeProfile, profile, ld.Dictionary())
 				attributes := pprofile.FromAttributeIndices(ld.Dictionary().AttributeTable(), profile, ld.Dictionary())
 				multiError = errors.Join(multiError, counter.update(ctx, attributes, scopeAttrs, resourceAttrs, pCtx))
+				pCtx.Close()
 			}
 		}
 

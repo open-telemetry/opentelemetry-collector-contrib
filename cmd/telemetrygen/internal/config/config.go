@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	types "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg"
 )
@@ -146,6 +146,7 @@ type Config struct {
 	TotalDuration         types.DurationWithInf
 	ReportingInterval     time.Duration
 	SkipSettingGRPCLogger bool
+	Timeout               time.Duration
 
 	// OTLP config
 	CustomEndpoint      string
@@ -169,6 +170,10 @@ type Config struct {
 
 	// Load testing configuration
 	LoadSize int
+
+	// Batching configuration
+	Batch     bool
+	BatchSize int
 }
 
 type ClientAuth struct {
@@ -193,7 +198,7 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
 	// may be overridden by `--otlp-attributes service.name="foo"`
-	attributes = append(attributes, semconv.ServiceNameKey.String(c.ServiceName))
+	attributes = append(attributes, conventions.ServiceNameKey.String(c.ServiceName))
 	if len(c.ResourceAttributes) > 0 {
 		for k, t := range c.ResourceAttributes {
 			switch v := t.(type) {
@@ -260,6 +265,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.Float64Var(&c.Rate, "rate", c.Rate, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
 	fs.Var(&c.TotalDuration, "duration", "For how long to run the test. Use 'inf' for infinite duration.")
 	fs.DurationVar(&c.ReportingInterval, "interval", c.ReportingInterval, "Reporting interval")
+	fs.DurationVar(&c.Timeout, "timeout", c.Timeout, "Maximum time to wait for the signals to reach destination.")
 
 	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", c.CustomEndpoint, "Destination endpoint for exporting logs, metrics and traces")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", c.Insecure, "Whether to enable client transport security for the exporter's grpc or http connection")
@@ -295,6 +301,10 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 
 	// Load testing configuration
 	fs.IntVar(&c.LoadSize, "size", c.LoadSize, "Desired minimum size in MB of string data for each generated telemetry record")
+
+	// Batching configuration
+	fs.BoolVar(&c.Batch, "batch", c.Batch, "Whether to batch telemetry records before sending")
+	fs.IntVar(&c.BatchSize, "batch-size", c.BatchSize, "Number of telemetry records to batch before sending")
 }
 
 // SetDefaults is here to mirror the defaults for flags above,
@@ -305,6 +315,7 @@ func (c *Config) SetDefaults() {
 	c.Rate = 0
 	c.TotalDuration = types.DurationWithInf(0)
 	c.ReportingInterval = 1 * time.Second
+	c.Timeout = 10 * time.Second
 	c.CustomEndpoint = ""
 	c.Insecure = false
 	c.InsecureSkipVerify = false
@@ -320,6 +331,8 @@ func (c *Config) SetDefaults() {
 	c.ClientAuth.ClientKeyFile = ""
 	c.AllowExportFailures = false
 	c.LoadSize = 0
+	c.Batch = true
+	c.BatchSize = 100
 }
 
 // CharactersPerMB is the number of characters needed to create a 1MB string attribute

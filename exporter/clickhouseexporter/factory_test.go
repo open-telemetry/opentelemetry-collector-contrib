@@ -80,6 +80,34 @@ func TestFactory_CreateTracesJSON(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(t.Context()))
 }
 
+func TestFactory_CreateLogsJSONConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+		cfg.JSON = true
+	})
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateLogs(t.Context(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
+func TestFactory_CreateTracesJSONConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = defaultEndpoint
+		cfg.JSON = true
+	})
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateTraces(t.Context(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(t.Context()))
+}
+
 func TestFactory_CreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {

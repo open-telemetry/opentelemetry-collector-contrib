@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -100,7 +101,7 @@ var (
 
 // newReceiver creates the Splunk HEC receiver with the given configuration.
 func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, error) {
-	if config.Endpoint == "" {
+	if config.NetAddr.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
 
@@ -118,15 +119,8 @@ func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, er
 		return nil, err
 	}
 	r := &splunkReceiver{
-		settings: settings,
-		config:   &config,
-		server: &http.Server{
-			Addr: config.Endpoint,
-			// TODO: Evaluate what properties should be configurable, for now
-			//		set some hard-coded values.
-			ReadHeaderTimeout: defaultServerTimeout,
-			WriteTimeout:      defaultServerTimeout,
-		},
+		settings:       settings,
+		config:         &config,
 		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
 	}
@@ -163,7 +157,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	// set up the listener
 	ln, err := r.config.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.NetAddr.Endpoint, err)
 	}
 
 	r.server, err = r.config.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, mx)
@@ -176,13 +170,11 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
+	r.shutdownWG.Go(func() {
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
-	}()
+	})
 
 	return err
 }
@@ -190,6 +182,9 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
+	if r.server == nil {
+		return nil
+	}
 	err := r.server.Close()
 	r.shutdownWG.Wait()
 	return err
@@ -415,7 +410,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	dec := json.NewDecoder(bodyReader)
 
-	var unfiltered []*splunk.Event
+	var unfiltered []*translator.Event
 	var firstEvent any
 	firstErr := dec.Decode(&firstEvent)
 
@@ -428,7 +423,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	case []any:
 		// Array of events
 		eventBytes, _ := json.Marshal(v)
-		var events []splunk.Event
+		var events []translator.Event
 		if err := json.Unmarshal(eventBytes, &events); err != nil {
 			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
@@ -451,7 +446,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	default:
 		// Single event
 		eventBytes, _ := json.Marshal(v)
-		var event splunk.Event
+		var event translator.Event
 		if err := json.Unmarshal(eventBytes, &event); err != nil {
 			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
@@ -459,8 +454,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		unfiltered = append(unfiltered, &event)
 	}
 
-	var events []*splunk.Event
-	var metricEvents []*splunk.Event
+	var events []*translator.Event
+	var metricEvents []*translator.Event
 
 	for len(unfiltered) > 0 {
 		msg := unfiltered[0]
@@ -497,7 +492,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 
 		if dec.More() {
-			var msg splunk.Event
+			var msg translator.Event
 			err := dec.Decode(&msg)
 			if err != nil {
 				r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)

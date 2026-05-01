@@ -5,20 +5,21 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 const (
@@ -76,25 +77,17 @@ func createDefaultConfig() component.Config {
 		ClientConfig:            clientConfig,
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
-		QueueSettings:           exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:           configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		MaxEventSize:            defaultMaxEventSize,
-		OtelAttrsToHec: splunk.HecToOtelAttrs{
-			Source:     splunk.DefaultSourceLabel,
-			SourceType: splunk.DefaultSourceTypeLabel,
-			Index:      splunk.DefaultIndexLabel,
-			Host:       string(conventions.HostNameKey),
-		},
-		HecFields: OtelToHecFields{
-			SeverityText:   splunk.DefaultSeverityTextLabel,
-			SeverityNumber: splunk.DefaultSeverityNumberLabel,
-		},
-		HealthPath:            splunk.DefaultHealthPath,
-		HecHealthCheckEnabled: false,
-		ExportRaw:             false,
+		OtelAttrsToHec:          translator.DefaultHecToOtelAttrs(),
+		HecFields:               translator.DefaultOtelToHecFields(),
+		HealthPath:              splunk.DefaultHealthPath,
+		HecHealthCheckEnabled:   false,
+		ExportRaw:               false,
 		Telemetry: HecTelemetry{
 			Enabled:              false,
 			OverrideMetricsNames: map[string]string{},
@@ -109,7 +102,6 @@ func createTracesExporter(
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	showDeprecationWarnings(cfg, set.Logger)
 	c := newTracesClient(set, cfg)
 
 	e, err := exporterhelper.NewTraces(
@@ -120,7 +112,7 @@ func createTracesExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(hecQueueSettings(cfg.QueueSettings)),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
 	)
@@ -130,7 +122,11 @@ func createTracesExporter(
 
 	wrapped := &baseTracesExporter{
 		Component: e,
-		Traces:    batchperresourceattr.NewMultiBatchPerResourceTraces([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, e),
+		Traces: batchperresourceattr.NewMultiBatchPerResourceTraces(
+			[]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel},
+			e,
+			batchperresourceattr.WithMetadataInjection(),
+		),
 	}
 
 	return wrapped, nil
@@ -142,7 +138,6 @@ func createMetricsExporter(
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	showDeprecationWarnings(cfg, set.Logger)
 	c := newMetricsClient(set, cfg)
 
 	e, err := exporterhelper.NewMetrics(
@@ -153,7 +148,7 @@ func createMetricsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(hecQueueSettings(cfg.QueueSettings)),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
 	)
@@ -163,7 +158,11 @@ func createMetricsExporter(
 
 	wrapped := &baseMetricsExporter{
 		Component: e,
-		Metrics:   batchperresourceattr.NewMultiBatchPerResourceMetrics([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, e),
+		Metrics: batchperresourceattr.NewMultiBatchPerResourceMetrics(
+			[]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel},
+			e,
+			batchperresourceattr.WithMetadataInjection(),
+		),
 	}
 
 	return wrapped, nil
@@ -175,7 +174,6 @@ func createLogsExporter(
 	config component.Config,
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
-	showDeprecationWarnings(cfg, set.Logger)
 	c := newLogsClient(set, cfg)
 
 	logsExporter, err := exporterhelper.NewLogs(
@@ -186,7 +184,7 @@ func createLogsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
-		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithQueue(hecQueueSettings(cfg.QueueSettings)),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
 	)
@@ -196,19 +194,46 @@ func createLogsExporter(
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs: batchperresourceattr.NewMultiBatchPerResourceLogs([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, &perScopeBatcher{
-			logsEnabled:      cfg.LogDataEnabled,
-			profilingEnabled: cfg.ProfilingDataEnabled,
-			logger:           set.Logger,
-			next:             logsExporter,
-		}),
+		Logs: batchperresourceattr.NewMultiBatchPerResourceLogs(
+			[]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel},
+			&perScopeBatcher{
+				logsEnabled:      cfg.LogDataEnabled,
+				profilingEnabled: cfg.ProfilingDataEnabled,
+				logger:           set.Logger,
+				next:             logsExporter,
+			},
+			batchperresourceattr.WithMetadataInjection(),
+		),
 	}
 
 	return wrapped, nil
 }
 
-func showDeprecationWarnings(cfg *Config, logger *zap.Logger) {
-	if cfg.DeprecatedBatcher.isSet {
-		logger.Warn("The 'batcher' field is deprecated and will be removed in a future release. Use 'sending_queue::batch' instead.")
+// hecRequiredMetadataKeys are the context metadata keys the exporterhelper
+// batcher must use to partition requests so different HEC routing targets
+// are never merged into the same batch.
+var hecRequiredMetadataKeys = []string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}
+
+// hecQueueSettings returns a copy of qs with hecRequiredMetadataKeys
+// guaranteed to be present in Batch.Partition.MetadataKeys. Keys already
+// set by the user are preserved; required keys are appended only when absent
+// (case-insensitive). Returns qs unchanged when batching is not configured.
+func hecQueueSettings(qs configoptional.Optional[exporterhelper.QueueBatchConfig]) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	if !qs.HasValue() || !qs.Get().Batch.HasValue() {
+		return qs
 	}
+	qCopy := *qs.Get()
+	bCopy := *qCopy.Batch.Get()
+
+	existing := make(map[string]bool, len(bCopy.Partition.MetadataKeys))
+	for _, k := range bCopy.Partition.MetadataKeys {
+		existing[strings.ToLower(k)] = true
+	}
+	for _, k := range hecRequiredMetadataKeys {
+		if !existing[strings.ToLower(k)] {
+			bCopy.Partition.MetadataKeys = append(bCopy.Partition.MetadataKeys, k)
+		}
+	}
+	qCopy.Batch = configoptional.Some(bCopy)
+	return configoptional.Some(qCopy)
 }

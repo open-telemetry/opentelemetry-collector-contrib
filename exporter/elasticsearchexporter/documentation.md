@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol.elasticsearch.bulk_requests.count
 
-Count of the completed bulk requests. [Alpha]
+Count of the completed bulk requests.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -16,14 +16,14 @@ Count of the completed bulk requests. [Alpha]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http.response.status_code | HTTP status code. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
 
 ### otelcol.elasticsearch.bulk_requests.latency
 
-Latency of Elasticsearch bulk operations in seconds. [Alpha]
+Latency of Elasticsearch bulk operations in seconds.
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
@@ -31,14 +31,14 @@ Latency of Elasticsearch bulk operations in seconds. [Alpha]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http.response.status_code | HTTP status code. | Any Int |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
 
 ### otelcol.elasticsearch.docs.processed
 
-Count of documents flushed to Elasticsearch. [Alpha]
+Count of documents flushed to Elasticsearch.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -46,16 +46,16 @@ Count of documents flushed to Elasticsearch. [Alpha]
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` |
-| http.response.status_code | HTTP status code. | Any Int |
-| failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` |
-| error.type | The type of error that occurred when processing the documents. | Any Str |
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
+| failure_store | The status of the failure store. | Str: ``unknown``, ``not_enabled``, ``used``, ``failed`` | - |
+| error.type | The type of error that occurred when processing the documents. | Any Str | - |
 
 ### otelcol.elasticsearch.docs.received
 
-Count of Elasticsearch documents successfully received to be buffered. [Alpha]
+Count of Elasticsearch documents successfully received to be buffered.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -63,7 +63,7 @@ Count of Elasticsearch documents successfully received to be buffered. [Alpha]
 
 ### otelcol.elasticsearch.docs.retried
 
-Count of document retries. [Alpha]
+Count of document retries.
 
 Only document level retries are captured, whole bulk request retries are not captured.
 
@@ -71,9 +71,34 @@ Only document level retries are captured, whole bulk request retries are not cap
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Alpha |
 
+### otelcol.elasticsearch.docs.retried_http_request
+
+Count of documents retried due to HTTP request-level failures.
+
+Counts documents that are retried because an entire bulk HTTP
+request failed with a retryable status code (as configured in
+`retry_on_status`) and was retried by the Elasticsearch client,
+up to the `max_retries` limit.
+
+In contrast, `elasticsearch.docs.retried` counts documents retried
+individually within otherwise successful bulk requests due to
+document-specific failures such as mapping conflicts.
+
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| 1 | Sum | Int | true | Alpha |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| outcome | The operation outcome. | Str: ``success``, ``failed_client``, ``failed_server``, ``timeout``, ``too_many``, ``failure_store``, ``internal_server_error`` | - |
+| http.response.status_code | HTTP status code. | Any Int | - |
+
 ### otelcol.elasticsearch.flushed.bytes
 
-Number of bytes flushed by the indexer. [Alpha]
+Number of bytes flushed by the indexer.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
@@ -81,7 +106,7 @@ Number of bytes flushed by the indexer. [Alpha]
 
 ### otelcol.elasticsearch.flushed.uncompressed_bytes
 
-Number of uncompressed bytes flushed by the indexer. [Alpha]
+Number of uncompressed bytes flushed by the indexer.
 
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |

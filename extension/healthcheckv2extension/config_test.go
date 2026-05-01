@@ -37,7 +37,11 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
+						KeepAlivesEnabled: true,
 					},
 					Path: "/",
 				},
@@ -48,7 +52,10 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:13",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:13",
+						},
 						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CAFile:   "/path/to/ca",
@@ -56,6 +63,7 @@ func TestLoadConfig(t *testing.T) {
 								KeyFile:  "/path/to/key",
 							},
 						}),
+						KeepAlivesEnabled: true,
 					},
 					CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
 						Enabled:                  false,
@@ -81,13 +89,21 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
+						KeepAlivesEnabled: true,
 					},
 					Path: "/",
 				},
 				HTTPConfig: &healthcheck.HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
+						KeepAlivesEnabled: true,
 					},
 					Status: healthcheck.PathConfig{
 						Enabled: true,
@@ -104,6 +120,7 @@ func TestLoadConfig(t *testing.T) {
 							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultGRPCPort),
 							Transport: "tcp",
 						},
+						Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 					},
 				},
 				ComponentHealthConfig: &healthcheck.ComponentHealthConfig{
@@ -119,13 +136,21 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
+						KeepAlivesEnabled: true,
 					},
 					Path: "/",
 				},
 				HTTPConfig: &healthcheck.HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:13",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:13",
+						},
+						KeepAlivesEnabled: true,
 					},
 					Status: healthcheck.PathConfig{
 						Enabled: true,
@@ -148,7 +173,11 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: healthcheck.HTTPLegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  testutil.EndpointForPort(healthcheck.DefaultHTTPPort),
+						},
+						KeepAlivesEnabled: true,
 					},
 					Path: "/",
 				},
@@ -158,6 +187,7 @@ func TestLoadConfig(t *testing.T) {
 							Endpoint:  "localhost:13",
 							Transport: "tcp",
 						},
+						Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 					},
 				},
 			},

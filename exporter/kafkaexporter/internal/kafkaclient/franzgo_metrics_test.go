@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -90,7 +91,7 @@ func TestFranzProducerMetrics(t *testing.T) {
 		require.NoError(t, err)
 		defer tb.Shutdown()
 		fpm := NewFranzProducerMetrics(tb)
-		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, 0, kgo.BrokerE2E{
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, int16(kmsg.Produce), kgo.BrokerE2E{
 			WriteWait:   time.Second / 4,
 			TimeToWrite: time.Second / 4,
 			ReadWait:    time.Second / 4,
@@ -98,12 +99,20 @@ func TestFranzProducerMetrics(t *testing.T) {
 			WriteErr:    nil,
 			ReadErr:     nil,
 		})
-		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, 0, kgo.BrokerE2E{
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, int16(kmsg.Produce), kgo.BrokerE2E{
 			WriteWait:   time.Second * 25,
 			TimeToWrite: time.Second * 25,
 			ReadWait:    time.Second * 25,
 			TimeToRead:  time.Second * 25,
 			WriteErr:    errors.New(""),
+			ReadErr:     nil,
+		})
+		fpm.OnBrokerE2E(kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}, int16(kmsg.Metadata), kgo.BrokerE2E{
+			WriteWait:   time.Second * 100,
+			TimeToWrite: time.Second * 100,
+			ReadWait:    time.Second * 100,
+			TimeToRead:  time.Second * 100,
+			WriteErr:    nil,
 			ReadErr:     nil,
 		})
 		var rm metricdata.ResourceMetrics
@@ -311,6 +320,23 @@ func TestFranzProducerMetrics(t *testing.T) {
 			},
 			metricdatatest.IgnoreTimestamp(),
 		)
+	})
+	t.Run("should evict broker E2E cache on disconnect", func(t *testing.T) {
+		testTel := componenttest.NewTelemetry()
+		tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
+		require.NoError(t, err)
+		defer tb.Shutdown()
+		fpm := NewFranzProducerMetrics(tb)
+		meta := kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}
+
+		// Populate the cache for both outcomes.
+		fpm.OnBrokerE2E(meta, int16(kmsg.Produce), kgo.BrokerE2E{})
+		fpm.OnBrokerE2E(meta, int16(kmsg.Produce), kgo.BrokerE2E{WriteErr: errors.New("oops")})
+		require.Len(t, fpm.brokerE2EOpts, 2)
+
+		// Disconnect should evict both entries.
+		fpm.OnBrokerDisconnect(meta, nil)
+		require.Empty(t, fpm.brokerE2EOpts)
 	})
 	t.Run("should report the metrics when OnBrokerThrottle hook is called", func(t *testing.T) {
 		testTel := componenttest.NewTelemetry()

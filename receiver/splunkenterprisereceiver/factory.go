@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 		SHEndpoint:           httpCfg,
 		CMEndpoint:           httpCfg,
 		ControllerConfig:     scfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		VersionInfo:          false,
 	}
 }
@@ -74,6 +74,6 @@ func createMetricsReceiver(
 		&cfg.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(metadata.Type, s),
+		scraperhelper.AddMetricsScraper(metadata.Type, s),
 	)
 }

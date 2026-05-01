@@ -6,8 +6,11 @@ package redactionprocessor // import "github.com/open-telemetry/opentelemetry-co
 //nolint:gosec
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"hash"
@@ -15,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -33,6 +37,8 @@ type redaction struct {
 	allowList map[string]string
 	// Attribute keys ignored in a span
 	ignoreList map[string]string
+	// Attribute key patterns ignored in a span
+	ignoreKeyRegexList map[string]*regexp.Regexp
 	// Attribute values blocked in a span
 	blockRegexList map[string]*regexp.Regexp
 	// Attribute values allowed in a span
@@ -55,6 +61,11 @@ type redaction struct {
 func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
 	allowList := makeAllowList(config)
 	ignoreList := makeIgnoreList(config)
+	ignoreKeysRegexList, err := makeRegexList(ctx, config.IgnoredKeyPatterns)
+	if err != nil {
+		// TODO: Placeholder for an error metric in the next PR
+		return nil, fmt.Errorf("failed to process ignore keys list: %w", err)
+	}
 	blockRegexList, err := makeRegexList(ctx, config.BlockedValues)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
@@ -79,19 +90,20 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 			return nil, fmt.Errorf("failed to create URL sanitizer: %w", err)
 		}
 	}
-	dbObfuscator := db.NewObfuscator(config.DBSanitizer)
+	dbObfuscator := db.NewObfuscator(config.DBSanitizer, logger)
 
 	return &redaction{
-		allowList:         allowList,
-		ignoreList:        ignoreList,
-		blockRegexList:    blockRegexList,
-		allowRegexList:    allowRegexList,
-		blockKeyRegexList: blockKeysRegexList,
-		hashFunction:      config.HashFunction,
-		config:            config,
-		logger:            logger,
-		urlSanitizer:      urlSanitizer,
-		dbObfuscator:      dbObfuscator,
+		allowList:          allowList,
+		ignoreList:         ignoreList,
+		ignoreKeyRegexList: ignoreKeysRegexList,
+		blockRegexList:     blockRegexList,
+		allowRegexList:     allowRegexList,
+		blockKeyRegexList:  blockKeysRegexList,
+		hashFunction:       config.HashFunction,
+		config:             config,
+		logger:             logger,
+		urlSanitizer:       urlSanitizer,
+		dbObfuscator:       dbObfuscator,
 	}, nil
 }
 
@@ -143,20 +155,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			// Attributes can also be part of span events
 			s.processSpanEvents(ctx, span.Events())
 
-			if s.shouldRedactSpanName(&span) {
-				name := span.Name()
-				if s.urlSanitizer != nil {
-					name = s.urlSanitizer.SanitizeURL(name)
-				}
-				if s.dbObfuscator.HasObfuscators() {
-					var err error
-					name, err = s.dbObfuscator.Obfuscate(name)
-					if err != nil {
-						s.logger.Error(err.Error())
-					}
-				}
-				span.SetName(name)
-			}
+			s.sanitizeSpanName(span)
 		}
 	}
 }
@@ -330,6 +329,10 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var redactedKeys, maskedKeys, allowedKeys, ignoredKeys []string
 
+	if s.dbObfuscator != nil {
+		s.dbObfuscator.DBSystem = db.GetDBSystem(attributes)
+	}
+
 	// Identify attributes to redact and mask in the following sequence
 	// 1. Make a list of attribute keys to redact
 	// 2. Mask any blocked values for the other attributes
@@ -390,6 +393,10 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 			return hashString(match, sha3.New256())
 		case MD5:
 			return hashString(match, md5.New())
+		case HMACSHA256:
+			return hashStringHMAC(match, s.config.HMACKey, sha256.New)
+		case HMACSHA512:
+			return hashStringHMAC(match, s.config.HMACKey, sha512.New)
 		default:
 			return "****"
 		}
@@ -400,6 +407,12 @@ func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
 func hashString(input string, hasher hash.Hash) string {
 	hasher.Write([]byte(input))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func hashStringHMAC(input string, key configopaque.String, newHash func() hash.Hash) string {
+	h := hmac.New(newHash, []byte(string(key)))
+	h.Write([]byte(input))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // addMetaAttrs adds diagnostic information about redacted or masked attribute keys
@@ -496,6 +509,12 @@ func (s *redaction) shouldIgnoreKey(k string) bool {
 	if _, ignored := s.ignoreList[k]; ignored {
 		return true
 	}
+	// Check if key matches any of the ignored key patterns
+	for _, compiledRE := range s.ignoreKeyRegexList {
+		if compiledRE.MatchString(k) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -508,20 +527,57 @@ func (s *redaction) shouldRedactKey(k string) bool {
 	return false
 }
 
-func (s *redaction) shouldRedactSpanName(span *ptrace.Span) bool {
-	if s.urlSanitizer == nil && !s.dbObfuscator.HasObfuscators() {
-		return false
+func (s *redaction) sanitizeSpanName(span ptrace.Span) {
+	name := span.Name()
+
+	if s.shouldAllowValue(name) {
+		return
 	}
-	spanKind := span.Kind()
-	if spanKind != ptrace.SpanKindClient && spanKind != ptrace.SpanKindServer {
+
+	if s.shouldSanitizeSpanNameForURL() {
+		if sanitized, ok := url.SanitizeSpanName(span, s.urlSanitizer); ok {
+			applySpanName(span, name, sanitized)
+			return
+		}
+	}
+
+	if s.shouldSanitizeSpanNameForDB() {
+		if sanitized, ok, err := db.SanitizeSpanName(span, s.dbObfuscator); err != nil {
+			s.logger.Error("failed to obfuscate span name", zap.Error(err))
+		} else if ok {
+			applySpanName(span, name, sanitized)
+		}
+	}
+}
+
+func applySpanName(span ptrace.Span, original, candidate string) {
+	if candidate == "" || candidate == "..." {
+		return
+	}
+	if candidate != original {
+		span.SetName(candidate)
+	}
+}
+
+func (s *redaction) shouldSanitizeSpanNameForURL() bool {
+	if s.urlSanitizer == nil {
 		return false
 	}
 
-	spanName := span.Name()
-	if !strings.Contains(spanName, "/") && !s.dbObfuscator.HasObfuscators() {
+	if s.config.URLSanitization.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.URLSanitization.SanitizeSpanName
+}
+
+func (s *redaction) shouldSanitizeSpanNameForDB() bool {
+	if !s.dbObfuscator.HasObfuscators() {
 		return false
 	}
-	return !s.shouldAllowValue(spanName)
+	if s.config.DBSanitizer.SanitizeSpanName == nil {
+		return true
+	}
+	return *s.config.DBSanitizer.SanitizeSpanName
 }
 
 const (

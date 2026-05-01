@@ -29,7 +29,7 @@ func newDefaultConfig() component.Config {
 
 	return &Config{
 		ControllerConfig:     cfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		Targets:              []*confignet.TCPAddrConfig{},
 	}
 }
@@ -50,7 +50,7 @@ func newReceiver(
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(metadata.Type, s)
+	opt := scraperhelper.AddMetricsScraper(metadata.Type, s)
 
 	return scraperhelper.NewMetricsController(
 		&tcpCheckConfig.ControllerConfig,

@@ -4,6 +4,8 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"strings"
+
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/scrape"
 )
@@ -55,6 +57,11 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 	normalizedName := normalizeMetricName(metricName)
 	if metadata, ok := mc.GetMetadata(normalizedName); ok {
 		if metadata.Type == model.MetricTypeCounter {
+			// NB (eriksywu): see https://github.com/prometheus/prometheus/issues/14823
+			if strings.HasSuffix(metricName, metricSuffixCreated) {
+				return &metadata, normalizedName + metricSuffixTotal
+			}
+			// END NB (eriksywu)
 			return &metadata, metricName
 		}
 		return &metadata, normalizedName
@@ -64,6 +71,19 @@ func metadataForMetric(metricName string, mc scrape.MetricMetadataStore) (*scrap
 		MetricFamily: metricName,
 		Type:         model.MetricTypeUnknown,
 	}, metricName
+}
+
+// isCounterCreatedLine determines whether a metric is a _created line for a counter appended by an om-text parser
+// these assumptions are made
+// 1. the metric name of an OM counter line would always have either _total or _created as a suffix
+// 2. the omptextarser stores metadata of every om text line using the counter's normalized name (i.e foo_counter_total => foo_counter, foo_counter_created => foo_counter)
+// 3. the promtextparser stores metadata without normalization of metric name
+func isCounterCreatedLine(metricName, normalizedMetricName string, mc scrape.MetricMetadataStore) bool {
+	if !strings.HasSuffix(metricName, metricSuffixCreated) {
+		return false
+	}
+	md, ok := mc.GetMetadata(normalizedMetricName)
+	return ok && md.Type == model.MetricTypeCounter
 }
 
 type emptyMetadataStore struct{}

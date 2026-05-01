@@ -8,13 +8,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -138,18 +142,99 @@ func CreateTelemetryGenObjects(t *testing.T, client *K8sClient, createOpts *Tele
 }
 
 func WaitForTelemetryGenToStart(t *testing.T, client *K8sClient, podNamespace string, podLabels map[string]any, workload, dataType string) {
-	podGVR := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
+	const (
+		baseTimeout     = 3 * time.Minute
+		extendedTimeout = 8 * time.Minute
+		pollInterval    = 200 * time.Millisecond
+	)
+
 	listOptions := metav1.ListOptions{LabelSelector: SelectorFromMap(podLabels).String()}
-	podTimeoutMinutes := 3
-	var podPhase string
-	require.Eventually(t, func() bool {
-		list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(t.Context(), listOptions)
-		require.NoError(t, err, "failed to list collector pods")
-		if len(list.Items) == 0 {
-			return false
+	var lastPodStatus string
+	var slowImagePull bool
+
+	cond := func() bool {
+		running, slowPull, status := telemetrygenPodsStatus(t, client, podNamespace, listOptions)
+		lastPodStatus = status
+		if slowPull {
+			slowImagePull = true
 		}
-		podPhase = list.Items[0].Object["status"].(map[string]any)["phase"].(string)
-		return podPhase == "Running"
-	}, time.Duration(podTimeoutMinutes)*time.Minute, 50*time.Millisecond,
-		"telemetrygen pod of Workload [%s] in datatype [%s] haven't started within %d minutes, latest pod phase is %s", workload, dataType, podTimeoutMinutes, podPhase)
+		return running
+	}
+
+	if assert.Eventuallyf(t, cond, baseTimeout, pollInterval,
+		"telemetrygen pods for Workload [%s] datatype [%s] haven't started in namespace %s, last observed status:\n%s",
+		workload, dataType, podNamespace, lastPodStatus) {
+		return
+	}
+
+	if slowImagePull && assert.Eventuallyf(t, cond, extendedTimeout-baseTimeout, pollInterval,
+		"telemetrygen pods (slow image pull) for Workload [%s] datatype [%s] haven't started in namespace %s, last observed status:\n%s",
+		workload, dataType, podNamespace, lastPodStatus) {
+		return
+	}
+
+	require.Failf(t, "telemetrygen startup timeout",
+		"telemetrygen pods for Workload [%s] datatype [%s] haven't started in namespace %s, last observed status:\n%s",
+		workload, dataType, podNamespace, lastPodStatus)
+}
+
+func telemetrygenPodsStatus(t *testing.T, client *K8sClient, podNamespace string, listOptions metav1.ListOptions) (bool, bool, string) {
+	podGVR := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
+	list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(t.Context(), listOptions)
+	require.NoError(t, err, "failed to list collector pods")
+	if len(list.Items) == 0 {
+		return false, false, "no pods found yet"
+	}
+
+	var pods v1.PodList
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(list.UnstructuredContent(), &pods)
+	require.NoError(t, err, "failed to convert telemetrygen pods")
+
+	running := false
+	slowPull := false
+	var b strings.Builder
+	for i := range pods.Items {
+		pod := &pods.Items[i]
+		if pod.Status.Phase == v1.PodRunning {
+			running = true
+		}
+		fmt.Fprintf(&b, "pod=%s phase=%s", pod.Name, pod.Status.Phase)
+		if msg := podWaitMessage(pod); msg != "" {
+			fmt.Fprintf(&b, " (%s)", msg)
+			if strings.Contains(msg, "ImagePull") {
+				slowPull = true
+			}
+		}
+		b.WriteString("\n")
+	}
+	return running, slowPull, strings.TrimSpace(b.String())
+}
+
+func podWaitMessage(pod *v1.Pod) string {
+	var messages []string
+	for i := range pod.Status.ContainerStatuses {
+		cs := &pod.Status.ContainerStatuses[i]
+		switch {
+		case cs.State.Waiting != nil:
+			msg := cs.State.Waiting.Reason
+			if cs.State.Waiting.Message != "" {
+				msg = fmt.Sprintf("%s - %s", msg, cs.State.Waiting.Message)
+			}
+			messages = append(messages, fmt.Sprintf("%s waiting: %s", cs.Name, msg))
+		case cs.State.Terminated != nil && cs.State.Terminated.ExitCode != 0:
+			msg := cs.State.Terminated.Reason
+			if cs.State.Terminated.Message != "" {
+				msg = fmt.Sprintf("%s - %s", msg, cs.State.Terminated.Message)
+			}
+			messages = append(messages, fmt.Sprintf("%s terminated: %s", cs.Name, msg))
+		}
+	}
+	if len(messages) == 0 {
+		for _, cond := range pod.Status.Conditions {
+			if cond.Status != v1.ConditionTrue {
+				messages = append(messages, fmt.Sprintf("condition %s=%s (%s)", cond.Type, cond.Status, cond.Reason))
+			}
+		}
+	}
+	return strings.Join(messages, "; ")
 }

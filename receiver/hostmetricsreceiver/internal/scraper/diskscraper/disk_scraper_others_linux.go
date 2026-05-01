@@ -6,9 +6,12 @@
 package diskscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 
 import (
+	"time"
+
 	"github.com/shirou/gopsutil/v4/disk"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/precision"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
@@ -22,7 +25,7 @@ func (s *diskScraper) recordSystemSpecificDataPoints(now pcommon.Timestamp, ioCo
 func (s *diskScraper) recordDiskWeightedIOTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device := range ioCounters {
 		ioCounter := ioCounters[device]
-		s.mb.RecordSystemDiskWeightedIoTimeDataPoint(now, float64(ioCounter.WeightedIO)/1e3, device)
+		s.mb.RecordSystemDiskWeightedIoTimeDataPoint(now, precision.Scale(ioCounter.WeightedIO, time.Millisecond), device)
 	}
 }
 

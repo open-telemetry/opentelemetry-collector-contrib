@@ -5,20 +5,20 @@ receivers:
         endpoint: "127.0.0.1:4317"
 
 exporters:
-  otlp:
+  otlp_grpc:
     endpoint: "127.0.0.1:55680"
     tls:
       insecure: true
     sending_queue:
       batch:
   debug:
-    loglevel: info
+    verbosity: normal
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [otlp, debug]
+      exporters: [otlp_grpc, debug]
     metrics:
       receivers: [otlp]
-      exporters: [otlp, debug]
+      exporters: [otlp_grpc, debug]

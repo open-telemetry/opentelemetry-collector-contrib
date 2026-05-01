@@ -42,7 +42,10 @@ func TestLoadConfigLegacy(t *testing.T) {
 				Config: healthcheck.Config{
 					LegacyConfig: healthcheck.HTTPLegacyConfig{
 						ServerConfig: confighttp.ServerConfig{
-							Endpoint: "localhost:13",
+							NetAddr: confignet.AddrConfig{
+								Transport: "tcp",
+								Endpoint:  "localhost:13",
+							},
 							TLS: configoptional.Some(configtls.ServerConfig{
 								Config: configtls.Config{
 									CAFile:   "/path/to/ca",
@@ -119,10 +122,10 @@ func TestLoadConfigV2WithoutGate(t *testing.T) {
 }
 
 func TestLoadConfigV2WithGate(t *testing.T) {
-	prev := useComponentStatusGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), true))
+	prev := metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), prev))
 	})
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -138,7 +141,10 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 		Config: healthcheck.Config{
 			LegacyConfig: healthcheck.HTTPLegacyConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:13133",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:13133",
+					},
 				},
 				Path: "/",
 				CheckCollectorPipeline: &healthcheck.CheckCollectorPipelineConfig{
@@ -149,7 +155,11 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 			},
 			HTTPConfig: &healthcheck.HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:13133",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:13133",
+					},
+					KeepAlivesEnabled: true,
 				},
 				Status: healthcheck.PathConfig{
 					Enabled: true,
@@ -166,6 +176,7 @@ func TestLoadConfigV2WithGate(t *testing.T) {
 						Endpoint:  "localhost:13132",
 						Transport: confignet.TransportTypeTCP,
 					},
+					Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 				},
 			},
 			ComponentHealthConfig: &healthcheck.ComponentHealthConfig{

@@ -6,12 +6,16 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 )
 
 var prefix = metadata.Type.String()
+
+// prefixedServiceInstanceIDKey is the service.instance.id key with the connector prefix,
+// pre-computed to avoid a string allocation on every Copy() call.
+var prefixedServiceInstanceIDKey = keyWithPrefix(string(conventions.ServiceInstanceIDKey))
 
 // CollectorInstanceInfo holds the attributes that could uniquely identify
 // the current collector instance. These attributes are initialized from the
@@ -27,7 +31,7 @@ func NewCollectorInstanceInfo(
 ) CollectorInstanceInfo {
 	var info CollectorInstanceInfo
 	for k, v := range set.Resource.Attributes().All() {
-		if k == string(semconv.ServiceInstanceIDKey) {
+		if k == string(conventions.ServiceInstanceIDKey) {
 			if str := v.Str(); str != "" {
 				info.serviceInstanceID = v.Str()
 				info.size++
@@ -46,7 +50,7 @@ func (info CollectorInstanceInfo) Size() int {
 func (info CollectorInstanceInfo) Copy(to pcommon.Map) {
 	to.EnsureCapacity(info.Size())
 	if info.serviceInstanceID != "" {
-		to.PutStr(keyWithPrefix(string(semconv.ServiceInstanceIDKey)), info.serviceInstanceID)
+		to.PutStr(prefixedServiceInstanceIDKey, info.serviceInstanceID)
 	}
 }
 

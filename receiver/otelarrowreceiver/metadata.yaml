@@ -1,4 +1,12 @@
+display_name: Apache Arrow OTLP Receiver
 type: otelarrow
+
+description: |
+  Receives telemetry data using [OpenTelemetry Protocol with Apache
+  Arrow](https://github.com/open-telemetry/otel-arrow) and standard
+  [OTLP](
+  https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
+  protocol via gRPC.
 
 status:
   class: receiver
@@ -6,4 +14,5 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jmacd, moh-osman3]
+    active: [jmacd, JakeDern]
+    emeritus: [moh-osman3]

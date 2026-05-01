@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -28,14 +28,15 @@ import (
 var (
 	unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
 
-	_ = featuregate.GlobalRegistry().MustRegister(
-		"receiver.mongodb.removeDatabaseAttr",
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("Remove duplicate database name attribute"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24972"),
-		featuregate.WithRegisterFromVersion("v0.90.0"),
-		featuregate.WithRegisterToVersion("v0.104.0"))
+	// otelNamespaceUUID is the official OTel namespace UUID for deterministic UUID v5 generation.
+	otelNamespaceUUID = uuid.MustParse("4d63009a-8d0f-11ee-aad7-4c796ed8e320")
 )
+
+// generateInstanceID generates a deterministic UUID v5 from server address and port.
+func generateInstanceID(serverAddress string, serverPort int64) string {
+	name := fmt.Sprintf("%s:%d", serverAddress, serverPort)
+	return uuid.NewSHA1(otelNamespaceUUID, []byte(name)).String()
+}
 
 type mongodbScraper struct {
 	logger             *zap.Logger
@@ -168,29 +169,26 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-
 	// Collect metrics for each database
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf("failed to fetch collection names: %w", err))
-			return
+			continue
 		}
 
 		for _, collectionName := range collectionNames {
 			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
-
-		rb.SetServerAddress(serverAddress)
-		rb.SetServerPort(serverPort)
-		rb.SetDatabase(dbName)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
+
+	// Emit single resource for the server
+	rb := s.mb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errs *scrapererror.ScrapeErrors) {
@@ -231,42 +229,125 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 }
 
 func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	s.recordCollections(now, doc, dbName, errs)
-	s.recordDataSize(now, doc, dbName, errs)
-	s.recordExtentCount(now, doc, dbName, errs)
-	s.recordIndexSize(now, doc, dbName, errs)
-	s.recordIndexCount(now, doc, dbName, errs)
-	s.recordObjectCount(now, doc, dbName, errs)
-	s.recordStorageSize(now, doc, dbName, errs)
+	if s.config.Metrics.MongodbCollectionCount.Enabled {
+		s.recordCollections(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbDataSize.Enabled {
+		s.recordDataSize(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbExtentCount.Enabled {
+		s.recordExtentCount(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbIndexSize.Enabled {
+		s.recordIndexSize(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbIndexCount.Enabled {
+		s.recordIndexCount(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbObjectCount.Enabled {
+		s.recordObjectCount(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbStorageSize.Enabled {
+		s.recordStorageSize(now, doc, dbName, errs)
+	}
 }
 
 func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	s.recordConnections(now, doc, dbName, errs)
-	s.recordDocumentOperations(now, doc, dbName, errs)
-	s.recordMemoryUsage(now, doc, dbName, errs)
-	s.recordLockAcquireCounts(now, doc, dbName, errs)
-	s.recordLockAcquireWaitCounts(now, doc, dbName, errs)
-	s.recordLockTimeAcquiringMicros(now, doc, dbName, errs)
-	s.recordLockDeadlockCount(now, doc, dbName, errs)
+	if s.config.Metrics.MongodbConnectionCount.Enabled {
+		s.recordConnections(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbDocumentOperationCount.Enabled {
+		s.recordDocumentOperations(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbMemoryUsage.Enabled {
+		s.recordMemoryUsage(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbLockAcquireCount.Enabled {
+		s.recordLockAcquireCounts(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbLockAcquireWaitCount.Enabled {
+		s.recordLockAcquireWaitCounts(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbLockAcquireTime.Enabled {
+		s.recordLockTimeAcquiringMicros(now, doc, dbName, errs)
+	}
+
+	if s.config.Metrics.MongodbLockDeadlockCount.Enabled {
+		s.recordLockDeadlockCount(now, doc, dbName, errs)
+	}
 }
 
 func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
-	s.recordCacheOperations(now, document, errs)
-	s.recordCursorCount(now, document, errs)
-	s.recordCursorTimeoutCount(now, document, errs)
-	s.recordGlobalLockTime(now, document, errs)
-	s.recordNetworkCount(now, document, errs)
+	if s.config.Metrics.MongodbCacheOperations.Enabled {
+		s.recordCacheOperations(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbCursorCount.Enabled {
+		s.recordCursorCount(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbCursorTimeoutCount.Enabled {
+		s.recordCursorTimeoutCount(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbGlobalLockTime.Enabled {
+		s.recordGlobalLockTime(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbNetworkRequestCount.Enabled {
+		s.recordNetworkCount(now, document, errs)
+	}
+
 	s.recordOperations(now, document, errs)
+
 	s.recordOperationsRepl(now, document, errs)
-	s.recordSessionCount(now, document, errs)
-	s.recordLatencyTime(now, document, errs)
-	s.recordUptime(now, document, errs)
-	s.recordHealth(now, document, errs)
-	s.recordActiveWrites(now, document, errs)
-	s.recordActiveReads(now, document, errs)
-	s.recordFlushesPerSecond(now, document, errs)
-	s.recordWTCacheBytes(now, document, errs)
-	s.recordPageFaults(now, document, errs)
+
+	if s.config.Metrics.MongodbSessionCount.Enabled {
+		s.recordSessionCount(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbOperationLatencyTime.Enabled {
+		s.recordLatencyTime(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbUptime.Enabled {
+		s.recordUptime(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbHealth.Enabled {
+		s.recordHealth(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbActiveWrites.Enabled {
+		s.recordActiveWrites(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbActiveReads.Enabled {
+		s.recordActiveReads(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbFlushesRate.Enabled {
+		s.recordFlushesPerSecond(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbWtcacheBytesRead.Enabled {
+		s.recordWTCacheBytes(now, document, errs)
+	}
+
+	if s.config.Metrics.MongodbPageFaults.Enabled {
+		s.recordPageFaults(now, document, errs)
+	}
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName, collectionName string, errs *scrapererror.ScrapeErrors) {

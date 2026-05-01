@@ -30,7 +30,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -53,6 +53,6 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf co
 		&cfg.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(metadata.Type, sc),
+		scraperhelper.AddMetricsScraper(metadata.Type, sc),
 	)
 }

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -71,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: true,
 				},
@@ -85,6 +86,7 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:     30 * time.Second,
 					Timeout:             10 * time.Second,
 					DropTags:            false,
+					StripK8sLabelPrefix: true,
 				},
 				ExcludeMetrics:      nil,
 				IncludeMetrics:      nil,
@@ -145,13 +147,12 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Enabled = true
 					queue.NumConsumers = 2
 					queue.QueueSize = 10
 					return queue
-				}(),
+				}()),
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
 				},
@@ -165,6 +166,11 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:     2 * time.Hour,
 					Timeout:             20 * time.Second,
 					DropTags:            false,
+					StripK8sLabelPrefix: true,
+				},
+				DefaultProperties: map[string]string{
+					"foo":    "bar",
+					"_index": "baz",
 				},
 				ExcludeMetrics: []dpfilters.MetricFilter{
 					{
@@ -333,7 +339,7 @@ func TestConfigGetIngestURL(t *testing.T) {
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "ingest.us0.signalfx.com",
+				Host:   "ingest.us0.observability.splunkcloud.com",
 				Path:   "",
 			},
 		},
@@ -341,11 +347,11 @@ func TestConfigGetIngestURL(t *testing.T) {
 			name: "Test URL overrides",
 			cfg: &Config{
 				Realm:     "us0",
-				IngestURL: "https://ingest.us1.signalfx.com/",
+				IngestURL: "https://ingest.us1.observability.splunkcloud.com/",
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "ingest.us1.signalfx.com",
+				Host:   "ingest.us1.observability.splunkcloud.com",
 				Path:   "/",
 			},
 		},
@@ -384,18 +390,18 @@ func TestConfigGetAPIURL(t *testing.T) {
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "api.us0.signalfx.com",
+				Host:   "api.us0.observability.splunkcloud.com",
 			},
 		},
 		{
 			name: "Test URL overrides",
 			cfg: &Config{
 				Realm:  "us0",
-				APIURL: "https://api.us1.signalfx.com/",
+				APIURL: "https://api.us1.observability.splunkcloud.com/",
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "api.us1.signalfx.com",
+				Host:   "api.us1.observability.splunkcloud.com",
 				Path:   "/",
 			},
 		},
@@ -433,14 +439,14 @@ func TestConfigValidateErrors(t *testing.T) {
 			name: "Test empty realm and API URL",
 			cfg: &Config{
 				AccessToken: "access_token",
-				IngestURL:   "https://ingest.us1.signalfx.com/",
+				IngestURL:   "https://ingest.us1.observability.splunkcloud.com/",
 			},
 		},
 		{
 			name: "Test empty realm and Ingest URL",
 			cfg: &Config{
 				AccessToken: "access_token",
-				APIURL:      "https://api.us1.signalfx.com/",
+				APIURL:      "https://api.us1.observability.splunkcloud.com/",
 			},
 		},
 		{
@@ -456,10 +462,9 @@ func TestConfigValidateErrors(t *testing.T) {
 			cfg: &Config{
 				Realm:       "us0",
 				AccessToken: "access_token",
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:   true,
+				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 					QueueSize: -1,
-				},
+				}),
 			},
 		},
 		{
@@ -469,6 +474,14 @@ func TestConfigValidateErrors(t *testing.T) {
 				AccessToken:      "access_token",
 				RootPath:         "/foobar",
 				SyncHostMetadata: true,
+			},
+		},
+		{
+			name: "Empty default property",
+			cfg: &Config{
+				DefaultProperties: map[string]string{
+					"foo": "",
+				},
 			},
 		},
 	}

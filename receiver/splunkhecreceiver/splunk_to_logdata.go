@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 const (
@@ -29,7 +29,7 @@ const (
 var errCannotConvertValue = errors.New("cannot convert field value to attribute")
 
 // splunkHecToLogData transforms splunk events into logs
-func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
+func splunkHecToLogData(logger *zap.Logger, events []*translator.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	scopeLogsMap := make(map[[4]string]plog.ScopeLogs)
 	for _, event := range events {
@@ -103,7 +103,7 @@ func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCusto
 	return ld, sl.LogRecords().Len(), nil
 }
 
-func appendSplunkMetadata(rl plog.ResourceLogs, attrs splunk.HecToOtelAttrs, host, source, sourceType, index string) {
+func appendSplunkMetadata(rl plog.ResourceLogs, attrs translator.HecToOtelAttrs, host, source, sourceType, index string) {
 	if host != "" {
 		rl.Resource().Attributes().PutStr(attrs.Host, host)
 	}

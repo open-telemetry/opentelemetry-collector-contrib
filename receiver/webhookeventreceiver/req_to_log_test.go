@@ -521,7 +521,7 @@ func TestReqToLog(t *testing.T) {
 			_ = testConfig.Validate()
 
 			// receiver will fail to create if endpoint is empty
-			testConfig.Endpoint = "localhost:8080"
+			testConfig.NetAddr.Endpoint = "localhost:8080"
 			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *testConfig, consumertest.NewNop())
 			require.NoError(t, err)
 			eventReceiver := receiver.(*eventReceiver)

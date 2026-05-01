@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
 	assert.Equal(t, ocfg.BackOffConfig, configretry.NewDefaultBackOffConfig())
-	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
+	assert.Equal(t, ocfg.QueueSettings, configoptional.Some(exporterhelper.NewDefaultQueueConfig()))
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
 }
 
@@ -279,8 +279,8 @@ func TestCreateTracesWithPrivateLink(t *testing.T) {
 	require.NotNil(t, consumer)
 
 	// Verify the endpoint is correctly set to private link
-	settings := cfg.getDomainGrpcSettings()
-	assert.Equal(t, "ingress.private.coralogix.com:443", settings.Endpoint)
+	endpoint := setDomainGrpcSettings(cfg)
+	assert.Equal(t, "ingress.private.coralogix.com:443", endpoint)
 
 	err = consumer.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
@@ -306,8 +306,8 @@ func TestCreateMetricsWithPrivateLink(t *testing.T) {
 	require.NotNil(t, consumer)
 
 	// Verify the endpoint is correctly set to private link
-	settings := cfg.getDomainGrpcSettings()
-	assert.Equal(t, "ingress.private.eu2.coralogix.com:443", settings.Endpoint)
+	endpoint := setDomainGrpcSettings(cfg)
+	assert.Equal(t, "ingress.private.eu2.coralogix.com:443", endpoint)
 
 	err = consumer.Shutdown(t.Context())
 	assert.NoError(t, err)
@@ -327,8 +327,8 @@ func TestCreateLogsWithPrivateLink(t *testing.T) {
 	require.NotNil(t, consumer)
 
 	// Verify the endpoint is correctly set to private link
-	settings := cfg.getDomainGrpcSettings()
-	assert.Equal(t, "ingress.private.coralogix.us:443", settings.Endpoint)
+	endpoint := setDomainGrpcSettings(cfg)
+	assert.Equal(t, "ingress.private.coralogix.us:443", endpoint)
 
 	err = consumer.Shutdown(t.Context())
 	assert.NoError(t, err)
@@ -348,8 +348,8 @@ func TestCreateTracesWithDomainAlreadyContainingPrivate(t *testing.T) {
 	require.NotNil(t, consumer)
 
 	// Verify the endpoint does not duplicate "private"
-	settings := cfg.getDomainGrpcSettings()
-	assert.Equal(t, "ingress.private.coralogix.com:443", settings.Endpoint)
+	endpoint := setDomainGrpcSettings(cfg)
+	assert.Equal(t, "ingress.private.coralogix.com:443", endpoint)
 
 	err = consumer.Start(t.Context(), componenttest.NewNopHost())
 	assert.NoError(t, err)
@@ -375,8 +375,8 @@ func TestCreateMetricsWithDomainAlreadyContainingPrivate(t *testing.T) {
 	require.NotNil(t, consumer)
 
 	// Verify the endpoint does not duplicate "private"
-	settings := cfg.getDomainGrpcSettings()
-	assert.Equal(t, "ingress.private.eu2.coralogix.com:443", settings.Endpoint)
+	endpoint := setDomainGrpcSettings(cfg)
+	assert.Equal(t, "ingress.private.eu2.coralogix.com:443", endpoint)
 
 	err = consumer.Shutdown(t.Context())
 	assert.NoError(t, err)

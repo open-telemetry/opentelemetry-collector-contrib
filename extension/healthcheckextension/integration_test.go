@@ -5,6 +5,7 @@ package healthcheckextension
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck"
 )
@@ -36,14 +38,18 @@ func TestLegacyReadyNotReadyBehavior(t *testing.T) {
 	f := NewFactory()
 	port := testutil.GetAvailablePort(t)
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = fmt.Sprintf("localhost:%d", port)
+	cfg.NetAddr.Endpoint = fmt.Sprintf("localhost:%d", port)
 	ext, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.IsType(t, &healthCheckExtension{}, ext)
 
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, ext.Shutdown(t.Context()))
+		// Use Background context for shutdown in cleanup to avoid cancellation issues.
+		//nolint:usetesting // cleanup may run after the test context is cancelled
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		require.NoError(t, ext.Shutdown(ctx))
 	})
 
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/", port))
@@ -90,10 +96,10 @@ func TestLegacyReadyNotReadyBehavior(t *testing.T) {
 }
 
 func TestV2ExtensionEnabledByGate(t *testing.T) {
-	prev := useComponentStatusGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), true))
+	prev := metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), true))
 	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(useComponentStatusGate.ID(), prev))
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ExtensionHealthcheckUseComponentStatusFeatureGate.ID(), prev))
 	})
 
 	transport := &http.Transport{
@@ -109,14 +115,18 @@ func TestV2ExtensionEnabledByGate(t *testing.T) {
 	f := NewFactory()
 	port := testutil.GetAvailablePort(t)
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = fmt.Sprintf("localhost:%d", port)
+	cfg.NetAddr.Endpoint = fmt.Sprintf("localhost:%d", port)
 	ext, err := f.Create(t.Context(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.IsType(t, &healthcheck.HealthCheckExtension{}, ext)
 
 	require.NoError(t, ext.Start(t.Context(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
-		require.NoError(t, ext.Shutdown(t.Context()))
+		// Use Background context for shutdown in cleanup to avoid cancellation issues.
+		//nolint:usetesting // cleanup may run after the test context is cancelled
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		require.NoError(t, ext.Shutdown(ctx))
 	})
 
 	resp, err := client.Get(fmt.Sprintf("http://localhost:%d/", port))

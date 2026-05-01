@@ -1,0 +1,15 @@
+{
+  "records": [
+    {
+      "time": "2022-11-11T04:48:27.6767145Z",
+      "resourceId": "/RESOURCE_ID",
+      "operationName": "SecretGet",
+      "category": "NonExistentCategory",
+      "identity": {
+        "claim": {
+          "oid": "607964b6-41a5-4e24-a5db-db7aab3b9b34"
+        }
+      }
+    }
+  ]
+}

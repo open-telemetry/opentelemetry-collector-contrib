@@ -1,9 +1,28 @@
+display_name: Azure Logs/Traces/Metrics Encoding Extension
 type: azure_encoding
+
+description: >
+  This extension is designed for unmarshaling logs/traces/metrics encoded in specific format
+  produced by [Azure Diagnostic Settings Export](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings) or
+  [Azure Data Collection Rules (DCRs)](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-rule-overview)
 
 status:
   disable_codecov_badge: true
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   codeowners:
     active: [axw, constanca-m]
+  distributions: [contrib]
+
+feature_gates:
+  - id: extension.azureencoding.DontEmitV0LogConventions
+    stage: alpha
+    description: When enabled, v0 semconv log attribute names are not emitted.
+    from_version: v0.149.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543
+  - id: extension.azureencoding.EmitV1LogConventions
+    stage: alpha
+    description: When enabled, v1 semconv log attribute names are emitted.
+    from_version: v0.149.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47543

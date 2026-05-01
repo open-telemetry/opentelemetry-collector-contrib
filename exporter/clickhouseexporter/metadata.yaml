@@ -1,4 +1,5 @@
 type: clickhouse
+display_name: ClickHouse Exporter
 
 status:
   class: exporter

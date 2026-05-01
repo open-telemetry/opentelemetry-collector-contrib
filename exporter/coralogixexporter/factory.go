@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
@@ -13,12 +13,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"google.golang.org/grpc/encoding/gzip"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
@@ -37,13 +39,14 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		QueueSettings:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		DomainSettings: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
 				Compression: configcompression.TypeGzip,
 			},
+			AcceptEncoding: gzip.Name,
 		},
 		// Traces GRPC client
 		Traces: TransportConfig{
@@ -51,6 +54,7 @@ func createDefaultConfig() component.Config {
 				Endpoint:    "https://",
 				Compression: configcompression.TypeGzip,
 			},
+			AcceptEncoding: gzip.Name,
 		},
 		Metrics: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
@@ -59,12 +63,14 @@ func createDefaultConfig() component.Config {
 				Compression:     configcompression.TypeGzip,
 				WriteBufferSize: 512 * 1024,
 			},
+			AcceptEncoding: gzip.Name,
 		},
 		Logs: TransportConfig{
 			ClientConfig: configgrpc.ClientConfig{
 				Endpoint:    "https://",
 				Compression: configcompression.TypeGzip,
 			},
+			AcceptEncoding: gzip.Name,
 		},
 		PrivateKey: "",
 		AppName:    "",

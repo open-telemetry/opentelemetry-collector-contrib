@@ -44,13 +44,13 @@ func TestFactory(t *testing.T) {
 					},
 					TopQueryCollection: TopQueryCollection{
 						MaxQuerySampleCount: 1000,
-						TopQueryCount:       200,
+						TopQueryCount:       250,
 						CollectionInterval:  time.Minute,
 					},
 					QuerySample: QuerySample{
 						MaxRowsPerQuery: 100,
 					},
-					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 					LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 				}
 

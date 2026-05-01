@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -21,15 +20,21 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	}{
 		{
 			name: "default",
-			want: DefaultMetricsBuilderConfig(),
+			want: NewDefaultMetricsBuilderConfig(),
 		},
 		{
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoDeviceUp:           MetricConfig{Enabled: true},
-					SystemCPUUtilization:    MetricConfig{Enabled: true},
-					SystemMemoryUtilization: MetricConfig{Enabled: true},
+					CiscoDeviceUp: MetricConfig{
+						Enabled: true,
+					},
+					SystemCPUUtilization: MetricConfig{
+						Enabled: true,
+					},
+					SystemMemoryUtilization: MetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostIP: ResourceAttributeConfig{Enabled: true},
@@ -42,9 +47,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CiscoDeviceUp:           MetricConfig{Enabled: false},
-					SystemCPUUtilization:    MetricConfig{Enabled: false},
-					SystemMemoryUtilization: MetricConfig{Enabled: false},
+					CiscoDeviceUp: MetricConfig{
+						Enabled: false,
+					},
+					SystemCPUUtilization: MetricConfig{
+						Enabled: false,
+					},
+					SystemMemoryUtilization: MetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostIP: ResourceAttributeConfig{Enabled: false},
@@ -68,7 +79,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
+	cfg := NewDefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }

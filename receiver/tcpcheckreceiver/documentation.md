@@ -22,9 +22,9 @@ Measures the duration of TCP connection.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| tcpcheck.endpoint | TCP endpoint | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tcpcheck.endpoint | TCP endpoint | Any Str | Required | - |
 
 ### tcpcheck.error
 
@@ -32,14 +32,14 @@ Records errors occurring during TCP check.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {error} | Sum | Int | Cumulative | true | Development |
+| {errors} | Sum | Int | Cumulative | true | Development |
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| tcpcheck.endpoint | TCP endpoint | Any Str | Recommended |
-| error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error`` | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tcpcheck.endpoint | TCP endpoint | Any Str | Required | - |
+| error.code | Error code recorded during check | Str: ``connection_refused``, ``connection_timeout``, ``invalid_endpoint``, ``network_unreachable``, ``unknown_error`` | Recommended | - |
 
 ### tcpcheck.status
 
@@ -51,6 +51,6 @@ Records errors occurring during TCP check.
 
 #### Attributes
 
-| Name | Description | Values | Requirement Level |
-| ---- | ----------- | ------ | -------- |
-| tcpcheck.endpoint | TCP endpoint | Any Str | Recommended |
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| tcpcheck.endpoint | TCP endpoint | Any Str | Required | - |

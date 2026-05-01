@@ -9,7 +9,7 @@
 
 ## Components of AWS Container Insights Receiver 
 
-`awscontainerinsightreceiver` collects data from two main sources:
+`awscontainerinsight` collects data from two main sources:
 * `cadvisor` 
   * A customized `cadvisor` lib is embedded inside the receiver. The  `cadvisor` setting is tweaked for Container Insights use cases. For example, only certain metrics are collected and only certain `cgroup` is included. 
   * The receiver generates Container Insights specific metrics from the raw metrics provided by `cadvisor`. The metrics are categorized as different infrastructure layers like node, node filesystem, node disk io, node network, pod, pod network, container, and container filesystem. 

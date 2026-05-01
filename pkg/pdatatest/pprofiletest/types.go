@@ -64,13 +64,12 @@ func (sp ScopeProfile) Transform(dic pprofile.ProfilesDictionary, prp pprofile.R
 }
 
 type Profile struct {
-	SampleType             ValueTypes
+	SampleType             ValueType
 	Sample                 []Sample
 	TimeNanos              pcommon.Timestamp
 	DurationNanos          uint64
 	PeriodType             ValueType
 	Period                 int64
-	DefaultSampleType      ValueType
 	ProfileID              pprofile.ProfileID
 	DroppedAttributesCount uint32
 	OriginalPayloadFormat  string
@@ -90,9 +89,6 @@ func (p *Profile) Transform(dic pprofile.ProfilesDictionary, psp pprofile.ScopeP
 	if p.PeriodType.Typ == "" && p.PeriodType.Unit == "" {
 		p.PeriodType = defaultValueType
 	}
-	if p.DefaultSampleType.Typ == "" && p.DefaultSampleType.Unit == "" {
-		p.DefaultSampleType = defaultValueType
-	}
 
 	p.SampleType.Transform(dic, pp)
 	for _, sa := range p.Sample {
@@ -102,7 +98,6 @@ func (p *Profile) Transform(dic pprofile.ProfilesDictionary, psp pprofile.ScopeP
 	pp.SetDurationNano(p.DurationNanos)
 	p.PeriodType.CopyTo(dic, pp.PeriodType())
 	pp.SetPeriod(p.Period)
-	p.DefaultSampleType.Transform(dic, pp)
 	pp.SetProfileID(p.ProfileID)
 	pp.SetDroppedAttributesCount(p.DroppedAttributesCount)
 	pp.SetOriginalPayloadFormat(p.OriginalPayloadFormat)
@@ -125,14 +120,6 @@ func addString(dic pprofile.ProfilesDictionary, s string) int32 {
 	}
 	dic.StringTable().Append(s)
 	return int32(dic.StringTable().Len() - 1)
-}
-
-type ValueTypes []ValueType
-
-func (vts *ValueTypes) Transform(dic pprofile.ProfilesDictionary, pp pprofile.Profile) {
-	for _, vt := range *vts {
-		vt.Transform(dic, pp)
-	}
 }
 
 type ValueType struct {

@@ -1,4 +1,13 @@
-type: mongodbatlas
+display_name: MongoDB Atlas Receiver
+type: mongodb_atlas
+deprecated_type: mongodbatlas
+reaggregation_enabled: true
+
+description: |
+  The MongoDB Atlas Receiver receives metrics from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) 
+  via their [monitoring APIs](https://docs.atlas.mongodb.com/reference/api/monitoring-and-logs/),
+  as well as alerts via a configured [webhook](https://www.mongodb.com/docs/atlas/tutorial/third-party-service-integrations/)
+  and events from [events APIs](https://www.mongodb.com/docs/atlas/reference/api/events/).
 
 status:
   class: receiver
@@ -6,7 +15,7 @@ status:
     beta: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [justinianvoss22]
+    active: [justinianvoss22, dyl10s, ishleenk17]
     seeking_new: true
 
 resource_attributes:
@@ -67,6 +76,7 @@ attributes:
   assert_type:
     description: MongoDB assertion type
     type: string
+    requirement_level: recommended
     enum:
       - regular
       - warning
@@ -75,6 +85,7 @@ attributes:
   btree_counter_type:
     description: Database index effectiveness
     type: string
+    requirement_level: recommended
     enum:
       - accesses
       - hits
@@ -82,30 +93,35 @@ attributes:
   cache_direction:
     description: Whether read into or written from
     type: string
+    requirement_level: recommended
     enum:
       - read_into
       - written_from
   cache_ratio_type:
     description: Cache ratio type
     type: string
+    requirement_level: recommended
     enum:
       - cache_fill
       - dirty_fill
   cache_status:
     description: Cache status
     type: string
+    requirement_level: recommended
     enum:
       - dirty
       - used
   cluster_role:
     description: Whether process is acting as replica or primary
     type: string
+    requirement_level: recommended
     enum:
       - primary
       - replica
   cpu_state:
     description: CPU state
     type: string
+    requirement_level: recommended
     enum:
       - kernel
       - user
@@ -118,18 +134,21 @@ attributes:
   cursor_state:
     description: Whether cursor is open or timed out
     type: string
+    requirement_level: recommended
     enum:
       - timed_out
       - open
   direction:
     description: Network traffic direction
     type: string
+    requirement_level: recommended
     enum:
       - receive
       - transmit
   disk_direction:
     description: Measurement type for disk operation
     type: string
+    requirement_level: recommended
     enum:
       - read
       - write
@@ -137,12 +156,14 @@ attributes:
   disk_status:
     description: Disk measurement type
     type: string
+    requirement_level: recommended
     enum:
       - free
       - used
   document_status:
     description: Status of documents in the database
     type: string
+    requirement_level: recommended
     enum:
       - returned
       - inserted
@@ -151,6 +172,7 @@ attributes:
   execution_type:
     description: Type of command
     type: string
+    requirement_level: recommended
     enum:
       - reads
       - writes
@@ -158,6 +180,7 @@ attributes:
   global_lock_state:
     description: Which queue is locked
     type: string
+    requirement_level: recommended
     enum:
       - current_queue_total
       - current_queue_readers
@@ -165,6 +188,7 @@ attributes:
   memory_issue_type:
     description: Type of memory issue encountered
     type: string
+    requirement_level: recommended
     enum:
       - extra_info
       - global_accesses_not_in_memory
@@ -172,6 +196,7 @@ attributes:
   memory_state:
     description: Memory usage type
     type: string
+    requirement_level: recommended
     enum:
       - resident
       - virtual
@@ -183,6 +208,7 @@ attributes:
   memory_status:
     description: Memory measurement type
     type: string
+    requirement_level: recommended
     enum:
       - available
       - buffers
@@ -193,6 +219,7 @@ attributes:
   object_type:
     description: MongoDB object type
     type: string
+    requirement_level: recommended
     enum:
       - collection
       - index
@@ -204,6 +231,7 @@ attributes:
   operation:
     description: Type of database operation
     type: string
+    requirement_level: recommended
     enum:
       - cmd
       - query
@@ -216,6 +244,7 @@ attributes:
   oplog_type:
     description: Oplog type
     type: string
+    requirement_level: recommended
     enum:
       - slave_lag_master_time
       - master_time
@@ -223,12 +252,14 @@ attributes:
   scanned_type:
     description: Objects or indexes scanned during query
     type: string
+    requirement_level: recommended
     enum:
       - index_items
       - objects
   storage_status:
     description: Views on database size
     type: string
+    requirement_level: recommended
     enum:
       - total
       - data_size
@@ -237,6 +268,7 @@ attributes:
   ticket_type:
     description: Type of ticket available
     type: string
+    requirement_level: recommended
     enum:
       - available_reads
       - available_writes
@@ -244,8 +276,7 @@ attributes:
 metrics:
   mongodbatlas.db.counts:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Database feature size
     extended_documentation: Aggregate of MongoDB Metrics DATABASE_EXTENT_COUNT, DATABASE_VIEW_COUNT, DATABASE_COLLECTION_COUNT, DATABASE_OBJECT_COUNT, DATABASE_INDEX_COUNT
     unit: "{objects}"
@@ -254,8 +285,7 @@ metrics:
       value_type: double
   mongodbatlas.db.size:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Database feature size
     extended_documentation: Aggregate of MongoDB Metrics DATABASE_DATA_SIZE, DATABASE_STORAGE_SIZE, DATABASE_INDEX_SIZE, DATABASE_AVERAGE_OBJECT_SIZE
     unit: By
@@ -264,8 +294,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.iops.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition iops
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_IOPS_READ, DISK_PARTITION_IOPS_WRITE, DISK_PARTITION_IOPS_TOTAL
     unit: "{ops}/s"
@@ -274,8 +303,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.iops.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition iops
     extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_IOPS_WRITE, MAX_DISK_PARTITION_IOPS_TOTAL, MAX_DISK_PARTITION_IOPS_READ
     unit: "{ops}/s"
@@ -284,8 +312,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.latency.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition latency
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_LATENCY_WRITE, DISK_PARTITION_LATENCY_READ
     unit: ms
@@ -294,8 +321,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.latency.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition latency
     extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_LATENCY_WRITE, MAX_DISK_PARTITION_LATENCY_READ
     unit: ms
@@ -304,8 +330,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.queue.depth:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: Disk queue depth
     extended_documentation: Aggregate of MongoDB Metrics DISK_QUEUE_DEPTH
     unit: "1"
@@ -314,8 +339,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.space.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition space
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
@@ -324,8 +348,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.space.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition space
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
@@ -334,8 +357,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.throughput:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: Disk throughput
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_THROUGHPUT_READ, DISK_PARTITION_THROUGHPUT_WRITE
     unit: By/s
@@ -344,8 +366,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition usage (%)
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED
     unit: "1"
@@ -354,8 +375,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Disk partition usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE
     unit: "1"
@@ -364,8 +384,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.utilization.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
     unit: "1"
@@ -373,8 +392,7 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.utilization.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: The maximum percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
     unit: "1"
@@ -382,8 +400,7 @@ metrics:
       value_type: double
   mongodbatlas.process.asserts:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Number of assertions per second
     extended_documentation: Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING
     unit: "{assertions}/s"
@@ -392,8 +409,7 @@ metrics:
       value_type: double
   mongodbatlas.process.background_flush:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Amount of data flushed in the background
     extended_documentation: MongoDB Metric BACKGROUND_FLUSH_AVG
     unit: "1"
@@ -401,8 +417,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cache.io:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Cache throughput (per second)
     extended_documentation: Aggregate of MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM
     unit: By
@@ -411,8 +426,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cache.ratio:
     enabled: false
-    stability:
-      level: development
+    stability: development
     description: Cache ratios represented as (%)
     extended_documentation: Aggregate of MongoDB Metrics CACHE_FILL_RATIO, DIRTY_FILL_RATIO
     unit: "%"
@@ -421,8 +435,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cache.size:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Cache sizes
     extended_documentation: Aggregate of MongoDB Metrics CACHE_USED_BYTES, CACHE_DIRTY_BYTES
     unit: By
@@ -433,8 +446,7 @@ metrics:
       aggregation_temporality: cumulative
   mongodbatlas.process.connections:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Number of current connections
     extended_documentation: MongoDB Metric CONNECTIONS
     unit: "{connections}"
@@ -444,8 +456,7 @@ metrics:
       aggregation_temporality: cumulative
   mongodbatlas.process.cpu.children.normalized.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage for child processes, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, PROCESS_NORMALIZED_CPU_CHILDREN_USER
     unit: "1"
@@ -454,8 +465,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cpu.children.normalized.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage for child processes, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_CHILDREN_KERNEL, MAX_PROCESS_NORMALIZED_CPU_CHILDREN_USER
     unit: "1"
@@ -464,8 +474,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cpu.children.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage for child processes (%)
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_CPU_CHILDREN_KERNEL, PROCESS_CPU_CHILDREN_USER
     unit: "1"
@@ -474,8 +483,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cpu.children.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage for child processes (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_CPU_CHILDREN_USER, MAX_PROCESS_CPU_CHILDREN_KERNEL
     unit: "1"
@@ -484,8 +492,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cpu.normalized.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_NORMALIZED_CPU_KERNEL, PROCESS_NORMALIZED_CPU_USER
     unit: "1"
@@ -494,8 +501,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cpu.normalized.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage, normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_NORMALIZED_CPU_USER, MAX_PROCESS_NORMALIZED_CPU_KERNEL
     unit: "1"
@@ -504,8 +510,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cpu.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics PROCESS_CPU_KERNEL, PROCESS_CPU_USER
     unit: "1"
@@ -514,8 +519,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cpu.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_PROCESS_CPU_KERNEL, MAX_PROCESS_CPU_USER
     unit: "1"
@@ -524,8 +528,7 @@ metrics:
       value_type: double
   mongodbatlas.process.cursors:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Number of cursors
     extended_documentation: Aggregate of MongoDB Metrics CURSORS_TOTAL_OPEN, CURSORS_TOTAL_TIMED_OUT
     unit: "{cursors}"
@@ -534,8 +537,7 @@ metrics:
       value_type: double
   mongodbatlas.process.db.document.rate:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Document access rates
     extended_documentation: Aggregate of MongoDB Metrics DOCUMENT_METRICS_UPDATED, DOCUMENT_METRICS_DELETED, DOCUMENT_METRICS_RETURNED, DOCUMENT_METRICS_INSERTED
     unit: "{documents}/s"
@@ -544,8 +546,7 @@ metrics:
       value_type: double
   mongodbatlas.process.db.operations.rate:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: DB Operation Rates
     extended_documentation: Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT, OPCOUNTER_TTL_DELETED
     unit: "{operations}/s"
@@ -554,8 +555,7 @@ metrics:
       value_type: double
   mongodbatlas.process.db.operations.time:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: DB Operation Times
     extended_documentation: Aggregate of MongoDB Metrics OP_EXECUTION_TIME_WRITES, OP_EXECUTION_TIME_COMMANDS, OP_EXECUTION_TIME_READS
     unit: ms
@@ -566,8 +566,7 @@ metrics:
       aggregation_temporality: cumulative
   mongodbatlas.process.db.query_executor.scanned:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Scanned objects
     extended_documentation: Aggregate of MongoDB Metrics QUERY_EXECUTOR_SCANNED_OBJECTS, QUERY_EXECUTOR_SCANNED
     attributes: [scanned_type]
@@ -576,8 +575,7 @@ metrics:
       value_type: double
   mongodbatlas.process.db.query_targeting.scanned_per_returned:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Scanned objects per returned
     extended_documentation: Aggregate of MongoDB Metrics QUERY_TARGETING_SCANNED_OBJECTS_PER_RETURNED, QUERY_TARGETING_SCANNED_PER_RETURNED
     unit: "{scanned}/{returned}"
@@ -586,8 +584,7 @@ metrics:
       value_type: double
   mongodbatlas.process.db.storage:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Storage used by the database
     extended_documentation: Aggregate of MongoDB Metrics DB_INDEX_SIZE_TOTAL, DB_DATA_SIZE_TOTAL_WO_SYSTEM, DB_STORAGE_TOTAL, DB_DATA_SIZE_TOTAL
     unit: By
@@ -596,8 +593,7 @@ metrics:
       value_type: double
   mongodbatlas.process.global_lock:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Number and status of locks
     extended_documentation: Aggregate of MongoDB Metrics GLOBAL_LOCK_CURRENT_QUEUE_WRITERS, GLOBAL_LOCK_CURRENT_QUEUE_READERS, GLOBAL_LOCK_CURRENT_QUEUE_TOTAL
     unit: "{locks}"
@@ -606,8 +602,7 @@ metrics:
       value_type: double
   mongodbatlas.process.index.btree_miss_ratio:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Index miss ratio (%)
     extended_documentation: MongoDB Metric INDEX_COUNTERS_BTREE_MISS_RATIO
     unit: "1"
@@ -615,8 +610,7 @@ metrics:
       value_type: double
   mongodbatlas.process.index.counters:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Indexes
     extended_documentation: Aggregate of MongoDB Metrics INDEX_COUNTERS_BTREE_MISSES, INDEX_COUNTERS_BTREE_ACCESSES, INDEX_COUNTERS_BTREE_HITS
     unit: "{indexes}"
@@ -625,8 +619,7 @@ metrics:
       value_type: double
   mongodbatlas.process.journaling.commits:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Journaling commits
     extended_documentation: MongoDB Metric JOURNALING_COMMITS_IN_WRITE_LOCK
     unit: "{commits}"
@@ -634,8 +627,7 @@ metrics:
       value_type: double
   mongodbatlas.process.journaling.data_files:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Data file sizes
     extended_documentation: MongoDB Metric JOURNALING_WRITE_DATA_FILES_MB
     unit: MiBy
@@ -643,8 +635,7 @@ metrics:
       value_type: double
   mongodbatlas.process.journaling.written:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Journals written
     extended_documentation: MongoDB Metric JOURNALING_MB
     unit: MiBy
@@ -652,8 +643,7 @@ metrics:
       value_type: double
   mongodbatlas.process.memory.usage:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Memory Usage
     extended_documentation: Aggregate of MongoDB Metrics MEMORY_MAPPED, MEMORY_VIRTUAL, COMPUTED_MEMORY, MEMORY_RESIDENT
     unit: By
@@ -662,8 +652,7 @@ metrics:
       value_type: double
   mongodbatlas.process.network.io:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Network IO
     extended_documentation: Aggregate of MongoDB Metrics NETWORK_BYTES_OUT, NETWORK_BYTES_IN
     unit: By/s
@@ -672,8 +661,7 @@ metrics:
       value_type: double
   mongodbatlas.process.network.requests:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Network requests
     extended_documentation: MongoDB Metric NETWORK_NUM_REQUESTS
     unit: "{requests}"
@@ -683,8 +671,7 @@ metrics:
       aggregation_temporality: cumulative
   mongodbatlas.process.oplog.rate:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Execution rate by operation
     extended_documentation: MongoDB Metric OPLOG_RATE_GB_PER_HOUR
     unit: GiBy/h
@@ -692,8 +679,7 @@ metrics:
       value_type: double
   mongodbatlas.process.oplog.time:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Execution time by operation
     extended_documentation: Aggregate of MongoDB Metrics OPLOG_MASTER_TIME, OPLOG_SLAVE_LAG_MASTER_TIME, OPLOG_MASTER_LAG_TIME_DIFF
     unit: s
@@ -702,8 +688,7 @@ metrics:
       value_type: double
   mongodbatlas.process.page_faults:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Page faults
     extended_documentation: Aggregate of MongoDB Metrics GLOBAL_PAGE_FAULT_EXCEPTIONS_THROWN, EXTRA_INFO_PAGE_FAULTS, GLOBAL_ACCESSES_NOT_IN_MEMORY
     unit: "{faults}/s"
@@ -712,8 +697,7 @@ metrics:
       value_type: double
   mongodbatlas.process.restarts:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Restarts in last hour
     extended_documentation: Aggregate of MongoDB Metrics RESTARTS_IN_LAST_HOUR
     unit: "{restarts}/h"
@@ -721,8 +705,7 @@ metrics:
       value_type: double
   mongodbatlas.process.tickets:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Tickets
     extended_documentation: Aggregate of MongoDB Metrics TICKETS_AVAILABLE_WRITE, TICKETS_AVAILABLE_READS
     unit: "{tickets}"
@@ -731,8 +714,7 @@ metrics:
       value_type: double
   mongodbatlas.system.cpu.normalized.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System CPU Normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics SYSTEM_NORMALIZED_CPU_IOWAIT, SYSTEM_NORMALIZED_CPU_GUEST, SYSTEM_NORMALIZED_CPU_IRQ, SYSTEM_NORMALIZED_CPU_KERNEL, SYSTEM_NORMALIZED_CPU_STEAL, SYSTEM_NORMALIZED_CPU_SOFTIRQ, SYSTEM_NORMALIZED_CPU_NICE, SYSTEM_NORMALIZED_CPU_USER
     attributes: [cpu_state]
@@ -741,8 +723,7 @@ metrics:
       value_type: double
   mongodbatlas.system.cpu.normalized.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System CPU Normalized to pct
     extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_NORMALIZED_CPU_USER, MAX_SYSTEM_NORMALIZED_CPU_NICE, MAX_SYSTEM_NORMALIZED_CPU_IOWAIT, MAX_SYSTEM_NORMALIZED_CPU_SOFTIRQ, MAX_SYSTEM_NORMALIZED_CPU_STEAL, MAX_SYSTEM_NORMALIZED_CPU_KERNEL, MAX_SYSTEM_NORMALIZED_CPU_GUEST, MAX_SYSTEM_NORMALIZED_CPU_IRQ
     attributes: [cpu_state]
@@ -751,8 +732,7 @@ metrics:
       value_type: double
   mongodbatlas.system.cpu.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics SYSTEM_CPU_USER, SYSTEM_CPU_GUEST, SYSTEM_CPU_SOFTIRQ, SYSTEM_CPU_IRQ, SYSTEM_CPU_KERNEL, SYSTEM_CPU_IOWAIT, SYSTEM_CPU_NICE, SYSTEM_CPU_STEAL
     attributes: [cpu_state]
@@ -761,8 +741,7 @@ metrics:
       value_type: double
   mongodbatlas.system.cpu.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System CPU Usage (%)
     extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_CPU_SOFTIRQ, MAX_SYSTEM_CPU_IRQ, MAX_SYSTEM_CPU_GUEST, MAX_SYSTEM_CPU_IOWAIT, MAX_SYSTEM_CPU_NICE, MAX_SYSTEM_CPU_KERNEL, MAX_SYSTEM_CPU_USER, MAX_SYSTEM_CPU_STEAL
     attributes: [cpu_state]
@@ -771,8 +750,7 @@ metrics:
       value_type: double
   mongodbatlas.system.fts.cpu.normalized.usage:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Full text search disk usage (%)
     extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_NORMALIZED_CPU_USER, FTS_PROCESS_NORMALIZED_CPU_KERNEL
     unit: "1"
@@ -781,8 +759,7 @@ metrics:
       value_type: double
   mongodbatlas.system.fts.cpu.usage:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Full-text search (%)
     extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
     unit: "1"
@@ -791,8 +768,7 @@ metrics:
       value_type: double
   mongodbatlas.system.fts.disk.used:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Full text search disk usage
     extended_documentation: MongoDB Metric FTS_DISK_USAGE
     unit: By
@@ -800,8 +776,7 @@ metrics:
       value_type: double
   mongodbatlas.system.fts.memory.usage:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Full-text search
     extended_documentation: Aggregate of MongoDB Metrics FTS_MEMORY_MAPPED, FTS_PROCESS_SHARED_MEMORY, FTS_PROCESS_RESIDENT_MEMORY, FTS_PROCESS_VIRTUAL_MEMORY
     unit: MiBy
@@ -812,8 +787,7 @@ metrics:
       aggregation_temporality: cumulative
   mongodbatlas.system.memory.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System Memory Usage
     extended_documentation: Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYSTEM_MEMORY_USED, SYSTEM_MEMORY_CACHED, SYSTEM_MEMORY_SHARED, SYSTEM_MEMORY_FREE
     unit: KiBy
@@ -822,8 +796,7 @@ metrics:
       value_type: double
   mongodbatlas.system.memory.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System Memory Usage
     extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_USED, MAX_SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_FREE, MAX_SYSTEM_MEMORY_SHARED
     unit: KiBy
@@ -832,8 +805,7 @@ metrics:
       value_type: double
   mongodbatlas.system.network.io.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System Network IO
     extended_documentation: Aggregate of MongoDB Metrics SYSTEM_NETWORK_IN, SYSTEM_NETWORK_OUT
     unit: By/s
@@ -842,8 +814,7 @@ metrics:
       value_type: double
   mongodbatlas.system.network.io.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: System Network IO
     extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN
     unit: By/s
@@ -852,8 +823,7 @@ metrics:
       value_type: double
   mongodbatlas.system.paging.io.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Swap IO
     extended_documentation: Aggregate of MongoDB Metrics SWAP_IO_IN, SWAP_IO_OUT
     unit: "{pages}/s"
@@ -862,8 +832,7 @@ metrics:
       value_type: double
   mongodbatlas.system.paging.io.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Swap IO
     extended_documentation: Aggregate of MongoDB Metrics MAX_SWAP_IO_IN, MAX_SWAP_IO_OUT
     unit: "{pages}/s"
@@ -872,8 +841,7 @@ metrics:
       value_type: double
   mongodbatlas.system.paging.usage.average:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Swap usage
     extended_documentation: Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED
     unit: KiBy
@@ -882,8 +850,7 @@ metrics:
       value_type: double
   mongodbatlas.system.paging.usage.max:
     enabled: true
-    stability:
-      level: development
+    stability: development
     description: Swap usage
     extended_documentation: Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
     unit: KiBy

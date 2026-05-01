@@ -28,8 +28,7 @@ func TestLimit(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 10 {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			for i := range 110 {
 				o, loaded := m.LoadOrStore(i, v)
 				switch {
@@ -41,8 +40,7 @@ func TestLimit(t *testing.T) {
 					stores.Add(1)
 				}
 			}
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 

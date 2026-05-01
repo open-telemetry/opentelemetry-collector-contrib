@@ -9,6 +9,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"sync"
@@ -19,7 +22,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 	collectorlogs "go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/config"
 )
 
 // mockLogsReceiver is a mock gRPC receiver for testing
@@ -80,17 +88,19 @@ func startMockReceiver(t *testing.T) (*grpc.Server, string, *mockLogsReceiver) {
 
 // TestTelemetrygenIntegration tests the actual behavior of the telemetrygen tool
 func TestTelemetrygenIntegration(t *testing.T) {
+	// Create unique binary name to avoid conflicts between tests
+	binaryName := fmt.Sprintf("telemetrygen-test-%d", time.Now().UnixNano())
 	buildDir := "../../../telemetrygen"
-	buildCmd := exec.Command("go", "build", "-o", "telemetrygen-test", ".")
+	buildCmd := exec.Command("go", "build", "-o", binaryName, ".")
 	buildCmd.Dir = buildDir
 	err := buildCmd.Run()
 	require.NoError(t, err, "Failed to build telemetrygen")
 
-	defer os.Remove("../../../telemetrygen/telemetrygen-test")
+	defer os.Remove("../../../telemetrygen/" + binaryName)
 
-	testBinaryPath := "../../../telemetrygen/telemetrygen-test"
+	testBinaryPath := "../../../telemetrygen/" + binaryName
 
-	t.Run("RespectsLogsParameter", func(t *testing.T) {
+	t.Run("RespectsLogsParameterWithBatching", func(t *testing.T) {
 		server, endpoint, receiver := startMockReceiver(t)
 		defer func() {
 			server.Stop()
@@ -104,19 +114,50 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "3", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "5", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch", "--batch-size", "2")
 
 		start := time.Now()
 		err := cmd.Run()
 		duration := time.Since(start)
 
-		assert.NoError(t, err, "telemetrygen should complete successfully with --logs parameter")
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching enabled")
 		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
 
 		// Wait for all logs to be processed
 		time.Sleep(500 * time.Millisecond)
 		logs := receiver.GetLogs()
-		assert.Len(t, logs, 3, "Should have received exactly 3 logs")
+
+		assert.Len(t, logs, 3, "Should have received exactly 3 log batches with batching enabled")
+	})
+
+	t.Run("RespectsLogsParameterWithoutBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "4", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching disabled")
+		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all logs to be processed
+		time.Sleep(500 * time.Millisecond)
+		logs := receiver.GetLogs()
+
+		assert.Len(t, logs, 4, "Should have received exactly 4 log batches with batching disabled")
 	})
 
 	t.Run("DurationOverridesLogs", func(t *testing.T) {
@@ -133,7 +174,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Add timeout to prevent hanging
 		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 		defer cancel()
-		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "100", "--duration", "100ms", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "100", "--duration", "100ms", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
 
 		start := time.Now()
 		err := cmd.Run()
@@ -161,7 +202,7 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		// Reset receiver to ensure clean state
 		receiver.Reset()
 
-		cmd := exec.Command(testBinaryPath, "logs", "--logs", "50", "--duration", "inf", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		cmd := exec.Command(testBinaryPath, "logs", "--logs", "50", "--duration", "inf", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
 
 		// Start the command first to ensure Process is available
 		err := cmd.Start()
@@ -188,4 +229,223 @@ func TestTelemetrygenIntegration(t *testing.T) {
 		logs := receiver.GetLogs()
 		assert.NotEmpty(t, logs, "Should have generated some logs")
 	})
+
+	t.Run("BatchingWithBatchSize", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "5", "--batch-size", "2", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure")
+		err := cmd.Run()
+		require.NoError(t, err, "Failed to run telemetrygen")
+
+		time.Sleep(1 * time.Second)
+
+		logs := receiver.GetLogs()
+		assert.Len(t, logs, 3, "Expected 3 batches with batch size 2")
+		assert.Equal(t, 2, logs[0].LogRecordCount(), "First batch should have 2 logs")
+		assert.Equal(t, 2, logs[1].LogRecordCount(), "Second batch should have 2 logs")
+		assert.Equal(t, 1, logs[2].LogRecordCount(), "Third batch should have 1 log")
+	})
+
+	t.Run("NoBatchingWhenFlagDisabled", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "3", "--rate", "1000", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+		err := cmd.Run()
+		require.NoError(t, err, "Failed to run telemetrygen")
+
+		time.Sleep(1 * time.Second)
+
+		logs := receiver.GetLogs()
+		assert.Len(t, logs, 3, "Expected 3 individual logs when batching is disabled")
+		assert.Equal(t, 1, logs[0].LogRecordCount(), "Each log should be sent individually")
+		assert.Equal(t, 1, logs[1].LogRecordCount(), "Each log should be sent individually")
+		assert.Equal(t, 1, logs[2].LogRecordCount(), "Each log should be sent individually")
+	})
+
+	t.Run("RespectsLogsParameterWithBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "5", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch", "--batch-size", "2")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching enabled")
+		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all logs to be processed
+		time.Sleep(500 * time.Millisecond)
+		logs := receiver.GetLogs()
+
+		assert.Len(t, logs, 3, "Should have received exactly 3 log batches with batching enabled")
+	})
+
+	t.Run("RespectsLogsParameterWithoutBatching", func(t *testing.T) {
+		server, endpoint, receiver := startMockReceiver(t)
+		defer func() {
+			server.Stop()
+			// Wait for server to fully stop and connections to close
+			time.Sleep(200 * time.Millisecond)
+		}()
+
+		// Reset receiver to ensure clean state
+		receiver.Reset()
+
+		// Add timeout to prevent hanging
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, testBinaryPath, "logs", "--logs", "4", "--workers", "1", "--otlp-endpoint", endpoint, "--otlp-insecure", "--batch=false")
+
+		start := time.Now()
+		err := cmd.Run()
+		duration := time.Since(start)
+
+		assert.NoError(t, err, "telemetrygen should complete successfully with batching disabled")
+		assert.Less(t, duration, 6*time.Second, "Should complete quickly without connection issues")
+
+		// Wait for all logs to be processed
+		time.Sleep(500 * time.Millisecond)
+		logs := receiver.GetLogs()
+
+		assert.Len(t, logs, 4, "Should have received exactly 4 log batches with batching disabled")
+	})
+}
+
+func TestHTTPExporterOptions_Timeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+				if tc.handlerDelay > 0 {
+					time.Sleep(tc.handlerDelay)
+				}
+			}))
+			defer srv.Close()
+			srvURL, _ := url.Parse(srv.URL)
+
+			cfg := Config{
+				Config: config.Config{
+					Insecure:       true,
+					CustomEndpoint: srvURL.Host,
+					Timeout:        tc.timeout,
+				},
+			}
+			opts, err := httpExporterOptions(&cfg)
+			require.NoError(t, err)
+
+			exp, err := otlploghttp.New(t.Context(), opts...)
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = exp.Shutdown(t.Context()) })
+
+			err = exp.Export(t.Context(), []sdklog.Record{{}})
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestGRPCExporterOptions_Timeout(t *testing.T) {
+	for name, tc := range map[string]struct {
+		timeout      time.Duration
+		handlerDelay time.Duration
+		expectError  bool
+	}{
+		"TimeoutElapsed": {
+			timeout:      50 * time.Millisecond,
+			handlerDelay: 500 * time.Millisecond,
+			expectError:  true,
+		},
+		"TimeoutNotElapsed": {
+			timeout:     500 * time.Millisecond,
+			expectError: false,
+		},
+		"NoTimeout": {
+			timeout:     0,
+			expectError: false,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			srv := grpc.NewServer(grpc.UnaryInterceptor(func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+				if tc.handlerDelay > 0 {
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					case <-time.After(tc.handlerDelay):
+					}
+				}
+				return handler(ctx, req)
+			}))
+			collectorlogs.RegisterGRPCServer(srv, &mockLogsReceiver{})
+			lis, err := net.Listen("tcp", "localhost:0")
+			require.NoError(t, err)
+			go srv.Serve(lis) //nolint:errcheck
+			defer srv.Stop()
+
+			cfg := Config{
+				Config: config.Config{
+					Insecure:       true,
+					CustomEndpoint: lis.Addr().String(),
+					Timeout:        tc.timeout,
+				},
+			}
+			opts, err := grpcExporterOptions(&cfg)
+			require.NoError(t, err)
+			exp, err := otlploggrpc.New(t.Context(), opts...)
+			require.NoError(t, err)
+			defer func() { _ = exp.Shutdown(t.Context()) }()
+
+			err = exp.Export(t.Context(), []sdklog.Record{{}})
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

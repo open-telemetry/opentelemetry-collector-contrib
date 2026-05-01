@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,21 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-const franzGoClientFeatureGateName = "exporter.kafkaexporter.UseFranzGo"
-
-// franzGoClientFeatureGate is a feature gate that controls whether the Kafka exporter
-// uses the franz-go client or the Sarama client. When enabled, the Kafka exporter
-// will use the franz-go client, which is more performant and has better support for
-// modern Kafka features.
-var franzGoClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	franzGoClientFeatureGateName, featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the Kafka exporter will use the franz-go client to produce messages to Kafka."),
-	featuregate.WithRegisterFromVersion("v0.128.0"),
-	featuregate.WithRegisterToVersion("v0.143.0"),
-)
-
 // producer is an interface that abstracts the Kafka producer operations
-// to allow for different implementations (e.g., Sarama, franz-go)
 type producer interface {
 	// ExportData sends a batch of messages to Kafka
 	ExportData(ctx context.Context, messages kafkaclient.Messages) error
@@ -100,33 +86,28 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return err
 	}
 
-	if franzGoClientFeatureGate.IsEnabled() {
-		producer, ferr := kafka.NewFranzSyncProducer(
-			ctx,
-			e.cfg.ClientConfig,
-			e.cfg.Producer,
-			e.cfg.TimeoutSettings.Timeout,
-			e.logger,
-			kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
-		)
-		if ferr != nil {
-			return ferr
-		}
-		e.producer = kafkaclient.NewFranzSyncProducer(producer,
-			e.cfg.IncludeMetadataKeys,
-		)
-		return nil
+	partitionerOpt, err := buildPartitionerOpt(e.cfg.RecordPartitioner, host)
+	if err != nil {
+		return fmt.Errorf("failed to configure record partitioner: %w", err)
 	}
-	producer, err := kafka.NewSaramaSyncProducer(ctx, e.cfg.ClientConfig,
-		e.cfg.Producer, e.cfg.TimeoutSettings.Timeout,
+
+	producer, err := kafka.NewFranzSyncProducer(
+		ctx,
+		host,
+		e.cfg.ClientConfig,
+		e.cfg.Producer,
+		e.cfg.TimeoutSettings.Timeout,
+		e.logger,
+		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
+		partitionerOpt,
 	)
 	if err != nil {
 		return err
 	}
-	e.producer = kafkaclient.NewSaramaSyncProducer(
-		producer,
-		kafkaclient.NewSaramaProducerMetrics(tb),
+	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
+		e.cfg.RecordHeaders,
+		e.cfg.Producer.MaxMessageBytes,
 	)
 	return nil
 }
@@ -171,16 +152,7 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		})
 	}
 	err := e.producer.ExportData(ctx, m)
-	if err == nil {
-		if e.logger.Core().Enabled(zap.DebugLevel) {
-			for _, mi := range m.TopicMessages {
-				e.logger.Debug("kafka records exported",
-					zap.Int("records", len(mi.Messages)),
-					zap.String("topic", mi.Topic),
-				)
-			}
-		}
-	} else {
+	if err != nil {
 		for _, mi := range m.TopicMessages {
 			e.logger.Error("kafka records export failed",
 				zap.Int("records", len(mi.Messages)),
@@ -188,8 +160,24 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 				zap.Error(err),
 			)
 		}
+		var msgTooLarge *kafkaclient.MessageTooLargeError
+		if errors.As(err, &msgTooLarge) {
+			e.logger.Error("kafka record exceeds max message size",
+				zap.Int("actual_message_bytes", msgTooLarge.RecordBytes),
+				zap.Int("max_message_bytes", msgTooLarge.MaxMessageBytes),
+			)
+		}
+		return err
 	}
-	return err
+	if e.logger.Core().Enabled(zap.DebugLevel) {
+		for _, mi := range m.TopicMessages {
+			e.logger.Debug("kafka records exported",
+				zap.Int("records", len(mi.Messages)),
+				zap.String("topic", mi.Topic),
+			)
+		}
+	}
+	return nil
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
@@ -226,20 +214,34 @@ func (e *kafkaTracesMessenger) getTopic(ctx context.Context, td ptrace.Traces) s
 
 func (e *kafkaTracesMessenger) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
 	return func(yield func([]byte, ptrace.Traces) bool) {
-		if !e.config.PartitionTracesByID {
-			yield(nil, td)
+		if e.config.PartitionTracesByID {
+			for _, td := range batchpersignal.SplitTraces(td) {
+				// Note that batchpersignal.SplitTraces guarantees that each trace
+				// has exactly one trace, and by implication, at least one span.
+				key := []byte(traceutil.TraceIDToHexOrEmptyString(
+					td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID(),
+				))
+				if !yield(key, td) {
+					return
+				}
+			}
 			return
 		}
-		for _, td := range batchpersignal.SplitTraces(td) {
-			// Note that batchpersignal.SplitTraces guarantees that each trace
-			// has exactly one trace, and by implication, at least one span.
-			key := []byte(traceutil.TraceIDToHexOrEmptyString(
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID(),
-			))
-			if !yield(key, td) {
-				return
+		if e.config.TopicFromAttribute != "" {
+			newTraces := ptrace.NewTraces()
+			target := newTraces.ResourceSpans().AppendEmpty()
+			for _, resourceSpans := range td.ResourceSpans().All() {
+				resourceSpans.CopyTo(target)
+				// NOTE: The same ptrace.Traces instance (newTraces) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
+				if !yield(nil, newTraces) {
+					return
+				}
 			}
+			return
 		}
+		yield(nil, td)
 	}
 }
 
@@ -271,12 +273,22 @@ func (e *kafkaLogsMessenger) getTopic(ctx context.Context, ld plog.Logs) string 
 
 func (e *kafkaLogsMessenger) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
 	return func(yield func([]byte, plog.Logs) bool) {
-		if e.config.PartitionLogsByResourceAttributes {
+		splitByResource := e.config.PartitionLogsByResourceAttributes ||
+			(e.config.TopicFromAttribute != "" && !e.config.PartitionLogsByTraceID)
+		if splitByResource {
+			newLogs := plog.NewLogs()
+			target := newLogs.ResourceLogs().AppendEmpty()
 			for _, resourceLogs := range ld.ResourceLogs().All() {
-				hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
-				newLogs := plog.NewLogs()
-				resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
-				if !yield(hash[:], newLogs) {
+				var key []byte
+				if e.config.PartitionLogsByResourceAttributes {
+					hash := pdatautil.MapHash(resourceLogs.Resource().Attributes())
+					key = hash[:]
+				}
+				resourceLogs.CopyTo(target)
+				// NOTE: The same plog.Logs instance (newLogs) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
+				if !yield(key, newLogs) {
 					return
 				}
 			}
@@ -327,15 +339,25 @@ func (e *kafkaMetricsMessenger) getTopic(ctx context.Context, md pmetric.Metrics
 
 func (e *kafkaMetricsMessenger) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
 	return func(yield func([]byte, pmetric.Metrics) bool) {
-		if !e.config.PartitionMetricsByResourceAttributes {
+		splitByResource := e.config.PartitionMetricsByResourceAttributes ||
+			e.config.TopicFromAttribute != ""
+		if !splitByResource {
 			yield(nil, md)
 			return
 		}
+		newMetrics := pmetric.NewMetrics()
+		target := newMetrics.ResourceMetrics().AppendEmpty()
 		for _, resourceMetrics := range md.ResourceMetrics().All() {
-			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
-			newMetrics := pmetric.NewMetrics()
-			resourceMetrics.CopyTo(newMetrics.ResourceMetrics().AppendEmpty())
-			if !yield(hash[:], newMetrics) {
+			var key []byte
+			if e.config.PartitionMetricsByResourceAttributes {
+				hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+				key = hash[:]
+			}
+			resourceMetrics.CopyTo(target)
+			// NOTE: The same pmetric.Metrics instance (newMetrics) is reused and mutated on each iteration.
+			// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+			// the current callback/iteration, as its contents will be overwritten on the next yield.
+			if !yield(key, newMetrics) {
 				return
 			}
 		}
@@ -368,9 +390,23 @@ func (e *kafkaProfilesMessenger) getTopic(ctx context.Context, ld pprofile.Profi
 	return getTopic[pprofile.ResourceProfiles](ctx, e.config.Profiles, e.config.TopicFromAttribute, ld.ResourceProfiles())
 }
 
-func (*kafkaProfilesMessenger) partitionData(ld pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
+func (e *kafkaProfilesMessenger) partitionData(pd pprofile.Profiles) iter.Seq2[[]byte, pprofile.Profiles] {
 	return func(yield func([]byte, pprofile.Profiles) bool) {
-		yield(nil, ld)
+		if e.config.TopicFromAttribute != "" {
+			newProfiles := pprofile.NewProfiles()
+			target := newProfiles.ResourceProfiles().AppendEmpty()
+			for _, resourceProfiles := range pd.ResourceProfiles().All() {
+				resourceProfiles.CopyTo(target)
+				// NOTE: The same pprofile.Profiles instance (newProfiles) is reused and mutated on each iteration.
+				// Callers must treat the yielded pdata as ephemeral and must not retain it beyond
+				// the current callback/iteration, as its contents will be overwritten on the next yield.
+				if !yield(nil, newProfiles) {
+					return
+				}
+			}
+			return
+		}
+		yield(nil, pd)
 	}
 }
 

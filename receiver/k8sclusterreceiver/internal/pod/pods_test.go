@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -33,8 +32,8 @@ import (
 )
 
 var commonPodMetadata = map[string]string{
-	"foo":                    "bar",
-	"foo1":                   "",
+	"k8s.pod.label.foo":      "bar",
+	"k8s.pod.label.foo1":     "",
 	"pod.creation_timestamp": "0001-01-01T00:00:00Z",
 }
 
@@ -46,7 +45,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
+	mb := metadata.NewMetricsBuilder(metadata.NewDefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
@@ -68,7 +67,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sPodStatusReason.Enabled = true
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
 	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
@@ -249,12 +248,12 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{
-				kindNameLabel:                      kindObjName,
-				kindUIDLabel:                       kindObjUID,
-				string(conventions.K8SNodeNameKey): "test-node",
-				"k8s.pod.name":                     podNameLabel,
-				"k8s.pod.phase":                    "Unknown", // Default value when phase is not set.
-				"k8s.namespace.name":               namespaceLabel,
+				kindNameLabel:        kindObjName,
+				kindUIDLabel:         kindObjUID,
+				"k8s.node.name":      "test-node",
+				"k8s.pod.name":       podNameLabel,
+				"k8s.pod.phase":      "Unknown", // Default value when phase is not set.
+				"k8s.namespace.name": namespaceLabel,
 			},
 		},
 	}
@@ -553,17 +552,17 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodFailed,
 			statusReason: "Evicted",
 			expectedMetadata: map[string]string{
-				"k8s.pod.name":                     "test-pod-0",
-				"k8s.namespace.name":               "test-namespace",
-				"k8s.pod.phase":                    "Failed",
-				"k8s.pod.status_reason":            "Evicted",
-				"k8s.workload.kind":                "Deployment",
-				"k8s.workload.name":                "test-deployment-0",
-				"k8s.replicaset.name":              "test-replicaset-0",
-				"k8s.replicaset.uid":               "test-replicaset-0-uid",
-				"k8s.deployment.name":              "test-deployment-0",
-				"k8s.deployment.uid":               "test-deployment-0-uid",
-				string(conventions.K8SNodeNameKey): "test-node",
+				"k8s.pod.name":          "test-pod-0",
+				"k8s.namespace.name":    "test-namespace",
+				"k8s.pod.phase":         "Failed",
+				"k8s.pod.status_reason": "Evicted",
+				"k8s.workload.kind":     "Deployment",
+				"k8s.workload.name":     "test-deployment-0",
+				"k8s.replicaset.name":   "test-replicaset-0",
+				"k8s.replicaset.uid":    "test-replicaset-0-uid",
+				"k8s.deployment.name":   "test-deployment-0",
+				"k8s.deployment.uid":    "test-deployment-0-uid",
+				"k8s.node.name":         "test-node",
 			},
 		},
 		{
@@ -571,16 +570,16 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodRunning,
 			statusReason: "",
 			expectedMetadata: map[string]string{
-				"k8s.pod.name":                     "test-pod-0",
-				"k8s.namespace.name":               "test-namespace",
-				"k8s.pod.phase":                    "Running",
-				"k8s.workload.kind":                "Deployment",
-				"k8s.workload.name":                "test-deployment-0",
-				"k8s.replicaset.name":              "test-replicaset-0",
-				"k8s.replicaset.uid":               "test-replicaset-0-uid",
-				"k8s.deployment.name":              "test-deployment-0",
-				"k8s.deployment.uid":               "test-deployment-0-uid",
-				string(conventions.K8SNodeNameKey): "test-node",
+				"k8s.pod.name":        "test-pod-0",
+				"k8s.namespace.name":  "test-namespace",
+				"k8s.pod.phase":       "Running",
+				"k8s.workload.kind":   "Deployment",
+				"k8s.workload.name":   "test-deployment-0",
+				"k8s.replicaset.name": "test-replicaset-0",
+				"k8s.replicaset.uid":  "test-replicaset-0-uid",
+				"k8s.deployment.name": "test-deployment-0",
+				"k8s.deployment.uid":  "test-deployment-0-uid",
+				"k8s.node.name":       "test-node",
 			},
 		},
 	}
@@ -617,7 +616,7 @@ func TestPodContainerStateMetrics(t *testing.T) {
 		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sContainerStatusState.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
@@ -655,7 +654,7 @@ func TestPodContainerReasonMetrics(t *testing.T) {
 		},
 	)
 
-	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc := metadata.NewDefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sContainerStatusReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))

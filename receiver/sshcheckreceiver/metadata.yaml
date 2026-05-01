@@ -1,4 +1,9 @@
-type: sshcheck
+display_name: SSH Check Receiver
+type: ssh_check
+deprecated_type: sshcheck
+reaggregation_enabled: true
+
+description: This receiver creates stats by connecting to an SSH server which may be an SFTP server.
 
 status:
   class: receiver
@@ -18,22 +23,21 @@ resource_attributes:
 attributes:
   error.message:
     description: Error message recorded during check
+    requirement_level: recommended
     type: string
 
 metrics:
   sshcheck.duration:
     description: Measures the duration of SSH connection.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   sshcheck.error:
     description: Records errors occurring during SSH check.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -43,16 +47,14 @@ metrics:
   sshcheck.sftp_duration:
     description: Measures SFTP request duration.
     enabled: false
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
   sshcheck.sftp_error:
     description: Records errors occurring during SFTP check.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -62,8 +64,7 @@ metrics:
   sshcheck.sftp_status:
     description: 1 if the SFTP server replied to request, otherwise 0.
     enabled: false
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -72,8 +73,7 @@ metrics:
   sshcheck.status:
     description: 1 if the SSH client successfully connected, otherwise 0.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative

@@ -27,8 +27,8 @@ For instance, if using the existing end-to-end test, the general dataflow can be
   * `JaegerGRPCDataSender` - Implementation of `DataSender` which sends to `jaeger` receiver.
   * `OCTraceDataSender` - Implementation of `DataSender` which sends to `opencensus` receiver.
   * `OCMetricsDataSender` - Implementation of `DataSender` which sends to `opencensus` receiver.
-  * `OTLPTraceDataSender` - Implementation of `DataSender` which sends to `otlp` receiver.
-  * `OTLPMetricsDataSender` - Implementation of `DataSender` which sends to `otlp` receiver.
+  * `OTLPTraceDataSender` - Implementation of `DataSender` which sends to `otlp_grpc` receiver.
+  * `OTLPMetricsDataSender` - Implementation of `DataSender` which sends to `otlp_grpc` receiver.
   * `ZipkinDataSender` - Implementation of `DataSender` which sends to `zipkin` receiver.
 * `DataReceiver` - Receives data from the collector instance under test and stores it for use in test assertions.
   * `OCDataReceiver` - Implementation of `DataReceiver` which receives data from `opencensus` exporter.

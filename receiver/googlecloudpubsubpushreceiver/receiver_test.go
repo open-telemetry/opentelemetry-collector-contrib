@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubpushreceiver/internal/metadata"
@@ -54,13 +53,17 @@ func TestLoadEncodingExtension(t *testing.T) {
 		},
 	}
 
-	_, err := loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, component.ID{}, "test")
-	require.ErrorContains(t, err, `extension "" not found`)
+	_, err := loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, nil, "test")
+	require.ErrorContains(t, err, "encoding must be set")
 
-	_, err = loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, component.MustNewID("test_fail"), "test")
+	zeroID := component.ID{}
+	_, err = loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, &zeroID, "test")
+	require.ErrorContains(t, err, "encoding must be set")
+
+	_, err = loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, componentIDPtr(component.MustNewID("test_fail")), "test")
 	require.ErrorContains(t, err, `extension "test_fail" is not a test unmarshaler`)
 
-	res, err := loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, component.MustNewID("test_succeed"), "test")
+	res, err := loadEncodingExtension[encoding.LogsUnmarshalerExtension](mHost, componentIDPtr(component.MustNewID("test_succeed")), "test")
 	require.NoError(t, err)
 	require.Equal(t, encodingExt, res)
 }
@@ -187,7 +190,7 @@ func TestStartShutdown(t *testing.T) {
 		"invalid_encoding": {
 			pubSubReceiver: &pubSubPushReceiver{
 				cfg: &Config{
-					Encoding: component.MustNewID("fails"),
+					Encoding: componentIDPtr(component.MustNewID("fails")),
 				},
 				nextLogs: consumertest.NewNop(),
 			},
@@ -196,7 +199,7 @@ func TestStartShutdown(t *testing.T) {
 		"valid": {
 			pubSubReceiver: &pubSubPushReceiver{
 				cfg: &Config{
-					Encoding:     component.MustNewID("test"),
+					Encoding:     componentIDPtr(component.MustNewID("test")),
 					ServerConfig: confighttp.NewDefaultServerConfig(),
 				},
 				settings: receivertest.NewNopSettings(metadata.Type),
@@ -255,9 +258,7 @@ func TestTelemetry(t *testing.T) {
 
 	var wg sync.WaitGroup
 	makeRequest := func() {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			resp, err := http.Post(
 				server.URL,
 				"application/json",
@@ -269,7 +270,7 @@ func TestTelemetry(t *testing.T) {
 				assert.NoError(t, errBody)
 			}()
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
-		}()
+		})
 	}
 	pauseRequest := func() {
 		<-started
@@ -296,7 +297,7 @@ func TestTelemetry(t *testing.T) {
 
 	metadatatest.AssertEqualHTTPServerRequestDuration(t, tel, []metricdata.HistogramDataPoint[float64]{{
 		Attributes: attribute.NewSet(
-			attribute.Int(string(semconv.HTTPResponseStatusCodeKey), http.StatusOK),
+			attribute.Int("http.response.status_code", http.StatusOK),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 

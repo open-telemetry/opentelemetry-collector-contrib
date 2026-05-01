@@ -35,6 +35,13 @@ func (rb *ResourceBuilder) SetHaproxyProxyName(val string) {
 	}
 }
 
+// SetHaproxyServerState sets provided value as "haproxy.server.state" attribute.
+func (rb *ResourceBuilder) SetHaproxyServerState(val string) {
+	if rb.config.HaproxyServerState.Enabled {
+		rb.res.Attributes().PutStr("haproxy.server.state", val)
+	}
+}
+
 // SetHaproxyServiceName sets provided value as "haproxy.service_name" attribute.
 func (rb *ResourceBuilder) SetHaproxyServiceName(val string) {
 	if rb.config.HaproxyServiceName.Enabled {

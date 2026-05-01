@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !aix
+
 package pulsarexporter
 
 import (
@@ -46,13 +48,12 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
-					queue.Enabled = true
 					queue.NumConsumers = 2
 					queue.QueueSize = 10
 					return queue
-				}(),
+				}()),
 				Endpoint:                "pulsar://localhost:6650",
 				Topic:                   "spans",
 				Encoding:                "otlp-spans",

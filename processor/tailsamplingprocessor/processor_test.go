@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -18,17 +19,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/tailstorageextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/pkg/samplingpolicy"
 )
 
@@ -48,6 +52,7 @@ var (
 			},
 		},
 	}
+	testExtensionID = component.MustNewID("my_extension")
 )
 
 type TestPolicyEvaluator struct {
@@ -60,6 +65,10 @@ func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.Trac
 	close(t.Started)
 	<-t.CouldContinue
 	return t.pe.Evaluate(ctx, traceID, trace)
+}
+
+func (t *TestPolicyEvaluator) IsStateful() bool {
+	return t.pe.IsStateful()
 }
 
 // testTSPController is a set of mechanisms to make the TSP do predictable
@@ -196,8 +205,9 @@ func TestTraceIntegrity(t *testing.T) {
 
 	controller := newTestTSPController()
 	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
 		Options: []Option{
 			withPolicies(policies),
 			withTestController(controller),
@@ -211,20 +221,20 @@ func TestTraceIntegrity(t *testing.T) {
 		require.NoError(t, p.Shutdown(t.Context()))
 	}()
 
-	mpe1.NextDecision = samplingpolicy.Sampled
+	mpe1.SetDecision(samplingpolicy.Sampled)
 
 	// Generate and deliver first span
 	require.NoError(t, p.ConsumeTraces(t.Context(), traces))
 
 	// The first tick won't do anything
 	controller.waitForTick()
-	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount())
 
 	// This will cause policy evaluations on the first span
 	controller.waitForTick()
 
 	// Both policies should have been evaluated once
-	assert.Equal(t, 4, mpe1.EvaluationCount)
+	assert.Equal(t, 4, mpe1.EvaluationCount())
 
 	consumed := nextConsumer.AllTraces()
 	require.Len(t, consumed, 4)
@@ -249,6 +259,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	traceIDs, batches := generateIDsAndBatches(128)
 	controller := newTestTSPController()
 	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -297,6 +308,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	controller := newTestTSPController()
 	var wg sync.WaitGroup
 	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -365,6 +377,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 
 	var wg sync.WaitGroup
 	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
@@ -406,6 +419,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	controller := newTestTSPController()
 	traceIDs, batches := generateIDsAndBatches(210)
 	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               defaultNumTraces,
 		ExpectedNewTracesPerSec: 64,
@@ -481,7 +495,8 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
 	cfg := Config{
-		DecisionWait: 10 * time.Millisecond,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     10 * time.Millisecond,
 		// idToTrace map size is 2x the number of batches, to eliminate "expected"
 		// dropped too early errors.
 		NumTraces:  uint64(numBatches * 2),
@@ -521,8 +536,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 	// For each batch, we consume the same trace repeatedly for at least 2x the decision wait time
 	// this ensures that batches are being consumed concurrently with policy evaluation.
 	for _, batch := range batches {
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			start := time.Now()
 			// The important thing here is that we are writing as close as
 			// possible to the moment when the policy is evaluated. We can't
@@ -535,8 +549,7 @@ func TestConsumptionDuringPolicyEvaluation(t *testing.T) {
 					errCh <- err
 				}
 			}
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 	close(errCh)
@@ -558,8 +571,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -631,8 +645,9 @@ func TestSetSamplingPolicy(t *testing.T) {
 	telem := setupTestTelemetry()
 
 	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -709,9 +724,10 @@ func TestSubSecondDecisionTime(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
 	tsp, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
-		DecisionWait: 500 * time.Millisecond,
-		NumTraces:    defaultNumTraces,
-		PolicyCfgs:   testPolicy,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     500 * time.Millisecond,
+		NumTraces:        defaultNumTraces,
+		PolicyCfgs:       testPolicy,
 		Options: []Option{
 			withTickerFrequency(10 * time.Millisecond),
 		},
@@ -766,8 +782,9 @@ func TestDuplicatePolicyName(t *testing.T) {
 	}
 
 	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
 			{sharedPolicyCfg: alwaysSample},
 			{sharedPolicyCfg: alwaysSample},
@@ -789,8 +806,9 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -854,6 +872,103 @@ func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
 	assert.Contains(t, sampledTraceIDs, uInt64ToTraceID(2))
 }
 
+func TestDecisionHooks(t *testing.T) {
+	controller := newTestTSPController()
+
+	// Track hook invocations
+	var sampledHookCalls []struct {
+		id pcommon.TraceID
+		td *TraceData
+	}
+	var nonSampledHookCalls []struct {
+		id pcommon.TraceID
+		td *TraceData
+	}
+
+	sampledHook := func(_ context.Context, id pcommon.TraceID, td *TraceData) {
+		sampledHookCalls = append(sampledHookCalls, struct {
+			id pcommon.TraceID
+			td *TraceData
+		}{id: id, td: td})
+	}
+
+	nonSampledHook := func(_ context.Context, id pcommon.TraceID, td *TraceData) {
+		nonSampledHookCalls = append(nonSampledHookCalls, struct {
+			id pcommon.TraceID
+			td *TraceData
+		}{id: id, td: td})
+	}
+
+	cfg := Config{
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "sample-high-latency",
+					Type: Latency,
+					LatencyCfg: LatencyCfg{
+						ThresholdMs: 100,
+					},
+				},
+			},
+		},
+		Options: []Option{
+			withTestController(controller),
+			WithSampledHooks(sampledHook),
+			WithNonSampledHooks(nonSampledHook),
+		},
+	}
+
+	msp := new(consumertest.TracesSink)
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	// Create a trace that will be sampled (high latency)
+	sampledTraceID := uInt64ToTraceID(1)
+	sampledTrace := simpleTracesWithID(sampledTraceID)
+	sampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-200 * time.Millisecond)))
+	sampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	// Create a trace that will not be sampled (low latency)
+	nonSampledTraceID := uInt64ToTraceID(2)
+	nonSampledTrace := simpleTracesWithID(nonSampledTraceID)
+	nonSampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-50 * time.Millisecond)))
+	nonSampledTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), sampledTrace))
+	require.NoError(t, p.ConsumeTraces(t.Context(), nonSampledTrace))
+
+	controller.waitForTick() // First tick does nothing
+	controller.waitForTick() // Second tick makes decisions
+
+	// Verify hooks were called
+	require.Len(t, sampledHookCalls, 1, "sampled hook should be called once")
+	require.Len(t, nonSampledHookCalls, 1, "non-sampled hook should be called once")
+
+	// Verify sampled hook data
+	sampledCall := sampledHookCalls[0]
+	assert.Equal(t, sampledTraceID, sampledCall.id)
+	assert.NotNil(t, sampledCall.td)
+	assert.Equal(t, samplingpolicy.Sampled, sampledCall.td.FinalDecision)
+	assert.Equal(t, "sample-high-latency", sampledCall.td.PolicyName)
+	assert.Equal(t, int64(1), sampledCall.td.SpanCount)
+
+	// Verify non-sampled hook data
+	nonSampledCall := nonSampledHookCalls[0]
+	assert.Equal(t, nonSampledTraceID, nonSampledCall.id)
+	assert.NotNil(t, nonSampledCall.td)
+	assert.Equal(t, samplingpolicy.NotSampled, nonSampledCall.td.FinalDecision)
+	assert.Empty(t, nonSampledCall.td.PolicyName, "PolicyName should be empty for not sampled traces")
+	assert.Equal(t, int64(1), nonSampledCall.td.SpanCount)
+}
+
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
@@ -896,6 +1011,9 @@ func generateIDsAndBatches(numIDs int) ([]pcommon.TraceID, []ptrace.Traces) {
 			span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			span.SetTraceID(traceIDs[i])
 
+			if j != 0 {
+				span.SetParentSpanID(uInt64ToSpanID(uint64(spanID)))
+			}
 			spanID++
 			span.SetSpanID(uInt64ToSpanID(uint64(spanID)))
 			tds = append(tds, td)
@@ -920,16 +1038,43 @@ func uInt64ToSpanID(id uint64) pcommon.SpanID {
 }
 
 type mockPolicyEvaluator struct {
-	NextDecision    samplingpolicy.Decision
-	NextError       error
-	EvaluationCount int
+	mu sync.Mutex
+
+	nextDecision    samplingpolicy.Decision
+	nextError       error
+	evaluationCount int
 }
 
 var _ samplingpolicy.Evaluator = (*mockPolicyEvaluator)(nil)
 
 func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *samplingpolicy.TraceData) (samplingpolicy.Decision, error) {
-	m.EvaluationCount++
-	return m.NextDecision, m.NextError
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.evaluationCount++
+	return m.nextDecision, m.nextError
+}
+
+func (*mockPolicyEvaluator) IsStateful() bool {
+	return false
+}
+
+func (m *mockPolicyEvaluator) SetDecision(decision samplingpolicy.Decision) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.nextDecision = decision
+}
+
+func (m *mockPolicyEvaluator) SetError(nextError error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.nextError = nextError
+}
+
+func (m *mockPolicyEvaluator) EvaluationCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.evaluationCount
 }
 
 type syncIDBatcher struct {
@@ -937,6 +1082,7 @@ type syncIDBatcher struct {
 	openBatch idbatcher.Batch
 	batchPipe chan idbatcher.Batch
 	stopped   bool
+	currentID uint64
 }
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
@@ -946,16 +1092,33 @@ func newSyncIDBatcher() idbatcher.Batcher {
 	batches <- nil
 	return &syncIDBatcher{
 		batchPipe: batches,
+		openBatch: idbatcher.Batch{},
 	}
 }
 
-func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) {
+func (s *syncIDBatcher) AddToCurrentBatch(id pcommon.TraceID) uint64 {
 	s.Lock()
+	defer s.Unlock()
 	if s.stopped {
 		panic("cannot add to stopped batcher!")
 	}
-	s.openBatch = append(s.openBatch, id)
-	s.Unlock()
+	s.openBatch[id] = struct{}{}
+	return s.currentID
+}
+
+// MoveToEarlierBatch is a noop for a sync batcher as there is only one pending batch.
+func (s *syncIDBatcher) MoveToEarlierBatch(_ pcommon.TraceID, currentBatch, _ uint64) uint64 {
+	s.Lock()
+	defer s.Unlock()
+	return currentBatch
+}
+
+func (s *syncIDBatcher) RemoveFromBatch(id pcommon.TraceID, batch uint64) {
+	s.Lock()
+	defer s.Unlock()
+	if batch == s.currentID {
+		delete(s.openBatch, id)
+	}
 }
 
 func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) {
@@ -964,12 +1127,15 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 	firstBatch, ok := <-s.batchPipe
 	// When batchPipe is closed it means we have stopped and just need to return the openBatch as the last entries.
 	if !ok {
-		return s.openBatch, false
+		batch := s.openBatch
+		s.openBatch = nil
+		return batch, false
 	}
 	// Do not move the open batch to the channel if we are stopped. It will panic, we return it once the channel is closed instead.
 	if !s.stopped {
 		s.batchPipe <- s.openBatch
-		s.openBatch = nil
+		s.openBatch = idbatcher.Batch{}
+		s.currentID++
 	}
 	return firstBatch, true
 }
@@ -1086,13 +1252,247 @@ func TestNumericAttributeCases(t *testing.T) {
 	}
 }
 
+func TestDropLargeTraces(t *testing.T) {
+	controller := newTestTSPController()
+
+	traces := ptrace.NewTraces()
+	// Create a large trace (clearly more than 1024 bytes).
+	largeTrace := traces.ResourceSpans().AppendEmpty()
+	ss := largeTrace.ScopeSpans().AppendEmpty()
+	largeValue := strings.Repeat("bar", 1024)
+	sp := ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	sp.Attributes().PutStr("foo", largeValue)
+
+	// Small trace with just one attribute.
+	smallTrace := traces.ResourceSpans().AppendEmpty()
+	ss = smallTrace.ScopeSpans().AppendEmpty()
+	sp = ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 5}))
+	sp.Attributes().PutStr("foo", "short")
+
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(4),
+		ExpectedNewTracesPerSec: 64,
+		MaximumTraceSizeBytes:   1024,
+		PolicyCfgs:              testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	processor, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = processor.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = processor.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), traces))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 1)
+
+	// Verify that the config can be changed without restarting the processor.
+	processor.(*tailSamplingSpanProcessor).SetMaximumTraceSizeBytes(1 << 20)
+	controller.waitForTick()
+
+	largeOnly := ptrace.NewTraces()
+	// Create a another large trace as ConsumeTraces is not guaranteed to preserve the trace.
+	largeTrace = largeOnly.ResourceSpans().AppendEmpty()
+	ss = largeTrace.ScopeSpans().AppendEmpty()
+	sp = ss.Spans().AppendEmpty()
+	sp.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 6}))
+	sp.Attributes().PutStr("foo", largeValue)
+
+	require.NoError(t, processor.ConsumeTraces(t.Context(), largeOnly))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces = nextConsumer.AllTraces()
+	// The sink will still contain the original trace.
+	assert.Len(t, allSampledTraces, 2)
+
+	// These traces should not count as dropped too early as we record a separate metric.
+	// Use Eventually to ensure metric aggregation is complete before asserting.
+	// This handles async metric pipeline timing, especially in slower CI environments.
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		var md metricdata.ResourceMetrics
+		err := telem.reader.Collect(t.Context(), &md)
+		require.NoError(collect, err)
+
+		expectedTooEarly := metricdata.Metrics{
+			Name: "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+			Unit: "{traces}",
+			Data: metricdata.Sum[int64]{
+				IsMonotonic: true,
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 0,
+					},
+				},
+			},
+		}
+		tooEarly := telem.getMetric(expectedTooEarly.Name, md)
+		// Verify metric exists and has expected structure
+		require.NotNil(collect, tooEarly)
+		require.Equal(collect, expectedTooEarly.Name, tooEarly.Name)
+		require.Equal(collect, expectedTooEarly.Unit, tooEarly.Unit)
+		// Validate metric metadata (IsMonotonic and Temporality)
+		tooEarlySum := tooEarly.Data.(metricdata.Sum[int64])
+		require.True(collect, tooEarlySum.IsMonotonic, "tooEarly metric must be monotonic")
+		require.Equal(collect, metricdata.CumulativeTemporality, tooEarlySum.Temporality,
+			"tooEarly metric must have CumulativeTemporality")
+		require.Len(collect,
+			tooEarlySum.DataPoints,
+			len(expectedTooEarly.Data.(metricdata.Sum[int64]).DataPoints))
+		require.Equal(collect, int64(0), tooEarlySum.DataPoints[0].Value)
+
+		expectedTooLarge := metricdata.Metrics{
+			Name: "otelcol_processor_tail_sampling_traces_dropped_too_large",
+			Unit: "{traces}",
+			Data: metricdata.Sum[int64]{
+				IsMonotonic: true,
+				Temporality: metricdata.CumulativeTemporality,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		}
+		tooLarge := telem.getMetric(expectedTooLarge.Name, md)
+		// Verify metric exists and has expected structure
+		require.NotNil(collect, tooLarge)
+		require.Equal(collect, expectedTooLarge.Name, tooLarge.Name)
+		require.Equal(collect, expectedTooLarge.Unit, tooLarge.Unit)
+		// Validate metric metadata (IsMonotonic and Temporality)
+		tooLargeSum := tooLarge.Data.(metricdata.Sum[int64])
+		require.True(collect, tooLargeSum.IsMonotonic, "tooLarge metric must be monotonic")
+		require.Equal(collect, metricdata.CumulativeTemporality, tooLargeSum.Temporality,
+			"tooLarge metric must have CumulativeTemporality")
+		require.Len(collect,
+			tooLargeSum.DataPoints,
+			len(expectedTooLarge.Data.(metricdata.Sum[int64]).DataPoints))
+		require.Equal(collect, int64(1), tooLargeSum.DataPoints[0].Value)
+	}, 2*time.Second, 100*time.Millisecond)
+}
+
+// TestDeleteQueueCleared verifies that all in memory traces are removed from
+// both the idToTrace map as well as the deleteTraceQueue.
+func TestDeleteQueueCleared(t *testing.T) {
+	controller := newTestTSPController()
+
+	traceIDs, batches := generateIDsAndBatches(128)
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		// Use cache so that traces are cleared from memory.
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	controller.waitForTick()
+	controller.waitForTick()
+
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Len(t, allSampledTraces, 128)
+	// All traces should be flushed from the map.
+	assert.Empty(t, sp.(*tailSamplingSpanProcessor).idToTrace)
+	// All traces should be removed from the delete queue.
+	assert.Zero(t, sp.(*tailSamplingSpanProcessor).deleteTraceQueue.Len())
+}
+
+func TestRootReceivedBatcher(t *testing.T) {
+	traceIDs, batches := generateIDsAndBatches(128)
+	cfg := Config{
+		SamplingStrategy:        samplingStrategyTraceComplete,
+		DecisionWait:            time.Minute,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		DecisionCache: DecisionCacheConfig{
+			SampledCacheSize:    128,
+			NonSampledCacheSize: 128,
+		},
+		PolicyCfgs: []PolicyCfg{
+			{sharedPolicyCfg: sharedPolicyCfg{
+				Name: "test-policy",
+				Type: Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{
+					SamplingPercentage: 50,
+				},
+			}},
+		},
+		DecisionWaitAfterRootReceived: time.Second,
+		DropPendingTracesOnShutdown:   true,
+	}
+	telem := setupTestTelemetry()
+	telemetrySettings := telem.newSettings()
+	nextConsumer := new(consumertest.TracesSink)
+	sp, err := newTracesProcessor(t.Context(), telemetrySettings, nextConsumer, cfg)
+	require.NoError(t, err)
+
+	err = sp.Start(t.Context(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		err = sp.Shutdown(t.Context())
+		require.NoError(t, err)
+	}()
+
+	for _, batch := range batches {
+		require.NoError(t, sp.ConsumeTraces(t.Context(), batch))
+	}
+	// Wait long enough that we pass the decision wait after a root is received,
+	// but no where near the base decision wait.
+	time.Sleep(2 * time.Second)
+
+	// Make sure about half of traces are sampled before a tick is called.
+	allSampledTraces := nextConsumer.AllTraces()
+	assert.Less(t, len(allSampledTraces), len(traceIDs)*6/10)
+	assert.Greater(t, len(allSampledTraces), len(traceIDs)*4/10)
+}
+
 func TestExtension(t *testing.T) {
 	controller := newTestTSPController()
 	msp := new(consumertest.TracesSink)
 
 	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
@@ -1123,6 +1523,107 @@ func TestExtension(t *testing.T) {
 	assert.Equal(t, map[string]any{"foo": "bar"}, host.extension.cfg)
 }
 
+func TestTailStorageExtensionFromHost(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	controller := newTestTSPController()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		TailStorageID:    &testExtensionID,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	host := &extensionHost{}
+	require.NoError(t, p.Start(t.Context(), host))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Positive(t, host.extension.appendCount)
+	assert.Positive(t, host.extension.takeCount)
+}
+
+func TestTailStorageExtensionNotConfigured(t *testing.T) {
+	controller := newTestTSPController()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		Options: []Option{
+			withTestController(controller),
+		},
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	host := &extensionHost{}
+	require.NoError(t, p.Start(t.Context(), host))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	require.NoError(t, p.ConsumeTraces(t.Context(), simpleTraces()))
+	controller.waitForTick()
+	controller.waitForTick()
+
+	assert.Len(t, msp.AllTraces(), 1)
+	assert.Zero(t, host.extension.appendCount)
+	assert.Zero(t, host.extension.takeCount)
+}
+
+func TestTailStorageExtensionNotFound(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		TailStorageID:    &testExtensionID,
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), componenttest.NewNopHost())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "tail storage extension 'my_extension' not found")
+}
+
+func TestTailStorageExtensionWrongType(t *testing.T) {
+	enableTailStorageFeatureGateForTest(t)
+
+	cfg := Config{
+		DecisionWait:     defaultTestDecisionWait,
+		NumTraces:        defaultNumTraces,
+		SamplingStrategy: samplingStrategyTraceComplete,
+		PolicyCfgs:       testPolicy,
+		TailStorageID:    &testExtensionID,
+	}
+	p, err := newTracesProcessor(t.Context(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
+	require.NoError(t, err)
+
+	err = p.Start(t.Context(), &nonTailStorageExtensionHost{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "non-tail-storage extension 'my_extension' found")
+}
+
 type extensionHost struct {
 	extension *extension
 }
@@ -1132,22 +1633,53 @@ func (h *extensionHost) GetExtensions() map[component.ID]component.Component {
 		h.extension = &extension{}
 	}
 	return map[component.ID]component.Component{
-		component.MustNewID("my_extension"): h.extension,
+		testExtensionID: h.extension,
 	}
 }
 
 type extension struct {
 	policyName string
 	cfg        map[string]any
+	storage    tailstorageextension.TailStorage
+	appendCount,
+	takeCount,
+	deleteCount int
 }
 
-var _ samplingpolicy.Extension = &extension{}
+var (
+	_ samplingpolicy.Extension         = &extension{}
+	_ tailstorageextension.TailStorage = &extension{}
+)
 
 // NewEvaluator implements samplingpolicy.Extension.
 func (e *extension) NewEvaluator(policyName string, cfg map[string]any) (samplingpolicy.Evaluator, error) {
 	e.policyName = policyName
 	e.cfg = cfg
 	return nil, nil
+}
+
+func (e *extension) ensureStorage() {
+	if e.storage == nil {
+		e.storage = tailstorageextension.NewInMemoryTailStorage()
+	}
+}
+
+func (e *extension) Append(traceID pcommon.TraceID, rss ptrace.ResourceSpans) {
+	e.ensureStorage()
+	e.storage.Append(traceID, rss)
+	e.appendCount++
+}
+
+func (e *extension) Take(traceID pcommon.TraceID) (ptrace.Traces, bool) {
+	e.ensureStorage()
+	e.takeCount++
+	return e.storage.Take(traceID)
+}
+
+func (e *extension) Delete(traceID pcommon.TraceID) {
+	e.ensureStorage()
+	e.storage.Delete(traceID)
+	e.deleteCount++
 }
 
 // Start implements component.Component.
@@ -1157,5 +1689,32 @@ func (*extension) Start(_ context.Context, _ component.Host) error {
 
 // Shutdown implements component.Component.
 func (*extension) Shutdown(_ context.Context) error {
+	return nil
+}
+
+type nonTailStorageExtensionHost struct{}
+
+func (*nonTailStorageExtensionHost) GetExtensions() map[component.ID]component.Component {
+	return map[component.ID]component.Component{
+		testExtensionID: &nonTailStorageExtension{},
+	}
+}
+
+func enableTailStorageFeatureGateForTest(t *testing.T) {
+	t.Helper()
+	prev := tailstorageextension.IsFeatureGateEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(tailstorageextension.FeatureGateID, prev))
+	})
+}
+
+type nonTailStorageExtension struct{}
+
+func (*nonTailStorageExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (*nonTailStorageExtension) Shutdown(context.Context) error {
 	return nil
 }

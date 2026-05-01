@@ -31,8 +31,10 @@ ignored_paths:
   - pkg/translator/prometheusremotewrite
   - pkg/translator/signalfx
   - pkg/translator/skywalking
+  - pkg/translator/splunk
   - pkg/winperfcounters
   - pkg/xk8stest
+  - processor/lookupprocessor
   - processor/tailsamplingprocessor
   - receiver/hostmetricsreceiver # issue with the parser not identifying Config as a config struct
   - receiver/pulsarreceiver # 38930

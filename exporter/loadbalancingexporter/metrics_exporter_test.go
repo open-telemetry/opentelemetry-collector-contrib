@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -111,6 +110,7 @@ func TestMetricsExporterStart(t *testing.T) {
 			"ok",
 			func() *metricExporterImp {
 				p, _ := newMetricsExporter(ts, serviceBasedRoutingConfig())
+				p.loadBalancer.res = &mockResolver{}
 				return p
 			}(),
 			nil,
@@ -285,6 +285,30 @@ func TestSplitMetrics(t *testing.T) {
 			name:      "duplicate_stream_id",
 			splitFunc: splitMetricsByStreamID,
 		},
+		{
+			name: "basic_attributes",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key", "scope_key", "aaa"})
+			},
+		},
+		{
+			name: "attributes_resource_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"resource_key"})
+			},
+		},
+		{
+			name: "attributes_scope_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"scope_key"})
+			},
+		},
+		{
+			name: "attributes_datapoint_only",
+			splitFunc: func(md pmetric.Metrics) map[string]pmetric.Metrics {
+				return splitMetricsByAttributes(md, []string{"aaa"})
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -305,13 +329,94 @@ func TestSplitMetrics(t *testing.T) {
 	}
 }
 
+func TestSplitMetricsByAttributes_StableEncodingAvoidsConcatenationCollisions(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(aValue, bValue string) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("a", aValue)
+		rm.Resource().Attributes().PutStr("b", bValue)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric("foo", "bar")
+	buildResourceMetric("foob", "ar")
+
+	out := splitMetricsByAttributes(md, []string{"a", "b"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "a=foo|b=bar|")
+	assert.Contains(t, out, "a=foob|b=ar|")
+}
+
+func TestSplitMetricsByAttributes_StableEncodingIncludesMissingAttributes(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource_key", "res1")
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	metric := sm.Metrics().AppendEmpty()
+	metric.SetName("test.metric")
+
+	sum := metric.SetEmptySum()
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	sum.SetIsMonotonic(false)
+
+	dp := sum.DataPoints().AppendEmpty()
+	dp.SetIntValue(1)
+	dp.Attributes().PutStr("aaa", "dp1")
+
+	out := splitMetricsByAttributes(md, []string{"resource_key", "missing", "aaa"})
+	require.Len(t, out, 1)
+	assert.Contains(t, out, "resource_key=res1|missing=|aaa=dp1|")
+}
+
+func TestSplitMetricsByAttributes_NonStringValues(t *testing.T) {
+	md := pmetric.NewMetrics()
+
+	buildResourceMetric := func(shard int64) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutInt("shard", shard)
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("test.metric")
+
+		sum := metric.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		sum.SetIsMonotonic(false)
+
+		dp := sum.DataPoints().AppendEmpty()
+		dp.SetIntValue(1)
+	}
+
+	buildResourceMetric(1)
+	buildResourceMetric(2)
+
+	out := splitMetricsByAttributes(md, []string{"shard"})
+	require.Len(t, out, 2)
+	assert.Contains(t, out, "shard=1|")
+	assert.Contains(t, out, "shard=2|")
+}
+
 func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -329,6 +434,11 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -340,9 +450,9 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
-
 			p, err := newMetricsExporter(createSettings, config)
 			require.NoError(t, err)
 			require.NotNil(t, p)
@@ -487,8 +597,9 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		name       string
-		routingKey string
+		name              string
+		routingKey        string
+		routingAttributes []string
 	}{
 		{
 			name:       "resource_service_name",
@@ -506,6 +617,11 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 			name:       "stream_id",
 			routingKey: streamIDRoutingStr,
 		},
+		{
+			name:              "attributes",
+			routingKey:        attrRoutingStr,
+			routingAttributes: []string{"resource_key", "scope_key", "aaa"},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -517,7 +633,8 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 				Resolver: ResolverSettings{
 					Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}}),
 				},
-				RoutingKey: tc.routingKey,
+				RoutingKey:        tc.routingKey,
+				RoutingAttributes: tc.routingAttributes,
 			}
 
 			p, err := newMetricsExporter(createSettings, config)
@@ -913,7 +1030,7 @@ func randomMetrics(t require.TestingT, rmCount, smCount, mCount, dpCount int) pm
 	for range rmCount {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
-			string(conventions.ServiceNameKey): fmt.Sprintf("service-%d", rand.IntN(512)),
+			"service.name": fmt.Sprintf("service-%d", rand.IntN(512)),
 		})
 		require.NoError(t, err)
 
@@ -1070,7 +1187,7 @@ func simpleMetricsWithServiceName() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
+	rmetrics.Resource().Attributes().PutStr("service.name", serviceName1)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
 	return metrics
 }
@@ -1079,7 +1196,7 @@ func simpleMetricsWithResource() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
+	rmetrics.Resource().Attributes().PutStr("service.name", serviceName1)
 	rmetrics.Resource().Attributes().PutStr(keyAttr1, valueAttr1)
 	rmetrics.Resource().Attributes().PutInt(keyAttr2, valueAttr2)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
@@ -1090,10 +1207,10 @@ func twoServicesWithSameMetricName() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(2)
 	rs1 := metrics.ResourceMetrics().AppendEmpty()
-	rs1.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName1)
+	rs1.Resource().Attributes().PutStr("service.name", serviceName1)
 	appendSimpleMetricWithID(rs1, signal1Name)
 	rs2 := metrics.ResourceMetrics().AppendEmpty()
-	rs2.Resource().Attributes().PutStr(string(conventions.ServiceNameKey), serviceName2)
+	rs2.Resource().Attributes().PutStr("service.name", serviceName2)
 	appendSimpleMetricWithID(rs2, signal1Name)
 	return metrics
 }

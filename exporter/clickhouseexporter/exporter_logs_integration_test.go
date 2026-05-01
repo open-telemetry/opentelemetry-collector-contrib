@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -35,7 +34,7 @@ func newTestLogsExporter(t *testing.T, dsn string, testSchemaFeatures bool, fns 
 	// Tests the schema feature flags by disabling newer columns. The insert logic should adapt.
 	if testSchemaFeatures {
 		exporter.schemaFeatures.EventName = false
-		exporter.renderInsertLogsSQL()
+		require.NoError(t, exporter.renderInsertLogsSQL())
 	}
 
 	t.Cleanup(func() { _ = exporter.shutdown(t.Context()) })
@@ -55,7 +54,6 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody, testSchemaF
 
 	type log struct {
 		Timestamp          time.Time         `ch:"Timestamp"`
-		TimestampTime      time.Time         `ch:"TimestampTime"`
 		TraceID            string            `ch:"TraceId"`
 		SpanID             string            `ch:"SpanId"`
 		TraceFlags         uint8             `ch:"TraceFlags"`
@@ -75,7 +73,6 @@ func verifyExportLogs(t *testing.T, exporter *logsExporter, mapBody, testSchemaF
 
 	expectedLog := log{
 		Timestamp:         telemetryTimestamp,
-		TimestampTime:     telemetryTimestamp,
 		TraceID:           "01020300000000000000000000000000",
 		SpanID:            "0102030000000000",
 		SeverityText:      "error",
@@ -141,7 +138,7 @@ func simpleLogs(count int, mapBody bool) plog.Logs {
 			r.Body().SetStr("error message")
 		}
 
-		r.Attributes().PutStr(string(conventions.ServiceNamespaceKey), "default")
+		r.Attributes().PutStr("service.namespace", "default")
 		r.SetFlags(plog.DefaultLogRecordFlags)
 		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		r.SetSpanID([8]byte{1, 2, 3, byte(i)})

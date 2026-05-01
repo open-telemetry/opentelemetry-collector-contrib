@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -140,7 +139,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
-		assert.Equal(t, conventions.SchemaURL, rm.SchemaUrl(),
+		assert.Equal(t, "https://opentelemetry.io/schemas/1.9.0", rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
 			maps.Copy(returnedMetrics, returnedMetricNames)
@@ -256,6 +255,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(b.Context(), componenttest.NewNopHost()))
+	b.Cleanup(func() { require.NoError(b, receiver.Shutdown(b.Context())) })
 
 	for b.Loop() {
 		tickerCh <- time.Now()

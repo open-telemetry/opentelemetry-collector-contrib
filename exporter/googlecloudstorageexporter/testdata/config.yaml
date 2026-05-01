@@ -1,12 +1,55 @@
-googlecloudstorage:
+google_cloud_storage:
   encoding: test
   bucket:
     region: test-region
     name: test-bucket
     project_id: test-project-id
 
-googlecloudstorage/empty_bucket_name:
+google_cloud_storage/with_partition:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    partition:
+      format: year=%Y
+      prefix: my-logs
+
+google_cloud_storage/empty_bucket_name:
   encoding: test
   bucket:
     region: test-region
     project_id: test-project-id
+
+google_cloud_storage/invalid_partition_format:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    partition:
+      format: year=%invalid
+
+google_cloud_storage/with_gzip_compression:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    compression: gzip
+
+google_cloud_storage/with_zstd_compression:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    compression: zstd
+
+google_cloud_storage/unsupported_compression:
+  encoding: test
+  bucket:
+    region: test-region
+    name: test-bucket
+    project_id: test-project-id
+    compression: snappy

@@ -15,6 +15,25 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+const (
+	grantTypeClientCredentials = "client_credentials"
+)
+
+func newClientCredentialsGrantTypeConfig(cfg *Config) *clientCredentialsConfig {
+	return &clientCredentialsConfig{
+		Config: clientcredentials.Config{
+			ClientID:       cfg.ClientID,
+			ClientSecret:   string(cfg.ClientSecret),
+			TokenURL:       cfg.TokenURL,
+			Scopes:         cfg.Scopes,
+			EndpointParams: cfg.EndpointParams,
+		},
+		ClientIDFile:     cfg.ClientIDFile,
+		ClientSecretFile: cfg.ClientSecretFile,
+		ExpiryBuffer:     cfg.ExpiryBuffer,
+	}
+}
+
 // clientCredentialsConfig is a clientcredentials.Config wrapper to allow
 // values read from files in the ClientID and ClientSecret fields.
 //
@@ -92,7 +111,11 @@ func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, err
 }
 
 func (c *clientCredentialsConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
-	return oauth2.ReuseTokenSourceWithExpiry(nil, clientCredentialsTokenSource{ctx: ctx, config: c}, c.ExpiryBuffer)
+	return clientCredentialsTokenSource{ctx: ctx, config: c}
+}
+
+func (c *clientCredentialsConfig) TokenEndpoint() string {
+	return c.TokenURL
 }
 
 func (ts clientCredentialsTokenSource) Token() (*oauth2.Token, error) {

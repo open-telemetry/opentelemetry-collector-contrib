@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -53,7 +54,10 @@ func TestMultipleCreateWithAPIServer(t *testing.T) {
 	cfg.APIServer = APIServer{
 		Enabled: true,
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:9090",
+			NetAddr: confignet.AddrConfig{
+				Transport: "tcp",
+				Endpoint:  "localhost:9090",
+			},
 		},
 	}
 	set := receivertest.NewNopSettings(metadata.Type)

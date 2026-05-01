@@ -34,6 +34,8 @@ type Server struct {
 	aggregator     *status.Aggregator
 	startTimestamp time.Time
 	doneWg         sync.WaitGroup
+	doneCh         chan struct{}
+	doneOnce       sync.Once
 }
 
 var (
@@ -53,14 +55,19 @@ func NewServer(
 		telemetry:  telemetry,
 		mux:        http.NewServeMux(),
 		aggregator: aggregator,
+		doneCh:     make(chan struct{}),
 	}
 
 	if legacyConfig.UseV2 {
 		srv.httpConfig = config.ServerConfig
+		includeAttributes := true // default for backward compatibility
+		if config.Status.Enabled {
+			includeAttributes = config.Status.IncludeAttributes
+		}
 		if componentHealthConfig != nil {
-			srv.responder = componentHealthResponder(&now, componentHealthConfig)
+			srv.responder = componentHealthResponder(&now, componentHealthConfig, includeAttributes)
 		} else {
-			srv.responder = defaultResponder(&now)
+			srv.responder = defaultResponder(&now, includeAttributes)
 		}
 		if config.Status.Enabled {
 			srv.mux.Handle(config.Status.Path, srv.statusHandler())
@@ -93,29 +100,34 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 
 	ln, err := s.httpConfig.ToListener(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.Endpoint, err)
+		// Server never started, ensure doneCh is closed so shutdown doesn't block
+		s.doneOnce.Do(func() { close(s.doneCh) })
+		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.NetAddr.Endpoint, err)
 	}
 
-	s.doneWg.Add(1)
-	go func() {
-		defer s.doneWg.Done()
+	s.doneWg.Go(func() {
+		defer s.doneOnce.Do(func() { close(s.doneCh) })
 
 		if err = s.httpServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 		}
-	}()
+	})
 
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
-func (s *Server) Shutdown(context.Context) error {
+func (s *Server) Shutdown(ctx context.Context) error {
 	if s.httpServer == nil {
 		return nil
 	}
 	s.httpServer.Close()
-	s.doneWg.Wait()
-	return nil
+	select {
+	case <-s.doneCh:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // NotifyConfig implements the extension.ConfigWatcher interface.

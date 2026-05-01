@@ -349,7 +349,7 @@ operations via RemoteConfigStatus message.
 The Supervisor will sanitize the configuration of the components that
 access the local filesystem according to the access_dirs config setting
 to only allow specified directories and their subdirectories. This
-applies for example to \`include\` setting of the \`filelog\` receiver
+applies for example to \`include\` setting of the \`file_log\` receiver
 or to \`directory\` setting of the \`file_storage\` extension.
 
 The Supervisor will locate all such entries while building the Collector
@@ -578,7 +578,7 @@ extensions:
   opamp:
     # OpAMP server URL. Supports WS or plain http transport,
     # based on the scheme of the URL (ws,wss,http,https).
-    # Any other settings defined in ClientConfig, squashed. This
+    # Any other settings defined in ClientConfig is squashed. This
     # includes ability to specify an "auth" setting that refers
     # to an extension that implements the Authentication interface.
     endpoint:

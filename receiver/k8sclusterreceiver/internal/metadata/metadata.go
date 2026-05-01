@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 )
@@ -51,12 +51,15 @@ func TransformObjectMeta(om v1.ObjectMeta) v1.ObjectMeta {
 // live on v1.ObjectMeta.
 func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetadata {
 	rType := strings.ToLower(resourceType)
-	metadata := maps.MergeStringMaps(map[string]string{}, om.Labels)
+	metadata := map[string]string{}
+	for k, v := range om.Labels {
+		metadata[fmt.Sprintf("k8s.%s.label.%s", rType, k)] = v
+	}
 
 	metadata[constants.K8sKeyWorkLoadKind] = resourceType
 	metadata[constants.K8sKeyWorkLoadName] = om.Name
 	metadata[rType+".creation_timestamp"] = om.GetCreationTimestamp().Format(time.RFC3339)
-	metadata[constants.K8sKeyNamespaceName] = om.Namespace
+	metadata[string(conventions.K8SNamespaceNameKey)] = om.Namespace
 
 	for _, or := range om.OwnerReferences {
 		kind := strings.ToLower(or.Kind)

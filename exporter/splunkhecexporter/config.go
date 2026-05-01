@@ -14,10 +14,9 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 const (
@@ -32,14 +31,6 @@ const (
 	maxContentLengthTracesLimit      = 800 * 1024 * 1024
 	maxMaxEventSize                  = 800 * 1024 * 1024
 )
-
-// OtelToHecFields defines the mapping of attributes to HEC fields
-type OtelToHecFields struct {
-	// SeverityText informs the exporter to map the severity text field to a specific HEC field.
-	SeverityText string `mapstructure:"severity_text"`
-	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
-	SeverityNumber string `mapstructure:"severity_number"`
-}
 
 // HecHeartbeat defines the heartbeat information for the exporter
 type HecHeartbeat struct {
@@ -64,22 +55,11 @@ type HecTelemetry struct {
 	ExtraAttributes map[string]string `mapstructure:"extra_attributes"`
 }
 
-type DeprecatedBatchConfig struct {
-	Enabled      bool                            `mapstructure:"enabled"`
-	FlushTimeout time.Duration                   `mapstructure:"flush_timeout"`
-	Sizer        exporterhelper.RequestSizerType `mapstructure:"sizer"`
-	MinSize      int64                           `mapstructure:"min_size"`
-	MaxSize      int64                           `mapstructure:"max_size"`
-	isSet        bool                            `mapstructure:"-"`
-}
-
 // Config defines configuration for Splunk exporter.
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
-	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	QueueSettings             configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	// DeprecatedBatcher is the deprecated batcher configuration.
-	DeprecatedBatcher DeprecatedBatchConfig `mapstructure:"batcher"`
 
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`
@@ -126,10 +106,10 @@ type Config struct {
 	SplunkAppVersion string `mapstructure:"splunk_app_version"`
 
 	// OtelAttrsToHec creates a mapping from attributes to HEC specific metadata: source, sourcetype, index and host.
-	OtelAttrsToHec splunk.HecToOtelAttrs `mapstructure:"otel_attrs_to_hec_metadata"`
+	OtelAttrsToHec translator.HecToOtelAttrs `mapstructure:"otel_attrs_to_hec_metadata"`
 
 	// HecFields creates a mapping from attributes to HEC fields.
-	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
+	HecFields translator.OtelToHecFields `mapstructure:"otel_to_hec_fields"`
 
 	// HealthPath for health API, default is '/services/collector/health'
 	HealthPath string `mapstructure:"health_path"`
@@ -148,35 +128,6 @@ type Config struct {
 
 	// Telemetry is the configuration for splunk hec exporter telemetry
 	Telemetry HecTelemetry `mapstructure:"telemetry"`
-}
-
-func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cfg); err != nil {
-		return err
-	}
-	if conf.IsSet("batcher") {
-		cfg.DeprecatedBatcher.isSet = true
-		if cfg.QueueSettings.Batch.HasValue() {
-			return errors.New(`deprecated "batcher" cannot be set along with "sending_queue::batch"`)
-		}
-		if cfg.DeprecatedBatcher.Enabled {
-			cfg.QueueSettings.Batch = configoptional.Some(exporterhelper.BatchConfig{
-				FlushTimeout: cfg.DeprecatedBatcher.FlushTimeout,
-				Sizer:        cfg.DeprecatedBatcher.Sizer,
-				MinSize:      cfg.DeprecatedBatcher.MinSize,
-				MaxSize:      cfg.DeprecatedBatcher.MaxSize,
-			})
-
-			// If the deprecated batcher is enabled without a queue, enable blocking queue to replicate the
-			// behavior of the deprecated batcher.
-			if !cfg.QueueSettings.Enabled {
-				cfg.QueueSettings.Enabled = true
-				cfg.QueueSettings.WaitForResult = true
-			}
-		}
-	}
-
-	return nil
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {

@@ -72,13 +72,13 @@ type exprGetter[K any] struct {
 	keys []key
 }
 
-func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+func (g *exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	result, err := g.expr.Eval(ctx, tCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	if g.keys == nil {
+	if len(g.keys) == 0 {
 		return result, nil
 	}
 
@@ -161,9 +161,6 @@ type listGetter[K any] struct {
 
 func newListGetter[K any](slice []Getter[K]) (Getter[K], error) {
 	g := listGetter[K]{slice}
-	if len(slice) == 0 {
-		return &g, nil
-	}
 	for _, v := range slice {
 		if !isLiteralGetter(v) {
 			return &g, nil
@@ -197,10 +194,6 @@ type mapGetter[K any] struct {
 
 func newMapGetter[K any](mapValues map[string]Getter[K]) (Getter[K], error) {
 	g := mapGetter[K]{mapValues: mapValues}
-	// Check if literal, if yes then return literal Getter.
-	if len(mapValues) == 0 {
-		return &g, nil
-	}
 	for _, v := range mapValues {
 		if !isLiteralGetter(v) {
 			return &g, nil
@@ -215,6 +208,7 @@ func newMapGetter[K any](mapValues map[string]Getter[K]) (Getter[K], error) {
 
 func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	result := pcommon.NewMap()
+	result.EnsureCapacity(len(m.mapValues))
 	for k, v := range m.mapValues {
 		val, err := v.Get(ctx, tCtx)
 		if err != nil {
@@ -226,6 +220,7 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 			typedVal.CopyTo(target)
 		case []any:
 			target := result.PutEmpty(k).SetEmptySlice()
+			target.EnsureCapacity(len(typedVal))
 			for _, el := range typedVal {
 				switch typedEl := el.(type) {
 				case pcommon.Map:

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
@@ -44,11 +45,11 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:      "testing",
 				Endpoint:           "",
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 1
 					return queue
-				}(),
+				}()),
 			},
 		},
 		{
@@ -65,12 +66,12 @@ func TestLoadConfig(t *testing.T) {
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",
 				LogStreamName:      "testing",
-				QueueSettings: func() exporterhelper.QueueBatchConfig {
+				QueueSettings: configoptional.Some(func() exporterhelper.QueueBatchConfig {
 					queue := exporterhelper.NewDefaultQueueConfig()
 					queue.NumConsumers = 1
 					queue.QueueSize = 2
 					return queue
-				}(),
+				}()),
 			},
 		},
 		{
@@ -120,11 +121,10 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       365,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: exporterhelper.QueueBatchConfig{
-			Enabled:      true,
+		QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 			NumConsumers: 1,
-			QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
-		},
+			QueueSize:    1000,
+		}),
 	}
 	assert.NoError(t, xconfmap.Validate(cfg))
 }
@@ -138,10 +138,9 @@ func TestRetentionValidateWrong(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       366,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: exporterhelper.QueueBatchConfig{
-			Enabled:   true,
-			QueueSize: exporterhelper.NewDefaultQueueConfig().QueueSize,
-		},
+		QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
+			QueueSize: 1000,
+		}),
 	}
 	assert.Error(t, xconfmap.Validate(wrongcfg))
 }
@@ -221,11 +220,10 @@ func TestValidateTags(t *testing.T) {
 				Endpoint:           "",
 				Tags:               tt.tags,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: exporterhelper.QueueBatchConfig{
-					Enabled:      true,
+				QueueSettings: configoptional.Some(exporterhelper.QueueBatchConfig{
 					NumConsumers: 1,
-					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
-				},
+					QueueSize:    1000,
+				}),
 			}
 			if tt.errorMessage != "" {
 				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)

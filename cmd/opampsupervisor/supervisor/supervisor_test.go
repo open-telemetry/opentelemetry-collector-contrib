@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -187,7 +188,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 func Test_composeEffectiveConfig(t *testing.T) {
 	fileLogConfig := `
 receivers:
-  filelog:
+  file_log:
     include: ['/test/logs/input.log']
     start_at: "beginning"
 
@@ -198,7 +199,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [file]`
 
 	// load expected effective config bytes once
@@ -2114,7 +2115,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 		s.config = config.Supervisor{
 			HealthCheck: config.HealthCheck{
 				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:23233",
+					NetAddr: confignet.AddrConfig{
+						Transport: "tcp",
+						Endpoint:  "localhost:23233",
+					},
 				},
 			},
 		}
@@ -2198,7 +2202,10 @@ func TestSupervisor_HealthCheckServer(t *testing.T) {
 			config: config.Supervisor{
 				HealthCheck: config.HealthCheck{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: "localhost:23233",
+						NetAddr: confignet.AddrConfig{
+							Transport: "tcp",
+							Endpoint:  "localhost:23233",
+						},
 					},
 				},
 			},
@@ -2253,9 +2260,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 	startSignal := make(chan struct{})
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-startSignal
 		for i := range 1000 {
 			if i%2 == 0 {
@@ -2264,11 +2269,9 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 				s.remoteConfig.Store(config2)
 			}
 		}
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		<-startSignal
 		for range 1000 {
 			cfg := s.remoteConfig.Load()
@@ -2276,7 +2279,7 @@ func TestRemoteConfigConcurrentAccess(t *testing.T) {
 				_ = cfg.GetConfigHash()
 			}
 		}
-	}()
+	})
 
 	close(startSignal)
 	wg.Wait()

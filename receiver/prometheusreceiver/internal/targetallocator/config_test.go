@@ -25,20 +25,39 @@ func TestComponentConfigStruct(t *testing.T) {
 }
 
 func TestLoadTargetAllocatorConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	cfg := &Config{}
+	t.Run("basic", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		cfg := &Config{}
 
-	sub, err := cm.Sub("target_allocator")
-	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, xconfmap.Validate(cfg))
+		sub, err := cm.Sub("target_allocator")
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
 
-	assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
-	assert.Equal(t, 5*time.Second, cfg.Timeout)
-	assert.Equal(t, "client.crt", cfg.TLS.CertFile)
-	assert.Equal(t, 30*time.Second, cfg.Interval)
-	assert.Equal(t, "collector-1", cfg.CollectorID)
+		assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
+		assert.Equal(t, 5*time.Second, cfg.Timeout)
+		assert.Equal(t, "client.crt", cfg.TLS.CertFile)
+		assert.Equal(t, 30*time.Second, cfg.Interval)
+		assert.Equal(t, "collector-1", cfg.CollectorID)
+	})
+
+	t.Run("special characters in password", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_with_special_chars.yaml"))
+		require.NoError(t, err)
+
+		var cfg Config
+		sub, err := cm.Sub("target_allocator")
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(&cfg))
+
+		require.NotNil(t, cfg.HTTPSDConfig, "http_sd_config should be present")
+		require.NotNil(t, cfg.HTTPScrapeConfig, "http_scrape_config should be present")
+		require.NotNil(t, cfg.HTTPScrapeConfig.BasicAuth, "basic_auth should be present")
+		assert.Equal(t, "testuser", cfg.HTTPScrapeConfig.BasicAuth.Username)
+		assert.Equal(t, "%password-with-percent", string(cfg.HTTPScrapeConfig.BasicAuth.Password),
+			"password with special YAML characters should be preserved")
+	})
 }
 
 func TestPromHTTPClientConfigValidateAuthorization(t *testing.T) {
@@ -115,8 +134,54 @@ func TestConfigValidate_InvalidEndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				CollectorID: tt.collectorID,
+				Interval:    30 * time.Second,
 			}
 			cfg.Endpoint = tt.endpoint
+			err := xconfmap.Validate(cfg)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigValidate_InvalidInterval(t *testing.T) {
+	tests := []struct {
+		name        string
+		interval    time.Duration
+		expectError bool
+	}{
+		{
+			name:        "valid interval",
+			interval:    30 * time.Second,
+			expectError: false,
+		},
+		{
+			name:        "valid interval - 1 nanosecond",
+			interval:    1 * time.Nanosecond,
+			expectError: false,
+		},
+		{
+			name:        "invalid interval - zero",
+			interval:    0,
+			expectError: true,
+		},
+		{
+			name:        "invalid interval - negative",
+			interval:    -1 * time.Second,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Interval:    tt.interval,
+				CollectorID: "collector-1",
+			}
+			cfg.Endpoint = "http://localhost:8080"
 			err := xconfmap.Validate(cfg)
 			if tt.expectError {
 				assert.Error(t, err)
@@ -218,6 +283,7 @@ func TestCheckTLSConfig(t *testing.T) {
 			}
 			cfg := &Config{
 				CollectorID: "collector-1",
+				Interval:    30 * time.Second,
 				HTTPScrapeConfig: &PromHTTPClientConfig{
 					TLSConfig: tlsConfig,
 				},
@@ -487,4 +553,51 @@ func TestConfigureSDHTTPClientConfigFromTA_Errors(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUnmarshalConf(t *testing.T) {
+	t.Run("empty config", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		err := unmarshalConf(confmap.NewFromStringMap(map[string]any{}), nil, &cfg)
+		require.NoError(t, err)
+		assert.Zero(t, cfg)
+	})
+
+	t.Run("special YAML characters preserved", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		input := map[string]any{
+			"basic_auth": map[string]any{
+				"username": "user",
+				"password": "%password-with-percent",
+			},
+		}
+		err := unmarshalConf(confmap.NewFromStringMap(input), nil, &cfg)
+		require.NoError(t, err)
+		require.NotNil(t, cfg.BasicAuth)
+		assert.Equal(t, "%password-with-percent", string(cfg.BasicAuth.Password))
+	})
+
+	t.Run("callback mutates config", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		input := map[string]any{
+			"basic_auth": map[string]any{
+				"username": "original",
+			},
+		}
+		cb := func(m map[string]any) {
+			m["basic_auth"].(map[string]any)["username"] = "mutated"
+		}
+		require.NoError(t, unmarshalConf(confmap.NewFromStringMap(input), cb, &cfg))
+		require.NotNil(t, cfg.BasicAuth)
+		assert.Equal(t, "mutated", cfg.BasicAuth.Username)
+	})
+
+	t.Run("marshal error", func(t *testing.T) {
+		var cfg promConfig.HTTPClientConfig
+		input := map[string]any{
+			"invalid": make(chan int), // channels can't be marshaled to YAML
+		}
+		err := unmarshalConf(confmap.NewFromStringMap(input), nil, &cfg)
+		require.ErrorContains(t, err, "failed to marshal")
+	})
 }

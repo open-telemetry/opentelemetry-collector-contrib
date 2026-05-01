@@ -11,6 +11,7 @@ import (
 	"io"
 	"math/rand/v2"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -36,6 +37,7 @@ type azureBlobExporter struct {
 	signal           pipeline.Signal
 	marshaller       *marshaller
 	blobNameTemplate *blobNameTemplate
+	timeLocation     *time.Location
 }
 
 type blobNameTemplate struct {
@@ -288,12 +290,26 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		}
 	}
 
+	if tz := strings.TrimSpace(e.config.BlobNameFormat.Timezone); tz != "" {
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return fmt.Errorf("failed to load timezone: %w", err)
+		}
+		e.timeLocation = loc
+	} else {
+		e.timeLocation = nil
+	}
+
 	return nil
 }
 
 func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal, telemetryData any) (string, error) {
 	// Get current time
 	now := time.Now()
+
+	if e.timeLocation != nil {
+		now = now.In(e.timeLocation)
+	}
 
 	var format string
 	var tmpl *template.Template
@@ -348,7 +364,55 @@ func (e *azureBlobExporter) parseTimeInBlobName(now time.Time, format string) st
 	if !e.config.BlobNameFormat.TimeParserEnabled {
 		return format
 	}
-	return now.Format(format)
+
+	ranges := e.config.BlobNameFormat.TimeParserRanges
+	if len(ranges) == 0 {
+		// No ranges specified, parse entire string
+		return now.Format(format)
+	}
+
+	// Parse only specified ranges
+	result := []byte(format)
+	for _, r := range ranges {
+		start, end, err := parseRange(r)
+		if err != nil {
+			e.logger.Warn("Invalid time_parser_range, skipping", zap.String("range", r), zap.Error(err))
+			continue
+		}
+		if start >= len(format) {
+			continue
+		}
+		if end > len(format) {
+			end = len(format)
+		}
+		parsed := now.Format(format[start:end])
+		// Replace the range in result
+		newResult := make([]byte, 0, len(result)-end+start+len(parsed))
+		newResult = append(newResult, result[:start]...)
+		newResult = append(newResult, parsed...)
+		newResult = append(newResult, result[end:]...)
+		result = newResult
+	}
+	return string(result)
+}
+
+func parseRange(r string) (int, int, error) {
+	parts := strings.SplitN(r, "-", 2)
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid range format: %s", r)
+	}
+	start, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid start index: %w", err)
+	}
+	end, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid end index: %w", err)
+	}
+	if start < 0 || end < start {
+		return 0, 0, fmt.Errorf("invalid range: start=%d end=%d", start, end)
+	}
+	return start, end, nil
 }
 
 func (*azureBlobExporter) Capabilities() consumer.Capabilities {

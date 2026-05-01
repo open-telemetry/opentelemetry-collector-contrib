@@ -82,11 +82,11 @@ processors:
 
 exporters:
   # Send all data to analysis backend
-  otlp/analysis:
+  otlp_grpc/analysis:
     endpoint: analysis-backend:4317
   
   # Send only anomalies to alerting system  
-  otlp/alerts:
+  otlp_grpc/alerts:
     endpoint: alerting-system:4317
 
 service:
@@ -94,12 +94,12 @@ service:
     traces/analysis:
       receivers: [otlp]
       processors: [isolationforest, probabilistic_sampler, batch]
-      exporters: [otlp/analysis]
+      exporters: [otlp_grpc/analysis]
       
     traces/alerts:
       receivers: [otlp]
       processors: [isolationforest, batch]
-      exporters: [otlp/alerts]
+      exporters: [otlp_grpc/alerts]
 `
 	fmt.Println("Cost Optimization Configuration:")
 	fmt.Println(configYAML)
@@ -169,11 +169,11 @@ processors:
         pipelines: [traces/normal]
 
 exporters:
-  otlp/critical:
+  otlp_grpc/critical:
     endpoint: pagerduty-integration:4317
-  otlp/warning:
+  otlp_grpc/warning:
     endpoint: slack-integration:4317
-  otlp/normal:
+  otlp_grpc/normal:
     endpoint: storage-backend:4317
 
 service:
@@ -185,17 +185,17 @@ service:
     traces/critical:
       receivers: [routing]
       processors: [batch]
-      exporters: [otlp/critical]
+      exporters: [otlp_grpc/critical]
       
     traces/warning:
       receivers: [routing]  
       processors: [batch]
-      exporters: [otlp/warning]
+      exporters: [otlp_grpc/warning]
       
     traces/normal:
       receivers: [routing]
       processors: [batch]
-      exporters: [otlp/normal]
+      exporters: [otlp_grpc/normal]
 `
 	fmt.Println("Multi-Environment Configuration:")
 	fmt.Println(configYAML)
@@ -239,7 +239,7 @@ processors:
     limit_mib: 2048         # Prevent memory exhaustion
 
 exporters:
-  otlp/fast:
+  otlp_grpc/fast:
     endpoint: fast-backend:4317
     sending_queue:
       queue_size: 10000     # Large queue for bursts
@@ -252,7 +252,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, isolationforest, batch]
-      exporters: [otlp/fast]
+      exporters: [otlp_grpc/fast]
 `
 	fmt.Println("High Performance Configuration:")
 	fmt.Println(configYAML)

@@ -11,6 +11,10 @@ type DBSanitizerConfig struct {
 	MongoConfig      MongoConfig      `mapstructure:"mongo"`
 	OpenSearchConfig OpenSearchConfig `mapstructure:"opensearch"`
 	ESConfig         ESConfig         `mapstructure:"es"`
+	// AllowFallbackWithoutSystem enables sequential sanitization when `db.system` is missing.
+	// This is meant for logs contexts and is set internally, not via YAML.
+	AllowFallbackWithoutSystem bool  `mapstructure:"-"`
+	SanitizeSpanName           *bool `mapstructure:"sanitize_span_name"`
 }
 
 type SQLConfig struct {

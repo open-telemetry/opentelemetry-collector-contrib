@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
@@ -44,7 +45,10 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultConfigGitHubReceiver.(*Config).WebHook = WebHook{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint:     "localhost:8080",
+			NetAddr: confignet.AddrConfig{
+				Transport: confignet.TransportTypeTCP,
+				Endpoint:  "localhost:8080",
+			},
 			ReadTimeout:  500 * time.Millisecond,
 			WriteTimeout: 500 * time.Millisecond,
 		},
@@ -77,9 +81,13 @@ func TestLoadConfig(t *testing.T) {
 		Scrapers: map[string]internal.Config{
 			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint:     "localhost:8080",
+				NetAddr: confignet.AddrConfig{
+					Transport: confignet.TransportTypeTCP,
+					Endpoint:  "localhost:8080",
+				},
 				ReadTimeout:  500 * time.Millisecond,
 				WriteTimeout: 500 * time.Millisecond,
 			},

@@ -26,4 +26,7 @@ const (
 
 	// Feature gate for VPC flow start field ISO-8601 format
 	VPCFlowStartISO8601FormatID = "extension.awslogsencoding.vpcflow.start.iso8601"
+
+	// CloudTrailEnableUserIdentityPrefixID defines the feature gate ID to control `aws.user_identity` prefix for decoded CloudTrail logs.
+	CloudTrailEnableUserIdentityPrefixID = "extension.awslogsencoding.cloudtrail.enable.user.identity.prefix"
 )

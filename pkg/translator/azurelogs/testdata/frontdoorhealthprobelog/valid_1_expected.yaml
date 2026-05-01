@@ -15,46 +15,47 @@ resourceLogs:
           - body:
               kvlistValue:
                 values:
-                  - key: operation.name
-                    value:
-                      stringValue: WAF/FirewallLog
-                  - key: url.full
-                    value:
-                      stringValue: https://probe.net/health
-                  - key: dns.lookup.duration
-                    value:
-                      doubleValue: 0.00023
-                  - key: http.response.status_code
-                    value:
-                      intValue: "200"
-                  - key: server.address
-                    value:
-                      stringValue: 42.42.42.42
-                  - key: http.request.duration
-                    value:
-                      doubleValue: 0.042
                   - key: http.request.method
                     value:
                       stringValue: GET
+                  - key: http.response.status_code
+                    value:
+                      intValue: "200"
+                  - key: url.full
+                    value:
+                      stringValue: https://probe.net/health
+                  - key: server.address
+                    value:
+                      stringValue: 42.42.42.42
                   - key: properties
                     value:
                       kvlistValue:
                         values:
-                          - key: originName
-                            value:
-                              stringValue: https://probe.net/
-                          - key: healthProbeId
-                            value:
-                              stringValue: AAAA
                           - key: POP
                             value:
                               stringValue: ""
                           - key: result
                             value:
                               stringValue: ""
+                          - key: originName
+                            value:
+                              stringValue: https://probe.net/
+                          - key: healthProbeId
+                            value:
+                              stringValue: AAAA
                   - key: category
                     value:
                       stringValue: FrontDoorHealthProbeLog
+                  - key: operation.name
+                    value:
+                      stringValue: WAF/FirewallLog
+                  - key: dns.lookup.duration
+                    value:
+                      doubleValue: 0.00023
+                  - key: http.request.duration
+                    value:
+                      doubleValue: 0.042
+            observedTimeUnixNano: "1766081218377191000"
             timeUnixNano: "1713960372000000000"
         scope:
           name: otelcol/azureresourcelogs

@@ -1,4 +1,8 @@
+display_name: TCP Check Receiver
 type: tcpcheck
+reaggregation_enabled: true
+
+description: This receiver creates stats by connecting to a TCP server.
 
 status:
   class: receiver
@@ -13,18 +17,19 @@ resource_attributes:
 attributes:
   error.code:
     description: Error code recorded during check
+    requirement_level: recommended
     type: string
     enum: [connection_refused, connection_timeout, invalid_endpoint, network_unreachable, unknown_error]
   tcpcheck.endpoint:
     description: TCP endpoint
+    requirement_level: required
     type: string
 
 metrics:
   tcpcheck.duration:
     description: Measures the duration of TCP connection.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: ms
@@ -32,19 +37,17 @@ metrics:
   tcpcheck.error:
     description: Records errors occurring during TCP check.
     enabled: true
-    stability:
-      level: development
+    stability: development
     sum:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    unit: "{error}"
+    unit: "{errors}"
     attributes: [tcpcheck.endpoint, error.code]
   tcpcheck.status:
     description: 1 if the TCP client successfully connected, otherwise 0.
     enabled: true
-    stability:
-      level: development
+    stability: development
     gauge:
       value_type: int
     unit: "1"

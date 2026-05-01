@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -10,6 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+)
+
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+	AggregationStrategyMin = "min"
+	AggregationStrategyMax = "max"
 )
 
 // AttributeState specifies the value state attribute.
@@ -58,6 +66,32 @@ var MapAttributeState = map[string]AttributeState{
 	"used":               AttributeStateUsed,
 }
 
+// AttributeSystemMemoryLinuxHugepagesState specifies the value system.memory.linux.hugepages.state attribute.
+type AttributeSystemMemoryLinuxHugepagesState int
+
+const (
+	_ AttributeSystemMemoryLinuxHugepagesState = iota
+	AttributeSystemMemoryLinuxHugepagesStateFree
+	AttributeSystemMemoryLinuxHugepagesStateUsed
+)
+
+// String returns the string representation of the AttributeSystemMemoryLinuxHugepagesState.
+func (av AttributeSystemMemoryLinuxHugepagesState) String() string {
+	switch av {
+	case AttributeSystemMemoryLinuxHugepagesStateFree:
+		return "free"
+	case AttributeSystemMemoryLinuxHugepagesStateUsed:
+		return "used"
+	}
+	return ""
+}
+
+// MapAttributeSystemMemoryLinuxHugepagesState is a helper map of string to AttributeSystemMemoryLinuxHugepagesState attribute value.
+var MapAttributeSystemMemoryLinuxHugepagesState = map[string]AttributeSystemMemoryLinuxHugepagesState{
+	"free": AttributeSystemMemoryLinuxHugepagesStateFree,
+	"used": AttributeSystemMemoryLinuxHugepagesStateUsed,
+}
+
 var MetricsInfo = metricsInfo{
 	SystemLinuxMemoryAvailable: metricInfo{
 		Name: "system.linux.memory.available",
@@ -67,6 +101,27 @@ var MetricsInfo = metricsInfo{
 	},
 	SystemMemoryLimit: metricInfo{
 		Name: "system.memory.limit",
+	},
+	SystemMemoryLinuxHugepagesLimit: metricInfo{
+		Name: "system.memory.linux.hugepages.limit",
+	},
+	SystemMemoryLinuxHugepagesPageSize: metricInfo{
+		Name: "system.memory.linux.hugepages.page_size",
+	},
+	SystemMemoryLinuxHugepagesReserved: metricInfo{
+		Name: "system.memory.linux.hugepages.reserved",
+	},
+	SystemMemoryLinuxHugepagesSurplus: metricInfo{
+		Name: "system.memory.linux.hugepages.surplus",
+	},
+	SystemMemoryLinuxHugepagesUsage: metricInfo{
+		Name: "system.memory.linux.hugepages.usage",
+	},
+	SystemMemoryLinuxHugepagesUtilization: metricInfo{
+		Name: "system.memory.linux.hugepages.utilization",
+	},
+	SystemMemoryLinuxShared: metricInfo{
+		Name: "system.memory.linux.shared",
 	},
 	SystemMemoryPageSize: metricInfo{
 		Name: "system.memory.page_size",
@@ -80,12 +135,19 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	SystemLinuxMemoryAvailable metricInfo
-	SystemLinuxMemoryDirty     metricInfo
-	SystemMemoryLimit          metricInfo
-	SystemMemoryPageSize       metricInfo
-	SystemMemoryUsage          metricInfo
-	SystemMemoryUtilization    metricInfo
+	SystemLinuxMemoryAvailable            metricInfo
+	SystemLinuxMemoryDirty                metricInfo
+	SystemMemoryLimit                     metricInfo
+	SystemMemoryLinuxHugepagesLimit       metricInfo
+	SystemMemoryLinuxHugepagesPageSize    metricInfo
+	SystemMemoryLinuxHugepagesReserved    metricInfo
+	SystemMemoryLinuxHugepagesSurplus     metricInfo
+	SystemMemoryLinuxHugepagesUsage       metricInfo
+	SystemMemoryLinuxHugepagesUtilization metricInfo
+	SystemMemoryLinuxShared               metricInfo
+	SystemMemoryPageSize                  metricInfo
+	SystemMemoryUsage                     metricInfo
+	SystemMemoryUtilization               metricInfo
 }
 
 type metricInfo struct {
@@ -93,9 +155,9 @@ type metricInfo struct {
 }
 
 type metricSystemLinuxMemoryAvailable struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                         // data buffer for generated metric.
+	config   SystemLinuxMemoryAvailableMetricConfig // metric config provided by user.
+	capacity int                                    // max observed number of data points added to the metric.
 }
 
 // init fills system.linux.memory.available metric with initial data.
@@ -134,8 +196,9 @@ func (m *metricSystemLinuxMemoryAvailable) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemLinuxMemoryAvailable(cfg MetricConfig) metricSystemLinuxMemoryAvailable {
+func newMetricSystemLinuxMemoryAvailable(cfg SystemLinuxMemoryAvailableMetricConfig) metricSystemLinuxMemoryAvailable {
 	m := metricSystemLinuxMemoryAvailable{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -144,9 +207,9 @@ func newMetricSystemLinuxMemoryAvailable(cfg MetricConfig) metricSystemLinuxMemo
 }
 
 type metricSystemLinuxMemoryDirty struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                     // data buffer for generated metric.
+	config   SystemLinuxMemoryDirtyMetricConfig // metric config provided by user.
+	capacity int                                // max observed number of data points added to the metric.
 }
 
 // init fills system.linux.memory.dirty metric with initial data.
@@ -185,8 +248,9 @@ func (m *metricSystemLinuxMemoryDirty) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemLinuxMemoryDirty(cfg MetricConfig) metricSystemLinuxMemoryDirty {
+func newMetricSystemLinuxMemoryDirty(cfg SystemLinuxMemoryDirtyMetricConfig) metricSystemLinuxMemoryDirty {
 	m := metricSystemLinuxMemoryDirty{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -195,9 +259,9 @@ func newMetricSystemLinuxMemoryDirty(cfg MetricConfig) metricSystemLinuxMemoryDi
 }
 
 type metricSystemMemoryLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                // data buffer for generated metric.
+	config   SystemMemoryLimitMetricConfig // metric config provided by user.
+	capacity int                           // max observed number of data points added to the metric.
 }
 
 // init fills system.memory.limit metric with initial data.
@@ -236,8 +300,449 @@ func (m *metricSystemMemoryLimit) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemMemoryLimit(cfg MetricConfig) metricSystemMemoryLimit {
+func newMetricSystemMemoryLimit(cfg SystemMemoryLimitMetricConfig) metricSystemMemoryLimit {
 	m := metricSystemMemoryLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLinuxHugepagesLimit struct {
+	data     pmetric.Metric                              // data buffer for generated metric.
+	config   SystemMemoryLinuxHugepagesLimitMetricConfig // metric config provided by user.
+	capacity int                                         // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.hugepages.limit metric with initial data.
+func (m *metricSystemMemoryLinuxHugepagesLimit) init() {
+	m.data.SetName("system.memory.linux.hugepages.limit")
+	m.data.SetDescription("Total number of hugepages available.")
+	m.data.SetUnit("{page}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemMemoryLinuxHugepagesLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxHugepagesLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxHugepagesLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxHugepagesLimit(cfg SystemMemoryLinuxHugepagesLimitMetricConfig) metricSystemMemoryLinuxHugepagesLimit {
+	m := metricSystemMemoryLinuxHugepagesLimit{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLinuxHugepagesPageSize struct {
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   SystemMemoryLinuxHugepagesPageSizeMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.hugepages.page_size metric with initial data.
+func (m *metricSystemMemoryLinuxHugepagesPageSize) init() {
+	m.data.SetName("system.memory.linux.hugepages.page_size")
+	m.data.SetDescription("System hugepage size in bytes.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemMemoryLinuxHugepagesPageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxHugepagesPageSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxHugepagesPageSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxHugepagesPageSize(cfg SystemMemoryLinuxHugepagesPageSizeMetricConfig) metricSystemMemoryLinuxHugepagesPageSize {
+	m := metricSystemMemoryLinuxHugepagesPageSize{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLinuxHugepagesReserved struct {
+	data     pmetric.Metric                                 // data buffer for generated metric.
+	config   SystemMemoryLinuxHugepagesReservedMetricConfig // metric config provided by user.
+	capacity int                                            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.hugepages.reserved metric with initial data.
+func (m *metricSystemMemoryLinuxHugepagesReserved) init() {
+	m.data.SetName("system.memory.linux.hugepages.reserved")
+	m.data.SetDescription("Number of reserved hugepages (hugepages for which a commitment to allocate has been made, but no allocation has yet been made). This is reported as a separate metric rather than a usage state because reserved pages are already counted in free pages - they represent a subset of free pages that cannot be used for non-reserved allocations.")
+	m.data.SetUnit("{page}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemMemoryLinuxHugepagesReserved) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxHugepagesReserved) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxHugepagesReserved) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxHugepagesReserved(cfg SystemMemoryLinuxHugepagesReservedMetricConfig) metricSystemMemoryLinuxHugepagesReserved {
+	m := metricSystemMemoryLinuxHugepagesReserved{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLinuxHugepagesSurplus struct {
+	data     pmetric.Metric                                // data buffer for generated metric.
+	config   SystemMemoryLinuxHugepagesSurplusMetricConfig // metric config provided by user.
+	capacity int                                           // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.hugepages.surplus metric with initial data.
+func (m *metricSystemMemoryLinuxHugepagesSurplus) init() {
+	m.data.SetName("system.memory.linux.hugepages.surplus")
+	m.data.SetDescription("Number of surplus hugepages (overcommitted hugepages beyond the persistent pool). This is reported as a separate metric rather than a usage state because surplus pages can be in either used or free state, and including them would break the semantic convention that usage states must sum to the limit.")
+	m.data.SetUnit("{page}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemMemoryLinuxHugepagesSurplus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxHugepagesSurplus) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxHugepagesSurplus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxHugepagesSurplus(cfg SystemMemoryLinuxHugepagesSurplusMetricConfig) metricSystemMemoryLinuxHugepagesSurplus {
+	m := metricSystemMemoryLinuxHugepagesSurplus{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLinuxHugepagesUsage struct {
+	data          pmetric.Metric                              // data buffer for generated metric.
+	config        SystemMemoryLinuxHugepagesUsageMetricConfig // metric config provided by user.
+	capacity      int                                         // max observed number of data points added to the metric.
+	aggDataPoints []int64                                     // slice containing number of aggregated datapoints at each index
+}
+
+// init fills system.memory.linux.hugepages.usage metric with initial data.
+func (m *metricSystemMemoryLinuxHugepagesUsage) init() {
+	m.data.SetName("system.memory.linux.hugepages.usage")
+	m.data.SetDescription("Number of hugepages in use by state.")
+	m.data.SetUnit("{page}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSystemMemoryLinuxHugepagesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemMemoryLinuxHugepagesStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemMemoryLinuxHugepagesUsageMetricAttributeKeySystemMemoryLinuxHugepagesState) {
+		dp.Attributes().PutStr("system.memory.linux.hugepages.state", systemMemoryLinuxHugepagesStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetIntValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxHugepagesUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxHugepagesUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxHugepagesUsage(cfg SystemMemoryLinuxHugepagesUsageMetricConfig) metricSystemMemoryLinuxHugepagesUsage {
+	m := metricSystemMemoryLinuxHugepagesUsage{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLinuxHugepagesUtilization struct {
+	data          pmetric.Metric                                    // data buffer for generated metric.
+	config        SystemMemoryLinuxHugepagesUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                               // max observed number of data points added to the metric.
+	aggDataPoints []float64                                         // slice containing number of aggregated datapoints at each index
+}
+
+// init fills system.memory.linux.hugepages.utilization metric with initial data.
+func (m *metricSystemMemoryLinuxHugepagesUtilization) init() {
+	m.data.SetName("system.memory.linux.hugepages.utilization")
+	m.data.SetDescription("Percentage of hugepages in use by state.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
+}
+
+func (m *metricSystemMemoryLinuxHugepagesUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, systemMemoryLinuxHugepagesStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+
+	dp := pmetric.NewNumberDataPoint()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemMemoryLinuxHugepagesUtilizationMetricAttributeKeySystemMemoryLinuxHugepagesState) {
+		dp.Attributes().PutStr("system.memory.linux.hugepages.state", systemMemoryLinuxHugepagesStateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
+	dp.SetDoubleValue(val)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxHugepagesUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxHugepagesUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxHugepagesUtilization(cfg SystemMemoryLinuxHugepagesUtilizationMetricConfig) metricSystemMemoryLinuxHugepagesUtilization {
+	m := metricSystemMemoryLinuxHugepagesUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLinuxShared struct {
+	data     pmetric.Metric                      // data buffer for generated metric.
+	config   SystemMemoryLinuxSharedMetricConfig // metric config provided by user.
+	capacity int                                 // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.linux.shared metric with initial data.
+func (m *metricSystemMemoryLinuxShared) init() {
+	m.data.SetName("system.memory.linux.shared")
+	m.data.SetDescription("Shared memory usage, including tmpfs filesystems and System V/POSIX shared memory. Only supported on Linux.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemMemoryLinuxShared) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLinuxShared) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLinuxShared) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLinuxShared(cfg SystemMemoryLinuxSharedMetricConfig) metricSystemMemoryLinuxShared {
+	m := metricSystemMemoryLinuxShared{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -246,9 +751,9 @@ func newMetricSystemMemoryLimit(cfg MetricConfig) metricSystemMemoryLimit {
 }
 
 type metricSystemMemoryPageSize struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data     pmetric.Metric                   // data buffer for generated metric.
+	config   SystemMemoryPageSizeMetricConfig // metric config provided by user.
+	capacity int                              // max observed number of data points added to the metric.
 }
 
 // init fills system.memory.page_size metric with initial data.
@@ -285,8 +790,9 @@ func (m *metricSystemMemoryPageSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSystemMemoryPageSize(cfg MetricConfig) metricSystemMemoryPageSize {
+func newMetricSystemMemoryPageSize(cfg SystemMemoryPageSizeMetricConfig) metricSystemMemoryPageSize {
 	m := metricSystemMemoryPageSize{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -295,9 +801,10 @@ func newMetricSystemMemoryPageSize(cfg MetricConfig) metricSystemMemoryPageSize 
 }
 
 type metricSystemMemoryUsage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                // data buffer for generated metric.
+	config        SystemMemoryUsageMetricConfig // metric config provided by user.
+	capacity      int                           // max observed number of data points added to the metric.
+	aggDataPoints []int64                       // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.memory.usage metric with initial data.
@@ -309,17 +816,48 @@ func (m *metricSystemMemoryUsage) init() {
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemMemoryUsageMetricAttributeKeyState) {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", stateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -332,14 +870,20 @@ func (m *metricSystemMemoryUsage) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemMemoryUsage) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemMemoryUsage(cfg MetricConfig) metricSystemMemoryUsage {
+func newMetricSystemMemoryUsage(cfg SystemMemoryUsageMetricConfig) metricSystemMemoryUsage {
 	m := metricSystemMemoryUsage{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -348,9 +892,10 @@ func newMetricSystemMemoryUsage(cfg MetricConfig) metricSystemMemoryUsage {
 }
 
 type metricSystemMemoryUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data          pmetric.Metric                      // data buffer for generated metric.
+	config        SystemMemoryUtilizationMetricConfig // metric config provided by user.
+	capacity      int                                 // max observed number of data points added to the metric.
+	aggDataPoints []float64                           // slice containing number of aggregated datapoints at each index
 }
 
 // init fills system.memory.utilization metric with initial data.
@@ -360,17 +905,48 @@ func (m *metricSystemMemoryUtilization) init() {
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.aggDataPoints = m.aggDataPoints[:0]
 }
 
 func (m *metricSystemMemoryUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	if slices.Contains(m.config.EnabledAttributes, SystemMemoryUtilizationMetricAttributeKeyState) {
+		dp.Attributes().PutStr("state", stateAttributeValue)
+	}
+
+	var s string
+	dps := m.data.Gauge().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dpi := dps.At(i)
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			case AggregationStrategyMin:
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			case AggregationStrategyMax:
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
+		}
+	}
+
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("state", stateAttributeValue)
+	m.aggDataPoints = append(m.aggDataPoints, 1)
+	dp.MoveTo(dps.AppendEmpty())
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -383,14 +959,20 @@ func (m *metricSystemMemoryUtilization) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemMemoryUtilization) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
+			for i, aggCount := range m.aggDataPoints {
+				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
+			}
+		}
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtilization {
+func newMetricSystemMemoryUtilization(cfg SystemMemoryUtilizationMetricConfig) metricSystemMemoryUtilization {
 	m := metricSystemMemoryUtilization{config: cfg}
+
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -401,17 +983,24 @@ func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtiliz
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                           MetricsBuilderConfig // config of the metrics builder.
-	startTime                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                  int                  // maximum observed number of metrics per resource.
-	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                        component.BuildInfo  // contains version information.
-	metricSystemLinuxMemoryAvailable metricSystemLinuxMemoryAvailable
-	metricSystemLinuxMemoryDirty     metricSystemLinuxMemoryDirty
-	metricSystemMemoryLimit          metricSystemMemoryLimit
-	metricSystemMemoryPageSize       metricSystemMemoryPageSize
-	metricSystemMemoryUsage          metricSystemMemoryUsage
-	metricSystemMemoryUtilization    metricSystemMemoryUtilization
+	config                                      MetricsBuilderConfig // config of the metrics builder.
+	startTime                                   pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                             int                  // maximum observed number of metrics per resource.
+	metricsBuffer                               pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                   component.BuildInfo  // contains version information.
+	metricSystemLinuxMemoryAvailable            metricSystemLinuxMemoryAvailable
+	metricSystemLinuxMemoryDirty                metricSystemLinuxMemoryDirty
+	metricSystemMemoryLimit                     metricSystemMemoryLimit
+	metricSystemMemoryLinuxHugepagesLimit       metricSystemMemoryLinuxHugepagesLimit
+	metricSystemMemoryLinuxHugepagesPageSize    metricSystemMemoryLinuxHugepagesPageSize
+	metricSystemMemoryLinuxHugepagesReserved    metricSystemMemoryLinuxHugepagesReserved
+	metricSystemMemoryLinuxHugepagesSurplus     metricSystemMemoryLinuxHugepagesSurplus
+	metricSystemMemoryLinuxHugepagesUsage       metricSystemMemoryLinuxHugepagesUsage
+	metricSystemMemoryLinuxHugepagesUtilization metricSystemMemoryLinuxHugepagesUtilization
+	metricSystemMemoryLinuxShared               metricSystemMemoryLinuxShared
+	metricSystemMemoryPageSize                  metricSystemMemoryPageSize
+	metricSystemMemoryUsage                     metricSystemMemoryUsage
+	metricSystemMemoryUtilization               metricSystemMemoryUtilization
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -433,16 +1022,23 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                           mbc,
-		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        settings.BuildInfo,
-		metricSystemLinuxMemoryAvailable: newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
-		metricSystemLinuxMemoryDirty:     newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
-		metricSystemMemoryLimit:          newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
-		metricSystemMemoryPageSize:       newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
-		metricSystemMemoryUsage:          newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
-		metricSystemMemoryUtilization:    newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
+		config:                                      mbc,
+		startTime:                                   pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                               pmetric.NewMetrics(),
+		buildInfo:                                   settings.BuildInfo,
+		metricSystemLinuxMemoryAvailable:            newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
+		metricSystemLinuxMemoryDirty:                newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
+		metricSystemMemoryLimit:                     newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
+		metricSystemMemoryLinuxHugepagesLimit:       newMetricSystemMemoryLinuxHugepagesLimit(mbc.Metrics.SystemMemoryLinuxHugepagesLimit),
+		metricSystemMemoryLinuxHugepagesPageSize:    newMetricSystemMemoryLinuxHugepagesPageSize(mbc.Metrics.SystemMemoryLinuxHugepagesPageSize),
+		metricSystemMemoryLinuxHugepagesReserved:    newMetricSystemMemoryLinuxHugepagesReserved(mbc.Metrics.SystemMemoryLinuxHugepagesReserved),
+		metricSystemMemoryLinuxHugepagesSurplus:     newMetricSystemMemoryLinuxHugepagesSurplus(mbc.Metrics.SystemMemoryLinuxHugepagesSurplus),
+		metricSystemMemoryLinuxHugepagesUsage:       newMetricSystemMemoryLinuxHugepagesUsage(mbc.Metrics.SystemMemoryLinuxHugepagesUsage),
+		metricSystemMemoryLinuxHugepagesUtilization: newMetricSystemMemoryLinuxHugepagesUtilization(mbc.Metrics.SystemMemoryLinuxHugepagesUtilization),
+		metricSystemMemoryLinuxShared:               newMetricSystemMemoryLinuxShared(mbc.Metrics.SystemMemoryLinuxShared),
+		metricSystemMemoryPageSize:                  newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
+		metricSystemMemoryUsage:                     newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
+		metricSystemMemoryUtilization:               newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
 	}
 
 	for _, op := range options {
@@ -512,6 +1108,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemLinuxMemoryAvailable.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryDirty.emit(ils.Metrics())
 	mb.metricSystemMemoryLimit.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxHugepagesLimit.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxHugepagesPageSize.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxHugepagesReserved.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxHugepagesSurplus.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxHugepagesUsage.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxHugepagesUtilization.emit(ils.Metrics())
+	mb.metricSystemMemoryLinuxShared.emit(ils.Metrics())
 	mb.metricSystemMemoryPageSize.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
 	mb.metricSystemMemoryUtilization.emit(ils.Metrics())
@@ -549,6 +1152,41 @@ func (mb *MetricsBuilder) RecordSystemLinuxMemoryDirtyDataPoint(ts pcommon.Times
 // RecordSystemMemoryLimitDataPoint adds a data point to system.memory.limit metric.
 func (mb *MetricsBuilder) RecordSystemMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemMemoryLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryLinuxHugepagesLimitDataPoint adds a data point to system.memory.linux.hugepages.limit metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxHugepagesLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryLinuxHugepagesPageSizeDataPoint adds a data point to system.memory.linux.hugepages.page_size metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesPageSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxHugepagesPageSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryLinuxHugepagesReservedDataPoint adds a data point to system.memory.linux.hugepages.reserved metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesReservedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxHugepagesReserved.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryLinuxHugepagesSurplusDataPoint adds a data point to system.memory.linux.hugepages.surplus metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesSurplusDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxHugepagesSurplus.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryLinuxHugepagesUsageDataPoint adds a data point to system.memory.linux.hugepages.usage metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUsageDataPoint(ts pcommon.Timestamp, val int64, systemMemoryLinuxHugepagesStateAttributeValue AttributeSystemMemoryLinuxHugepagesState) {
+	mb.metricSystemMemoryLinuxHugepagesUsage.recordDataPoint(mb.startTime, ts, val, systemMemoryLinuxHugepagesStateAttributeValue.String())
+}
+
+// RecordSystemMemoryLinuxHugepagesUtilizationDataPoint adds a data point to system.memory.linux.hugepages.utilization metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxHugepagesUtilizationDataPoint(ts pcommon.Timestamp, val float64, systemMemoryLinuxHugepagesStateAttributeValue AttributeSystemMemoryLinuxHugepagesState) {
+	mb.metricSystemMemoryLinuxHugepagesUtilization.recordDataPoint(mb.startTime, ts, val, systemMemoryLinuxHugepagesStateAttributeValue.String())
+}
+
+// RecordSystemMemoryLinuxSharedDataPoint adds a data point to system.memory.linux.shared metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLinuxSharedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryLinuxShared.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryPageSizeDataPoint adds a data point to system.memory.page_size metric.

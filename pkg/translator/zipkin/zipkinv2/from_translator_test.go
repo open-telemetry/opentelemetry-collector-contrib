@@ -11,12 +11,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.30.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
+
+func TestZipkinEndpointFromTagsPrefersV1ServicePeerName(t *testing.T) {
+	redundantKeys := make(map[string]bool)
+	zTags := map[string]string{
+		"peer.service":      "legacy-peer",
+		"service.peer.name": "v1-peer",
+	}
+
+	endpoint := zipkinEndpointFromTags(zTags, "local-service", true, redundantKeys)
+	assert.NotNil(t, endpoint)
+	assert.Equal(t, "v1-peer", endpoint.ServiceName)
+	assert.True(t, redundantKeys["service.peer.name"])
+	assert.False(t, redundantKeys["peer.service"])
+}
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
 	tests := []struct {
@@ -207,10 +220,10 @@ func zipkinOneSpan(status ptrace.StatusCode) *zipkinmodel.SpanModel {
 
 	switch status {
 	case ptrace.StatusCodeOk:
-		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_OK"
+		spanTags["otel.status_code"] = "STATUS_CODE_OK"
 	case ptrace.StatusCodeError:
-		spanTags[string(conventions.OTelStatusCodeKey)] = "STATUS_CODE_ERROR"
-		spanTags[string(conventions.OTelStatusDescriptionKey)] = "error message"
+		spanTags["otel.status_code"] = "STATUS_CODE_ERROR"
+		spanTags["otel.status_description"] = "error message"
 		spanTags[tracetranslator.TagError] = "true"
 		spanErr = errors.New("error message")
 	}

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -25,13 +26,14 @@ type prometheusExporter struct {
 	collector    *collector
 	registry     *prometheus.Registry
 	settings     component.TelemetrySettings
+	stopCh       chan struct{} // signals the background metric cleanup goroutine to stop
 }
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
 func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusExporter, error) {
-	addr := strings.TrimSpace(config.Endpoint)
-	if strings.TrimSpace(config.Endpoint) == "" {
+	addr := strings.TrimSpace(config.NetAddr.Endpoint)
+	if strings.TrimSpace(config.NetAddr.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
 	}
 
@@ -83,6 +85,27 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 		_ = srv.Serve(ln)
 	}()
 
+	// Start a background goroutine that periodically evicts expired metric families.
+	// Without this, cleanup only happens during Collect() (i.e. when Prometheus scrapes).
+	// If no scraper is active, stale entries in metricFamilies accumulate indefinitely,
+	// causing unbounded memory growth. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/41123
+	if pe.collector.metricExpiration > 0 {
+		pe.stopCh = make(chan struct{})
+		go func(stopCh chan struct{}) {
+			ticker := time.NewTicker(pe.collector.metricExpiration)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					pe.collector.accumulator.cleanupExpired()
+					pe.collector.cleanupMetricFamilies()
+				case <-stopCh:
+					return
+				}
+			}
+		}(pe.stopCh)
+	}
+
 	return nil
 }
 
@@ -97,5 +120,9 @@ func (pe *prometheusExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 }
 
 func (pe *prometheusExporter) Shutdown(ctx context.Context) error {
+	if pe.stopCh != nil {
+		close(pe.stopCh)
+		pe.stopCh = nil
+	}
 	return pe.shutdownFunc(ctx)
 }

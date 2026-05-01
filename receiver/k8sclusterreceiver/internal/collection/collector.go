@@ -14,6 +14,7 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
@@ -25,10 +26,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/persistentvolume"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/persistentvolumeclaim"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/resourcequota"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 )
 
@@ -105,8 +109,87 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	dc.metadataStore.ForEach(gvk.ClusterResourceQuota, func(o any) {
 		clusterresourcequota.RecordMetrics(dc.metricsBuilder, o.(*quotav1.ClusterResourceQuota), ts)
 	})
+	dc.metadataStore.ForEach(gvk.PersistentVolume, func(o any) {
+		persistentvolume.RecordMetrics(dc.metricsBuilder, o.(*corev1.PersistentVolume), ts)
+	})
+	dc.metadataStore.ForEach(gvk.PersistentVolumeClaim, func(o any) {
+		persistentvolumeclaim.RecordMetrics(dc.metricsBuilder, o.(*corev1.PersistentVolumeClaim), ts)
+	})
+
+	serviceEndpointCounts := dc.calculateServiceEndpointCounts()
+
+	dc.metadataStore.ForEach(gvk.Service, func(o any) {
+		svc := o.(*corev1.Service)
+		counts := serviceEndpointCounts[string(svc.UID)]
+		service.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, svc, counts, ts)
+	})
 
 	m := dc.metricsBuilder.Emit()
 	customRMs.MoveAndAppendTo(m.ResourceMetrics())
 	return m
+}
+
+func (dc *DataCollector) calculateServiceEndpointCounts() map[string]service.EndpointCountsByKey {
+	serviceEndpointCounts := make(map[string]service.EndpointCountsByKey)
+
+	dc.metadataStore.ForEach(gvk.EndpointSlice, func(o any) {
+		eps := o.(*discoveryv1.EndpointSlice)
+
+		serviceName, ok := eps.Labels["kubernetes.io/service-name"]
+		if !ok {
+			return
+		}
+
+		serviceKey := eps.Namespace + "/" + serviceName
+
+		if serviceEndpointCounts[serviceKey] == nil {
+			serviceEndpointCounts[serviceKey] = make(service.EndpointCountsByKey)
+		}
+
+		addressType := string(eps.AddressType)
+
+		for _, endpoint := range eps.Endpoints {
+			zone := ""
+			if endpoint.Zone != nil {
+				zone = *endpoint.Zone
+			}
+
+			key := service.EndpointKey{AddressType: addressType, Zone: zone}
+			counts := serviceEndpointCounts[serviceKey][key]
+
+			// K8s Spec: ready == true or nil means endpoint can receive NEW connections
+			isReady := endpoint.Conditions.Ready == nil || *endpoint.Conditions.Ready
+			if isReady {
+				counts.Ready++
+			}
+
+			// K8s Spec: serving == true, or if nil "consumers should defer to the ready condition"
+			// https://kubernetes.io/docs/reference/kubernetes-api/service-resources/endpoint-slice-v1/#EndpointConditions
+			if endpoint.Conditions.Serving != nil {
+				if *endpoint.Conditions.Serving {
+					counts.Serving++
+				}
+			} else if isReady {
+				counts.Serving++
+			}
+
+			// K8s Spec: terminating == true means endpoint is draining
+			if endpoint.Conditions.Terminating != nil && *endpoint.Conditions.Terminating {
+				counts.Terminating++
+			}
+
+			serviceEndpointCounts[serviceKey][key] = counts
+		}
+	})
+
+	uidBasedCounts := make(map[string]service.EndpointCountsByKey)
+	dc.metadataStore.ForEach(gvk.Service, func(o any) {
+		svc := o.(*corev1.Service)
+		serviceKey := svc.Namespace + "/" + svc.Name
+		if counts, ok := serviceEndpointCounts[serviceKey]; ok {
+			uidBasedCounts[string(svc.UID)] = counts
+		}
+	})
+
+	return uidBasedCounts
 }

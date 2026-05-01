@@ -14,8 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 )
 
@@ -62,10 +64,8 @@ func TestNew_VPCFlowLog(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
-	// VPC Flow Log unmarshaler handles non-log input gracefully
-	logs, err := e.UnmarshalLogs([]byte("some test input"))
-	require.NoError(t, err)
-	require.NotNil(t, logs)
+	_, err = e.UnmarshalLogs([]byte("some test input"))
+	require.ErrorContains(t, err, "failed to read first line of VPC logs from S3")
 }
 
 func TestNew_VPCFlowLogV1(t *testing.T) {
@@ -134,6 +134,20 @@ func TestNew_Unimplemented(t *testing.T) {
 	assert.EqualError(t, err, `unimplemented format "invalid"`)
 }
 
+func TestValidateFeatureGates(t *testing.T) {
+	registry := featuregate.GlobalRegistry()
+	require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), true))
+	require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
+	t.Cleanup(func() {
+		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingDontEmitV0RPCConventionsFeatureGate.ID(), false))
+		require.NoError(t, registry.Set(metadata.ExtensionEncodingAwslogsencodingEmitV1RPCConventionsFeatureGate.ID(), false))
+	})
+
+	e, err := newExtension(&Config{Format: constants.FormatCloudTrailLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	require.Nil(t, e)
+	require.ErrorContains(t, err, "extension.encoding.awslogsencoding.DontEmitV0RPCConventions requires extension.encoding.awslogsencoding.EmitV1RPCConventions to be enabled")
+}
+
 func TestGetReaderFromFormat(t *testing.T) {
 	t.Parallel()
 
@@ -164,7 +178,10 @@ func TestGetReaderFromFormat(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			e := &encodingExtension{format: test.format}
+			e := &encodingExtension{
+				format: test.format,
+				cfg:    createDefaultConfig().(*Config),
+			}
 			_, reader, err := e.getReaderFromFormat(test.buf)
 			require.NoError(t, err)
 			require.NotNil(t, reader)
@@ -208,11 +225,9 @@ func TestConcurrentGzipReaderUsage(t *testing.T) {
 	concurrent := 20
 	wg := sync.WaitGroup{}
 	for range concurrent {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			testUnmarshall()
-		}()
+		})
 	}
 	wg.Wait()
 }

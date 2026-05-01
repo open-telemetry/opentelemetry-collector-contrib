@@ -12,6 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -57,11 +60,12 @@ func TestValidate(t *testing.T) {
 
 func TestFindFiles(t *testing.T) {
 	cases := []struct {
-		name     string
-		files    []string
-		include  []string
-		exclude  []string
-		expected []string
+		name                       string
+		files                      []string
+		include                    []string
+		exclude                    []string
+		expected                   []string
+		caseInsensitiveFeaturegate bool
 	}{
 		{
 			name:     "IncludeOne",
@@ -166,11 +170,38 @@ func TestFindFiles(t *testing.T) {
 			include:  []string{filepath.Join("**", "*")},
 			expected: []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
 		},
+		{
+			name:                       "CaseSensitivity_WithFeaturegate",
+			files:                      []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"},
+			include:                    []string{"*.log", "*.txt"},
+			caseInsensitiveFeaturegate: true,
+			expected: (func() []string {
+				if runtime.GOOS == "windows" {
+					return []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"}
+				}
+				return []string{"a.log", "my_file.txt"}
+			})(),
+		},
+		{
+			name:                       "CaseSensitivity_WithoutFeaturegate",
+			files:                      []string{"a.log", "B.LOG", "c.Log", "my_file.txt", "CaSe_FIle.TXT"},
+			include:                    []string{"*.log", "*.txt"},
+			caseInsensitiveFeaturegate: false,
+			expected: (func() []string {
+				return []string{"a.log", "my_file.txt"}
+			})(),
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Chdir(t.TempDir())
+			if tc.caseInsensitiveFeaturegate {
+				require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsCaseInsensitiveFeatureGate.ID(), true))
+				t.Cleanup(func() {
+					require.NoError(t, featuregate.GlobalRegistry().Set(metadata.FilelogWindowsCaseInsensitiveFeatureGate.ID(), false))
+				})
+			}
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
 

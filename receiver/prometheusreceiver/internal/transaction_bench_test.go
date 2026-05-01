@@ -13,11 +13,11 @@ import (
 	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -66,7 +66,7 @@ func benchmarkAppend(b *testing.B) {
 
 		for j, ls := range labelSets {
 			value := float64(j)
-			_, err := tx.Append(0, ls, timestamp, value)
+			_, err := tx.Append(0, ls, 0, timestamp, value, nil, nil, storage.AOptions{})
 			assert.NoError(b, err)
 		}
 	}
@@ -89,11 +89,10 @@ func benchmarkAppendHistogram(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		tx := newBenchmarkTransaction(b)
-		tx.enableNativeHistograms = true
 		b.StartTimer()
 
 		for j := range labelSets {
-			_, err := tx.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
+			_, err := tx.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
 			assert.NoError(b, err)
 		}
 	}
@@ -149,27 +148,24 @@ func benchmarkCommit(b *testing.B, useNativeHistograms, withTargetInfo, withScop
 		// Setup: Create transaction and append all data (not timed)
 		b.StopTimer()
 		tx := newBenchmarkTransaction(b)
-		if useNativeHistograms {
-			tx.enableNativeHistograms = true
-		}
 
 		if withTargetInfo {
 			targetInfoLabels := createTargetInfoLabels()
-			_, _ = tx.Append(0, targetInfoLabels, timestamp, 1)
+			_, _ = tx.Append(0, targetInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
 		}
 
 		if withScopeInfo {
 			scopeInfoLabels := createScopeInfoLabels()
-			_, _ = tx.Append(0, scopeInfoLabels, timestamp, 1)
+			_, _ = tx.Append(0, scopeInfoLabels, 0, timestamp, 1, nil, nil, storage.AOptions{})
 		}
 
 		if useNativeHistograms {
 			for j := range labelSets {
-				_, _ = tx.AppendHistogram(0, labelSets[j], timestamp, histograms[j], nil)
+				_, _ = tx.Append(0, labelSets[j], 0, timestamp, 0, histograms[j], nil, storage.AOptions{})
 			}
 		} else {
 			for j, ls := range labelSets {
-				_, _ = tx.Append(0, ls, timestamp, float64(j))
+				_, _ = tx.Append(0, ls, 0, timestamp, float64(j), nil, nil, storage.AOptions{})
 			}
 		}
 		b.StartTimer()
@@ -187,7 +183,6 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 
 	sink := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopSettings(metadata.Type)
-	adjuster := &noOpAdjuster{}
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.MustNewID("prometheus"),
 		Transport:              "http",
@@ -199,13 +194,11 @@ func newBenchmarkTransaction(b *testing.B) *transaction {
 
 	tx := newTransaction(
 		benchCtx,
-		adjuster,
 		sink,
 		labels.EmptyLabels(), // no external labels
 		settings,
 		obsrecv,
 		false, // trimSuffixes
-		false, // enableNativeHistograms (not needed for Append benchmark)
 		false, // useMetadata
 	)
 
@@ -271,14 +264,6 @@ func createScopeInfoLabels() labels.Labels {
 		prometheus.ScopeVersionLabelKey: "1.0.0",
 		"scope_attribute":               "test_value",
 	})
-}
-
-// noOpAdjuster is a MetricsAdjuster that doesn't modify metrics.
-// This isolates the transaction performance from adjustment overhead.
-type noOpAdjuster struct{}
-
-func (*noOpAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
-	return nil
 }
 
 // mockMetadataStore is a minimal implementation of scrape.MetricMetadataStore for testing

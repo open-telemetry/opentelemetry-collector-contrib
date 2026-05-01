@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/healthcheck/internal/common"
@@ -70,7 +71,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
 	if !c.UseV2 {
-		if c.Endpoint == "" {
+		if c.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if !strings.HasPrefix(c.Path, "/") {
@@ -84,7 +85,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPConfig != nil {
-		if c.HTTPConfig.Endpoint == "" {
+		if c.HTTPConfig.NetAddr.Endpoint == "" {
 			return ErrHTTPEndpointRequired
 		}
 		if c.HTTPConfig.Status.Enabled && !strings.HasPrefix(c.HTTPConfig.Status.Path, "/") {
@@ -111,7 +112,11 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if conf.IsSet(httpConfigKey) {
 		c.HTTPConfig = &http.Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointForPort(DefaultHTTPPort),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  endpointForPort(DefaultHTTPPort),
+					Transport: confignet.TransportTypeTCP,
+				},
+				KeepAlivesEnabled: true,
 			},
 			Status: http.PathConfig{
 				Enabled: true,
@@ -130,6 +135,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 					Endpoint:  endpointForPort(DefaultGRPCPort),
 					Transport: confignet.TransportTypeTCP,
 				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 			},
 		}
 	}
@@ -156,17 +162,26 @@ func NewDefaultConfig() component.Config {
 	return &Config{
 		LegacyConfig: http.LegacyConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointForPort(DefaultHTTPPort),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  endpointForPort(DefaultHTTPPort),
+					Transport: "tcp",
+				},
+				KeepAlivesEnabled: true,
 			},
 			Path: "/",
 		},
 		HTTPConfig: &http.Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: endpointForPort(DefaultHTTPPort),
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  endpointForPort(DefaultHTTPPort),
+					Transport: "tcp",
+				},
+				KeepAlivesEnabled: true,
 			},
 			Status: http.PathConfig{
-				Enabled: true,
-				Path:    "/status",
+				Enabled:           true,
+				Path:              "/status",
+				IncludeAttributes: false,
 			},
 			Config: http.PathConfig{
 				Enabled: false,
@@ -179,6 +194,7 @@ func NewDefaultConfig() component.Config {
 					Endpoint:  endpointForPort(DefaultGRPCPort),
 					Transport: "tcp",
 				},
+				Keepalive: configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 			},
 		},
 	}

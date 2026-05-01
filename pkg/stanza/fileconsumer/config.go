@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -36,21 +35,27 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
+
+	// MaxLogSizeBehaviorSplit splits oversized log entries into multiple log entries.
+	MaxLogSizeBehaviorSplit = "split"
+	// MaxLogSizeBehaviorTruncate truncates oversized log entries and drops the remainder.
+	MaxLogSizeBehaviorTruncate = "truncate"
 )
 
-var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
-	"filelog.allowFileDeletion",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+// OnTruncate defines the behavior when a file with the same fingerprint
+// is detected but with a smaller size (indicating a copytruncate rotation).
+const (
+	// OnTruncateIgnore keeps the current behavior: do not read any data until
+	// the file grows past the original offset, then read only the new data.
+	OnTruncateIgnore = "ignore"
+	// OnTruncateReadWholeFile reads the whole file from the beginning when truncation is detected.
+	OnTruncateReadWholeFile = "read_whole_file"
+	// OnTruncateReadNew stores the new (lower) offset, so that the next time the file grows,
+	// any new data past the new offset is read.
+	OnTruncateReadNew = "read_new"
 )
 
-var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
-	"filelog.allowHeaderMetadataParsing",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
-)
+const defaultOnTruncate = OnTruncateIgnore
 
 // NewConfig creates a new input config with default values
 func NewConfig() *Config {
@@ -61,8 +66,10 @@ func NewConfig() *Config {
 		FingerprintSize:    fingerprint.DefaultSize,
 		InitialBufferSize:  scanner.DefaultBufferSize,
 		MaxLogSize:         reader.DefaultMaxLogSize,
+		MaxLogSizeBehavior: MaxLogSizeBehaviorSplit,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
+		OnTruncate:         defaultOnTruncate,
 		Resolver: attrs.Resolver{
 			IncludeFileName: true,
 		},
@@ -80,6 +87,7 @@ type Config struct {
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
 	InitialBufferSize       helper.ByteSize `mapstructure:"initial_buffer_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	MaxLogSizeBehavior      string          `mapstructure:"max_log_size_behavior,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
 	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
@@ -91,6 +99,7 @@ type Config struct {
 	Compression             string          `mapstructure:"compression,omitempty"`
 	PollsToArchive          int             `mapstructure:"polls_to_archive,omitempty"`
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
+	OnTruncate              string          `mapstructure:"on_truncate,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -159,6 +168,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		FingerprintSize:         int(c.FingerprintSize),
 		InitialBufferSize:       int(c.InitialBufferSize),
 		MaxLogSize:              int(c.MaxLogSize),
+		TruncateOnMaxLogSize:    c.MaxLogSizeBehavior == MaxLogSizeBehaviorTruncate,
 		Encoding:                enc,
 		SplitFunc:               splitFunc,
 		TrimFunc:                trimFunc,
@@ -192,6 +202,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		telemetryBuilder: telemetryBuilder,
 		noTracking:       o.noTracking,
 		pollsToArchive:   c.PollsToArchive,
+		onTruncate:       c.OnTruncate,
 	}, nil
 }
 
@@ -216,14 +227,21 @@ func (c Config) validate() error {
 		return errors.New("'max_batches' must not be negative")
 	}
 
+	switch c.MaxLogSizeBehavior {
+	case MaxLogSizeBehaviorSplit:
+	case MaxLogSizeBehaviorTruncate:
+	default:
+		return fmt.Errorf("'max_log_size_behavior' must be either '%s' or '%s'", MaxLogSizeBehaviorSplit, MaxLogSizeBehaviorTruncate)
+	}
+
 	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}
 
 	if c.DeleteAfterRead {
-		if !allowFileDeletion.IsEnabled() {
-			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", allowFileDeletion.ID())
+		if !metadata.FilelogAllowFileDeletionFeatureGate.IsEnabled() {
+			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", metadata.FilelogAllowFileDeletionFeatureGate.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'delete_after_read' cannot be used with 'start_at: end'")
@@ -231,8 +249,8 @@ func (c Config) validate() error {
 	}
 
 	if c.Header != nil {
-		if !AllowHeaderMetadataParsing.IsEnabled() {
-			return fmt.Errorf("'header' requires feature gate '%s'", AllowHeaderMetadataParsing.ID())
+		if !metadata.FilelogAllowHeaderMetadataParsingFeatureGate.IsEnabled() {
+			return fmt.Errorf("'header' requires feature gate '%s'", metadata.FilelogAllowHeaderMetadataParsingFeatureGate.ID())
 		}
 		if c.StartAt == "end" {
 			return errors.New("'header' cannot be specified with 'start_at: end'")
@@ -244,7 +262,18 @@ func (c Config) validate() error {
 	}
 
 	if runtime.GOOS == "windows" && (c.IncludeFileOwnerName || c.IncludeFileOwnerGroupName) {
-		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
+		return errors.New("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported on Windows")
+	}
+
+	switch c.OnTruncate {
+	case OnTruncateIgnore, OnTruncateReadWholeFile, OnTruncateReadNew:
+		// Valid values
+	default:
+		return fmt.Errorf("'on_truncate' must be one of: %s, %s, %s", OnTruncateIgnore, OnTruncateReadWholeFile, OnTruncateReadNew)
+	}
+
+	if runtime.GOOS == "windows" && c.IncludeFilePermissions {
+		return errors.New("'include_file_permissions' is not supported on Windows")
 	}
 
 	return nil

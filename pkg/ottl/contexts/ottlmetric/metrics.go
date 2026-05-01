@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxotelcol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
@@ -40,19 +41,16 @@ var (
 
 // TransformContext represents a metric and its associated hierarchy.
 type TransformContext struct {
-	metric               pmetric.Metric
-	metrics              pmetric.MetricSlice
-	instrumentationScope pcommon.InstrumentationScope
-	resource             pcommon.Resource
-	cache                pcommon.Map
-	scopeMetrics         pmetric.ScopeMetrics
-	resourceMetrics      pmetric.ResourceMetrics
+	resourceMetrics pmetric.ResourceMetrics
+	scopeMetrics    pmetric.ScopeMetrics
+	metric          pmetric.Metric
+	cache           pcommon.Map
 }
 
 // MarshalLogObject serializes the metric into a zapcore.ObjectEncoder for logging.
 func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
-	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
-	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
+	err := encoder.AddObject("resource", logging.Resource(tCtx.GetResource()))
+	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.GetInstrumentationScope())))
 	err = errors.Join(err, encoder.AddObject("metric", logging.Metric(tCtx.metric)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 
@@ -62,33 +60,13 @@ func (tCtx *TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) er
 // TransformContextOption represents an option for configuring a TransformContext.
 type TransformContextOption func(*TransformContext)
 
-// Deprecated: [v0.142.0] Use NewTransformContextPtr.
-func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options ...TransformContextOption) TransformContext {
-	tc := TransformContext{
-		metric:               metric,
-		metrics:              metrics,
-		instrumentationScope: instrumentationScope,
-		resource:             resource,
-		cache:                pcommon.NewMap(),
-		scopeMetrics:         scopeMetrics,
-		resourceMetrics:      resourceMetrics,
-	}
-	for _, opt := range options {
-		opt(&tc)
-	}
-	return tc
-}
-
 // NewTransformContextPtr returns a new TransformContext with the provided parameters from a pool of contexts.
 // Caller must call TransformContext.Close on the returned TransformContext.
 func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetrics pmetric.ScopeMetrics, metric pmetric.Metric, options ...TransformContextOption) *TransformContext {
 	tCtx := tcPool.Get().(*TransformContext)
-	tCtx.metric = metric
-	tCtx.metrics = scopeMetrics.Metrics()
-	tCtx.instrumentationScope = scopeMetrics.Scope()
-	tCtx.resource = resourceMetrics.Resource()
-	tCtx.scopeMetrics = scopeMetrics
 	tCtx.resourceMetrics = resourceMetrics
+	tCtx.scopeMetrics = scopeMetrics
+	tCtx.metric = metric
 	for _, opt := range options {
 		opt(tCtx)
 	}
@@ -98,13 +76,10 @@ func NewTransformContextPtr(resourceMetrics pmetric.ResourceMetrics, scopeMetric
 // Close the current TransformContext.
 // After this function returns this instance cannot be used.
 func (tCtx *TransformContext) Close() {
-	tCtx.metric = pmetric.NewMetric()
-	tCtx.metrics = pmetric.MetricSlice{}
-	tCtx.instrumentationScope = pcommon.InstrumentationScope{}
-	tCtx.resource = pcommon.Resource{}
-	tCtx.cache.Clear()
-	tCtx.scopeMetrics = pmetric.ScopeMetrics{}
 	tCtx.resourceMetrics = pmetric.ResourceMetrics{}
+	tCtx.scopeMetrics = pmetric.ScopeMetrics{}
+	tCtx.metric = pmetric.NewMetric()
+	tCtx.cache.Clear()
 	tcPool.Put(tCtx)
 }
 
@@ -115,17 +90,17 @@ func (tCtx *TransformContext) GetMetric() pmetric.Metric {
 
 // GetMetrics returns the metric slice from the TransformContext.
 func (tCtx *TransformContext) GetMetrics() pmetric.MetricSlice {
-	return tCtx.metrics
+	return tCtx.scopeMetrics.Metrics()
 }
 
 // GetInstrumentationScope returns the instrumentation scope from the TransformContext.
 func (tCtx *TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return tCtx.instrumentationScope
+	return tCtx.scopeMetrics.Scope()
 }
 
 // GetResource returns the resource from the TransformContext.
 func (tCtx *TransformContext) GetResource() pcommon.Resource {
-	return tCtx.resource
+	return tCtx.resourceMetrics.Resource()
 }
 
 // GetScopeSchemaURLItem returns the scope schema URL item from the TransformContext.
@@ -150,6 +125,7 @@ func EnablePathContextNames() ottl.Option[*TransformContext] {
 			ctxscope.LegacyName,
 			ctxscope.Name,
 			ctxresource.Name,
+			ctxotelcol.Name,
 		})(p)
 	}
 }
@@ -231,5 +207,6 @@ func pathExpressionParser(cacheGetter ctxcache.Getter[*TransformContext]) ottl.P
 			ctxscope.Name:       ctxscope.PathGetSetter[*TransformContext],
 			ctxscope.LegacyName: ctxscope.PathGetSetter[*TransformContext],
 			ctxmetric.Name:      ctxmetric.PathGetSetter[*TransformContext],
+			ctxotelcol.Name:     ctxotelcol.PathGetSetter[*TransformContext],
 		})
 }
