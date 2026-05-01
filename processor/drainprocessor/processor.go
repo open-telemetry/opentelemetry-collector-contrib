@@ -5,6 +5,8 @@ package drainprocessor // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -82,6 +84,45 @@ func (p *drainProcessor) seed() {
 			p.logger.Warn("failed to seed log line, skipping", zap.String("line", line), zap.Error(err))
 		}
 	}
+}
+
+// Start loads a snapshot from storage (if available) and starts the periodic
+// save goroutine when configured.
+func (p *drainProcessor) Start(ctx context.Context, host component.Host) error {
+	var err error
+	p.storageClient, err = getStorageClient(ctx, host, p.config.Storage, p.componentID)
+	if err != nil {
+		return fmt.Errorf("failed to get storage client: %w", err)
+	}
+
+	if !p.loadSnapshot(ctx) {
+		p.seed()
+	}
+
+	if p.config.SaveInterval > 0 {
+		p.startPeriodicSave()
+	}
+	return nil
+}
+
+// Shutdown stops the periodic save goroutine, performs a final snapshot save,
+// and closes the storage client.
+func (p *drainProcessor) Shutdown(ctx context.Context) error {
+	if p.stopSave != nil {
+		p.stopSave()
+	}
+
+	var errs []error
+	if p.storageClient != nil {
+		if err := p.saveSnapshot(ctx); err != nil {
+			p.logger.Warn("final snapshot save failed", zap.Error(err))
+			errs = append(errs, err)
+		}
+		if err := p.storageClient.Close(ctx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // processLogs is the ConsumeLogs handler passed to processorhelper.NewLogs.
