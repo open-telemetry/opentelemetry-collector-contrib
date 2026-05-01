@@ -1,4 +1,4 @@
-description: Config has the configuration for the MCP extension.
+description: Config represents the extension config settings within the collector's config.yaml
 type: object
 allOf:
-    $ref: go.opentelemetry.io/collector/config/confighttp.server_config
+  - $ref: go.opentelemetry.io/collector/config/confighttp.server_config
