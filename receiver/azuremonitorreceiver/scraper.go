@@ -355,11 +355,6 @@ func (s *azureScraper) loadResources(ctx context.Context, subscriptionID string)
 	s.settings.Logger.Debug("Loading the list of Azure Resources",
 		zap.String("subscription_id", subscriptionID))
 
-	// Ensure that the map for this subscription ID is initialized before trying to access it to avoid nil pointer dereference.
-	if s.resources[subscriptionID] == nil {
-		s.resources[subscriptionID] = newUpdatedMap[string, *azureResource]()
-	}
-
 	if time.Since(s.resources[subscriptionID].LastUpdated).Seconds() < s.cfg.CacheResources {
 		s.settings.Logger.Debug("Azure Resources are cached, skipping refresh",
 			zap.String("subscription_id", subscriptionID))
