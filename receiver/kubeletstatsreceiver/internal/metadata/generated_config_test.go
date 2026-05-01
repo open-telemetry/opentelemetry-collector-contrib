@@ -26,198 +26,190 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerCPUTime: ContainerCPUTimeMetricConfig{
+					ContainerCPUTime: MetricConfig{
 						Enabled: true,
 					},
-					ContainerCPUUsage: ContainerCPUUsageMetricConfig{
+					ContainerCPUUsage: MetricConfig{
 						Enabled: true,
 					},
-					ContainerFilesystemAvailable: ContainerFilesystemAvailableMetricConfig{
+					ContainerFilesystemAvailable: MetricConfig{
 						Enabled: true,
 					},
-					ContainerFilesystemCapacity: ContainerFilesystemCapacityMetricConfig{
+					ContainerFilesystemCapacity: MetricConfig{
 						Enabled: true,
 					},
-					ContainerFilesystemUsage: ContainerFilesystemUsageMetricConfig{
+					ContainerFilesystemUsage: MetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
+					ContainerMemoryAvailable: MetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryMajorPageFaults: ContainerMemoryMajorPageFaultsMetricConfig{
+					ContainerMemoryMajorPageFaults: MetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryPageFaults: ContainerMemoryPageFaultsMetricConfig{
+					ContainerMemoryPageFaults: MetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryRss: ContainerMemoryRssMetricConfig{
+					ContainerMemoryRss: MetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
+					ContainerMemoryUsage: MetricConfig{
 						Enabled: true,
 					},
-					ContainerMemoryWorkingSet: ContainerMemoryWorkingSetMetricConfig{
+					ContainerMemoryWorkingSet: MetricConfig{
 						Enabled: true,
 					},
-					ContainerUptime: ContainerUptimeMetricConfig{
+					ContainerUptime: MetricConfig{
 						Enabled: true,
 					},
-					K8sContainerCPUNodeUtilization: K8sContainerCPUNodeUtilizationMetricConfig{
+					K8sContainerCPUNodeUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sContainerCPULimitUtilization: K8sContainerCPULimitUtilizationMetricConfig{
+					K8sContainerCPULimitUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sContainerCPURequestUtilization: K8sContainerCPURequestUtilizationMetricConfig{
+					K8sContainerCPURequestUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sContainerMemoryNodeUtilization: K8sContainerMemoryNodeUtilizationMetricConfig{
+					K8sContainerMemoryNodeUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sContainerMemoryLimitUtilization: K8sContainerMemoryLimitUtilizationMetricConfig{
+					K8sContainerMemoryLimitUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sContainerMemoryRequestUtilization: K8sContainerMemoryRequestUtilizationMetricConfig{
+					K8sContainerMemoryRequestUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeCPUTime: K8sNodeCPUTimeMetricConfig{
+					K8sNodeCPUTime: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeCPUUsage: K8sNodeCPUUsageMetricConfig{
+					K8sNodeCPUUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeFilesystemAvailable: K8sNodeFilesystemAvailableMetricConfig{
+					K8sNodeFilesystemAvailable: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityMetricConfig{
+					K8sNodeFilesystemCapacity: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeFilesystemUsage: K8sNodeFilesystemUsageMetricConfig{
+					K8sNodeFilesystemUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
+					K8sNodeMemoryAvailable: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeMemoryMajorPageFaults: K8sNodeMemoryMajorPageFaultsMetricConfig{
+					K8sNodeMemoryMajorPageFaults: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeMemoryPageFaults: K8sNodeMemoryPageFaultsMetricConfig{
+					K8sNodeMemoryPageFaults: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeMemoryRss: K8sNodeMemoryRssMetricConfig{
+					K8sNodeMemoryRss: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeMemoryUsage: K8sNodeMemoryUsageMetricConfig{
+					K8sNodeMemoryUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeMemoryWorkingSet: K8sNodeMemoryWorkingSetMetricConfig{
+					K8sNodeMemoryWorkingSet: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeNetworkErrors: K8sNodeNetworkErrorsMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeNetworkErrorsMetricAttributeKey{K8sNodeNetworkErrorsMetricAttributeKeyInterface, K8sNodeNetworkErrorsMetricAttributeKeyDirection},
-					},
-					K8sNodeNetworkIo: K8sNodeNetworkIoMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
-					},
-					K8sNodeSystemContainerCPUTime: K8sNodeSystemContainerCPUTimeMetricConfig{
+					K8sNodeNetworkErrors: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeSystemContainerCPUUsage: K8sNodeSystemContainerCPUUsageMetricConfig{
+					K8sNodeNetworkIo: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeSystemContainerMemoryUsage: K8sNodeSystemContainerMemoryUsageMetricConfig{
+					K8sNodeSystemContainerCPUTime: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeSystemContainerMemoryWorkingSet: K8sNodeSystemContainerMemoryWorkingSetMetricConfig{
+					K8sNodeSystemContainerCPUUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sNodeUptime: K8sNodeUptimeMetricConfig{
+					K8sNodeSystemContainerMemoryUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodCPUNodeUtilization: K8sPodCPUNodeUtilizationMetricConfig{
+					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
+					K8sNodeUptime: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodCPUUsage: K8sPodCPUUsageMetricConfig{
+					K8sPodCPUNodeUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodCPULimitUtilization: K8sPodCPULimitUtilizationMetricConfig{
+					K8sPodCPUTime: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodCPURequestUtilization: K8sPodCPURequestUtilizationMetricConfig{
+					K8sPodCPUUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodFilesystemAvailable: K8sPodFilesystemAvailableMetricConfig{
+					K8sPodCPULimitUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodFilesystemCapacity: K8sPodFilesystemCapacityMetricConfig{
+					K8sPodCPURequestUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodFilesystemUsage: K8sPodFilesystemUsageMetricConfig{
+					K8sPodFilesystemAvailable: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
+					K8sPodFilesystemCapacity: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryMajorPageFaults: K8sPodMemoryMajorPageFaultsMetricConfig{
+					K8sPodFilesystemUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryNodeUtilization: K8sPodMemoryNodeUtilizationMetricConfig{
+					K8sPodMemoryAvailable: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryPageFaults: K8sPodMemoryPageFaultsMetricConfig{
+					K8sPodMemoryMajorPageFaults: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryRss: K8sPodMemoryRssMetricConfig{
+					K8sPodMemoryNodeUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryUsage: K8sPodMemoryUsageMetricConfig{
+					K8sPodMemoryPageFaults: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryWorkingSet: K8sPodMemoryWorkingSetMetricConfig{
+					K8sPodMemoryRss: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryLimitUtilization: K8sPodMemoryLimitUtilizationMetricConfig{
+					K8sPodMemoryUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodMemoryRequestUtilization: K8sPodMemoryRequestUtilizationMetricConfig{
+					K8sPodMemoryWorkingSet: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodNetworkErrors: K8sPodNetworkErrorsMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodNetworkErrorsMetricAttributeKey{K8sPodNetworkErrorsMetricAttributeKeyInterface, K8sPodNetworkErrorsMetricAttributeKeyDirection},
-					},
-					K8sPodNetworkIo: K8sPodNetworkIoMetricConfig{
-						Enabled:             true,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodNetworkIoMetricAttributeKey{K8sPodNetworkIoMetricAttributeKeyInterface, K8sPodNetworkIoMetricAttributeKeyDirection},
-					},
-					K8sPodUptime: K8sPodUptimeMetricConfig{
+					K8sPodMemoryLimitUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sPodVolumeUsage: K8sPodVolumeUsageMetricConfig{
+					K8sPodMemoryRequestUtilization: MetricConfig{
 						Enabled: true,
 					},
-					K8sVolumeAvailable: K8sVolumeAvailableMetricConfig{
+					K8sPodNetworkErrors: MetricConfig{
 						Enabled: true,
 					},
-					K8sVolumeCapacity: K8sVolumeCapacityMetricConfig{
+					K8sPodNetworkIo: MetricConfig{
 						Enabled: true,
 					},
-					K8sVolumeInodes: K8sVolumeInodesMetricConfig{
+					K8sPodUptime: MetricConfig{
 						Enabled: true,
 					},
-					K8sVolumeInodesFree: K8sVolumeInodesFreeMetricConfig{
+					K8sPodVolumeUsage: MetricConfig{
 						Enabled: true,
 					},
-					K8sVolumeInodesUsed: K8sVolumeInodesUsedMetricConfig{
+					K8sVolumeAvailable: MetricConfig{
+						Enabled: true,
+					},
+					K8sVolumeCapacity: MetricConfig{
+						Enabled: true,
+					},
+					K8sVolumeInodes: MetricConfig{
+						Enabled: true,
+					},
+					K8sVolumeInodesFree: MetricConfig{
+						Enabled: true,
+					},
+					K8sVolumeInodesUsed: MetricConfig{
 						Enabled: true,
 					},
 				},
@@ -245,198 +237,190 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					ContainerCPUTime: ContainerCPUTimeMetricConfig{
+					ContainerCPUTime: MetricConfig{
 						Enabled: false,
 					},
-					ContainerCPUUsage: ContainerCPUUsageMetricConfig{
+					ContainerCPUUsage: MetricConfig{
 						Enabled: false,
 					},
-					ContainerFilesystemAvailable: ContainerFilesystemAvailableMetricConfig{
+					ContainerFilesystemAvailable: MetricConfig{
 						Enabled: false,
 					},
-					ContainerFilesystemCapacity: ContainerFilesystemCapacityMetricConfig{
+					ContainerFilesystemCapacity: MetricConfig{
 						Enabled: false,
 					},
-					ContainerFilesystemUsage: ContainerFilesystemUsageMetricConfig{
+					ContainerFilesystemUsage: MetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryAvailable: ContainerMemoryAvailableMetricConfig{
+					ContainerMemoryAvailable: MetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryMajorPageFaults: ContainerMemoryMajorPageFaultsMetricConfig{
+					ContainerMemoryMajorPageFaults: MetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryPageFaults: ContainerMemoryPageFaultsMetricConfig{
+					ContainerMemoryPageFaults: MetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryRss: ContainerMemoryRssMetricConfig{
+					ContainerMemoryRss: MetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
+					ContainerMemoryUsage: MetricConfig{
 						Enabled: false,
 					},
-					ContainerMemoryWorkingSet: ContainerMemoryWorkingSetMetricConfig{
+					ContainerMemoryWorkingSet: MetricConfig{
 						Enabled: false,
 					},
-					ContainerUptime: ContainerUptimeMetricConfig{
+					ContainerUptime: MetricConfig{
 						Enabled: false,
 					},
-					K8sContainerCPUNodeUtilization: K8sContainerCPUNodeUtilizationMetricConfig{
+					K8sContainerCPUNodeUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sContainerCPULimitUtilization: K8sContainerCPULimitUtilizationMetricConfig{
+					K8sContainerCPULimitUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sContainerCPURequestUtilization: K8sContainerCPURequestUtilizationMetricConfig{
+					K8sContainerCPURequestUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sContainerMemoryNodeUtilization: K8sContainerMemoryNodeUtilizationMetricConfig{
+					K8sContainerMemoryNodeUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sContainerMemoryLimitUtilization: K8sContainerMemoryLimitUtilizationMetricConfig{
+					K8sContainerMemoryLimitUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sContainerMemoryRequestUtilization: K8sContainerMemoryRequestUtilizationMetricConfig{
+					K8sContainerMemoryRequestUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeCPUTime: K8sNodeCPUTimeMetricConfig{
+					K8sNodeCPUTime: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeCPUUsage: K8sNodeCPUUsageMetricConfig{
+					K8sNodeCPUUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeFilesystemAvailable: K8sNodeFilesystemAvailableMetricConfig{
+					K8sNodeFilesystemAvailable: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeFilesystemCapacity: K8sNodeFilesystemCapacityMetricConfig{
+					K8sNodeFilesystemCapacity: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeFilesystemUsage: K8sNodeFilesystemUsageMetricConfig{
+					K8sNodeFilesystemUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeMemoryAvailable: K8sNodeMemoryAvailableMetricConfig{
+					K8sNodeMemoryAvailable: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeMemoryMajorPageFaults: K8sNodeMemoryMajorPageFaultsMetricConfig{
+					K8sNodeMemoryMajorPageFaults: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeMemoryPageFaults: K8sNodeMemoryPageFaultsMetricConfig{
+					K8sNodeMemoryPageFaults: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeMemoryRss: K8sNodeMemoryRssMetricConfig{
+					K8sNodeMemoryRss: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeMemoryUsage: K8sNodeMemoryUsageMetricConfig{
+					K8sNodeMemoryUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeMemoryWorkingSet: K8sNodeMemoryWorkingSetMetricConfig{
+					K8sNodeMemoryWorkingSet: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeNetworkErrors: K8sNodeNetworkErrorsMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeNetworkErrorsMetricAttributeKey{K8sNodeNetworkErrorsMetricAttributeKeyInterface, K8sNodeNetworkErrorsMetricAttributeKeyDirection},
-					},
-					K8sNodeNetworkIo: K8sNodeNetworkIoMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sNodeNetworkIoMetricAttributeKey{K8sNodeNetworkIoMetricAttributeKeyInterface, K8sNodeNetworkIoMetricAttributeKeyDirection},
-					},
-					K8sNodeSystemContainerCPUTime: K8sNodeSystemContainerCPUTimeMetricConfig{
+					K8sNodeNetworkErrors: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeSystemContainerCPUUsage: K8sNodeSystemContainerCPUUsageMetricConfig{
+					K8sNodeNetworkIo: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeSystemContainerMemoryUsage: K8sNodeSystemContainerMemoryUsageMetricConfig{
+					K8sNodeSystemContainerCPUTime: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeSystemContainerMemoryWorkingSet: K8sNodeSystemContainerMemoryWorkingSetMetricConfig{
+					K8sNodeSystemContainerCPUUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sNodeUptime: K8sNodeUptimeMetricConfig{
+					K8sNodeSystemContainerMemoryUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodCPUNodeUtilization: K8sPodCPUNodeUtilizationMetricConfig{
+					K8sNodeSystemContainerMemoryWorkingSet: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodCPUTime: K8sPodCPUTimeMetricConfig{
+					K8sNodeUptime: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodCPUUsage: K8sPodCPUUsageMetricConfig{
+					K8sPodCPUNodeUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodCPULimitUtilization: K8sPodCPULimitUtilizationMetricConfig{
+					K8sPodCPUTime: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodCPURequestUtilization: K8sPodCPURequestUtilizationMetricConfig{
+					K8sPodCPUUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodFilesystemAvailable: K8sPodFilesystemAvailableMetricConfig{
+					K8sPodCPULimitUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodFilesystemCapacity: K8sPodFilesystemCapacityMetricConfig{
+					K8sPodCPURequestUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodFilesystemUsage: K8sPodFilesystemUsageMetricConfig{
+					K8sPodFilesystemAvailable: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryAvailable: K8sPodMemoryAvailableMetricConfig{
+					K8sPodFilesystemCapacity: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryMajorPageFaults: K8sPodMemoryMajorPageFaultsMetricConfig{
+					K8sPodFilesystemUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryNodeUtilization: K8sPodMemoryNodeUtilizationMetricConfig{
+					K8sPodMemoryAvailable: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryPageFaults: K8sPodMemoryPageFaultsMetricConfig{
+					K8sPodMemoryMajorPageFaults: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryRss: K8sPodMemoryRssMetricConfig{
+					K8sPodMemoryNodeUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryUsage: K8sPodMemoryUsageMetricConfig{
+					K8sPodMemoryPageFaults: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryWorkingSet: K8sPodMemoryWorkingSetMetricConfig{
+					K8sPodMemoryRss: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryLimitUtilization: K8sPodMemoryLimitUtilizationMetricConfig{
+					K8sPodMemoryUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodMemoryRequestUtilization: K8sPodMemoryRequestUtilizationMetricConfig{
+					K8sPodMemoryWorkingSet: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodNetworkErrors: K8sPodNetworkErrorsMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodNetworkErrorsMetricAttributeKey{K8sPodNetworkErrorsMetricAttributeKeyInterface, K8sPodNetworkErrorsMetricAttributeKeyDirection},
-					},
-					K8sPodNetworkIo: K8sPodNetworkIoMetricConfig{
-						Enabled:             false,
-						AggregationStrategy: AggregationStrategySum,
-						EnabledAttributes:   []K8sPodNetworkIoMetricAttributeKey{K8sPodNetworkIoMetricAttributeKeyInterface, K8sPodNetworkIoMetricAttributeKeyDirection},
-					},
-					K8sPodUptime: K8sPodUptimeMetricConfig{
+					K8sPodMemoryLimitUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sPodVolumeUsage: K8sPodVolumeUsageMetricConfig{
+					K8sPodMemoryRequestUtilization: MetricConfig{
 						Enabled: false,
 					},
-					K8sVolumeAvailable: K8sVolumeAvailableMetricConfig{
+					K8sPodNetworkErrors: MetricConfig{
 						Enabled: false,
 					},
-					K8sVolumeCapacity: K8sVolumeCapacityMetricConfig{
+					K8sPodNetworkIo: MetricConfig{
 						Enabled: false,
 					},
-					K8sVolumeInodes: K8sVolumeInodesMetricConfig{
+					K8sPodUptime: MetricConfig{
 						Enabled: false,
 					},
-					K8sVolumeInodesFree: K8sVolumeInodesFreeMetricConfig{
+					K8sPodVolumeUsage: MetricConfig{
 						Enabled: false,
 					},
-					K8sVolumeInodesUsed: K8sVolumeInodesUsedMetricConfig{
+					K8sVolumeAvailable: MetricConfig{
+						Enabled: false,
+					},
+					K8sVolumeCapacity: MetricConfig{
+						Enabled: false,
+					},
+					K8sVolumeInodes: MetricConfig{
+						Enabled: false,
+					},
+					K8sVolumeInodesFree: MetricConfig{
+						Enabled: false,
+					},
+					K8sVolumeInodesUsed: MetricConfig{
 						Enabled: false,
 					},
 				},
@@ -464,7 +448,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ContainerCPUTimeMetricConfig{}, ContainerCPUUsageMetricConfig{}, ContainerFilesystemAvailableMetricConfig{}, ContainerFilesystemCapacityMetricConfig{}, ContainerFilesystemUsageMetricConfig{}, ContainerMemoryAvailableMetricConfig{}, ContainerMemoryMajorPageFaultsMetricConfig{}, ContainerMemoryPageFaultsMetricConfig{}, ContainerMemoryRssMetricConfig{}, ContainerMemoryUsageMetricConfig{}, ContainerMemoryWorkingSetMetricConfig{}, ContainerUptimeMetricConfig{}, K8sContainerCPUNodeUtilizationMetricConfig{}, K8sContainerCPULimitUtilizationMetricConfig{}, K8sContainerCPURequestUtilizationMetricConfig{}, K8sContainerMemoryNodeUtilizationMetricConfig{}, K8sContainerMemoryLimitUtilizationMetricConfig{}, K8sContainerMemoryRequestUtilizationMetricConfig{}, K8sNodeCPUTimeMetricConfig{}, K8sNodeCPUUsageMetricConfig{}, K8sNodeFilesystemAvailableMetricConfig{}, K8sNodeFilesystemCapacityMetricConfig{}, K8sNodeFilesystemUsageMetricConfig{}, K8sNodeMemoryAvailableMetricConfig{}, K8sNodeMemoryMajorPageFaultsMetricConfig{}, K8sNodeMemoryPageFaultsMetricConfig{}, K8sNodeMemoryRssMetricConfig{}, K8sNodeMemoryUsageMetricConfig{}, K8sNodeMemoryWorkingSetMetricConfig{}, K8sNodeNetworkErrorsMetricConfig{}, K8sNodeNetworkIoMetricConfig{}, K8sNodeSystemContainerCPUTimeMetricConfig{}, K8sNodeSystemContainerCPUUsageMetricConfig{}, K8sNodeSystemContainerMemoryUsageMetricConfig{}, K8sNodeSystemContainerMemoryWorkingSetMetricConfig{}, K8sNodeUptimeMetricConfig{}, K8sPodCPUNodeUtilizationMetricConfig{}, K8sPodCPUTimeMetricConfig{}, K8sPodCPUUsageMetricConfig{}, K8sPodCPULimitUtilizationMetricConfig{}, K8sPodCPURequestUtilizationMetricConfig{}, K8sPodFilesystemAvailableMetricConfig{}, K8sPodFilesystemCapacityMetricConfig{}, K8sPodFilesystemUsageMetricConfig{}, K8sPodMemoryAvailableMetricConfig{}, K8sPodMemoryMajorPageFaultsMetricConfig{}, K8sPodMemoryNodeUtilizationMetricConfig{}, K8sPodMemoryPageFaultsMetricConfig{}, K8sPodMemoryRssMetricConfig{}, K8sPodMemoryUsageMetricConfig{}, K8sPodMemoryWorkingSetMetricConfig{}, K8sPodMemoryLimitUtilizationMetricConfig{}, K8sPodMemoryRequestUtilizationMetricConfig{}, K8sPodNetworkErrorsMetricConfig{}, K8sPodNetworkIoMetricConfig{}, K8sPodUptimeMetricConfig{}, K8sPodVolumeUsageMetricConfig{}, K8sVolumeAvailableMetricConfig{}, K8sVolumeCapacityMetricConfig{}, K8sVolumeInodesMetricConfig{}, K8sVolumeInodesFreeMetricConfig{}, K8sVolumeInodesUsedMetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
