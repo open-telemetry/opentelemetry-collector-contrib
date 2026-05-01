@@ -38,6 +38,9 @@ func (e *pebbleTailStorageExtension) Start(_ context.Context, _ component.Host) 
 }
 
 func (e *pebbleTailStorageExtension) Shutdown(_ context.Context) error {
+	if e.storage == nil {
+		return nil
+	}
 	err := e.storage.Close()
 	e.storage = nil
 	return err
