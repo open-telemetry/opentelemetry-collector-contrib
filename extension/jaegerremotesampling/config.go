@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -97,5 +98,18 @@ func extractPort(endpoint string) (string, error) {
 		return "", fmt.Errorf("failed to parse endpoint %q: %w", endpoint, err)
 	}
 
-	return port, nil
+	// Normalize the port so comparisons do not miss equivalent values like "08080" or service names.
+	if portNumber, err := strconv.Atoi(port); err == nil {
+		if portNumber < 0 || portNumber > 65535 {
+			return "", fmt.Errorf("invalid port %q: out of range", port)
+		}
+		return strconv.Itoa(portNumber), nil
+	}
+
+	portNumber, err := net.LookupPort("tcp", port)
+	if err != nil {
+		return "", fmt.Errorf("invalid port %q: %w", port, err)
+	}
+
+	return strconv.Itoa(portNumber), nil
 }

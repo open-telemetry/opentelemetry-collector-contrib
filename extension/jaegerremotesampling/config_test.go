@@ -244,6 +244,44 @@ func TestConfigValidate(t *testing.T) {
 			expectedErr: errSamePortConflict,
 		},
 		{
+			name: "invalid: same port with zero-padded format",
+			config: Config{
+				HTTPServerConfig: &confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint: "0.0.0.0:08080",
+					},
+				},
+				GRPCServerConfig: &configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint: "0.0.0.0:8080",
+					},
+				},
+				Source: Source{
+					File: "/etc/strategies.json",
+				},
+			},
+			expectedErr: errSamePortConflict,
+		},
+		{
+			name: "invalid: same port with service name",
+			config: Config{
+				HTTPServerConfig: &confighttp.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint: "localhost:http",
+					},
+				},
+				GRPCServerConfig: &configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint: "0.0.0.0:80",
+					},
+				},
+				Source: Source{
+					File: "/etc/strategies.json",
+				},
+			},
+			expectedErr: errSamePortConflict,
+		},
+		{
 			name: "invalid: too many sources",
 			config: Config{
 				HTTPServerConfig: &confighttp.ServerConfig{
@@ -320,6 +358,18 @@ func TestExtractPort(t *testing.T) {
 			name:         "IPv6 with zone",
 			endpoint:     "[fe80::1%lo0]:8080",
 			expectedPort: "8080",
+			expectError:  false,
+		},
+		{
+			name:         "zero-padded port",
+			endpoint:     "0.0.0.0:08080",
+			expectedPort: "8080",
+			expectError:  false,
+		},
+		{
+			name:         "service name port",
+			endpoint:     "localhost:http",
+			expectedPort: "80",
 			expectError:  false,
 		},
 		{
