@@ -4,7 +4,6 @@
 package cardinalityguardianprocessor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,12 +34,12 @@ func TestCreateMetricsProcessor(t *testing.T) {
 	set := processortest.NewNopSettings(component.MustNewType("cardinality_guardian"))
 
 	// Test successful creation
-	tp, err := createMetricsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	tp, err := createMetricsProcessor(t.Context(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
 	// Test invalid config type
-	_, err = createMetricsProcessor(context.Background(), set, nil, consumertest.NewNop())
+	_, err = createMetricsProcessor(t.Context(), set, nil, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid config type")
 }

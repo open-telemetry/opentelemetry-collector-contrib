@@ -4,7 +4,10 @@
 // Package cardinalityguardianprocessor is documented in processor.go.
 package cardinalityguardianprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cardinalityguardianprocessor"
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // Config defines the user-facing configuration for the cardinality_guardian
 // processor. Every field maps directly to a key in the OpenTelemetry Collector
@@ -123,30 +126,30 @@ type Config struct {
 // construction; a non-nil return value prevents the pipeline from starting.
 func (c *Config) Validate() error {
 	if c.MaxCardinalityDeltaPerEpoch <= 0 {
-		return fmt.Errorf("max_cardinality_delta_per_epoch must be greater than 0")
+		return errors.New("max_cardinality_delta_per_epoch must be greater than 0")
 	}
 	if c.EpochDurationSeconds < 10 {
-		return fmt.Errorf("epoch_duration_seconds must be at least 10")
+		return errors.New("epoch_duration_seconds must be at least 10")
 	}
 	if c.EstimatedCostPerMetricMonth < 0 {
-		return fmt.Errorf("estimated_cost_per_metric_month cannot be negative")
+		return errors.New("estimated_cost_per_metric_month cannot be negative")
 	}
 	if c.TopOffendersCount < 0 || c.TopOffendersCount > 500 {
-		return fmt.Errorf("top_offenders_count must be between 0 and 500")
+		return errors.New("top_offenders_count must be between 0 and 500")
 	}
 	if c.MaxTrackerCount < 0 || c.MaxTrackerCount > 10000000 {
-		return fmt.Errorf("max_tracker_count must be between 0 and 10,000,000")
+		return errors.New("max_tracker_count must be between 0 and 10,000,000")
 	}
 	for name, limit := range c.MetricOverrides {
 		if name == "" {
-			return fmt.Errorf("metric_overrides contains an empty metric name")
+			return errors.New("metric_overrides contains an empty metric name")
 		}
 		if limit <= 0 {
 			return fmt.Errorf("metric_overrides[%q] must be greater than 0", name)
 		}
 	}
 	if c.DropLogMaxPerEpoch < 0 {
-		return fmt.Errorf("drop_log_max_per_epoch must be >= 0")
+		return errors.New("drop_log_max_per_epoch must be >= 0")
 	}
 	return nil
 }

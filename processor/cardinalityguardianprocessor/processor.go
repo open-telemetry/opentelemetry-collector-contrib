@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package cardinalityguardianprocessor
 
 import (
@@ -21,14 +24,14 @@ func newCardinalityProcessor(
 		set,
 		cfg,
 		nextConsumer,
-		func(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+		func(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 			return md, nil
 		},
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		processorhelper.WithStart(func(ctx context.Context, host component.Host) error {
+		processorhelper.WithStart(func(_ context.Context, _ component.Host) error {
 			return nil
 		}),
-		processorhelper.WithShutdown(func(ctx context.Context) error {
+		processorhelper.WithShutdown(func(_ context.Context) error {
 			return nil
 		}),
 	)
