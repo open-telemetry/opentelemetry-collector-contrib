@@ -20,14 +20,6 @@ type Config struct {
 	HTTP configoptional.Optional[confighttp.ServerConfig] `mapstructure:"http"`
 }
 
-// HTTPConfig defines the configuration for the HTTP server receiving traces.
-type HTTPConfig struct {
-	confighttp.ServerConfig `mapstructure:",squash"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
