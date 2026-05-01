@@ -34,6 +34,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - groupbyattrs
         - groupbytrace
