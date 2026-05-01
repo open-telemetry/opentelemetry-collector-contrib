@@ -28,12 +28,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
+// azureType is built from the collected list of azureResource.
+// It is just a helper allowing us to easily find back the resourceIDs to provide to the AzBatch API.
 type azureType struct {
-	name                      *string
-	resourceIDs               []string
-	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
-	metricsDefinitionsUpdated time.Time
+	resourceIDs []string
 }
+
+// azResourceTypeStore is a convenient alias for azureBatchScraper.resourceTypes field
+type azResourceTypeStore = map[string]*updatedMap[string, *azureType]
+
+// azRegionStore is a convenient alias for azureBatchScraper.regions field
+type azRegionStore = map[string]*updatedMap[string, void]
 
 func newBatchScraper(conf *Config, settings receiver.Settings) *azureBatchScraper {
 	return &azureBatchScraper{
@@ -53,16 +58,18 @@ type azureBatchScraper struct {
 	cfg              *Config
 	receiverSettings receiver.Settings
 	settings         component.TelemetrySettings
-	// resources on which we'll get attributes. Stored by resource id and subscription id.
-	resources map[string]map[string]*azureResource
-	// resourceTypes on which we'll collect metrics. Stored by resource type and subscription id.
-	resourceTypes map[string]map[string]*azureType
+	mbs              concurrentMetricsBuilderMap[*metadata.MetricsBuilder]
+
 	// subscriptions on which we'll look up resources. Stored by subscription id.
-	subscriptions        map[string]*azureSubscription
-	subscriptionsUpdated time.Time
-	// regions on which we'll collect metrics. Stored by subscription id.
-	regions map[string]map[string]struct{}
-	mbs     concurrentMetricsBuilderMap[*metadata.MetricsBuilder]
+	subscriptions azSubscriptionStore
+	// resourceTypes on which we'll look up metrics. Stored by subscription id and resource type.
+	resourceTypes azResourceTypeStore
+	// resources on which we'll look up metrics. Stored by subscription id and resource id.
+	resources azResourceStore
+	// regions on which we'll collect values. Stored by subscription id.
+	regions azRegionStore
+	// metrics on which we'll collect values. Stored by subscription id, resource id, and metricsCompositeKey.
+	metrics azMetricsStore
 
 	mutex                        *sync.Mutex
 	time                         timeNowIface
@@ -81,31 +88,34 @@ func (s *azureBatchScraper) start(_ context.Context, host component.Host) (err e
 		return err
 	}
 
-	s.subscriptions = map[string]*azureSubscription{}
-	s.resourceTypes = map[string]map[string]*azureType{}
-	s.resources = map[string]map[string]*azureResource{}
-	s.regions = map[string]map[string]struct{}{}
+	s.subscriptions = newUpdatedMap[string, *azureSubscription]()
+	s.resourceTypes = azResourceTypeStore{}
+	s.resources = azResourceStore{}
+	s.regions = azRegionStore{}
+	s.metrics = azMetricsStore{}
 
 	return err
 }
 
 func (s *azureBatchScraper) loadSubscription(sub azureSubscription) {
-	s.resourceTypes[sub.SubscriptionID] = make(map[string]*azureType)
-	s.resources[sub.SubscriptionID] = make(map[string]*azureResource)
-	s.regions[sub.SubscriptionID] = make(map[string]struct{})
-	s.subscriptions[sub.SubscriptionID] = &azureSubscription{
+	s.subscriptions.Data[sub.SubscriptionID] = &azureSubscription{
 		SubscriptionID: sub.SubscriptionID,
 		DisplayName:    sub.DisplayName,
 	}
+	s.resources[sub.SubscriptionID] = newUpdatedMap[string, *azureResource]()
+	s.resourceTypes[sub.SubscriptionID] = newUpdatedMap[string, *azureType]()
+	s.regions[sub.SubscriptionID] = newUpdatedMap[string, void]()
+	s.metrics[sub.SubscriptionID] = make(map[string]*updatedMap[metricsCompositeKey, *azureResourceMetrics])
 }
 
 func (s *azureBatchScraper) unloadSubscription(id string) {
 	s.settings.Logger.Debug("Unloading subscription", zap.String("subscription_id", id))
 
-	delete(s.subscriptions, id)
+	delete(s.subscriptions.Data, id)
 	delete(s.resourceTypes, id)
 	delete(s.resources, id)
 	delete(s.regions, id)
+	delete(s.metrics, id)
 }
 
 func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -113,7 +123,7 @@ func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var subWG sync.WaitGroup
 
-	for subID, subscription := range s.subscriptions {
+	for subID, subscription := range s.subscriptions.Data {
 		s.mbs.Set(subID, metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.receiverSettings))
 		subWG.Add(1)
 		go func(subscriptionID string) {
@@ -123,7 +133,7 @@ func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 			resourceTypesWithDefinitions := make(chan string)
 			go func() {
 				defer close(resourceTypesWithDefinitions)
-				for resourceType := range s.resourceTypes[subscriptionID] {
+				for resourceType := range s.resourceTypes[subscriptionID].Data {
 					s.loadResourceMetricsDefinitionsByType(ctx, subscriptionID, resourceType)
 					resourceTypesWithDefinitions <- resourceType
 				}
@@ -171,7 +181,7 @@ func (s *azureBatchScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 // TODO: duplicate
 func (s *azureBatchScraper) loadSubscriptions(ctx context.Context) {
 	s.settings.Logger.Debug("Loading the list of Azure Subscriptions", zap.Bool("discover_subscriptions", s.cfg.DiscoverSubscriptions))
-	if time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources {
+	if time.Since(s.subscriptions.LastUpdated).Seconds() < s.cfg.CacheResources {
 		s.settings.Logger.Debug("Azure subscriptions are cached, skipping refresh")
 		return
 	}
@@ -215,15 +225,15 @@ func (s *azureBatchScraper) loadSubscriptions(ctx context.Context) {
 				DisplayName:    *resp.DisplayName,
 			})
 		}
-		s.subscriptionsUpdated = time.Now()
+		s.subscriptions.LastUpdated = time.Now()
 		s.settings.Logger.Info("Loaded the list of Azure Subscriptions",
-			zap.Int("subscriptions_count", len(s.subscriptions)))
+			zap.Int("subscriptions_count", len(s.subscriptions.Data)))
 		return
 	}
 
 	// Prepare a map of existing subscriptions to detect removed ones later
 	existingSubscriptions := map[string]void{}
-	for id := range s.subscriptions {
+	for id := range s.subscriptions.Data {
 		existingSubscriptions[id] = void{}
 	}
 
@@ -258,9 +268,9 @@ func (s *azureBatchScraper) loadSubscriptions(ctx context.Context) {
 		}
 	}
 
-	s.subscriptionsUpdated = time.Now()
+	s.subscriptions.LastUpdated = time.Now()
 	s.settings.Logger.Info("Loaded the list of Azure Subscriptions",
-		zap.Int("subscriptions_count", len(s.subscriptions)),
+		zap.Int("subscriptions_count", len(s.subscriptions.Data)),
 		zap.Int("deleted_subscriptions_count", len(existingSubscriptions)))
 }
 
@@ -268,7 +278,21 @@ func (s *azureBatchScraper) loadSubscriptions(ctx context.Context) {
 func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscriptionID string) {
 	s.settings.Logger.Debug("Loading the list of Azure Resources",
 		zap.String("subscription_id", subscriptionID))
-	if time.Since(s.subscriptions[subscriptionID].resourcesUpdated).Seconds() < s.cfg.CacheResources {
+
+	// Ensure that the maps for this subscription ID are initialized before trying to access it to avoid nil pointer dereference.
+	if s.resources[subscriptionID] == nil {
+		s.resources[subscriptionID] = newUpdatedMap[string, *azureResource]()
+	}
+	if s.resourceTypes[subscriptionID] == nil {
+		s.resourceTypes[subscriptionID] = newUpdatedMap[string, *azureType]()
+	}
+	if s.regions[subscriptionID] == nil {
+		s.regions[subscriptionID] = newUpdatedMap[string, void]()
+	}
+
+	if time.Since(s.resources[subscriptionID].LastUpdated).Seconds() < s.cfg.CacheResources ||
+		time.Since(s.resourceTypes[subscriptionID].LastUpdated).Seconds() < s.cfg.CacheResourcesDefinitions ||
+		time.Since(s.regions[subscriptionID].LastUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
 		s.settings.Logger.Debug("Azure Resources are cached, skipping refresh",
 			zap.String("subscription_id", subscriptionID))
 		return
@@ -283,7 +307,7 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 
 	// Prepare a map of existing resources to detect removed ones later
 	existingResources := map[string]void{}
-	for id := range s.resources[subscriptionID] {
+	for id := range s.resources[subscriptionID].Data {
 		existingResources[id] = void{}
 	}
 
@@ -318,7 +342,7 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 		page++
 
 		for _, resource := range s.processResources(nextResult.Value) {
-			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
+			if _, ok := s.resources[subscriptionID].Data[*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
 					attributeName:          resource.Name,
@@ -326,17 +350,16 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 					attributeResourceType:  resource.Type,
 				}
 				if resource.Location != nil {
-					s.regions[subscriptionID][*resource.Location] = struct{}{}
+					s.regions[subscriptionID].Data[*resource.Location] = struct{}{}
 					attributes[attributeLocation] = resource.Location
 				}
-				s.resources[subscriptionID][*resource.ID] = &azureResource{
+				s.resources[subscriptionID].Data[*resource.ID] = &azureResource{
 					attributes:   attributes,
 					tags:         filterResourceTags(tagsFilterMap, resource.Tags),
 					resourceType: resource.Type,
 				}
 				if resourceTypes[*resource.Type] == nil {
 					resourceTypes[*resource.Type] = &azureType{
-						name:        resource.Type,
 						resourceIDs: []string{*resource.ID},
 					}
 				} else {
@@ -350,16 +373,38 @@ func (s *azureBatchScraper) loadResourcesAndTypes(ctx context.Context, subscript
 	// Unload resources that are no longer present
 	if len(existingResources) > 0 {
 		for idToDelete := range existingResources {
-			delete(s.resources[subscriptionID], idToDelete)
+			delete(s.resources[subscriptionID].Data, idToDelete)
 		}
 	}
 
-	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
+	s.resources[subscriptionID].LastUpdated = time.Now()
+	s.resourceTypes[subscriptionID].LastUpdated = time.Now()
+	s.regions[subscriptionID].LastUpdated = time.Now()
+	maps.Copy(s.resourceTypes[subscriptionID].Data, resourceTypes)
+
+	// Pre-allocate the per-resource-type metrics entries here, while we are still on the
+	// synchronous path of scrape() (no goroutine has been launched yet for this subscription).
+	// The producer (loadResourceMetricsDefinitionsByType) and the consumers
+	// (loadBatchMetricsValues) will both access s.metrics[subscriptionID]; Go maps are not safe
+	// for concurrent read/write even on different keys (a write may trigger a rehash that
+	// invalidates concurrent reads). By inserting all entries up front, we guarantee that only
+	// inner-struct fields are mutated concurrently afterwards, never the outer map itself.
+	// Covered by TestAzureScraperBatchScrape_NoRaceWithManyResourceTypes.
+	if s.metrics[subscriptionID] == nil {
+		s.metrics[subscriptionID] = make(map[string]*updatedMap[metricsCompositeKey, *azureResourceMetrics])
+	}
+	for resourceType := range s.resourceTypes[subscriptionID].Data {
+		if s.metrics[subscriptionID][resourceType] == nil {
+			s.metrics[subscriptionID][resourceType] = newUpdatedMap[metricsCompositeKey, *azureResourceMetrics]()
+		}
+	}
+
 	s.settings.Logger.Info("Loaded the list of Azure Resources",
 		zap.String("subscription_id", subscriptionID),
-		zap.Int("resources_count", len(s.resources[subscriptionID])),
+		zap.Int("resources_count", len(s.resources[subscriptionID].Data)),
+		zap.Int("regions_count", len(s.regions[subscriptionID].Data)),
+		zap.Int("resource_types_count", len(s.resourceTypes[subscriptionID].Data)),
 		zap.Int("deleted_resources_count", len(existingResources)))
-	maps.Copy(s.resourceTypes[subscriptionID], resourceTypes)
 }
 
 // processResources is a workaround specially done for the storageAccount metrics.
@@ -420,7 +465,8 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 	s.settings.Logger.Debug("Loading the list of Azure Metrics Definitions",
 		zap.String("resource_type", resourceType),
 		zap.String("subscription_id", subscriptionID))
-	if time.Since(s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
+
+	if time.Since(s.metrics[subscriptionID][resourceType].LastUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
 		s.settings.Logger.Debug("Azure Metrics Definitions are cached, skipping refresh",
 			zap.String("resource_type", resourceType),
 			zap.String("subscription_id", subscriptionID))
@@ -428,7 +474,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 	}
 
 	// Prepare the map of metrics by composite key.
-	s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
+	s.metrics[subscriptionID][resourceType].Data = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	clientMetricsDefinitions, clientErr := armmonitor.NewMetricDefinitionsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
 	if clientErr != nil {
@@ -437,7 +483,7 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 		return
 	}
 
-	resourceIDs := s.resourceTypes[subscriptionID][resourceType].resourceIDs
+	resourceIDs := s.resourceTypes[subscriptionID].Data[resourceType].resourceIDs
 	if len(resourceIDs) == 0 && resourceIDs[0] != "" {
 		return
 	}
@@ -477,9 +523,9 @@ func (s *azureBatchScraper) loadResourceMetricsDefinitionsByType(ctx context.Con
 			s.loadMetricsDefinitionByType(subscriptionID, resourceType, metricName, compositeKey)
 		}
 	}
-	s.resourceTypes[subscriptionID][resourceType].metricsDefinitionsUpdated = time.Now()
+	s.metrics[subscriptionID][resourceType].LastUpdated = time.Now()
 	s.settings.Logger.Info("Loaded the list of Azure Metrics Definitions",
-		zap.Int("metrics_definitions_count", len(s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey)),
+		zap.Int("metrics_definitions_count", len(s.metrics[subscriptionID][resourceType].Data)),
 		zap.String("resource_type", resourceType),
 		zap.String("subscription_id", subscriptionID))
 }
@@ -493,12 +539,12 @@ func (s *azureBatchScraper) loadMetricsDefinitionByType(subscriptionID, resource
 		zap.String("metric", metricName),
 		zap.String("resource_type", resourceType),
 		zap.String("subscription_id", subscriptionID))
-	if _, ok := s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey]; ok {
-		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics = append(
-			s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey].metrics, metricName,
+	if _, ok := s.metrics[subscriptionID][resourceType].Data[compositeKey]; ok {
+		s.metrics[subscriptionID][resourceType].Data[compositeKey].metrics = append(
+			s.metrics[subscriptionID][resourceType].Data[compositeKey].metrics, metricName,
 		)
 	} else {
-		s.resourceTypes[subscriptionID][resourceType].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{metricName}}
+		s.metrics[subscriptionID][resourceType].Data[compositeKey] = &azureResourceMetrics{metrics: []string{metricName}}
 	}
 }
 
@@ -506,7 +552,8 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 	s.settings.Logger.Debug("Loading the Azure Metrics",
 		zap.String("resource_type", resourceType),
 		zap.String("subscription_id", subscriptionID))
-	resType := *s.resourceTypes[subscriptionID][resourceType]
+	resType := *s.resourceTypes[subscriptionID].Data[resourceType]
+	metricsDef := s.metrics[subscriptionID][resourceType].Data
 	maxPerBatch := defaultMaximumResourcesPerBatch
 	if s.cfg.MaximumResourcesPerBatch > 0 {
 		maxPerBatch = s.cfg.MaximumResourcesPerBatch
@@ -516,7 +563,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 		s.settings.Logger.Fatal("error: metrics builder not found for subscription")
 	}
 
-	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
+	for compositeKey, metricsByGrain := range metricsDef {
 		now := time.Now().UTC()
 
 		// Anti-duplicate guard: do not re-scrape a (resourceType, compositeKey) pair more often
@@ -535,7 +582,7 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 
 		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
 
-		for region := range s.regions[subscriptionID] {
+		for region := range s.regions[subscriptionID].Data {
 			clientMetrics, clientErr := s.GetMetricsBatchValuesClient(region)
 			if clientErr != nil {
 				s.settings.Logger.Error("Failed to initialize the client for Azure Metrics",
@@ -605,7 +652,8 @@ func (s *azureBatchScraper) loadBatchMetricsValues(ctx context.Context, subscrip
 						resID := *metricValues.ResourceID
 						for _, metric := range metricValues.Values {
 							for _, timeseriesElement := range metric.TimeSeries {
-								res := s.resources[subscriptionID][resID]
+								// TODO: move up
+								res := s.resources[subscriptionID].Data[resID]
 								if res == nil {
 									continue
 								}

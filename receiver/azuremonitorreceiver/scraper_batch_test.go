@@ -5,6 +5,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/query/azmetrics"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v3"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -232,11 +234,12 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				settings:                     settings.TelemetrySettings,
 				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
 
-				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{},
-				resources:     map[string]map[string]*azureResource{},
-				regions:       map[string]map[string]struct{}{},
-				resourceTypes: map[string]map[string]*azureType{},
+				// From there, initialize everything normally initialized in start() func
+				subscriptions: newUpdatedMap[string, *azureSubscription](),
+				resourceTypes: azResourceTypeStore{},
+				resources:     azResourceStore{},
+				regions:       azRegionStore{},
+				metrics:       azMetricsStore{},
 			}
 
 			metrics, err := s.scrape(tt.args.ctx)
@@ -257,6 +260,118 @@ func TestAzureScraperBatchScrape(t *testing.T) {
 				pmetrictest.IgnoreResourceMetricsOrder(),
 			))
 		})
+	}
+}
+
+// TestAzureScraperBatchScrape_NoRaceWithManyResourceTypes ensures that the producer/consumer
+// pipeline in (*azureBatchScraper).scrape() does not race on the s.metrics[subscriptionID] map.
+//
+// The producer (loadResourceMetricsDefinitionsByType) and the consumers (loadBatchMetricsValues)
+// run concurrently and both touch s.metrics[subscriptionID]. Go maps are NOT safe for concurrent
+// read/write even on different keys: a write may trigger a rehash that invalidates concurrent
+// reads. To trigger this reliably, this test fans out across several distinct resourceTypes per
+// subscription so the producer keeps writing new entries while consumers iterate over previously
+// pushed ones, and runs scrape() many times to widen the race window.
+//
+// Run with `-race` to detect regressions: any future change that re-introduces a write to the
+// outer s.metrics[subscriptionID] map after the goroutines have started will fail this test.
+func TestAzureScraperBatchScrape_NoRaceWithManyResourceTypes(t *testing.T) {
+	const (
+		sub1     = "subRace1"
+		sub2     = "subRace2"
+		typeA    = "Microsoft.Race/typeA"
+		typeB    = "Microsoft.Race/typeB"
+		typeC    = "Microsoft.Race/typeC"
+		location = "westeurope"
+	)
+	id := func(sub, rt string) string {
+		return fmt.Sprintf("/subscriptions/%s/resourceGroups/rg/providers/%s/r", sub, rt)
+	}
+
+	cfg := createDefaultTestConfig()
+	cfg.SubscriptionIDs = []string{sub1, sub2}
+	cfg.AppendTagsAsAttributes = []string{}
+	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.Services = []string{typeA, typeB, typeC}
+
+	// One resource per (subscription, type). Multiple types per subscription is what
+	// triggers the race: the producer keeps inserting new keys in s.metrics[sub] while
+	// consumers iterate previously pushed ones.
+	resources := map[string][][]*armresources.GenericResourceExpanded{
+		sub1: {{
+			{ID: to.Ptr(id(sub1, typeA)), Location: to.Ptr(location), Name: to.Ptr("rA"), Type: to.Ptr(typeA)},
+			{ID: to.Ptr(id(sub1, typeB)), Location: to.Ptr(location), Name: to.Ptr("rB"), Type: to.Ptr(typeB)},
+			{ID: to.Ptr(id(sub1, typeC)), Location: to.Ptr(location), Name: to.Ptr("rC"), Type: to.Ptr(typeC)},
+		}},
+		sub2: {{
+			{ID: to.Ptr(id(sub2, typeA)), Location: to.Ptr(location), Name: to.Ptr("rA"), Type: to.Ptr(typeA)},
+			{ID: to.Ptr(id(sub2, typeB)), Location: to.Ptr(location), Name: to.Ptr("rB"), Type: to.Ptr(typeB)},
+			{ID: to.Ptr(id(sub2, typeC)), Location: to.Ptr(location), Name: to.Ptr("rC"), Type: to.Ptr(typeC)},
+		}},
+	}
+
+	// One trivial metric definition per resource so the scraper produces actual composite
+	// keys and therefore exercises loadBatchMetricsValues -> reads on s.metrics[sub][type].
+	metricsDefs := map[string][]metricsDefinitionMockInput{
+		id(sub1, typeA): {{namespace: typeA, name: "raceMetric", timeGrain: "PT1M"}},
+		id(sub1, typeB): {{namespace: typeB, name: "raceMetric", timeGrain: "PT1M"}},
+		id(sub1, typeC): {{namespace: typeC, name: "raceMetric", timeGrain: "PT1M"}},
+		id(sub2, typeA): {{namespace: typeA, name: "raceMetric", timeGrain: "PT1M"}},
+		id(sub2, typeB): {{namespace: typeB, name: "raceMetric", timeGrain: "PT1M"}},
+		id(sub2, typeC): {{namespace: typeC, name: "raceMetric", timeGrain: "PT1M"}},
+	}
+
+	// Empty-but-valid query response per (subscription, namespace). Values are irrelevant:
+	// the test only cares that consumers actually read s.metrics[sub][type].
+	mkQuery := func(sub, rt string) queryResourcesResponseMock {
+		return queryResourcesResponseMock{
+			params: queryResourcesResponseMockParams{
+				subscriptionID:  sub,
+				metricNamespace: rt,
+				metricNames:     []string{"raceMetric"},
+				resourceIDs:     []string{id(sub, rt)},
+			},
+			response: newQueryResourcesResponseMockData(nil),
+		}
+	}
+	queryMocks := []queryResourcesResponseMock{
+		mkQuery(sub1, typeA), mkQuery(sub1, typeB), mkQuery(sub1, typeC),
+		mkQuery(sub2, typeA), mkQuery(sub2, typeB), mkQuery(sub2, typeC),
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	optionsResolver := newMockClientOptionsResolver(
+		newSubscriptionsByIDMockData(map[string]string{sub1: sub1 + "-display", sub2: sub2 + "-display"}),
+		nil,
+		newResourcesMockData(resources),
+		newMetricsDefinitionMockData(metricsDefs),
+		nil,
+		queryMocks,
+	)
+
+	s := &azureBatchScraper{
+		cfg:                          cfg,
+		mbs:                          newConcurrentMapImpl[*metadata.MetricsBuilder](),
+		mutex:                        &sync.Mutex{},
+		time:                         getTimeMock(),
+		clientOptionsResolver:        optionsResolver,
+		receiverSettings:             settings,
+		settings:                     settings.TelemetrySettings,
+		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
+
+		subscriptions: newUpdatedMap[string, *azureSubscription](),
+		resourceTypes: azResourceTypeStore{},
+		resources:     azResourceStore{},
+		regions:       azRegionStore{},
+		metrics:       azMetricsStore{},
+	}
+
+	// We don't compare against a golden file: the value of this test is the race detector.
+	// Run several iterations to widen the race window (compensates for the small number
+	// of resource types).
+	for range 20 {
+		_, err := s.scrape(t.Context())
+		require.NoError(t, err)
 	}
 }
 

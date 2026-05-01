@@ -147,8 +147,9 @@ func TestAzureScraperScrape(t *testing.T) {
 				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.fields.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{},
-				resources:     map[string]map[string]*azureResource{},
+				subscriptions: newUpdatedMap[string, *azureSubscription](),
+				resources:     azResourceStore{},
+				metrics:       azMetricsStore{},
 			}
 
 			metrics, err := s.scrape(tt.args.ctx)
@@ -268,8 +269,9 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfgLimitedMertics.Services),
 
 			// From there, initialize everything that is normally initialized in start() func
-			subscriptions: map[string]*azureSubscription{},
-			resources:     map[string]map[string]*azureResource{},
+			subscriptions: newUpdatedMap[string, *azureSubscription](),
+			resources:     azResourceStore{},
+			metrics:       azMetricsStore{},
 		}
 
 		metrics, err := s.scrape(t.Context())
@@ -327,19 +329,20 @@ func getNominalTestScraper() *azureScraper {
 		storageAccountSpecificConfig: newStorageAccountSpecificConfig(cfg.Services),
 
 		// From there, initialize everything that is normally initialized in start() func
-		subscriptions: map[string]*azureSubscription{},
-		resources:     map[string]map[string]*azureResource{},
+		subscriptions: newUpdatedMap[string, *azureSubscription](),
+		resources:     azResourceStore{},
+		metrics:       azMetricsStore{},
 	}
 }
 
 func TestAzureScraperGetResources(t *testing.T) {
 	s := getNominalTestScraper()
-	s.resources["subscriptionId1"] = map[string]*azureResource{}
-	s.subscriptions["subscriptionId1"] = &azureSubscription{}
+	s.resources["subscriptionId1"] = newUpdatedMap[string, *azureResource]()
+	s.subscriptions.Data["subscriptionId1"] = &azureSubscription{}
 	s.cfg.CacheResources = 0
 	s.loadResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
-	assert.Len(t, s.resources["subscriptionId1"], 3)
+	assert.Len(t, s.resources["subscriptionId1"].Data, 3)
 
 	s.clientOptionsResolver = newMockClientOptionsResolver(
 		getSubscriptionByIDMockData(),
@@ -357,7 +360,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 	)
 	s.loadResources(t.Context(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
-	assert.Empty(t, s.resources["subscriptionId1"])
+	assert.Empty(t, s.resources["subscriptionId1"].Data)
 }
 
 func TestAzureScraperProcessResources(t *testing.T) {
@@ -496,8 +499,9 @@ func TestAzureScraperProcessResources(t *testing.T) {
 				storageAccountSpecificConfig: newStorageAccountSpecificConfig(tt.cfg.Services),
 
 				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{},
-				resources:     map[string]map[string]*azureResource{},
+				subscriptions: newUpdatedMap[string, *azureSubscription](),
+				resources:     azResourceStore{},
+				metrics:       azMetricsStore{},
 			}
 
 			assert.Equal(t, tt.expected, s.processResources(tt.resourcesArg))
