@@ -30,9 +30,11 @@ type logExporterImp struct {
 	loadBalancer *loadBalancer
 	batcher      *logBatcher
 
-	logger    *zap.Logger
-	started   atomic.Bool
-	telemetry *metadata.TelemetryBuilder
+	logger        *zap.Logger
+	started       atomic.Bool
+	telemetry     *metadata.TelemetryBuilder
+	ignoreTraceID bool
+	randomTraceID func() pcommon.TraceID
 }
 
 // Create new logs exporter
@@ -55,9 +57,11 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	}
 
 	logExporter := &logExporterImp{
-		loadBalancer: lb,
-		telemetry:    telemetry,
-		logger:       params.Logger,
+		loadBalancer:  lb,
+		telemetry:     telemetry,
+		logger:        params.Logger,
+		ignoreTraceID: cfg.(*Config).LogRouting.IgnoreTraceID,
+		randomTraceID: random,
 	}
 	if cfg.(*Config).LogBatcher.Enabled {
 		logBatcherCfg := cfg.(*Config).LogBatcher
@@ -152,16 +156,7 @@ func (e *logExporterImp) groupLogsByEndpoint(ld plog.Logs) (map[string]*endpoint
 			for k := 0; k < sl.LogRecords().Len(); k++ {
 				rec := sl.LogRecords().At(k)
 
-				traceID := rec.TraceID()
-				balancingKey := traceID
-				if traceID == pcommon.NewTraceIDEmpty() {
-					scopeKey := [2]int{i, j}
-					balancingKey = emptyTraceFallbackKeys[scopeKey]
-					if balancingKey == pcommon.NewTraceIDEmpty() {
-						balancingKey = random()
-						emptyTraceFallbackKeys[scopeKey] = balancingKey
-					}
-				}
+				balancingKey := e.routingKeyForLogRecord(rec, [2]int{i, j}, emptyTraceFallbackKeys)
 
 				le, endpoint, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
 				if err != nil {
@@ -207,11 +202,7 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *logExporterImp) consumeLogDirect(ctx context.Context, ld plog.Logs, rerouteAttempt int) error {
-	traceID := traceIDFromLogs(ld)
-	balancingKey := traceID
-	if traceID == pcommon.NewTraceIDEmpty() {
-		balancingKey = random()
-	}
+	balancingKey := e.routingKeyForLogs(ld)
 
 	le, _, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
 	if err != nil {
@@ -363,6 +354,39 @@ func findOrCreateScopeLogs(rl plog.ResourceLogs, src plog.ScopeLogs) plog.ScopeL
 	srcScope.CopyTo(sl.Scope())
 	sl.SetSchemaUrl(src.SchemaUrl())
 	return sl
+}
+
+func (e *logExporterImp) routingKeyForLogRecord(rec plog.LogRecord, scopeKey [2]int, emptyTraceFallbackKeys map[[2]int]pcommon.TraceID) pcommon.TraceID {
+	if !e.ignoreTraceID {
+		traceID := rec.TraceID()
+		if traceID != pcommon.NewTraceIDEmpty() {
+			return traceID
+		}
+	}
+
+	balancingKey := emptyTraceFallbackKeys[scopeKey]
+	if balancingKey == pcommon.NewTraceIDEmpty() {
+		balancingKey = e.nextRandomTraceID()
+		emptyTraceFallbackKeys[scopeKey] = balancingKey
+	}
+	return balancingKey
+}
+
+func (e *logExporterImp) routingKeyForLogs(ld plog.Logs) pcommon.TraceID {
+	if !e.ignoreTraceID {
+		traceID := traceIDFromLogs(ld)
+		if traceID != pcommon.NewTraceIDEmpty() {
+			return traceID
+		}
+	}
+	return e.nextRandomTraceID()
+}
+
+func (e *logExporterImp) nextRandomTraceID() pcommon.TraceID {
+	if e.randomTraceID == nil {
+		return random()
+	}
+	return e.randomTraceID()
 }
 
 func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {

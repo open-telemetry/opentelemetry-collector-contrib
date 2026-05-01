@@ -112,6 +112,12 @@ func TestDefaultLogBatcherConfig(t *testing.T) {
 	assert.Equal(t, QueuePayloadCompressionNone, cfg.LogBatcher.PayloadCompression)
 }
 
+func TestDefaultLogRoutingConfig(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	assert.False(t, cfg.LogRouting.IgnoreTraceID)
+}
+
 func TestDefaultMetricBatcherConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 

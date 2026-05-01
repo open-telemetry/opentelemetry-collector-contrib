@@ -312,6 +312,31 @@ func TestLoadConfigWithLogBatcher(t *testing.T) {
 	require.Equal(t, QueuePayloadCompressionZstd, cfg.LogBatcher.PayloadCompression)
 }
 
+func TestLoadConfigWithLogRouting(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	conf := confmap.NewFromStringMap(map[string]any{
+		"protocol": map[string]any{
+			"otlp": map[string]any{
+				"endpoint": "localhost:4317",
+				"tls": map[string]any{
+					"insecure": true,
+				},
+			},
+		},
+		"resolver": map[string]any{
+			"static": map[string]any{
+				"hostnames": []string{"localhost:4317"},
+			},
+		},
+		"log_routing": map[string]any{
+			"ignore_trace_id": true,
+		},
+	})
+
+	require.NoError(t, conf.Unmarshal(cfg))
+	require.True(t, cfg.LogRouting.IgnoreTraceID)
+}
+
 func TestLoadConfigWithMetricBatcher(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	conf := confmap.NewFromStringMap(map[string]any{

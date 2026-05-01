@@ -42,6 +42,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	QueueSettings             QueueSettings        `mapstructure:"sending_queue"`
 	LogBatcher                LogBatcherConfig     `mapstructure:"log_batcher"`
+	LogRouting                LogRoutingConfig     `mapstructure:"log_routing"`
 	MetricBatcher             MetricBatcherConfig  `mapstructure:"metric_batcher"`
 	EndpointHealth            EndpointHealthConfig `mapstructure:"endpoint_health"`
 
@@ -94,6 +95,12 @@ type LogBatcherConfig struct {
 	MaxBytes           int                     `mapstructure:"max_bytes"`
 	FlushInterval      time.Duration           `mapstructure:"flush_interval"`
 	PayloadCompression QueuePayloadCompression `mapstructure:"payload_compression"`
+}
+
+type LogRoutingConfig struct {
+	IgnoreTraceID bool `mapstructure:"ignore_trace_id"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type MetricBatcherConfig struct {

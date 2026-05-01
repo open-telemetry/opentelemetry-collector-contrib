@@ -62,6 +62,11 @@ $defs:
       timeout:
         type: string
         format: duration
+  log_routing_config:
+    type: object
+    properties:
+      ignore_trace_id:
+        type: boolean
   protocol:
     description: Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
     type: object
@@ -97,6 +102,8 @@ type: object
 properties:
   endpoint_health:
     $ref: endpoint_health_config
+  log_routing:
+    $ref: log_routing_config
   protocol:
     $ref: protocol
   resolver:

@@ -574,6 +574,35 @@ func TestLogsWithoutTraceID(t *testing.T) {
 	assert.Len(t, sink.AllLogs(), 1)
 }
 
+func TestConsumeLogsIgnoreTraceIDUsesRandomRoutingKey(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+
+	calls := map[string]int{}
+	p, lb := newTestLogsExporter(t, ts, tb, cfg, func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(context.Context, plog.Logs) error {
+			calls[endpoint]++
+			return nil
+		}), nil
+	})
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(t.Context()))
+	}()
+
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	randomTraceIDForEndpoint2 := findTraceIDForEndpoint(t, lb.ring, "endpoint-2:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return randomTraceIDForEndpoint2
+	}
+
+	require.NoError(t, p.ConsumeLogs(t.Context(), simpleLogWithID(traceIDForEndpoint1)))
+
+	assert.Zero(t, calls["endpoint-1:4317"])
+	assert.Equal(t, 1, calls["endpoint-2:4317"])
+}
+
 func TestGroupLogsByEndpointKeepsEmptyTraceLogsTogetherPerScope(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
@@ -597,6 +626,39 @@ func TestGroupLogsByEndpointKeepsEmptyTraceLogsTogetherPerScope(t *testing.T) {
 	for _, batch := range batches {
 		assert.Equal(t, 2, batch.logs.LogRecordCount())
 	}
+}
+
+func TestGroupLogsByEndpointIgnoreTraceIDUsesRandomRoutingKey(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := twoEndpointLogConfig()
+	cfg.LogRouting.IgnoreTraceID = true
+	lb, err := newLoadBalancer(ts.Logger, cfg, nil, tb)
+	require.NoError(t, err)
+
+	first := newWrappedExporter(newNopMockLogsExporter(), "endpoint-1:4317")
+	second := newWrappedExporter(newNopMockLogsExporter(), "endpoint-2:4317")
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.exporters = map[string]*wrappedExporter{
+		"endpoint-1:4317": first,
+		"endpoint-2:4317": second,
+	}
+
+	p, err := newLogsExporter(ts, cfg)
+	require.NoError(t, err)
+	p.loadBalancer = lb
+
+	traceIDForEndpoint1 := findTraceIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	randomTraceIDForEndpoint2 := findTraceIDForEndpoint(t, lb.ring, "endpoint-2:4317")
+	p.randomTraceID = func() pcommon.TraceID {
+		return randomTraceIDForEndpoint2
+	}
+
+	batches, groupErr := p.groupLogsByEndpoint(simpleLogWithID(traceIDForEndpoint1))
+	require.NoError(t, groupErr)
+	require.Len(t, batches, 1)
+	require.Contains(t, batches, "endpoint-2:4317")
+	assert.Equal(t, batches["endpoint-2:4317"].exp, second)
+	assert.Equal(t, 1, batches["endpoint-2:4317"].logs.LogRecordCount())
 }
 
 func TestConsumeLogLegacyPathIgnoresStoppingGate(t *testing.T) {
@@ -941,6 +1003,14 @@ func randomLogs() plog.Logs {
 
 func simpleLogs() plog.Logs {
 	return simpleLogWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+}
+
+func twoEndpointLogConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: configoptional.Some(StaticResolver{Hostnames: []string{"endpoint-1:4317", "endpoint-2:4317"}}),
+		},
+	}
 }
 
 func simpleLogWithID(id pcommon.TraceID) plog.Logs {
