@@ -9,7 +9,7 @@ components:
         - failover
         - grafanacloud
         - otlpjson
-        - roundrobin
+        - round_robin
         - routing
         - service_graph
         - signal_to_metrics

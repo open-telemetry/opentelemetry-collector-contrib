@@ -22,7 +22,7 @@ components:
     - connector/grafanacloud
     - connector/metricsaslogs
     - connector/otlpjson
-    - connector/roundrobin
+    - connector/round_robin
     - connector/routing
     - connector/service_graph
     - connector/signal_to_metrics
