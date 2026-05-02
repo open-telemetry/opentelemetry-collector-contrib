@@ -63,100 +63,16 @@ translation_rules:
 - action: copy_metrics
   mapping:
     system.cpu.time: sf_temp.system.cpu.time
-- action: split_metric
-  metric_name: sf_temp.system.cpu.time
-  dimension_key: state
-  mapping:
-    idle: sf_temp.cpu.idle
-    interrupt: sf_temp.cpu.interrupt
-    system: sf_temp.cpu.system
-    user: sf_temp.cpu.user
-    steal: sf_temp.cpu.steal
-    wait: sf_temp.cpu.wait
-    softirq: sf_temp.cpu.softirq
-    nice: sf_temp.cpu.nice
 - action: multiply_float
   scale_factors_float:
     sf_temp.container_cpu_utilization: 100
-    sf_temp.cpu.idle: 100
-    sf_temp.cpu.interrupt: 100
-    sf_temp.cpu.system: 100
-    sf_temp.cpu.user: 100
-    sf_temp.cpu.steal: 100
-    sf_temp.cpu.wait: 100
-    sf_temp.cpu.softirq: 100
-    sf_temp.cpu.nice: 100
 - action: convert_values
   types_mapping:
     sf_temp.container_cpu_utilization: int
-    sf_temp.cpu.idle: int
-    sf_temp.cpu.interrupt: int
-    sf_temp.cpu.system: int
-    sf_temp.cpu.user: int
-    sf_temp.cpu.steal: int
-    sf_temp.cpu.wait: int
-    sf_temp.cpu.softirq: int
-    sf_temp.cpu.nice: int
 
-# compute cpu.num_processors
-- action: copy_metrics
-  mapping:
-    sf_temp.cpu.idle: sf_temp.cpu.num_processors
 - action: aggregate_metric
   metric_name: sf_temp.cpu.num_processors
   aggregation_method: count
-  without_dimensions:
-  - cpu
-
-- action: copy_metrics
-  mapping:
-    sf_temp.cpu.idle: sf_temp.cpu.idle_per_core
-    sf_temp.cpu.interrupt: sf_temp.cpu.interrupt_per_core
-    sf_temp.cpu.system: sf_temp.cpu.system_per_core
-    sf_temp.cpu.user: sf_temp.cpu.user_per_core
-    sf_temp.cpu.wait: sf_temp.cpu.wait_per_core
-    sf_temp.cpu.steal: sf_temp.cpu.steal_per_core
-    sf_temp.cpu.softirq: sf_temp.cpu.softirq_per_core
-    sf_temp.cpu.nice: sf_temp.cpu.nice_per_core
-
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.idle
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.interrupt
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.system
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.user
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.steal
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.wait
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.softirq
-  aggregation_method: sum
-  without_dimensions:
-  - cpu
-- action: aggregate_metric
-  metric_name: sf_temp.cpu.nice
-  aggregation_method: sum
   without_dimensions:
   - cpu
 
@@ -391,42 +307,11 @@ translation_rules:
     vmpage_io.memory.in: 4096
     vmpage_io.memory.out: 4096
 
-# process metric
-- action: copy_metrics
-  mapping:
-    process.cpu.time: sf_temp.process.cpu.time
-  dimension_key: state
-  dimension_values:
-    user: true
-    system: true
-
-- action: aggregate_metric
-  metric_name: sf_temp.process.cpu.time
-  aggregation_method: sum
-  without_dimensions:
-  - state
-
 - action: rename_metrics
   mapping:
     sf_temp.container_cpu_utilization: container_cpu_utilization
-    sf_temp.cpu.idle: cpu.idle
-    sf_temp.cpu.idle_per_core: cpu.idle
-    sf_temp.cpu.interrupt: cpu.interrupt
-    sf_temp.cpu.interrupt_per_core: cpu.interrupt
-    sf_temp.cpu.nice: cpu.nice
-    sf_temp.cpu.nice_per_core: cpu.nice
     sf_temp.cpu.num_processors: cpu.num_processors
-    sf_temp.cpu.softirq: cpu.softirq
-    sf_temp.cpu.softirq_per_core: cpu.softirq
-    sf_temp.cpu.steal: cpu.steal
-    sf_temp.cpu.steal_per_core: cpu.steal
-    sf_temp.cpu.system: cpu.system
-    sf_temp.cpu.system_per_core: cpu.system
-    sf_temp.cpu.user: cpu.user
-    sf_temp.cpu.user_per_core: cpu.user
     sf_temp.cpu.utilization: cpu.utilization
-    sf_temp.cpu.wait: cpu.wait
-    sf_temp.cpu.wait_per_core: cpu.wait
     sf_temp.disk.summary_utilization: disk.summary_utilization
     sf_temp.disk.utilization: disk.utilization
     sf_temp.memory.total: memory.total
@@ -436,7 +321,6 @@ translation_rules:
     sf_temp.system.disk.operations.total: system.disk.operations.total
     sf_temp.system.network.io.total: system.network.io.total
     sf_temp.system.network.packets.total: system.network.packets.total
-    sf_temp.process.cpu.time: process.cpu_time_seconds
 
 # remove redundant metrics
 - action: drop_metrics
