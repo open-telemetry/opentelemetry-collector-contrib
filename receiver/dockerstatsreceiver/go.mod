@@ -91,6 +91,7 @@ require (
 	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+<<<<<<< HEAD
 	go.opentelemetry.io/collector/config/configopaque v1.58.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.152.1-0.20260514231715-e7f22744c28c // indirect
@@ -100,6 +101,17 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.152.1-0.20260514231715-e7f22744c28c // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.152.1-0.20260514231715-e7f22744c28c // indirect
+=======
+	go.opentelemetry.io/collector/config/configopaque v1.57.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/internal/componentalias v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+>>>>>>> d7490fce72 ([receiver/docker_stats] Add feature gate to align metrics to new semconv)
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
