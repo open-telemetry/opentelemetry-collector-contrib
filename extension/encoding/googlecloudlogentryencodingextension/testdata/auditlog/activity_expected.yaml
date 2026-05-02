@@ -34,6 +34,9 @@ resourceLogs:
               - key: gcp.audit.resource.name
                 value:
                   stringValue: coordination.k8s.io/v1/namespaces/kube-system/leases/gcp-controller-manager
+              - key: rpc.jsonrpc.error_code
+                value:
+                  intValue: "0"
               - key: rpc.response.status_code
                 value:
                   stringValue: "0"
