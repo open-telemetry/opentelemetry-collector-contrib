@@ -9,7 +9,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.151.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk v0.151.0
 	github.com/signalfx/pprof v0.0.0-20260502061645-d32fe129401b
 	github.com/stretchr/testify v1.11.1
@@ -70,7 +69,6 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
-	github.com/google/pprof v0.0.0-20260402051712-545e8a4df936 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
@@ -159,5 +157,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk => ../../pkg/translator/splunk
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof => ../../pkg/translator/pprof
