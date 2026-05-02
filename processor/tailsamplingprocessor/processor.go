@@ -60,6 +60,10 @@ type TraceData struct {
 	batchID       uint64
 }
 
+func (t *TraceData) ExceedsMaxSizeBytes(maxTraceSizeBytes uint64) bool {
+	return maxTraceSizeBytes > 0 && t.SizeBytes > maxTraceSizeBytes
+}
+
 type DecisionHook func(ctx context.Context, id pcommon.TraceID, td *TraceData)
 
 type tailSamplingSpanProcessor struct {
@@ -95,9 +99,9 @@ type tailSamplingSpanProcessor struct {
 	workChan         chan []traceBatch
 	doneChan         chan struct{}
 
-	// tickChan triggers ticks and responds on the provided channel when the tick is complete.
+	// testingTickChan triggers ticks and responds on the provided channel when the tick is complete.
 	// this is used in tests to produce deterministic ticks.
-	tickChan chan chan struct{}
+	testingTickChan chan chan struct{}
 }
 
 func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
@@ -364,7 +368,23 @@ func WithNonSampledDecisionCache(c cache.Cache) Option {
 	}
 }
 
-// WithSampledHooks sets hooks to be called when a trace is sampled.
+// WithSampledHooks sets hooks to be called at decision time when a trace is sampled.
+//
+// When a decision's made to sample a given trace, the configured hooks are invoked on the
+// processor's hot-path event handler goroutine. DecisionHook functions must act immediately on
+// the TraceData or make a copy if intending to process TraceData async; after the hooks are
+// invoked for the trace, the processor can still modify the provided TraceData's state.
+//
+// Hooks are typically invoked once for a given trace (at decision time), but this is not a
+// guarantee (more detail below). If span(s) arrive for a trace after the decision's been made
+// (the spans arrived "late"), and the processor's still aware that the prior trace decision was
+// to sample (either through the sampled decision cache mechanism or through the past TraceData
+// still being present in the processor's in-memory view) then the hooks are NOT invoked again
+// with those new late spans. The exception to this is if, due to the non-determinism of the
+// processor's in-memory views of past decisions, late spans arrive for a trace and the processor
+// does not find the previous decision. In which case the processor will start tracking a new
+// trace for these spans, as though it is the first time seeing it, and will accordingly invoke
+// the hooks again at decision time (potentially observing a different sampling result).
 func WithSampledHooks(hooks ...DecisionHook) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.sampledHooks = hooks
@@ -372,6 +392,27 @@ func WithSampledHooks(hooks ...DecisionHook) Option {
 }
 
 // WithNonSampledHooks sets hooks to be called when a trace is not sampled.
+//
+// When a decision's made not to sample a given trace, the configured hooks are invoked on the
+// processor's hot-path event handler goroutine. DecisionHook functions must act immediately on
+// the TraceData or make a copy if intending to process TraceData async; after the hooks are
+// invoked for the trace, the processor can still modify the provided TraceData's state.
+//
+// Hooks are typically invoked once for a given trace (at decision time), but this is not a
+// guarantee (more detail below). If span(s) arrive for a trace after the decision's been made
+// (the spans arrived "late"), and the processor's still aware that the prior trace decision was
+// to not sample (either through the sampled decision cache mechanism or through the past TraceData
+// still being present in the processor's in-memory view) then the hooks are NOT invoked again
+// with those new late spans. The exception to this is if, due to the non-determinism of the
+// processor's in-memory views of past decisions, late spans arrive for a trace and the processor
+// does not find the previous decision. In which case the processor will start tracking a new
+// trace for these spans, as though it is the first time seeing it, and will accordingly invoke
+// the hooks again at decision time (potentially observing a different sampling result).
+//
+// When `maximum_trace_size_bytes` is configured, the hooks are invoked once at the point the
+// received batch of spans causes the trace to exceed the configured byte threshold. Any additional
+// spans that arrive later for this trace will not invoke the hooks, but again only if the
+// processor finds an in-memory record of that past decision for that trace ID.
 func WithNonSampledHooks(hooks ...DecisionHook) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.nonSampledHooks = hooks
@@ -581,9 +622,9 @@ func (tsp *tailSamplingSpanProcessor) iter(tickChan <-chan time.Time, workChan <
 		tsp.logger.Debug("New maximum trace size loaded", zap.Uint64("size", maxTraceSize))
 	case <-tickChan:
 		tsp.samplingPolicyOnTick()
-	case tickChan := <-tsp.tickChan:
+	case testReplyChan := <-tsp.testingTickChan:
 		tsp.samplingPolicyOnTick()
-		tickChan <- struct{}{}
+		testReplyChan <- struct{}{}
 	}
 	return true
 }
@@ -631,6 +672,10 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 		return
 	}
 
+	// TODO: Isn't this basically a starvation risk though?
+	//       Instead of some portion getting through, if we're always dropping from the front
+	//       and adding to the back, it's possible we'll never actually flush anything?
+	//       Is that the behvaior we want?
 	front := tsp.deleteTraceQueue.Front()
 	if front == nil {
 		// This should be impossible.
@@ -902,57 +947,64 @@ func groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceI
 	return idToSpans
 }
 
+func (tsp *tailSamplingSpanProcessor) newTraceData(id pcommon.TraceID, arrivalTime time.Time) *TraceData {
+	actualData := &TraceData{
+		arrivalTime: arrivalTime,
+		batchID:     tsp.decisionBatcher.AddToCurrentBatch(id),
+		TraceData: samplingpolicy.TraceData{
+			ReceivedBatches: ptrace.NewTraces(),
+		},
+	}
+
+	if !tsp.blockOnOverflow {
+		actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
+	}
+
+	return actualData
+}
+
 func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrace.ResourceSpans, spanCount int64, containsRootSpan bool) {
-	currTime := time.Now()
-
-	var newTraceIDs int64
-	defer func() {
-		// Need a closure here to delay evaluation of newTraceIDs.
-		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, newTraceIDs)
-	}()
-
 	actualData, ok := tsp.idToTrace[id]
 	if !ok {
-		actualData = &TraceData{
-			arrivalTime: currTime,
-			TraceData: samplingpolicy.TraceData{
-				SpanCount:       spanCount,
-				ReceivedBatches: ptrace.NewTraces(),
-			},
-		}
-
+		actualData = tsp.newTraceData(id, time.Now())
 		tsp.idToTrace[id] = actualData
 
-		newTraceIDs++
-		actualData.batchID = tsp.decisionBatcher.AddToCurrentBatch(id)
-
-		if !tsp.blockOnOverflow {
-			actualData.deleteElement = tsp.deleteTraceQueue.PushBack(id)
-		}
-	} else {
-		actualData.SpanCount += spanCount
+		tsp.telemetry.ProcessorTailSamplingNewTraceIDReceived.Add(tsp.ctx, 1)
 	}
+
+	marshaler := new(ptrace.ProtoMarshaler)
+	actualData.SizeBytes += uint64(marshaler.ResourceSpansSize(rss))
+	actualData.SpanCount += spanCount
+
 	if containsRootSpan && tsp.cfg.DecisionWaitAfterRootReceived > 0 {
 		actualData.batchID = tsp.decisionBatcher.MoveToEarlierBatch(id, actualData.batchID, uint64(tsp.cfg.DecisionWaitAfterRootReceived.Seconds()))
 	}
 
-	finalDecision := actualData.FinalDecision
+	if actualData.FinalDecision == samplingpolicy.Unspecified {
+		if actualData.ExceedsMaxSizeBytes(tsp.maxTraceSizeBytes) {
+			// This trace now exceeds configured max size in bytes.
+			//
+			// Record the final decision as NotSampled now, but do NOT record a decision time.
+			// This way if additional spans come in for this trace, we avoid reporting
+			// them as arriving late below since we're making an early decision here due to size.
+			// If we did not handle this way, it would deceptively skew the late span metric
+			// since we won't be able to tell if those later spans were in fact late vs they
+			// arrived within the decision wait window, but we decided early here.
+			actualData.FinalDecision = samplingpolicy.NotSampled
+			tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
 
-	marshaler := &ptrace.ProtoMarshaler{}
-	actualData.SizeBytes += uint64(marshaler.ResourceSpansSize(rss))
+			// Since we are not in a normal decision flow when dropping large traces,
+			// also be sure to remove it from the batcher.
+			tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
+			tsp.releaseNotSampledTrace(id, actualData)
 
-	if finalDecision == samplingpolicy.Unspecified &&
-		tsp.maxTraceSizeBytes > 0 &&
-		actualData.SizeBytes > tsp.maxTraceSizeBytes {
-		tsp.telemetry.ProcessorTailSamplingTracesDroppedTooLarge.Add(tsp.ctx, 1)
-		actualData.FinalDecision = samplingpolicy.NotSampled
-		// Since we are not in a normal decision flow when dropping large traces, also be sure to remove it from the batcher.
-		tsp.decisionBatcher.RemoveFromBatch(id, actualData.batchID)
-		tsp.releaseNotSampledTrace(id, actualData)
-		return
-	}
+			// Zero out spans now to immediately shed the in-memory footprint of this large trace.
+			// The samplingPolicyOnTick() path does this same clearing of received batches after
+			// a decision, so also doing so here is consistent with that existing behavior.
+			actualData.ReceivedBatches = ptrace.NewTraces()
+			return
+		}
 
-	if finalDecision == samplingpolicy.Unspecified {
 		if tsp.cfg.SamplingStrategy == samplingStrategySpanIngest {
 			metrics := newPolicyEvaluationMetrics(len(tsp.policies))
 			evaluationStart := time.Now()
@@ -1000,21 +1052,29 @@ func (tsp *tailSamplingSpanProcessor) processTrace(id pcommon.TraceID, rss ptrac
 		return
 	}
 
-	switch finalDecision {
-	case samplingpolicy.Sampled:
-		traceTd := ptrace.NewTraces()
-		appendToTraces(traceTd, rss)
-		tsp.forwardSpans(tsp.ctx, traceTd)
-	case samplingpolicy.NotSampled:
-		// TODO: I don't think this is correct? If it isn't sampled shouldn't we just do nothing?
-		tsp.releaseNotSampledTrace(id, actualData)
-	default:
-		tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
-	}
-
+	// These spans have arrived after a decision was already evaluated for its trace.
+	// Emit the late span age now before any processing time from forwarding, which might
+	// otherwise skew the late span age metric. Note that this metric already has some skew
+	// introduced by including the batch's queuing delay + processing time from workChan
+	// (along with any prior processors in the collector pipeline). However, in practice, this
+	// metric might have less jitter still by emitting duration between actualData.decisionTime
+	// and the arrival time of the batch at ConsumeTraces().
+	// (Although, doing so would then allow for the possibility of negative late span ages.)
 	if !actualData.decisionTime.IsZero() {
 		tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.decisionTime)/time.Second))
 	}
+
+	// If the decision was Sample, then forward on these spans.
+	// Otherwise, for any other decision there's nothing to do.
+	//
+	// We do not need to remove from the batcher because if we have an existing finalDecision,
+	// (and therefore existing idToTrace entry) then it must not have just been added to batcher.
+	if actualData.FinalDecision == samplingpolicy.Sampled {
+		traceTd := ptrace.NewTraces()
+		appendToTraces(traceTd, rss)
+		tsp.forwardSpans(tsp.ctx, traceTd)
+	}
+
 }
 
 func extensions(host component.Host) map[string]samplingpolicy.Extension {
@@ -1095,7 +1155,7 @@ func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, i
 	tsp.sampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
 	tsp.forwardSpans(ctx, td.ReceivedBatches)
 	_, ok := tsp.sampledIDCache.Get(id)
-	if ok {
+	if ok || (tsp.blockOnOverflow && uint64(len(tsp.idToTrace)) >= tsp.cfg.NumTraces) {
 		tsp.dropTrace(id, time.Now())
 	}
 }
@@ -1108,7 +1168,7 @@ func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID,
 	}
 	tsp.nonSampledIDCache.Put(id, cache.DecisionMetadata{PolicyName: td.PolicyName})
 	_, ok := tsp.nonSampledIDCache.Get(id)
-	if ok {
+	if ok || (tsp.blockOnOverflow && uint64(len(tsp.idToTrace)) >= tsp.cfg.NumTraces) {
 		tsp.dropTrace(id, time.Now())
 	}
 }

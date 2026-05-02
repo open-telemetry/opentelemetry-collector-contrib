@@ -103,8 +103,8 @@ func (t *testTSPController) waitForTick() {
 
 func withTestController(t *testTSPController) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.tickChan = make(chan chan struct{})
-		t.tickChan = tsp.tickChan
+		tsp.testingTickChan = make(chan chan struct{})
+		t.tickChan = tsp.testingTickChan
 
 		// Use an unbuffered work channel so we know that when ConsumeTraces
 		// completes the traces will have been ingested by the TSP.
@@ -115,7 +115,7 @@ func withTestController(t *testTSPController) Option {
 		tsp.decisionBatcher = newSyncIDBatcher()
 
 		// Use a slow tick frequency to effectively disable automatic ticks.
-		// We'll manually trigger ticks as needed via the tickChan.
+		// We'll manually trigger ticks as needed via the testingTickChan.
 		tsp.tickerFrequency = time.Hour
 	}
 }
