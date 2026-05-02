@@ -675,7 +675,7 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 	// TODO: Isn't this basically a starvation risk though?
 	//       Instead of some portion getting through, if we're always dropping from the front
 	//       and adding to the back, it's possible we'll never actually flush anything?
-	//       Is that the behvaior we want?
+	//       Is that the desired behavior?
 	front := tsp.deleteTraceQueue.Front()
 	if front == nil {
 		// This should be impossible.
@@ -903,6 +903,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecisionOnSpanIngest(id pcommon.TraceI
 		}
 
 		metrics.addDecision(i, decision, trace.SpanCount)
+
+		if decision == samplingpolicy.InvertSampled || decision == samplingpolicy.InvertNotSampled {
+			tsp.logger.Warn("Strategy span-ingest is incompatible with deprecated sampling decisions; batch of spans may be lost or incorrectly sampled",
+				zap.String("decision", decision.String()), zap.String("policyName", p.name))
+			continue
+		}
 
 		if decision == samplingpolicy.Dropped {
 			metrics.decisionDropped++
