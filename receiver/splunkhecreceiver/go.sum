@@ -195,8 +195,8 @@ go.opentelemetry.io/collector/consumer v1.57.1-0.20260501001745-24aecacf1c04 h1:
 go.opentelemetry.io/collector/consumer v1.57.1-0.20260501001745-24aecacf1c04/go.mod h1:tJKbog9Xw/8y66aWd/C+21BMuQkOWn/lF4bzJDRC9OM=
 go.opentelemetry.io/collector/consumer/consumererror v0.151.1-0.20260501001745-24aecacf1c04 h1:qkfcstbr6sFqjkfS4H28ZvAtxJWwCFn8tgKVGSgwdOg=
 go.opentelemetry.io/collector/consumer/consumererror v0.151.1-0.20260501001745-24aecacf1c04/go.mod h1:dxnhPRnw3kjyweDy9pGWUNVueem15kxlvqRp0qY5k6U=
-go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.151.0 h1:pXKjwyo4RkGQlG+1byCa0e3D2reIHmdr1v9Ex7C7K5c=
-go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.151.0/go.mod h1:/5Aau99Cp6Q2RF6RPl+QmlUO9jC9gZ3Np6VD+p9dfLs=
+go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.151.1-0.20260501001745-24aecacf1c04 h1:phCwcFVGsAt4A4lckWyWDvbfeBfae+ZHjJTs5JB3lYo=
+go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.151.1-0.20260501001745-24aecacf1c04/go.mod h1:/5Aau99Cp6Q2RF6RPl+QmlUO9jC9gZ3Np6VD+p9dfLs=
 go.opentelemetry.io/collector/consumer/consumertest v0.151.1-0.20260501001745-24aecacf1c04 h1:epog01HB9BfTRBt6VubZBZX2rEF8HU4n8Ah5LYa6zbM=
 go.opentelemetry.io/collector/consumer/consumertest v0.151.1-0.20260501001745-24aecacf1c04/go.mod h1:eAGCGxkq+aABLmlr3PvMOqz3ZJbmn/lUqCbbffabSi4=
 go.opentelemetry.io/collector/consumer/xconsumer v0.151.1-0.20260501001745-24aecacf1c04 h1:KFnUzGruixLmgxT1yb5qgsc4ItxjB5WdtC6VCQzAYLo=
@@ -205,8 +205,8 @@ go.opentelemetry.io/collector/exporter v1.57.1-0.20260501001745-24aecacf1c04 h1:
 go.opentelemetry.io/collector/exporter v1.57.1-0.20260501001745-24aecacf1c04/go.mod h1:xfJPcn0EJMIFP8g5nheLSWLzPZgdu9/p14b9+D5RXjM=
 go.opentelemetry.io/collector/exporter/exporterhelper v0.151.1-0.20260501001745-24aecacf1c04 h1:L64WAqfrYJZWvUtDZ6+wN8ttGGslyuQxQx4yANaRGDU=
 go.opentelemetry.io/collector/exporter/exporterhelper v0.151.1-0.20260501001745-24aecacf1c04/go.mod h1:IdqxjEDvwDcuhHOw83krWDjxj4NFrWRzTUc6q8enTh0=
-go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.151.0 h1:7WP/01S//77cExER3phahlg+RDQSSSStpoKq9p3w7VQ=
-go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.151.0/go.mod h1:II06vOl4v4oPh9QoEtlCH4J8uyJohoH3pWvdii9QnvA=
+go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.151.1-0.20260501001745-24aecacf1c04 h1:WsIkZLYOPi84IoN79pJn70JhamMF+876KZCUpDiDiz4=
+go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.151.1-0.20260501001745-24aecacf1c04/go.mod h1:II06vOl4v4oPh9QoEtlCH4J8uyJohoH3pWvdii9QnvA=
 go.opentelemetry.io/collector/exporter/exportertest v0.151.1-0.20260501001745-24aecacf1c04 h1:0VZzhr1kLC0fM+vqFZNxJPzds+CQFAIAOuks+GsaB+U=
 go.opentelemetry.io/collector/exporter/exportertest v0.151.1-0.20260501001745-24aecacf1c04/go.mod h1:huqcu/9iu+EOs01VUpMEmjIuOoHoT+rWNvZwdPgAQ1Q=
 go.opentelemetry.io/collector/exporter/xexporter v0.151.1-0.20260501001745-24aecacf1c04 h1:dtT8YaV3XN2iEH69pLJc9wzU+2zCw1A4OZ/Mee3KcFg=

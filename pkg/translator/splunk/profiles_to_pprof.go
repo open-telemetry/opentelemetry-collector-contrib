@@ -147,13 +147,13 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 				lines = append(lines, pprofLine)
 			}
 			// label source.event.name of type string OPTIONALLY can contain the name of the event that triggered the sampling
-			//label source.event.time of type int64 MUST be set to the unix time in millis when the sample was taken
-			//label trace_id of type string MUST be set when sample was taken within a span scope
-			//label span_id of type string MUST be set when sample was taken within a span scope
-			//label thread.id of type int64 OPTIONALLY can be set to the thread identifier used by the runtime environment
-			//label thread.name of type string OPTIONALLY can be set to the thread name used by the runtime environment
-			//label thread.os.id of type int64 OPTIONALLY can be set to the thread identifier used by the operating system
-			//label thread.stack.truncated of type string and with value true MUST be set when this sample does not contain the full stack trace
+			// label source.event.time of type int64 MUST be set to the unix time in millis when the sample was taken
+			// label trace_id of type string MUST be set when sample was taken within a span scope
+			// label span_id of type string MUST be set when sample was taken within a span scope
+			// label thread.id of type int64 OPTIONALLY can be set to the thread identifier used by the runtime environment
+			// label thread.name of type string OPTIONALLY can be set to the thread name used by the runtime environment
+			// label thread.os.id of type int64 OPTIONALLY can be set to the thread identifier used by the operating system
+			// label thread.stack.truncated of type string and with value true MUST be set when this sample does not contain the full stack trace
 
 			pprofSample.Location = append(pprofSample.Location,
 				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc))
