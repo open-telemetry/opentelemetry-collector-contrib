@@ -37,6 +37,8 @@ all_set:
       enabled: true
     container.cpu.throttling_data.throttled_time:
       enabled: true
+    container.cpu.time:
+      enabled: true
     container.cpu.usage.kernelmode:
       enabled: true
     container.cpu.usage.percpu:
@@ -119,6 +121,8 @@ all_set:
     container.memory.total_writeback:
       enabled: true
     container.memory.unevictable:
+      enabled: true
+    container.memory.usage:
       enabled: true
     container.memory.usage.limit:
       enabled: true
@@ -213,6 +217,8 @@ reaggregate_set:
       enabled: true
     container.cpu.throttling_data.throttled_time:
       enabled: true
+    container.cpu.time:
+      enabled: true
     container.cpu.usage.kernelmode:
       enabled: true
     container.cpu.usage.percpu:
@@ -295,6 +301,8 @@ reaggregate_set:
     container.memory.total_writeback:
       enabled: true
     container.memory.unevictable:
+      enabled: true
+    container.memory.usage:
       enabled: true
     container.memory.usage.limit:
       enabled: true
@@ -389,6 +397,8 @@ none_set:
       enabled: false
     container.cpu.throttling_data.throttled_time:
       enabled: false
+    container.cpu.time:
+      enabled: false
     container.cpu.usage.kernelmode:
       enabled: false
     container.cpu.usage.percpu:
@@ -471,6 +481,8 @@ none_set:
     container.memory.total_writeback:
       enabled: false
     container.memory.unevictable:
+      enabled: false
+    container.memory.usage:
       enabled: false
     container.memory.usage.limit:
       enabled: false

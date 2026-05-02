@@ -192,6 +192,7 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *ctypes.MemoryStats) {
 	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
+	r.mb.RecordContainerMemoryUsageDataPoint(now, int64(totalUsage))
 
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
 
@@ -289,9 +290,13 @@ func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, networks *
 func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, v *ctypes.StatsResponse) {
 	cpuStats := v.CPUStats
 	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.SystemUsage)/1_000_000_000, metadata.WithCPUModeMetricAttribute("system"))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.TotalUsage)/1_000_000_000)
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.UsageInKernelmode)/1_000_000_000, metadata.WithCPUModeMetricAttribute("kernel"))
 	r.mb.RecordContainerCPUUsageUsermodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInUsermode))
+	r.mb.RecordContainerCPUTimeDataPoint(now, float64(cpuStats.CPUUsage.UsageInUsermode)/1_000_000_000, metadata.WithCPUModeMetricAttribute("user"))
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))

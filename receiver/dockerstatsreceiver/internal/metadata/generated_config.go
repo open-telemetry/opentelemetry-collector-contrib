@@ -529,6 +529,26 @@ func (ms *ContainerCPUThrottlingDataThrottledTimeMetricConfig) Unmarshal(parser 
 	return nil
 }
 
+// ContainerCPUTimeMetricConfig provides config for the container.cpu.time metric.
+type ContainerCPUTimeMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerCPUTimeMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerCPUUsageKernelmodeMetricConfig provides config for the container.cpu.usage.kernelmode metric.
 type ContainerCPUUsageKernelmodeMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1377,6 +1397,26 @@ func (ms *ContainerMemoryUnevictableMetricConfig) Unmarshal(parser *confmap.Conf
 	return nil
 }
 
+// ContainerMemoryUsageMetricConfig provides config for the container.memory.usage metric.
+type ContainerMemoryUsageMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *ContainerMemoryUsageMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // ContainerMemoryUsageLimitMetricConfig provides config for the container.memory.usage.limit metric.
 type ContainerMemoryUsageLimitMetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -1937,6 +1977,7 @@ type MetricsConfig struct {
 	ContainerCPUThrottlingDataPeriods          ContainerCPUThrottlingDataPeriodsMetricConfig          `mapstructure:"container.cpu.throttling_data.periods"`
 	ContainerCPUThrottlingDataThrottledPeriods ContainerCPUThrottlingDataThrottledPeriodsMetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
 	ContainerCPUThrottlingDataThrottledTime    ContainerCPUThrottlingDataThrottledTimeMetricConfig    `mapstructure:"container.cpu.throttling_data.throttled_time"`
+	ContainerCPUTime                           ContainerCPUTimeMetricConfig                           `mapstructure:"container.cpu.time"`
 	ContainerCPUUsageKernelmode                ContainerCPUUsageKernelmodeMetricConfig                `mapstructure:"container.cpu.usage.kernelmode"`
 	ContainerCPUUsagePercpu                    ContainerCPUUsagePercpuMetricConfig                    `mapstructure:"container.cpu.usage.percpu"`
 	ContainerCPUUsageSystem                    ContainerCPUUsageSystemMetricConfig                    `mapstructure:"container.cpu.usage.system"`
@@ -1978,6 +2019,7 @@ type MetricsConfig struct {
 	ContainerMemoryTotalUnevictable            ContainerMemoryTotalUnevictableMetricConfig            `mapstructure:"container.memory.total_unevictable"`
 	ContainerMemoryTotalWriteback              ContainerMemoryTotalWritebackMetricConfig              `mapstructure:"container.memory.total_writeback"`
 	ContainerMemoryUnevictable                 ContainerMemoryUnevictableMetricConfig                 `mapstructure:"container.memory.unevictable"`
+	ContainerMemoryUsage                       ContainerMemoryUsageMetricConfig                       `mapstructure:"container.memory.usage"`
 	ContainerMemoryUsageLimit                  ContainerMemoryUsageLimitMetricConfig                  `mapstructure:"container.memory.usage.limit"`
 	ContainerMemoryUsageMax                    ContainerMemoryUsageMaxMetricConfig                    `mapstructure:"container.memory.usage.max"`
 	ContainerMemoryUsageTotal                  ContainerMemoryUsageTotalMetricConfig                  `mapstructure:"container.memory.usage.total"`
@@ -2054,6 +2096,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerCPUThrottlingDataThrottledTime: ContainerCPUThrottlingDataThrottledTimeMetricConfig{
+			Enabled: false,
+		},
+		ContainerCPUTime: ContainerCPUTimeMetricConfig{
 			Enabled: false,
 		},
 		ContainerCPUUsageKernelmode: ContainerCPUUsageKernelmodeMetricConfig{
@@ -2179,6 +2224,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryUnevictable: ContainerMemoryUnevictableMetricConfig{
+			Enabled: false,
+		},
+		ContainerMemoryUsage: ContainerMemoryUsageMetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryUsageLimit: ContainerMemoryUsageLimitMetricConfig{

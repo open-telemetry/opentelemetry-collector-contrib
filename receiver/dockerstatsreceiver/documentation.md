@@ -346,6 +346,20 @@ Aggregate time the container was throttled.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | ns | Sum | Int | Cumulative | true | Development |
 
+### container.cpu.time
+
+Total CPU time consumed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Double | Cumulative | true | Development |
+
+#### Attributes
+
+| Name | Description | Values | Requirement Level | Semantic Convention |
+| ---- | ----------- | ------ | ----------------- | ------------------- |
+| cpu.mode | The CPU mode for this data point. | Any Str | Conditionally Required | - |
+
 ### container.cpu.usage.percpu
 
 Per-core CPU usage by the container (Only available with cgroups v1).
@@ -640,6 +654,14 @@ The amount of memory that cannot be reclaimed.
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | By | Sum | Int | Cumulative | false | Development |
 
+### container.memory.usage
+
+Memory usage of the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| By | Sum | Int | Cumulative | false | Development |
+
 ### container.memory.usage.max
 
 Maximum memory usage.
@@ -759,3 +781,13 @@ Time elapsed since container start time.
 | container.image.name | The name of the docker image in use by the container. | Any Str | true | - |
 | container.name | The name of the container. | Any Str | true | - |
 | container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `receiver.dockerstatsreceiver.enableSemConvMetrics` | alpha | Enable new container metrics that align with new container semantic convention | v0.152.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31649) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
