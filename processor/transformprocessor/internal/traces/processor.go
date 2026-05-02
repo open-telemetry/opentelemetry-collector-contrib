@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -15,11 +17,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
 type Processor struct {
 	contexts []common.TracesConsumer
 	logger   *zap.Logger
+	tracer   trace.Tracer
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, spanFunctions map[string]ottl.Factory[*ottlspan.TransformContext], spanEventFunctions map[string]ottl.Factory[*ottlspanevent.TransformContext]) (*Processor, error) {
@@ -45,16 +49,34 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 	return &Processor{
 		contexts: contexts,
 		logger:   settings.Logger,
+		tracer:   metadata.Tracer(settings),
 	}, nil
 }
 
 func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	ctx, span := p.tracer.Start(ctx, "transform.ProcessTraces")
+	defer span.End()
+
 	for _, c := range p.contexts {
-		err := c.ConsumeTraces(ctx, td)
+		ctxChild, contextSpan := p.tracer.Start(ctx, "transform.context",
+			trace.WithAttributes(attribute.String("transform.context.type", string(c.Context()))))
+		err := c.ConsumeTraces(ctxChild, td)
 		if err != nil {
+			contextSpan.RecordError(err)
+			contextSpan.End()
 			p.logger.Error("failed processing traces", zap.Error(err))
+			span.RecordError(err)
 			return td, err
 		}
+		contextSpan.End()
 	}
+
+	if span.IsRecording() {
+		span.SetAttributes(
+			attribute.Int("transform.context.count", len(p.contexts)),
+			attribute.Int("transform.resource_spans.count", td.ResourceSpans().Len()),
+		)
+	}
+
 	return td, nil
 }
