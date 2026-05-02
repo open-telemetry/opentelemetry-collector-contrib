@@ -6,11 +6,11 @@ package auditlog // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
@@ -247,9 +247,10 @@ func handleStatus(s *status, attr pcommon.Map) {
 	if s == nil {
 		return
 	}
-
-	shared.PutInt(string(conventionsv138.RPCJSONRPCErrorCodeKey), s.Code, attr)
-	shared.PutStr(string(conventionsv138.RPCJSONRPCErrorMessageKey), s.Message, attr)
+	if s.Code != nil {
+		shared.PutStr(string(conventions.RPCResponseStatusCodeKey), strconv.FormatInt(*s.Code, 10), attr)
+	}
+	shared.PutStr("error.message", s.Message, attr)
 }
 
 func handleAuthenticationInfo(info *authenticationInfo, attr pcommon.Map) {

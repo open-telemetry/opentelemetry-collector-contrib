@@ -34,7 +34,7 @@ resourceLogs:
               - key: gcp.audit.resource.name
                 value:
                   stringValue: projects/elastic-observability/zones/us-central1-a/instances/instance-group-1-p327
-              - key: rpc.jsonrpc.error_message
+              - key: error.message
                 value:
                   stringValue: 'Instance Group Manager ''instance-group-1'' initiated recreateInstance on instance ''projects/8560181848/zones/us-central1-a/instances/instance-group-1-p327''. Reason: Instance eligible for repair: instance should be RUNNING, but it doesn''t exist.'
               - key: user.email

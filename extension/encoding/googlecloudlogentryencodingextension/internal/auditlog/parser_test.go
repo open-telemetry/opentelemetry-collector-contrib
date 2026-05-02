@@ -109,8 +109,8 @@ func TestHandleStatus(t *testing.T) {
 				Message: "RESOURCE_ALREADY_EXISTS",
 			},
 			expectedAttr: map[string]any{
-				"rpc.jsonrpc.error_code":    int64(6),
-				"rpc.jsonrpc.error_message": "RESOURCE_ALREADY_EXISTS",
+				"rpc.response.status_code": "6",
+				"error.message":            "RESOURCE_ALREADY_EXISTS",
 			},
 		},
 	}
