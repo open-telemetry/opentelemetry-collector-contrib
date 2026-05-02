@@ -51,6 +51,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		raw:              c.Raw,
 		excludeProviders: excludeProvidersSet(c.ExcludeProviders),
 		remote:           c.Remote,
+		ReqOrgAttr:       c.ReqOrgAttr,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
 

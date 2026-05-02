@@ -359,11 +359,10 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 				e.AddAttribute(eK, fmt.Sprintf("%v", eD))
 			}
 		}
-	}
+	}	
 	if i.isAdditionalAttrReq() {
-		e.AddAttribute("log_record_original", eventXML.Original)
+		e.AddAttribute("event_xml_original", eventXML.Original)
 	}
-
 	return i.Write(ctx, e)
 }
 
