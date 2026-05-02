@@ -125,7 +125,7 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
 		return &dbMockConfig{providerConfigMock: providerConfigMock{func() error { return nil }}}
 	}
-	providerFactories["mock"] = &baseMockFactory
+	setMockProviderFactoryForTest(t, &baseMockFactory)
 
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
 		return &providerConfigMock{func() error { return nil }}
 	}
-	providerFactories["mock"] = &baseMockFactory
+	setMockProviderFactoryForTest(t, &baseMockFactory)
 
 	factories.Processors[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
@@ -161,7 +161,7 @@ func TestLoadConfig_ProviderValidateError(t *testing.T) {
 		}
 		return &sampleConfig
 	}
-	providerFactories["mock"] = &baseMockFactory
+	setMockProviderFactoryForTest(t, &baseMockFactory)
 
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)

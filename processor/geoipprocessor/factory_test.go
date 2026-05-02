@@ -79,7 +79,7 @@ func TestCreateProcessor_FailedProvider(t *testing.T) {
 	}
 
 	const providerKey string = "mock"
-	providerFactories[providerKey] = &baseMockFactory
+	setMockProviderFactoryForTest(t, &baseMockFactory)
 
 	factory := NewFactory()
 	cfg := &Config{Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}}

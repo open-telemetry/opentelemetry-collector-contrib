@@ -93,6 +93,27 @@ var baseProviderMock = providerMock{
 	},
 }
 
+// setMockProviderFactoryForTest registers the mock provider factory under "mock" while the
+// current test runs. It takes the providerFactories lock and restores the previous entry on
+// cleanup, so tests no longer race with other tests that read the map via getProviderFactory.
+func setMockProviderFactoryForTest(tb testing.TB, factory provider.GeoIPProviderFactory) {
+	tb.Helper()
+	const key = "mock"
+	providerFactoriesMu.Lock()
+	prev, existed := providerFactories[key]
+	providerFactories[key] = factory
+	providerFactoriesMu.Unlock()
+	tb.Cleanup(func() {
+		providerFactoriesMu.Lock()
+		defer providerFactoriesMu.Unlock()
+		if existed {
+			providerFactories[key] = prev
+		} else {
+			delete(providerFactories, key)
+		}
+	})
+}
+
 var testCases = []struct {
 	name       string
 	goldenDir  string
@@ -235,7 +256,7 @@ func TestProcessor(t *testing.T) {
 		return attribute.Set{}, provider.ErrNoMetadataFound
 	}
 	const providerKey string = "mock"
-	providerFactories[providerKey] = &baseMockFactory
+	setMockProviderFactoryForTest(t, &baseMockFactory)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
