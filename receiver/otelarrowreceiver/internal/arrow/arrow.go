@@ -416,6 +416,17 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, sig signalType) (retE
 	for {
 		select {
 		case <-doneCtx.Done():
+			// Before returning Canceled, drain any pending recvErrCh to
+			// avoid masking admission/resource errors with a shutdown race.
+			select {
+			case err := <-recvErrCh:
+				flushCancel()
+				if errors.Is(err, io.EOF) {
+					continue
+				}
+				return err
+			default:
+			}
 			return status.Error(codes.Canceled, "server stream shutdown")
 		case err := <-recvErrCh:
 			flushCancel()

@@ -1,4 +1,4 @@
-scope1:
+scope_key=scope1|:
   resourceMetrics:
     - schemaUrl: https://test-res-schema.com/schema
       resource:
