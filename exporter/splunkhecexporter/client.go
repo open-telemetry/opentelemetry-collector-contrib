@@ -5,7 +5,6 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -29,7 +28,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
@@ -179,21 +177,16 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 	}
 
-	p, err := pprof.ConvertPprofileToPprof(&pp)
+	p, err := translator.ConvertPprofileToPprof(&pp)
 	if err != nil {
 		return err
 	}
+	firstProfile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+	p.TimeNanos = firstProfile.Time().AsTime().UnixNano()
 	var buf bytes.Buffer
-	zipWriter := gzip.NewWriter(&buf)
-	defer func() {
-		_ = zipWriter.Close()
-	}()
 
 	// The Write method encodes the profile to a gzipped protobuf
-	if err := p.Write(zipWriter); err != nil {
-		return err
-	}
-	if err := zipWriter.Flush(); err != nil {
+	if err := p.Write(&buf); err != nil {
 		return err
 	}
 
@@ -201,7 +194,6 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 	rl := ld.ResourceLogs().AppendEmpty()
 	pp.ResourceProfiles().At(0).Resource().Attributes().CopyTo(rl.Resource().Attributes())
 
-	firstProfile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("otel.profiling")
 	sl.Scope().SetVersion("0.1.0")

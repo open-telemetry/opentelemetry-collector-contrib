@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
-	"github.com/google/pprof/profile"
+	"github.com/signalfx/pprof/profile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -40,7 +40,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/pprof"
 	translator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
@@ -1772,8 +1771,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 func TestProfileData(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 
-	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
-	config.MaxContentLengthLogs, config.DisableCompression = 300, true
+	// A 350-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	config.MaxContentLengthLogs, config.DisableCompression = 350, true
 
 	c := newProfilesClient(exportertest.NewNopSettings(metadata.Type), config)
 
@@ -1791,10 +1790,8 @@ func TestProfileData(t *testing.T) {
 		raw, _ := io.ReadAll(gr)
 		pprofProfile, err := profile.ParseData(raw)
 		require.NoError(t, err)
-		pp, err := pprof.ConvertPprofToProfiles(pprofProfile)
-		require.NoError(t, err)
 
-		require.Equal(t, []int64{42}, pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Samples().At(0).Values().AsRaw())
+		require.Equal(t, []int64{42}, pprofProfile.Sample[0].Value)
 		close(done)
 	})
 
