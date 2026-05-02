@@ -159,10 +159,7 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc))
 		}
 
-		switch src.Dictionary().StringTable().At(int(p.SampleType().TypeStrindex())) {
-		case "cpu":
-			// label source.event.period of type int64 MUST contain the sampling period in milliseconds if this sample represents a periodic event
-			// label thread.state of type string OPTIONALLY can be set to describe the state of the thread
+		if src.Dictionary().StringTable().At(int(p.SampleType().TypeStrindex())) == "cpu" {
 			pprofSample.Label["source.event.period"] = []string{strconv.Itoa(int(p.Period()))}
 		}
 
