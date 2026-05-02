@@ -196,6 +196,7 @@ body:
       - pkg/xk8stest
       - pkg/xstreamencoding
       - processor/attributes
+      - processor/cardinalityguardian
       - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative
