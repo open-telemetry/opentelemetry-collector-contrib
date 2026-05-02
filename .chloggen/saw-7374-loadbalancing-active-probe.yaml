@@ -1,0 +1,7 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add optional active TCP probes for loadbalancing exporter endpoint health.
+issues: [7374]
+subtext: |-
+  Set `endpoint_health.active_probe.enabled` to exclude per-pod-unreachable backends after configurable fall failures and recover them after configurable rise successes.
+change_logs: [user]

@@ -53,6 +53,15 @@ loadbalancing/6:
     quarantine_duration: 30s
     reroute_on_failure: true
     max_reroute_attempts: 1
+    active_probe:
+      enabled: true
+      type: tcp_connect
+      interval: 5s
+      timeout: 250ms
+      jitter: 20%
+      max_concurrency: 4
+      fall: 2
+      rise: 2
   protocol:
     otlp:
       timeout: 3s

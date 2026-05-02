@@ -439,6 +439,441 @@ func TestLoadBalancerEndpointHealthExcludesQuarantinedEndpoint(t *testing.T) {
 	}
 }
 
+func TestLoadBalancerEndpointHealthActiveProbeExcludesAndRecoversEndpoint(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       time.Second,
+		Timeout:        100 * time.Millisecond,
+		Jitter:         "0%",
+		MaxConcurrency: 2,
+		Fall:           2,
+		Rise:           2,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+	routingID := findRoutingIDForEndpoint(t, p.ring, "endpoint-1:4317")
+
+	decision := p.handleBackendProbeFailure(t.Context(), "endpoint-1:4317", errors.New("probe failed"))
+	require.False(t, decision.quarantined)
+	require.Contains(t, p.exporters, "endpoint-1:4317")
+
+	decision = p.handleBackendProbeFailure(t.Context(), "endpoint-1:4317", errors.New("probe failed"))
+	require.True(t, decision.quarantined)
+	require.NotContains(t, p.exporters, "endpoint-1:4317")
+
+	_, endpoint, err := p.exporterAndEndpoint([]byte(routingID))
+	require.NoError(t, err)
+	require.Equal(t, "endpoint-2:4317", endpoint)
+
+	success := p.handleBackendProbeSuccess(t.Context(), "endpoint-1:4317")
+	require.False(t, success.recovered)
+	require.NotContains(t, p.exporters, "endpoint-1:4317")
+
+	success = p.handleBackendProbeSuccess(t.Context(), "endpoint-1:4317")
+	require.True(t, success.recovered)
+	require.Contains(t, p.exporters, "endpoint-1:4317")
+
+	_, endpoint, err = p.exporterAndEndpoint([]byte(routingID))
+	require.NoError(t, err)
+	require.Equal(t, "endpoint-1:4317", endpoint)
+}
+
+func TestLoadBalancerEndpointHealthActiveProbeFailsOpenWhenEveryEndpointIsUnhealthy(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       time.Second,
+		Timeout:        100 * time.Millisecond,
+		Jitter:         "0%",
+		MaxConcurrency: 2,
+		Fall:           1,
+		Rise:           1,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+	endpoint1Original := p.exporters["endpoint-1:4317"]
+	endpoint2Original := p.exporters["endpoint-2:4317"]
+
+	decision := p.handleBackendProbeFailure(t.Context(), "endpoint-1:4317", errors.New("probe failed"))
+	require.True(t, decision.quarantined)
+	require.False(t, decision.failOpen)
+
+	decision = p.handleBackendProbeFailure(t.Context(), "endpoint-2:4317", errors.New("probe failed"))
+	require.True(t, decision.quarantined)
+	require.True(t, decision.failOpen)
+	require.Contains(t, decision.eligible, "endpoint-1:4317")
+	require.Contains(t, decision.eligible, "endpoint-2:4317")
+	require.NotSame(t, endpoint1Original, p.exporters["endpoint-1:4317"])
+	require.NotSame(t, endpoint2Original, p.exporters["endpoint-2:4317"])
+}
+
+func TestLoadBalancerEndpointHealthActiveProbeUpdatesExistingHealthMetrics(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       time.Second,
+		Timeout:        100 * time.Millisecond,
+		Jitter:         "0%",
+		MaxConcurrency: 2,
+		Fall:           1,
+		Rise:           1,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+	p.handleBackendProbeFailure(t.Context(), "endpoint-1:4317", errors.New("probe failed"))
+	p.handleBackendProbeSuccess(t.Context(), "endpoint-1:4317")
+
+	metadatatest.AssertEqualLoadbalancerBackendQuarantineTotal(t, telemetry, []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("reason", "active_probe")),
+			Value:      1,
+		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualLoadbalancerBackendUnquarantineTotal(t, telemetry, []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("reason", "active_probe")),
+			Value:      1,
+		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualLoadbalancerBackendState(t, telemetry, []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("state", "eligible")),
+			Value:      1,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("state", "quarantined")),
+			Value:      0,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("state", "stale")),
+			Value:      0,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-2:4317"), attribute.String("state", "eligible")),
+			Value:      1,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-2:4317"), attribute.String("state", "quarantined")),
+			Value:      0,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-2:4317"), attribute.String("state", "stale")),
+			Value:      0,
+		},
+	}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestLoadBalancerEndpointHealthProbeRecoveryKeepsActiveTransportQuarantineMetrics(t *testing.T) {
+	ts, tb, telemetry := getTelemetryAssetsWithReader(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       time.Second,
+		Timeout:        100 * time.Millisecond,
+		Jitter:         "0%",
+		MaxConcurrency: 2,
+		Fall:           1,
+		Rise:           1,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+	now := time.Unix(100, 0)
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	p.endpointHealth.settings.now = func() time.Time { return now }
+	p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
+
+	transportFailure := p.handleBackendFailure(t.Context(), "endpoint-1:4317", status.Error(codes.Unavailable, "unavailable"))
+	require.True(t, transportFailure.quarantined)
+	probeFailure := p.handleBackendProbeFailure(t.Context(), "endpoint-1:4317", errors.New("probe failed"))
+	require.True(t, probeFailure.quarantined)
+
+	probeSuccess := p.handleBackendProbeSuccess(t.Context(), "endpoint-1:4317")
+	require.False(t, probeSuccess.recovered)
+	require.NotContains(t, p.exporters, "endpoint-1:4317")
+	_, err = telemetry.GetMetric("otelcol_loadbalancer_backend_unquarantine_total")
+	require.Error(t, err)
+	metadatatest.AssertEqualLoadbalancerBackendState(t, telemetry, []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("state", "eligible")),
+			Value:      0,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("state", "quarantined")),
+			Value:      1,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("state", "stale")),
+			Value:      0,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-2:4317"), attribute.String("state", "eligible")),
+			Value:      1,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-2:4317"), attribute.String("state", "quarantined")),
+			Value:      0,
+		},
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-2:4317"), attribute.String("state", "stale")),
+			Value:      0,
+		},
+	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	p.endpointHealth.mu.RLock()
+	state := p.endpointHealth.endpoints["endpoint-1:4317"]
+	quarantinedUntil := state.quarantinedUntil
+	failureReason := state.failureReason
+	p.endpointHealth.mu.RUnlock()
+	require.Equal(t, endpointFailureUnavailable, failureReason)
+
+	now = quarantinedUntil.Add(time.Nanosecond)
+	require.True(t, p.endpointHealth.quarantineRefreshDue())
+	p.refreshExpiredEndpointHealth(t.Context())
+	require.Contains(t, p.exporters, "endpoint-1:4317")
+	metadatatest.AssertEqualLoadbalancerBackendUnquarantineTotal(t, telemetry, []metricdata.DataPoint[int64]{
+		{
+			Attributes: attribute.NewSet(attribute.String("endpoint", "endpoint-1:4317"), attribute.String("reason", string(endpointFailureUnavailable))),
+			Value:      1,
+		},
+	}, metricdatatest.IgnoreTimestamp())
+}
+
+func TestLoadBalancerEndpointHealthActiveProbeCycleUsesTCPConnectAndRecoversEndpoint(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       time.Second,
+		Timeout:        100 * time.Millisecond,
+		Jitter:         "0%",
+		MaxConcurrency: 2,
+		Fall:           1,
+		Rise:           1,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+
+	reachable := listenTCPForProbe(t, "127.0.0.1:0")
+	unreachableAddr := reserveTCPAddr(t)
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+
+	p.onBackendChanges([]string{reachable.Addr().String(), unreachableAddr})
+	routingID := findRoutingIDForEndpoint(t, p.ring, unreachableAddr)
+
+	p.runEndpointHealthActiveProbeCycle(t.Context())
+
+	require.NotContains(t, p.exporters, unreachableAddr)
+	_, endpoint, err := p.exporterAndEndpoint([]byte(routingID))
+	require.NoError(t, err)
+	require.NotEqual(t, unreachableAddr, endpoint)
+
+	recovered := listenTCPForProbe(t, unreachableAddr)
+	defer recovered.Close()
+
+	p.runEndpointHealthActiveProbeCycle(t.Context())
+
+	require.Contains(t, p.exporters, unreachableAddr)
+	_, endpoint, err = p.exporterAndEndpoint([]byte(routingID))
+	require.NoError(t, err)
+	require.Equal(t, unreachableAddr, endpoint)
+}
+
+func TestLoadBalancerEndpointHealthActiveProbeCycleHonorsMaxConcurrency(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       time.Second,
+		Timeout:        100 * time.Millisecond,
+		Jitter:         "0%",
+		MaxConcurrency: 2,
+		Fall:           1,
+		Rise:           1,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	p.onBackendChanges([]string{"endpoint-1", "endpoint-2", "endpoint-3", "endpoint-4"})
+
+	var active atomic.Int64
+	var maxActive atomic.Int64
+	started := make(chan struct{}, 4)
+	release := make(chan struct{})
+	p.activeProbeFunc = func(ctx context.Context, _ string) error {
+		current := active.Add(1)
+		for {
+			observedMax := maxActive.Load()
+			if current <= observedMax || maxActive.CompareAndSwap(observedMax, current) {
+				break
+			}
+		}
+		started <- struct{}{}
+		select {
+		case <-release:
+		case <-ctx.Done():
+		}
+		active.Add(-1)
+		return nil
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		p.runEndpointHealthActiveProbeCycle(t.Context())
+	}()
+
+	requireProbeStarts(t, started, 2)
+	select {
+	case <-started:
+		t.Fatal("active_probe exceeded max_concurrency before a probe completed")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(release)
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("active probe cycle did not finish")
+	}
+	require.LessOrEqual(t, maxActive.Load(), int64(2))
+}
+
+func TestLoadBalancerEndpointHealthActiveProbeLoopStopsOnShutdown(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       10 * time.Millisecond,
+		Timeout:        time.Minute,
+		Jitter:         "0%",
+		MaxConcurrency: 1,
+		Fall:           1,
+		Rise:           1,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	p.onBackendChanges([]string{"endpoint-1"})
+
+	probeStarted := make(chan struct{})
+	var startedOnce sync.Once
+	p.activeProbeFunc = func(ctx context.Context, _ string) error {
+		startedOnce.Do(func() { close(probeStarted) })
+		<-ctx.Done()
+		return ctx.Err()
+	}
+
+	require.NoError(t, p.Start(t.Context(), componenttest.NewNopHost()))
+	select {
+	case <-probeStarted:
+	case <-time.After(time.Second):
+		t.Fatal("expected active probe loop to start")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	require.NoError(t, p.Shutdown(shutdownCtx))
+}
+
+func TestLoadBalancerEndpointHealthActiveProbeLoopWaitsBeforeFirstCycle(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := simpleConfig()
+	enableEndpointHealth(cfg)
+	cfg.EndpointHealth.ActiveProbe = EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       200 * time.Millisecond,
+		Timeout:        50 * time.Millisecond,
+		Jitter:         "0%",
+		MaxConcurrency: 1,
+		Fall:           1,
+		Rise:           1,
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return mockComponent{}, nil
+	}
+
+	p, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	p.onBackendChanges([]string{"endpoint-1"})
+
+	probeStarted := make(chan struct{}, 1)
+	p.activeProbeFunc = func(context.Context, string) error {
+		probeStarted <- struct{}{}
+		return nil
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		p.runEndpointHealthActiveProbeLoop(ctx)
+	}()
+
+	select {
+	case <-probeStarted:
+		cancel()
+		<-done
+		t.Fatal("active probe loop started before the first interval elapsed")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("active probe loop did not stop after cancellation")
+	}
+}
+
 func TestLoadBalancerEndpointHealthRemovesDNSStaleEndpoint(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := simpleConfig()
@@ -1088,6 +1523,38 @@ func enableEndpointHealth(cfg *Config) {
 	cfg.EndpointHealth.QuarantineDuration = time.Minute
 	cfg.EndpointHealth.RerouteOnFailure = true
 	cfg.EndpointHealth.MaxRerouteAttempts = 1
+}
+
+func listenTCPForProbe(t *testing.T, address string) net.Listener {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", address)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = listener.Close()
+	})
+	return listener
+}
+
+func reserveTCPAddr(t *testing.T) string {
+	t.Helper()
+
+	listener := listenTCPForProbe(t, "127.0.0.1:0")
+	address := listener.Addr().String()
+	require.NoError(t, listener.Close())
+	return address
+}
+
+func requireProbeStarts(t *testing.T, started <-chan struct{}, count int) {
+	t.Helper()
+
+	for range count {
+		select {
+		case <-started:
+		case <-time.After(time.Second):
+			t.Fatalf("expected %d active probes to start", count)
+		}
+	}
 }
 
 type countingComponent struct {

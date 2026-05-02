@@ -72,6 +72,16 @@ func createDefaultConfig() component.Config {
 			QuarantineDuration: defaultEndpointHealthQuarantineDuration,
 			RerouteOnFailure:   true,
 			MaxRerouteAttempts: 1,
+			ActiveProbe: EndpointHealthActiveProbeConfig{
+				Enabled:        false,
+				Type:           EndpointHealthActiveProbeTypeTCPConnect,
+				Interval:       defaultEndpointHealthActiveProbeInterval,
+				Timeout:        defaultEndpointHealthActiveProbeTimeout,
+				Jitter:         defaultEndpointHealthActiveProbeJitter,
+				MaxConcurrency: defaultEndpointHealthActiveProbeMaxConcurrency,
+				Fall:           defaultEndpointHealthActiveProbeFall,
+				Rise:           defaultEndpointHealthActiveProbeRise,
+			},
 		},
 	}
 }

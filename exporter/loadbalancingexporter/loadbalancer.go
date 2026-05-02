@@ -7,10 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
+	"net"
 	"slices"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
@@ -38,15 +41,20 @@ type loadBalancer struct {
 	res  resolver
 	ring *hashRing
 
-	componentFactory componentFactory
-	exporters        map[string]*wrappedExporter
-	onExporterRemove func(context.Context, string, *wrappedExporter) error
-	telemetry        *metadata.TelemetryBuilder
-	endpointHealth   *endpointHealthManager
+	componentFactory  componentFactory
+	exporters         map[string]*wrappedExporter
+	onExporterRemove  func(context.Context, string, *wrappedExporter) error
+	telemetry         *metadata.TelemetryBuilder
+	endpointHealth    *endpointHealthManager
+	activeProbe       EndpointHealthActiveProbeConfig
+	activeProbeJitter float64
+	activeProbeFunc   func(context.Context, string) error
 
 	stopped   bool
 	cleanupMu sync.Mutex
 	cleanupWG sync.WaitGroup
+	probeWG   sync.WaitGroup
+	probeStop context.CancelFunc
 
 	updateLock sync.RWMutex
 }
@@ -145,20 +153,35 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 		return nil, errNoResolver
 	}
 
+	activeProbeJitter := 0.0
+	if oCfg.EndpointHealth.ActiveProbe.Enabled {
+		var err error
+		activeProbeJitter, err = parseEndpointHealthActiveProbeJitter(oCfg.EndpointHealth.ActiveProbe.Jitter)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &loadBalancer{
-		logger:           logger,
-		res:              res,
-		componentFactory: factory,
-		exporters:        map[string]*wrappedExporter{},
-		telemetry:        telemetry,
-		endpointHealth:   newEndpointHealthManager(endpointHealthSettingsFromConfig(oCfg.EndpointHealth)),
+		logger:            logger,
+		res:               res,
+		componentFactory:  factory,
+		exporters:         map[string]*wrappedExporter{},
+		telemetry:         telemetry,
+		endpointHealth:    newEndpointHealthManager(endpointHealthSettingsFromConfig(oCfg.EndpointHealth)),
+		activeProbe:       oCfg.EndpointHealth.ActiveProbe,
+		activeProbeJitter: activeProbeJitter,
 	}, nil
 }
 
 func (lb *loadBalancer) Start(ctx context.Context, host component.Host) error {
 	lb.res.onChange(lb.onBackendChanges)
 	lb.host = host
-	return lb.res.start(ctx)
+	if err := lb.res.start(ctx); err != nil {
+		return err
+	}
+	lb.startEndpointHealthActiveProbeLoop()
+	return nil
 }
 
 func (lb *loadBalancer) onBackendChanges(resolved []string) {
@@ -486,6 +509,66 @@ func (lb *loadBalancer) handleBackendFailureHealthOnly(ctx context.Context, endp
 	return decision
 }
 
+func (lb *loadBalancer) handleBackendProbeFailure(ctx context.Context, endpoint string, _ error) endpointHealthFailureDecision {
+	endpoint = endpointWithPort(endpoint)
+	decision := lb.endpointHealth.markProbeFailure(endpoint)
+	lb.recordEndpointFailureDecision(ctx, endpoint, decision)
+	if !shouldCommitEndpointHealthFailure(endpoint, decision) {
+		return decision
+	}
+
+	forceCreate := map[string]struct{}{}
+	if endpointListContains(decision.eligible, endpoint) {
+		forceCreate[endpoint] = struct{}{}
+	}
+	created := lb.createMissingExporters(ctx, decision.eligible, forceCreate)
+
+	lb.updateLock.Lock()
+	eligible := lb.endpointHealth.eligibleEndpointsNoRefresh()
+	lb.ring = newHashRing(eligible)
+
+	var removed []removedExporter
+	endpointEligible := endpointListContains(eligible, endpoint)
+	if exp, ok := lb.exporters[endpoint]; ok && (!endpointEligible || createdExporterExists(created, endpoint)) {
+		exp.markStopping()
+		delete(lb.exporters, endpoint)
+		removed = append(removed, removedExporter{endpoint: endpoint, exporter: exp})
+	}
+	duplicates := lb.installCreatedExportersLocked(created, eligible)
+	lb.updateLock.Unlock()
+
+	lb.shutdownCreatedExporters(ctx, duplicates)
+	if len(removed) > 0 {
+		lb.runCleanupAsync(func() {
+			lb.drainRemovedExporters(context.WithoutCancel(ctx), removed)
+		})
+	}
+	return decision
+}
+
+func (lb *loadBalancer) handleBackendProbeSuccess(ctx context.Context, endpoint string) endpointHealthSuccessDecision {
+	if !lb.endpointHealth.enabled() {
+		return endpointHealthSuccessDecision{}
+	}
+
+	endpoint = endpointWithPort(endpoint)
+	decision := lb.endpointHealth.markProbeSuccess(endpoint)
+	if !decision.recovered {
+		return decision
+	}
+	lb.recordEndpointUnquarantine(ctx, endpoint, decision.reason)
+	created := lb.createMissingExporters(ctx, decision.eligible, nil)
+
+	lb.updateLock.Lock()
+	eligible := lb.endpointHealth.eligibleEndpointsNoRefresh()
+	lb.ring = newHashRing(eligible)
+	duplicates := lb.installCreatedExportersLocked(created, eligible)
+	lb.updateLock.Unlock()
+
+	lb.shutdownCreatedExporters(ctx, duplicates)
+	return decision
+}
+
 func (lb *loadBalancer) cleanupBackendWithoutDrain(ctx context.Context, endpoint string) {
 	endpoint = endpointWithPort(endpoint)
 	lb.updateLock.Lock()
@@ -690,8 +773,130 @@ func (lb *loadBalancer) recordBackendReroute(ctx context.Context, signal string,
 	))
 }
 
+func (lb *loadBalancer) endpointHealthActiveProbeEnabled() bool {
+	return lb != nil && lb.endpointHealth.enabled() && lb.activeProbe.Enabled
+}
+
+func (lb *loadBalancer) startEndpointHealthActiveProbeLoop() {
+	if !lb.endpointHealthActiveProbeEnabled() {
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	lb.probeStop = cancel
+	lb.probeWG.Go(func() {
+		lb.runEndpointHealthActiveProbeLoop(ctx)
+	})
+}
+
+func (lb *loadBalancer) stopEndpointHealthActiveProbeLoop(ctx context.Context) error {
+	if lb.probeStop != nil {
+		lb.probeStop()
+	}
+	return waitForInflight(ctx, &lb.probeWG)
+}
+
+func (lb *loadBalancer) runEndpointHealthActiveProbeLoop(ctx context.Context) {
+	for {
+		if !lb.waitForNextEndpointHealthActiveProbeInterval(ctx) {
+			return
+		}
+		lb.runEndpointHealthActiveProbeCycle(ctx)
+	}
+}
+
+func (lb *loadBalancer) waitForNextEndpointHealthActiveProbeInterval(ctx context.Context) bool {
+	timer := time.NewTimer(lb.nextEndpointHealthActiveProbeInterval())
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func (lb *loadBalancer) runEndpointHealthActiveProbeCycle(ctx context.Context) {
+	if !lb.endpointHealthActiveProbeEnabled() {
+		return
+	}
+
+	endpoints := lb.endpointHealth.presentEndpoints()
+	if len(endpoints) == 0 {
+		return
+	}
+
+	maxConcurrency := lb.activeProbe.MaxConcurrency
+	if maxConcurrency <= 0 {
+		maxConcurrency = 1
+	}
+	sem := make(chan struct{}, maxConcurrency)
+	var wg sync.WaitGroup
+	for _, endpoint := range endpoints {
+		select {
+		case sem <- struct{}{}:
+		case <-ctx.Done():
+			wg.Wait()
+			return
+		}
+
+		wg.Add(1)
+		go func(endpoint string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			probeCtx, cancel := context.WithTimeout(ctx, lb.activeProbe.Timeout)
+			err := lb.probeEndpoint(probeCtx, endpoint)
+			cancel()
+			if ctx.Err() != nil {
+				return
+			}
+			if err != nil {
+				lb.handleBackendProbeFailure(ctx, endpoint, err)
+				return
+			}
+			lb.handleBackendProbeSuccess(ctx, endpoint)
+		}(endpoint)
+	}
+	wg.Wait()
+}
+
+func (lb *loadBalancer) probeEndpoint(ctx context.Context, endpoint string) error {
+	if lb.activeProbeFunc != nil {
+		return lb.activeProbeFunc(ctx, endpoint)
+	}
+	return probeEndpointTCPConnect(ctx, endpoint)
+}
+
+func probeEndpointTCPConnect(ctx context.Context, endpoint string) error {
+	dialer := net.Dialer{}
+	conn, err := dialer.DialContext(ctx, "tcp", endpointWithPort(endpoint))
+	if err != nil {
+		return err
+	}
+	return conn.Close()
+}
+
+func (lb *loadBalancer) nextEndpointHealthActiveProbeInterval() time.Duration {
+	interval := lb.activeProbe.Interval
+	if interval <= 0 {
+		interval = defaultEndpointHealthActiveProbeInterval
+	}
+	if lb.activeProbeJitter <= 0 {
+		return interval
+	}
+
+	scale := 1 + ((rand.Float64()*2 - 1) * lb.activeProbeJitter)
+	jittered := time.Duration(float64(interval) * scale)
+	if jittered <= 0 {
+		return time.Nanosecond
+	}
+	return jittered
+}
+
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
-	err := lb.res.shutdown(ctx)
+	err := lb.stopEndpointHealthActiveProbeLoop(ctx)
+	err = errors.Join(err, lb.res.shutdown(ctx))
 
 	lb.cleanupMu.Lock()
 	lb.stopped = true

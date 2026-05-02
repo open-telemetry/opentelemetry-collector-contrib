@@ -151,6 +151,100 @@ func TestConfigValidateEndpointHealth(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 }
 
+func TestConfigValidateEndpointHealthActiveProbe(t *testing.T) {
+	validProbe := EndpointHealthActiveProbeConfig{
+		Enabled:        true,
+		Type:           EndpointHealthActiveProbeTypeTCPConnect,
+		Interval:       5 * time.Second,
+		Timeout:        250 * time.Millisecond,
+		Jitter:         "20%",
+		MaxConcurrency: 4,
+		Fall:           2,
+		Rise:           2,
+	}
+
+	cfg := createDefaultConfig().(*Config)
+	require.False(t, cfg.EndpointHealth.ActiveProbe.Enabled)
+	cfg.EndpointHealth.ActiveProbe = validProbe
+	require.ErrorContains(t, cfg.Validate(), "endpoint_health.active_probe requires endpoint_health.enabled=true")
+
+	cfg.EndpointHealth.Enabled = true
+	require.NoError(t, cfg.Validate())
+
+	tests := []struct {
+		name        string
+		mutate      func(*EndpointHealthActiveProbeConfig)
+		expectedErr string
+	}{
+		{
+			name:        "unknown type",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Type = "grpc_health" },
+			expectedErr: "endpoint_health.active_probe.type",
+		},
+		{
+			name:        "zero interval",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Interval = 0 },
+			expectedErr: "endpoint_health.active_probe.interval",
+		},
+		{
+			name:        "zero timeout",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Timeout = 0 },
+			expectedErr: "endpoint_health.active_probe.timeout",
+		},
+		{
+			name:        "timeout not shorter than interval",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Timeout = c.Interval },
+			expectedErr: "endpoint_health.active_probe.timeout must be shorter than endpoint_health.active_probe.interval",
+		},
+		{
+			name:        "invalid jitter",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Jitter = "fast" },
+			expectedErr: "endpoint_health.active_probe.jitter",
+		},
+		{
+			name:        "jitter above one hundred percent",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Jitter = "101%" },
+			expectedErr: "endpoint_health.active_probe.jitter",
+		},
+		{
+			name:        "nan jitter",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Jitter = "NaN%" },
+			expectedErr: "endpoint_health.active_probe.jitter",
+		},
+		{
+			name:        "infinite jitter",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Jitter = "Inf%" },
+			expectedErr: "endpoint_health.active_probe.jitter",
+		},
+		{
+			name:        "zero max concurrency",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.MaxConcurrency = 0 },
+			expectedErr: "endpoint_health.active_probe.max_concurrency",
+		},
+		{
+			name:        "zero fall",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Fall = 0 },
+			expectedErr: "endpoint_health.active_probe.fall",
+		},
+		{
+			name:        "zero rise",
+			mutate:      func(c *EndpointHealthActiveProbeConfig) { c.Rise = 0 },
+			expectedErr: "endpoint_health.active_probe.rise",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.EndpointHealth.Enabled = true
+			cfg.EndpointHealth.ActiveProbe = validProbe
+			tt.mutate(&cfg.EndpointHealth.ActiveProbe)
+
+			require.ErrorContains(t, cfg.Validate(), tt.expectedErr)
+		})
+	}
+}
+
 func TestLoadConfigWithQueueCompression(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	conf := confmap.NewFromStringMap(map[string]any{
@@ -391,6 +485,16 @@ func TestLoadConfigWithEndpointHealth(t *testing.T) {
 			"quarantine_duration":  "10s",
 			"reroute_on_failure":   true,
 			"max_reroute_attempts": 1,
+			"active_probe": map[string]any{
+				"enabled":         true,
+				"type":            "tcp_connect",
+				"interval":        "5s",
+				"timeout":         "250ms",
+				"jitter":          "20%",
+				"max_concurrency": 4,
+				"fall":            2,
+				"rise":            2,
+			},
 		},
 	})
 
@@ -399,6 +503,14 @@ func TestLoadConfigWithEndpointHealth(t *testing.T) {
 	require.Equal(t, 10*time.Second, cfg.EndpointHealth.QuarantineDuration)
 	require.True(t, cfg.EndpointHealth.RerouteOnFailure)
 	require.Equal(t, 1, cfg.EndpointHealth.MaxRerouteAttempts)
+	require.True(t, cfg.EndpointHealth.ActiveProbe.Enabled)
+	require.Equal(t, EndpointHealthActiveProbeTypeTCPConnect, cfg.EndpointHealth.ActiveProbe.Type)
+	require.Equal(t, 5*time.Second, cfg.EndpointHealth.ActiveProbe.Interval)
+	require.Equal(t, 250*time.Millisecond, cfg.EndpointHealth.ActiveProbe.Timeout)
+	require.Equal(t, "20%", cfg.EndpointHealth.ActiveProbe.Jitter)
+	require.Equal(t, 4, cfg.EndpointHealth.ActiveProbe.MaxConcurrency)
+	require.Equal(t, 2, cfg.EndpointHealth.ActiveProbe.Fall)
+	require.Equal(t, 2, cfg.EndpointHealth.ActiveProbe.Rise)
 	require.NoError(t, cfg.Validate())
 }
 

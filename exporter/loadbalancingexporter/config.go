@@ -6,6 +6,9 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
@@ -112,12 +115,38 @@ type MetricBatcherConfig struct {
 }
 
 const defaultEndpointHealthQuarantineDuration = 30 * time.Second
+const (
+	defaultEndpointHealthActiveProbeInterval       = 5 * time.Second
+	defaultEndpointHealthActiveProbeTimeout        = 250 * time.Millisecond
+	defaultEndpointHealthActiveProbeJitter         = "20%"
+	defaultEndpointHealthActiveProbeMaxConcurrency = 4
+	defaultEndpointHealthActiveProbeFall           = 2
+	defaultEndpointHealthActiveProbeRise           = 2
+)
+
+type EndpointHealthActiveProbeType string
+
+const (
+	EndpointHealthActiveProbeTypeTCPConnect EndpointHealthActiveProbeType = "tcp_connect"
+)
 
 type EndpointHealthConfig struct {
-	Enabled            bool          `mapstructure:"enabled"`
-	QuarantineDuration time.Duration `mapstructure:"quarantine_duration"`
-	RerouteOnFailure   bool          `mapstructure:"reroute_on_failure"`
-	MaxRerouteAttempts int           `mapstructure:"max_reroute_attempts"`
+	Enabled            bool                            `mapstructure:"enabled"`
+	QuarantineDuration time.Duration                   `mapstructure:"quarantine_duration"`
+	RerouteOnFailure   bool                            `mapstructure:"reroute_on_failure"`
+	MaxRerouteAttempts int                             `mapstructure:"max_reroute_attempts"`
+	ActiveProbe        EndpointHealthActiveProbeConfig `mapstructure:"active_probe"`
+}
+
+type EndpointHealthActiveProbeConfig struct {
+	Enabled        bool                          `mapstructure:"enabled"`
+	Type           EndpointHealthActiveProbeType `mapstructure:"type"`
+	Interval       time.Duration                 `mapstructure:"interval"`
+	Timeout        time.Duration                 `mapstructure:"timeout"`
+	Jitter         string                        `mapstructure:"jitter"`
+	MaxConcurrency int                           `mapstructure:"max_concurrency"`
+	Fall           int                           `mapstructure:"fall"`
+	Rise           int                           `mapstructure:"rise"`
 }
 
 func (q *QueueSettings) Unmarshal(conf *confmap.Conf) error {
@@ -263,6 +292,9 @@ func (c MetricBatcherConfig) Validate() error {
 }
 
 func (c EndpointHealthConfig) Validate() error {
+	if c.ActiveProbe.Enabled && !c.Enabled {
+		return errors.New("endpoint_health.active_probe requires endpoint_health.enabled=true")
+	}
 	if !c.Enabled {
 		return nil
 	}
@@ -272,7 +304,53 @@ func (c EndpointHealthConfig) Validate() error {
 	if c.MaxRerouteAttempts < 0 {
 		return errors.New("endpoint_health.max_reroute_attempts must be greater than or equal to 0")
 	}
+	return c.ActiveProbe.Validate()
+}
+
+func (c EndpointHealthActiveProbeConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+	if c.Type != EndpointHealthActiveProbeTypeTCPConnect {
+		return fmt.Errorf("endpoint_health.active_probe.type must be %q, found %q", EndpointHealthActiveProbeTypeTCPConnect, c.Type)
+	}
+	if c.Interval <= 0 {
+		return errors.New("endpoint_health.active_probe.interval must be greater than 0")
+	}
+	if c.Timeout <= 0 {
+		return errors.New("endpoint_health.active_probe.timeout must be greater than 0")
+	}
+	if c.Timeout >= c.Interval {
+		return errors.New("endpoint_health.active_probe.timeout must be shorter than endpoint_health.active_probe.interval")
+	}
+	if _, err := parseEndpointHealthActiveProbeJitter(c.Jitter); err != nil {
+		return err
+	}
+	if c.MaxConcurrency <= 0 {
+		return errors.New("endpoint_health.active_probe.max_concurrency must be greater than 0")
+	}
+	if c.Fall <= 0 {
+		return errors.New("endpoint_health.active_probe.fall must be greater than 0")
+	}
+	if c.Rise <= 0 {
+		return errors.New("endpoint_health.active_probe.rise must be greater than 0")
+	}
 	return nil
+}
+
+func parseEndpointHealthActiveProbeJitter(jitter string) (float64, error) {
+	value := strings.TrimSpace(jitter)
+	if value == "" {
+		value = "0%"
+	}
+	if !strings.HasSuffix(value, "%") {
+		return 0, errors.New("endpoint_health.active_probe.jitter must be a percentage from 0% through 100%")
+	}
+	percentage, err := strconv.ParseFloat(strings.TrimSpace(strings.TrimSuffix(value, "%")), 64)
+	if err != nil || math.IsNaN(percentage) || math.IsInf(percentage, 0) || percentage < 0 || percentage > 100 {
+		return 0, errors.New("endpoint_health.active_probe.jitter must be a percentage from 0% through 100%")
+	}
+	return percentage / 100, nil
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.

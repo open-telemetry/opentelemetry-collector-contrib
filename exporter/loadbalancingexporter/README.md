@@ -79,7 +79,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 * When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
 * Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `loadbalancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
 * Resiliency options 2 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
-* The `endpoint_health` option can be enabled to quarantine a resolver-present backend after the first endpoint-local transport failure. When `reroute_on_failure` is enabled, the failed telemetry is rerouted once to another eligible backend, which can temporarily break routing affinity to preserve availability. If every resolver-present backend is quarantined, endpoint health fails open and keeps those endpoints eligible so traffic is not blackholed.
+* The `endpoint_health` option can be enabled to quarantine a resolver-present backend after the first endpoint-local transport failure. When `reroute_on_failure` is enabled, the failed telemetry is rerouted once to another eligible backend, which can temporarily break routing affinity to preserve availability. If every resolver-present backend is quarantined, endpoint health fails open and keeps those endpoints eligible so traffic is not blackholed. `endpoint_health.active_probe` can also be enabled to locally test backend reachability with TCP connects before customer telemetry is routed there.
 
 Unfortunately, data loss is still possible for any resolver type if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
@@ -131,6 +131,15 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `quarantine_duration` keeps a backend out of the eligible routing ring for this duration after an endpoint-local failure. Default: `30s`.
   * `reroute_on_failure` reroutes failed telemetry once to another eligible backend when the failure is endpoint-local. Default: `true`.
   * `max_reroute_attempts` limits endpoint-failure reroute attempts. Default: `1`.
+  * `active_probe` actively checks every resolver-present backend from the local exporter before routing customer telemetry to it. It is disabled by default and fails open if every backend is locally unhealthy.
+    * `enabled` turns active probing on or off. Default: `false`.
+    * `type` is the probe type. Only `tcp_connect` is currently supported. Default: `tcp_connect`.
+    * `interval` controls how often each exporter pod probes its resolved backend set. Default: `5s`.
+    * `timeout` is the per-probe timeout and must be shorter than `interval`. Default: `250ms`.
+    * `jitter` randomizes probe-cycle timing by this percentage from `0%` through `100%`. Default: `20%`.
+    * `max_concurrency` limits concurrent local probes per exporter pod. Default: `4`.
+    * `fall` is the number of consecutive failed probes required before a backend is excluded. Default: `2`.
+    * `rise` is the number of consecutive successful probes required before a backend is readmitted. Default: `2`.
 * The `log_routing` property controls log-specific routing behavior.
   * `ignore_trace_id` routes logs using an auto-generated `traceID` even when each log record has a `traceID`. Default: `false`.
 * The `log_batcher` property enables post-routing log batching per backend. It is `disabled` by default for backward compatibility.
@@ -158,6 +167,15 @@ exporters:
       quarantine_duration: 30s
       reroute_on_failure: true
       max_reroute_attempts: 1
+      active_probe:
+        enabled: true
+        type: tcp_connect
+        interval: 5s
+        timeout: 250ms
+        jitter: 20%
+        max_concurrency: 4
+        fall: 2
+        rise: 2
     log_batcher:
       enabled: true
       max_records: 512

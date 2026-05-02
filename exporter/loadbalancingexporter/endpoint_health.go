@@ -30,6 +30,7 @@ const (
 	endpointFailureDNS               endpointFailureReason = "dns"
 	endpointFailureUnknownTransport  endpointFailureReason = "unknown_transport"
 	endpointFailureExporterStopping  endpointFailureReason = "exporter_stopping"
+	endpointFailureActiveProbe       endpointFailureReason = "active_probe"
 )
 
 type endpointHealthSettings struct {
@@ -37,7 +38,14 @@ type endpointHealthSettings struct {
 	quarantineDuration time.Duration
 	rerouteOnFailure   bool
 	maxRerouteAttempts int
+	activeProbe        endpointHealthActiveProbeSettings
 	now                func() time.Time
+}
+
+type endpointHealthActiveProbeSettings struct {
+	enabled bool
+	fall    int
+	rise    int
 }
 
 type endpointHealthManager struct {
@@ -56,6 +64,9 @@ type endpointHealthState struct {
 	lastSeenAt        time.Time
 	lastFailedAt      time.Time
 	lastStateChangeAt time.Time
+	probeUnhealthy    bool
+	probeFailures     int
+	probeSuccesses    int
 }
 
 type endpointHealthReconcileResult struct {
@@ -114,7 +125,12 @@ func endpointHealthSettingsFromConfig(cfg EndpointHealthConfig) endpointHealthSe
 		quarantineDuration: quarantineDuration,
 		rerouteOnFailure:   cfg.RerouteOnFailure,
 		maxRerouteAttempts: cfg.MaxRerouteAttempts,
-		now:                time.Now,
+		activeProbe: endpointHealthActiveProbeSettings{
+			enabled: cfg.ActiveProbe.Enabled,
+			fall:    cfg.ActiveProbe.Fall,
+			rise:    cfg.ActiveProbe.Rise,
+		},
+		now: time.Now,
 	}
 }
 
@@ -192,6 +208,44 @@ func (m *endpointHealthManager) markFailure(endpoint string, err error) endpoint
 	return decision
 }
 
+func (m *endpointHealthManager) markProbeFailure(endpoint string) endpointHealthFailureDecision {
+	if !m.enabled() || !m.settings.activeProbe.enabled {
+		return endpointHealthFailureDecision{}
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	state, exists := m.endpoints[endpoint]
+	if !exists || !state.present {
+		return endpointHealthFailureDecision{}
+	}
+
+	now := m.settings.now()
+	state.lastFailedAt = now
+	state.probeFailures++
+	state.probeSuccesses = 0
+
+	decision := endpointHealthFailureDecision{
+		endpointLocal: true,
+		reason:        endpointFailureActiveProbe,
+	}
+	if state.probeUnhealthy {
+		if !state.hasActiveTransportQuarantine(now) {
+			state.failureReason = endpointFailureActiveProbe
+		}
+	} else if state.probeFailures >= m.settings.activeProbe.fall {
+		state.probeUnhealthy = true
+		if !state.hasActiveTransportQuarantine(now) {
+			state.failureReason = endpointFailureActiveProbe
+		}
+		state.lastStateChangeAt = now
+		decision.quarantined = true
+	}
+	decision.eligible, decision.failOpen, decision.failOpenStarted = m.eligibleEndpointsLocked(now)
+	return decision
+}
+
 func (m *endpointHealthManager) markSuccess(endpoint string) bool {
 	return m.markSuccessDecision(endpoint).recovered
 }
@@ -203,7 +257,7 @@ func (m *endpointHealthManager) markSuccessDecision(endpoint string) endpointHea
 
 	m.mu.RLock()
 	state, ok := m.endpoints[endpoint]
-	if !ok || !state.present || (state.quarantinedUntil.IsZero() && state.failureReason == "") {
+	if !ok || !state.present || (state.quarantinedUntil.IsZero() && state.failureReason == "" && !state.probeUnhealthy) {
 		m.mu.RUnlock()
 		return endpointHealthSuccessDecision{}
 	}
@@ -216,10 +270,15 @@ func (m *endpointHealthManager) markSuccessDecision(endpoint string) endpointHea
 	if !ok || !state.present {
 		return endpointHealthSuccessDecision{}
 	}
+	if state.probeUnhealthy {
+		return endpointHealthSuccessDecision{}
+	}
 	if !state.quarantinedUntil.IsZero() || state.failureReason != "" {
 		reason := state.failureReason
 		state.quarantinedUntil = time.Time{}
 		state.failureReason = ""
+		state.probeFailures = 0
+		state.probeSuccesses = 0
 		state.lastStateChangeAt = m.settings.now()
 		eligible, _, _ := m.eligibleEndpointsLocked(state.lastStateChangeAt)
 		return endpointHealthSuccessDecision{
@@ -229,6 +288,47 @@ func (m *endpointHealthManager) markSuccessDecision(endpoint string) endpointHea
 		}
 	}
 	return endpointHealthSuccessDecision{}
+}
+
+func (m *endpointHealthManager) markProbeSuccess(endpoint string) endpointHealthSuccessDecision {
+	if !m.enabled() || !m.settings.activeProbe.enabled {
+		return endpointHealthSuccessDecision{}
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	state, ok := m.endpoints[endpoint]
+	if !ok || !state.present {
+		return endpointHealthSuccessDecision{}
+	}
+	state.probeFailures = 0
+	if !state.probeUnhealthy {
+		state.probeSuccesses = 0
+		return endpointHealthSuccessDecision{}
+	}
+
+	state.probeSuccesses++
+	if state.probeSuccesses < m.settings.activeProbe.rise {
+		return endpointHealthSuccessDecision{}
+	}
+
+	now := m.settings.now()
+	reason := state.failureReason
+	state.probeUnhealthy = false
+	state.probeSuccesses = 0
+	state.lastStateChangeAt = now
+	if !state.quarantinedUntil.IsZero() && state.quarantinedUntil.After(now) {
+		_, _, _ = m.eligibleEndpointsLocked(now)
+		return endpointHealthSuccessDecision{}
+	}
+	state.failureReason = ""
+	eligible, _, _ := m.eligibleEndpointsLocked(now)
+	return endpointHealthSuccessDecision{
+		recovered: true,
+		reason:    reason,
+		eligible:  eligible,
+	}
 }
 
 func (m *endpointHealthManager) isPresent(endpoint string) bool {
@@ -279,6 +379,24 @@ func (m *endpointHealthManager) eligibleEndpointsNoRefresh() []string {
 	return eligible
 }
 
+func (m *endpointHealthManager) presentEndpoints() []string {
+	if !m.enabled() {
+		return nil
+	}
+
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var endpoints []string
+	for _, state := range m.endpoints {
+		if state.present {
+			endpoints = append(endpoints, state.endpoint)
+		}
+	}
+	sort.Strings(endpoints)
+	return endpoints
+}
+
 func (m *endpointHealthManager) refreshExpiredQuarantines() endpointHealthRefreshResult {
 	if !m.enabled() {
 		return endpointHealthRefreshResult{}
@@ -291,6 +409,11 @@ func (m *endpointHealthManager) refreshExpiredQuarantines() endpointHealthRefres
 	var recovered []endpointHealthRecovered
 	for _, state := range m.endpoints {
 		if !state.present || state.quarantinedUntil.IsZero() || state.quarantinedUntil.After(now) {
+			continue
+		}
+		if state.probeUnhealthy {
+			state.quarantinedUntil = time.Time{}
+			state.failureReason = endpointFailureActiveProbe
 			continue
 		}
 		recovered = append(recovered, endpointHealthRecovered{endpoint: state.endpoint, reason: state.failureReason})
@@ -344,14 +467,21 @@ func (m *endpointHealthManager) eligibleEndpointsLockedWithRefresh(now time.Time
 			continue
 		}
 		present = append(present, state.endpoint)
-		if !state.quarantinedUntil.IsZero() && !state.quarantinedUntil.After(now) && refreshExpired {
-			state.quarantinedUntil = time.Time{}
-			state.failureReason = ""
-			state.lastStateChangeAt = now
-		} else if !state.quarantinedUntil.IsZero() && (nextExpiry.IsZero() || state.quarantinedUntil.Before(nextExpiry)) {
-			nextExpiry = state.quarantinedUntil
+		if !state.quarantinedUntil.IsZero() {
+			if !state.quarantinedUntil.After(now) && refreshExpired {
+				state.quarantinedUntil = time.Time{}
+				if state.probeUnhealthy {
+					state.failureReason = endpointFailureActiveProbe
+				} else {
+					state.failureReason = ""
+					state.lastStateChangeAt = now
+				}
+			}
+			if !state.quarantinedUntil.IsZero() && state.quarantinedUntil.After(now) && (nextExpiry.IsZero() || state.quarantinedUntil.Before(nextExpiry)) {
+				nextExpiry = state.quarantinedUntil
+			}
 		}
-		if state.quarantinedUntil.IsZero() {
+		if state.quarantinedUntil.IsZero() && !state.probeUnhealthy {
 			eligible = append(eligible, state.endpoint)
 		}
 	}
@@ -370,6 +500,13 @@ func (m *endpointHealthManager) eligibleEndpointsLockedWithRefresh(now time.Time
 		return present, true, failOpenStarted
 	}
 	return eligible, false, false
+}
+
+func (s *endpointHealthState) hasActiveTransportQuarantine(now time.Time) bool {
+	return !s.quarantinedUntil.IsZero() &&
+		s.quarantinedUntil.After(now) &&
+		s.failureReason != "" &&
+		s.failureReason != endpointFailureActiveProbe
 }
 
 func classifyEndpointFailure(err error) (endpointFailureReason, bool) {

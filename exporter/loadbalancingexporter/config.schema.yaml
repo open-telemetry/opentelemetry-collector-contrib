@@ -35,6 +35,8 @@ $defs:
   endpoint_health_config:
     type: object
     properties:
+      active_probe:
+        $ref: endpoint_health_active_probe_config
       enabled:
         type: boolean
       max_reroute_attempts:
@@ -46,6 +48,35 @@ $defs:
         description: Must be greater than 0 when endpoint_health.enabled is true.
       reroute_on_failure:
         type: boolean
+  endpoint_health_active_probe_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      fall:
+        type: integer
+        minimum: 1
+      interval:
+        type: string
+        format: duration
+        description: Must be greater than 0 when endpoint_health.active_probe.enabled is true.
+      jitter:
+        type: string
+        description: Percentage from 0% through 100%.
+      max_concurrency:
+        type: integer
+        minimum: 1
+      rise:
+        type: integer
+        minimum: 1
+      timeout:
+        type: string
+        format: duration
+        description: Must be greater than 0 and shorter than interval when endpoint_health.active_probe.enabled is true.
+      type:
+        type: string
+        enum:
+          - tcp_connect
   k_8_s_svc_resolver:
     description: K8sSvcResolver defines the configuration for the DNS resolver
     type: object
