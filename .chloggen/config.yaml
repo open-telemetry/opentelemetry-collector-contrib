@@ -186,6 +186,7 @@ components:
     - processor/alibabaecsdetector
     - processor/attributes
     - processor/azuredetector
+    - processor/cardinality_guardian
     - processor/coralogix
     - processor/cumulativetodelta
     - processor/deltatocumulative
