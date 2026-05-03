@@ -238,7 +238,7 @@ func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 				},
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
@@ -275,7 +275,7 @@ func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 				},
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
@@ -322,7 +322,7 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 				},
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
@@ -394,7 +394,7 @@ func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
 				FilePath: caCertFile,
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
@@ -425,7 +425,7 @@ func TestScrape_ValidFilepathCertificate(t *testing.T) {
 				FilePath: caCertFile,
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
@@ -465,7 +465,7 @@ func TestScrape_ValidJKSCertificate(t *testing.T) {
 				Password:   configopaque.String("changeit"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
@@ -498,7 +498,7 @@ func TestScrape_ExpiredJKSCertificate(t *testing.T) {
 				Password:   configopaque.String("changeit"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
@@ -521,7 +521,7 @@ func TestScrape_WrongPasswordJKS(t *testing.T) {
 				Password:   configopaque.String("wrong-password"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
@@ -541,7 +541,7 @@ func TestScrape_ValidPKCS12Certificate(t *testing.T) {
 				Password:   configopaque.String("test-pass"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
@@ -566,7 +566,7 @@ func TestScrape_ExpiredPKCS12Certificate(t *testing.T) {
 				Password:   configopaque.String("test-pass"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
@@ -589,7 +589,7 @@ func TestScrape_WrongPasswordPKCS12(t *testing.T) {
 				Password:   configopaque.String("wrong"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
@@ -608,7 +608,7 @@ func TestScrape_AutoDetectJKSByExtension(t *testing.T) {
 				Password: configopaque.String("changeit"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
@@ -628,7 +628,7 @@ func TestScrape_AutoDetectPKCS12ByExtension(t *testing.T) {
 				Password: configopaque.String("pass"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	s := newScraper(cfg, receivertest.NewNopSettings(factory.Type()), mockGetConnectionStateValid)
@@ -745,7 +745,7 @@ func TestScrape_JKSAliasFailsBothLookups(t *testing.T) {
 				Password:   configopaque.String("store-pass"),
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
