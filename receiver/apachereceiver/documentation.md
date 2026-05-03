@@ -18,7 +18,7 @@ The number of active connections currently attached to the HTTP server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {connections} | Sum | Int | Cumulative | false | Development |
+| {connection} | Sum | Int | Cumulative | false | Development |
 
 ### apache.connection.status
 
@@ -26,7 +26,7 @@ The number of connections in different asynchronous states reported by Apache's 
 
 | Unit | Metric Type | Value Type | Stability |
 | ---- | ----------- | ---------- | --------- |
-| {connections} | Gauge | Int | Development |
+| {connection} | Gauge | Int | Development |
 
 #### Attributes
 
@@ -87,7 +87,7 @@ The number of requests serviced by the HTTP server per second.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {requests} | Sum | Int | Cumulative | true | Development |
+| {request} | Sum | Int | Cumulative | true | Development |
 
 ### apache.request.io.transmitted
 
@@ -119,7 +119,7 @@ The number of busy workers currently attached to the HTTP server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {workers} | Sum | Int | Cumulative | false | Development |
+| {worker} | Sum | Int | Cumulative | false | Development |
 
 ### apache.worker.idle
 
@@ -127,7 +127,7 @@ The number of idle workers currently attached to the HTTP server.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {workers} | Sum | Int | Cumulative | false | Development |
+| {worker} | Sum | Int | Cumulative | false | Development |
 
 ### apache.worker.status
 
@@ -137,7 +137,7 @@ The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| {workers} | Sum | Int | Cumulative | false | Development |
+| {worker} | Sum | Int | Cumulative | false | Development |
 
 #### Attributes
 

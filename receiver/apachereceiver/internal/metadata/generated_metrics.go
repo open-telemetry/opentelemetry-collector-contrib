@@ -246,7 +246,7 @@ type metricApacheConnectionActive struct {
 func (m *metricApacheConnectionActive) init() {
 	m.data.SetName("apache.connection.active")
 	m.data.SetDescription("The number of active connections currently attached to the HTTP server.")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -299,7 +299,7 @@ type metricApacheConnectionStatus struct {
 func (m *metricApacheConnectionStatus) init() {
 	m.data.SetName("apache.connection.status")
 	m.data.SetDescription("The number of connections in different asynchronous states reported by Apache's server-status.")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 	m.aggDataPoints = m.aggDataPoints[:0]
@@ -681,7 +681,7 @@ type metricApacheRequestCount struct {
 func (m *metricApacheRequestCount) init() {
 	m.data.SetName("apache.request.count")
 	m.data.SetDescription("The number of requests serviced by the HTTP server per second.")
-	m.data.SetUnit("{requests}")
+	m.data.SetUnit("{request}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -889,7 +889,7 @@ type metricApacheWorkerActive struct {
 func (m *metricApacheWorkerActive) init() {
 	m.data.SetName("apache.worker.active")
 	m.data.SetDescription("The number of busy workers currently attached to the HTTP server.")
-	m.data.SetUnit("{workers}")
+	m.data.SetUnit("{worker}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -941,7 +941,7 @@ type metricApacheWorkerIdle struct {
 func (m *metricApacheWorkerIdle) init() {
 	m.data.SetName("apache.worker.idle")
 	m.data.SetDescription("The number of idle workers currently attached to the HTTP server.")
-	m.data.SetUnit("{workers}")
+	m.data.SetUnit("{worker}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -994,7 +994,7 @@ type metricApacheWorkerStatus struct {
 func (m *metricApacheWorkerStatus) init() {
 	m.data.SetName("apache.worker.status")
 	m.data.SetDescription("The number of workers in each state.")
-	m.data.SetUnit("{workers}")
+	m.data.SetUnit("{worker}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
