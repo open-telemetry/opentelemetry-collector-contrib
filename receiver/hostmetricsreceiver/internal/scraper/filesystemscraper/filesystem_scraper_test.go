@@ -50,13 +50,13 @@ func TestScrape(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:          "Standard",
-			config:        Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			config:        Config{MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig()},
 			expectMetrics: true,
 		},
 		{
 			name: "Include single device filter",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeDevices:       DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}},
 			},
 			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
@@ -71,7 +71,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Device Filter that matches nothing",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeDevices:       DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectMetrics: false,
@@ -79,7 +79,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include device filtering that includes virtual partitions",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeVirtualFS:     true,
 				IncludeFSTypes:       FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
 			},
@@ -99,7 +99,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include filter with devices, filesystem type and mount points",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{
 					Config: filterset.Config{
 						MatchType: filterset.Strict,
@@ -168,7 +168,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "RootPath at /hostfs",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			rootPath: filepath.Join("/", "hostfs"),
 			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
@@ -205,7 +205,7 @@ func TestScrape(t *testing.T) {
 				common.HostProcMountinfo: "/proc/1/self",
 			},
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			rootPath: filepath.Join("/", "hostfs"),
 			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
@@ -239,7 +239,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Device Filter",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeDevices:       DeviceMatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_devices filter:",
@@ -247,7 +247,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Device Filter",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ExcludeDevices:       DeviceMatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_devices filter:",
@@ -255,7 +255,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Filesystems Filter",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeFSTypes:       FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_fs_types filter:",
@@ -263,7 +263,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Filesystems Filter",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ExcludeFSTypes:       FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_fs_types filter:",
@@ -271,7 +271,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Mountpoints Filter",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_mount_points filter:",
@@ -279,7 +279,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Mountpoints Filter",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				ExcludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_mount_points filter:",
@@ -292,7 +292,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Partitions and error provided",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{
 					Config: filterset.Config{
 						MatchType: filterset.Strict,
@@ -353,7 +353,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Do not report duplicate mount points",
 			config: Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			},
 			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{
@@ -526,7 +526,7 @@ func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric 
 }
 
 func TestScrape_UtilizationExcludesReservedBlocks(t *testing.T) {
-	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg := metadata.NewDefaultMetricsBuilderConfig()
 	cfg.Metrics.SystemFilesystemUtilization.Enabled = true
 
 	scraper, err := newFileSystemScraper(t.Context(), scrapertest.NewNopSettings(metadata.Type), &Config{
@@ -552,6 +552,84 @@ func TestScrape_UtilizationExcludesReservedBlocks(t *testing.T) {
 
 	actual := m.Gauge().DataPoints().At(0).DoubleValue()
 	assert.Equal(t, 0.63, actual, "utilization should be Used/(Used+Free), not Used/Total")
+}
+
+func TestTranslateMountpoint(t *testing.T) {
+	tests := []struct {
+		name       string
+		rootPath   string
+		mountpoint string
+		env        common.EnvMap
+		expected   string
+	}{
+		{
+			name:       "empty rootPath",
+			rootPath:   "",
+			mountpoint: "/data",
+			expected:   "/data",
+		},
+		{
+			name:       "rootPath is filesystem root",
+			rootPath:   "/",
+			mountpoint: "/data",
+			expected:   "/data",
+		},
+		{
+			name:       "rootPath prepended to mountpoint",
+			rootPath:   "/hostfs",
+			mountpoint: "/data",
+			expected:   "/hostfs/data",
+		},
+		{
+			name:       "mountpoint already has rootPath prefix",
+			rootPath:   "/hostfs",
+			mountpoint: "/hostfs/data",
+			expected:   "/hostfs/data",
+		},
+		{
+			name:       "mountpoint already has rootPath prefix, rootPath has trailing slash",
+			rootPath:   "/hostfs/",
+			mountpoint: "/hostfs/data",
+			expected:   "/hostfs/data",
+		},
+		{
+			name:       "mountpoint equals rootPath",
+			rootPath:   "/hostfs",
+			mountpoint: "/hostfs",
+			expected:   "/hostfs",
+		},
+		{
+			name:       "mountpoint has rootPath as partial prefix",
+			rootPath:   "/host",
+			mountpoint: "/hostdata",
+			expected:   "/host/hostdata",
+		},
+		{
+			name:       "HOST_PROC_MOUNTINFO set skips translation",
+			rootPath:   "/hostfs",
+			mountpoint: "/data",
+			env: common.EnvMap{
+				common.HostProcMountinfo: "/proc/1/mountinfo",
+			},
+			expected: "/data",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			env := make(common.EnvMap, len(tt.env))
+			for k, v := range tt.env {
+				env[k] = filepath.FromSlash(v)
+			}
+			ctx := context.WithValue(t.Context(), common.EnvKey, env)
+
+			// translateMountpoint() runs conditionally filepath.Join(), which runs filepath.Clean(),
+			// which replaces / with the platform-specific path separator.
+			// Therefore, use filepath.FromSlash() here to account for differences in path separator between platforms.
+			result := translateMountpoint(ctx, filepath.FromSlash(tt.rootPath), filepath.FromSlash(tt.mountpoint))
+			assert.Equal(t, filepath.FromSlash(tt.expected), result)
+		})
+	}
 }
 
 func isUnix() bool {

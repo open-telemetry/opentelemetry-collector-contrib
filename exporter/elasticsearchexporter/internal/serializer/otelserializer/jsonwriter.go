@@ -97,10 +97,16 @@ func (w *jsonWriter) float64Val(val float64) {
 		}
 	}
 	if needDot {
-		// Insert ".0" before exponent
+		// Insert ".0" before exponent.
+		// Copy tail for reuse below. Any write to buf would overwrite the
+		// remaining b content, leading to a corruption in the tail part.
+		// tail length is based on IEEE 754 max exponent of +308 or min exponent of -324, padded
+		// for alignment.
+		var tail [8]byte
+		n := copy(tail[:], b[expIdx:])
 		w.buf.Write(b[:expIdx])
 		w.buf.WriteString(".0")
-		w.buf.Write(b[expIdx:])
+		w.buf.Write(tail[:n])
 	} else {
 		w.buf.Write(b)
 	}

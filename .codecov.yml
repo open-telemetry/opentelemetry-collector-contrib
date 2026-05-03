@@ -437,10 +437,18 @@ component_management:
     name: extension_sumologic
     paths:
     - extension/sumologicextension/**
+  - component_id: extension_tailstorage_pebbletailstorage
+    name: extension_tailstorage_pebbletailstorage
+    paths:
+    - extension/tailstorage/pebbletailstorageextension/**
   - component_id: processor_attributes
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_cardinalityguardian
+    name: processor_cardinalityguardian
+    paths:
+    - processor/cardinalityguardianprocessor/**
   - component_id: processor_coralogix
     name: processor_coralogix
     paths:
@@ -457,10 +465,10 @@ component_management:
     name: processor_deltatorate
     paths:
     - processor/deltatorateprocessor/**
-  - component_id: processor_dnslookup
-    name: processor_dnslookup
+  - component_id: processor_drain
+    name: processor_drain
     paths:
-    - processor/dnslookupprocessor/**
+    - processor/drainprocessor/**
   - component_id: processor_filter
     name: processor_filter
     paths:
@@ -541,6 +549,10 @@ component_management:
     name: processor_span
     paths:
     - processor/spanprocessor/**
+  - component_id: processor_spanpruning
+    name: processor_spanpruning
+    paths:
+    - processor/spanpruningprocessor/**
   - component_id: processor_sumologic
     name: processor_sumologic
     paths:

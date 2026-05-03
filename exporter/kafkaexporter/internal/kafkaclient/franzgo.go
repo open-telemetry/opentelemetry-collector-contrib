@@ -10,6 +10,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -45,25 +46,35 @@ func recordUserSize(r *kgo.Record) int {
 type FranzSyncProducer struct {
 	client          *kgo.Client
 	metadataKeys    []string
+	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
+	recordHeaders configopaque.MapList,
 	maxMessageBytes int,
 ) *FranzSyncProducer {
+	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
+	for _, pair := range recordHeaders {
+		headers = append(headers, kgo.RecordHeader{
+			Key:   pair.Name,
+			Value: []byte(pair.Value),
+		})
+	}
+
 	return &FranzSyncProducer{
 		client:          client,
 		metadataKeys:    metadataKeys,
+		recordHeaders:   headers,
 		maxMessageBytes: maxMessageBytes,
 	}
 }
 
 // ExportData sends a batch of messages to Kafka
 func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error {
-	messages := makeFranzMessages(msgs)
-	setMessageHeaders(ctx, messages, p.metadataKeys)
+	messages := makeFranzMessages(msgs, p.recordHeaders, metadataToHeaders(ctx, p.metadataKeys))
 	result := p.client.ProduceSync(ctx, messages...)
 	var errs []error
 	for _, r := range result {
@@ -93,18 +104,23 @@ func (p *FranzSyncProducer) Close() error {
 	return nil
 }
 
-func makeFranzMessages(messages Messages) []*kgo.Record {
+func makeFranzMessages(messages Messages, recordHeaders, metadataHeaders []kgo.RecordHeader) []*kgo.Record {
+	var headers []kgo.RecordHeader
+	if n := len(recordHeaders) + len(metadataHeaders); n > 0 {
+		headers = make([]kgo.RecordHeader, 0, n)
+		headers = append(headers, recordHeaders...)
+		headers = append(headers, metadataHeaders...)
+	}
+
 	msgs := make([]*kgo.Record, 0, messages.Count)
 	for _, msg := range messages.TopicMessages {
-		for _, message := range msg.Messages {
-			msg := &kgo.Record{Topic: msg.Topic}
-			if message.Key != nil {
-				msg.Key = message.Key
-			}
-			if message.Value != nil {
-				msg.Value = message.Value
-			}
-			msgs = append(msgs, msg)
+		for _, m := range msg.Messages {
+			msgs = append(msgs, &kgo.Record{
+				Topic:   msg.Topic,
+				Key:     m.Key,
+				Value:   m.Value,
+				Headers: headers,
+			})
 		}
 	}
 	return msgs

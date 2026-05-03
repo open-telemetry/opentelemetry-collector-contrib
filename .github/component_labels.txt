@@ -118,6 +118,7 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
+extension/tailstorage/pebbletailstorageextension extension/tailstorage/pebbletailstorage
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
@@ -176,11 +177,12 @@ pkg/winperfcounters pkg/winperfcounters
 pkg/xk8stest pkg/xk8stest
 pkg/xstreamencoding pkg/xstreamencoding
 processor/attributesprocessor processor/attributes
+processor/cardinalityguardianprocessor processor/cardinalityguardian
 processor/coralogixprocessor processor/coralogix
 processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
-processor/dnslookupprocessor processor/dnslookup
+processor/drainprocessor processor/drain
 processor/filterprocessor processor/filter
 processor/geoipprocessor processor/geoip
 processor/groupbyattrsprocessor processor/groupbyattrs
@@ -215,6 +217,7 @@ processor/resourcedetectionprocessor/internal/vultr processor/resourcedetection/
 processor/resourceprocessor processor/resource
 processor/schemaprocessor processor/schema
 processor/spanprocessor processor/span
+processor/spanpruningprocessor processor/spanpruning
 processor/sumologicprocessor processor/sumologic
 processor/tailsamplingprocessor processor/tailsampling
 processor/transformprocessor processor/transform

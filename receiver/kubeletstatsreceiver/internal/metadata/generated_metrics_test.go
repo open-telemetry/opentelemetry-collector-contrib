@@ -62,27 +62,27 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `aws.volume.id` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `fs.type` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `gce.pd.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `glusterfs.endpoints.name` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `glusterfs.path` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if tt.resAttrsSet == testDataSetDefault || tt.resAttrsSet == testDataSetAll {
+			if tt.resAttrsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `partition` should not be enabled: This resource_attribute is deprecated and will be removed soon", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -209,6 +209,18 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 
 			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerCPUTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerCPUUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordK8sNodeUptimeDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -317,6 +329,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sNodeSystemContainerName("k8s.node.system_container.name-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -745,6 +758,56 @@ func TestMetricsBuilder(t *testing.T) {
 					directionAttrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.Equal(t, "receive", directionAttrVal.Str())
+				case "k8s.node.system_container.cpu.time":
+					assert.False(t, validatedMetrics["k8s.node.system_container.cpu.time"], "Found a duplicate in the metrics slice: k8s.node.system_container.cpu.time")
+					validatedMetrics["k8s.node.system_container.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
+					assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+					assert.Equal(t, "Total cumulative CPU time (sum of all cores) spent by the system container since its creation", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.True(t, mi.Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, mi.Sum().AggregationTemporality())
+					dp := mi.Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.node.system_container.cpu.usage":
+					assert.False(t, validatedMetrics["k8s.node.system_container.cpu.usage"], "Found a duplicate in the metrics slice: k8s.node.system_container.cpu.usage")
+					validatedMetrics["k8s.node.system_container.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "Total CPU usage (sum of all cores per second) averaged over the sample window for the system container", mi.Description())
+					assert.Equal(t, "{cpu}", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "k8s.node.system_container.memory.usage":
+					assert.False(t, validatedMetrics["k8s.node.system_container.memory.usage"], "Found a duplicate in the metrics slice: k8s.node.system_container.memory.usage")
+					validatedMetrics["k8s.node.system_container.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "System container memory usage", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.system_container.memory.working_set":
+					assert.False(t, validatedMetrics["k8s.node.system_container.memory.working_set"], "Found a duplicate in the metrics slice: k8s.node.system_container.memory.working_set")
+					validatedMetrics["k8s.node.system_container.memory.working_set"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+					assert.Equal(t, "System container memory working_set", mi.Description())
+					assert.Equal(t, "By", mi.Unit())
+					dp := mi.Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.uptime":
 					assert.False(t, validatedMetrics["k8s.node.uptime"], "Found a duplicate in the metrics slice: k8s.node.uptime")
 					validatedMetrics["k8s.node.uptime"] = true
