@@ -274,11 +274,24 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		err = p.handleTimeAndAttributeMappings(entry)
 		if err != nil {
-			handleErr := p.HandleEntryError(ctx, entry, fmt.Errorf("failed to handle attribute mappings: %w", err))
-			if p.isQuietMode() && !errors.As(handleErr, &writeErr) {
+			err = fmt.Errorf("failed to handle attribute mappings: %w", err)
+
+			switch p.OnError {
+			case helper.DropOnErrorQuiet:
 				return nil
+			case helper.SendOnErrorQuiet:
+				if writeErr := p.Write(ctx, entry); writeErr != nil {
+					return fmt.Errorf("failed to send entry after error: %w", writeErr)
+				}
+				return nil
+			case helper.SendOnError:
+				if writeErr := p.Write(ctx, entry); writeErr != nil {
+					return fmt.Errorf("failed to send entry after error: %w", writeErr)
+				}
+				return err
+			default:
+				return err
 			}
-			return handleErr
 		}
 
 		// send it to the recombine operator
