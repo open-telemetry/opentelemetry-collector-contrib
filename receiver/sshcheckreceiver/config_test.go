@@ -15,6 +15,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
 )
 
 // check that OTel Collector patterns are implemented
@@ -114,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	rcvrs, err := cm.Sub("receivers")
 	require.NoError(t, err)
-	sshconf, err := rcvrs.Sub("sshcheck")
+	sshconf, err := rcvrs.Sub(metadata.Type.String())
 	require.NoError(t, err)
 	// unmarshal to receiver config
 	actualConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
