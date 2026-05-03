@@ -82,6 +82,12 @@ func ParseGotime(layout string, value any, location *time.Location) (time.Time, 
 	if err != nil {
 		return time.Time{}, err
 	}
+	// If the caller requested local time, canonicalize to time.Local so the
+	// returned location pointer is always time.Local regardless of the
+	// system timezone name (e.g. "WET", "CET").
+	if location == time.Local {
+		timeValue = timeValue.In(time.Local)
+	}
 	return SetTimestampYear(timeValue), nil
 }
 
