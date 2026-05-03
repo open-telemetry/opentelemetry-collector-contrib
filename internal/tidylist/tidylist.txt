@@ -188,6 +188,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/tailstorage/pebbletailstorageextension
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -212,10 +213,11 @@ pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/pprof
 processor/attributesprocessor
+processor/cardinalityguardianprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
-processor/dnslookupprocessor
+processor/drainprocessor
 processor/filterprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
