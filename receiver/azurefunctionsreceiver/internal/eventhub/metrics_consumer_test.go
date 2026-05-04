@@ -34,14 +34,11 @@ func makeMetrics() pmetric.Metrics {
 	sm := rm.ScopeMetrics().AppendEmpty()
 	met := sm.Metrics().AppendEmpty()
 	met.SetName("test.metric")
-	dps := met.SetEmptyGauge().DataPoints()
-	dps.AppendEmpty().SetIntValue(1)
+	met.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(1)
 	return m
 }
 
 func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
-	emptyMetrics := pmetric.NewMetrics()
-
 	tests := map[string]struct {
 		content         [][]byte
 		metadata        map[string]string
@@ -49,7 +46,6 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 		wantErr         string
 		wantBatches     int
 		wantMetricCount int
-		wantMetadata    map[string]string
 	}{
 		"success_single_message": {
 			content:         [][]byte{[]byte("m1")},
@@ -57,21 +53,16 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
 			wantBatches:     1,
 			wantMetricCount: 1,
-			wantMetadata:    map[string]string{AttrEventHubName: "single"},
 		},
 		"success_multiple_messages_merged": {
-			content:         [][]byte{[]byte("a"), []byte("b")},
-			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
-			wantBatches:     1,
-			wantMetricCount: 2,
+			content: [][]byte{[]byte("a"), []byte("b")},
 			metadata: map[string]string{
 				AttrEventHubName:        "hub",
 				AttrEventHubPartitionID: "7",
 			},
-			wantMetadata: map[string]string{
-				AttrEventHubName:        "hub",
-				AttrEventHubPartitionID: "7",
-			},
+			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
+			wantBatches:     1,
+			wantMetricCount: 2,
 		},
 		"metadata_applied_to_resource_attributes": {
 			content: [][]byte{[]byte("m")},
@@ -84,30 +75,21 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 			unmarshaler:     &fakeMetricsUnmarshaler{metrics: makeMetrics()},
 			wantBatches:     1,
 			wantMetricCount: 1,
-			wantMetadata: map[string]string{
-				AttrEventHubName:          "myhub",
-				AttrEventHubPartitionID:   "1",
-				AttrEventHubNamespace:     "test-namespace.servicebus.windows.net",
-				AttrEventHubConsumerGroup: "test",
-			},
 		},
 		"unmarshal_error": {
 			content:     [][]byte{[]byte("bad")},
 			unmarshaler: &fakeMetricsUnmarshaler{err: errors.New("unmarshal failed")},
 			wantErr:     "unmarshal message 0",
-			wantBatches: 0,
 		},
 		"no_metrics_to_consume_empty_content": {
 			content:     [][]byte{},
 			unmarshaler: &fakeMetricsUnmarshaler{metrics: makeMetrics()},
 			wantErr:     "no metrics to consume",
-			wantBatches: 0,
 		},
 		"no_metrics_to_consume_all_unmarshaled_empty": {
 			content:     [][]byte{[]byte("a"), []byte("b")},
-			unmarshaler: &fakeMetricsUnmarshaler{metrics: emptyMetrics},
+			unmarshaler: &fakeMetricsUnmarshaler{metrics: pmetric.NewMetrics()},
 			wantErr:     "no metrics to consume",
-			wantBatches: 0,
 		},
 	}
 
@@ -117,15 +99,13 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			consumer := NewMetricsConsumer(tt.unmarshaler, sink)
 
-			req := trigger.ParsedRequest{
+			err := consumer.ConsumeEvents(t.Context(), trigger.ParsedRequest{
 				Content:  tt.content,
 				Metadata: tt.metadata,
-			}
-			err := consumer.ConsumeEvents(t.Context(), req)
+			})
 
 			if tt.wantErr != "" {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.wantErr)
+				assert.ErrorContains(t, err, tt.wantErr)
 				assert.Len(t, sink.AllMetrics(), tt.wantBatches)
 				return
 			}
@@ -135,11 +115,11 @@ func TestMetricsConsumer_ConsumeEvents(t *testing.T) {
 			if tt.wantBatches > 0 {
 				assert.Equal(t, tt.wantMetricCount, all[0].MetricCount(), "metrics in merged batch")
 			}
-			if len(tt.wantMetadata) > 0 && tt.wantBatches > 0 {
+			if len(tt.metadata) > 0 && tt.wantBatches > 0 {
 				md := all[0]
 				for ri := 0; ri < md.ResourceMetrics().Len(); ri++ {
 					resource := md.ResourceMetrics().At(ri).Resource()
-					for key, wantVal := range tt.wantMetadata {
+					for key, wantVal := range tt.metadata {
 						attr, ok := resource.Attributes().Get(key)
 						require.True(t, ok, "resource %d attribute %q", ri, key)
 						assert.Equal(t, wantVal, attr.Str(), "resource %d attribute %q", ri, key)

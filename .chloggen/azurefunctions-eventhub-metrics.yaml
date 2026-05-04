@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/azure_functions
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The `azure_functions` receiver can ingest metrics from Azure Functions Event Hub triggers. Configure `triggers.event_hub.metrics` with per-binding encodings that implement `pmetric.Unmarshaler`. Logs and metrics pipelines share one HTTP server when both reference the same receiver.
+note: Add Event Hub metrics support to the `azure_functions` receiver with per-binding encodings under `triggers.event_hub.metrics`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [43507]
