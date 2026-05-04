@@ -93,8 +93,6 @@ receivers:
 | `target_allocator` | | Optional Target Allocator client configuration used to fetch dynamically assigned scrape targets. See [OpenTelemetry Operator](#opentelemetry-operator). |
 | `trim_metric_suffixes` | `false` | [**Experimental**] Trims unit and some counter type suffixes from metric names, for example `singing_duration_seconds_total` -> `singing_duration`. Useful when trying to restore metric names closer to OpenTelemetry instrumentation. |
 | `api_server` | | Optional nested block for a local Prometheus agent-mode API server (debugging targets, configuration, and service discovery). See [Prometheus API Server](#prometheus-api-server). |
-| `api_server.enabled` | `false` | When `true`, runs a local Prometheus agent-mode API server for debugging targets, configuration, and service discovery. |
-| `api_server.server_config` | | HTTP server settings ([confighttp server configuration][confighttp-server]). When `api_server.enabled` is `true`, `endpoint` must be non-empty. |
 
 At least one of `config.scrape_configs`, `config.scrape_config_files`, or `target_allocator` must be set.
 
