@@ -4,6 +4,8 @@
 package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -214,6 +216,11 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if decodeErr != nil {
 			return nil, fmt.Errorf("unable to base64 decode the record at index %d: %w", recordIndex-1, decodeErr)
 		}
+
+		recordBuf, decodeErr = gunzipRecordIfNeeded(recordBuf)
+		if decodeErr != nil {
+			return nil, fmt.Errorf("unable to decompress the record at index %d: %w", recordIndex-1, decodeErr)
+		}
 		return recordBuf, nil
 	}
 
@@ -273,6 +280,25 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	if _, err = w.Write(payload); err != nil {
 		fmr.settings.Logger.Error("Failed to send response", zap.Error(err))
 	}
+}
+
+func gunzipRecordIfNeeded(record []byte) ([]byte, error) {
+	if len(record) < 2 || record[0] != 0x1f || record[1] != 0x8b {
+		return record, nil
+	}
+
+	reader, err := gzip.NewReader(bytes.NewReader(record))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	decompressed, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressed, nil
 }
 
 // loadEncodingExtension tries to load an available extension for the given encoding.
