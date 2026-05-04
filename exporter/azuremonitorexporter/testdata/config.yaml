@@ -20,4 +20,9 @@ azuremonitor/2:
     num_consumers: 10
     storage: disk
 
+azuremonitor/3:
+  connection_string: InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/
+  non_error_http_status_codes: [404, 409]
+  align_http_server_span_success_with_otel_spec: true
+
 disk/3:

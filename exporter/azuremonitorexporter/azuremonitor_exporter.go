@@ -102,9 +102,10 @@ func (exporter *azureMonitorExporter) consumeMetrics(_ context.Context, metricDa
 }
 
 type traceVisitor struct {
-	processed int
-	err       error
-	exporter  *azureMonitorExporter
+	processed  int
+	err        error
+	exporter   *azureMonitorExporter
+	httpPolicy httpStatusPolicy
 }
 
 // Called for each tuple of Resource, InstrumentationScope, and Span
@@ -113,7 +114,7 @@ func (v *traceVisitor) visit(
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span,
 ) (ok bool) {
-	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
+	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.httpPolicy, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
 		v.err = consumererror.NewPermanent(err)
@@ -138,7 +139,7 @@ func (exporter *azureMonitorExporter) consumeTraces(_ context.Context, traceData
 		return nil
 	}
 
-	visitor := &traceVisitor{exporter: exporter}
+	visitor := &traceVisitor{exporter: exporter, httpPolicy: newHTTPStatusPolicy(exporter.config)}
 	accept(traceData, visitor)
 
 	// Flush the transport channel to force the telemetry to be sent

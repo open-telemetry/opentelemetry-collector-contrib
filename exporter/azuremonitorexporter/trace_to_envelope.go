@@ -48,6 +48,37 @@ type msLink struct {
 	ID          string `json:"id"`
 }
 
+// httpStatusPolicy decides whether an HTTP status code on a span should be reported as
+// Success=true on Application Insights RequestData / RemoteDependencyData. The default
+// (zero value) preserves the historical behavior: any code in [100, 399] is success.
+type httpStatusPolicy struct {
+	nonErrorCodes               map[int64]struct{}
+	alignServerSpanWithOTelSpec bool
+}
+
+func newHTTPStatusPolicy(cfg *Config) httpStatusPolicy {
+	p := httpStatusPolicy{
+		alignServerSpanWithOTelSpec: cfg.AlignHTTPServerSpanSuccessWithOTelSpec,
+	}
+	if len(cfg.NonErrorHTTPStatusCodes) > 0 {
+		p.nonErrorCodes = make(map[int64]struct{}, len(cfg.NonErrorHTTPStatusCodes))
+		for _, code := range cfg.NonErrorHTTPStatusCodes {
+			p.nonErrorCodes[int64(code)] = struct{}{}
+		}
+	}
+	return p
+}
+
+func (p httpStatusPolicy) success(statusCode int64, isServer bool) bool {
+	if _, ok := p.nonErrorCodes[statusCode]; ok {
+		return true
+	}
+	if isServer && p.alignServerSpanWithOTelSpec && statusCode >= 400 && statusCode < 500 {
+		return true
+	}
+	return statusCode >= 100 && statusCode <= 399
+}
+
 // Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
 func spanToEnvelopes(
@@ -55,6 +86,7 @@ func spanToEnvelopes(
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
 	spanEventsEnabled bool,
+	httpPolicy httpStatusPolicy,
 	logger *zap.Logger,
 ) ([]*contracts.Envelope, error) {
 	spanKind := span.Kind()
@@ -88,7 +120,7 @@ func spanToEnvelopes(
 
 	switch spanKind {
 	case ptrace.SpanKindServer, ptrace.SpanKindConsumer:
-		requestData := spanToRequestData(span, incomingSpanType)
+		requestData := spanToRequestData(span, incomingSpanType, httpPolicy)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
 		envelope.Name = requestData.EnvelopeName("")
@@ -96,7 +128,7 @@ func spanToEnvelopes(
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
 	case ptrace.SpanKindClient, ptrace.SpanKindProducer, ptrace.SpanKindInternal:
-		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
+		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType, httpPolicy)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc
 		if spanKind == ptrace.SpanKindInternal {
@@ -222,7 +254,7 @@ func newEnvelope(span ptrace.Span, time string) *contracts.Envelope {
 }
 
 // Maps Server/Consumer Span to AppInsights RequestData
-func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.RequestData {
+func spanToRequestData(span ptrace.Span, incomingSpanType spanType, httpPolicy httpStatusPolicy) *contracts.RequestData {
 	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/requestdata.go
 	// Start with some reasonable default for server spans.
 	data := contracts.NewRequestData()
@@ -234,7 +266,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 
 	switch incomingSpanType {
 	case httpSpanType:
-		fillRequestDataHTTP(span, data)
+		fillRequestDataHTTP(span, data, httpPolicy)
 	case rpcSpanType:
 		fillRequestDataRPC(span, data)
 	case messagingSpanType:
@@ -247,7 +279,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 }
 
 // Maps Span to AppInsights RemoteDependencyData
-func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *contracts.RemoteDependencyData {
+func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType, httpPolicy httpStatusPolicy) *contracts.RemoteDependencyData {
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/remotedependencydata.go
 	// Start with some reasonable default for dependent spans.
 	data := contracts.NewRemoteDependencyData()
@@ -259,7 +291,7 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 
 	switch incomingSpanType {
 	case httpSpanType:
-		fillRemoteDependencyDataHTTP(span, data)
+		fillRemoteDependencyDataHTTP(span, data, httpPolicy)
 	case rpcSpanType:
 		fillRemoteDependencyDataRPC(span, data)
 	case databaseSpanType:
@@ -302,18 +334,18 @@ func spanEventToMessageData(spanEvent ptrace.SpanEvent) *contracts.MessageData {
 	return data
 }
 
-func getFormattedHTTPStatusValues(statusCode int64) (statusAsString string, success bool) {
+func getFormattedHTTPStatusValues(statusCode int64, isServer bool, policy httpStatusPolicy) (statusAsString string, success bool) {
 	// see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#status
-	return strconv.FormatInt(statusCode, 10), statusCode >= 100 && statusCode <= 399
+	return strconv.FormatInt(statusCode, 10), policy.success(statusCode, isServer)
 }
 
 // Maps HTTP Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#semantic-conventions-for-http-spans
-func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
+func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData, httpPolicy httpStatusPolicy) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	if attrs.HTTPResponseStatusCode != 0 {
-		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode)
+		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode, true, httpPolicy)
 	}
 
 	var sb strings.Builder
@@ -391,12 +423,12 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 
 // Maps HTTP Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md
-func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDependencyData) {
+func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDependencyData, httpPolicy httpStatusPolicy) {
 	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	data.Type = "HTTP"
 	if attrs.HTTPResponseStatusCode != 0 {
-		data.ResultCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode)
+		data.ResultCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPResponseStatusCode, false, httpPolicy)
 	}
 
 	var sb strings.Builder

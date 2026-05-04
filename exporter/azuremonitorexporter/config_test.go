@@ -57,6 +57,18 @@ func TestLoadConfig(t *testing.T) {
 				ShutdownTimeout: 2 * time.Second,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "3"),
+			expected: &Config{
+				ConnectionString:                       "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
+				MaxBatchSize:                           1024,
+				MaxBatchInterval:                       10 * time.Second,
+				ShutdownTimeout:                        1 * time.Second,
+				NonErrorHTTPStatusCodes:                []int{404, 409},
+				AlignHTTPServerSpanSuccessWithOTelSpec: true,
+				QueueSettings:                          configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -70,6 +82,34 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestConfigValidate_NonErrorHTTPStatusCodes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		codes   []int
+		wantErr string
+	}{
+		{name: "empty list ok", codes: nil},
+		{name: "valid range ok", codes: []int{100, 200, 404, 599}},
+		{name: "below 100 rejected", codes: []int{99}, wantErr: "99 is not a valid HTTP status code"},
+		{name: "above 599 rejected", codes: []int{600}, wantErr: "600 is not a valid HTTP status code"},
+		{name: "negative rejected", codes: []int{-1}, wantErr: "-1 is not a valid HTTP status code"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{NonErrorHTTPStatusCodes: tt.codes}
+			err := cfg.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.ErrorContains(t, err, tt.wantErr)
 		})
 	}
 }

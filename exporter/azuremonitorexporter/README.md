@@ -44,6 +44,18 @@ The following settings can be optionally configured:
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
 - `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
 - `custom_events_enabled` (default = `false`): Enables export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
+- `non_error_http_status_codes` (default = `[]`): HTTP status codes that should be reported as `Success = true` on Application Insights `RequestData` (server spans) and `RemoteDependencyData` (client spans), regardless of the default 100-399 success range. Useful for hiding expected non-2xx responses (404 cache miss, 409 conflict, 412 precondition failed) from failure-rate dashboards and alerts. Codes must be in `[100, 599]`.
+- `align_http_server_span_success_with_otel_spec` (default = `false`): When `true`, any 4xx HTTP response on a server span is reported as `Success = true` on `RequestData`, matching the [OpenTelemetry HTTP semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/http/http-spans.md#status) which only flip server span status to `Error` on 5xx. Client spans (`RemoteDependencyData`) are unaffected; use `non_error_http_status_codes` to override individual client codes.
+
+Example:
+
+```yaml
+exporters:
+  azuremonitor:
+    connection_string: "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/"
+    non_error_http_status_codes: [404, 409]
+    align_http_server_span_success_with_otel_spec: true
+```
 
 Example:
 
