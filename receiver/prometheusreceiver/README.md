@@ -99,9 +99,16 @@ receivers:
               action: keep
 ```
 
-The prometheus receiver also supports additional top-level options:
+## Configuration
 
-- **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
+| Field | Default | Description |
+| --- | --- | --- |
+| `config` | | Embedded [Prometheus scrape configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/) (`global`, `scrape_configs`, `scrape_config_files`, and related sections). Uses the same YAML structure as Prometheus; any field you omit picks up the default documented there for that setting. Service discovery and relabeling behave like Prometheus. |
+| `target_allocator` | | Optional Target Allocator client configuration used to fetch dynamically assigned scrape targets. See [OpenTelemetry Operator](#opentelemetry-operator). |
+| `trim_metric_suffixes` | `false` | [**Experimental**] Trims unit and some counter type suffixes from metric names, for example `singing_duration_seconds_total` -> `singing_duration`. Useful when trying to restore metric names closer to OpenTelemetry instrumentation. |
+| `api_server` | | Optional nested block for a local Prometheus agent-mode API server (debugging targets, configuration, and service discovery). See [Prometheus API Server](#prometheus-api-server). |
+
+At least one of `config.scrape_configs`, `config.scrape_config_files`, or `target_allocator` must be set.
 
 Example configuration:
 
@@ -224,6 +231,7 @@ receivers:
 The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#client-configuration
+[confighttp-server]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration
 
 ## Exemplars
 This receiver accepts exemplars coming in Prometheus format and converts it to OTLP format.
