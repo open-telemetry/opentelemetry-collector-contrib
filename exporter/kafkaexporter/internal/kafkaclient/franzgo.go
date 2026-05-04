@@ -42,7 +42,7 @@ func recordUserSize(r *kgo.Record) int {
 // RecordHeader includes key-value pairs to be added as headers to Kafka records.
 type RecordHeader struct {
 	Name  string `mapstructure:"name"`
-	Value string `mapstructure:"value"`
+	Value configopaque.String `mapstructure:"value"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
