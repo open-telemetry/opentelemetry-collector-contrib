@@ -638,13 +638,11 @@ func (*vcenterClient) uuidFromEntityRefID(id string) (string, error) {
 
 // uidFromURL returns the ID from resource URL (applies to datastores)
 // url looks like ds:///vmfs/volumes/fca66b03-2ed734ff/
-func (c *vcenterClient) IDFromURL(url string) (string, error) {
+func (*vcenterClient) IDFromURL(url string) (string, error) {
 	parts := strings.Split(url, "/")
-	// Iterate from the end to find the last non-empty part
-	for i := len(parts) - 1; i >= 0; i-- {
-		if parts[i] != "" {
-			uid := parts[i]
-			return uid, nil
+	for _, part := range slices.Backward(parts) {
+		if part != "" {
+			return part, nil
 		}
 	}
 
