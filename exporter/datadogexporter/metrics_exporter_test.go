@@ -39,6 +39,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/featuregates"
 )
@@ -491,6 +492,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
+				hostmetadata.PusherConfig{},
 				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
@@ -802,6 +804,7 @@ func TestServiceInstanceIDTag(t *testing.T) {
 		newTestConfig(t, server.URL, nil, datadogconfig.HistogramModeDistributions),
 		traceconfig.New(),
 		&once,
+		hostmetadata.PusherConfig{},
 		attributesTranslator,
 		&testutil.MockSourceProvider{Src: source.Source{Kind: source.HostnameKind, Identifier: "test-host"}},
 		reporter,
@@ -935,6 +938,7 @@ func TestMetricRemapping(t *testing.T) {
 				newTestConfig(t, server.URL, []string{}, datadogconfig.HistogramModeDistributions),
 				acfg,
 				&once,
+				hostmetadata.PusherConfig{},
 				attributesTranslator,
 				&testutil.MockSourceProvider{},
 				reporter,

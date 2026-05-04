@@ -43,14 +43,15 @@ type traceExporter struct {
 	cfg    *datadogconfig.Config
 	ctx    context.Context // ctx triggers shutdown upon cancellation
 
-	metricsAPI       *datadogV2.MetricsApi    // client sends running metrics to backend
-	scrubber         scrub.Scrubber           // scrubber scrubs sensitive information from error messages
-	onceMetadata     *sync.Once               // onceMetadata ensures that metadata is sent only once across all exporters
-	agent            *agent.Agent             // agent processes incoming traces
-	sourceProvider   source.Provider          // is able to source the origin of a trace (hostname, container, etc)
-	metadataReporter *inframetadata.Reporter  // reports host metadata from resource attributes and metrics
-	retrier          *clientutil.Retrier      // retrier handles retries on requests
-	gatewayUsage     *attributes.GatewayUsage // gatewayUsage stores the gateway usage metrics
+	metricsAPI       *datadogV2.MetricsApi     // client sends running metrics to backend
+	scrubber         scrub.Scrubber            // scrubber scrubs sensitive information from error messages
+	onceMetadata     *sync.Once                // onceMetadata ensures that metadata is sent only once across all exporters
+	pcfg             hostmetadata.PusherConfig // pcfg is the metadata pusher config (includes alias providers)
+	agent            *agent.Agent              // agent processes incoming traces
+	sourceProvider   source.Provider           // is able to source the origin of a trace (hostname, container, etc)
+	metadataReporter *inframetadata.Reporter   // reports host metadata from resource attributes and metrics
+	retrier          *clientutil.Retrier       // retrier handles retries on requests
+	gatewayUsage     *attributes.GatewayUsage  // gatewayUsage stores the gateway usage metrics
 }
 
 func newTracesExporter(
@@ -58,6 +59,7 @@ func newTracesExporter(
 	params exporter.Settings,
 	cfg *datadogconfig.Config,
 	onceMetadata *sync.Once,
+	pcfg hostmetadata.PusherConfig,
 	sourceProvider source.Provider,
 	agent *agent.Agent,
 	metadataReporter *inframetadata.Reporter,
@@ -70,6 +72,7 @@ func newTracesExporter(
 		ctx:              ctx,
 		agent:            agent,
 		onceMetadata:     onceMetadata,
+		pcfg:             pcfg,
 		scrubber:         scrubber,
 		sourceProvider:   sourceProvider,
 		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
@@ -111,7 +114,7 @@ func (exp *traceExporter) consumeTraces(
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}
-			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs, exp.metadataReporter)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, exp.pcfg, exp.sourceProvider, attrs, exp.metadataReporter)
 		})
 
 		// Consume resources for host metadata
