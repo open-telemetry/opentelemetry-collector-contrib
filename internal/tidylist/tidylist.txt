@@ -156,6 +156,7 @@ extension/encoding/azureencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
+extension/encoding/opensearchlogencodingextension
 pkg/translator/skywalking
 extension/encoding/skywalkingencodingextension
 extension/encoding/textencodingextension

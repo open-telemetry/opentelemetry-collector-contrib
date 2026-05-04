@@ -1,0 +1,16 @@
+display_name: OpenSearch Log Encoding Extension
+type: opensearch_log_encoding
+
+description: This extension marshals logs into OpenSearch Simple Schema for Observability (SS4O) NDJSON format.
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [joluc]
+
+tests:
+  config:

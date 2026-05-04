@@ -89,9 +89,3 @@ kafka/metadata_batch_valid:
           - metadata_key
           - another_key
           - kafka_topic
-kafka/opensearch:
-  brokers:
-    - "localhost:9092"
-  logs:
-    topic: otel-logs
-    encoding: opensearch_json
