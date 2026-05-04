@@ -7,7 +7,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"sync"
 	"testing"
 	"time"
 
@@ -21,23 +20,23 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 )
 
 func TestNewManager(t *testing.T) {
 	cfg := &Config{}
 	registry := prometheus.NewRegistry()
-	promCfg := &promconfig.Config{
+	promCfg := sharedpromconfig.NewConfig(&promconfig.Config{
 		ScrapeConfigs: []*promconfig.ScrapeConfig{
 			{JobName: "test-job"},
 		},
-	}
+	})
 	manager := NewManager(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		promCfg,
 		registry,
 		registry,
-		&sync.RWMutex{},
 	)
 
 	assert.NotNil(t, manager)
@@ -46,65 +45,6 @@ func TestNewManager(t *testing.T) {
 	assert.NotNil(t, manager.shutdown)
 	assert.NotNil(t, manager.registry)
 	assert.NotNil(t, manager.registerer)
-	assert.NotNil(t, manager.cfgLock)
-}
-
-func TestNewManagerUsesProvidedConfigLock(t *testing.T) {
-	sharedLock := &sync.RWMutex{}
-	registry := prometheus.NewRegistry()
-	promCfg := &promconfig.Config{
-		ScrapeConfigs: []*promconfig.ScrapeConfig{
-			{JobName: "test-job"},
-		},
-	}
-
-	manager := NewManager(
-		receivertest.NewNopSettings(metadata.Type),
-		&Config{},
-		promCfg,
-		registry,
-		registry,
-		sharedLock,
-	)
-
-	require.NotNil(t, manager)
-	assert.Same(t, sharedLock, manager.cfgLock)
-}
-
-func TestNewManagerNilConfig(t *testing.T) {
-	registry := prometheus.NewRegistry()
-
-	manager := NewManager(
-		receivertest.NewNopSettings(metadata.Type),
-		nil,
-		&promconfig.Config{},
-		registry,
-		registry,
-		&sync.RWMutex{},
-	)
-
-	require.Nil(t, manager)
-}
-
-func TestManagerApplyConfig(t *testing.T) {
-	registry := prometheus.NewRegistry()
-	promCfg := &promconfig.Config{
-		ScrapeConfigs: []*promconfig.ScrapeConfig{{JobName: "test-job"}},
-	}
-	manager := NewManager(
-		receivertest.NewNopSettings(metadata.Type),
-		&Config{},
-		promCfg,
-		registry,
-		registry,
-		&sync.RWMutex{},
-	)
-	require.NotNil(t, manager)
-
-	newCfg := &promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-
-	require.NoError(t, manager.ApplyConfig(newCfg))
-	assert.Equal(t, newCfg, manager.GetConfig())
 }
 
 func TestManagerShutdown(t *testing.T) {
@@ -114,10 +54,9 @@ func TestManagerShutdown(t *testing.T) {
 	manager := NewManager(
 		receivertest.NewNopSettings(metadata.Type),
 		cfg,
-		&promconfig.Config{},
+		sharedpromconfig.NewConfig(&promconfig.Config{}),
 		registry,
 		registry,
-		&sync.RWMutex{},
 	)
 	require.NotNil(t, manager)
 
@@ -169,10 +108,9 @@ func TestManagerStart(t *testing.T) {
 						},
 					},
 				},
-				&promconfig.Config{},
+				sharedpromconfig.NewConfig(&promconfig.Config{}),
 				prometheus.NewRegistry(),
 				prometheus.NewRegistry(),
-				&sync.RWMutex{},
 			),
 			expectErr: "failed to create listener",
 		},

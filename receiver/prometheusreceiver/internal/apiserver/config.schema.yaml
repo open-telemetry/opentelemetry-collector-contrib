@@ -2,9 +2,6 @@ $defs:
   config:
     type: object
     properties:
-      enabled:
-        x-pointer: true
-        type: boolean
       lookback_delta:
         type: string
         format: duration

@@ -19,55 +19,12 @@ func TestConfigStruct(t *testing.T) {
 }
 
 func TestConfigDefaults(t *testing.T) {
-	t.Run("factory defaults", func(t *testing.T) {
-		cfg := DefaultConfig()
-		assert.Equal(t, confignet.TransportTypeTCP, cfg.ServerConfig.NetAddr.Transport)
-		assert.Equal(t, defaultEndpoint, cfg.ServerConfig.NetAddr.Endpoint)
-		assert.Equal(t, defaultReadTimeout, cfg.ServerConfig.ReadTimeout)
-		assert.Equal(t, defaultLookbackDelta, cfg.LookbackDelta)
-		assert.Equal(t, defaultMaxConnections, cfg.MaxConnections)
-		assert.False(t, cfg.IsEnabled())
-	})
-
-	t.Run("enabled config", func(t *testing.T) {
-		cfg := DefaultConfig()
-		enabled := true
-		cfg.Enabled = &enabled
-		assert.True(t, cfg.IsEnabled())
-	})
-
-	t.Run("nil config is disabled", func(t *testing.T) {
-		var cfg *Config
-		assert.False(t, cfg.IsEnabled())
-	})
-
-	t.Run("apply defaults to zero value", func(t *testing.T) {
-		var cfg Config
-		cfg.ApplyDefaults()
-		assert.Equal(t, confignet.TransportTypeTCP, cfg.ServerConfig.NetAddr.Transport)
-		assert.Equal(t, defaultEndpoint, cfg.ServerConfig.NetAddr.Endpoint)
-		assert.Equal(t, defaultReadTimeout, cfg.ServerConfig.ReadTimeout)
-		assert.Equal(t, defaultLookbackDelta, cfg.LookbackDelta)
-		assert.Equal(t, defaultMaxConnections, cfg.MaxConnections)
-	})
-
-	t.Run("preserve configured values", func(t *testing.T) {
-		cfg := Config{
-			LookbackDelta: time.Minute,
-			ServerConfig: confighttp.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Transport: confignet.TransportTypeUnix,
-					Endpoint:  "/tmp/prometheus.sock",
-				},
-				ReadTimeout: time.Second,
-			},
-		}
-		cfg.ApplyDefaults()
-		assert.Equal(t, confignet.TransportTypeUnix, cfg.ServerConfig.NetAddr.Transport)
-		assert.Equal(t, "/tmp/prometheus.sock", cfg.ServerConfig.NetAddr.Endpoint)
-		assert.Equal(t, time.Second, cfg.ServerConfig.ReadTimeout)
-		assert.Equal(t, time.Minute, cfg.LookbackDelta)
-	})
+	cfg := DefaultConfig()
+	assert.Equal(t, confignet.TransportTypeTCP, cfg.ServerConfig.NetAddr.Transport)
+	assert.Equal(t, defaultEndpoint, cfg.ServerConfig.NetAddr.Endpoint)
+	assert.Equal(t, defaultReadTimeout, cfg.ServerConfig.ReadTimeout)
+	assert.Equal(t, defaultLookbackDelta, cfg.LookbackDelta)
+	assert.Equal(t, defaultMaxConnections, cfg.MaxConnections)
 }
 
 func TestConfigValidate(t *testing.T) {

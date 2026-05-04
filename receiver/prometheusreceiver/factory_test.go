@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -52,16 +53,14 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 func TestMultipleCreateWithAPIServer(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	apiEnabled := true
-	cfg.APIServer = &apiserver.Config{
-		Enabled: &apiEnabled,
+	cfg.APIServer = configoptional.Some(apiserver.Config{
 		ServerConfig: confighttp.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Transport: "tcp",
 				Endpoint:  "localhost:9090",
 			},
 		},
-	}
+	})
 	set := receivertest.NewNopSettings(metadata.Type)
 	firstRcvr, err := factory.CreateMetrics(t.Context(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)

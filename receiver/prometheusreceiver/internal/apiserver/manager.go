@@ -13,7 +13,6 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
-	"sync"
 
 	"github.com/grafana/regexp"
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,7 +21,6 @@ import (
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/common/version"
 	toolkit_web "github.com/prometheus/exporter-toolkit/web"
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/promql/parser"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
@@ -34,28 +32,24 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"golang.org/x/net/netutil"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 )
 
 type Manager struct {
 	settings      receiver.Settings
 	shutdown      chan struct{}
 	cfg           *Config
-	promCfg       *promconfig.Config
+	promCfg       *sharedpromconfig.Config
 	scrapeManager *scrape.Manager
 	registry      *prometheus.Registry
 	registerer    prometheus.Registerer
 	server        *http.Server
-	serverDone    chan struct{}
-	cfgLock       *sync.RWMutex
+	serverGroup   *errgroup.Group
 }
 
-func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, registry *prometheus.Registry, registerer prometheus.Registerer, cfgLock *sync.RWMutex) *Manager {
-	if cfg == nil {
-		return nil
-	}
-	if cfgLock == nil {
-		cfgLock = &sync.RWMutex{}
-	}
+func NewManager(set receiver.Settings, cfg *Config, promCfg *sharedpromconfig.Config, registry *prometheus.Registry, registerer prometheus.Registerer) *Manager {
 	return &Manager{
 		shutdown:   make(chan struct{}),
 		settings:   set,
@@ -63,7 +57,6 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, 
 		promCfg:    promCfg,
 		registry:   registry,
 		registerer: registerer,
-		cfgLock:    cfgLock,
 	}
 }
 
@@ -123,11 +116,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 		factoryTr,
 		factoryAr,
 		// This ensures that any changes to the config made, even by the target allocator, are reflected in the API.
-		func() promconfig.Config {
-			m.cfgLock.RLock()
-			defer m.cfgLock.RUnlock()
-			return *m.promCfg
-		},
+		m.promCfg.Get,
 		o.Flags,
 		api_v1.GlobalURLOptions{
 			ListenAddress: o.ListenAddresses[0],
@@ -220,32 +209,16 @@ func (m *Manager) Start(ctx context.Context, host component.Host, scrapeManager 
 	}
 	webconfig := ""
 
-	m.serverDone = make(chan struct{})
-	go func() {
-		defer close(m.serverDone)
+	m.serverGroup = &errgroup.Group{}
+	m.serverGroup.Go(func() error {
 		if err := toolkit_web.Serve(listener, m.server, &toolkit_web.FlagConfig{WebConfigFile: &webconfig}, logger); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			m.settings.Logger.Error("API server failed", zap.Error(err))
+			return err
 		}
-	}()
+		return nil
+	})
 
 	return nil
-}
-
-// ApplyConfig updates the config field of the Manager struct.
-func (m *Manager) ApplyConfig(cfg *promconfig.Config) error {
-	m.cfgLock.Lock()
-	defer m.cfgLock.Unlock()
-
-	m.promCfg = cfg
-
-	return nil
-}
-
-func (m *Manager) GetConfig() *promconfig.Config {
-	m.cfgLock.RLock()
-	defer m.cfgLock.RUnlock()
-
-	return m.promCfg
 }
 
 func (m *Manager) Shutdown(ctx context.Context) error {
@@ -263,9 +236,12 @@ func (m *Manager) Shutdown(ctx context.Context) error {
 		return err
 	}
 
-	if m.serverDone != nil {
+	if m.serverGroup != nil {
+		errCh := make(chan error, 1)
+		go func() { errCh <- m.serverGroup.Wait() }()
 		select {
-		case <-m.serverDone:
+		case err := <-errCh:
+			return err
 		case <-ctx.Done():
 			return ctx.Err()
 		}

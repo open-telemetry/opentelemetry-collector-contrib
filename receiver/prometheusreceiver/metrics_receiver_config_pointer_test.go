@@ -5,7 +5,6 @@ package prometheusreceiver
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 	"unsafe"
@@ -22,36 +21,30 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/apiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/sharedpromconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/targetallocator"
 )
 
-func TestTargetAllocatorAndAPIServerSharePromConfigPointer(t *testing.T) {
+func TestTargetAllocatorAndAPIServerSharePromConfig(t *testing.T) {
 	t.Parallel()
 
 	receiver := newReceiverWithTargetAllocatorAndAPIServer(t)
 
-	taPromCfg := extractManagerPromConfig(t, receiver.targetAllocatorManager)
-	apiPromCfg := extractManagerPromConfig(t, receiver.apiServerManager)
-	require.NotNil(t, taPromCfg)
-	require.NotNil(t, apiPromCfg)
-	assert.Same(t, taPromCfg, apiPromCfg)
+	taSharedCfg := extractSharedPromConfig(t, receiver.targetAllocatorManager)
+	apiSharedCfg := extractSharedPromConfig(t, receiver.apiServerManager)
+	require.NotNil(t, taSharedCfg)
+	require.NotNil(t, apiSharedCfg)
+	assert.Same(t, taSharedCfg, apiSharedCfg)
 
-	initialLen := len(apiPromCfg.ScrapeConfigs)
-	taPromCfg.ScrapeConfigs = append(taPromCfg.ScrapeConfigs, &promConfig.ScrapeConfig{JobName: "ta-added"})
-	require.Len(t, apiPromCfg.ScrapeConfigs, initialLen+1)
-	assert.Equal(t, "ta-added", apiPromCfg.ScrapeConfigs[initialLen].JobName)
-}
-
-func TestTargetAllocatorAndAPIServerShareConfigLock(t *testing.T) {
-	t.Parallel()
-
-	receiver := newReceiverWithTargetAllocatorAndAPIServer(t)
-
-	taLock := extractManagerLock(t, receiver.targetAllocatorManager)
-	apiLock := extractManagerLock(t, receiver.apiServerManager)
-	require.NotNil(t, taLock)
-	require.NotNil(t, apiLock)
-	assert.Same(t, taLock, apiLock)
+	// Make sure TA changes are visible to the API server manager
+	promCfg := taSharedCfg.Get()
+	initialLen := len(promCfg.ScrapeConfigs)
+	taSharedCfg.Mutate(func(cfg *promConfig.Config) {
+		cfg.ScrapeConfigs = append(cfg.ScrapeConfigs, &promConfig.ScrapeConfig{JobName: "ta-added"})
+	})
+	promCfg = apiSharedCfg.Get()
+	require.Len(t, promCfg.ScrapeConfigs, initialLen+1)
+	assert.Equal(t, "ta-added", promCfg.ScrapeConfigs[initialLen].JobName)
 }
 
 func TestPrometheusAPIServerManagerDisabledByDefault(t *testing.T) {
@@ -93,18 +86,16 @@ scrape_configs:
 	promCfg, err := promConfig.Load(promCfgYAML, promslog.NewNopLogger())
 	require.NoError(t, err)
 
-	apiEnabled := true
 	cfg := &Config{
 		PrometheusConfig: (*PromConfig)(promCfg),
-		APIServer: &apiserver.Config{
-			Enabled: &apiEnabled,
+		APIServer: configoptional.Some(apiserver.Config{
 			ServerConfig: confighttp.ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Transport: "tcp",
 					Endpoint:  "127.0.0.1:0",
 				},
 			},
-		},
+		}),
 		TargetAllocator: configoptional.Some(targetallocator.Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "http://target-allocator:8080",
@@ -121,32 +112,17 @@ scrape_configs:
 	return receiver
 }
 
-func extractManagerPromConfig(t *testing.T, manager any) *promConfig.Config {
+func extractSharedPromConfig(t *testing.T, manager any) *sharedpromconfig.Config {
 	t.Helper()
 	require.NotNil(t, manager)
 
 	val := reflect.ValueOf(manager)
 	require.True(t, val.IsValid())
-	require.Equal(t, reflect.Ptr, val.Kind())
+	require.Equal(t, reflect.Pointer, val.Kind())
 
 	field := val.Elem().FieldByName("promCfg")
 	require.True(t, field.IsValid())
 	require.True(t, field.CanAddr())
 
-	return *(**promConfig.Config)(unsafe.Pointer(field.UnsafeAddr()))
-}
-
-func extractManagerLock(t *testing.T, manager any) *sync.RWMutex {
-	t.Helper()
-	require.NotNil(t, manager)
-
-	val := reflect.ValueOf(manager)
-	require.True(t, val.IsValid())
-	require.Equal(t, reflect.Ptr, val.Kind())
-
-	field := val.Elem().FieldByName("cfgLock")
-	require.True(t, field.IsValid())
-	require.True(t, field.CanAddr())
-
-	return *(**sync.RWMutex)(unsafe.Pointer(field.UnsafeAddr()))
+	return *(**sharedpromconfig.Config)(unsafe.Pointer(field.UnsafeAddr()))
 }
