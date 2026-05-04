@@ -13,7 +13,11 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
+	"strings"
 	"time"
+
+	"github.com/elastic/lunes"
 )
 
 var (
@@ -64,24 +68,6 @@ var ctimeSubstitutes = map[string]string{
 	"%t": "\t",
 	"%%": "%",
 	"%c": "Mon Jan 02 15:04:05 2006",
-}
-
-// Alternative formats that allow more flexible ctime-compatible parsing.
-var ctimeParseSubstitutes = map[string]string{
-	"%m": "1",
-	"%o": "1",
-	"%q": "1",
-	"%d": "2",
-	"%e": "2",
-	"%g": "2",
-	"%I": "3",
-	"%M": "4",
-	"%S": "5",
-	"%T": "15:4:5",
-	"%X": "15:4:5",
-	"%r": "3:4:5 pm",
-	"%R": "15:4",
-	"%c": "Mon Jan 2 15:4:5 2006",
 }
 
 // Format returns a textual representation of the time value formatted
@@ -158,11 +144,29 @@ type ParseFunc func(layout string) (time.Time, error)
 // Note: The returned ParseError will indicate the ctime directive that failed to parse.
 func FlexibleParse(format string, parse ParseFunc) (time.Time, error) {
 	indexes := ctimeRegexp.FindAllStringIndex(format, -1)
-	if len(indexes) == 0 {
-		// Format doesn't contain any directives.
-		return time.Time{}, nil
-	}
 	return iterativeParse("", format, 0, indexes, parse)
+}
+
+// Alternative formats that allow more flexible ctime-compatible parsing.
+// The values are split into discrete time.Parse elements so they can be identified in ParseError.LayoutElem.
+var ctimeParseSubstitutes = map[string][]string{
+	"%m": {"1"},
+	"%o": {"1"},
+	"%q": {"1"},
+	"%d": {"2"},
+	"%e": {"2"},
+	"%g": {"2"},
+	"%I": {"3"},
+	"%M": {"4"},
+	"%S": {"5"},
+	"%D": {"1", "/", "2", "/", "2006"},
+	"%x": {"1", "/", "2", "/", "2006"},
+	"%F": {"2006", "-", "1", "-", "2"},
+	"%T": {"15", ":", "4", ":", "5"},
+	"%X": {"15", ":", "4", ":", "5"},
+	"%r": {"3", ":", "4", ":", "5", " ", "pm"},
+	"%R": {"15", ":", "4"},
+	"%c": {"Mon", " ", "Jan", " ", "2", " ", "15", ":", "4", ":", "5", " ", "2006"},
 }
 
 func iterativeParse(partialLayout string, format string, startIndex int, indexes [][]int, parse ParseFunc) (out time.Time, err error) {
@@ -171,45 +175,64 @@ func iterativeParse(partialLayout string, format string, startIndex int, indexes
 	}
 	partialLayout += format[startIndex:indexes[0][0]]
 	directive := format[indexes[0][0]:indexes[0][1]]
-	// try will attempt to match the time with element.
-	// It returns err.ValueElem if the parse failed and this was the element that caused the parse failure.
-	try := func(extra, element string) string {
-		out, err = iterativeParse(partialLayout+extra+element, format, indexes[0][1], indexes[1:], parse)
+	// tryElements will attempt to match the time with elements.
+	// It returns the index of the failing element and the remaining unparsed input, or -1 if none of the elements were responsible for a failure.
+	tryElements := func(elements ...string) (int, string) {
+		out, err = iterativeParse(partialLayout+strings.Join(elements, ""), format, indexes[0][1], indexes[1:], parse)
 		if err, ok := err.(*time.ParseError); ok {
-			if err.LayoutElem == element {
+			if i := slices.Index(elements, err.LayoutElem); i >= 0 {
 				err.LayoutElem = directive
-				return err.ValueElem
+				return i, err.ValueElem
 			}
 		}
-		return ""
-	}
-	// try will attempt to match the time with element and optional leading spaces
-	tryWhitespace := func(element string) string {
-		remainder := try("", element)
-		if space := leadingSpaceRegexp.FindString(remainder); space != "" {
-			return try(space, element)
+		if err, ok := err.(*lunes.ErrLayoutMismatch); ok {
+			// Work around https://github.com/elastic/lunes/issues/15
+			// If we're parsing a minute or second and we're failing to parse %p, try again
+			// with a leading zero on the minute or second placeholder.
+			switch err.LayoutElem {
+			case "pm", "PM", "%p", "%P":
+				if slices.ContainsFunc(elements, func(e string) bool { return e == "4" || e == "5" }) {
+					return 1, "unknown"
+				}
+			}
+			if i := slices.Index(elements, err.LayoutElem); i >= 0 {
+				err.LayoutElem = directive
+				return i, "unknown"
+			}
 		}
-		return remainder
+		return -1, ""
+	}
+	// tryWhitespace will attempt to match the time with elements and optional leading spaces
+	tryWhitespace := func(elements ...string) (int, string) {
+		for {
+			i, remainder := tryElements(elements...)
+			if space := leadingSpaceRegexp.FindString(remainder); space != "" {
+				elements = slices.Insert(append([]string{}, elements...), i, space)
+				continue
+			}
+			return i, remainder
+		}
 	}
 	switch directive {
 	case "%z":
-		if tryWhitespace("Z0700") == "" {
+		if i, _ := tryWhitespace("Z0700"); i < 0 {
 			return
 		}
-		if tryWhitespace("Z07:00") == "" {
+		if i, _ := tryWhitespace("Z07:00"); i < 0 {
 			return
 		}
-		if tryWhitespace("Z07") == "" {
+		if i, _ := tryWhitespace("Z07"); i < 0 {
 			return
 		}
 		return
 	}
-	if subst, ok := ctimeParseSubstitutes[directive]; ok {
-		try("", subst)
-		return
+	if substs, ok := ctimeParseSubstitutes[directive]; ok {
+		if i, _ := tryElements(substs...); i < 0 {
+			return
+		}
 	}
 	if subst, ok := ctimeSubstitutes[directive]; ok {
-		try("", subst)
+		tryElements("", subst)
 		return
 	}
 	return time.Time{}, fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)

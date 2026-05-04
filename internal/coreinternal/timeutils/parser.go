@@ -31,12 +31,9 @@ func ParseStrptime(layout string, value any, location *time.Location) (time.Time
 // ParseLocalizedStrptime is like ParseLocalizedGotime, but instead of using the native Go time layout,
 // it uses the ctime-like format.
 func ParseLocalizedStrptime(layout string, value any, location *time.Location, language string) (time.Time, error) {
-	goLayout, err := strptime.ToNative(layout)
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	return ParseLocalizedGotime(goLayout, value, location, language)
+	return strptime.FlexibleParse(layout, func(format string) (time.Time, error) {
+		return ParseLocalizedGotime(format, value, location, language)
+	})
 }
 
 func GetLocation(location, layout *string) (*time.Location, error) {
