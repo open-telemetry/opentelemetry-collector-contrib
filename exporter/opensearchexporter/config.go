@@ -58,6 +58,10 @@ type Config struct {
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
 	BulkAction string `mapstructure:"bulk_action"`
+
+	// Pipeline is the optional ID of an ingest pipeline to apply when indexing documents.
+	// https://opensearch.org/docs/latest/ingest-pipelines/
+	Pipeline string `mapstructure:"pipeline"`
 }
 
 var (
