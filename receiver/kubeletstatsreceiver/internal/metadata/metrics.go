@@ -47,6 +47,11 @@ var ContainerCPUMetrics = CPUMetrics{
 	RequestUtilization: (*MetricsBuilder).RecordK8sContainerCPURequestUtilizationDataPoint,
 }
 
+var SystemContainerCPUMetrics = CPUMetrics{
+	Time:  (*MetricsBuilder).RecordK8sNodeSystemContainerCPUTimeDataPoint,
+	Usage: (*MetricsBuilder).RecordK8sNodeSystemContainerCPUUsageDataPoint,
+}
+
 type MemoryMetrics struct {
 	Available          RecordIntDataPointFunc
 	Usage              RecordIntDataPointFunc
@@ -90,6 +95,11 @@ var ContainerMemoryMetrics = MemoryMetrics{
 	WorkingSet:         (*MetricsBuilder).RecordContainerMemoryWorkingSetDataPoint,
 	PageFaults:         (*MetricsBuilder).RecordContainerMemoryPageFaultsDataPoint,
 	MajorPageFaults:    (*MetricsBuilder).RecordContainerMemoryMajorPageFaultsDataPoint,
+}
+
+var SystemContainerMemoryMetrics = MemoryMetrics{
+	Usage:      (*MetricsBuilder).RecordK8sNodeSystemContainerMemoryUsageDataPoint,
+	WorkingSet: (*MetricsBuilder).RecordK8sNodeSystemContainerMemoryWorkingSetDataPoint,
 }
 
 type FilesystemMetrics struct {

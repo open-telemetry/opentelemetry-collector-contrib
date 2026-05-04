@@ -214,6 +214,7 @@ pkg/translator/azurelogs
 pkg/translator/loki
 pkg/translator/pprof
 processor/attributesprocessor
+processor/cardinalityguardianprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatorateprocessor
