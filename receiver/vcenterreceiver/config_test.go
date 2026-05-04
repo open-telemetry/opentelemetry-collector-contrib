@@ -117,3 +117,53 @@ func TestLoadConfig(t *testing.T) {
 
 	require.False(t, cfg.(*Config).Metrics.VcenterHostCPUUtilization.Enabled)
 }
+
+func TestUIDFromURL(t *testing.T) {
+	vc := &vcenterClient{}
+
+	testCases := []struct {
+		name        string
+		url         string
+		expectedUID string
+		expectError bool
+	}{
+		{
+			name:        "Valid URL with trailing slash",
+			url:         "ds:///vmfs/volumes/634d4a87-9657ca9c-0517-4cd98f9a3b65/",
+			expectedUID: "634d4a87-9657ca9c-0517-4cd98f9a3b65",
+			expectError: false,
+		},
+		{
+			name:        "Valid URL without trailing slash",
+			url:         "ds:///vmfs/volumes/fca66b03-2ed734ff",
+			expectedUID: "fca66b03-2ed734ff",
+			expectError: false,
+		},
+		{
+			name:        "Invalid URL with no parts",
+			url:         "",
+			expectedUID: "",
+			expectError: true,
+		},
+		{
+			name:        "URL with multiple trailing slashes",
+			url:         "ds:///vmfs/volumes/fca66b03-2ed734ff//",
+			expectedUID: "fca66b03-2ed734ff",
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			uid, err := vc.IDFromURL(tc.url)
+
+			if tc.expectError {
+				require.Error(t, err)
+				require.Equal(t, tc.expectedUID, uid)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedUID, uid)
+			}
+		})
+	}
+}

@@ -208,6 +208,8 @@ func routePerformanceQuery(t *testing.T, body map[string]any) ([]byte, error) {
 		return loadResponse("host-performance-counters.xml")
 	case "VirtualMachine":
 		return loadResponse("vm-performance-counters.xml")
+	case "Datatore":
+		return loadResponse("datastore-performance-counters.xml")
 	}
 	return []byte{}, errNotFound
 }

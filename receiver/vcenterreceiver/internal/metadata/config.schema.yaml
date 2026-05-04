@@ -352,6 +352,36 @@ $defs:
           enabled:
             type: boolean
             default: true
+      vcenter.host.datastore.normalized_latency.avg:
+        description: "VcenterHostDatastoreNormalizedLatencyAvgMetricConfig provides config for the vcenter.host.datastore.normalized_latency.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+      vcenter.host.datastore.operations:
+        description: "VcenterHostDatastoreOperationsMetricConfig provides config for the vcenter.host.datastore.operations metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          aggregation_strategy:
+            type: string
+            enum:
+              - "sum"
+              - "avg"
+              - "min"
+              - "max"
+            default: "avg"
+          attributes:
+            type: array
+            items:
+              type: string
+              enum:
+                - "direction"
+            default:
+              - "direction"
       vcenter.host.disk.latency.avg:
         description: "VcenterHostDiskLatencyAvgMetricConfig provides config for the vcenter.host.disk.latency.avg metric."
         type: object
@@ -569,6 +599,13 @@ $defs:
                 - "object"
             default:
               - "object"
+      vcenter.host.uptime:
+        description: "VcenterHostUptimeMetricConfig provides config for the vcenter.host.uptime metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
       vcenter.host.vsan.cache.hit_rate:
         description: "VcenterHostVsanCacheHitRateMetricConfig provides config for the vcenter.host.vsan.cache.hit_rate metric."
         type: object
@@ -733,6 +770,13 @@ $defs:
                 - "type"
             default:
               - "type"
+      vcenter.vm.cpu.latency.avg:
+        description: "VcenterVMCPULatencyAvgMetricConfig provides config for the vcenter.vm.cpu.latency.avg metric."
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
       vcenter.vm.cpu.readiness:
         description: "VcenterVMCPUReadinessMetricConfig provides config for the vcenter.vm.cpu.readiness metric."
         type: object

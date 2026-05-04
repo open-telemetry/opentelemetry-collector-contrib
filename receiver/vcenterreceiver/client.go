@@ -139,6 +139,7 @@ func (vc *vcenterClient) Datastores(ctx context.Context, containerMoRef vt.Manag
 		"name",
 		"summary.capacity",
 		"summary.freeSpace",
+		"summary.url",
 	}, &datastores)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve Datastores: %w", err)
@@ -188,6 +189,7 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 		"config.vsanHostConfig.clusterInfo.nodeUuid",
 		"summary.quickStats.overallMemoryUsage",
 		"summary.quickStats.overallCpuUsage",
+		"summary.quickStats.uptime",
 		"summary.overallStatus",
 		"vm",
 		"parent",
@@ -632,4 +634,19 @@ func (*vcenterClient) uuidFromEntityRefID(id string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no ':' found in EntityRefId [%s] to parse UUID", id)
+}
+
+// uidFromURL returns the ID from resource URL (applies to datastores)
+// url looks like ds:///vmfs/volumes/fca66b03-2ed734ff/
+func (c *vcenterClient) IDFromURL(url string) (string, error) {
+	parts := strings.Split(url, "/")
+	// Iterate from the end to find the last non-empty part
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] != "" {
+			uid := parts[i]
+			return uid, nil
+		}
+	}
+
+	return "", fmt.Errorf("UID not found in URL: %s", url)
 }

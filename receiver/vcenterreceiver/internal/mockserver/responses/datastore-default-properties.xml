@@ -17,6 +17,10 @@
                         <name>summary.freeSpace</name>
                         <val xsi:type="xsd:long">51693551508648</val>
                     </propSet>
+                    <propSet>
+                        <name>summary.url</name>
+                        <val xsi:type="xsd:string">ds:///vmfs/volumes/0c56ce3b-c4bb0950/</val>
+                    </propSet>
                 </objects>
             </returnval>
         </RetrievePropertiesExResponse>
