@@ -78,6 +78,10 @@ func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycomb
 func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
+		serviceName := ""
+		if v, ok := rlogs.Resource().Attributes().Get("service.name"); ok {
+			serviceName = v.AsString()
+		}
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
@@ -91,7 +95,7 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 						return err
 					}
 					if match {
-						err = e.sendMarker(ctx, m, logRecord)
+						err = e.sendMarker(ctx, m, logRecord, serviceName)
 						if err != nil {
 							tCtx.Close()
 							return err
@@ -105,7 +109,7 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 	return nil
 }
 
-func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRecord plog.LogRecord) error {
+func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRecord plog.LogRecord, serviceName string) error {
 	requestMap := map[string]string{
 		"type": m.Type,
 	}
@@ -125,10 +129,7 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRec
 		return err
 	}
 
-	datasetSlug := m.DatasetSlug
-	if datasetSlug == "" {
-		datasetSlug = defaultDatasetSlug
-	}
+	datasetSlug := resolveDatasetSlug(m.Marker, serviceName)
 
 	url := fmt.Sprintf("%s/1/markers/%s", strings.TrimRight(e.apiURL, "/"), datasetSlug)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
@@ -158,6 +159,19 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRec
 	}
 
 	return nil
+}
+
+// resolveDatasetSlug picks the slug to send a marker to, in priority order:
+// resource service.name (when use_service_name_as_dataset_slug is enabled), then
+// the configured DatasetSlug, then the default "__all__".
+func resolveDatasetSlug(m Marker, serviceName string) string {
+	if m.UseServiceNameAsDatasetSlug && serviceName != "" {
+		return serviceName
+	}
+	if m.DatasetSlug != "" {
+		return m.DatasetSlug
+	}
+	return defaultDatasetSlug
 }
 
 func (e *honeycombLogsExporter) start(ctx context.Context, host component.Host) (err error) {
