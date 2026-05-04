@@ -422,14 +422,6 @@ The sum of the data transmitted and received for all the NIC instances of the ho
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | object | The object on the virtual machine or host that is being reported on. | Any Str | Recommended | - |
 
-### vcenter.host.uptime
-
-Total time elapsed since last operating system boot-up.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
-| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
-| s | Sum | Int | Cumulative | true | Development |
-
 ### vcenter.host.vsan.cache.hit_rate
 
 The host's read IOs which could be satisfied by the local client cache.
@@ -853,6 +845,14 @@ Total memory  capacity of the host system.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
 | ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
 | MiBy | Sum | Double | Cumulative | false | Development |
+
+### vcenter.host.uptime
+
+Total time elapsed since last operating system boot-up.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- |
+| s | Sum | Int | Cumulative | true | Development |
 
 ### vcenter.vm.cpu.latency.avg
 

@@ -320,7 +320,6 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordVcenterHostNetworkUsageDataPoint(ts, 3, "object_name-val-2")
 			}
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostUptimeDataPoint(ts, 1)
 

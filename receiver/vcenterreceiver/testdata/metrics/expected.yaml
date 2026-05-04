@@ -996,16 +996,6 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
-          - description: Total time elapsed since last operating system boot-up.
-            name: vcenter.host.uptime
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "40337209"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: s
           - description: The host's read IOs which could be satisfied by the local client cache.
             gauge:
               dataPoints:
@@ -1741,16 +1731,6 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
-          - description: Total time elapsed since last operating system boot-up.
-            name: vcenter.host.uptime
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "40337809"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: s
           - description: The host's read IOs which could be satisfied by the local client cache.
             gauge:
               dataPoints:

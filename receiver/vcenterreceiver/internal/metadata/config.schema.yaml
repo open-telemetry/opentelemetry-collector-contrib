@@ -605,7 +605,7 @@ $defs:
         properties:
           enabled:
             type: boolean
-            default: true
+            default: false
       vcenter.host.vsan.cache.hit_rate:
         description: "VcenterHostVsanCacheHitRateMetricConfig provides config for the vcenter.host.vsan.cache.hit_rate metric."
         type: object

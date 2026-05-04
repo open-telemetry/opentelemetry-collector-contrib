@@ -17,7 +17,7 @@ issues: [48098]
 # Use pipe (|) for multiline entries.
 subtext: |
   This adds the following metrics:
-  - vcenter.host.uptime (enabled by default)
+  - vcenter.host.uptime (disabled by default)
   - vcenter.host.datastore.normalized_latency.avg (disabled by default)
   - vcenter.host.datastore.operations (disabled by default)
   - vcenter.vm.cpu.latency.avg (disabled by default)
