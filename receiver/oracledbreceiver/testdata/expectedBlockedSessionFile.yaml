@@ -109,12 +109,9 @@ resourceLogs:
               - key: oracledb.lock.type
                 value:
                   stringValue: TX
-              - key: oracledb.lock.id1
+              - key: oracledb.blocked_object
                 value:
-                  stringValue: "131074"
-              - key: oracledb.lock.id2
-                value:
-                  stringValue: "1234"
+                  stringValue: APP_USER.ORDERS
             body: {}
             eventName: db.server.query_sample
             timeUnixNano: "1777451370754534000"

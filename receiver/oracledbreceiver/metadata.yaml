@@ -57,6 +57,9 @@ attributes:
   oracledb.application_wait_time:
     description: The total time (in seconds) a query spent waiting on the application before it could proceed with execution (reporting delta).
     type: double
+  oracledb.blocked_object:
+    description: The owner and name of the database object the session is waiting to lock (e.g., SCHEMA.TABLE_NAME). Empty when no object lock wait is active.
+    type: string
   oracledb.blocker.root_session.id:
     description: The session ID (SID) of the root/head blocker at the top of the blocking chain. Empty string when there is no blocking.
     type: string
@@ -109,14 +112,8 @@ attributes:
   oracledb.executions:
     description: The number of times a specific SQL query has been executed (reporting delta).
     type: int
-  oracledb.lock.id1:
-    description: The first identifier of the lock resource from V$LOCK. Its meaning depends on the lock type (e.g., object ID for TM locks, USN+slot for TX locks).
-    type: string
-  oracledb.lock.id2:
-    description: The second identifier of the lock resource from V$LOCK. Its meaning depends on the lock type (e.g., sequence number for TX locks).
-    type: string
   oracledb.lock.type:
-    description: The type of lock the session is requesting from V$LOCK (e.g., TX for row lock, TM for table lock).
+    description: The type of enqueue lock the session is waiting on, extracted from the wait event (e.g., TX for row lock, TM for table lock). Empty when not waiting on a lock.
     type: string
   oracledb.module:
     description: Logical module name of the client application that initiated a query or session.
@@ -245,8 +242,7 @@ events:
       - oracledb.blocker.session_relationship.state
       - oracledb.wait.duration
       - oracledb.lock.type
-      - oracledb.lock.id1
-      - oracledb.lock.id2
+      - oracledb.blocked_object
   db.server.top_query:
     enabled: false
     description: Collection of event metrics for top N queries, filtered based on the highest CPU time consumed (oracledb.elapsed_time).

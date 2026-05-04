@@ -747,8 +747,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 	const blockingSessionStatus = "BLOCKING_SESSION_STATUS"
 	const secondsInWait = "SECONDS_IN_WAIT"
 	const lockType = "LOCK_TYPE"
-	const lockID1 = "LOCK_ID1"
-	const lockID2 = "LOCK_ID2"
+	const blockedObject = "BLOCKED_OBJECT"
 
 	var scrapeErrors []error
 
@@ -809,7 +808,7 @@ func (s *oracleScraper) collectQuerySamples(ctx context.Context, logs plog.Logs)
 			row[schemaName], row[program], row[module], row[status], row[state], row[waitclass], row[event], objID, row[objectName], row[objectType],
 			row[osUser], queryDuration,
 			row[blockingSession], row[finalBlockingSession], row[blockingSessionStatus], secondsInWaitVal,
-			row[lockType], row[lockID1], row[lockID2])
+			row[lockType], row[blockedObject])
 	}
 
 	emittedLogs := s.lb.Emit(metadata.WithLogsResource(rb.Emit()))
@@ -843,8 +842,7 @@ func sanitizeQuerySampleOptionalAttributes(logs plog.Logs) {
 					attrs.Remove("oracledb.blocker.root_session.id")
 					attrs.Remove("oracledb.blocker.session_relationship.state")
 					attrs.Remove("oracledb.lock.type")
-					attrs.Remove("oracledb.lock.id1")
-					attrs.Remove("oracledb.lock.id2")
+					attrs.Remove("oracledb.blocked_object")
 				}
 			}
 		}
