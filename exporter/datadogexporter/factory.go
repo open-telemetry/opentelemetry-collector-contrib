@@ -65,6 +65,7 @@ type factory struct {
 
 	onceProvider   sync.Once
 	sourceProvider source.Provider
+	aliasProviders []hostmetadata.HostAliasProvider
 	providerErr    error
 
 	onceReporter     sync.Once
@@ -81,11 +82,11 @@ type factory struct {
 	gatewayUsage *attributes.GatewayUsage
 }
 
-func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
+func (f *factory) SourceAndAliasProviders(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, []hostmetadata.HostAliasProvider, error) {
 	f.onceProvider.Do(func() {
-		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname, timeout)
+		f.sourceProvider, f.aliasProviders, f.providerErr = hostmetadata.GetSourceAndAliasProviders(set, configHostname, timeout)
 	})
-	return f.sourceProvider, f.providerErr
+	return f.sourceProvider, f.aliasProviders, f.providerErr
 }
 
 func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attributes.Translator, error) {
@@ -205,7 +206,7 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 	cfg.LogWarnings(set.Logger)
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
+	hostProvider, aliases, err := f.SourceAndAliasProviders(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -244,6 +245,7 @@ func (f *factory) createMetricsExporter(
 	var pushMetricsFn consumer.ConsumeMetricsFunc
 
 	pcfg := newMetadataConfigfromConfig(cfg)
+	pcfg.HostAliasProviders = append(pcfg.HostAliasProviders, aliases...)
 	// Don't start a `Reporter` if host metadata is disabled.
 	var metadataReporter *inframetadata.Reporter
 	if cfg.HostMetadata.Enabled {
@@ -396,7 +398,7 @@ func (f *factory) createTracesExporter(
 		wg     sync.WaitGroup // waits for agent to exit
 	)
 
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
+	hostProvider, aliases, err := f.SourceAndAliasProviders(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -416,6 +418,7 @@ func (f *factory) createTracesExporter(
 	}
 
 	pcfg := newMetadataConfigfromConfig(cfg)
+	pcfg.HostAliasProviders = append(pcfg.HostAliasProviders, aliases...)
 	// Don't start a `Reporter` if host metadata is disabled.
 	var metadataReporter *inframetadata.Reporter
 	if cfg.HostMetadata.Enabled {
@@ -491,7 +494,7 @@ func (f *factory) createLogsExporter(
 
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
+	hostProvider, aliases, err := f.SourceAndAliasProviders(set.TelemetrySettings, cfg.Hostname, cfg.HostnameDetectionTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -499,6 +502,7 @@ func (f *factory) createLogsExporter(
 	// cancel() runs on shutdown
 
 	pcfg := newMetadataConfigfromConfig(cfg)
+	pcfg.HostAliasProviders = append(pcfg.HostAliasProviders, aliases...)
 	// Don't start a `Reporter` if host metadata is disabled.
 	var metadataReporter *inframetadata.Reporter
 	if cfg.HostMetadata.Enabled {

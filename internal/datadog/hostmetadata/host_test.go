@@ -13,7 +13,7 @@ import (
 )
 
 func TestHost(t *testing.T) {
-	p, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "test-host", 31*time.Second)
+	p, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "test-host", 31*time.Second)
 	require.NoError(t, err)
 	src, err := p.Source(t.Context())
 	require.NoError(t, err)

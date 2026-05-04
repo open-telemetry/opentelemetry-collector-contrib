@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -64,7 +65,7 @@ func TestFillHostMetadata(t *testing.T) {
 		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
 	}
 
-	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname", 31*time.Second)
+	hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "hostname", 31*time.Second)
 	require.NoError(t, err)
 
 	metadata := payload.NewEmpty()
@@ -232,7 +233,7 @@ func TestPusher(t *testing.T) {
 	params := exportertest.NewNopSettings(exportertest.NopType)
 	params.BuildInfo = mockBuildInfo
 
-	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "source-hostname", 31*time.Second)
+	hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "source-hostname", 31*time.Second)
 	require.NoError(t, err)
 
 	attrs := testutil.NewAttributeMap(map[string]string{
@@ -259,6 +260,121 @@ func TestPusher(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.Meta.SocketHostname, hostname)
+}
+
+// mockAliasProvider is a test implementation of HostAliasProvider.
+type mockAliasProvider struct {
+	alias string
+	err   error
+}
+
+func (m *mockAliasProvider) HostAlias(_ context.Context) (string, error) {
+	return m.alias, m.err
+}
+
+func TestFillHostMetadataWithAliasProviders(t *testing.T) {
+	params := exportertest.NewNopSettings(exportertest.NopType)
+	params.BuildInfo = mockBuildInfo
+
+	t.Run("alias added when not primary hostname", func(t *testing.T) {
+		pcfg := PusherConfig{
+			ConfigHostname:     "config-hostname",
+			HostAliasProviders: []HostAliasProvider{&mockAliasProvider{alias: "my-node-my-cluster"}},
+		}
+
+		hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "config-hostname", 31*time.Second)
+		require.NoError(t, err)
+
+		metadata := payload.NewEmpty()
+		fillHostMetadata(params, pcfg, hostProvider, &metadata)
+
+		assert.Contains(t, metadata.Meta.HostAliases, "my-node-my-cluster")
+	})
+
+	t.Run("alias added even when it equals InternalHostname", func(t *testing.T) {
+		pcfg := PusherConfig{
+			ConfigHostname:     "my-node-my-cluster",
+			HostAliasProviders: []HostAliasProvider{&mockAliasProvider{alias: "my-node-my-cluster"}},
+		}
+
+		hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "my-node-my-cluster", 31*time.Second)
+		require.NoError(t, err)
+
+		metadata := payload.NewEmpty()
+		fillHostMetadata(params, pcfg, hostProvider, &metadata)
+
+		assert.Contains(t, metadata.Meta.HostAliases, "my-node-my-cluster")
+	})
+
+	t.Run("alias not duplicated when already in HostAliases", func(t *testing.T) {
+		pcfg := PusherConfig{
+			ConfigHostname:     "config-hostname",
+			HostAliasProviders: []HostAliasProvider{&mockAliasProvider{alias: "my-node-my-cluster"}},
+		}
+
+		hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "config-hostname", 31*time.Second)
+		require.NoError(t, err)
+
+		metadata := payload.NewEmpty()
+		metadata.Meta.HostAliases = []string{"my-node-my-cluster"}
+		fillHostMetadata(params, pcfg, hostProvider, &metadata)
+
+		count := 0
+		for _, a := range metadata.Meta.HostAliases {
+			if a == "my-node-my-cluster" {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count, "alias should appear exactly once")
+	})
+
+	t.Run("alias skipped when provider returns error", func(t *testing.T) {
+		pcfg := PusherConfig{
+			ConfigHostname:     "config-hostname",
+			HostAliasProviders: []HostAliasProvider{&mockAliasProvider{err: errors.New("unexpected error")}},
+		}
+
+		hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "config-hostname", 31*time.Second)
+		require.NoError(t, err)
+
+		metadata := payload.NewEmpty()
+		fillHostMetadata(params, pcfg, hostProvider, &metadata)
+
+		assert.Empty(t, metadata.Meta.HostAliases)
+	})
+
+	t.Run("multiple providers each contribute an alias", func(t *testing.T) {
+		pcfg := PusherConfig{
+			ConfigHostname: "config-hostname",
+			HostAliasProviders: []HostAliasProvider{
+				&mockAliasProvider{alias: "alias-one"},
+				&mockAliasProvider{alias: "alias-two"},
+			},
+		}
+
+		hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "config-hostname", 31*time.Second)
+		require.NoError(t, err)
+
+		metadata := payload.NewEmpty()
+		fillHostMetadata(params, pcfg, hostProvider, &metadata)
+
+		assert.Contains(t, metadata.Meta.HostAliases, "alias-one")
+		assert.Contains(t, metadata.Meta.HostAliases, "alias-two")
+	})
+
+	t.Run("no alias providers — HostAliases unchanged", func(t *testing.T) {
+		pcfg := PusherConfig{
+			ConfigHostname: "config-hostname",
+		}
+
+		hostProvider, _, err := GetSourceAndAliasProviders(componenttest.NewNopTelemetrySettings(), "config-hostname", 31*time.Second)
+		require.NoError(t, err)
+
+		metadata := payload.NewEmpty()
+		fillHostMetadata(params, pcfg, hostProvider, &metadata)
+
+		assert.Empty(t, metadata.Meta.HostAliases)
+	})
 }
 
 func TestDeepCopyHostMetadata(t *testing.T) {

@@ -4,11 +4,17 @@
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 )
+
+// HostAliasProvider contributes one host alias to the metadata payload.
+type HostAliasProvider interface {
+	HostAlias(context.Context) (string, error)
+}
 
 // PusherConfig is the configuration for the metadata pusher goroutine.
 type PusherConfig struct {
@@ -30,4 +36,6 @@ type PusherConfig struct {
 	RetrySettings configretry.BackOffConfig
 	// ReporterPeriod is the period of the reporter goroutine.
 	ReporterPeriod time.Duration
+	// HostAliasProviders contribute additional host aliases to the metadata payload.
+	HostAliasProviders []HostAliasProvider
 }

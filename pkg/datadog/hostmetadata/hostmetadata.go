@@ -14,5 +14,6 @@ import (
 
 // GetSourceProvider returns a provider which can be used to identify a source
 func GetSourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
-	return hostmetadata.GetSourceProvider(set, configHostname, timeout)
+	sourceProvider, _, err := hostmetadata.GetSourceAndAliasProviders(set, configHostname, timeout)
+	return sourceProvider, err
 }

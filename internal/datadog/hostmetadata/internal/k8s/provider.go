@@ -22,6 +22,27 @@ type Provider struct {
 	clusterNameProvider provider.ClusterNameProvider
 }
 
+// IsAvailable reports whether a Kubernetes environment was detected at construction time.
+func (p *Provider) IsAvailable() bool {
+	_, unavailable := p.nodeNameProvider.(*nodeNameUnavailable)
+	return !unavailable
+}
+
+// HostAlias returns "nodeName-clusterName", or an error if either component is not discoverable.
+func (p *Provider) HostAlias(ctx context.Context) (string, error) {
+	nodeName, err := p.nodeNameProvider.NodeName(ctx)
+	if err != nil {
+		return "", fmt.Errorf("node name not available: %w", err)
+	}
+
+	clusterName, err := p.clusterNameProvider.ClusterName(ctx)
+	if err != nil {
+		return "", fmt.Errorf("cluster name not available: %w", err)
+	}
+
+	return fmt.Sprintf("%s-%s", nodeName, clusterName), nil
+}
+
 // Hostname returns the Kubernetes node name followed by the cluster name if available.
 func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	nodeName, err := p.nodeNameProvider.NodeName(ctx)
