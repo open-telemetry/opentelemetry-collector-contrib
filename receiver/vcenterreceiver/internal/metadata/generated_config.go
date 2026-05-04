@@ -2851,7 +2851,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			EnabledAttributes:   []VcenterHostNetworkUsageMetricAttributeKey{VcenterHostNetworkUsageMetricAttributeKeyObjectName},
 		},
 		VcenterHostUptime: VcenterHostUptimeMetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterHostVsanCacheHitRate: VcenterHostVsanCacheHitRateMetricConfig{
 			Enabled: true,

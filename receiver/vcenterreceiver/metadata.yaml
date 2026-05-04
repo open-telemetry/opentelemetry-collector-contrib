@@ -556,7 +556,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [object_name]
   vcenter.host.uptime:
-    enabled: true
+    enabled: false
     description: Total time elapsed since last operating system boot-up.
     stability: development
     unit: s
