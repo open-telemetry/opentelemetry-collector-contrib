@@ -10,7 +10,6 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -40,6 +39,12 @@ func recordUserSize(r *kgo.Record) int {
 	return s
 }
 
+// RecordHeader includes key-value pairs to be added as headers to Kafka records.
+type RecordHeader struct {
+	Name  string `mapstructure:"name"`
+	Value string `mapstructure:"value"`
+}
+
 // FranzSyncProducer is a wrapper around the franz-go client that implements
 // the Producer interface. Allowing us to use the franz-go client while
 // maintaining compatibility with the existing Kafka exporter code.
@@ -53,7 +58,7 @@ type FranzSyncProducer struct {
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
-	recordHeaders configopaque.MapList,
+	recordHeaders []RecordHeader,
 	maxMessageBytes int,
 ) *FranzSyncProducer {
 	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
