@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuref
 go 1.25.0
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.151.0
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.63.1-0.20260721190914-bc198f44aa6e
 	go.opentelemetry.io/collector/component/componenttest v0.157.1-0.20260721190914-bc198f44aa6e
@@ -80,3 +81,5 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent

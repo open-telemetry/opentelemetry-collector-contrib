@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 				Auth: component.MustNewID("azureauth"),
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{
-						Logs: []LogsEncodingConfig{
+						Logs: []EncodingConfig{
 							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
 							{Name: "raw_logs", Encoding: component.MustNewID("azureresourcelogs_encoding")},
 						},
@@ -67,8 +67,39 @@ func TestLoadConfig(t *testing.T) {
 				HTTP: &noAuthServerConfig,
 				Triggers: &TriggersConfig{
 					EventHub: &EventHubTriggerConfig{
-						Logs: []LogsEncodingConfig{
+						Logs: []EncodingConfig{
 							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metrics_only"),
+			expected: &Config{
+				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				Auth: component.MustNewID("azureauth"),
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Metrics: []EncodingConfig{
+							{Name: "metrics", Encoding: component.MustNewID("azure_encoding")},
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "logs_and_metrics"),
+			expected: &Config{
+				HTTP: &confighttp.ServerConfig{NetAddr: confignet.AddrConfig{Endpoint: "test:123", Transport: confignet.TransportTypeTCP}},
+				Auth: component.MustNewID("azureauth"),
+				Triggers: &TriggersConfig{
+					EventHub: &EventHubTriggerConfig{
+						Logs: []EncodingConfig{
+							{Name: "logs", Encoding: component.MustNewID("azure_encoding")},
+						},
+						Metrics: []EncodingConfig{
+							{Name: "metrics", Encoding: component.MustNewID("azure_encoding")},
 						},
 					},
 				},
@@ -101,6 +132,26 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:                 component.NewIDWithName(metadata.Type, "duplicate_binding_name"),
 			expectedErrMessage: `triggers.event_hub.logs: duplicate binding name "logs"`,
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "empty_event_hub_logs_and_metrics"),
+			expectedErrMessage: "at least one configured trigger with at least one binding is required",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "missing_metrics_binding_name"),
+			expectedErrMessage: "triggers.event_hub.metrics[0].name must be set",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "missing_metrics_binding_encoding"),
+			expectedErrMessage: "triggers.event_hub.metrics[0].encoding must be set",
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "duplicate_metrics_binding_name"),
+			expectedErrMessage: `triggers.event_hub.metrics: duplicate binding name "m"`,
+		},
+		{
+			id:                 component.NewIDWithName(metadata.Type, "duplicate_binding_name_logs_and_metrics"),
+			expectedErrMessage: `triggers.event_hub: binding name "logs" is used in both logs and metrics`,
 		},
 	}
 	for _, tt := range tests {
