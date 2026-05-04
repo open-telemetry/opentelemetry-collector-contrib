@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporter/kafka
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow record_headers to set multiple headers with the same key. 
+note: Allow record_headers to accept multiple headers with the same key. 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48092]
