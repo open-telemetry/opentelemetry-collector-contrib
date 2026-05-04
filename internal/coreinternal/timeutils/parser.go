@@ -82,12 +82,6 @@ func ParseGotime(layout string, value any, location *time.Location) (time.Time, 
 	if err != nil {
 		return time.Time{}, err
 	}
-	// If the caller requested local time, canonicalize to time.Local so the
-	// returned location pointer is always time.Local regardless of the
-	// system timezone name (e.g. "WET", "CET").
-	if location == time.Local {
-		timeValue = timeValue.In(time.Local)
-	}
 	return SetTimestampYear(timeValue), nil
 }
 
@@ -100,9 +94,17 @@ func parseGotime(layout string, value any, location *time.Location) (time.Time, 
 	result, err := time.ParseInLocation(layout, str, location)
 
 	// Depending on the timezone database, we may get a pseudo-matching timezone
-	// This is apparent when the zone is not "UTC", but the offset is still 0
+	// This is apparent when the zone is not "UTC", but the offset is still 0.
+	// We skip the correction if the zone matches the caller's default location,
+	// because in that case the zone name came from the default (e.g. "WET" for
+	// time.Local on a Western European system), not from an abbreviation in the
+	// input string.
 	zone, offset := result.Zone()
-	if offset != 0 || zone == "UTC" {
+	var locZone string
+	if location != nil {
+		locZone, _ = result.In(location).Zone()
+	}
+	if offset != 0 || zone == "UTC" || zone == locZone {
 		return result, err
 	}
 
