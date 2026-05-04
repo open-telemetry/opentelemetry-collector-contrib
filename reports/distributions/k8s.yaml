@@ -7,7 +7,7 @@ components:
         - exceptions
         - failover
         - otlpjson
-        - roundrobin
+        - round_robin
         - routing
         - service_graph
     exporter:
@@ -34,6 +34,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - groupbyattrs
         - groupbytrace
