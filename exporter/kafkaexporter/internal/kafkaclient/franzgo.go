@@ -10,6 +10,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -41,7 +42,7 @@ func recordUserSize(r *kgo.Record) int {
 
 // RecordHeader includes key-value pairs to be added as headers to Kafka records.
 type RecordHeader struct {
-	Name  string `mapstructure:"name"`
+	Name  string              `mapstructure:"name"`
 	Value configopaque.String `mapstructure:"value"`
 
 	// prevent unkeyed literal initialization
