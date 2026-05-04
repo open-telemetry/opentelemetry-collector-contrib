@@ -34,6 +34,7 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
+        - drain
         - filter
         - groupbyattrs
         - groupbytrace
@@ -58,7 +59,7 @@ components:
         - k8s_cluster
         - k8s_events
         - k8s_objects
-        - kubeletstats
+        - kubelet_stats
         - otelarrow
         - prometheus
         - receiver_creator
