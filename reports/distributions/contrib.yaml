@@ -150,8 +150,8 @@ components:
         - carbon
         - chrony
         - cisco_os
+        - cloud_foundry
         - cloudflare
-        - cloudfoundry
         - collectd
         - couchdb
         - datadog

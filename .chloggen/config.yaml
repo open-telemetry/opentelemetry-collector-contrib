@@ -250,8 +250,8 @@ components:
     - receiver/carbon
     - receiver/chrony
     - receiver/cisco_os
+    - receiver/cloud_foundry
     - receiver/cloudflare
-    - receiver/cloudfoundry
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
