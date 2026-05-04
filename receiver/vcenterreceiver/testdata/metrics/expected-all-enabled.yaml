@@ -1005,6 +1005,16 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: Total time elapsed since last operating system boot-up.
+            name: vcenter.host.uptime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "40337209"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
           - description: The host's read IOs which could be satisfied by the local client cache.
             gauge:
               dataPoints:
@@ -1749,6 +1759,16 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: Total time elapsed since last operating system boot-up.
+            name: vcenter.host.uptime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "40337809"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
           - description: The host's read IOs which could be satisfied by the local client cache.
             gauge:
               dataPoints:
@@ -2159,6 +2179,14 @@ resourceMetrics:
             stringValue: CentOS 9
     scopeMetrics:
       - metrics:
+          - description: Percent of time the virtual machine is unable to run because it is contending for access to the physical CPU(s).
+            gauge:
+              dataPoints:
+                - asDouble: 2.0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.latency.avg
+            unit: '%'
           - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
             gauge:
               dataPoints:
@@ -2990,6 +3018,14 @@ resourceMetrics:
             stringValue: CentOS 7
     scopeMetrics:
       - metrics:
+          - description: Percent of time the virtual machine is unable to run because it is contending for access to the physical CPU(s).
+            gauge:
+              dataPoints:
+                - asDouble: 7.0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.latency.avg
+            unit: '%'
           - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
             gauge:
               dataPoints:
@@ -3920,6 +3956,14 @@ resourceMetrics:
             stringValue: CentOS 8
     scopeMetrics:
       - metrics:
+          - description: Percent of time the virtual machine is unable to run because it is contending for access to the physical CPU(s).
+            gauge:
+              dataPoints:
+                - asDouble: 5.0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.latency.avg
+            unit: '%'
           - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
             gauge:
               dataPoints:
@@ -4822,6 +4866,95 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.vsan.throughput
             unit: By/s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
+        - key: vcenter.cluster.name
+          value:
+            stringValue: Cluster
+        - key: vcenter.host.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: vcenter.datastore.name
+          value:
+            stringValue: vsanDatastore
+    scopeMetrics:
+      - metrics:
+          - description: The size-normalized I/O latency of the datastore for this host.
+            name: vcenter.host.datastore.normalized_latency.avg
+            unit: us
+            gauge:
+              dataPoints:
+                - asInt: 492
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+          - description: The IOPs of the datastore for this host.
+            name: vcenter.host.datastore.operations
+            unit: "{operations/s}"
+            gauge:
+              dataPoints:
+                - asInt: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: 51
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
+        - key: vcenter.host.name
+          value:
+            stringValue: esxi-111.europe-southeast1.gve.goog
+        - key: vcenter.datastore.name
+          value:
+            stringValue: vsanDatastore
+    scopeMetrics:
+      - metrics:
+          - description: The size-normalized I/O latency of the datastore for this host.
+            name: vcenter.host.datastore.normalized_latency.avg
+            unit: us
+            gauge:
+              dataPoints:
+                - asInt: 544
+                  startTimeUnixNano: "3000000"
+                  timeUnixNano: "1000000"
+          - description: The IOPs of the datastore for this host.
+            name: vcenter.host.datastore.operations
+            unit: "{operations/s}"
+            gauge:
+              dataPoints:
+                - asInt: 95
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asInt: 23
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest

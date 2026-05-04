@@ -30,6 +30,10 @@
                         <val xsi:type="xsd:short">36</val>
                     </propSet>
                     <propSet>
+                        <name>summary.quickStats.uptime</name>
+                        <val xsi:type="xsd:int">40337809</val>
+                    </propSet>
+                    <propSet>
                         <name>summary.quickStats.overallCpuUsage</name>
                         <val xsi:type="xsd:int">6107</val>
                     </propSet>
@@ -81,6 +85,10 @@
                     <propSet>
                         <name>summary.hardware.numCpuCores</name>
                         <val xsi:type="xsd:short">36</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.uptime</name>
+                        <val xsi:type="xsd:int">40337209</val>
                     </propSet>
                     <propSet>
                         <name>summary.quickStats.overallCpuUsage</name>
