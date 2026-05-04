@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/mcp/tools"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp/internal/tools"
 )
 
 var _ extension.Extension = (*mcpExtension)(nil)

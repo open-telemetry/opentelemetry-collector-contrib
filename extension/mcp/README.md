@@ -35,3 +35,65 @@ extensions:
 | `component-schema-validation` | Validate a component configuration JSON against its schema |
 | `component-deprecated-fields` | List deprecated configuration fields for one or more components |
 | `rag` | Answer questions about the collector using documentation search |
+
+### Component Discovery
+
+| Tool | Description |
+|------|-------------|
+| `list_available_components` | List all component types built into this collector instance with their versions |
+| `get_component_schema` | Get the default configuration schema for a component by reflecting on its factory |
+| `get_factory_info` | Get factory metadata for a component type, including stability level |
+
+### Configuration Inspection
+
+| Tool | Description |
+|------|-------------|
+| `get_config` | Get the current collector configuration, with all defaults expanded |
+| `get_component_config` | Get the effective configuration for a specific component instance |
+| `list_configured_components` | List all currently configured component instances |
+| `get_pipeline_config` | Get the configuration for a specific pipeline |
+
+### Configuration Validation
+
+| Tool | Description |
+|------|-------------|
+| `validate_config` | Validate a complete proposed collector configuration structure |
+| `validate_config_section` | Validate a single configuration section (receivers, processors, exporters, etc.) |
+| `add_component` | Validate adding a new component to the configuration (read-only) |
+| `remove_component` | Validate removing a component and report which pipelines would be affected (read-only) |
+| `update_pipeline` | Validate a modified pipeline configuration (read-only) |
+
+### Runtime Status
+
+| Tool | Description |
+|------|-------------|
+| `get_component_status` | Get the runtime status of configured components |
+| `get_pipeline_metrics` | Get component counts and status for pipelines |
+| `get_extensions` | List all running extensions |
+
+### Telemetry Buffers
+
+| Tool | Description |
+|------|-------------|
+| `get_recent_traces` | Get recent traces from the in-memory buffer in CSV format |
+| `get_recent_metrics` | List available metric names or fetch latest values for a specific metric |
+| `get_recent_logs` | Get recent logs from the in-memory buffer in CSV format |
+| `get_telemetry_summary` | Get buffer capacity and item counts for traces, metrics, and logs |
+
+### Telemetry Queries
+
+| Tool | Description |
+|------|-------------|
+| `query_traces` | Query traces with filtering by service, span name, status, and duration range |
+| `query_logs` | Query logs with filtering by severity, body text, service, and trace/span ID |
+| `query_metrics` | Query metrics with filtering by name, service, and type |
+
+### Telemetry Search
+
+| Tool | Description |
+|------|-------------|
+| `search_traces` | Search traces by service name, span name, or trace ID |
+| `search_logs` | Search logs by severity, body text, or service name |
+| `search_metrics` | Search metrics by name or service name |
+| `get_trace_by_id` | Retrieve all spans for a specific trace ID, rendered as a waterfall |
+| `find_related_telemetry` | Find logs and spans correlated with a given trace ID or span ID |
