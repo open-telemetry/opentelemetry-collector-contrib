@@ -9,7 +9,7 @@ components:
         - failover
         - grafanacloud
         - otlpjson
-        - roundrobin
+        - round_robin
         - routing
         - service_graph
         - signal_to_metrics
@@ -25,7 +25,7 @@ components:
         - azure_blob
         - azuredataexplorer
         - azuremonitor
-        - bmchelix
+        - bmc_helix
         - cassandra
         - clickhouse
         - coralogix
@@ -150,8 +150,8 @@ components:
         - carbon
         - chrony
         - cisco_os
+        - cloud_foundry
         - cloudflare
-        - cloudfoundry
         - collectd
         - couchdb
         - datadog
@@ -182,7 +182,7 @@ components:
         - k8s_objects
         - kafka
         - kafkametrics
-        - kubeletstats
+        - kubelet_stats
         - libhoney
         - loki
         - macos_unified_logging

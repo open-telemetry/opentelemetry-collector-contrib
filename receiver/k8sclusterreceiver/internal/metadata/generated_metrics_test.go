@@ -19,6 +19,7 @@ const (
 	testDataSetDefault testDataSet = iota
 	testDataSetAll
 	testDataSetNone
+	testDataSetReag
 )
 
 func TestMetricsBuilder(t *testing.T) {
@@ -35,6 +36,11 @@ func TestMetricsBuilder(t *testing.T) {
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "reaggregate_set",
+			metricsSet:  testDataSetReag,
+			resAttrsSet: testDataSetReag,
 		},
 		{
 			name:        "none_set",
@@ -60,9 +66,15 @@ func TestMetricsBuilder(t *testing.T) {
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
+			aggMap["K8sServiceEndpointCount"] = mb.metricK8sServiceEndpointCount.config.AggregationStrategy
+			aggMap["OpenshiftAppliedclusterquotaLimit"] = mb.metricOpenshiftAppliedclusterquotaLimit.config.AggregationStrategy
+			aggMap["OpenshiftAppliedclusterquotaUsed"] = mb.metricOpenshiftAppliedclusterquotaUsed.config.AggregationStrategy
 
 			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			if tt.metricsSet != testDataSetReag {
+				assert.Equal(t, expectedWarnings, observedLogs.Len())
+			}
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
@@ -249,6 +261,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			ebK8sService.RecordK8sServiceEndpointCountDataPoint(ts, 1, AttributeK8sServiceEndpointAddressTypeIPv4, AttributeK8sServiceEndpointConditionReady, "k8s.service.endpoint.zone-val")
+			if tt.name == "reaggregate_set" {
+				ebK8sService.RecordK8sServiceEndpointCountDataPoint(ts, 3, AttributeK8sServiceEndpointAddressTypeIPv6, AttributeK8sServiceEndpointConditionServing, "k8s.service.endpoint.zone-val-2")
+			}
 
 			allMetricsCount++
 			ebK8sService.RecordK8sServiceLoadBalancerIngressCountDataPoint(ts, 1)
@@ -272,10 +287,16 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
+			if tt.name == "reaggregate_set" {
+				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 3, "k8s.namespace.name-val-2", "resource-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
 			ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
+			if tt.name == "reaggregate_set" {
+				ebOpenshiftClusterquota.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 3, "k8s.namespace.name-val-2", "resource-val")
+			}
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -356,6 +377,11 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetOsType("os.type-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
+			if tt.name == "reaggregate_set" {
+				assert.Empty(t, mb.metricK8sServiceEndpointCount.aggDataPoints)
+				assert.Empty(t, mb.metricOpenshiftAppliedclusterquotaLimit.aggDataPoints)
+				assert.Empty(t, mb.metricOpenshiftAppliedclusterquotaUsed.aggDataPoints)
+			}
 
 			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -934,26 +960,55 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ok)
 					assert.Equal(t, "resource-val", resourceAttrVal.Str())
 				case "k8s.service.endpoint.count":
-					assert.False(t, validatedMetrics["k8s.service.endpoint.count"], "Found a duplicate in the metrics slice: k8s.service.endpoint.count")
-					validatedMetrics["k8s.service.endpoint.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of endpoints for a service, broken down by condition, address type, and zone.", mi.Description())
-					assert.Equal(t, "{endpoint}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					k8sServiceEndpointAddressTypeAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.address_type")
-					assert.True(t, ok)
-					assert.Equal(t, "IPv4", k8sServiceEndpointAddressTypeAttrVal.Str())
-					k8sServiceEndpointConditionAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.condition")
-					assert.True(t, ok)
-					assert.Equal(t, "ready", k8sServiceEndpointConditionAttrVal.Str())
-					k8sServiceEndpointZoneAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.zone")
-					assert.True(t, ok)
-					assert.Equal(t, "k8s.service.endpoint.zone-val", k8sServiceEndpointZoneAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["k8s.service.endpoint.count"], "Found a duplicate in the metrics slice: k8s.service.endpoint.count")
+						validatedMetrics["k8s.service.endpoint.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of endpoints for a service, broken down by condition, address type, and zone.", mi.Description())
+						assert.Equal(t, "{endpoint}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						k8sServiceEndpointAddressTypeAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.address_type")
+						assert.True(t, ok)
+						assert.Equal(t, "IPv4", k8sServiceEndpointAddressTypeAttrVal.Str())
+						k8sServiceEndpointConditionAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.condition")
+						assert.True(t, ok)
+						assert.Equal(t, "ready", k8sServiceEndpointConditionAttrVal.Str())
+						k8sServiceEndpointZoneAttrVal, ok := dp.Attributes().Get("k8s.service.endpoint.zone")
+						assert.True(t, ok)
+						assert.Equal(t, "k8s.service.endpoint.zone-val", k8sServiceEndpointZoneAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["k8s.service.endpoint.count"], "Found a duplicate in the metrics slice: k8s.service.endpoint.count")
+						validatedMetrics["k8s.service.endpoint.count"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The number of endpoints for a service, broken down by condition, address type, and zone.", mi.Description())
+						assert.Equal(t, "{endpoint}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["k8s.service.endpoint.count"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("k8s.service.endpoint.address_type")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("k8s.service.endpoint.condition")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("k8s.service.endpoint.zone")
+						assert.False(t, ok)
+					}
 				case "k8s.service.load_balancer.ingress.count":
 					assert.False(t, validatedMetrics["k8s.service.load_balancer.ingress.count"], "Found a duplicate in the metrics slice: k8s.service.load_balancer.ingress.count")
 					validatedMetrics["k8s.service.load_balancer.ingress.count"] = true
@@ -1015,41 +1070,95 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 				case "openshift.appliedclusterquota.limit":
-					assert.False(t, validatedMetrics["openshift.appliedclusterquota.limit"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.limit")
-					validatedMetrics["openshift.appliedclusterquota.limit"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The upper limit for a particular resource in a specific namespace.", mi.Description())
-					assert.Equal(t, "{resource}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					k8sNamespaceNameAttrVal, ok := dp.Attributes().Get("k8s.namespace.name")
-					assert.True(t, ok)
-					assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
-					resourceAttrVal, ok := dp.Attributes().Get("resource")
-					assert.True(t, ok)
-					assert.Equal(t, "resource-val", resourceAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["openshift.appliedclusterquota.limit"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.limit")
+						validatedMetrics["openshift.appliedclusterquota.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The upper limit for a particular resource in a specific namespace.", mi.Description())
+						assert.Equal(t, "{resource}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						k8sNamespaceNameAttrVal, ok := dp.Attributes().Get("k8s.namespace.name")
+						assert.True(t, ok)
+						assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
+						resourceAttrVal, ok := dp.Attributes().Get("resource")
+						assert.True(t, ok)
+						assert.Equal(t, "resource-val", resourceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["openshift.appliedclusterquota.limit"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.limit")
+						validatedMetrics["openshift.appliedclusterquota.limit"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The upper limit for a particular resource in a specific namespace.", mi.Description())
+						assert.Equal(t, "{resource}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["openshift.appliedclusterquota.limit"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("k8s.namespace.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("resource")
+						assert.True(t, ok)
+					}
 				case "openshift.appliedclusterquota.used":
-					assert.False(t, validatedMetrics["openshift.appliedclusterquota.used"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.used")
-					validatedMetrics["openshift.appliedclusterquota.used"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-					assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
-					assert.Equal(t, "The usage for a particular resource in a specific namespace.", mi.Description())
-					assert.Equal(t, "{resource}", mi.Unit())
-					dp := mi.Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					k8sNamespaceNameAttrVal, ok := dp.Attributes().Get("k8s.namespace.name")
-					assert.True(t, ok)
-					assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
-					resourceAttrVal, ok := dp.Attributes().Get("resource")
-					assert.True(t, ok)
-					assert.Equal(t, "resource-val", resourceAttrVal.Str())
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["openshift.appliedclusterquota.used"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.used")
+						validatedMetrics["openshift.appliedclusterquota.used"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The usage for a particular resource in a specific namespace.", mi.Description())
+						assert.Equal(t, "{resource}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						assert.Equal(t, int64(1), dp.IntValue())
+						k8sNamespaceNameAttrVal, ok := dp.Attributes().Get("k8s.namespace.name")
+						assert.True(t, ok)
+						assert.Equal(t, "k8s.namespace.name-val", k8sNamespaceNameAttrVal.Str())
+						resourceAttrVal, ok := dp.Attributes().Get("resource")
+						assert.True(t, ok)
+						assert.Equal(t, "resource-val", resourceAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["openshift.appliedclusterquota.used"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.used")
+						validatedMetrics["openshift.appliedclusterquota.used"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "The usage for a particular resource in a specific namespace.", mi.Description())
+						assert.Equal(t, "{resource}", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+						switch aggMap["openshift.appliedclusterquota.used"] {
+						case "sum":
+							assert.Equal(t, int64(4), dp.IntValue())
+						case "avg":
+							assert.Equal(t, int64(2), dp.IntValue())
+						case "min":
+							assert.Equal(t, int64(1), dp.IntValue())
+						case "max":
+							assert.Equal(t, int64(3), dp.IntValue())
+						}
+						_, ok := dp.Attributes().Get("k8s.namespace.name")
+						assert.False(t, ok)
+						_, ok = dp.Attributes().Get("resource")
+						assert.True(t, ok)
+					}
 				case "openshift.clusterquota.limit":
 					assert.False(t, validatedMetrics["openshift.clusterquota.limit"], "Found a duplicate in the metrics slice: openshift.clusterquota.limit")
 					validatedMetrics["openshift.clusterquota.limit"] = true

@@ -22,7 +22,7 @@ components:
     - connector/grafanacloud
     - connector/metricsaslogs
     - connector/otlpjson
-    - connector/roundrobin
+    - connector/round_robin
     - connector/routing
     - connector/service_graph
     - connector/signal_to_metrics
@@ -39,7 +39,7 @@ components:
     - exporter/azure_blob
     - exporter/azuredataexplorer
     - exporter/azuremonitor
-    - exporter/bmchelix
+    - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -186,6 +186,7 @@ components:
     - processor/alibabaecsdetector
     - processor/attributes
     - processor/azuredetector
+    - processor/cardinality_guardian
     - processor/coralogix
     - processor/cumulativetodelta
     - processor/deltatocumulative
@@ -249,8 +250,8 @@ components:
     - receiver/carbon
     - receiver/chrony
     - receiver/cisco_os
+    - receiver/cloud_foundry
     - receiver/cloudflare
-    - receiver/cloudfoundry
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
@@ -284,7 +285,7 @@ components:
     - receiver/k8s_objects
     - receiver/kafka
     - receiver/kafkametrics
-    - receiver/kubeletstats
+    - receiver/kubelet_stats
     - receiver/libhoney
     - receiver/loki
     - receiver/macos_unified_logging
