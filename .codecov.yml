@@ -437,10 +437,18 @@ component_management:
     name: extension_sumologic
     paths:
     - extension/sumologicextension/**
+  - component_id: extension_tailstorage_pebbletailstorage
+    name: extension_tailstorage_pebbletailstorage
+    paths:
+    - extension/tailstorage/pebbletailstorageextension/**
   - component_id: processor_attributes
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_cardinalityguardian
+    name: processor_cardinalityguardian
+    paths:
+    - processor/cardinalityguardianprocessor/**
   - component_id: processor_coralogix
     name: processor_coralogix
     paths:
