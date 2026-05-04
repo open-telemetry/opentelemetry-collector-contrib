@@ -219,7 +219,7 @@ func TestParseLocalizedGotime(t *testing.T) {
 
 func TestParseLocalizedGotimeInvalidType(t *testing.T) {
 	value := time.Now().UnixNano()
-	_, err := ParseLocalizedStrptime("Mon", value, time.Local, "en")
+	_, err := ParseLocalizedGotime("Mon", value, time.Local, "en")
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cannot be parsed as a time")
 }
