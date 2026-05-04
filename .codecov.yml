@@ -445,6 +445,10 @@ component_management:
     name: processor_attributes
     paths:
     - processor/attributesprocessor/**
+  - component_id: processor_cardinalityguardian
+    name: processor_cardinalityguardian
+    paths:
+    - processor/cardinalityguardianprocessor/**
   - component_id: processor_coralogix
     name: processor_coralogix
     paths:
