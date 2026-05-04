@@ -182,7 +182,7 @@ components:
         - k8s_objects
         - kafka
         - kafkametrics
-        - kubeletstats
+        - kubelet_stats
         - libhoney
         - loki
         - macos_unified_logging
