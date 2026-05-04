@@ -7,11 +7,10 @@ status:
     development: [traces]
   distributions: []
   codeowners:
-    active: [kylehounslow, vamsimanohar, ps48]
+    active: [kylehounslow, TylerHelmuth]
 
 tests:
   config:
-    profiles:
-      - openinference
-      - openllmetry
-    remove_originals: true
+    sources:
+      openinference: {}
+      openllmetry: {}

@@ -1,9 +1,10 @@
 processors:
   genainormalizer:
-    profiles:
-      - openinference
-      - openllmetry
-    remove_originals: true
-    overwrite: false
-    custom_mappings:
-      my_vendor.model: gen_ai.request.model
+    sources:
+      openinference:
+        remove_originals: true
+        overwrite: false
+        custom_mappings:
+          my_vendor.model: gen_ai.request.model
+      openllmetry:
+        remove_originals: true

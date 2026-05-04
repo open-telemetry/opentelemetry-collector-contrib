@@ -6,64 +6,61 @@ package genainormalizerprocessor // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
 )
 
-// supportedProfiles lists all recognized profile names.
-var supportedProfiles = map[string]struct{}{
-	"openinference": {},
-	"openllmetry":   {},
+// SourceName identifies a supported source instrumentation convention.
+type SourceName string
+
+const (
+	SourceOpenInference SourceName = "openinference"
+	SourceOpenLLMetry   SourceName = "openllmetry"
+)
+
+var supportedSources = map[SourceName]struct{}{
+	SourceOpenInference: {},
+	SourceOpenLLMetry:   {},
 }
 
-// sortedProfileNames returns the supported profile names in sorted order.
-func sortedProfileNames() string {
-	names := make([]string, 0, len(supportedProfiles))
-	for k := range supportedProfiles {
-		names = append(names, k)
-	}
-	sort.Strings(names)
-	return strings.Join(names, ", ")
-}
-
-// Config holds the configuration for the genainormalizer processor.
-type Config struct {
-	// Profiles to enable. Each profile maps a specific instrumentation
-	// library's attributes to OTel GenAI Semantic Conventions.
-	Profiles []string `mapstructure:"profiles"`
-
+// Source configures normalization behavior for a single source convention.
+type Source struct {
 	// RemoveOriginals deletes source attributes after mapping.
 	RemoveOriginals bool `mapstructure:"remove_originals"`
 
 	// Overwrite controls whether existing target attributes are overwritten.
-	// When false (default), if the target attribute already exists on the span,
-	// the mapping is skipped.
+	// When true, the target attribute is replaced if it already exists on the span.
+	// When false (default), the mapping is skipped.
 	Overwrite bool `mapstructure:"overwrite"`
 
-	// CustomMappings allows users to define additional source->target attribute mappings.
-	// These are applied after profile mappings and override them on conflict.
+	// CustomMappings defines additional source->target attribute mappings for this source.
+	// Applied after built-in mappings and override them on conflict.
 	CustomMappings map[string]string `mapstructure:"custom_mappings"`
+}
+
+// Config holds the configuration for the genainormalizer processor.
+type Config struct {
+	// Sources selects which source conventions to normalize and their per-source options.
+	Sources map[SourceName]Source `mapstructure:"sources"`
 }
 
 // Validate checks that the configuration is valid.
 func (c *Config) Validate() error {
-	if len(c.Profiles) == 0 {
-		return errors.New("at least one profile must be specified")
+	if len(c.Sources) == 0 {
+		return errors.New("at least one source must be specified")
 	}
-	for _, p := range c.Profiles {
-		if _, ok := supportedProfiles[p]; !ok {
-			return fmt.Errorf("unknown profile %q; supported: %s", p, sortedProfileNames())
+	for name, src := range c.Sources {
+		if _, ok := supportedSources[name]; !ok {
+			return fmt.Errorf("unknown source %q", name)
 		}
-	}
-	for src, tgt := range c.CustomMappings {
-		if src == "" {
-			return errors.New("custom_mappings: source attribute name must be non-empty")
-		}
-		if tgt == "" {
-			return fmt.Errorf("custom_mappings: target for %q must be non-empty", src)
-		}
-		if src == tgt {
-			return fmt.Errorf("custom_mappings: source and target are identical (%q)", src)
+		for srcAttr, tgtAttr := range src.CustomMappings {
+			if srcAttr == "" {
+				return fmt.Errorf("sources[%q].custom_mappings: source attribute name must be non-empty", name)
+			}
+			if tgtAttr == "" {
+				return fmt.Errorf("sources[%q].custom_mappings: target for %q must be non-empty", name, srcAttr)
+			}
+			if srcAttr == tgtAttr {
+				return fmt.Errorf("sources[%q].custom_mappings: source and target are identical (%q)", name, srcAttr)
+			}
 		}
 	}
 	return nil

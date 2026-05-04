@@ -18,49 +18,65 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid",
 			cfg: Config{
-				Profiles:        []string{"openinference", "openllmetry"},
-				RemoveOriginals: true,
+				Sources: map[SourceName]Source{
+					SourceOpenInference: {RemoveOriginals: true},
+					SourceOpenLLMetry:   {},
+				},
 			},
 		},
 		{
-			name:    "no profiles",
-			cfg:     Config{Profiles: []string{}},
-			wantErr: "at least one profile",
+			name:    "no sources",
+			cfg:     Config{Sources: map[SourceName]Source{}},
+			wantErr: "at least one source",
 		},
 		{
-			name:    "unknown profile",
-			cfg:     Config{Profiles: []string{"openinference", "bogus"}},
-			wantErr: "bogus",
-		},
-		{
-			name: "custom_mappings empty source",
+			name: "unknown source",
 			cfg: Config{
-				Profiles:       []string{"openinference"},
-				CustomMappings: map[string]string{"": "gen_ai.request.model"},
+				Sources: map[SourceName]Source{"bogus": {}},
+			},
+			wantErr: `unknown source "bogus"`,
+		},
+		{
+			name: "custom_mappings empty source attr",
+			cfg: Config{
+				Sources: map[SourceName]Source{
+					SourceOpenInference: {
+						CustomMappings: map[string]string{"": "gen_ai.request.model"},
+					},
+				},
 			},
 			wantErr: "source attribute name must be non-empty",
 		},
 		{
 			name: "custom_mappings empty target",
 			cfg: Config{
-				Profiles:       []string{"openinference"},
-				CustomMappings: map[string]string{"my_vendor.model": ""},
+				Sources: map[SourceName]Source{
+					SourceOpenInference: {
+						CustomMappings: map[string]string{"my_vendor.model": ""},
+					},
+				},
 			},
-			wantErr: "target for \"my_vendor.model\" must be non-empty",
+			wantErr: `target for "my_vendor.model" must be non-empty`,
 		},
 		{
 			name: "custom_mappings identity",
 			cfg: Config{
-				Profiles:       []string{"openinference"},
-				CustomMappings: map[string]string{"gen_ai.request.model": "gen_ai.request.model"},
+				Sources: map[SourceName]Source{
+					SourceOpenInference: {
+						CustomMappings: map[string]string{"gen_ai.request.model": "gen_ai.request.model"},
+					},
+				},
 			},
 			wantErr: "source and target are identical",
 		},
 		{
 			name: "valid custom_mappings",
 			cfg: Config{
-				Profiles:       []string{"openinference"},
-				CustomMappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
+				Sources: map[SourceName]Source{
+					SourceOpenInference: {
+						CustomMappings: map[string]string{"my_vendor.model": "gen_ai.request.model"},
+					},
+				},
 			},
 		},
 	}
