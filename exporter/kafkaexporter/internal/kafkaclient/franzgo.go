@@ -43,6 +43,9 @@ func recordUserSize(r *kgo.Record) int {
 type RecordHeader struct {
 	Name  string `mapstructure:"name"`
 	Value string `mapstructure:"value"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // FranzSyncProducer is a wrapper around the franz-go client that implements
