@@ -108,6 +108,7 @@ components:
     - extension/k8s_leader_elector
     - extension/k8s_observer
     - extension/kafkatopics_observer
+    - extension/mcp
     - extension/oauth2client
     - extension/observer
     - extension/oidc

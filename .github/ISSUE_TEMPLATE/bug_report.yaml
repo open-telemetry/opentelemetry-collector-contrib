@@ -118,6 +118,7 @@ body:
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/k8sleaderelector
+      - extension/mcp
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/cfgardenobserver

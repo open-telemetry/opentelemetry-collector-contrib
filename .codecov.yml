@@ -357,6 +357,10 @@ component_management:
     name: extension_k8sleaderelector
     paths:
     - extension/k8sleaderelector/**
+  - component_id: extension_mcp
+    name: extension_mcp
+    paths:
+    - extension/mcp/**
   - component_id: extension_oauth2clientauth
     name: extension_oauth2clientauth
     paths:

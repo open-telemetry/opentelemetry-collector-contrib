@@ -98,6 +98,7 @@ extension/healthcheckv2extension extension/healthcheckv2
 extension/httpforwarderextension extension/httpforwarder
 extension/jaegerremotesampling extension/jaegerremotesampling
 extension/k8sleaderelector extension/k8sleaderelector
+extension/mcp extension/mcp
 extension/oauth2clientauthextension extension/oauth2clientauth
 extension/observer extension/observer
 extension/observer/cfgardenobserver extension/observer/cfgardenobserver

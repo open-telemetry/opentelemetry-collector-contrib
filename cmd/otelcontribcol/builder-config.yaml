@@ -28,6 +28,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling v0.151.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver v0.151.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver v0.151.0

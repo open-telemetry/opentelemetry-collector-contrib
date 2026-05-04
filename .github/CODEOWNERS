@@ -117,6 +117,7 @@ extension/healthcheckv2extension/                                @open-telemetry
 extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme
 extension/jaegerremotesampling/                                  @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rakesh-garimella
+extension/mcp/                                                   @open-telemetry/collector-contrib-approvers @pavolloffay @codeboten @dmitryax
 extension/oauth2clientauthextension/                             @open-telemetry/collector-contrib-approvers @pavankrish123
 extension/observer/                                              @open-telemetry/collector-contrib-approvers @dmitryax
 extension/observer/cfgardenobserver/                             @open-telemetry/collector-contrib-approvers @crobert-1 @jriguera
