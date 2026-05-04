@@ -1,5 +1,6 @@
 display_name: Kubelet Stats Receiver
-type: kubeletstats
+type: kubelet_stats
+deprecated_type: kubeletstats
 
 description: |
   The Kubelet Stats Receiver pulls node, pod, container, and volume metrics from the API server on a kubelet

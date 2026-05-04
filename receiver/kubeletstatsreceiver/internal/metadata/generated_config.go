@@ -27,7 +27,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for kubeletstats metrics.
+// MetricsConfig provides config for kubelet_stats metrics.
 type MetricsConfig struct {
 	ContainerCPUTime                       MetricConfig `mapstructure:"container.cpu.time"`
 	ContainerCPUUsage                      MetricConfig `mapstructure:"container.cpu.usage"`
@@ -310,7 +310,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for kubeletstats resource attributes.
+// ResourceAttributesConfig provides config for kubelet_stats resource attributes.
 type ResourceAttributesConfig struct {
 	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
@@ -383,7 +383,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for kubeletstats metrics builder.
+// MetricsBuilderConfig is a configuration for kubelet_stats metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
