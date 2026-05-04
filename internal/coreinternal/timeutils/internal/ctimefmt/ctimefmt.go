@@ -107,7 +107,7 @@ var ctimeSubstitutes = map[string]string{
 //	%% - A % sign
 //	%c - Date and time representation (Mon Jan 02 15:04:05 2006)
 func Format(format string, t time.Time) (string, error) {
-	native, err := ToNative(format)
+	native, err := toNative(format)
 	if err != nil {
 		return "", err
 	}
@@ -230,15 +230,15 @@ func iterativeParse(partialLayout string, format string, startIndex int, indexes
 	return time.Time{}, fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)
 }
 
-// ToNative converts ctime-like format string to Go native layout
+// toNative converts ctime-like format string to Go native layout
 // (which is used by time.Time.Format() and time.Parse() functions).
-func ToNative(format string) (string, error) {
+func toNative(format string) (string, error) {
 	var errs []error
 	replaceFunc := func(directive string) string {
 		if subst, ok := ctimeSubstitutes[directive]; ok {
 			return subst
 		}
-		errs = append(errs, errors.New("unsupported ctimefmt.ToNative() directive: "+directive))
+		errs = append(errs, errors.New("unsupported ctimefmt.toNative() directive: "+directive))
 		return ""
 	}
 
@@ -264,7 +264,7 @@ func Validate(format string) error {
 	var errs []error
 	for _, directive := range directives {
 		if _, ok := ctimeSubstitutes[directive]; !ok {
-			errs = append(errs, errors.New("unsupported ctimefmt.ToNative() directive: "+directive))
+			errs = append(errs, errors.New("unsupported ctimefmt.toNative() directive: "+directive))
 		}
 	}
 	if len(errs) != 0 {

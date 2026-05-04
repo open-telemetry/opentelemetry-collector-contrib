@@ -114,7 +114,7 @@ func TestValidate(t *testing.T) {
 			args: args{
 				layout: "%C-%m-%d-%H-%M-%S.%L",
 			},
-			wantErr: "invalid strptime format: [unsupported ctimefmt.ToNative() directive: %C]",
+			wantErr: "invalid strptime format: [unsupported ctimefmt.toNative() directive: %C]",
 		},
 	}
 	for _, tt := range tests {

@@ -18,8 +18,8 @@ import (
 
 var invalidFractionalSecondsGoTime = regexp.MustCompile(`[^.,9]9+`)
 
-func StrptimeToGotime(layout string) (string, error) {
-	return strptime.ToNative(layout)
+func FormatStrptime(format string, t time.Time) (string, error) {
+	return strptime.Format(format, t)
 }
 
 func ParseStrptime(layout string, value any, location *time.Location) (time.Time, error) {
