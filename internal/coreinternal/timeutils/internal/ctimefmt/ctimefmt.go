@@ -20,6 +20,7 @@ var (
 	ctimeRegexp                      = regexp.MustCompile(`%.`)
 	invalidFractionalSecondsStrptime = regexp.MustCompile(`[^.,]%[Lfs]`)
 	decimalsRegexp                   = regexp.MustCompile(`\d`)
+	leadingSpaceRegexp               = regexp.MustCompile(`^\s+`)
 )
 
 var ctimeSubstitutes = map[string]string{
@@ -63,6 +64,24 @@ var ctimeSubstitutes = map[string]string{
 	"%t": "\t",
 	"%%": "%",
 	"%c": "Mon Jan 02 15:04:05 2006",
+}
+
+// Alternative formats that allow more flexible ctime-compatible parsing.
+var ctimeParseSubstitutes = map[string]string{
+	"%m": "1",
+	"%o": "1",
+	"%q": "1",
+	"%d": "2",
+	"%e": "2",
+	"%g": "2",
+	"%I": "3",
+	"%M": "4",
+	"%S": "5",
+	"%T": "15:4:5",
+	"%X": "15:4:5",
+	"%r": "3:4:5 pm",
+	"%R": "15:4",
+	"%c": "Mon Jan 2 15:4:5 2006",
 }
 
 // Format returns a textual representation of the time value formatted
@@ -119,6 +138,81 @@ func Parse(format, value string) (time.Time, error) {
 		return time.Time{}, nil
 	}
 	return time.Parse(native, value)
+}
+
+type ParseFunc func(layout string) (time.Time, error)
+
+// FlexibleParse parses a ctime-like formatted string (e.g. "%Y-%m-%d ...")
+// and returns the time value it represents.
+//
+// It differs from Parse in that it will attempt to parse the string
+// multiple times in order to handle format specifiers that can have
+// multiple valid formats such as %z. Notable differences include:
+//
+// - Leading whitespace before a digit is ignored
+// - Numbers may or may not have leading zero digits
+// - Multiple time zone formats are supported
+//
+// Refer to strptime(3) and Format() function documentation for possible directives.
+//
+// Note: The returned ParseError will indicate the ctime directive that failed to parse.
+func FlexibleParse(format string, parse ParseFunc) (time.Time, error) {
+	indexes := ctimeRegexp.FindAllStringIndex(format, -1)
+	if len(indexes) == 0 {
+		// Format doesn't contain any directives.
+		return time.Time{}, nil
+	}
+	return iterativeParse("", format, 0, indexes, parse)
+}
+
+func iterativeParse(partialLayout string, format string, startIndex int, indexes [][]int, parse ParseFunc) (out time.Time, err error) {
+	if len(indexes) == 0 {
+		return parse(partialLayout + format[startIndex:])
+	}
+	partialLayout += format[startIndex:indexes[0][0]]
+	directive := format[indexes[0][0]:indexes[0][1]]
+	// try will attempt to match the time with element.
+	// It returns err.ValueElem if the parse failed and this was the element that caused the parse failure.
+	try := func(extra, element string) string {
+		out, err = iterativeParse(partialLayout+extra+element, format, indexes[0][1], indexes[1:], parse)
+		if err, ok := err.(*time.ParseError); ok {
+			if err.LayoutElem == element {
+				err.LayoutElem = directive
+				return err.ValueElem
+			}
+		}
+		return ""
+	}
+	// try will attempt to match the time with element and optional leading spaces
+	tryWhitespace := func(element string) string {
+		remainder := try("", element)
+		if space := leadingSpaceRegexp.FindString(remainder); space != "" {
+			return try(space, element)
+		}
+		return remainder
+	}
+	switch directive {
+	case "%z":
+		if tryWhitespace("Z0700") == "" {
+			return
+		}
+		if tryWhitespace("Z07:00") == "" {
+			return
+		}
+		if tryWhitespace("Z07") == "" {
+			return
+		}
+		return
+	}
+	if subst, ok := ctimeParseSubstitutes[directive]; ok {
+		try("", subst)
+		return
+	}
+	if subst, ok := ctimeSubstitutes[directive]; ok {
+		try("", subst)
+		return
+	}
+	return time.Time{}, fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)
 }
 
 // ToNative converts ctime-like format string to Go native layout
