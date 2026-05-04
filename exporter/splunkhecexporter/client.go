@@ -177,19 +177,6 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 	}
 
-	p, err := translator.ConvertPprofileToPprof(&pp)
-	if err != nil {
-		return err
-	}
-	firstProfile := pp.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
-	p.TimeNanos = firstProfile.Time().AsTime().UnixNano()
-	var buf bytes.Buffer
-
-	// The Write method encodes the profile to a gzipped protobuf
-	if err := p.Write(&buf); err != nil {
-		return err
-	}
-
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	pp.ResourceProfiles().At(0).Resource().Attributes().CopyTo(rl.Resource().Attributes())
@@ -197,16 +184,34 @@ func (c *client) pushProfilesData(ctx context.Context, pp pprofile.Profiles) err
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("otel.profiling")
 	sl.Scope().SetVersion("0.1.0")
-	lr := sl.LogRecords().AppendEmpty()
-	lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
-	lr.SetTimestamp(firstProfile.Time())
-	lr.Attributes().PutStr("com.splunk.sourcetype", "otel.profiling")
-	sampleType := pp.Dictionary().StringTable().At(int(firstProfile.SampleType().TypeStrindex()))
-	lr.Attributes().PutStr("profiling.data.type", sampleType)
-	lr.Attributes().PutStr("profiling.data.format", "pprof-gzip-base64")
-	lr.Attributes().PutInt("profiling.data.total.frame.count", int64(firstProfile.Samples().Len()))
-	// TODO find whether it is continuous or snapshot
-	lr.Attributes().PutStr("profiling.instrumentation.source", "continuous")
+
+	for _, rp := range pp.ResourceProfiles().All() {
+		for _, sp := range rp.ScopeProfiles().All() {
+			for _, pprofile := range sp.Profiles().All() {
+				p, err := translator.ConvertPprofileToPprof(pp.Dictionary(), sp.Scope(), pprofile)
+				if err != nil {
+					return consumererror.NewPermanent(err)
+				}
+				p.TimeNanos = pprofile.Time().AsTime().UnixNano()
+				var buf bytes.Buffer
+
+				// The Write method encodes the profile to a gzipped protobuf
+				if err := p.Write(&buf); err != nil {
+					return consumererror.NewPermanent(err)
+				}
+				lr := sl.LogRecords().AppendEmpty()
+				lr.Body().SetStr(base64.StdEncoding.EncodeToString(buf.Bytes()))
+				lr.SetTimestamp(pprofile.Time())
+				lr.Attributes().PutStr("com.splunk.sourcetype", "otel.profiling")
+				sampleType := pp.Dictionary().StringTable().At(int(pprofile.SampleType().TypeStrindex()))
+				lr.Attributes().PutStr("profiling.data.type", sampleType)
+				lr.Attributes().PutStr("profiling.data.format", "pprof-gzip-base64")
+				lr.Attributes().PutInt("profiling.data.total.frame.count", int64(pprofile.Samples().Len()))
+				// TODO find whether it is continuous or snapshot
+				lr.Attributes().PutStr("profiling.instrumentation.source", "continuous")
+			}
+		}
+	}
 
 	return c.pushLogDataInBatches(ctx, ld, localHeaders)
 }

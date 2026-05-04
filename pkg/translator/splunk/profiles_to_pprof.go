@@ -17,6 +17,7 @@ import (
 
 	"github.com/signalfx/pprof/profile"
 	"github.com/zeebo/xxh3"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 )
@@ -24,31 +25,8 @@ import (
 // errNotFound is returned if something requested is not available
 var errNotFound = errors.New("not found")
 
-func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
+func ConvertPprofileToPprof(dict pprofile.ProfilesDictionary, scope pcommon.InstrumentationScope, p pprofile.Profile) (*profile.Profile, error) {
 	dst := &profile.Profile{}
-
-	rp := src.ResourceProfiles()
-	if rp.Len() != 1 {
-		return nil, errors.New("multiple ResourceProfiles can not be embedded into a single pprof profile")
-	}
-
-	sp := rp.At(0).ScopeProfiles()
-	if sp.Len() != 1 {
-		return nil, errors.New("multiple ScopeProfiles can not be embedded into a single pprof profile")
-	}
-
-	pprofiles := sp.At(0).Profiles()
-	numProfiles := pprofiles.Len()
-
-	// Basic check that all profiles hold the same number of samples.
-	numSamples := []int{}
-	for _, p := range pprofiles.All() {
-		numSamples = append(numSamples, p.Samples().Len())
-	}
-
-	if !allElementsSame(numSamples) {
-		return nil, errors.New("profiles hold varying number of samples")
-	}
 
 	// Helper maps to avoid duplicates.
 	functionMap := make(map[uint64]*profile.Function)
@@ -57,7 +35,7 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 
 	// Pre-populate all mappings from the mapping table to preserve all of them
 	// (not just those referenced by locations) and maintain their original order.
-	for i, m := range src.Dictionary().MappingTable().All() {
+	for i, m := range dict.MappingTable().All() {
 		if i == 0 {
 			// Skip the zero-value mapping at index 0.
 			continue
@@ -66,67 +44,67 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			m.MemoryStart(),
 			m.MemoryLimit(),
 			m.FileOffset(),
-			getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
-			src.Dictionary(),
+			getStringFromIdx(dict, int(m.FilenameStrindex())),
+			dict,
 			m,
 		)
 	}
 
+	sampleType := dict.StringTable().At(int(p.SampleType().TypeStrindex()))
+
 	// As all profiles hold the same number of samples,
 	// assume they only differ on the sample type and therefore can
 	// be merged into a pprof profile.
-	p := sp.At(0).Profiles().At(0)
 	var attrErr error
 
+	firstSample := true
 	// Convert profiles samples into pprof samples.
-	for sampleIdx, s := range p.Samples().All() {
+	for _, s := range p.Samples().All() {
+		if s.Values().Len() == 0 {
+			continue
+		}
 		profileTime := p.Time().AsTime()
 		if p.Time().AsTime().UnixNano() == 0 {
 			profileTime = time.Now()
 		}
+		if firstSample {
+			for i := 0; i < s.Values().Len(); i++ {
+				dst.SampleType = append(dst.SampleType, &profile.ValueType{
+					Type: sampleType,
+				})
+			}
+		}
+		firstSample = false
 
 		pprofSample := profile.Sample{
 			Label: map[string][]string{
-				"source.event.name": {sp.At(0).Scope().Name()},
+				"source.event.name": {scope.Name()},
 			},
 			NumLabel: map[string][]int64{
 				"source.event.time": {profileTime.UnixMilli()},
 			},
+			Value: s.Values().AsRaw(),
+		}
+		if int(s.LinkIndex()) < dict.LinkTable().Len() {
+			link := dict.LinkTable().At(int(s.LinkIndex()))
+			pprofSample.Label["span_id"] = []string{link.SpanID().String()}
+			pprofSample.Label["trace_id"] = []string{link.TraceID().String()}
 		}
 		si := s.StackIndex()
-		stack := src.Dictionary().StackTable().At(int(si))
-
-		// By convention, pprof uses the last sample type as default, while OTel Profiles
-		// uses the first profile as default. Therefore, swap first and last.
-		for i := range numProfiles {
-			// Swap first and last: first OTel profile becomes last pprof sample type
-			var mappedIdx int
-			switch i {
-			case 0:
-				mappedIdx = numProfiles - 1
-			case numProfiles - 1:
-				mappedIdx = 0
-			default:
-				mappedIdx = i
-			}
-			if sp.At(0).Profiles().At(mappedIdx).Samples().At(sampleIdx).Values().Len() != 1 {
-				return nil, errors.New("invalid number of values per sample")
-			}
-			pprofSample.Value = append(pprofSample.Value, pprofiles.At(mappedIdx).Samples().At(sampleIdx).Values().At(0))
-		}
+		stack := dict.StackTable().At(int(si))
 
 		for _, li := range stack.LocationIndices().All() {
-			loc := src.Dictionary().LocationTable().At(int(li))
+			loc := dict.LocationTable().At(int(li))
 			var locMapping *profile.Mapping
 
 			if mi := loc.MappingIndex(); mi != 0 {
-				m := src.Dictionary().MappingTable().At(int(mi))
+				m := dict.MappingTable().At(int(mi))
 				locMapping = populateMapping(dst, mappingMap,
 					m.MemoryStart(),
 					m.MemoryLimit(),
 					m.FileOffset(),
-					getStringFromIdx(src.Dictionary(), int(m.FilenameStrindex())),
-					src.Dictionary(),
+					getStringFromIdx(dict, int(m.FilenameStrindex())),
+					dict,
 					m,
 				)
 			}
@@ -136,12 +114,12 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 				pprofLine := profile.Line{
 					Line: l.Line(),
 				}
-				fn := src.Dictionary().FunctionTable().At(int(l.FunctionIndex()))
+				fn := dict.FunctionTable().At(int(l.FunctionIndex()))
 
 				pprofLine.Function = populateFunction(dst, functionMap,
-					getStringFromIdx(src.Dictionary(), int(fn.NameStrindex())),
-					getStringFromIdx(src.Dictionary(), int(fn.SystemNameStrindex())),
-					getStringFromIdx(src.Dictionary(), int(fn.FilenameStrindex())),
+					getStringFromIdx(dict, int(fn.NameStrindex())),
+					getStringFromIdx(dict, int(fn.SystemNameStrindex())),
+					getStringFromIdx(dict, int(fn.FilenameStrindex())),
 					fn.StartLine())
 
 				lines = append(lines, pprofLine)
@@ -156,39 +134,18 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 			// label thread.stack.truncated of type string and with value true MUST be set when this sample does not contain the full stack trace
 
 			pprofSample.Location = append(pprofSample.Location,
-				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, src.Dictionary(), loc))
+				populateLocation(dst, locationMap, locMapping, loc.Address(), lines, dict, loc))
 		}
 
-		if src.Dictionary().StringTable().At(int(p.SampleType().TypeStrindex())) == "cpu" {
+		if sampleType == "cpu" {
 			pprofSample.Label["source.event.period"] = []string{strconv.Itoa(int(p.Period()))}
 		}
 
-		// pprof.Sample.label is skipped for the moment.
 		dst.Sample = append(dst.Sample, &pprofSample)
 	}
 
-	// Set pprof values that should be common across all profiles.
-	// By convention, pprof uses the last sample type as default, while OTel Profiles
-	// uses the first profile as default. Therefore, swap first and last.
-	for i := range numProfiles {
-		// Swap first and last: first OTel profile becomes last pprof sample type
-		var mappedIdx int
-		switch i {
-		case 0:
-			mappedIdx = numProfiles - 1
-		case numProfiles - 1:
-			mappedIdx = 0
-		default:
-			mappedIdx = i
-		}
-		dst.SampleType = append(dst.SampleType, &profile.ValueType{
-			Type: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().TypeStrindex())),
-			Unit: getStringFromIdx(src.Dictionary(), int(pprofiles.At(mappedIdx).SampleType().UnitStrindex())),
-		})
-	}
-
 	var commentStrs []string
-	commentStrs, attrErr = getAttributeStringWithPrefix(src.Dictionary())
+	commentStrs, attrErr = getAttributeStringWithPrefix(dict)
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
@@ -196,11 +153,11 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 		dst.Comments = append(dst.Comments, commentStrs...)
 	}
 
-	dst.KeepFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileKeepFramesKey))
+	dst.KeepFrames, attrErr = getAttributeString(dict, string(semconv.PprofProfileKeepFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
-	dst.DropFrames, attrErr = getAttributeString(src.Dictionary(), string(semconv.PprofProfileDropFramesKey))
+	dst.DropFrames, attrErr = getAttributeString(dict, string(semconv.PprofProfileDropFramesKey))
 	if attrErr != nil && !errors.Is(attrErr, errNotFound) {
 		return nil, attrErr
 	}
@@ -210,8 +167,8 @@ func ConvertPprofileToPprof(src *pprofile.Profiles) (*profile.Profile, error) {
 
 	pt := p.PeriodType()
 	dst.PeriodType = &profile.ValueType{
-		Type: getStringFromIdx(src.Dictionary(), int(pt.TypeStrindex())),
-		Unit: getStringFromIdx(src.Dictionary(), int(pt.UnitStrindex())),
+		Type: getStringFromIdx(dict, int(pt.TypeStrindex())),
+		Unit: getStringFromIdx(dict, int(pt.UnitStrindex())),
 	}
 
 	if err := dst.CheckValid(); err != nil {
