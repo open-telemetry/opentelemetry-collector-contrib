@@ -40,7 +40,7 @@ type EventHubTriggerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata"`
 }
 
-// EncodingConfig holds the binding name and encoding for an Event Hub signal (logs or metrics).
+// EncodingConfig holds the binding name and encoding for a signal (logs or metrics).
 // Name is the Azure Functions binding name and typically corresponds to the request path (e.g. /logs, /metrics).
 type EncodingConfig struct {
 	Name     string       `mapstructure:"name"`
@@ -68,37 +68,46 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Triggers != nil && cfg.Triggers.EventHub != nil {
 		eh := cfg.Triggers.EventHub
-		logNames := make(map[string]struct{}, len(eh.Logs))
-		for i, b := range eh.Logs {
-			if b.Name == "" {
-				errs = append(errs, fmt.Errorf("triggers.event_hub.logs[%d].name must be set", i))
-			} else if _, ok := logNames[b.Name]; ok {
-				errs = append(errs, fmt.Errorf("triggers.event_hub.logs: duplicate binding name %q", b.Name))
-			} else {
-				logNames[b.Name] = struct{}{}
-			}
-			if b.Encoding.String() == "" {
-				errs = append(errs, fmt.Errorf("triggers.event_hub.logs[%d].encoding must be set", i))
-			}
-		}
-		seenMetrics := make(map[string]struct{}, len(eh.Metrics))
-		for i, b := range eh.Metrics {
-			if b.Name == "" {
-				errs = append(errs, fmt.Errorf("triggers.event_hub.metrics[%d].name must be set", i))
-			} else {
-				if _, ok := logNames[b.Name]; ok {
-					errs = append(errs, fmt.Errorf("triggers.event_hub: binding name %q is used in both logs and metrics", b.Name))
-				} else if _, ok := seenMetrics[b.Name]; ok {
-					errs = append(errs, fmt.Errorf("triggers.event_hub.metrics: duplicate binding name %q", b.Name))
-				} else {
-					seenMetrics[b.Name] = struct{}{}
-				}
-			}
-			if b.Encoding.String() == "" {
-				errs = append(errs, fmt.Errorf("triggers.event_hub.metrics[%d].encoding must be set", i))
-			}
-		}
+		errs = append(errs, validateLogAndMetricBindings("triggers.event_hub", eh.Logs, eh.Metrics)...)
 	}
 
 	return errors.Join(errs...)
+}
+
+// validateLogAndMetricBindings validates logs and metrics binding slices for one trigger.
+// prefix is the mapstructure path without the signal segment, e.g. "triggers.event_hub".
+// Binding names must be unique within logs, within metrics, and across logs and metrics for that trigger.
+func validateLogAndMetricBindings(prefix string, logs, metrics []EncodingConfig) []error {
+	var errs []error
+	logNames := make(map[string]struct{}, len(logs))
+	for i, b := range logs {
+		if b.Name == "" {
+			errs = append(errs, fmt.Errorf("%s.logs[%d].name must be set", prefix, i))
+		} else if _, ok := logNames[b.Name]; ok {
+			errs = append(errs, fmt.Errorf("%s.logs: duplicate binding name %q", prefix, b.Name))
+		} else {
+			logNames[b.Name] = struct{}{}
+		}
+		if b.Encoding.String() == "" {
+			errs = append(errs, fmt.Errorf("%s.logs[%d].encoding must be set", prefix, i))
+		}
+	}
+	metricNames := make(map[string]struct{}, len(metrics))
+	for i, b := range metrics {
+		if b.Name == "" {
+			errs = append(errs, fmt.Errorf("%s.metrics[%d].name must be set", prefix, i))
+		} else {
+			if _, ok := logNames[b.Name]; ok {
+				errs = append(errs, fmt.Errorf("%s: binding name %q is used in both logs and metrics", prefix, b.Name))
+			} else if _, ok := metricNames[b.Name]; ok {
+				errs = append(errs, fmt.Errorf("%s.metrics: duplicate binding name %q", prefix, b.Name))
+			} else {
+				metricNames[b.Name] = struct{}{}
+			}
+		}
+		if b.Encoding.String() == "" {
+			errs = append(errs, fmt.Errorf("%s.metrics[%d].encoding must be set", prefix, i))
+		}
+	}
+	return errs
 }

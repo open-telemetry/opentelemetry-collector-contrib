@@ -40,33 +40,27 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	assert.NotNil(t, ext)
 }
 
-// TestReuseLogsAndMetricsReceiversSameConfig checks that CreateLogs and CreateMetrics with the same
-// config return the same wrapped receiver instance. The collector builds separate receiver objects
-// for the logs and metrics pipelines, but they must share one *functionsReceiver so Start binds the
-// HTTP listener only once
+// TestReuseLogsAndMetricsReceiversSameConfig asserts logs and metrics pipelines that use the same
+// receiver config share one underlying *functionsReceiver (one HTTP listener on Start).
 func TestReuseLogsAndMetricsReceiversSameConfig(t *testing.T) {
-	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.HTTP.NetAddr.Endpoint = "test:123"
-	encID := component.MustNewID("azure_encoding")
+	enc := component.MustNewID("azure_encoding")
 	cfg.Triggers = &TriggersConfig{
 		EventHub: &EventHubTriggerConfig{
-			Logs: []EncodingConfig{
-				{Name: "logs", Encoding: encID},
-			},
-			Metrics: []EncodingConfig{
-				{Name: "metrics", Encoding: encID},
-			},
+			Logs:    []EncodingConfig{{Name: "logs", Encoding: enc}},
+			Metrics: []EncodingConfig{{Name: "metrics", Encoding: enc}},
 		},
 	}
 
 	settings := receivertest.NewNopSettings(metadata.Type)
-	logsConsumer := consumertest.NewNop()
-	metricsConsumer := consumertest.NewNop()
-	rLogs, err := createLogsReceiver(t.Context(), settings, cfg, logsConsumer)
+	rLogs, err := f.CreateLogs(t.Context(), settings, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	rMetrics, err := createMetricsReceiver(t.Context(), settings, cfg, metricsConsumer)
+	rMetrics, err := f.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	assert.Equal(t, rLogs, rMetrics)
+
+	assert.Same(t, rLogs, rMetrics)
 	shared := rLogs.(*sharedcomponent.SharedComponent)
 	fr := shared.Unwrap().(*functionsReceiver)
 	assert.NotNil(t, fr.nextLogs)

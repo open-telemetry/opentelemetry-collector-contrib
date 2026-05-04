@@ -140,7 +140,6 @@ func TestHandleMetrics(t *testing.T) {
 		"invalid_unmarshal": {
 			testDataFile:           "invalid_metrics.request.json",
 			expectedMetricsBatches: 0,
-			expectedDataPoints:     0,
 			expectedReturnValue:    "failure",
 			expectedErrorSubstring: "unmarshal message 0",
 		},
@@ -148,7 +147,6 @@ func TestHandleMetrics(t *testing.T) {
 		"wrong_binding": {
 			testDataFile:           "valid_logs.request.json",
 			expectedMetricsBatches: 0,
-			expectedDataPoints:     0,
 			expectedReturnValue:    "failure",
 			expectedErrorSubstring: "missing data for binding \"metrics\"",
 		},
@@ -187,24 +185,29 @@ func TestHandleMetrics(t *testing.T) {
 			}
 
 			assert.Len(t, metricsSink.AllMetrics(), test.expectedMetricsBatches, "number of metrics batches")
-			if test.checkMetadata && test.expectedMetricsBatches > 0 {
-				points := 0
+			if test.expectedMetricsBatches > 0 {
+				totalPoints := 0
 				for _, md := range metricsSink.AllMetrics() {
-					points += md.DataPointCount()
-				}
-				assert.Equal(t, test.expectedDataPoints, points, "data point count")
-				for _, md := range metricsSink.AllMetrics() {
-					for i := 0; i < md.ResourceMetrics().Len(); i++ {
-						resource := md.ResourceMetrics().At(i).Resource()
-						name, ok := resource.Attributes().Get(eventhub.AttrEventHubName)
-						require.True(t, ok)
-						assert.Equal(t, "metrics", name.Str())
+					totalPoints += md.DataPointCount()
+					if test.checkMetadata {
+						for i := 0; i < md.ResourceMetrics().Len(); i++ {
+							resource := md.ResourceMetrics().At(i).Resource()
+							name, ok := resource.Attributes().Get(eventhub.AttrEventHubName)
+							require.True(t, ok)
+							assert.Equal(t, "metrics", name.Str())
+							partitionID, ok := resource.Attributes().Get(eventhub.AttrEventHubPartitionID)
+							require.True(t, ok)
+							assert.Equal(t, "3", partitionID.Str())
+							consumerGroup, ok := resource.Attributes().Get(eventhub.AttrEventHubConsumerGroup)
+							require.True(t, ok)
+							assert.Equal(t, "test", consumerGroup.Str())
+							namespace, ok := resource.Attributes().Get(eventhub.AttrEventHubNamespace)
+							require.True(t, ok)
+							assert.Equal(t, "test-namespace.servicebus.windows.net", namespace.Str())
+						}
 					}
 				}
-			} else if test.expectedMetricsBatches > 0 {
-				for _, md := range metricsSink.AllMetrics() {
-					assert.Greater(t, md.MetricCount(), 0, "at least one metric in batch")
-				}
+				assert.Equal(t, test.expectedDataPoints, totalPoints, "data point count")
 			}
 
 			metricsSink.Reset()
