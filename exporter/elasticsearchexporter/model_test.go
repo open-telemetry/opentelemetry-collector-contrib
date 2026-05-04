@@ -317,6 +317,56 @@ func TestEncodeMetricDocCountHint(t *testing.T) {
 			wantDocCountInDoc: true,
 			wantDocCountValue: 1,
 		},
+		{
+			name: "doc count hint with elasticsearch.doc_count attribute",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("sum")
+				dp := m.SetEmptySum().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetIntValue(5)
+
+				hints := dp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+				dp.Attributes().PutInt("elasticsearch.doc_count", 5)
+
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: true,
+			wantDocCountValue: 5,
+		},
+		{
+			name: "doc count hint with elasticsearch.doc_count zero falls back to default",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("sum")
+				dp := m.SetEmptySum().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetIntValue(5)
+
+				hints := dp.Attributes().PutEmptySlice(elasticsearch.MappingHintsAttrKey)
+				hints.AppendEmpty().SetStr(string(elasticsearch.HintDocCount))
+				dp.Attributes().PutInt("elasticsearch.doc_count", 0)
+
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: true,
+			wantDocCountValue: 1,
+		},
+		{
+			name: "elasticsearch.doc_count attribute ignored without hint",
+			buildDataPoints: func() []datapoints.DataPoint {
+				m := pmetric.NewMetric()
+				m.SetName("sum")
+				dp := m.SetEmptySum().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetIntValue(5)
+				dp.Attributes().PutInt("elasticsearch.doc_count", 5)
+
+				return []datapoints.DataPoint{datapoints.NewNumber(m, dp)}
+			},
+			wantDocCountInDoc: false,
+		},
 	}
 
 	for _, tt := range tests {

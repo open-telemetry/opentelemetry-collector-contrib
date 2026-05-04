@@ -78,7 +78,10 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric, mode DynamicTemplateMode
 	}
 }
 
-func (Number) DocCount() uint64 {
+func (dp Number) DocCount() uint64 {
+	if v, ok := dp.Attributes().Get("elasticsearch.doc_count"); ok && v.Type() == pcommon.ValueTypeInt && v.Int() > 0 {
+		return uint64(v.Int())
+	}
 	return 1
 }
 

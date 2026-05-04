@@ -443,6 +443,16 @@ The index template must define dynamic templates whose names match the values se
 - **OTel**: Each metric is written under the `metrics` object; the bulk action maps full field names (e.g. `metrics.my_metric`) to one of the OTel template names above based on metric type (histogram, summary, gauge, or counter) and value type.
 - **ECS**: Each metric is written as a top-level field `metric.<name>`; the bulk action maps that field name to one of the ECS/APM template names (`histogram_metrics`, `summary_metrics`, or `double_metrics` for gauges and counters).
 
+### Metrics special attributes
+
+The following are transient attributes. They are consumed by the exporter to control document-level Elasticsearch behaviour but are not written to the documents themselves:
+
+- **`elasticsearch.mapping.hints`** (metrics): A list of hints that influence how the metric document is written. Supported values:
+  - `_doc_count` — instructs the exporter to write a [_doc_count](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-doc-count-field.html) field indicating the document represents multiple source events.
+  - `aggregate_metric_double` — instructs the exporter to use the `aggregate_metric_double` dynamic template.
+
+- **`elasticsearch.doc_count`** (metrics, traces): An integer indicating how many source events this datapoint represents. When present alongside the `_doc_count` mapping hint, its value is used to populate `_doc_count` in the Elasticsearch document. For `Histogram` and `ExponentialHistogram` datapoints the built-in count field is used instead.
+
 ## Exporting profiles
 
 Profiles support is currently in development, and should not be used in

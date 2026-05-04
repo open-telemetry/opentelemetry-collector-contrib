@@ -110,6 +110,12 @@ var (
 		string(conventions.DBNamespaceKey):          {to: "span.db.instance"},
 		string(conventions.DBQueryTextKey):          {to: "span.db.statement"},
 		string(conventions.HTTPResponseBodySizeKey): {to: "http.response.encoded_body_size"},
+		"elasticsearch.doc_count":                   {skip: true},
+	}
+
+	datapointAttrsConversionMap = map[string]conversionEntry{
+		"elasticsearch.doc_count":         {skip: true},
+		elasticsearch.MappingHintsAttrKey: {skip: true},
 	}
 
 	// Precomputed protected fields for performance
@@ -477,7 +483,7 @@ func (ecsDataPointsEncoder) encodeMetrics(
 
 	encodeAttributesECSMode(&document, ec.resource.Attributes(), resourceAttrsConversionMap)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
-	document.AddAttributes("", dp0.Attributes())
+	encodeAttributesECSMode(&document, dp0.Attributes(), datapointAttrsConversionMap)
 	addDataStreamAttributes(&document, "", idx)
 	var docCount uint64
 
