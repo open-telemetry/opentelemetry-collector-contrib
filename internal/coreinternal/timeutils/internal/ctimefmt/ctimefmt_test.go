@@ -44,11 +44,11 @@ func TestFormat(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	dt, err := Parse(format1, value1)
+	dt, err := Parse(format1, func(native string) (time.Time, error) { return time.Parse(native, value1) })
 	require.NoError(t, err)
 	assert.Equal(t, dt, dt1, "Given: %v, expected: %v", dt, dt1)
 
-	dt, err = Parse(format2, value2)
+	dt, err = Parse(format2, func(native string) (time.Time, error) { return time.Parse(native, value2) })
 	require.NoError(t, err)
 	assert.Equal(t, dt, dt2, "Given: %v, expected: %v", dt, dt2)
 }
@@ -62,7 +62,7 @@ func TestZulu(t *testing.T) {
 		"2019-01-02T15:04:05.666666+0000",
 	} {
 		t.Run(input, func(t *testing.T) {
-			dt, err := Parse(format, input)
+			dt, err := Parse(format, func(native string) (time.Time, error) { return time.Parse(native, input) })
 			require.NoError(t, err)
 			// We compare the unix nanoseconds because Go has a subtle parsing difference between "Z" and "+0000".
 			// The former returns a Time with the UTC timezone, the latter returns a Time with a 0000 time zone offset.

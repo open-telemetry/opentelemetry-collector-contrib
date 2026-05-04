@@ -114,24 +114,12 @@ func Format(format string, t time.Time) (string, error) {
 	return t.Format(native), nil
 }
 
-// Parse parses a ctime-like formatted string (e.g. "%Y-%m-%d ...") and returns
-// the time value it represents.
-//
-// Refer to Format() function documentation for possible directives.
-func Parse(format, value string) (time.Time, error) {
-	native, err := ToNative(format)
-	if err != nil {
-		return time.Time{}, nil
-	}
-	return time.Parse(native, value)
-}
-
 type ParseFunc func(layout string) (time.Time, error)
 
-// FlexibleParse parses a ctime-like formatted string (e.g. "%Y-%m-%d ...")
+// Parse parses a ctime-like formatted string (e.g. "%Y-%m-%d ...")
 // and returns the time value it represents.
 //
-// It differs from Parse in that it will attempt to parse the string
+// It differs from Format in that it will attempt to parse the string
 // multiple times in order to handle format specifiers that can have
 // multiple valid formats such as %z. Notable differences include:
 //
@@ -142,7 +130,7 @@ type ParseFunc func(layout string) (time.Time, error)
 // Refer to strptime(3) and Format() function documentation for possible directives.
 //
 // Note: The returned ParseError will indicate the ctime directive that failed to parse.
-func FlexibleParse(format string, parse ParseFunc) (time.Time, error) {
+func Parse(format string, parse ParseFunc) (time.Time, error) {
 	indexes := ctimeRegexp.FindAllStringIndex(format, -1)
 	t, err := iterativeParse("", format, 0, indexes, parse)
 	if err, ok := err.(*time.ParseError); ok {
