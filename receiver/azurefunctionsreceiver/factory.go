@@ -47,7 +47,7 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
 	shared := receivers.GetOrAdd(cfg, func() component.Component {
-		return newFunctionsReceiver(settings, rCfg)
+		return newFunctionsReceiver(rCfg, settings)
 	})
 	shared.Unwrap().(*functionsReceiver).nextLogs = next
 	return shared, nil
@@ -61,7 +61,7 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 	shared := receivers.GetOrAdd(cfg, func() component.Component {
-		return newFunctionsReceiver(settings, rCfg)
+		return newFunctionsReceiver(rCfg, settings)
 	})
 	shared.Unwrap().(*functionsReceiver).nextMetrics = next
 	return shared, nil

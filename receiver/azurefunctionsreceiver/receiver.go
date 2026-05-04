@@ -28,12 +28,7 @@ type functionsReceiver struct {
 	shutdownWG sync.WaitGroup
 }
 
-var (
-	_ receiver.Metrics = (*functionsReceiver)(nil)
-	_ receiver.Logs    = (*functionsReceiver)(nil)
-)
-
-func newFunctionsReceiver(settings receiver.Settings, cfg *Config) *functionsReceiver {
+func newFunctionsReceiver(cfg *Config, settings receiver.Settings) *functionsReceiver {
 	return &functionsReceiver{
 		cfg:      cfg,
 		settings: settings,
