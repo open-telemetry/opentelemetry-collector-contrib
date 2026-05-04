@@ -10,11 +10,10 @@ import (
 )
 
 // Config provides thread-safe access to a shared Prometheus configuration.
-// The config is NOT immutable after creation: the target allocator's sync()
-// replaces ScrapeConfigs on every cycle, while the API server concurrently
-// reads the config to serve /api/v1/status/config and /api/v1/targets.
-// This type embeds the lock with the data it protects, ensuring correct
-// synchronization without requiring callers to manage a separate mutex.
+// The target allocator's sync() replaces ScrapeConfigs on every cycle,
+// while the API server concurrently reads the config to serve
+// /api/v1/status/config and /api/v1/targets.
+// This wraps the Prometheus config with a mutex tied to it.
 type Config struct {
 	mu  sync.RWMutex
 	cfg *promconfig.Config

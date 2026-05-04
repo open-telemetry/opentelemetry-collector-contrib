@@ -53,6 +53,7 @@ func TestConcurrentAccess(t *testing.T) {
 			promCfg := sc.Get()
 			assert.NotNil(t, &promCfg)
 		}()
+	}
 
 	for i := range goroutines {
 		go func() {
