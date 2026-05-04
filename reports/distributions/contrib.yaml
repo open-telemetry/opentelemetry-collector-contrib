@@ -25,7 +25,7 @@ components:
         - azure_blob
         - azuredataexplorer
         - azuremonitor
-        - bmchelix
+        - bmc_helix
         - cassandra
         - clickhouse
         - coralogix
@@ -150,8 +150,8 @@ components:
         - carbon
         - chrony
         - cisco_os
+        - cloud_foundry
         - cloudflare
-        - cloudfoundry
         - collectd
         - couchdb
         - datadog

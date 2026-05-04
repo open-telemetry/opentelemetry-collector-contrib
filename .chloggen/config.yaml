@@ -39,7 +39,7 @@ components:
     - exporter/azure_blob
     - exporter/azuredataexplorer
     - exporter/azuremonitor
-    - exporter/bmchelix
+    - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -250,8 +250,8 @@ components:
     - receiver/carbon
     - receiver/chrony
     - receiver/cisco_os
+    - receiver/cloud_foundry
     - receiver/cloudflare
-    - receiver/cloudfoundry
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
