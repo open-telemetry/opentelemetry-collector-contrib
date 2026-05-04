@@ -79,6 +79,8 @@ func (t *TimeParser) Validate() error {
 		return errors.New("missing required configuration parameter `layout`")
 	}
 
+	timezoneDirective := "MST"
+
 	switch t.LayoutType {
 	case NativeKey: // ok
 	case GotimeKey:
@@ -89,12 +91,7 @@ func (t *TimeParser) Validate() error {
 		if err := timeutils.ValidateStrptime(t.Layout); err != nil {
 			return fmt.Errorf("invalid strptime layout: %w", err)
 		}
-		var err error
-		t.Layout, err = timeutils.StrptimeToGotime(t.Layout)
-		if err != nil {
-			return fmt.Errorf("parse strptime layout: %w", err)
-		}
-		t.LayoutType = GotimeKey
+		timezoneDirective = "%Z"
 	case EpochKey:
 		switch t.Layout {
 		case "s", "ms", "us", "ns", "s.ms", "s.us", "s.ns": // ok
@@ -111,12 +108,12 @@ func (t *TimeParser) Validate() error {
 		)
 	}
 
-	if t.LayoutType == GotimeKey { // also covers StrptimeKey because it was remapped above
+	if t.LayoutType == GotimeKey || t.LayoutType == StrptimeKey { // also covers StrptimeKey because it was remapped above
 		if err := t.setLocation(); err != nil {
 			return fmt.Errorf("invalid 'location': %w", err)
 		}
 
-		if len(t.TimeZoneLocations) > 0 && !strings.Contains(t.Layout, "MST") {
+		if len(t.TimeZoneLocations) > 0 && !strings.Contains(t.Layout, timezoneDirective) {
 			return fmt.Errorf("'time_zone_locations' requires the layout to contain a timezone abbreviation directive (%%Z for strptime / MST for gotime), but layout %q has none", t.Layout)
 		}
 	}
@@ -202,6 +199,13 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 			return err
 		}
 		// timeutils.ParseGotime calls timeutils.SetTimestampYear before returning the timeValue
+		entry.Timestamp = timeValue
+	case StrptimeKey:
+		timeValue, err := timeutils.ParseStrptime(t.Layout, value, t.resolveLocation(value))
+		if err != nil {
+			return err
+		}
+		// timeutils.ParseStrptime calls timeutils.SetTimestampYear before returning the timeValue
 		entry.Timestamp = timeValue
 	case EpochKey:
 		timeValue, err := t.parseEpochTime(value)
