@@ -252,15 +252,13 @@ func (v *vcenterMetricScraper) scrapeDatastores(ctx context.Context, dc *mo.Data
 		errs.AddPartial(1, err)
 		return
 	}
-	dsRefs := []types.ManagedObjectReference{}
 	for i := range datastores {
-		dsRefs = append(dsRefs, datastores[i].Reference())
-		dsId, err := v.client.IDFromURL(datastores[i].Summary.Url)
+		dsID, err := v.client.IDFromURL(datastores[i].Summary.Url)
 		if err != nil {
 			errs.AddPartial(1, err)
 			continue
 		}
-		v.scrapeData.datastoresByID[dsId] = &datastores[i]
+		v.scrapeData.datastoresByID[dsID] = &datastores[i]
 	}
 }
 
