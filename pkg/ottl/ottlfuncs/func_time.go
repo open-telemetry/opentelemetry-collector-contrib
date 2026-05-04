@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -33,13 +34,22 @@ func createTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	return Time(args.Time, args.Format, args.Location, args.Locale)
 }
 
+type parseError time.ParseError
+
+func (err parseError) Error() string {
+	if err.Message == "" {
+		return "parsing time " +
+			strconv.Quote(err.Value) + " as " +
+			strconv.Quote(err.Layout) + ": cannot parse " +
+			strconv.Quote(err.ValueElem) + " as " +
+			strconv.Quote(err.LayoutElem)
+	}
+	return "parsing time " + strconv.Quote(err.Value) + err.Message
+}
+
 func Time[K any](inputTime ottl.StringGetter[K], format string, location, locale ottl.Optional[string]) (ottl.ExprFunc[K], error) {
 	if format == "" {
 		return nil, errors.New("format cannot be nil")
-	}
-	gotimeFormat, err := timeutils.StrptimeToGotime(format)
-	if err != nil {
-		return nil, err
 	}
 
 	var defaultLocation *string
@@ -63,8 +73,6 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location, locale
 		inputTimeLocale = &l
 	}
 
-	ctimeSubstitutes := timeutils.GetStrptimeNativeSubstitutes(format)
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
@@ -75,14 +83,15 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location, locale
 		}
 		var timestamp time.Time
 		if inputTimeLocale != nil {
-			timestamp, err = timeutils.ParseLocalizedGotime(gotimeFormat, t, loc, *inputTimeLocale)
+			timestamp, err = timeutils.ParseLocalizedStrptime(format, t, loc, *inputTimeLocale)
 		} else {
-			timestamp, err = timeutils.ParseGotime(gotimeFormat, t, loc)
+			timestamp, err = timeutils.ParseStrptime(format, t, loc)
 		}
 		if err != nil {
 			var timeErr *time.ParseError
 			if errors.As(err, &timeErr) {
-				return nil, timeutils.ToStrptimeParseError(timeErr, format, ctimeSubstitutes)
+				err := parseError(*timeErr)
+				return nil, &err
 			}
 			return nil, err
 		}
