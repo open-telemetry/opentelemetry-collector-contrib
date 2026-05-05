@@ -77,7 +77,7 @@ type encodingExtension struct {
 	// when resolving inner encoding extensions in the CloudWatch route router.
 	selfID component.ID
 	// router is built at Start time when the format is the CloudWatch
-	// subscription-filter and Config.CloudWatchRoutes is non-empty.
+	// subscription-filter and Config.CloudWatch.Streams is non-empty.
 	router *subscriptionfilter.Router
 }
 
@@ -190,11 +190,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 func (e *encodingExtension) Start(_ context.Context, host component.Host) error {
 	// Routing is only meaningful for the CloudWatch subscription-filter format.
 	if e.format != constants.FormatCloudWatchLogsSubscriptionFilter ||
-		len(e.cfg.CloudWatchRoutes) == 0 {
+		len(e.cfg.CloudWatch.Streams) == 0 {
 		return nil
 	}
 
-	router, err := subscriptionfilter.NewRouter(e.cfg.CloudWatchRoutes, host, e.selfID)
+	router, err := subscriptionfilter.NewRouter(e.cfg.CloudWatch.Streams, host, e.selfID)
 	if err != nil {
 		return fmt.Errorf("failed to build CloudWatch route router: %w", err)
 	}

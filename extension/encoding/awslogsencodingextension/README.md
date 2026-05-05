@@ -95,8 +95,8 @@ on the event's `logGroup` and/or `logStream`. This lets a single Lambda or
 Firehose receiver subscribed to multiple log groups dispatch each group's events
 to the appropriate decoder, instead of running a separate receiver per group.
 
-Routing is configured via the `cloudwatch_routes` field. Each route is an
-object with:
+Routing is configured via the nested `cloudwatch.streams` list. Each entry
+is an object with:
 
 | Field                | Description                                                                                                                       |
 |----------------------|-----------------------------------------------------------------------------------------------------------------------------------|
@@ -164,19 +164,20 @@ extensions:
   awslogs_encoding/cw_default:
     format: cloudwatch
 
-  # The router. Same format as cw_default, with cloudwatch_routes set.
+  # The router. Same format as cw_default, with cloudwatch.streams set.
   awslogs_encoding/cw_router:
     format: cloudwatch
-    cloudwatch_routes:
-      - name: vpcflow
-        encoding: awslogs_encoding/vpcflow      # default log_stream_pattern: "eni-*"
-      - name: cloudtrail
-        encoding: awslogs_encoding/cloudtrail   # default log_stream_pattern: "*_CloudTrail_*"
-      - name: lambda
-        encoding: awslogs_encoding/cw_default   # default log_group_pattern: "/aws/lambda/*"
-      - name: catchall
-        log_group_pattern: "*"
-        encoding: awslogs_encoding/cw_default
+    cloudwatch:
+      streams:
+        - name: vpcflow
+          encoding: awslogs_encoding/vpcflow      # default log_stream_pattern: "eni-*"
+        - name: cloudtrail
+          encoding: awslogs_encoding/cloudtrail   # default log_stream_pattern: "*_CloudTrail_*"
+        - name: lambda
+          encoding: awslogs_encoding/cw_default   # default log_group_pattern: "/aws/lambda/*"
+        - name: catchall
+          log_group_pattern: "*"
+          encoding: awslogs_encoding/cw_default
 
 receivers:
   awslambda:

@@ -23,7 +23,7 @@ func mustNewID(t *testing.T, s string) component.ID {
 	return id
 }
 
-func TestValidateRoutes(t *testing.T) {
+func TestValidateStreams(t *testing.T) {
 	t.Parallel()
 
 	encA := mustNewID(t, "fake/a")
@@ -31,57 +31,57 @@ func TestValidateRoutes(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		routes  []CloudWatchRoute
+		routes  []CloudWatchStream
 		wantErr string // substring; empty means no error
 	}{
 		{
 			name: "valid: name with explicit log group",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{Name: "lambda-payments", LogGroupPattern: "/aws/lambda/payment-*", Encoding: encA},
 			},
 		},
 		{
 			name: "valid: name with explicit log stream",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{Name: "vpc-eni", LogStreamPattern: "eni-*", Encoding: encA},
 			},
 		},
 		{
 			name: "valid: known name with no patterns (defaults will apply)",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{Name: "vpcflow", Encoding: encA},
 			},
 		},
 		{
 			name: "valid: known name with explicit pattern (overrides default)",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{Name: "lambda", LogGroupPattern: "/custom/*", Encoding: encA},
 			},
 		},
 		{
 			name: "missing name",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{LogGroupPattern: "/aws/lambda/*", Encoding: encA},
 			},
 			wantErr: "'name' is required",
 		},
 		{
 			name: "unknown name with no patterns",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{Name: "unknown-service", Encoding: encA},
 			},
 			wantErr: `name "unknown-service" has no defaults`,
 		},
 		{
 			name: "missing encoding",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{Name: "foo", LogGroupPattern: "/aws/lambda/*"},
 			},
 			wantErr: "'encoding' is required",
 		},
 		{
 			name: "duplicate name",
-			routes: []CloudWatchRoute{
+			routes: []CloudWatchStream{
 				{Name: "vpcflow", Encoding: encA},
 				{Name: "vpcflow", Encoding: encB},
 			},
@@ -92,7 +92,7 @@ func TestValidateRoutes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			err := ValidateRoutes(tt.routes)
+			err := ValidateStreams(tt.routes)
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
 				return
@@ -110,23 +110,23 @@ func TestWithDefaults(t *testing.T) {
 
 	tests := []struct {
 		name string
-		in   CloudWatchRoute
-		want CloudWatchRoute
+		in   CloudWatchStream
+		want CloudWatchStream
 	}{
 		{
 			name: "known name no patterns -> default applied",
-			in:   CloudWatchRoute{Name: "vpcflow", Encoding: encID},
-			want: CloudWatchRoute{Name: "vpcflow", Encoding: encID, LogStreamPattern: "eni-*"},
+			in:   CloudWatchStream{Name: "vpcflow", Encoding: encID},
+			want: CloudWatchStream{Name: "vpcflow", Encoding: encID, LogStreamPattern: "eni-*"},
 		},
 		{
 			name: "known name with explicit pattern -> default skipped",
-			in:   CloudWatchRoute{Name: "vpcflow", LogGroupPattern: "/custom/*", Encoding: encID},
-			want: CloudWatchRoute{Name: "vpcflow", LogGroupPattern: "/custom/*", Encoding: encID},
+			in:   CloudWatchStream{Name: "vpcflow", LogGroupPattern: "/custom/*", Encoding: encID},
+			want: CloudWatchStream{Name: "vpcflow", LogGroupPattern: "/custom/*", Encoding: encID},
 		},
 		{
 			name: "unknown name -> route returned unchanged",
-			in:   CloudWatchRoute{Name: "weird", Encoding: encID},
-			want: CloudWatchRoute{Name: "weird", Encoding: encID},
+			in:   CloudWatchStream{Name: "weird", Encoding: encID},
+			want: CloudWatchStream{Name: "weird", Encoding: encID},
 		},
 	}
 
@@ -138,61 +138,61 @@ func TestWithDefaults(t *testing.T) {
 	}
 }
 
-func TestSortRoutes(t *testing.T) {
+func TestSortStreams(t *testing.T) {
 	t.Parallel()
 
 	encID := mustNewID(t, "fake/a")
-	mk := func(group, stream string) CloudWatchRoute {
-		return CloudWatchRoute{LogGroupPattern: group, LogStreamPattern: stream, Encoding: encID}
+	mk := func(group, stream string) CloudWatchStream {
+		return CloudWatchStream{LogGroupPattern: group, LogStreamPattern: stream, Encoding: encID}
 	}
 
 	tests := []struct {
 		name  string
-		input []CloudWatchRoute
-		want  []CloudWatchRoute
+		input []CloudWatchStream
+		want  []CloudWatchStream
 	}{
 		{
 			name: "catch-all goes last",
-			input: []CloudWatchRoute{
+			input: []CloudWatchStream{
 				mk("*", ""),
 				mk("/aws/lambda/*", ""),
 			},
-			want: []CloudWatchRoute{
+			want: []CloudWatchStream{
 				mk("/aws/lambda/*", ""),
 				mk("*", ""),
 			},
 		},
 		{
 			name: "log_group before log_stream-only",
-			input: []CloudWatchRoute{
+			input: []CloudWatchStream{
 				mk("", "eni-*"),
 				mk("/aws/lambda/*", ""),
 			},
-			want: []CloudWatchRoute{
+			want: []CloudWatchStream{
 				mk("/aws/lambda/*", ""),
 				mk("", "eni-*"),
 			},
 		},
 		{
 			name: "more specific group pattern first",
-			input: []CloudWatchRoute{
+			input: []CloudWatchStream{
 				mk("/aws/lambda/*", ""),
 				mk("/aws/lambda/payment-*", ""),
 			},
-			want: []CloudWatchRoute{
+			want: []CloudWatchStream{
 				mk("/aws/lambda/payment-*", ""),
 				mk("/aws/lambda/*", ""),
 			},
 		},
 		{
 			name: "three-level interaction",
-			input: []CloudWatchRoute{
+			input: []CloudWatchStream{
 				mk("*", ""),                     // catch-all
 				mk("", "eni-*"),                 // stream-only
 				mk("/aws/lambda/*", ""),         // generic group
 				mk("/aws/lambda/payment-*", ""), // specific group
 			},
-			want: []CloudWatchRoute{
+			want: []CloudWatchStream{
 				mk("/aws/lambda/payment-*", ""),
 				mk("/aws/lambda/*", ""),
 				mk("", "eni-*"),
@@ -204,21 +204,21 @@ func TestSortRoutes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := sortRoutes(tt.input)
+			got := sortStreams(tt.input)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestSortRoutesAppliesDefaults(t *testing.T) {
+func TestSortStreamsAppliesDefaults(t *testing.T) {
 	t.Parallel()
 
 	encID := mustNewID(t, "fake/a")
-	in := []CloudWatchRoute{
+	in := []CloudWatchStream{
 		{Name: "lambda", Encoding: encID},  // expands to LogGroupPattern: /aws/lambda/*
 		{Name: "vpcflow", Encoding: encID}, // expands to LogStreamPattern: eni-*
 	}
-	got := sortRoutes(in)
+	got := sortStreams(in)
 
 	// After defaults: lambda has a log_group_pattern, vpcflow has only log_stream_pattern.
 	// Sort places log_group entries before log_stream-only entries.
@@ -227,10 +227,10 @@ func TestSortRoutesAppliesDefaults(t *testing.T) {
 	assert.Equal(t, "eni-*", got[1].LogStreamPattern)
 }
 
-func TestSortRoutesEmpty(t *testing.T) {
+func TestSortStreamsEmpty(t *testing.T) {
 	t.Parallel()
-	assert.Nil(t, sortRoutes(nil))
-	assert.Nil(t, sortRoutes([]CloudWatchRoute{}))
+	assert.Nil(t, sortStreams(nil))
+	assert.Nil(t, sortStreams([]CloudWatchStream{}))
 }
 
 // fakeLogsExtension is a minimal encoding.LogsUnmarshalerExtension used to
@@ -285,7 +285,7 @@ func TestNewRouter(t *testing.T) {
 			innerID: &fakeLogsExtension{label: "inner"},
 			otherID: &fakeLogsExtension{label: "other"},
 		})
-		routes := []CloudWatchRoute{
+		routes := []CloudWatchStream{
 			{Name: "vpcflow", Encoding: innerID},                        // default LogStreamPattern: eni-*
 			{Name: "lambda", Encoding: otherID},                         // default LogGroupPattern: /aws/lambda/*
 			{Name: "catchall", LogGroupPattern: "*", Encoding: innerID}, // catch-all
@@ -293,25 +293,25 @@ func TestNewRouter(t *testing.T) {
 		router, err := NewRouter(routes, host, selfID)
 		require.NoError(t, err)
 		require.NotNil(t, router)
-		require.Len(t, router.routes, 3)
+		require.Len(t, router.streams, 3)
 
 		// Sort placed log_group entries before log_stream-only, then catch-all last.
 		// lambda has /aws/lambda/* (group), vpcflow has eni-* (stream-only), catchall is *.
-		assert.Equal(t, "lambda", router.routes[0].name)
-		assert.Equal(t, "vpcflow", router.routes[1].name)
-		assert.Equal(t, "catchall", router.routes[2].name)
+		assert.Equal(t, "lambda", router.streams[0].name)
+		assert.Equal(t, "vpcflow", router.streams[1].name)
+		assert.Equal(t, "catchall", router.streams[2].name)
 
 		// Each route's pattern is pre-split.
-		assert.NotNil(t, router.routes[0].logGroupParts)
-		assert.Nil(t, router.routes[0].logStreamParts)
-		assert.Nil(t, router.routes[1].logGroupParts)
-		assert.NotNil(t, router.routes[1].logStreamParts)
+		assert.NotNil(t, router.streams[0].logGroupParts)
+		assert.Nil(t, router.streams[0].logStreamParts)
+		assert.Nil(t, router.streams[1].logGroupParts)
+		assert.NotNil(t, router.streams[1].logStreamParts)
 	})
 
 	t.Run("missing extension ID", func(t *testing.T) {
 		t.Parallel()
 		host := newFakeHost(t, map[component.ID]component.Component{})
-		routes := []CloudWatchRoute{
+		routes := []CloudWatchStream{
 			{Name: "vpcflow", Encoding: innerID},
 		}
 		_, err := NewRouter(routes, host, selfID)
@@ -324,7 +324,7 @@ func TestNewRouter(t *testing.T) {
 		host := newFakeHost(t, map[component.ID]component.Component{
 			innerID: &nonLogsExtension{},
 		})
-		routes := []CloudWatchRoute{
+		routes := []CloudWatchStream{
 			{Name: "vpcflow", Encoding: innerID},
 		}
 		_, err := NewRouter(routes, host, selfID)
@@ -337,7 +337,7 @@ func TestNewRouter(t *testing.T) {
 		host := newFakeHost(t, map[component.ID]component.Component{
 			selfID: &fakeLogsExtension{label: "self"},
 		})
-		routes := []CloudWatchRoute{
+		routes := []CloudWatchStream{
 			{Name: "loop", LogGroupPattern: "*", Encoding: selfID},
 		}
 		_, err := NewRouter(routes, host, selfID)
@@ -351,7 +351,7 @@ func TestNewRouter(t *testing.T) {
 		router, err := NewRouter(nil, host, selfID)
 		require.NoError(t, err)
 		require.NotNil(t, router)
-		assert.Empty(t, router.routes)
+		assert.Empty(t, router.streams)
 	})
 }
 
@@ -372,7 +372,7 @@ func TestRouterMatch(t *testing.T) {
 			otherID: &fakeLogsExtension{label: "other"},
 			catchID: &fakeLogsExtension{label: "catch"},
 		})
-		routes := []CloudWatchRoute{
+		routes := []CloudWatchStream{
 			{Name: "lambda-payments", LogGroupPattern: "/aws/lambda/payment-*", Encoding: innerID},
 			{Name: "lambda", Encoding: otherID},  // default /aws/lambda/*
 			{Name: "vpcflow", Encoding: innerID}, // default eni-*
@@ -432,7 +432,7 @@ func TestRouterMatch(t *testing.T) {
 			innerID: &fakeLogsExtension{label: "inner"},
 		})
 		// Single specific route, no catch-all.
-		routes := []CloudWatchRoute{
+		routes := []CloudWatchStream{
 			{Name: "lambda", Encoding: innerID}, // default /aws/lambda/*
 		}
 		router, err := NewRouter(routes, host, selfID)

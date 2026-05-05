@@ -168,43 +168,45 @@ func TestLoadConfig(t *testing.T) {
 				VPCFlowLogConfigV1: vpcflowlog.Config{
 					FileFormat: constants.FileFormatPlainText,
 				},
-				CloudWatchRoutes: []subscriptionfilter.CloudWatchRoute{
-					{
-						Name:     "vpcflow",
-						Encoding: component.MustNewIDWithName("aws_logs_encoding", "vpcflow_inner"),
-					},
-					{
-						Name:            "payment-lambda",
-						LogGroupPattern: "/aws/lambda/payment-*",
-						Encoding:        component.MustNewIDWithName("aws_logs_encoding", "lambda_inner"),
-					},
-					{
-						Name:            "catchall",
-						LogGroupPattern: "*",
-						Encoding:        component.MustNewIDWithName("aws_logs_encoding", "raw"),
+				CloudWatch: CloudWatchConfig{
+					Streams: []subscriptionfilter.CloudWatchStream{
+						{
+							Name:     "vpcflow",
+							Encoding: component.MustNewIDWithName("aws_logs_encoding", "vpcflow_inner"),
+						},
+						{
+							Name:            "payment-lambda",
+							LogGroupPattern: "/aws/lambda/payment-*",
+							Encoding:        component.MustNewIDWithName("aws_logs_encoding", "lambda_inner"),
+						},
+						{
+							Name:            "catchall",
+							LogGroupPattern: "*",
+							Encoding:        component.MustNewIDWithName("aws_logs_encoding", "raw"),
+						},
 					},
 				},
 			},
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "cw_routing_invalid_format"),
-			expectedErr: `'cloudwatch_routes' is only valid with format "cloudwatch"; got "vpcflow"`,
+			expectedErr: `'cloudwatch.streams' is only valid with format "cloudwatch"; got "vpcflow"`,
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "cw_routing_missing_name"),
-			expectedErr: `cloudwatch_routes[0]: 'name' is required`,
+			expectedErr: `cloudwatch.streams[0]: 'name' is required`,
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "cw_routing_missing_encoding"),
-			expectedErr: `cloudwatch_routes[0]: 'encoding' is required`,
+			expectedErr: `cloudwatch.streams[0]: 'encoding' is required`,
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "cw_routing_unknown_name"),
-			expectedErr: `cloudwatch_routes[0]: name "not-a-known-service" has no defaults; set 'log_group_pattern' or 'log_stream_pattern'`,
+			expectedErr: `cloudwatch.streams[0]: name "not-a-known-service" has no defaults; set 'log_group_pattern' or 'log_stream_pattern'`,
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "cw_routing_duplicate_name"),
-			expectedErr: `cloudwatch_routes[1]: duplicate name "vpcflow" also at cloudwatch_routes[0]`,
+			expectedErr: `cloudwatch.streams[1]: duplicate name "vpcflow" also at cloudwatch.streams[0]`,
 		},
 	}
 

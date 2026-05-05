@@ -284,8 +284,10 @@ func TestStart_RoutesWithValidHost(t *testing.T) {
 	e, err := newExtension(
 		&Config{
 			Format: constants.FormatCloudWatchLogsSubscriptionFilter,
-			CloudWatchRoutes: []subscriptionfilter.CloudWatchRoute{
-				{Name: "vpcflow", Encoding: innerID},
+			CloudWatch: CloudWatchConfig{
+				Streams: []subscriptionfilter.CloudWatchStream{
+					{Name: "vpcflow", Encoding: innerID},
+				},
 			},
 		},
 		settings,
@@ -310,8 +312,10 @@ func TestStart_RoutesWithMissingInner(t *testing.T) {
 	e, err := newExtension(
 		&Config{
 			Format: constants.FormatCloudWatchLogsSubscriptionFilter,
-			CloudWatchRoutes: []subscriptionfilter.CloudWatchRoute{
-				{Name: "vpcflow", Encoding: innerID},
+			CloudWatch: CloudWatchConfig{
+				Streams: []subscriptionfilter.CloudWatchStream{
+					{Name: "vpcflow", Encoding: innerID},
+				},
 			},
 		},
 		extensiontest.NewNopSettings(extensiontest.NopType),
@@ -357,9 +361,11 @@ func startRoutedExtension(t *testing.T) (*encodingExtension, *recordingInner, *r
 	e, err := newExtension(
 		&Config{
 			Format: constants.FormatCloudWatchLogsSubscriptionFilter,
-			CloudWatchRoutes: []subscriptionfilter.CloudWatchRoute{
-				{Name: "cloudtrail", Encoding: cloudtrailID}, // default *_CloudTrail_*
-				{Name: "lambda", Encoding: lambdaID},         // default /aws/lambda/*
+			CloudWatch: CloudWatchConfig{
+				Streams: []subscriptionfilter.CloudWatchStream{
+					{Name: "cloudtrail", Encoding: cloudtrailID}, // default *_CloudTrail_*
+					{Name: "lambda", Encoding: lambdaID},         // default /aws/lambda/*
+				},
 			},
 		},
 		extensiontest.NewNopSettings(extensiontest.NopType),

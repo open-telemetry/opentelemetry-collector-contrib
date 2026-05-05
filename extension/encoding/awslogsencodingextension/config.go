@@ -38,29 +38,24 @@ var (
 )
 
 type Config struct {
-	// Format defines the AWS logs format.
-	//
-	// Current valid values are:
-	// - cloudwatch
-	// - vpcflow
-	// - s3access
-	// - waf
-	// - cloudtrail
-	// - elbaccess
-	// - networkfirewall
-	//
+	// Format selects the AWS logs format. See supportedLogFormats for valid values.
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig vpcflowlog.Config `mapstructure:"vpcflow"`
-	// Deprecated: use VPCFlowLogConfig instead. It will be removed in v0.138.0
+	// Deprecated: use VPCFlowLogConfig. Will be removed in v0.138.0.
 	VPCFlowLogConfigV1 vpcflowlog.Config `mapstructure:"vpc_flow_log"`
 
-	// CloudWatchRoutes declares routing rules for CloudWatch Logs
-	// subscription-filter events. Each entry maps a logGroup and/or logStream
-	// pattern (or a known service name) to an inner encoding extension that
-	// decodes matching events. Only valid when Format is set to the
-	// CloudWatch subscription-filter format.
-	CloudWatchRoutes []subscriptionfilter.CloudWatchRoute `mapstructure:"cloudwatch_routes"`
+	// CloudWatch is consulted only when Format is a CloudWatch subscription-filter format.
+	CloudWatch CloudWatchConfig `mapstructure:"cloudwatch"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+type CloudWatchConfig struct {
+	// Streams routes subscription-filter events to inner encoding extensions
+	// by logGroup/logStream pattern or service name. Empty means no routing.
+	Streams []subscriptionfilter.CloudWatchStream `mapstructure:"streams"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -72,26 +67,25 @@ func (cfg *Config) Validate() error {
 	switch cfg.Format {
 	case "":
 		errs = append(errs, fmt.Errorf("format unspecified, expected one of %q", supportedLogFormats))
-	case constants.FormatCloudWatchLogsSubscriptionFilter: // valid
-	case constants.FormatCloudWatchLogsSubscriptionFilterV1: // valid
-	case constants.FormatVPCFlowLogV1: // valid
-	case constants.FormatVPCFlowLog: // valid
-	case constants.FormatS3AccessLogV1: // valid
-	case constants.FormatS3AccessLog: // valid
-	case constants.FormatWAFLogV1: // valid
-	case constants.FormatWAFLog: // valid
-	case constants.FormatCloudTrailLogV1: // valid
-	case constants.FormatCloudTrailLog: // valid
-	case constants.FormatELBAccessLogV1: // valid
-	case constants.FormatELBAccessLog: // valid
-	case constants.FormatNetworkFirewallLog: // valid
+	case constants.FormatCloudWatchLogsSubscriptionFilter,
+		constants.FormatCloudWatchLogsSubscriptionFilterV1,
+		constants.FormatVPCFlowLogV1,
+		constants.FormatVPCFlowLog,
+		constants.FormatS3AccessLogV1,
+		constants.FormatS3AccessLog,
+		constants.FormatWAFLogV1,
+		constants.FormatWAFLog,
+		constants.FormatCloudTrailLogV1,
+		constants.FormatCloudTrailLog,
+		constants.FormatELBAccessLogV1,
+		constants.FormatELBAccessLog,
+		constants.FormatNetworkFirewallLog:
 	default:
 		errs = append(errs, fmt.Errorf("unsupported format %q, expected one of %q", cfg.Format, supportedLogFormats))
 	}
 
 	switch cfg.VPCFlowLogConfig.FileFormat {
-	case constants.FileFormatParquet: // valid
-	case constants.FileFormatPlainText: // valid
+	case constants.FileFormatParquet, constants.FileFormatPlainText:
 	default:
 		errs = append(errs, fmt.Errorf(
 			"unsupported file format %q for VPC flow log, expected one of %q",
@@ -102,8 +96,7 @@ func (cfg *Config) Validate() error {
 
 	// to be deprecated in v0.138.0
 	switch cfg.VPCFlowLogConfigV1.FileFormat {
-	case constants.FileFormatParquet: // valid
-	case constants.FileFormatPlainText: // valid
+	case constants.FileFormatParquet, constants.FileFormatPlainText:
 	default:
 		errs = append(errs, fmt.Errorf(
 			"unsupported file format %q for VPC flow log, expected one of %q",
@@ -112,18 +105,17 @@ func (cfg *Config) Validate() error {
 		))
 	}
 
-	if len(cfg.CloudWatchRoutes) > 0 {
+	if len(cfg.CloudWatch.Streams) > 0 {
 		switch cfg.Format {
 		case constants.FormatCloudWatchLogsSubscriptionFilter,
 			constants.FormatCloudWatchLogsSubscriptionFilterV1:
-			// valid: routing only applies to the CW subscription-filter format.
 		default:
 			errs = append(errs, fmt.Errorf(
-				"'cloudwatch_routes' is only valid with format %q; got %q",
+				"'cloudwatch.streams' is only valid with format %q; got %q",
 				constants.FormatCloudWatchLogsSubscriptionFilter, cfg.Format,
 			))
 		}
-		if err := subscriptionfilter.ValidateRoutes(cfg.CloudWatchRoutes); err != nil {
+		if err := subscriptionfilter.ValidateStreams(cfg.CloudWatch.Streams); err != nil {
 			errs = append(errs, err)
 		}
 	}

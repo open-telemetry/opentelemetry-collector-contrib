@@ -14,10 +14,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-// CloudWatchRoute defines a single routing rule for CloudWatch Logs
+// CloudWatchStream defines a single routing rule for CloudWatch Logs
 // subscription-filter events. It maps a logGroup and/or logStream pattern to
 // an inner encoding extension.
-type CloudWatchRoute struct {
+type CloudWatchStream struct {
 	// Name identifies the route. Required. It is used as the deduplication key, in
 	// log and error messages, and as the lookup key into the default-pattern
 	// map. For known names (vpcflow, cloudtrail, lambda, waf, rds, eks,
@@ -38,11 +38,11 @@ type CloudWatchRoute struct {
 	LogStreamPattern string `mapstructure:"log_stream_pattern"`
 }
 
-// defaultCWPatterns maps known route names to default log_group / log_stream
-// patterns based on AWS conventions. When a user writes a route with only a
+// defaultCWPatterns maps known stream names to default log_group / log_stream
+// patterns based on AWS conventions. When a user writes a stream with only a
 // known name and no explicit patterns, the corresponding default is applied
 // at Start time.
-var defaultCWPatterns = map[string]CloudWatchRoute{
+var defaultCWPatterns = map[string]CloudWatchStream{
 	"vpcflow":    {Name: "vpcflow", LogStreamPattern: "eni-*"},
 	"cloudtrail": {Name: "cloudtrail", LogStreamPattern: "*_CloudTrail_*"},
 	"lambda":     {Name: "lambda", LogGroupPattern: "/aws/lambda/*"},
@@ -52,10 +52,10 @@ var defaultCWPatterns = map[string]CloudWatchRoute{
 	"apigateway": {Name: "apigateway", LogGroupPattern: "API-Gateway-Execution-Logs_*"},
 }
 
-// withDefaults returns a copy of the route with default patterns applied if
+// withDefaults returns a copy of the stream with default patterns applied if
 // the user supplied no patterns and the name is in the defaults map.
 // User-supplied patterns are never overwritten.
-func (r CloudWatchRoute) withDefaults() CloudWatchRoute {
+func (r CloudWatchStream) withDefaults() CloudWatchStream {
 	if r.LogGroupPattern != "" || r.LogStreamPattern != "" {
 		return r
 	}
@@ -66,23 +66,23 @@ func (r CloudWatchRoute) withDefaults() CloudWatchRoute {
 	return r
 }
 
-// ValidateRoutes reports configuration errors in a list of CloudWatch routes:
+// ValidateStreams reports configuration errors in a list of CloudWatch streams:
 // missing name, missing encoding, missing pattern when the name has no
 // defaults, and duplicate names.
-func ValidateRoutes(routes []CloudWatchRoute) error {
+func ValidateStreams(streams []CloudWatchStream) error {
 	var errs []error
-	seenNames := make(map[string]int, len(routes))
+	seenNames := make(map[string]int, len(streams))
 
-	for i, r := range routes {
+	for i, r := range streams {
 		// Name is required: it identifies the route in logs / errors and
 		// is the deduplication key.
 		if r.Name == "" {
-			errs = append(errs, fmt.Errorf("cloudwatch_routes[%d]: 'name' is required", i))
+			errs = append(errs, fmt.Errorf("cloudwatch.streams[%d]: 'name' is required", i))
 		}
 
 		// Encoding is required.
 		if r.Encoding == (component.ID{}) {
-			errs = append(errs, fmt.Errorf("cloudwatch_routes[%d]: 'encoding' is required", i))
+			errs = append(errs, fmt.Errorf("cloudwatch.streams[%d]: 'encoding' is required", i))
 		}
 
 		// When the user supplied no patterns, the name must be a known
@@ -91,7 +91,7 @@ func ValidateRoutes(routes []CloudWatchRoute) error {
 		if !hasPattern && r.Name != "" {
 			if _, ok := defaultCWPatterns[r.Name]; !ok {
 				errs = append(errs, fmt.Errorf(
-					"cloudwatch_routes[%d]: name %q has no defaults; set 'log_group_pattern' or 'log_stream_pattern'",
+					"cloudwatch.streams[%d]: name %q has no defaults; set 'log_group_pattern' or 'log_stream_pattern'",
 					i, r.Name,
 				))
 			}
@@ -101,7 +101,7 @@ func ValidateRoutes(routes []CloudWatchRoute) error {
 		if r.Name != "" {
 			if prior, ok := seenNames[r.Name]; ok {
 				errs = append(errs, fmt.Errorf(
-					"cloudwatch_routes[%d]: duplicate name %q also at cloudwatch_routes[%d]",
+					"cloudwatch.streams[%d]: duplicate name %q also at cloudwatch.streams[%d]",
 					i, r.Name, prior,
 				))
 			} else {
@@ -113,7 +113,7 @@ func ValidateRoutes(routes []CloudWatchRoute) error {
 	return errors.Join(errs...)
 }
 
-// sortRoutes returns a copy of routes ordered by routing precedence:
+// sortStreams returns a copy of routes ordered by routing precedence:
 //
 //  1. Catch-all entries (a pattern equal to "*") are placed last.
 //  2. Entries with a log_group_pattern come before entries that use only
@@ -121,17 +121,17 @@ func ValidateRoutes(routes []CloudWatchRoute) error {
 //  3. Within each group, more-specific patterns come first
 //     (see comparePatternSpecificity).
 //
-// Defaults are applied to each route via withDefaults before sorting, so the
+// Defaults are applied to each stream via withDefaults before sorting, so the
 // returned slice has all patterns populated for known names.
 //
 // Stable order is preserved among entries that compare equal.
-func sortRoutes(routes []CloudWatchRoute) []CloudWatchRoute {
-	if len(routes) == 0 {
+func sortStreams(streams []CloudWatchStream) []CloudWatchStream {
+	if len(streams) == 0 {
 		return nil
 	}
 
-	sorted := make([]CloudWatchRoute, len(routes))
-	for i, r := range routes {
+	sorted := make([]CloudWatchStream, len(streams))
+	for i, r := range streams {
 		sorted[i] = r.withDefaults()
 	}
 
@@ -150,13 +150,13 @@ func sortRoutes(routes []CloudWatchRoute) []CloudWatchRoute {
 	}
 
 	sort.SliceStable(sorted, func(i, j int) bool {
-		return compareRoutes(sorted[i], sorted[j], splitCache) < 0
+		return compareStreams(sorted[i], sorted[j], splitCache) < 0
 	})
 	return sorted
 }
 
-// compareRoutes implements the three-level routing precedence rule.
-func compareRoutes(a, b CloudWatchRoute, splitCache map[string][]string) int {
+// compareStreams implements the three-level routing precedence rule.
+func compareStreams(a, b CloudWatchStream, splitCache map[string][]string) int {
 	// Level 1: catch-all "*" goes last.
 	aIsCatchAll := a.LogGroupPattern == catchAllPattern || a.LogStreamPattern == catchAllPattern
 	bIsCatchAll := b.LogGroupPattern == catchAllPattern || b.LogStreamPattern == catchAllPattern
@@ -187,10 +187,10 @@ func compareRoutes(a, b CloudWatchRoute, splitCache map[string][]string) int {
 	return comparePatternSpecificity(splitCache[patA], splitCache[patB])
 }
 
-// resolvedRoute is a CloudWatchRoute with patterns pre-split for fast matching
+// resolvedStream is a CloudWatchStream with patterns pre-split for fast matching
 // and the inner extension already resolved to a typed
 // LogsUnmarshalerExtension.
-type resolvedRoute struct {
+type resolvedStream struct {
 	name           string
 	inner          encoding.LogsUnmarshalerExtension
 	logGroupParts  []string // nil if log_group_pattern is empty after defaults
@@ -200,29 +200,29 @@ type resolvedRoute struct {
 // Router dispatches CloudWatch subscription-filter events to inner encoding
 // extensions based on logGroup / logStream pattern matching.
 type Router struct {
-	routes []resolvedRoute
+	streams []resolvedStream
 }
 
 // NewRouter constructs a Router from validated routes. It applies defaults,
-// sorts routes by precedence, and resolves each route's component.ID against
+// sorts routes by precedence, and resolves each stream's component.ID against
 // host.GetExtensions(), failing fast if any ID is missing, points at a
 // component that does not implement encoding.LogsUnmarshalerExtension, or
 // refers back to selfID (cycle).
 //
 // selfID is the component.ID of the extension that owns this router.
 func NewRouter(
-	routes []CloudWatchRoute,
+	streams []CloudWatchStream,
 	host component.Host,
 	selfID component.ID,
 ) (*Router, error) {
-	sorted := sortRoutes(routes)
+	sorted := sortStreams(streams)
 	extensions := host.GetExtensions()
 
-	resolved := make([]resolvedRoute, 0, len(sorted))
+	resolved := make([]resolvedStream, 0, len(sorted))
 	for _, r := range sorted {
 		if r.Encoding == selfID {
 			return nil, fmt.Errorf(
-				"cloudwatch_routes[name=%q]: encoding %q refers back to this extension (cycle)",
+				"cloudwatch.streams[name=%q]: encoding %q refers back to this extension (cycle)",
 				r.Name, r.Encoding,
 			)
 		}
@@ -230,7 +230,7 @@ func NewRouter(
 		ext, ok := extensions[r.Encoding]
 		if !ok {
 			return nil, fmt.Errorf(
-				"cloudwatch_routes[name=%q]: encoding extension %q not found",
+				"cloudwatch.streams[name=%q]: encoding extension %q not found",
 				r.Name, r.Encoding,
 			)
 		}
@@ -238,12 +238,12 @@ func NewRouter(
 		inner, ok := ext.(encoding.LogsUnmarshalerExtension)
 		if !ok {
 			return nil, fmt.Errorf(
-				"cloudwatch_routes[name=%q]: extension %q does not implement encoding.LogsUnmarshalerExtension",
+				"cloudwatch.streams[name=%q]: extension %q does not implement encoding.LogsUnmarshalerExtension",
 				r.Name, r.Encoding,
 			)
 		}
 
-		rr := resolvedRoute{name: r.Name, inner: inner}
+		rr := resolvedStream{name: r.Name, inner: inner}
 		if r.LogGroupPattern != "" {
 			rr.logGroupParts = strings.Split(r.LogGroupPattern, "/")
 		}
@@ -253,7 +253,7 @@ func NewRouter(
 		resolved = append(resolved, rr)
 	}
 
-	return &Router{routes: resolved}, nil
+	return &Router{streams: resolved}, nil
 }
 
 // Match returns the inner encoding extension that should handle a CloudWatch
@@ -266,7 +266,7 @@ func NewRouter(
 // observability. If no route matches, an error is returned.
 func (r *Router) Match(logGroup, logStream string) (encoding.LogsUnmarshalerExtension, string, error) {
 	var groupParts, streamParts []string
-	for _, rr := range r.routes {
+	for _, rr := range r.streams {
 		if rr.logGroupParts != nil {
 			if groupParts == nil {
 				groupParts = strings.Split(logGroup, "/")
