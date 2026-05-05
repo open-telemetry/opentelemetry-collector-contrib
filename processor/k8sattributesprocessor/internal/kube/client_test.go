@@ -4322,12 +4322,12 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 			expectedDeploymentName:              "",
 		},
 		{
-			name:                                "flag enabled - replicaset in cache with deployment (should prefer existing)",
+			name:                                "flag enabled - replicaset in cache with deployment (should prefer informer)",
 			deploymentNameFromReplicaSetEnabled: true,
 			replicaSetInCache:                   true,
 			deploymentInRS:                      true,
 			replicaSetName:                      "my-deployment-7b9f4c8d5e",
-			expectedDeploymentName:              "my-deployment",
+			expectedDeploymentName:              "real-deployment-name",
 		},
 		{
 			name:                                "flag enabled - invalid replicaset name",
