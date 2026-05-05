@@ -68,7 +68,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 }
 
 func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
-	recordHeaders := configopaque.MapList{
+	recordHeaders := []RecordHeader{
 		{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
 		{Name: "shared-key", Value: configopaque.String("static-value-override")},
 	}
@@ -89,8 +89,11 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 		}},
 	}
 
-	records := makeFranzMessages(msgs, recordHeaders)
-	setMessageHeaders(ctx, records, []string{"dynamic-key-ONLY", "shared-key"})
+	// NewFranzSyncProducer will convert recordHeaders to kgo.RecordHeader and store them in the producer struct.
+	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0)
+	metadataHeaders := metadataToHeaders(ctx, []string{"dynamic-key-ONLY", "shared-key"})
+
+	records := makeFranzMessages(msgs, producer.recordHeaders, metadataHeaders)
 
 	require.Len(t, records, 1, "expected exactly 1 record")
 	record := records[0]
