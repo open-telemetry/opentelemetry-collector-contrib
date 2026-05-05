@@ -12,6 +12,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.uber.org/zap"
 )
 
 // MessageTooLargeError wraps a MessageTooLarge Kafka error with the actual
@@ -54,16 +55,22 @@ type RecordHeader struct {
 // maintaining compatibility with the existing Kafka exporter code.
 type FranzSyncProducer struct {
 	client          *kgo.Client
+	clientCancel    context.CancelFunc
+	logger          *zap.Logger
 	metadataKeys    []string
 	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
+// clientCancel must cancel the context passed to kgo.WithContext when the client was created;
+// it is called by Close to unblock any in-flight ProduceSync calls.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
 	recordHeaders []RecordHeader,
 	maxMessageBytes int,
+	logger *zap.Logger,
+	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
 	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
 	for _, pair := range recordHeaders {
@@ -75,6 +82,8 @@ func NewFranzSyncProducer(client *kgo.Client,
 
 	return &FranzSyncProducer{
 		client:          client,
+		clientCancel:    clientCancel,
+		logger:          logger,
 		metadataKeys:    metadataKeys,
 		recordHeaders:   headers,
 		maxMessageBytes: maxMessageBytes,
@@ -107,9 +116,27 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	return errors.Join(errs...)
 }
 
-// Close shuts down the producer and flushes any remaining messages.
-func (p *FranzSyncProducer) Close() error {
-	p.client.Close()
+// Close shuts down the producer, unblocking any in-flight ExportData call.
+func (p *FranzSyncProducer) Close(ctx context.Context) error {
+	if p.clientCancel != nil {
+		p.clientCancel()
+	}
+
+	if err := p.client.Flush(ctx); err != nil {
+		p.logger.Warn("kafka producer flushed with error during shutdown; some records may have been dropped",
+			zap.Error(err),
+		)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		p.client.Close()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-ctx.Done():
+	}
 	return nil
 }
 

@@ -4,8 +4,10 @@
 package kafkaclient
 
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 )
@@ -35,7 +38,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 
-	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes)
+	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, zap.NewNop(), nil)
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
@@ -90,7 +93,7 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 	}
 
 	// NewFranzSyncProducer will convert recordHeaders to kgo.RecordHeader and store them in the producer struct.
-	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0)
+	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0, zap.NewNop(), nil)
 	metadataHeaders := metadataToHeaders(ctx, []string{"dynamic-key-ONLY", "shared-key"})
 
 	records := makeFranzMessages(msgs, producer.recordHeaders, metadataHeaders)
@@ -111,4 +114,44 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 	assert.Equal(t, "static-value", headerMap["static-key-ONLY"], "static headers unique key failed")
 	assert.Equal(t, "dynamic-value", headerMap["dynamic-key-ONLY"], "dynamic headers unique key failed")
 	assert.Equal(t, "dynamic-value-wins", headerMap["shared-key"], "Precedence for common key failed")
+}
+
+func TestClose_UnblocksInFlightExportData(t *testing.T) {
+	fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1))
+	require.NoError(t, err)
+
+	clientCtx, clientCancel := context.WithCancel(t.Context())
+	kgoClient, err := kgo.NewClient(
+		kgo.SeedBrokers(fakeCluster.ListenAddrs()[0]),
+		kgo.WithContext(clientCtx),
+	)
+	require.NoError(t, err)
+
+	// Shut down the broker so ExportData blocks indefinitely.
+	fakeCluster.Close()
+
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, zap.NewNop(), clientCancel)
+
+	msgs := Messages{
+		Count: 1,
+		TopicMessages: []TopicMessages{{
+			Topic:    "otlp_logs",
+			Messages: []marshaler.Message{{Value: []byte("test")}},
+		}},
+	}
+
+	exportDone := make(chan error, 1)
+	go func() { exportDone <- producer.ExportData(t.Context(), msgs) }()
+
+	// Close must return and unblock ExportData within the deadline.
+	closeCtx, closeCancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer closeCancel()
+
+	require.NoError(t, producer.Close(closeCtx), "Close returned an error")
+
+	select {
+	case <-exportDone:
+	case <-closeCtx.Done():
+		t.Fatal("ExportData was not unblocked by Close; collector would hang on shutdown")
+	}
 }
