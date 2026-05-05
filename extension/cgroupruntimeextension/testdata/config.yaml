@@ -11,3 +11,6 @@ cgroup_runtime/invalid_ratio_negative:
 cgroup_runtime/invalid_ratio_type:
   gomemlimit:
     ratio: "not_valid"
+cgroup_runtime/invalid_refresh_interval:
+  gomemlimit:
+    refresh_interval: -10s
