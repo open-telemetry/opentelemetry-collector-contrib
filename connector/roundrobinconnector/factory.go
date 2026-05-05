@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector/internal/metadata"
@@ -17,12 +18,13 @@ import (
 
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
-	return connector.NewFactory(
+	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
-		connector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
+		xconnector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
+		xconnector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		xconnector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
+		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
