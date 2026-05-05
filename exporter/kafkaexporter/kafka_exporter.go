@@ -111,7 +111,6 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.cfg.IncludeMetadataKeys,
 		e.cfg.RecordHeaders,
 		e.cfg.Producer.MaxMessageBytes,
-		e.logger,
 		clientCancel,
 	)
 	return nil

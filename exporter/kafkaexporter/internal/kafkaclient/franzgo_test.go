@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 )
@@ -38,7 +37,7 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(client.Close)
 
-	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, zap.NewNop(), nil)
+	producer := NewFranzSyncProducer(client, nil, nil, maxMessageBytes, nil)
 
 	// Create a message larger than maxMessageBytes to trigger MessageTooLarge.
 	largeValue := []byte(strings.Repeat("x", maxMessageBytes*2))
@@ -93,7 +92,7 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 	}
 
 	// NewFranzSyncProducer will convert recordHeaders to kgo.RecordHeader and store them in the producer struct.
-	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0, zap.NewNop(), nil)
+	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0, nil)
 	metadataHeaders := metadataToHeaders(ctx, []string{"dynamic-key-ONLY", "shared-key"})
 
 	records := makeFranzMessages(msgs, producer.recordHeaders, metadataHeaders)
@@ -130,7 +129,7 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 	// Shut down the broker so ExportData blocks indefinitely.
 	fakeCluster.Close()
 
-	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, zap.NewNop(), clientCancel)
+	producer := NewFranzSyncProducer(kgoClient, nil, nil, 1024*1024, clientCancel)
 
 	msgs := Messages{
 		Count: 1,
