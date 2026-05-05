@@ -805,8 +805,7 @@ func TestAllMetricsCategorized(t *testing.T) {
 		srvMetrics[name] = true
 	}
 
-	cfg := createDefaultConfig().(*Config)
-	cfgType := reflect.TypeOf(cfg.Metrics)
+	cfgType := reflect.TypeFor[metadata.MetricsConfig]()
 
 	for i := 0; i < cfgType.NumField(); i++ {
 		field := cfgType.Field(i)
