@@ -7,14 +7,14 @@ change_type: bug_fix
 component: receiver/mysql
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix `mysql.instance.endpoint` resource attribute never being set on query sample and top query log events; add `service.instance.id` resource attribute to all log events.
+note: Fix `mysql.instance.endpoint` on query sample and top query log events; emit `service.instance.id` as the same deterministic UUID v5 resource attribute on MySQL metrics and logs when enabled.
 
 issues: [47207]
 
 subtext: |
-  `service.instance.id` is set alongside `mysql.instance.endpoint` on all emitted log events.
-  Its value is a UUID v5 derived deterministically from the configured endpoint using the
-  OpenTelemetry-specified namespace (`4d63009a-8d0f-11ee-aad7-4c796ed8e320`), as defined by the
-  OTel semantic conventions for `service.instance.id`.
+  `service.instance.id` is set alongside `mysql.instance.endpoint` on emitted metrics, query sample
+  logs, and top query logs. Its value is derived from the configured endpoint using the
+  OpenTelemetry-specified UUID v5 namespace (`4d63009a-8d0f-11ee-aad7-4c796ed8e320`), as defined
+  by the OTel semantic conventions for `service.instance.id`.
 
 change_logs: [user]
