@@ -13,6 +13,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
@@ -67,9 +68,9 @@ func TestExportData_MessageTooLarge(t *testing.T) {
 }
 
 func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
-	recordHeaders := []kgo.RecordHeader{
-		{Key: "static-key-ONLY", Value: []byte("static-value")},
-		{Key: "shared-key", Value: []byte("static-value-override")},
+	recordHeaders := []RecordHeader{
+		{Name: "static-key-ONLY", Value: configopaque.String("static-value")},
+		{Name: "shared-key", Value: configopaque.String("static-value-override")},
 	}
 
 	md := client.NewMetadata(map[string][]string{
@@ -88,8 +89,11 @@ func TestMakeFranzMessages_RecordHeaders(t *testing.T) {
 		}},
 	}
 
+	// NewFranzSyncProducer will convert recordHeaders to kgo.RecordHeader and store them in the producer struct.
+	producer := NewFranzSyncProducer(nil, nil, recordHeaders, 0)
 	metadataHeaders := metadataToHeaders(ctx, []string{"dynamic-key-ONLY", "shared-key"})
-	records := makeFranzMessages(msgs, recordHeaders, metadataHeaders)
+
+	records := makeFranzMessages(msgs, producer.recordHeaders, metadataHeaders)
 
 	require.Len(t, records, 1, "expected exactly 1 record")
 	record := records[0]

@@ -11,12 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
@@ -267,6 +269,39 @@ func TestLoadConfig(t *testing.T) {
 					Encoding:             "otlp_proto",
 				},
 				IncludeMetadataKeys: []string{"metadata_key"},
+				RecordPartitioner: (RecordPartitionerConfig{
+					StickyKey: &StickyKeyPartitionerConfig{
+						Hasher: "sarama_compat",
+					},
+				}),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "message_record_headers"),
+			expected: &Config{
+				TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+				QueueBatchConfig: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				ClientConfig:     configkafka.NewDefaultClientConfig(),
+				Producer:         configkafka.NewDefaultProducerConfig(),
+				Logs:             SignalConfig{Topic: defaultLogsTopic, Encoding: defaultLogsEncoding},
+				Metrics:          SignalConfig{Topic: defaultMetricsTopic, Encoding: defaultMetricsEncoding},
+				Traces:           SignalConfig{Topic: defaultTracesTopic, Encoding: defaultTracesEncoding},
+				Profiles:         SignalConfig{Topic: defaultProfilesTopic, Encoding: defaultProfilesEncoding},
+				RecordHeaders: []kafkaclient.RecordHeader{
+					{
+						Name:  "some-key",
+						Value: configopaque.String("some-value"),
+					},
+					{
+						Name:  "some-key",
+						Value: configopaque.String("another-value"),
+					},
+					{
+						Name:  "new-key",
+						Value: configopaque.String("new-value"),
+					},
+				},
 				RecordPartitioner: (RecordPartitionerConfig{
 					StickyKey: &StickyKeyPartitionerConfig{
 						Hasher: "sarama_compat",
