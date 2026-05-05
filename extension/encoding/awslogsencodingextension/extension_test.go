@@ -328,6 +328,39 @@ func TestStart_RoutesWithMissingInner(t *testing.T) {
 	assert.Nil(t, e.router)
 }
 
+func TestStart_RoutesWithSelfReference(t *testing.T) {
+	t.Parallel()
+
+	settings := extensiontest.NewNopSettings(extensiontest.NopType)
+	selfID := settings.ID
+
+	e, err := newExtension(
+		&Config{
+			Format: constants.FormatCloudWatchLogsSubscriptionFilter,
+			CloudWatch: CloudWatchConfig{
+				Streams: []subscriptionfilter.CloudWatchStream{
+					{Name: "vpcflow", Encoding: selfID},
+				},
+			},
+		},
+		settings,
+	)
+	require.NoError(t, err)
+
+	// Register the extension under its own selfID so resolution would otherwise
+	// succeed; Start must still reject the cycle.
+	host := &hostWithExtensions{
+		Host: componenttest.NewNopHost(),
+		extensions: map[component.ID]component.Component{
+			selfID: e,
+		},
+	}
+	err = e.Start(t.Context(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "refers back to this extension")
+	assert.Nil(t, e.router)
+}
+
 // recordingInner records the bytes of every UnmarshalLogs call so tests can
 // assert which inner was dispatched and what it received.
 type recordingInner struct {
