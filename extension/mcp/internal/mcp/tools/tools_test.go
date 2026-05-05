@@ -1,6 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// TODO: remove build constraint once https://github.com/pavolloffay/opentelemetry-mcp-server/issues/... is fixed
+// (collectorschema uses filepath.Join with embed.FS, which produces backslash paths on Windows)
+//go:build !windows
+
 package tools
 
 import (
