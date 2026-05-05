@@ -36,7 +36,7 @@ type producer interface {
 	// ExportData sends a batch of messages to Kafka
 	ExportData(ctx context.Context, messages kafkaclient.Messages) error
 	// Close shuts down the producer
-	Close() error
+	Close(ctx context.Context) error
 }
 
 type messenger[T any] interface {
@@ -91,6 +91,7 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		return fmt.Errorf("failed to configure record partitioner: %w", err)
 	}
 
+	clientCtx, clientCancel := context.WithCancel(context.Background())
 	producer, err := kafka.NewFranzSyncProducer(
 		ctx,
 		host,
@@ -98,30 +99,33 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) (err 
 		e.cfg.Producer,
 		e.cfg.TimeoutSettings.Timeout,
 		e.logger,
+		kgo.WithContext(clientCtx),
 		kgo.WithHooks(kafkaclient.NewFranzProducerMetrics(tb)),
 		partitionerOpt,
 	)
 	if err != nil {
+		clientCancel()
 		return err
 	}
 	e.producer = kafkaclient.NewFranzSyncProducer(producer,
 		e.cfg.IncludeMetadataKeys,
 		e.cfg.RecordHeaders,
 		e.cfg.Producer.MaxMessageBytes,
+		clientCancel,
 	)
 	return nil
 }
 
-func (e *kafkaExporter[T]) Close(context.Context) (err error) {
-	if e.producer == nil {
-		return nil
-	}
-	err = e.producer.Close()
-	e.producer = nil
+func (e *kafkaExporter[T]) Close(ctx context.Context) (err error) {
 	if e.tb != nil {
 		e.tb.Shutdown()
 		e.tb = nil
 	}
+	if e.producer == nil {
+		return nil
+	}
+	err = e.producer.Close(ctx)
+	e.producer = nil
 	return err
 }
 
