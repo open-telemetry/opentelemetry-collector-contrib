@@ -33,6 +33,7 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `priority_levels (required)`: list of pipeline level priorities in a 1 - n configuration, multiple pipelines can sit at a single priority level.
+- `failover_mode (optional)`: the failover strategy to use. Currently only `standard` is supported. Default value is `standard`.
 - `retry_interval (optional)`: the frequency at which the pipeline levels will attempt to reestablish connection with all higher priority levels. Default value is 10 minutes. (See Example below for further explanation)
 - `retry_gap (optional)`: * **Deprecated** * the amount of time between trying two separate priority levels in a single retry_interval timeframe. Default value is 30 seconds. (See Example below for further explanation)
 - `max_retries (optional)`: **Deprecated** * the maximum retries per level. Default value is 10. Set to 0 to allow unlimited retries.

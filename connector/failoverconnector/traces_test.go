@@ -174,8 +174,9 @@ func TestTracesWithQueue(t *testing.T) {
 }
 
 func consumeTracesAndCheckStable(router *tracesRouter, idx int, tr ptrace.Traces) bool {
+	strategy := router.strategy.(*standardTracesStrategy)
 	_ = router.Consume(context.Background(), tr)
-	stableIndex := router.pS.CurrentPipeline()
+	stableIndex := strategy.TestGetCurrentConsumerIndex()
 	return stableIndex == idx
 }
 

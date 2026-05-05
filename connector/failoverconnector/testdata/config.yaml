@@ -3,6 +3,7 @@ failover:
 failover/default:
   priority_levels:
     - [traces]
+  failover_mode: standard
 
 failover/full:
   priority_levels:
@@ -10,6 +11,7 @@ failover/full:
     - [ traces/second ]
     - [ traces/third ]
     - [ traces/fourth ]
+  failover_mode: standard
   retry_interval: 5m
 
 failover/queue:
@@ -18,11 +20,19 @@ failover/queue:
     - [ traces/second ]
     - [ traces/third ]
     - [ traces/fourth ]
+  failover_mode: standard
   sending_queue:
     enabled: true
-    
+
 failover/invalid:
   priority_levels:
     - [ traces/first ]
     - [ traces/second ]
+  failover_mode: standard
   retry_interval: 0m
+
+failover/invalid_mode:
+  priority_levels:
+    - [ traces/first ]
+    - [ traces/second ]
+  failover_mode: bogus

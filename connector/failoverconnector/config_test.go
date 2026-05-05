@@ -34,6 +34,7 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
 					},
 				},
+				FailoverMode:  FailoverModeStandard,
 				RetryInterval: 10 * time.Minute,
 			},
 		},
@@ -56,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, "fourth"),
 					},
 				},
+				FailoverMode:  FailoverModeStandard,
 				RetryInterval: 5 * time.Minute,
 			},
 		},
@@ -94,6 +96,11 @@ func TestValidateConfig(t *testing.T) {
 			name: "invalid retry_interval",
 			id:   component.NewIDWithName(metadata.Type, "invalid"),
 			err:  errInvalidRetryIntervals,
+		},
+		{
+			name: "invalid failover_mode",
+			id:   component.NewIDWithName(metadata.Type, "invalid_mode"),
+			err:  errInvalidFailoverMode,
 		},
 	}
 
