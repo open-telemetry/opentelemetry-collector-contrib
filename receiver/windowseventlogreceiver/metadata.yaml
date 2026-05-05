@@ -31,7 +31,7 @@ feature_gates:
     skip_strict_validation: true
 
 attributes:
-  channel:
+  windows.event_log.channel.name:
     description: The name of the Windows Event Log channel.
     type: string
 
@@ -46,7 +46,7 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [1, 5, 10, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
-      attributes: [channel]
+      attributes: [windows.event_log.channel.name]
 
     receiver_windows_event_log_channel_size:
       enabled: false
@@ -56,7 +56,7 @@ telemetry:
       unit: "{events}"
       gauge:
         value_type: int
-      attributes: [channel]
+      attributes: [windows.event_log.channel.name]
 
     receiver_windows_event_log_event_size:
       enabled: false
@@ -67,7 +67,7 @@ telemetry:
       histogram:
         value_type: int
         bucket_boundaries: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144]
-      attributes: [channel]
+      attributes: [windows.event_log.channel.name]
 
     receiver_windows_event_log_lag:
       enabled: false
@@ -78,7 +78,7 @@ telemetry:
       gauge:
         async: true
         value_type: double
-      attributes: [channel]
+      attributes: [windows.event_log.channel.name]
 
     receiver_windows_event_log_missed_events:
       enabled: false
@@ -89,4 +89,4 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-      attributes: [channel]
+      attributes: [windows.event_log.channel.name]
