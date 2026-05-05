@@ -10,4 +10,5 @@ status:
     active: [pavolloffay, codeboten, dmitryax]
 
 tests:
-  skip_lifecycle: false
+  config:
+    endpoint: localhost:0
