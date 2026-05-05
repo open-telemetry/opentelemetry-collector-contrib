@@ -111,7 +111,7 @@ func TestSort(t *testing.T) {
 			},
 			regex:           `(?P<time>[0-9a-z]+).*log`,
 			values:          []string{"2023020xyz611.log", "2023020612.log", "2023asdf020610.log", "2023020609.log"},
-			expectApplyErr:  "parsing time \"2023asdf020610\" as \"2006010215\": cannot parse \"asdf020610\" as \"01\"; parsing time \"2023020xyz611\" as \"2006010215\": cannot parse \"0xyz611\" as \"02\"",
+			expectApplyErr:  "parsing time \"2023asdf020610\" as \"%Y%m%d%H\": cannot parse \"asdf020610\" as \"%m\"; parsing time \"2023020xyz611\" as \"%Y%m%d%H\": cannot parse \"xyz611\" as \"%H\"",
 			expectAscending: []string{"2023020609.log", "2023020612.log"},
 		},
 		{
