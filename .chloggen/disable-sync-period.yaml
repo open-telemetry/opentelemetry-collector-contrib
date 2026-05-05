@@ -1,0 +1,6 @@
+change_type: enhancement
+component: processor/k8sattributesprocessor
+note: Configure `watch_sync_period` to perform no resync by default (default: `0s`).
+issues: [48110]
+subtext: Reprocessing the informer cache periodically (resync) can cause severe CPU/memory churn at scale, and is almost entirely unnecessary since modifications are pushed immediately via Kubernetes watch events. Setting `watch_sync_period` to `0s` disables resync completely.
+change_logs: [user]

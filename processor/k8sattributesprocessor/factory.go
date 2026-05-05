@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 			Metadata: enabledAttributes(),
 		},
 		WaitForMetadataTimeout: 10 * time.Second,
-		WatchSyncPeriod:        5 * time.Minute,
+		WatchSyncPeriod:        0,
 	}
 }
 

@@ -231,7 +231,7 @@ wait_for_metadata_timeout: 10s
 Reprocessing the informer cache periodically (resyncing) enqueues all cached K8s objects back into event handlers. In large clusters (e.g., 100K pods), this causes significant CPU spikes, memory churn, and garbage collection overhead.
 Because resource state modifications are already pushed immediately via Kubernetes watch events, a resync period is almost entirely unnecessary.
 
-- `watch_sync_period` (`default: 5m`): The resync period for K8s informers. You may set this to `0s` to disable resyncing completely (recommended for large clusters).
+- `watch_sync_period` (`default: 0s`): The resync period for K8s informers. Setting this to `0s` disables resyncing completely (recommended). You may set this to a higher duration (e.g., `1h` or `24h`) if you want a fallback mechanism for self-healing the internal cache in case of potential state drift.
 
 
 ## Extracting attributes from pod labels and annotations
@@ -705,8 +705,8 @@ k8s_attributes:
   wait_for_metadata_timeout: 10s
   
   # Informer resync period. Setting this to 0s disables resyncing completely.
-  # Default: 5m
-  watch_sync_period: 5m
+  # Default: 0s
+  watch_sync_period: 0s
   
   # Extract configuration - defines what metadata to extract
   extract:
@@ -878,7 +878,7 @@ k8s_attributes:
 | `passthrough` | bool | `false` | Only add pod IP without extracting metadata (no K8s API calls) |
 | `wait_for_metadata` | bool | `false` | Block collector startup until metadata is synced |
 | `wait_for_metadata_timeout` | duration | `10s` | Max wait time for metadata sync on startup |
-| `watch_sync_period` | duration | `5m` | Resync period for K8s informers (`0s` disables resync completely) |
+| `watch_sync_period` | duration | `0s` | Resync period for K8s informers (`0s` disables resync completely) |
 
 #### Extract Options
 
