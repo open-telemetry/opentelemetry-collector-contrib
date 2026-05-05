@@ -26,29 +26,37 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CouchdbAverageRequestTime: MetricConfig{
+					CouchdbAverageRequestTime: CouchdbAverageRequestTimeMetricConfig{
 						Enabled: true,
 					},
-					CouchdbDatabaseOpen: MetricConfig{
+					CouchdbDatabaseOpen: CouchdbDatabaseOpenMetricConfig{
 						Enabled: true,
 					},
-					CouchdbDatabaseOperations: MetricConfig{
+					CouchdbDatabaseOperations: CouchdbDatabaseOperationsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbDatabaseOperationsMetricAttributeKey{CouchdbDatabaseOperationsMetricAttributeKeyOperation},
+					},
+					CouchdbFileDescriptorOpen: CouchdbFileDescriptorOpenMetricConfig{
 						Enabled: true,
 					},
-					CouchdbFileDescriptorOpen: MetricConfig{
+					CouchdbHttpdBulkRequests: CouchdbHttpdBulkRequestsMetricConfig{
 						Enabled: true,
 					},
-					CouchdbHttpdBulkRequests: MetricConfig{
-						Enabled: true,
+					CouchdbHttpdRequests: CouchdbHttpdRequestsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbHttpdRequestsMetricAttributeKey{CouchdbHttpdRequestsMetricAttributeKeyHTTPMethod},
 					},
-					CouchdbHttpdRequests: MetricConfig{
-						Enabled: true,
+					CouchdbHttpdResponses: CouchdbHttpdResponsesMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbHttpdResponsesMetricAttributeKey{CouchdbHttpdResponsesMetricAttributeKeyHTTPStatusCode},
 					},
-					CouchdbHttpdResponses: MetricConfig{
-						Enabled: true,
-					},
-					CouchdbHttpdViews: MetricConfig{
-						Enabled: true,
+					CouchdbHttpdViews: CouchdbHttpdViewsMetricConfig{
+						Enabled:             true,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbHttpdViewsMetricAttributeKey{CouchdbHttpdViewsMetricAttributeKeyView},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -60,29 +68,37 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					CouchdbAverageRequestTime: MetricConfig{
+					CouchdbAverageRequestTime: CouchdbAverageRequestTimeMetricConfig{
 						Enabled: false,
 					},
-					CouchdbDatabaseOpen: MetricConfig{
+					CouchdbDatabaseOpen: CouchdbDatabaseOpenMetricConfig{
 						Enabled: false,
 					},
-					CouchdbDatabaseOperations: MetricConfig{
+					CouchdbDatabaseOperations: CouchdbDatabaseOperationsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbDatabaseOperationsMetricAttributeKey{CouchdbDatabaseOperationsMetricAttributeKeyOperation},
+					},
+					CouchdbFileDescriptorOpen: CouchdbFileDescriptorOpenMetricConfig{
 						Enabled: false,
 					},
-					CouchdbFileDescriptorOpen: MetricConfig{
+					CouchdbHttpdBulkRequests: CouchdbHttpdBulkRequestsMetricConfig{
 						Enabled: false,
 					},
-					CouchdbHttpdBulkRequests: MetricConfig{
-						Enabled: false,
+					CouchdbHttpdRequests: CouchdbHttpdRequestsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbHttpdRequestsMetricAttributeKey{CouchdbHttpdRequestsMetricAttributeKeyHTTPMethod},
 					},
-					CouchdbHttpdRequests: MetricConfig{
-						Enabled: false,
+					CouchdbHttpdResponses: CouchdbHttpdResponsesMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbHttpdResponsesMetricAttributeKey{CouchdbHttpdResponsesMetricAttributeKeyHTTPStatusCode},
 					},
-					CouchdbHttpdResponses: MetricConfig{
-						Enabled: false,
-					},
-					CouchdbHttpdViews: MetricConfig{
-						Enabled: false,
+					CouchdbHttpdViews: CouchdbHttpdViewsMetricConfig{
+						Enabled:             false,
+						AggregationStrategy: AggregationStrategySum,
+						EnabledAttributes:   []CouchdbHttpdViewsMetricAttributeKey{CouchdbHttpdViewsMetricAttributeKeyView},
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -94,7 +110,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(CouchdbAverageRequestTimeMetricConfig{}, CouchdbDatabaseOpenMetricConfig{}, CouchdbDatabaseOperationsMetricConfig{}, CouchdbFileDescriptorOpenMetricConfig{}, CouchdbHttpdBulkRequestsMetricConfig{}, CouchdbHttpdRequestsMetricConfig{}, CouchdbHttpdResponsesMetricConfig{}, CouchdbHttpdViewsMetricConfig{}, ResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
