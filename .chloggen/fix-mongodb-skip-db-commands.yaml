@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: mongodbreceiver
+component: receiver/mongodb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Skip database-level commands when all database metrics are disabled to prevent unauthorized errors on sharded clusters with direct_connection
