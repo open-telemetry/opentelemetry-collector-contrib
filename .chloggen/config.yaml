@@ -108,6 +108,7 @@ components:
     - extension/k8s_leader_elector
     - extension/k8s_observer
     - extension/kafkatopics_observer
+    - extension/mcp
     - extension/oauth2client
     - extension/observer
     - extension/oidc
@@ -208,8 +209,8 @@ components:
     - processor/logstransform
     - processor/lookup
     - processor/metric_start_time
+    - processor/metrics_transform
     - processor/metricsgeneration
-    - processor/metricstransform
     - processor/novadetector
     - processor/oracleclouddetector
     - processor/probabilistic_sampler
