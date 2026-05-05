@@ -146,7 +146,10 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 	closeCtx, closeCancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer closeCancel()
 
-	require.NoError(t, producer.Close(closeCtx), "Close returned an error")
+	err = producer.Close(closeCtx)
+	if err != nil {
+		require.ErrorIs(t, err, context.DeadlineExceeded, "Close returned unexpected error")
+	}
 
 	select {
 	case <-exportDone:

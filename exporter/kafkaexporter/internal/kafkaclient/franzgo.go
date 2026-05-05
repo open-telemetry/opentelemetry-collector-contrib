@@ -124,9 +124,10 @@ func (p *FranzSyncProducer) Close(ctx context.Context) error {
 	}()
 	select {
 	case <-done:
+		return nil
 	case <-ctx.Done():
+		return ctx.Err()
 	}
-	return nil
 }
 
 func makeFranzMessages(messages Messages, recordHeaders, metadataHeaders []kgo.RecordHeader) []*kgo.Record {
