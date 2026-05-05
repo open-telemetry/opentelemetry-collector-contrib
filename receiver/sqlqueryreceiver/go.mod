@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.25.0
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.45.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.46.0
 	github.com/SAP/go-hdb v1.16.7
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/go-sql-driver/mysql v1.9.3
