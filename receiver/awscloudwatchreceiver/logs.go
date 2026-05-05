@@ -384,7 +384,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			resourceAttributes := resourceLogs.Resource().Attributes()
 			resourceAttributes.PutStr("aws.region", l.region)
 			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
-			if len(l.accountID) > 0 {
+			if l.accountID != "" {
 				resourceAttributes.PutStr("cloud.account.id", l.accountID)
 			}
 			if logStreamName != "" {
