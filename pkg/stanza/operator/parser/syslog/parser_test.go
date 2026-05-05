@@ -4,6 +4,7 @@
 package syslog_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -22,6 +23,44 @@ func basicConfig() *syslog.Config {
 	cfg := syslog.NewConfigWithID("test_operator_id")
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
+}
+
+func processEntry(t *testing.T, cfg *syslog.Config, body any) (*entry.Entry, error, *testutil.FakeOutput) {
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	fake := testutil.NewFakeOutput(t)
+	err = op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, err)
+
+	newEntry := entry.New()
+	newEntry.Body = body
+	err = op.Process(t.Context(), newEntry)
+	return newEntry, err, fake
+}
+
+func requireReceived(t *testing.T, output *testutil.FakeOutput) *entry.Entry {
+	select {
+	case e := <-output.Received:
+		return e
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+	return nil
+}
+
+func requireNotReceived(t *testing.T, output *testutil.FakeOutput) {
+	select {
+	case e := <-output.Received:
+		require.Failf(t, "Unexpected entry received", "entry: %v", e)
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func requireEntriesEqualExceptObservedTimestamp(t *testing.T, expected, actual *entry.Entry) {
+	actual.ObservedTimestamp = expected.ObservedTimestamp
+	require.Equal(t, expected, actual)
 }
 
 func TestParser(t *testing.T) {
@@ -112,7 +151,7 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 }
 
 func TestSyslogProtocolConfig(t *testing.T) {
-	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164"} {
+	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164", "AUTO", "auto", "AuTo"} {
 		cfg := basicConfig()
 		cfg.Protocol = proto
 		set := componenttest.NewNopTelemetrySettings()
@@ -127,6 +166,203 @@ func TestSyslogProtocolConfig(t *testing.T) {
 		_, err := cfg.Build(set)
 		require.Error(t, err)
 	}
+}
+
+func TestSyslogAutoProtocolMatchesSpecificProtocolParsing(t *testing.T) {
+	ts := time.Now()
+	tests := []struct {
+		name             string
+		specificProtocol string
+		body             string
+		configure        func(*syslog.Config)
+	}{
+		{
+			name:             "RFC5424",
+			specificProtocol: syslog.RFC5424,
+			body:             `<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132"] Found the user`,
+		},
+		{
+			name:             "RFC3164",
+			specificProtocol: syslog.RFC3164,
+			body:             fmt.Sprintf("<34>%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
+			configure: func(cfg *syslog.Config) {
+				cfg.Location = "UTC"
+			},
+		},
+		{
+			name:             "RFC3164WithLocation",
+			specificProtocol: syslog.RFC3164,
+			body:             fmt.Sprintf("<34>%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
+			configure: func(cfg *syslog.Config) {
+				cfg.Location = "America/Detroit"
+			},
+		},
+		{
+			name:             "RFC5424SkipPriHeader",
+			specificProtocol: syslog.RFC5424,
+			body:             `1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 - Found the user`,
+			configure: func(cfg *syslog.Config) {
+				cfg.AllowSkipPriHeader = true
+			},
+		},
+		{
+			name:             "RFC3164SkipPriHeader",
+			specificProtocol: syslog.RFC3164,
+			body:             fmt.Sprintf("%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
+			configure: func(cfg *syslog.Config) {
+				cfg.AllowSkipPriHeader = true
+				cfg.Location = "UTC"
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specificCfg := basicConfig()
+			specificCfg.Protocol = tt.specificProtocol
+			if tt.configure != nil {
+				tt.configure(specificCfg)
+			}
+			specificEntry, err, specificOutput := processEntry(t, specificCfg, tt.body)
+			require.NoError(t, err)
+			requireReceived(t, specificOutput)
+
+			autoCfg := basicConfig()
+			autoCfg.Protocol = syslog.Auto
+			if tt.configure != nil {
+				tt.configure(autoCfg)
+			}
+			autoEntry, err, autoOutput := processEntry(t, autoCfg, tt.body)
+			require.NoError(t, err)
+			requireReceived(t, autoOutput)
+
+			requireEntriesEqualExceptObservedTimestamp(t, specificEntry, autoEntry)
+		})
+	}
+}
+
+func TestSyslogAutoProtocolOnError(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		onError       string
+		expectReceive bool
+	}{
+		{
+			name:          "send",
+			onError:       "send",
+			expectReceive: true,
+		},
+		{
+			name:    "drop",
+			onError: "drop",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := basicConfig()
+			cfg.Protocol = syslog.Auto
+			cfg.OnError = tc.onError
+
+			body := "invalid syslog message"
+			_, err, output := processEntry(t, cfg, body)
+			require.Error(t, err)
+			require.ErrorContains(t, err, "failed to parse as rfc5424")
+			require.ErrorContains(t, err, "failed to parse as rfc3164")
+			if tc.expectReceive {
+				require.Equal(t, body, requireReceived(t, output).Body)
+			} else {
+				requireNotReceived(t, output)
+			}
+		})
+	}
+}
+
+func TestSyslogAutoProtocolRFC6587(t *testing.T) {
+	ts := time.Now()
+	rfc3164Body := fmt.Sprintf("<34>%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05"))
+	rfc5424Body := `<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 - Found the user`
+
+	tests := []struct {
+		name             string
+		specificProtocol string
+		body             string
+		configure        func(*syslog.Config)
+		check            func(*testing.T, *entry.Entry)
+	}{
+		{
+			name:             "OctetCountingRFC5424",
+			specificProtocol: syslog.RFC5424,
+			body:             fmt.Sprintf("%d %s", len(rfc5424Body), rfc5424Body),
+			configure: func(cfg *syslog.Config) {
+				cfg.EnableOctetCounting = true
+			},
+		},
+		{
+			name: "OctetCountingRFC3164",
+			body: fmt.Sprintf("%d %s", len(rfc3164Body), rfc3164Body),
+			configure: func(cfg *syslog.Config) {
+				cfg.EnableOctetCounting = true
+				cfg.Location = "UTC"
+			},
+			check: requireRFC3164Parsed,
+		},
+		{
+			name:             "NonTransparentRFC5424",
+			specificProtocol: syslog.RFC5424,
+			body:             rfc5424Body + "\x00",
+			configure: func(cfg *syslog.Config) {
+				trailer := syslog.NULTrailer
+				cfg.NonTransparentFramingTrailer = &trailer
+			},
+		},
+		{
+			name: "NonTransparentRFC3164",
+			body: rfc3164Body + "\x00",
+			configure: func(cfg *syslog.Config) {
+				trailer := syslog.NULTrailer
+				cfg.NonTransparentFramingTrailer = &trailer
+				cfg.Location = "UTC"
+			},
+			check: requireRFC3164Parsed,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			autoCfg := basicConfig()
+			autoCfg.Protocol = syslog.Auto
+			tt.configure(autoCfg)
+			autoEntry, err, autoOutput := processEntry(t, autoCfg, tt.body)
+			require.NoError(t, err)
+			requireReceived(t, autoOutput)
+
+			if tt.check != nil {
+				tt.check(t, autoEntry)
+				return
+			}
+
+			specificCfg := basicConfig()
+			specificCfg.Protocol = tt.specificProtocol
+			tt.configure(specificCfg)
+			specificEntry, err, specificOutput := processEntry(t, specificCfg, tt.body)
+			require.NoError(t, err)
+			requireReceived(t, specificOutput)
+
+			requireEntriesEqualExceptObservedTimestamp(t, specificEntry, autoEntry)
+		})
+	}
+}
+
+func requireRFC3164Parsed(t *testing.T, e *entry.Entry) {
+	require.Equal(t, entry.Error2, e.Severity)
+	require.Equal(t, "crit", e.SeverityText)
+	require.Equal(t, map[string]any{
+		"appname":       "apache_server",
+		"facility":      4,
+		"facility_text": "auth",
+		"hostname":      "1.2.3.4",
+		"message":       "test message",
+		"priority":      34,
+	}, e.Attributes)
 }
 
 // TestSyslogParserDoesNotSplitBatches verifies that the syslog parser processes
