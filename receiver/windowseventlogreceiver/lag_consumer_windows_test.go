@@ -101,7 +101,7 @@ func TestLagConsumer_RecordsLag(t *testing.T) {
 
 	require.NoError(t, lc.ConsumeLogs(t.Context(), logs))
 
-	got, err := tel.GetMetric("otelcol_receiver_windows_event_log_lag")
+	got, err := tel.GetMetric("otelcol_receiver.windows_event_log.lag")
 	require.NoError(t, err)
 	dp := got.Data.(metricdata.Gauge[float64]).DataPoints
 	require.Len(t, dp, 1)
@@ -133,7 +133,7 @@ func TestLagConsumer_MaxLagAcrossRecords(t *testing.T) {
 
 	require.NoError(t, lc.ConsumeLogs(t.Context(), logs))
 
-	got, err := tel.GetMetric("otelcol_receiver_windows_event_log_lag")
+	got, err := tel.GetMetric("otelcol_receiver.windows_event_log.lag")
 	require.NoError(t, err)
 	dp := got.Data.(metricdata.Gauge[float64]).DataPoints
 	require.Len(t, dp, 1)
@@ -149,7 +149,7 @@ func TestLagConsumer_ObservedTimestampZeroFallsBackToNow(t *testing.T) {
 
 	require.NoError(t, lc.ConsumeLogs(t.Context(), logs))
 
-	got, err := tel.GetMetric("otelcol_receiver_windows_event_log_lag")
+	got, err := tel.GetMetric("otelcol_receiver.windows_event_log.lag")
 	require.NoError(t, err)
 	dp := got.Data.(metricdata.Gauge[float64]).DataPoints
 	require.Len(t, dp, 1)
@@ -169,7 +169,7 @@ func TestLagConsumer_ResetsToZeroAfterCollection(t *testing.T) {
 	require.NoError(t, lc.ConsumeLogs(t.Context(), logs))
 
 	// First collection: should show ~5s lag
-	got, err := tel.GetMetric("otelcol_receiver_windows_event_log_lag")
+	got, err := tel.GetMetric("otelcol_receiver.windows_event_log.lag")
 	require.NoError(t, err)
 	dp := got.Data.(metricdata.Gauge[float64]).DataPoints
 	require.Len(t, dp, 1)

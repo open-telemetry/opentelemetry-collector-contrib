@@ -9,15 +9,15 @@ $defs:
     description: MetricsConfig holds the per-metric enable/disable flags for the receiver's internal telemetry metrics.
     type: object
     properties:
-      receiver_windows_event_log_batch_size:
+      receiver.windows_event_log.batch_size:
         $ref: metric_config
-      receiver_windows_event_log_channel_size:
+      receiver.windows_event_log.channel_size:
         $ref: metric_config
-      receiver_windows_event_log_event_size:
+      receiver.windows_event_log.event_size:
         $ref: metric_config
-      receiver_windows_event_log_lag:
+      receiver.windows_event_log.lag:
         $ref: metric_config
-      receiver_windows_event_log_missed_events:
+      receiver.windows_event_log.missed_events:
         $ref: metric_config
   resolve_si_ds_config:
     description: ResolveSIDsConfig contains configuration for SID resolution
