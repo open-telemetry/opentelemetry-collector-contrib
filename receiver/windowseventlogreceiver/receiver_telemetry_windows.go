@@ -14,6 +14,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
+const channelAttrKey = "windows.event_log.channel.name"
+
 type receiverWindowsTelemetry struct {
 	tb  *metadata.TelemetryBuilder
 	cfg MetricsConfig
@@ -24,7 +26,7 @@ func (r *receiverWindowsTelemetry) RecordEventSize(ctx context.Context, channel 
 		return
 	}
 	r.tb.ReceiverWindowsEventLogEventSize.Record(ctx, int64(sizeBytes),
-		metric.WithAttributes(attribute.String("channel", channel)))
+		metric.WithAttributes(attribute.String(channelAttrKey, channel)))
 }
 
 func (r *receiverWindowsTelemetry) RecordChannelSize(ctx context.Context, channel string, size int64) {
@@ -32,7 +34,7 @@ func (r *receiverWindowsTelemetry) RecordChannelSize(ctx context.Context, channe
 		return
 	}
 	r.tb.ReceiverWindowsEventLogChannelSize.Record(ctx, size,
-		metric.WithAttributes(attribute.String("channel", channel)))
+		metric.WithAttributes(attribute.String(channelAttrKey, channel)))
 }
 
 func (r *receiverWindowsTelemetry) RecordMissedEvents(ctx context.Context, channel string, count int64) {
@@ -40,7 +42,7 @@ func (r *receiverWindowsTelemetry) RecordMissedEvents(ctx context.Context, chann
 		return
 	}
 	r.tb.ReceiverWindowsEventLogMissedEvents.Add(ctx, count,
-		metric.WithAttributes(attribute.String("channel", channel)))
+		metric.WithAttributes(attribute.String(channelAttrKey, channel)))
 }
 
 func (r *receiverWindowsTelemetry) RecordBatchSize(ctx context.Context, channel string, count int64) {
@@ -48,5 +50,5 @@ func (r *receiverWindowsTelemetry) RecordBatchSize(ctx context.Context, channel 
 		return
 	}
 	r.tb.ReceiverWindowsEventLogBatchSize.Record(ctx, count,
-		metric.WithAttributes(attribute.String("channel", channel)))
+		metric.WithAttributes(attribute.String(channelAttrKey, channel)))
 }
