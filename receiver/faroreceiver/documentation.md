@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_faro_events
+### otelcol_faro.event.ingested
 
 Number of Faro events ingested.
 
@@ -14,7 +14,7 @@ Number of Faro events ingested.
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
-### otelcol_faro_exceptions
+### otelcol_faro.exception.ingested
 
 Number of Faro exceptions ingested.
 
@@ -22,7 +22,7 @@ Number of Faro exceptions ingested.
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
-### otelcol_faro_logs
+### otelcol_faro.log.ingested
 
 Number of Faro logs ingested.
 
@@ -30,7 +30,7 @@ Number of Faro logs ingested.
 | ---- | ----------- | ---------- | --------- | --------- |
 | 1 | Sum | Int | true | Development |
 
-### otelcol_faro_measurements
+### otelcol_faro.measurement.ingested
 
 Number of Faro measurements ingested.
 

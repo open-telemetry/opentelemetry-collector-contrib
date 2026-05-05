@@ -16,8 +16,8 @@ issues: [48071]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds `otelcol_faro_logs_total`, `otelcol_faro_measurements_total`,
-  `otelcol_faro_exceptions_total`, and `otelcol_faro_events_total`. Each
+  Adds `otelcol_faro_log_ingested_total`, `otelcol_faro_measurement_ingested_total`,
+  `otelcol_faro_exception_ingested_total`, and `otelcol_faro_event_ingested_total`. Each
   counter is incremented by the number of entries in the corresponding
   payload section after the request body is parsed.
 

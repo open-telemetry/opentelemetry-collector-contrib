@@ -148,16 +148,16 @@ func TestFaroReceiver_CustomTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, resp.Body.Close())
 
-	metadatatest.AssertEqualFaroLogs(t, tel,
+	metadatatest.AssertEqualFaroLogIngested(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 2}},
 		metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualFaroMeasurements(t, tel,
+	metadatatest.AssertEqualFaroMeasurementIngested(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 3}},
 		metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualFaroExceptions(t, tel,
+	metadatatest.AssertEqualFaroExceptionIngested(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	metadatatest.AssertEqualFaroEvents(t, tel,
+	metadatatest.AssertEqualFaroEventIngested(t, tel,
 		[]metricdata.DataPoint[int64]{{Value: 4}},
 		metricdatatest.IgnoreTimestamp())
 }

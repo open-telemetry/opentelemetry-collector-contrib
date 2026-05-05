@@ -21,9 +21,9 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	return set
 }
 
-func AssertEqualFaroEvents(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFaroEventIngested(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_faro_events",
+		Name:        "otelcol_faro.event.ingested",
 		Description: "Number of Faro events ingested. [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
@@ -32,14 +32,14 @@ func AssertEqualFaroEvents(t *testing.T, tt *componenttest.Telemetry, dps []metr
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_faro_events")
+	got, err := tt.GetMetric("otelcol_faro.event.ingested")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFaroExceptions(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFaroExceptionIngested(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_faro_exceptions",
+		Name:        "otelcol_faro.exception.ingested",
 		Description: "Number of Faro exceptions ingested. [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
@@ -48,14 +48,14 @@ func AssertEqualFaroExceptions(t *testing.T, tt *componenttest.Telemetry, dps []
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_faro_exceptions")
+	got, err := tt.GetMetric("otelcol_faro.exception.ingested")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFaroLogs(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFaroLogIngested(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_faro_logs",
+		Name:        "otelcol_faro.log.ingested",
 		Description: "Number of Faro logs ingested. [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
@@ -64,14 +64,14 @@ func AssertEqualFaroLogs(t *testing.T, tt *componenttest.Telemetry, dps []metric
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_faro_logs")
+	got, err := tt.GetMetric("otelcol_faro.log.ingested")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFaroMeasurements(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFaroMeasurementIngested(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_faro_measurements",
+		Name:        "otelcol_faro.measurement.ingested",
 		Description: "Number of Faro measurements ingested. [Development]",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
@@ -80,7 +80,7 @@ func AssertEqualFaroMeasurements(t *testing.T, tt *componenttest.Telemetry, dps 
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_faro_measurements")
+	got, err := tt.GetMetric("otelcol_faro.measurement.ingested")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

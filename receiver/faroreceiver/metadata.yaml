@@ -16,7 +16,7 @@ status:
 
 telemetry:
   metrics:
-    faro_events:
+    faro.event.ingested:
       enabled: true
       description: Number of Faro events ingested.
       stability: development
@@ -24,7 +24,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    faro_exceptions:
+    faro.exception.ingested:
       enabled: true
       description: Number of Faro exceptions ingested.
       stability: development
@@ -32,7 +32,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    faro_logs:
+    faro.log.ingested:
       enabled: true
       description: Number of Faro logs ingested.
       stability: development
@@ -40,7 +40,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    faro_measurements:
+    faro.measurement.ingested:
       enabled: true
       description: Number of Faro measurements ingested.
       stability: development
