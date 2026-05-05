@@ -61,7 +61,7 @@ func (p *chainProvider) SourceWithAliases(ctx context.Context) (source.Source, [
 	replies := make([]chan reply, len(p.priorityList))
 	for i, sourceName := range p.priorityList {
 		provider := p.providers[sourceName]
-		replies[i] = make(chan reply, 1)
+		replies[i] = make(chan reply, 1) // Capacity required to avoid leaking goroutines / blocking aliasesWg
 		p.logger.Debug("Trying out source provider", zap.String("provider", sourceName))
 		isAliased := slices.Contains(p.aliasedList, sourceName)
 		if isAliased {
