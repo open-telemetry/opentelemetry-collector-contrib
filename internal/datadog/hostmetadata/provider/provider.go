@@ -116,7 +116,7 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 // Chain providers into a single provider that returns the first available hostname.
 // aliasedList contains providers whose hostname results are always awaited and added as aliases
 // when not chosen as the main source.
-func Chain(logger *zap.Logger, providers map[string]source.Provider, priorityList []string, aliasedList []string, timeout time.Duration) (SourceAliasesProvider, error) {
+func Chain(logger *zap.Logger, providers map[string]source.Provider, priorityList, aliasedList []string, timeout time.Duration) (SourceAliasesProvider, error) {
 	for _, source := range priorityList {
 		if _, ok := providers[source]; !ok {
 			return nil, fmt.Errorf("%q source is not available in providers", source)

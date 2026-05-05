@@ -103,7 +103,6 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 		hm.Meta.SocketHostname = systemHostInfo.OS
 		hm.Meta.SocketFqdn = systemHostInfo.FQDN
 	}
-
 }
 
 type pusher struct {
