@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
-	apps_v1 "k8s.io/api/apps/v1"
-	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -209,7 +207,7 @@ func New(
 		return nil, err
 	}
 
-	c.namespaceInformer = informersFactory.newNamespaceInformer(c.kc)
+	c.namespaceInformer = informersFactory.newNamespaceInformer(c.mc)
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
@@ -223,23 +221,23 @@ func New(
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
+		c.nodeInformer = newNodeSharedInformer(c.mc, c.Filters.Node)
 	}
 
 	if c.extractDeploymentLabelsAnnotations() {
-		c.deploymentInformer = newDeploymentSharedInformer(c.kc, c.Filters.Namespace)
+		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace)
 	}
 
 	if c.extractStatefulSetLabelsAnnotations() {
-		c.statefulsetInformer = newStatefulSetSharedInformer(c.kc, c.Filters.Namespace)
+		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace)
 	}
 
 	if c.extractDaemonSetLabelsAnnotations() {
-		c.daemonsetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
+		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace)
 	}
 
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
-		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
+		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace)
 	}
 	return c, err
 }
@@ -447,10 +445,10 @@ func (c *WatchClient) handleNamespaceAdd(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherNamespaceAdded.Add(context.Background(), 1)
 	}
-	if namespace, ok := obj.(*api_v1.Namespace); ok {
+	if namespace, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Namespace", zap.Any("received", obj))
 	}
 }
 
@@ -461,10 +459,10 @@ func (c *WatchClient) handleNamespaceUpdate(_, newNamespace any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherNamespaceUpdated.Add(context.Background(), 1)
 	}
-	if namespace, ok := newNamespace.(*api_v1.Namespace); ok {
+	if namespace, ok := newNamespace.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", newNamespace))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Namespace", zap.Any("received", newNamespace))
 	}
 }
 
@@ -475,7 +473,7 @@ func (c *WatchClient) handleNamespaceDelete(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherNamespaceDeleted.Add(context.Background(), 1)
 	}
-	if namespace, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Namespace); ok {
+	if namespace, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
 		c.m.Lock()
 		if ns, ok := c.Namespaces[namespace.Name]; ok {
 			// When a namespace is deleted all the pods(and other k8s objects in that namespace) in that namespace are deleted before it.
@@ -485,7 +483,7 @@ func (c *WatchClient) handleNamespaceDelete(obj any) {
 		}
 		c.m.Unlock()
 	} else {
-		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Namespace", zap.Any("received", obj))
 	}
 }
 
@@ -496,10 +494,10 @@ func (c *WatchClient) handleNodeAdd(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherNodeAdded.Add(context.Background(), 1)
 	}
-	if node, ok := obj.(*api_v1.Node); ok {
+	if node, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateNode(node)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Node", zap.Any("received", obj))
 	}
 }
 
@@ -510,10 +508,10 @@ func (c *WatchClient) handleNodeUpdate(_, newNode any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherNodeUpdated.Add(context.Background(), 1)
 	}
-	if node, ok := newNode.(*api_v1.Node); ok {
+	if node, ok := newNode.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateNode(node)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", newNode))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Node", zap.Any("received", newNode))
 	}
 }
 
@@ -524,14 +522,14 @@ func (c *WatchClient) handleNodeDelete(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherNodeDeleted.Add(context.Background(), 1)
 	}
-	if node, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Node); ok {
+	if node, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
 		c.m.Lock()
 		if n, ok := c.Nodes[node.Name]; ok {
 			delete(c.Nodes, n.Name)
 		}
 		c.m.Unlock()
 	} else {
-		c.logger.Error("object received was not of type api_v1.Node", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Node", zap.Any("received", obj))
 	}
 }
 
@@ -542,10 +540,10 @@ func (c *WatchClient) handleDeploymentAdd(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherDeploymentAdded.Add(context.Background(), 1)
 	}
-	if deployment, ok := obj.(*apps_v1.Deployment); ok {
+	if deployment, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateDeployment(deployment)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Deployment", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Deployment", zap.Any("received", obj))
 	}
 }
 
@@ -556,10 +554,10 @@ func (c *WatchClient) handleDeploymentUpdate(_, newDeployment any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherDeploymentUpdated.Add(context.Background(), 1)
 	}
-	if deployment, ok := newDeployment.(*apps_v1.Deployment); ok {
+	if deployment, ok := newDeployment.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateDeployment(deployment)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Deployment", zap.Any("received", newDeployment))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Deployment", zap.Any("received", newDeployment))
 	}
 }
 
@@ -570,14 +568,14 @@ func (c *WatchClient) handleDeploymentDelete(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherDeploymentDeleted.Add(context.Background(), 1)
 	}
-	if deployment, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.Deployment); ok {
+	if deployment, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
 		c.m.Lock()
 		if n, ok := c.Deployments[string(deployment.UID)]; ok {
 			delete(c.Deployments, n.UID)
 		}
 		c.m.Unlock()
 	} else {
-		c.logger.Error("object received was not of type api_v1.Deployment", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Deployment", zap.Any("received", obj))
 	}
 }
 
@@ -588,10 +586,10 @@ func (c *WatchClient) handleStatefulSetAdd(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherStatefulsetAdded.Add(context.Background(), 1)
 	}
-	if statefulset, ok := obj.(*apps_v1.StatefulSet); ok {
+	if statefulset, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateStatefulSet(statefulset)
 	} else {
-		c.logger.Error("object received was not of type api_v1.StatefulSet", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for StatefulSet", zap.Any("received", obj))
 	}
 }
 
@@ -602,10 +600,10 @@ func (c *WatchClient) handleStatefulSetUpdate(_, newStatefulSet any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherStatefulsetUpdated.Add(context.Background(), 1)
 	}
-	if statefulset, ok := newStatefulSet.(*apps_v1.StatefulSet); ok {
+	if statefulset, ok := newStatefulSet.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateStatefulSet(statefulset)
 	} else {
-		c.logger.Error("object received was not of type api_v1.StatefulSet", zap.Any("received", newStatefulSet))
+		c.logger.Error("object received was not of type PartialObjectMetadata for StatefulSet", zap.Any("received", newStatefulSet))
 	}
 }
 
@@ -616,14 +614,14 @@ func (c *WatchClient) handleStatefulSetDelete(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherStatefulsetDeleted.Add(context.Background(), 1)
 	}
-	if statefulset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.StatefulSet); ok {
+	if statefulset, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
 		c.m.Lock()
 		if n, ok := c.StatefulSets[string(statefulset.UID)]; ok {
 			delete(c.StatefulSets, n.UID)
 		}
 		c.m.Unlock()
 	} else {
-		c.logger.Error("object received was not of type api_v1.StatefulSet", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for StatefulSet", zap.Any("received", obj))
 	}
 }
 
@@ -634,10 +632,10 @@ func (c *WatchClient) handleDaemonSetAdd(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherDaemonsetAdded.Add(context.Background(), 1)
 	}
-	if daemonset, ok := obj.(*apps_v1.DaemonSet); ok {
+	if daemonset, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateDaemonSet(daemonset)
 	} else {
-		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for DaemonSet", zap.Any("received", obj))
 	}
 }
 
@@ -648,10 +646,10 @@ func (c *WatchClient) handleDaemonSetUpdate(_, newDaemonSet any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherDaemonsetUpdated.Add(context.Background(), 1)
 	}
-	if daemonset, ok := newDaemonSet.(*apps_v1.DaemonSet); ok {
+	if daemonset, ok := newDaemonSet.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateDaemonSet(daemonset)
 	} else {
-		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", newDaemonSet))
+		c.logger.Error("object received was not of type PartialObjectMetadata for DaemonSet", zap.Any("received", newDaemonSet))
 	}
 }
 
@@ -662,14 +660,14 @@ func (c *WatchClient) handleDaemonSetDelete(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherDaemonsetDeleted.Add(context.Background(), 1)
 	}
-	if daemonset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.DaemonSet); ok {
+	if daemonset, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
 		c.m.Lock()
 		if n, ok := c.DaemonSets[string(daemonset.UID)]; ok {
 			delete(c.DaemonSets, n.UID)
 		}
 		c.m.Unlock()
 	} else {
-		c.logger.Error("object received was not of type api_v1.DaemonSet", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for DaemonSet", zap.Any("received", obj))
 	}
 }
 
@@ -680,10 +678,10 @@ func (c *WatchClient) handleJobAdd(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherJobAdded.Add(context.Background(), 1)
 	}
-	if job, ok := obj.(*batch_v1.Job); ok {
+	if job, ok := obj.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateJob(job)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Job", zap.Any("received", obj))
 	}
 }
 
@@ -694,10 +692,10 @@ func (c *WatchClient) handleJobUpdate(_, newJob any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherJobUpdated.Add(context.Background(), 1)
 	}
-	if job, ok := newJob.(*batch_v1.Job); ok {
+	if job, ok := newJob.(*meta_v1.PartialObjectMetadata); ok {
 		c.addOrUpdateJob(job)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", newJob))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Job", zap.Any("received", newJob))
 	}
 }
 
@@ -708,14 +706,14 @@ func (c *WatchClient) handleJobDelete(obj any) {
 	if metadata.ProcessorK8sattributesTelemetryEnableNewFormatMetricsFeatureGate.IsEnabled() {
 		c.telemetryBuilder.K8sWatcherJobDeleted.Add(context.Background(), 1)
 	}
-	if job, ok := ignoreDeletedFinalStateUnknown(obj).(*batch_v1.Job); ok {
+	if job, ok := ignoreDeletedFinalStateUnknown(obj).(*meta_v1.PartialObjectMetadata); ok {
 		c.m.Lock()
 		if n, ok := c.Jobs[string(job.UID)]; ok {
 			delete(c.Jobs, n.UID)
 		}
 		c.m.Unlock()
 	} else {
-		c.logger.Error("object received was not of type api_v1.Job", zap.Any("received", obj))
+		c.logger.Error("object received was not of type PartialObjectMetadata for Job", zap.Any("received", obj))
 	}
 }
 
@@ -1280,7 +1278,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	return containers
 }
 
-func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
+func (c *WatchClient) extractNamespaceAttributes(namespace *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
 	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
@@ -1307,7 +1305,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	return tags
 }
 
-func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
+func (c *WatchClient) extractNodeAttributes(node *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
 	enableStable := metadata.ProcessorK8sattributesEmitV1K8sConventionsFeatureGate.IsEnabled()
@@ -1333,7 +1331,7 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	return tags
 }
 
-func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[string]string {
+func (c *WatchClient) extractDeploymentAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
@@ -1347,7 +1345,7 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	return tags
 }
 
-func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[string]string {
+func (c *WatchClient) extractStatefulSetAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
@@ -1361,7 +1359,7 @@ func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[s
 	return tags
 }
 
-func (c *WatchClient) extractDaemonSetAttributes(d *apps_v1.DaemonSet) map[string]string {
+func (c *WatchClient) extractDaemonSetAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
@@ -1375,7 +1373,7 @@ func (c *WatchClient) extractDaemonSetAttributes(d *apps_v1.DaemonSet) map[strin
 	return tags
 }
 
-func (c *WatchClient) extractJobAttributes(d *batch_v1.Job) map[string]string {
+func (c *WatchClient) extractJobAttributes(d *meta_v1.PartialObjectMetadata) map[string]string {
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
@@ -1674,7 +1672,7 @@ func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, er
 	return labelSelector, fields.AndSelectors(selectors...), nil
 }
 
-func (c *WatchClient) addOrUpdateNamespace(namespace *api_v1.Namespace) {
+func (c *WatchClient) addOrUpdateNamespace(namespace *meta_v1.PartialObjectMetadata) {
 	newNamespace := &Namespace{
 		Name:         namespace.Name,
 		NamespaceUID: string(namespace.UID),
@@ -1789,7 +1787,7 @@ func (c *WatchClient) extractNodeUID() bool {
 	return c.Rules.NodeUID
 }
 
-func (c *WatchClient) addOrUpdateNode(node *api_v1.Node) {
+func (c *WatchClient) addOrUpdateNode(node *meta_v1.PartialObjectMetadata) {
 	newNode := &Node{
 		Name:    node.Name,
 		NodeUID: string(node.UID),
@@ -1803,7 +1801,7 @@ func (c *WatchClient) addOrUpdateNode(node *api_v1.Node) {
 	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateDeployment(deployment *apps_v1.Deployment) {
+func (c *WatchClient) addOrUpdateDeployment(deployment *meta_v1.PartialObjectMetadata) {
 	newDeployment := &Deployment{
 		Name: deployment.Name,
 		UID:  string(deployment.UID),
@@ -1817,7 +1815,7 @@ func (c *WatchClient) addOrUpdateDeployment(deployment *apps_v1.Deployment) {
 	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateStatefulSet(statefulset *apps_v1.StatefulSet) {
+func (c *WatchClient) addOrUpdateStatefulSet(statefulset *meta_v1.PartialObjectMetadata) {
 	newStatefulSet := &StatefulSet{
 		Name: statefulset.Name,
 		UID:  string(statefulset.UID),
@@ -1831,7 +1829,7 @@ func (c *WatchClient) addOrUpdateStatefulSet(statefulset *apps_v1.StatefulSet) {
 	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateDaemonSet(daemonset *apps_v1.DaemonSet) {
+func (c *WatchClient) addOrUpdateDaemonSet(daemonset *meta_v1.PartialObjectMetadata) {
 	newDaemonSet := &DaemonSet{
 		Name: daemonset.Name,
 		UID:  string(daemonset.UID),
@@ -1845,7 +1843,7 @@ func (c *WatchClient) addOrUpdateDaemonSet(daemonset *apps_v1.DaemonSet) {
 	c.m.Unlock()
 }
 
-func (c *WatchClient) addOrUpdateJob(job *batch_v1.Job) {
+func (c *WatchClient) addOrUpdateJob(job *meta_v1.PartialObjectMetadata) {
 	newJob := &Job{
 		Name: job.Name,
 		UID:  string(job.UID),

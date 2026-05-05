@@ -18,8 +18,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-	apps_v1 "k8s.io/api/apps/v1"
-	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -106,11 +104,11 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Empty(t, c.Namespaces)
 
-	namespace := &api_v1.Namespace{}
+	namespace := &meta_v1.PartialObjectMetadata{}
 	handler(namespace)
 	assert.Empty(t, c.Namespaces)
 
-	namespace = &api_v1.Namespace{}
+	namespace = &meta_v1.PartialObjectMetadata{}
 	namespace.Name = "namespaceA"
 	handler(namespace)
 	assert.Len(t, c.Namespaces, 1)
@@ -118,7 +116,7 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj an
 	assert.Equal(t, "namespaceA", got.Name)
 	assert.Empty(t, got.NamespaceUID)
 
-	namespace = &api_v1.Namespace{}
+	namespace = &meta_v1.PartialObjectMetadata{}
 	namespace.Name = "namespaceB"
 	namespace.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	handler(namespace)
@@ -131,11 +129,11 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj an
 func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Empty(t, c.Nodes)
 
-	node := &api_v1.Node{}
+	node := &meta_v1.PartialObjectMetadata{}
 	handler(node)
 	assert.Empty(t, c.Nodes)
 
-	node = &api_v1.Node{}
+	node = &meta_v1.PartialObjectMetadata{}
 	node.Name = "nodeA"
 	handler(node)
 	assert.Len(t, c.Nodes, 1)
@@ -144,7 +142,7 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, "nodeA", got.Name)
 	assert.Empty(t, got.NodeUID)
 
-	node = &api_v1.Node{}
+	node = &meta_v1.PartialObjectMetadata{}
 	node.Name = "nodeB"
 	node.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	handler(node)
@@ -426,7 +424,7 @@ func TestNamespaceUpdate(t *testing.T) {
 	c, _ := newTestClient(t)
 	namespaceAddAndUpdateTest(t, c, func(obj any) {
 		// first argument (old namespace) is not used right now
-		c.handleNamespaceUpdate(&api_v1.Namespace{}, obj)
+		c.handleNamespaceUpdate(&meta_v1.PartialObjectMetadata{}, obj)
 	})
 }
 
@@ -434,7 +432,7 @@ func TestNodeUpdate(t *testing.T) {
 	c, _ := newTestClient(t)
 	nodeAddAndUpdateTest(t, c, func(obj any) {
 		// first argument (old node) is not used right now
-		c.handleNodeUpdate(&api_v1.Node{}, obj)
+		c.handleNodeUpdate(&meta_v1.PartialObjectMetadata{}, obj)
 	})
 }
 
@@ -511,10 +509,10 @@ func TestNamespaceDelete(t *testing.T) {
 	assert.Equal(t, "namespaceA", c.Namespaces["namespaceA"].Name)
 
 	// delete empty namespace
-	c.handleNamespaceDelete(&api_v1.Namespace{})
+	c.handleNamespaceDelete(&meta_v1.PartialObjectMetadata{})
 
 	// delete nonexistent namespace
-	namespace := &api_v1.Namespace{}
+	namespace := &meta_v1.PartialObjectMetadata{}
 	namespace.Name = "namespaceC"
 	c.handleNamespaceDelete(namespace)
 	assert.Len(t, c.Namespaces, 2)
@@ -546,10 +544,10 @@ func TestNodeDelete(t *testing.T) {
 	assert.Equal(t, "nodeA", c.Nodes["nodeA"].Name)
 
 	// delete empty node
-	c.handleNodeDelete(&api_v1.Node{})
+	c.handleNodeDelete(&meta_v1.PartialObjectMetadata{})
 
 	// delete nonexistent node
-	node := &api_v1.Node{}
+	node := &meta_v1.PartialObjectMetadata{}
 	node.Name = "nodeC"
 	c.handleNodeDelete(node)
 	assert.Len(t, c.Nodes, 2)
@@ -1352,7 +1350,7 @@ func TestRemoveUnnecessaryPodData_ClonesLabelsAndAnnotations(t *testing.T) {
 func TestNamespaceExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	namespace := &api_v1.Namespace{
+	namespace := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "auth-service-namespace-abc12-xyz3",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -1643,7 +1641,7 @@ func TestDeleteQueue(t *testing.T) {
 func TestNodeExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	node := &api_v1.Node{
+	node := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -1810,7 +1808,7 @@ func TestNodeExtractionRules(t *testing.T) {
 func TestDeploymentExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	deployment := &apps_v1.Deployment{
+	deployment := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -1962,7 +1960,7 @@ func TestDeploymentNameFromReplicaSet(t *testing.T) {
 func TestStatefulSetExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	statefulset := &apps_v1.StatefulSet{
+	statefulset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -2073,7 +2071,7 @@ func TestStatefulSetExtractionRules(t *testing.T) {
 func TestDaemonSetExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	daemonset := &apps_v1.DaemonSet{
+	daemonset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -2184,7 +2182,7 @@ func TestDaemonSetExtractionRules(t *testing.T) {
 func TestJobExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	job := &batch_v1.Job{
+	job := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "k8s-node-example",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -3917,7 +3915,7 @@ func TestCronJobExtractionRules_FromJobOwner(t *testing.T) {
 	}
 
 	// The Job object the pod points to (we'll mutate OwnerReferences per test case)
-	job := &batch_v1.Job{
+	job := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "my-cronjob-27667920",
 			Namespace: "ns1",
@@ -4299,7 +4297,7 @@ func TestDeploymentNameFromReplicaSetFeature(t *testing.T) {
 
 			// Create a replicaset if needed
 			if tt.replicaSetInCache {
-				replicaset := &apps_v1.ReplicaSet{
+				replicaset := &meta_v1.PartialObjectMetadata{
 					ObjectMeta: meta_v1.ObjectMeta{
 						Name:      tt.replicaSetName,
 						Namespace: "default",
@@ -4419,7 +4417,7 @@ func TestHandleDeploymentUpdate(t *testing.T) {
 		DeploymentName: true,
 	}
 
-	deployment := &apps_v1.Deployment{
+	deployment := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-deployment",
 			Namespace: "default",
@@ -4432,7 +4430,7 @@ func TestHandleDeploymentUpdate(t *testing.T) {
 	assert.Len(t, c.Deployments, 1)
 
 	// Update deployment
-	updatedDeployment := &apps_v1.Deployment{
+	updatedDeployment := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-deployment-updated",
 			Namespace: "default",
@@ -4450,7 +4448,7 @@ func TestHandleDeploymentUpdate(t *testing.T) {
 func TestHandleDeploymentDelete(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	deployment := &apps_v1.Deployment{
+	deployment := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-deployment",
 			Namespace: "default",
@@ -4477,7 +4475,7 @@ func TestHandleStatefulSetUpdate(t *testing.T) {
 		StatefulSetName: true,
 	}
 
-	statefulset := &apps_v1.StatefulSet{
+	statefulset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-statefulset",
 			Namespace: "default",
@@ -4490,7 +4488,7 @@ func TestHandleStatefulSetUpdate(t *testing.T) {
 	assert.Len(t, c.StatefulSets, 1)
 
 	// Update statefulset
-	updatedStatefulSet := &apps_v1.StatefulSet{
+	updatedStatefulSet := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-statefulset-updated",
 			Namespace: "default",
@@ -4508,7 +4506,7 @@ func TestHandleStatefulSetUpdate(t *testing.T) {
 func TestHandleStatefulSetDelete(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	statefulset := &apps_v1.StatefulSet{
+	statefulset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-statefulset",
 			Namespace: "default",
@@ -4535,7 +4533,7 @@ func TestHandleDaemonSetUpdate(t *testing.T) {
 		DaemonSetName: true,
 	}
 
-	daemonset := &apps_v1.DaemonSet{
+	daemonset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-daemonset",
 			Namespace: "default",
@@ -4548,7 +4546,7 @@ func TestHandleDaemonSetUpdate(t *testing.T) {
 	assert.Len(t, c.DaemonSets, 1)
 
 	// Update daemonset
-	updatedDaemonSet := &apps_v1.DaemonSet{
+	updatedDaemonSet := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-daemonset-updated",
 			Namespace: "default",
@@ -4566,7 +4564,7 @@ func TestHandleDaemonSetUpdate(t *testing.T) {
 func TestHandleDaemonSetDelete(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	daemonset := &apps_v1.DaemonSet{
+	daemonset := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-daemonset",
 			Namespace: "default",
@@ -4591,7 +4589,7 @@ func TestHandleJobUpdate(t *testing.T) {
 		JobName: true,
 	}
 
-	job := &batch_v1.Job{
+	job := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-job",
 			Namespace: "default",
@@ -4604,7 +4602,7 @@ func TestHandleJobUpdate(t *testing.T) {
 	assert.Len(t, c.Jobs, 1)
 
 	// Update job
-	updatedJob := &batch_v1.Job{
+	updatedJob := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-job-updated",
 			Namespace: "default",
@@ -4622,7 +4620,7 @@ func TestHandleJobUpdate(t *testing.T) {
 func TestHandleJobDelete(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
-	job := &batch_v1.Job{
+	job := &meta_v1.PartialObjectMetadata{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:      "test-job",
 			Namespace: "default",
