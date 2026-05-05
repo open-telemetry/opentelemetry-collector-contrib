@@ -41,7 +41,7 @@ components:
         - interval
         - k8s_attributes
         - log_dedup
-        - metricstransform
+        - metrics_transform
         - probabilistic_sampler
         - redaction
         - remotetap

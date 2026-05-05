@@ -209,8 +209,8 @@ components:
     - processor/logstransform
     - processor/lookup
     - processor/metric_start_time
+    - processor/metrics_transform
     - processor/metricsgeneration
-    - processor/metricstransform
     - processor/novadetector
     - processor/oracleclouddetector
     - processor/probabilistic_sampler
