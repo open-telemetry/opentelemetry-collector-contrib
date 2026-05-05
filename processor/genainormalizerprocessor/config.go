@@ -6,19 +6,26 @@ package genainormalizerprocessor // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"fmt"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // SourceName identifies a supported source instrumentation convention.
 type SourceName string
 
 const (
+	// SourceOpenInference enables normalization of OpenInference attributes.
 	SourceOpenInference SourceName = "openinference"
-	SourceOpenLLMetry   SourceName = "openllmetry"
+	// SourceOpenLLMetry enables normalization of OpenLLMetry attributes.
+	SourceOpenLLMetry SourceName = "openllmetry"
+	// SourceCustom applies only user-supplied mappings via CustomMappings.
+	SourceCustom SourceName = "custom"
 )
 
 var supportedSources = map[SourceName]struct{}{
 	SourceOpenInference: {},
 	SourceOpenLLMetry:   {},
+	SourceCustom:        {},
 }
 
 // Source configures normalization behavior for a single source convention.
@@ -26,20 +33,31 @@ type Source struct {
 	// RemoveOriginals deletes source attributes after mapping.
 	RemoveOriginals bool `mapstructure:"remove_originals"`
 
-	// Overwrite controls whether existing target attributes are overwritten.
-	// When true, the target attribute is replaced if it already exists on the span.
-	// When false (default), the mapping is skipped.
+	// Overwrite replaces target attributes that already exist on the span.
+	// When false (default), existing target attributes are left unchanged.
 	Overwrite bool `mapstructure:"overwrite"`
 
-	// CustomMappings defines additional source->target attribute mappings for this source.
+	// CustomMappings defines additional source->target attribute mappings.
 	// Applied after built-in mappings and override them on conflict.
+	// Required when the source is SourceCustom.
 	CustomMappings map[string]string `mapstructure:"custom_mappings"`
 }
 
 // Config holds the configuration for the genainormalizer processor.
 type Config struct {
 	// Sources selects which source conventions to normalize and their per-source options.
+	// If omitted, both openinference and openllmetry are enabled with default options.
+	// If specified, the provided map replaces the defaults entirely.
 	Sources map[SourceName]Source `mapstructure:"sources"`
+}
+
+// Unmarshal implements confmap.Unmarshaler so that a user-specified `sources`
+// map replaces the default sources instead of merging with them.
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf.IsSet("sources") {
+		c.Sources = nil
+	}
+	return conf.Unmarshal(c)
 }
 
 // Validate checks that the configuration is valid.
@@ -50,6 +68,9 @@ func (c *Config) Validate() error {
 	for name, src := range c.Sources {
 		if _, ok := supportedSources[name]; !ok {
 			return fmt.Errorf("unknown source %q", name)
+		}
+		if name == SourceCustom && len(src.CustomMappings) == 0 {
+			return fmt.Errorf("sources[%q]: custom_mappings must be non-empty for the custom source", name)
 		}
 		for srcAttr, tgtAttr := range src.CustomMappings {
 			if srcAttr == "" {

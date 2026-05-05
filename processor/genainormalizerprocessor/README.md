@@ -13,68 +13,90 @@
 
 The GenAI Normalizer Processor rewrites span attributes emitted by non-OTel GenAI instrumentation libraries into the [OTel GenAI Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/). Normalization is applied per configured source.
 
-Supported sources:
+## Configuration
+
+### Supported sources:
 
 - `openinference` — [OpenInference](https://github.com/Arize-ai/openinference) instrumentation
 - `openllmetry` — [OpenLLMetry](https://github.com/traceloop/openllmetry) instrumentation
-
-## Configuration
-
-```yaml
-processors:
-  genainormalizer:
-    sources:
-      openinference:
-        remove_originals: true
-        overwrite: false
-        custom_mappings:
-          my_vendor.model: gen_ai.request.model
-      openllmetry:
-        remove_originals: true
-```
+- `custom` — user-defined mappings; no built-in mappings applied
 
 ### Top-level fields
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `sources` | map[[source](#source)] | `{}` | Source conventions to normalize. At least one required. |
+| `sources` | map[[source](#source)] | `{openinference: {}, openllmetry: {}}` | Source conventions to normalize. See [Defaults and overrides](#defaults-and-overrides). |
 
 ### Source
 
-Each entry in `sources` is keyed by a supported source name (`openinference`, `openllmetry`) and accepts the following fields:
+Each entry in `sources` is keyed by a supported source name (`openinference`, `openllmetry`, `custom`) and accepts the following fields:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `remove_originals` | bool | `false` | Delete source attributes after mapping. |
 | `overwrite` | bool | `false` | When `true`, overwrite the target attribute if it already exists on the span. When `false`, skip the mapping. |
-| `custom_mappings` | map[string]string | `{}` | Additional source-to-target attribute mappings applied after built-in mappings, overriding them on conflict. |
+| `custom_mappings` | map[string]string | `{}` | Additional source-to-target attribute mappings applied after built-in mappings, overriding them on conflict. Required when the source is `custom`. |
+
+### Defaults and overrides
+
+If `sources` is omitted, both `openinference` and `openllmetry` are enabled with default options. If `sources` is specified, the provided map replaces the defaults entirely — there is no field-level merge. To disable a default source, omit it from `sources`.
 
 ## Examples
 
-Normalize both OpenInference and OpenLLMetry, keeping source attributes for downstream consumers that still depend on them:
+Use defaults (openinference and openllmetry, default options):
+
+```yaml
+processors:
+  genainormalizer: {}
+```
+
+Normalize only OpenInference (openllmetry is dropped):
 
 ```yaml
 processors:
   genainormalizer:
     sources:
       openinference: {}
-      openllmetry: {}
 ```
 
-Normalize OpenInference only, delete source attributes, add a vendor-specific mapping:
+Normalize only OpenLLMetry, deleting source attributes after mapping:
+
+```yaml
+processors:
+  genainormalizer:
+    sources:
+      openllmetry:
+        remove_originals: true
+```
+
+Use only user-defined mappings (both built-in sources are dropped):
+
+```yaml
+processors:
+  genainormalizer:
+    sources:
+      custom:
+        custom_mappings:
+          my_vendor.model: gen_ai.request.model
+          my_vendor.tokens: gen_ai.usage.input_tokens
+```
+
+Combine a built-in source with user-defined mappings on top:
 
 ```yaml
 processors:
   genainormalizer:
     sources:
       openinference:
-        remove_originals: true
         custom_mappings:
           my_vendor.model: gen_ai.request.model
+      custom:
+        custom_mappings:
+          other_vendor.model: gen_ai.request.model
 ```
 
 ## Relationship to other processors
 
-The [`schemaprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/schemaprocessor) translates between OTel semantic convention versions using `schema_url` and the OTel schema file format. Source conventions normalized by this processor (OpenInference, OpenLLMetry) do not set `schema_url` and do not publish OTel schema files, so `schemaprocessor` cannot be used for this translation today.
+The [`schemaprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/schemaprocessor) translates between OTel semantic convention versions using `schema_url` and the OTel schema file format. Source conventions normalized by this processor do not set `schema_url` and do not publish OTel schema files, so `schemaprocessor` cannot be used for this translation today.
 
 The [`transformprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) can rewrite attributes via OTTL but requires users to author and maintain the full mapping set themselves. This processor ships the mappings built-in.

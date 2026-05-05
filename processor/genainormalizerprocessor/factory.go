@@ -23,9 +23,14 @@ func NewFactory() processor.Factory {
 	)
 }
 
+// createDefaultConfig returns the default configuration. Both openinference
+// and openllmetry are enabled with zero-value options.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Sources: map[SourceName]Source{},
+		Sources: map[SourceName]Source{
+			SourceOpenInference: {RemoveOriginals: false, Overwrite: false, CustomMappings: nil},
+			SourceOpenLLMetry:   {RemoveOriginals: false, Overwrite: false, CustomMappings: nil},
+		},
 	}
 }
 
@@ -40,7 +45,6 @@ func createTracesProcessor(
 		return nil, err
 	}
 	return processorhelper.NewTraces(ctx, set, cfg, next, processTraces,
-		// Declared up front so the capabilities don't change when normalization logic lands.
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 }

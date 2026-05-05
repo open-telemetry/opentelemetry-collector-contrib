@@ -9,8 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// processTraces is a stub that passes traces through unchanged.
-// The normalization logic will be added in a follow-up PR.
+// processTraces passes traces through unchanged. Normalization is not yet implemented.
 func processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	return td, nil
 }
