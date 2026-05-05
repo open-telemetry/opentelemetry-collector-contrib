@@ -29,8 +29,11 @@ type StreamHandler struct {
 	stream      pubsubpb.Subscriber_StreamingPullClient
 	pushMessage func(ctx context.Context, message *pubsubpb.ReceivedMessage) error
 	acks        []string
-	mutex       sync.Mutex
-	client      SubscriberClient
+	// modAckDeadlines and modAckIDs are paired slices: modAckIDs[i] gets deadline modAckDeadlines[i].
+	modAckDeadlines []int32
+	modAckIDs       []string
+	mutex           sync.Mutex
+	client          SubscriberClient
 
 	clientID     string
 	subscription string
@@ -50,11 +53,27 @@ type StreamHandler struct {
 	retryAttempt int
 }
 
-// ack adds the ackID to the list of message to be acknowledged asynchronously
+// ack adds the ackID to the list of messages to be acknowledged asynchronously.
 func (handler *StreamHandler) ack(ackID string) {
 	handler.mutex.Lock()
 	defer handler.mutex.Unlock()
 	handler.acks = append(handler.acks, ackID)
+}
+
+// modifyAckDeadline queues a deadline modification for the given ackID.
+// Use the configured ModAckDeadlineSeconds to extend processing time, or 0 to nack.
+func (handler *StreamHandler) modifyAckDeadline(ackID string, deadlineSeconds int32) {
+	handler.mutex.Lock()
+	defer handler.mutex.Unlock()
+	handler.modAckIDs = append(handler.modAckIDs, ackID)
+	handler.modAckDeadlines = append(handler.modAckDeadlines, deadlineSeconds)
+}
+
+// nack sends a ModifyAckDeadline with deadline 0, making the message immediately
+// available for redelivery. This allows Pub/Sub to increment the delivery attempt
+// counter so messages eventually reach the dead-letter queue.
+func (handler *StreamHandler) nack(ackID string) {
+	handler.modifyAckDeadline(ackID, 0)
 }
 
 func NewHandler(
@@ -99,12 +118,16 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 		MaxOutstandingMessages:   handler.flowControlConfig.MaxOutstandingMessages,
 		MaxOutstandingBytes:      handler.flowControlConfig.MaxOutstandingBytes,
 		AckIds:                   handler.acks,
+		ModifyDeadlineAckIds:     handler.modAckIDs,
+		ModifyDeadlineSeconds:    handler.modAckDeadlines,
 	}
 	if err := handler.stream.Send(&request); err != nil {
 		_ = handler.stream.CloseSend()
 		return err
 	}
 	handler.acks = nil
+	handler.modAckIDs = nil
+	handler.modAckDeadlines = nil
 	handler.telemetryBuilder.ReceiverGooglecloudpubsubStreamRestarts.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("otelcol.component.kind", "receiver"),
@@ -168,20 +191,25 @@ func (handler *StreamHandler) Wait() {
 	handler.handlerWaitGroup.Wait()
 }
 
-// acknowledgeMessages will acknowledge the messages, and only clear the outstanding messages when the
-// acknowledgement is send successfully
+// acknowledgeMessages sends pending acks and ModifyAckDeadline requests.
+// Pending lists are only cleared on successful send so they can be retried
+// on the next stream if the current one breaks.
 func (handler *StreamHandler) acknowledgeMessages() error {
 	handler.mutex.Lock()
 	defer handler.mutex.Unlock()
-	if len(handler.acks) == 0 {
+	if len(handler.acks) == 0 && len(handler.modAckIDs) == 0 {
 		return nil
 	}
 	request := pubsubpb.StreamingPullRequest{
-		AckIds: handler.acks,
+		AckIds:                 handler.acks,
+		ModifyDeadlineAckIds:   handler.modAckIDs,
+		ModifyDeadlineSeconds:  handler.modAckDeadlines,
 	}
 	err := handler.stream.Send(&request)
 	if err == nil {
 		handler.acks = nil
+		handler.modAckIDs = nil
+		handler.modAckDeadlines = nil
 	}
 	return err
 }
@@ -221,17 +249,28 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 
 func (handler *StreamHandler) responseStream(ctx context.Context, cancel context.CancelFunc) {
 	activeStreaming := true
+	modAckDeadline := int32(handler.flowControlConfig.ModAckDeadlineSeconds)
 	for activeStreaming {
 		// block until the next message or timeout expires
 		resp, err := handler.stream.Recv()
 		if err == nil {
 			for _, message := range resp.ReceivedMessages {
-				// handle all the messages in the response, could be one or more
+				// Immediately extend the ack deadline so Pub/Sub knows we are
+				// actively processing this message. This mirrors the behavior
+				// of the official GCP client libraries and is required for the
+				// dead-letter queue delivery-attempt counter to work correctly
+				// with StreamingPull.
+				if modAckDeadline > 0 {
+					handler.modifyAckDeadline(message.AckId, modAckDeadline)
+				}
+
 				err = handler.pushMessage(context.Background(), message)
 				if err == nil {
-					// When sending a message though the pipeline fails, we ignore the error. We'll let Pubsub
-					// handle the flow control.
 					handler.ack(message.AckId)
+				} else {
+					// Nack the message so it becomes immediately available for
+					// redelivery and the delivery attempt counter increments.
+					handler.nack(message.AckId)
 				}
 			}
 		} else {
