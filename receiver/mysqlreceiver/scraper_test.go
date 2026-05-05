@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/otel/trace"
@@ -922,8 +923,8 @@ func TestServiceInstanceIDUniqueForLocalEndpoints(t *testing.T) {
 }
 
 // TestServiceInstanceIDEmittedWhenEnabled verifies that when service.instance.id
-// is explicitly enabled in the resource attributes config, the log scrapers emit
-// it as a resource attribute with a valid deterministic UUID v5 value.
+// is explicitly enabled in the resource attributes config, metrics and logs emit
+// the same valid deterministic UUID v5 value.
 func TestServiceInstanceIDEmittedWhenEnabled(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "otel"
@@ -931,13 +932,27 @@ func TestServiceInstanceIDEmittedWhenEnabled(t *testing.T) {
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
 	cfg.LogsBuilderConfig.Events.DbServerTopQuery.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServiceInstanceID.Enabled = true
 	cfg.LogsBuilderConfig.ResourceAttributes.ServiceInstanceID.Enabled = true
 
 	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](100), newTTLCache[string](0, time.Hour*24*365*10))
 	scraper.sqlclient = &mockClient{
-		querySamplesFile: "query_samples",
-		topQueriesFile:   "top_queries",
+		globalStatsFile:             "global_stats",
+		innodbStatsFile:             "innodb_stats",
+		tableIoWaitsFile:            "table_io_waits_stats",
+		indexIoWaitsFile:            "index_io_waits_stats",
+		tableStatsFile:              "table_stats",
+		statementEventsFile:         "statement_events",
+		tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
+		replicaStatusFile:           "replica_stats",
+		querySamplesFile:            "query_samples",
+		topQueriesFile:              "top_queries",
 	}
+
+	actualMetrics, err := scraper.scrape(t.Context())
+	require.NoError(t, err)
+	metricsServiceInstanceID := requireMetricsServiceInstanceID(t, actualMetrics)
+
 	scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "count_star", 1)
 	scraper.cacheAndDiff("mysql", "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739", "sum_timer_wait", 1)
 
@@ -954,16 +969,36 @@ func TestServiceInstanceIDEmittedWhenEnabled(t *testing.T) {
 		require.True(t, ok, "mysql.instance.endpoint must be present")
 		assert.Equal(t, "localhost:3306", endpointVal.Str())
 
-		idVal, ok := attrs.Get("service.instance.id")
-		require.True(t, ok, "service.instance.id must be present when enabled")
-		_, err = uuid.Parse(idVal.Str())
-		assert.NoError(t, err, "service.instance.id must be a valid UUID, got: %s", idVal.Str())
+		logsServiceInstanceID := requireLogsServiceInstanceID(t, logs)
+		assert.Equal(t, metricsServiceInstanceID, logsServiceInstanceID, "logs and metrics must use the same service.instance.id")
 
 		// Verify determinism: re-derive the expected UUID from the same seed.
 		seed := resolveServiceInstanceSeed("localhost:3306", scraper.logger)
 		expected := uuid.NewSHA1(otelServiceInstanceNamespace, []byte(seed)).String()
-		assert.Equal(t, expected, idVal.Str(), "service.instance.id must be deterministic UUID v5")
+		assert.Equal(t, expected, logsServiceInstanceID, "service.instance.id must be deterministic UUID v5")
 	}
+}
+
+func requireMetricsServiceInstanceID(t *testing.T, metrics pmetric.Metrics) string {
+	t.Helper()
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	attrs := metrics.ResourceMetrics().At(0).Resource().Attributes()
+	idVal, ok := attrs.Get("service.instance.id")
+	require.True(t, ok, "metrics service.instance.id must be present when enabled")
+	_, err := uuid.Parse(idVal.Str())
+	require.NoError(t, err, "metrics service.instance.id must be a valid UUID, got: %s", idVal.Str())
+	return idVal.Str()
+}
+
+func requireLogsServiceInstanceID(t *testing.T, logs plog.Logs) string {
+	t.Helper()
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+	attrs := logs.ResourceLogs().At(0).Resource().Attributes()
+	idVal, ok := attrs.Get("service.instance.id")
+	require.True(t, ok, "logs service.instance.id must be present when enabled")
+	_, err := uuid.Parse(idVal.Str())
+	require.NoError(t, err, "logs service.instance.id must be a valid UUID, got: %s", idVal.Str())
+	return idVal.Str()
 }
 
 func TestServiceInstanceIDNotEmittedWhenDisabled(t *testing.T) {
