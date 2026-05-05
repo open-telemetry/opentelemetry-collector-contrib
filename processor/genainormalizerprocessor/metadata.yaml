@@ -14,3 +14,6 @@ tests:
     sources:
       openinference: {}
       openllmetry: {}
+      custom:
+        custom_mappings:
+          my_vendor.model: gen_ai.request.model
