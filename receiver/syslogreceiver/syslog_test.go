@@ -36,6 +36,14 @@ func TestSyslogWithUdp(t *testing.T) {
 	testSyslog(t, testdataUDPConfig())
 }
 
+func TestSyslogAutoWithTcp(t *testing.T) {
+	testAutoSyslog(t, testdataAutoTCPConfig())
+}
+
+func TestSyslogAutoWithUdp(t *testing.T) {
+	testAutoSyslog(t, testdataAutoUDPConfig())
+}
+
 func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	numLogs := 5
 
@@ -78,6 +86,62 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	}
 }
 
+func testAutoSyslog(t *testing.T, cfg *SysLogConfig) {
+	f := NewFactory()
+	sink := new(consumertest.LogsSink)
+	rcvr, err := f.CreateLogs(t.Context(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
+	require.NoError(t, err)
+	require.NoError(t, rcvr.Start(t.Context(), componenttest.NewNopHost()))
+
+	address := "127.0.0.1:29019"
+	network := "tcp"
+	if cfg.InputConfig.UDP != nil {
+		address = "127.0.0.1:29020"
+		network = "udp"
+	}
+
+	conn, err := net.Dial(network, address)
+	require.NoError(t, err)
+
+	rfc3164Message := fmt.Sprintf("<34>%s 1.2.3.4 apache_server: legacy msg", time.Now().Format("Jan _2 15:04:05"))
+	messages := []string{
+		"<86>1 2021-02-28T00:00:02.003Z 192.168.1.1 SecureAuth0 23108 ID52020 - modern msg",
+		rfc3164Message,
+	}
+
+	for _, msg := range messages {
+		if network == "tcp" {
+			msg += "\n"
+		}
+		_, err = conn.Write([]byte(msg))
+		require.NoError(t, err)
+	}
+	require.NoError(t, conn.Close())
+
+	require.Eventually(t, expectNLogs(sink, len(messages)), 2*time.Second, time.Millisecond)
+	require.NoError(t, rcvr.Shutdown(t.Context()))
+
+	seen := map[string]bool{}
+	for _, logs := range sink.AllLogs() {
+		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			scopeLogs := logs.ResourceLogs().At(i).ScopeLogs()
+			for j := 0; j < scopeLogs.Len(); j++ {
+				records := scopeLogs.At(j).LogRecords()
+				for k := 0; k < records.Len(); k++ {
+					message, ok := records.At(k).Attributes().AsRaw()["message"].(string)
+					require.True(t, ok)
+					seen[message] = true
+				}
+			}
+		}
+	}
+
+	require.Equal(t, map[string]bool{
+		"modern msg": true,
+		"legacy msg": true,
+	}, seen)
+}
+
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -118,6 +182,37 @@ func testdataUDPConfig() *SysLogConfig {
 			c.UDP = &udp.NewConfig().BaseConfig
 			c.UDP.ListenAddress = "127.0.0.1:29018"
 			c.Protocol = "rfc5424"
+			return *c
+		}(),
+	}
+}
+
+func testdataAutoTCPConfig() *SysLogConfig {
+	return &SysLogConfig{
+		BaseConfig: adapter.BaseConfig{
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
+		},
+		InputConfig: func() syslog.Config {
+			c := syslog.NewConfig()
+			c.TCP = &tcp.NewConfig().BaseConfig
+			c.TCP.ListenAddress = "127.0.0.1:29019"
+			c.Protocol = "auto"
+			return *c
+		}(),
+	}
+}
+
+func testdataAutoUDPConfig() *SysLogConfig {
+	return &SysLogConfig{
+		BaseConfig: adapter.BaseConfig{
+			Operators: []operator.Config{},
+		},
+		InputConfig: func() syslog.Config {
+			c := syslog.NewConfig()
+			c.UDP = &udp.NewConfig().BaseConfig
+			c.UDP.ListenAddress = "127.0.0.1:29020"
+			c.Protocol = "auto"
 			return *c
 		}(),
 	}

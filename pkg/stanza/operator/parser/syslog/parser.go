@@ -153,12 +153,7 @@ func (p *Parser) parse(value any) (any, error) {
 func (p *Parser) buildParseFunc() (parseFunc, error) {
 	switch p.protocol {
 	case RFC3164:
-		return func(input []byte) (sl.Message, error) {
-			if p.allowSkipPriHeader && !priRegex.Match(input) {
-				input = append([]byte("<0>"), input...)
-			}
-			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location)).Parse(input)
-		}, nil
+		return p.newRFC3164ParseFunc(), nil
 	case RFC5424:
 		switch {
 		// Octet Counting Parsing RFC6587
@@ -171,16 +166,71 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 			return newNonTransparentFramingParseFunc(nontransparent.NUL), nil
 		// Raw RFC5424 parsing
 		default:
-			return func(input []byte) (sl.Message, error) {
-				if p.allowSkipPriHeader && !priRegex.Match(input) {
-					input = append([]byte("<0>"), input...)
-				}
-				return rfc5424.NewMachine().Parse(input)
-			}, nil
+			return p.newRFC5424ParseFunc(), nil
+		}
+	case Auto:
+		switch {
+		// Octet Counting Parsing RFC6587
+		case p.enableOctetCounting:
+			return newFallbackParseFunc(
+				newOctetCountingParseFunc(p.maxOctets),
+				newOctetCountingParseFuncRFC3164(p.maxOctets, p.location),
+			), nil
+		// Non-Transparent-Framing Parsing RFC6587
+		case p.nonTransparentFramingTrailer != nil && *p.nonTransparentFramingTrailer == LFTrailer:
+			return newFallbackParseFunc(
+				newNonTransparentFramingParseFunc(nontransparent.LF),
+				newNonTransparentFramingParseFuncRFC3164(nontransparent.LF, p.location),
+			), nil
+		case p.nonTransparentFramingTrailer != nil && *p.nonTransparentFramingTrailer == NULTrailer:
+			return newFallbackParseFunc(
+				newNonTransparentFramingParseFunc(nontransparent.NUL),
+				newNonTransparentFramingParseFuncRFC3164(nontransparent.NUL, p.location),
+			), nil
+		// Raw parsing
+		default:
+			return newFallbackParseFunc(p.newRFC5424ParseFunc(), p.newRFC3164ParseFunc()), nil
 		}
 
 	default:
 		return nil, fmt.Errorf("invalid protocol %s", p.protocol)
+	}
+}
+
+func (p *Parser) newRFC3164ParseFunc() parseFunc {
+	return func(input []byte) (sl.Message, error) {
+		if p.allowSkipPriHeader && !priRegex.Match(input) {
+			input = append([]byte("<0>"), input...)
+		}
+		return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(p.location)).Parse(input)
+	}
+}
+
+func (p *Parser) newRFC5424ParseFunc() parseFunc {
+	return func(input []byte) (sl.Message, error) {
+		if p.allowSkipPriHeader && !priRegex.Match(input) {
+			input = append([]byte("<0>"), input...)
+		}
+		return rfc5424.NewMachine().Parse(input)
+	}
+}
+
+func newFallbackParseFunc(primary, fallback parseFunc) parseFunc {
+	return func(input []byte) (sl.Message, error) {
+		message, primaryErr := primary(input)
+		if primaryErr == nil {
+			return message, nil
+		}
+
+		message, fallbackErr := fallback(input)
+		if fallbackErr == nil {
+			return message, nil
+		}
+
+		return nil, errors.Join(
+			fmt.Errorf("failed to parse as rfc5424: %w", primaryErr),
+			fmt.Errorf("failed to parse as rfc3164: %w", fallbackErr),
+		)
 	}
 }
 
@@ -383,6 +433,30 @@ func newOctetCountingParseFunc(maxOctets int) parseFunc {
 	}
 }
 
+func newOctetCountingParseFuncRFC3164(maxOctets int, location *time.Location) parseFunc {
+	return func(input []byte) (message sl.Message, err error) {
+		listener := func(res *sl.Result) {
+			message = res.Message
+			err = res.Error
+		}
+
+		parserOpts := []sl.ParserOption{
+			sl.WithBestEffort(),
+			sl.WithListener(listener),
+			sl.WithMachineOptions(rfc3164.WithLocaleTimezone(location)),
+		}
+
+		if maxOctets > 0 {
+			parserOpts = append(parserOpts, sl.WithMaxMessageLength(maxOctets))
+		}
+
+		parser := octetcounting.NewParserRFC3164(parserOpts...)
+		reader := bytes.NewReader(input)
+		parser.Parse(reader)
+		return message, err
+	}
+}
+
 func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
@@ -390,7 +464,32 @@ func newNonTransparentFramingParseFunc(trailerType nontransparent.TrailerType) p
 			err = res.Error
 		}
 
-		parser := nontransparent.NewParser(sl.WithBestEffort(), nontransparent.WithTrailer(trailerType), sl.WithListener(listener))
+		parserOpts := []sl.ParserOption{
+			sl.WithBestEffort(),
+			nontransparent.WithTrailer(trailerType),
+			sl.WithListener(listener),
+		}
+
+		parser := nontransparent.NewParser(parserOpts...)
+		reader := bytes.NewReader(input)
+		parser.Parse(reader)
+		return message, err
+	}
+}
+
+func newNonTransparentFramingParseFuncRFC3164(trailerType nontransparent.TrailerType, location *time.Location) parseFunc {
+	return func(input []byte) (message sl.Message, err error) {
+		listener := func(res *sl.Result) {
+			message = res.Message
+			err = res.Error
+		}
+
+		parser := nontransparent.NewParserRFC3164(
+			sl.WithBestEffort(),
+			nontransparent.WithTrailer(trailerType),
+			sl.WithListener(listener),
+			sl.WithMachineOptions(rfc3164.WithLocaleTimezone(location)),
+		)
 		reader := bytes.NewReader(input)
 		parser.Parse(reader)
 		return message, err
