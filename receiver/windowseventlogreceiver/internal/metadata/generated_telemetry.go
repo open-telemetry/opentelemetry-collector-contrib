@@ -90,33 +90,33 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.meter = Meter(settings)
 	var err, errs error
 	builder.ReceiverWindowsEventLogBatchSize, err = builder.meter.Int64Histogram(
-		"otelcol_receiver_windows_event_log_batch_size",
+		"otelcol_receiver.windows_event_log.batch_size",
 		metric.WithDescription("The number of events fetched from the Windows Event Log API in a single batch read via EvtNext. [Development]"),
 		metric.WithUnit("{events}"),
 		metric.WithExplicitBucketBoundaries([]float64{1, 5, 10, 25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverWindowsEventLogChannelSize, err = builder.meter.Int64Gauge(
-		"otelcol_receiver_windows_event_log_channel_size",
+		"otelcol_receiver.windows_event_log.channel_size",
 		metric.WithDescription("The approximate number of records in the Windows Event Log channel, sampled once per collection cycle via EvtGetLogInfo. [Development]"),
 		metric.WithUnit("{events}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverWindowsEventLogEventSize, err = builder.meter.Int64Histogram(
-		"otelcol_receiver_windows_event_log_event_size",
+		"otelcol_receiver.windows_event_log.event_size",
 		metric.WithDescription("The size in bytes of the rendered Windows Event XML per event, measured after decoding from the Windows API buffer. [Development]"),
 		metric.WithUnit("By"),
 		metric.WithExplicitBucketBoundaries([]float64{256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverWindowsEventLogLag, err = builder.meter.Float64ObservableGauge(
-		"otelcol_receiver_windows_event_log_lag",
+		"otelcol_receiver.windows_event_log.lag",
 		metric.WithDescription("The lag between the time a Windows event was originally logged and the time it was received by the collector, computed as the maximum observed lag across all log records in the most recent batch. [Development]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverWindowsEventLogMissedEvents, err = builder.meter.Int64Counter(
-		"otelcol_receiver_windows_event_log_missed_events",
+		"otelcol_receiver.windows_event_log.missed_events",
 		metric.WithDescription("The estimated number of Windows Event Log records dropped from the ring buffer before being read, detected via gaps in consecutive EventRecordID values. Only meaningful in channel mode (not query mode). Does not count events lost during a complete ring-buffer overflow, which instead triggers a subscription reopen. [Development]"),
 		metric.WithUnit("{events}"),
 	)
