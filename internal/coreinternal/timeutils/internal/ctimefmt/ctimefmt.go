@@ -133,8 +133,9 @@ type ParseFunc func(layout string) (time.Time, error)
 func Parse(format string, parse ParseFunc) (time.Time, error) {
 	indexes := ctimeRegexp.FindAllStringIndex(format, -1)
 	t, err := iterativeParse("", format, 0, indexes, parse)
-	if err, ok := err.(*time.ParseError); ok {
-		err.Layout = format
+	var timeErr *time.ParseError
+	if errors.As(err, &timeErr) {
+		timeErr.Layout = format
 	}
 	return t, err
 }
@@ -161,7 +162,7 @@ var ctimeParseSubstitutes = map[string][]string{
 	"%c": {"Mon", " ", "Jan", " ", "2", " ", "15", ":", "4", ":", "5", " ", "2006"},
 }
 
-func iterativeParse(partialLayout string, format string, startIndex int, indexes [][]int, parse ParseFunc) (out time.Time, err error) {
+func iterativeParse(partialLayout, format string, startIndex int, indexes [][]int, parse ParseFunc) (out time.Time, err error) {
 	if len(indexes) == 0 {
 		return parse(partialLayout + format[startIndex:])
 	}
@@ -171,24 +172,26 @@ func iterativeParse(partialLayout string, format string, startIndex int, indexes
 	// It returns the index of the failing element and the remaining unparsed input, or -1 if none of the elements were responsible for a failure.
 	tryElements := func(elements ...string) (int, string) {
 		out, err = iterativeParse(partialLayout+strings.Join(elements, ""), format, indexes[0][1], indexes[1:], parse)
-		if err, ok := err.(*time.ParseError); ok {
-			if i := slices.Index(elements, err.LayoutElem); i >= 0 {
-				err.LayoutElem = directive
-				return i, err.ValueElem
+		var timeErr *time.ParseError
+		if errors.As(err, &timeErr) {
+			if i := slices.Index(elements, timeErr.LayoutElem); i >= 0 {
+				timeErr.LayoutElem = directive
+				return i, timeErr.ValueElem
 			}
 		}
-		if err, ok := err.(*lunes.ErrLayoutMismatch); ok {
+		var lunesErr *lunes.ErrLayoutMismatch
+		if errors.As(err, &lunesErr) {
 			// Work around https://github.com/elastic/lunes/issues/15
 			// If we're parsing a minute or second and we're failing to parse %p, try again
 			// with a leading zero on the minute or second placeholder.
-			switch err.LayoutElem {
+			switch lunesErr.LayoutElem {
 			case "pm", "PM", "%p", "%P":
 				if i := slices.IndexFunc(elements, func(e string) bool { return e == "4" || e == "5" }); i >= 0 {
 					return i, "unknown"
 				}
 			}
-			if i := slices.Index(elements, err.LayoutElem); i >= 0 {
-				err.LayoutElem = directive
+			if i := slices.Index(elements, lunesErr.LayoutElem); i >= 0 {
+				lunesErr.LayoutElem = directive
 				return i, "unknown"
 			}
 		}
@@ -211,27 +214,26 @@ func iterativeParse(partialLayout string, format string, startIndex int, indexes
 			return i, remainder
 		}
 	}
-	switch directive {
-	case "%z":
+	if directive == "%z" {
 		if i, _ := try("Z0700"); i < 0 {
-			return
+			return out, err
 		}
 		if i, _ := try("Z07:00"); i < 0 {
-			return
+			return out, err
 		}
 		if i, _ := try("Z07"); i < 0 {
-			return
+			return out, err
 		}
-		return
+		return out, err
 	}
 	if substs, ok := ctimeParseSubstitutes[directive]; ok {
 		if i, _ := try(substs...); i < 0 {
-			return
+			return out, err
 		}
 	}
 	if subst, ok := ctimeSubstitutes[directive]; ok {
 		try("", subst)
-		return
+		return out, err
 	}
 	return time.Time{}, fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)
 }

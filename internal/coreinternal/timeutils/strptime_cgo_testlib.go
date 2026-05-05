@@ -8,13 +8,14 @@ package timeutils // import "github.com/open-telemetry/opentelemetry-collector-c
 // #include <stdlib.h>
 // #include <time.h>
 import (
-	"C"
+	"C" //nolint: gocritic // Buggy: https://github.com/go-critic/go-critic/issues/845
 )
+
 import (
 	"errors"
 	"fmt"
 	"time"
-	"unsafe"
+	"unsafe" //nolint: gocritic
 )
 
 func tm2Time(tm C.struct_tm) time.Time {
@@ -31,7 +32,7 @@ func tm2Time(tm C.struct_tm) time.Time {
 }
 
 // Wrap libc's strptime for use in TestTimeParserStrptimeCgo
-func C_strptime(s, format string) (time.Time, error) {
+func CStrptime(s, format string) (time.Time, error) {
 	cformat := C.CString(format)
 	defer C.free(unsafe.Pointer(cformat))
 
@@ -43,13 +44,12 @@ func C_strptime(s, format string) (time.Time, error) {
 		tm_gmtoff: -7 * 3600,
 	}
 
-	out := C.strptime(cs, cformat, &tm)
+	out := C.strptime(cs, cformat, &tm) //nolint: gocritic // Buggy: https://github.com/go-critic/go-critic/issues/897
 
 	t := tm2Time(tm)
-	// ts := int64(C.mktime(&tm))
 
 	if out == nil {
-		return time.Time{}, errors.New("strptime failed to parse the whole string")
+		return t, errors.New("strptime failed to parse the whole string")
 	} else if unsafe.Pointer(out) != unsafe.Add(unsafe.Pointer(cs), len(s)) {
 		return t, fmt.Errorf("strptime failed to parse: remainder %q", C.GoString(out))
 	}

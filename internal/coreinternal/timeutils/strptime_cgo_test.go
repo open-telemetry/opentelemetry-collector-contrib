@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build cgo
-// +build cgo
 
 package timeutils
 
@@ -19,7 +18,7 @@ func TestParseStrptimeCgo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, s := range tt.samples {
 				t.Run(s, func(t *testing.T) {
-					got, err := C_strptime(s, tt.format)
+					got, err := CStrptime(s, tt.format)
 					require.NoError(t, err)
 					// Use WithinDuration instead of Equal so the timezone name is ignored.
 					require.WithinDuration(t, tt.expected, got, 0)
