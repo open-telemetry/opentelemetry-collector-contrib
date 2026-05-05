@@ -114,8 +114,8 @@ components:
         - k8s_attributes
         - log_dedup
         - metric_start_time
+        - metrics_transform
         - metricsgeneration
-        - metricstransform
         - probabilistic_sampler
         - redaction
         - remotetap
