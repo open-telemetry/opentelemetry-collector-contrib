@@ -125,6 +125,7 @@ func TestClose_UnblocksInFlightExportData(t *testing.T) {
 		kgo.WithContext(clientCtx),
 	)
 	require.NoError(t, err)
+	t.Cleanup(kgoClient.Close)
 
 	// Shut down the broker so ExportData blocks indefinitely.
 	fakeCluster.Close()
