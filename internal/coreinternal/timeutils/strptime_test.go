@@ -89,6 +89,7 @@ var strptimeTests = []struct {
 		format:   "%Y%m%d%H%M%S",
 		samples: []string{
 			"20230203050607",
+			"2023 02 03 05 06 07",
 		},
 	},
 }

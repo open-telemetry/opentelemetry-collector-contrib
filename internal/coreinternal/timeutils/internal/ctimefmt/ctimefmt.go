@@ -183,8 +183,8 @@ func iterativeParse(partialLayout string, format string, startIndex int, indexes
 			// with a leading zero on the minute or second placeholder.
 			switch err.LayoutElem {
 			case "pm", "PM", "%p", "%P":
-				if slices.ContainsFunc(elements, func(e string) bool { return e == "4" || e == "5" }) {
-					return 1, "unknown"
+				if i := slices.IndexFunc(elements, func(e string) bool { return e == "4" || e == "5" }); i >= 0 {
+					return i, "unknown"
 				}
 			}
 			if i := slices.Index(elements, err.LayoutElem); i >= 0 {
@@ -194,37 +194,43 @@ func iterativeParse(partialLayout string, format string, startIndex int, indexes
 		}
 		return -1, ""
 	}
-	// tryWhitespace will attempt to match the time with elements and optional leading spaces
-	tryWhitespace := func(elements ...string) (int, string) {
+	// try will attempt to match the time with elements and optional leading spaces
+	try := func(elements ...string) (int, string) {
 		for {
 			i, remainder := tryElements(elements...)
-			if space := leadingSpaceRegexp.FindString(remainder); space != "" {
-				elements = slices.Insert(append([]string{}, elements...), i, space)
-				continue
+			if i >= 0 {
+				switch elements[i][0] {
+				case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Z':
+					space := leadingSpaceRegexp.FindString(remainder)
+					if space != "" {
+						elements = slices.Insert(append([]string{}, elements...), i, space)
+						continue
+					}
+				}
 			}
 			return i, remainder
 		}
 	}
 	switch directive {
 	case "%z":
-		if i, _ := tryWhitespace("Z0700"); i < 0 {
+		if i, _ := try("Z0700"); i < 0 {
 			return
 		}
-		if i, _ := tryWhitespace("Z07:00"); i < 0 {
+		if i, _ := try("Z07:00"); i < 0 {
 			return
 		}
-		if i, _ := tryWhitespace("Z07"); i < 0 {
+		if i, _ := try("Z07"); i < 0 {
 			return
 		}
 		return
 	}
 	if substs, ok := ctimeParseSubstitutes[directive]; ok {
-		if i, _ := tryElements(substs...); i < 0 {
+		if i, _ := try(substs...); i < 0 {
 			return
 		}
 	}
 	if subst, ok := ctimeSubstitutes[directive]; ok {
-		tryElements("", subst)
+		try("", subst)
 		return
 	}
 	return time.Time{}, fmt.Errorf("unsupported ctimefmt.FlexibleParse() directive: %s", directive)
