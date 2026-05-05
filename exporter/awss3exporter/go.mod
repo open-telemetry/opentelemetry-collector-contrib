@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1
 	github.com/google/uuid v1.6.0
 	github.com/itchyny/timefmt-go v0.1.8
-	github.com/klauspost/compress v1.18.5
+	github.com/klauspost/compress v1.18.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.151.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tilinna/clock v1.1.0
