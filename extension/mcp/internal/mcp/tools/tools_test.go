@@ -4,7 +4,7 @@
 package tools
 
 import (
-	"context"
+	"slices"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -33,10 +33,10 @@ func versionWithChangelog(t *testing.T, sm *collectorschema.SchemaManager) strin
 	t.Helper()
 	versions, err := sm.GetAllVersions()
 	require.NoError(t, err)
-	for i := len(versions) - 1; i >= 0; i-- {
-		changelog, err := sm.GetChangelog(versions[i])
-		if err == nil && len(changelog) > 0 {
-			return versions[i]
+	for _, version := range slices.Backward(versions) {
+		changelog, err := sm.GetChangelog(version)
+		if err == nil && changelog != "" {
+			return version
 		}
 	}
 	t.Skip("no version with changelog found in embedded data")
@@ -68,7 +68,7 @@ func TestCollectorVersionsTool(t *testing.T) {
 	sm, _ := setupSchemaManager(t)
 	tool := getCollectorVersionsTool(sm)
 
-	result, err := tool.Handler(context.Background(), newRequest(nil))
+	result, err := tool.Handler(t.Context(), newRequest(nil))
 	require.NoError(t, err)
 	assert.False(t, result.IsError)
 	require.Len(t, result.Content, 1)
@@ -103,7 +103,7 @@ func TestCollectorComponentsTool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.Handler(context.Background(), newRequest(tt.args))
+			result, err := tool.Handler(t.Context(), newRequest(tt.args))
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantIsError, result.IsError)
 		})
@@ -136,7 +136,7 @@ func TestCollectorReadmeTool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.Handler(context.Background(), newRequest(tt.args))
+			result, err := tool.Handler(t.Context(), newRequest(tt.args))
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantIsError, result.IsError)
 		})
@@ -166,7 +166,7 @@ func TestCollectorChangelogTool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.Handler(context.Background(), newRequest(tt.args))
+			result, err := tool.Handler(t.Context(), newRequest(tt.args))
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantIsError, result.IsError)
 		})
@@ -199,7 +199,7 @@ func TestCollectorSchemaGetTool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.Handler(context.Background(), newRequest(tt.args))
+			result, err := tool.Handler(t.Context(), newRequest(tt.args))
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantIsError, result.IsError)
 		})
@@ -243,7 +243,7 @@ func TestCollectorSchemaValidationTool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.Handler(context.Background(), newRequest(tt.args))
+			result, err := tool.Handler(t.Context(), newRequest(tt.args))
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantIsError, result.IsError)
 			if tt.checkResult != nil {
@@ -279,7 +279,7 @@ func TestCollectorComponentDeprecatedTool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.Handler(context.Background(), newRequest(tt.args))
+			result, err := tool.Handler(t.Context(), newRequest(tt.args))
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantIsError, result.IsError)
 		})
@@ -318,7 +318,7 @@ func TestCollectorDocumentationRAG(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tool.Handler(context.Background(), newRequest(tt.args))
+			result, err := tool.Handler(t.Context(), newRequest(tt.args))
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantIsError, result.IsError)
 		})

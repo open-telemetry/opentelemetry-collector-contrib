@@ -54,7 +54,7 @@ func (mcpe *mcpExtension) Start(ctx context.Context, host component.Host) error 
 	}
 
 	// Register all tools with the server
-	for _, tool := range allTools {
+	for _, tool := range allTools { //nolint:gocritic
 		s.AddTool(tool.Tool, tool.Handler)
 	}
 

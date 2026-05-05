@@ -22,7 +22,7 @@ func GetAllTools() ([]Tool, error) {
 	schemaManager := collectorschema.NewSchemaManager()
 	latestCollectorVersion, err := schemaManager.GetLatestVersion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get latest collector version: %v", err)
+		return nil, fmt.Errorf("failed to get latest collector version: %w", err)
 	}
 
 	tools := []Tool{
@@ -47,7 +47,7 @@ func getCollectorVersionsTool(schemaManager *collectorschema.SchemaManager) Tool
 		mcp.WithOpenWorldHintAnnotation(false),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		versions, err := schemaManager.GetAllVersions()
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("failed to get all supported versions by this tool: %v", err)), nil
@@ -73,7 +73,7 @@ func getCollectorComponentsTool(schemaManager *collectorschema.SchemaManager, la
 		),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		componentKind, err := request.RequireString("kind")
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("kind argument is required: %v", err)), nil
@@ -109,7 +109,7 @@ func getCollectorReadmeTool(schemaManager *collectorschema.SchemaManager, latest
 		),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		componentKind, err := request.RequireString("kind")
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("kind argument is required: %v", err)), nil
@@ -141,7 +141,7 @@ func getCollectorChangelogTool(schemaManager *collectorschema.SchemaManager, lat
 		),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		version := request.GetString("version", latestCollectorVersion)
 
 		readme, err := schemaManager.GetChangelog(version)
@@ -173,7 +173,7 @@ func getCollectorSchemaGetTool(schemaManager *collectorschema.SchemaManager, lat
 		),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		componentKind, err := request.RequireString("kind")
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("kind argument is required: %v", err)), nil
@@ -217,7 +217,7 @@ func getCollectorSchemaValidationTool(schemaManager *collectorschema.SchemaManag
 		),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		componentKind, err := request.RequireString("kind")
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("kind argument is required: %v", err)), nil
@@ -267,7 +267,7 @@ func getCollectorComponentDeprecatedTool(schemaManager *collectorschema.SchemaMa
 		),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		componentKind, err := request.RequireString("kind")
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("kind argument is required: %v", err)), nil
@@ -303,7 +303,7 @@ type DocumentationSearchResult struct {
 }
 
 // getCollectorDocumentationRAG returns the query from the RAG
-func getCollectorDocumentationRAG(schemaManager *collectorschema.SchemaManager, latestCollectorVersion string) Tool {
+func getCollectorDocumentationRAG(schemaManager *collectorschema.SchemaManager, _ string) Tool {
 	tool := mcp.NewTool("opentelemetry-collector-rag",
 		mcp.WithDescription("Answer questions about OpenTelemetry collector"),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -324,7 +324,7 @@ func getCollectorDocumentationRAG(schemaManager *collectorschema.SchemaManager, 
 		),
 	)
 
-	handler := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	handler := func(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		undefined := "none"
 		componentKind := request.GetString("kind", undefined)
 		componentName := request.GetString("name", undefined)
