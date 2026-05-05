@@ -173,16 +173,18 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 
 	if r.nextTraces != nil {
 		traces, translatorErr := farotranslator.TranslateToTraces(req.Context(), payload)
-		if translatorErr != nil {
+		switch {
+		case translatorErr != nil:
 			errors = append(errors, fmt.Sprintf("failed to translate traces: %v", translatorErr))
-		} else {
-			if traces.SpanCount() == 0 {
-				r.settings.Logger.Debug("Faro traces are nil, skipping")
-			} else {
-				consumeErr := r.nextTraces.ConsumeTraces(req.Context(), traces)
-				if consumeErr != nil {
-					errors = append(errors, fmt.Sprintf("failed to pass traces to next consumer: %v", consumeErr))
-				}
+		case traces.SpanCount() == 0:
+			r.settings.Logger.Debug("Faro traces are nil, skipping")
+		default:
+			spanCount := traces.SpanCount()
+			obsCtx := r.obsrepHTTP.StartTracesOp(req.Context())
+			consumeErr := r.nextTraces.ConsumeTraces(obsCtx, traces)
+			r.obsrepHTTP.EndTracesOp(obsCtx, "json", spanCount, consumeErr)
+			if consumeErr != nil {
+				errors = append(errors, fmt.Sprintf("failed to pass traces to next consumer: %v", consumeErr))
 			}
 		}
 	}
@@ -193,16 +195,18 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 
 	if r.nextLogs != nil {
 		logs, translatorErr := farotranslator.TranslateToLogs(req.Context(), payload)
-		if translatorErr != nil {
+		switch {
+		case translatorErr != nil:
 			errors = append(errors, fmt.Sprintf("failed to translate logs: %v", translatorErr))
-		} else {
-			if logs.LogRecordCount() == 0 {
-				r.settings.Logger.Debug("Faro logs are nil, skipping")
-			} else {
-				consumeErr := r.nextLogs.ConsumeLogs(req.Context(), logs)
-				if consumeErr != nil {
-					errors = append(errors, fmt.Sprintf("failed to pass logs to next consumer: %v", consumeErr))
-				}
+		case logs.LogRecordCount() == 0:
+			r.settings.Logger.Debug("Faro logs are nil, skipping")
+		default:
+			logRecordCount := logs.LogRecordCount()
+			obsCtx := r.obsrepHTTP.StartLogsOp(req.Context())
+			consumeErr := r.nextLogs.ConsumeLogs(obsCtx, logs)
+			r.obsrepHTTP.EndLogsOp(obsCtx, "json", logRecordCount, consumeErr)
+			if consumeErr != nil {
+				errors = append(errors, fmt.Sprintf("failed to pass logs to next consumer: %v", consumeErr))
 			}
 		}
 	}
