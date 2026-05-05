@@ -1,10 +1,10 @@
-metricstransform:
+metrics_transform:
   transforms:
     - include: name
       action: update
       new_name: new_name
 
-metricstransform/multiple:
+metrics_transform/multiple:
   transforms:
     - include: name1
       match_type: strict
