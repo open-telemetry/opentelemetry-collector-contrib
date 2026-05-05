@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/oracledb
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Exclude the collector's own monitoring queries from Query Sample collection using a SQL_TEXT prefix filter."
+note: "Exclude the collector's own monitoring queries from Query Sample collection using native session ID filtering."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47366]
@@ -16,7 +16,7 @@ issues: [47366]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Uses a simple VARCHAR2-based filter in the active session query (`AND Q.SQL_TEXT NOT LIKE '/* otel-collector */%'`) to avoid CLOB filtering overhead.
+  Uses native session evaluation (`AND S.SID != SYS_CONTEXT('USERENV', 'SID')`) to filter the collector's active queries from `V$SESSION`. This bypasses Go connection pool limitations and avoids the performance overhead of text-matching on `VARCHAR2` or `CLOB` fields. 
   Top Query collection is no longer filtered, so collector-originated statements can still appear there for troubleshooting.
 
 # If your change doesn't affect end users or the exported elements of any package,
