@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/mcp
 go 1.25.0
 
 require (
-	github.com/earthboundkid/deque/v2 v2.24.2
 	github.com/mark3labs/mcp-go v0.48.0
 	github.com/pavolloffay/opentelemetry-mcp-server/modules/collectorschema v0.0.0-20260505095018-a097481abafe
 	github.com/stretchr/testify v1.11.1
@@ -15,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/confmap v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/extension v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/extension/extensiontest v0.151.1-0.20260501001745-24aecacf1c04
-	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 )
@@ -67,6 +65,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.151.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/featuregate v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.151.1-0.20260501001745-24aecacf1c04 // indirect
+	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/collector/pipeline v1.57.1-0.20260501001745-24aecacf1c04 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
