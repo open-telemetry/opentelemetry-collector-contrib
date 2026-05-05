@@ -35,7 +35,11 @@ func C_strptime(s, format string) (time.Time, error) {
 	cs := C.CString(s)
 	defer C.free(unsafe.Pointer(cs))
 
-	var tm C.struct_tm
+	tm := C.struct_tm{
+		// Default time zone must match the TestParseStrptime
+		tm_gmtoff: -7 * 3600,
+	}
+
 	out := C.strptime(cs, cformat, &tm)
 
 	t := tm2Time(tm)
