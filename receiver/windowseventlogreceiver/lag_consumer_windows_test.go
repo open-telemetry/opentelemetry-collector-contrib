@@ -50,7 +50,7 @@ func newTestLagConsumer(t *testing.T) (*lagTrackingConsumer, *consumertest.LogsS
 }
 
 func channelAttr(ch string) attribute.KeyValue {
-	return attribute.String("channel", ch)
+	return attribute.String(channelAttrKey, ch)
 }
 
 func TestLagConsumer_Capabilities(t *testing.T) {

@@ -42,7 +42,7 @@ func newLagTrackingConsumer(next consumer.Logs, tb *metadata.TelemetryBuilder, c
 			// Atomically read and reset to 0. If no batches arrived since the last
 			// collection, this reports 0, signaling the receiver is caught up.
 			bits := lc.currentLag.Swap(0)
-			o.Observe(math.Float64frombits(bits), metric.WithAttributes(attribute.String("channel", lc.channel)))
+			o.Observe(math.Float64frombits(bits), metric.WithAttributes(attribute.String(channelAttrKey, lc.channel)))
 			return nil
 		})
 		return lc, err
