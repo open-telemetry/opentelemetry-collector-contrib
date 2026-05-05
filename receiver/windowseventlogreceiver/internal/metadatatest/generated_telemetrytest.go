@@ -23,7 +23,7 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 
 func AssertEqualReceiverWindowsEventLogBatchSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_receiver_windows_event_log_batch_size",
+		Name:        "otelcol_receiver.windows_event_log.batch_size",
 		Description: "The number of events fetched from the Windows Event Log API in a single batch read via EvtNext. [Development]",
 		Unit:        "{events}",
 		Data: metricdata.Histogram[int64]{
@@ -31,28 +31,28 @@ func AssertEqualReceiverWindowsEventLogBatchSize(t *testing.T, tt *componenttest
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_receiver_windows_event_log_batch_size")
+	got, err := tt.GetMetric("otelcol_receiver.windows_event_log.batch_size")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualReceiverWindowsEventLogChannelSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_receiver_windows_event_log_channel_size",
+		Name:        "otelcol_receiver.windows_event_log.channel_size",
 		Description: "The approximate number of records in the Windows Event Log channel, sampled once per collection cycle via EvtGetLogInfo. [Development]",
 		Unit:        "{events}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_receiver_windows_event_log_channel_size")
+	got, err := tt.GetMetric("otelcol_receiver.windows_event_log.channel_size")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualReceiverWindowsEventLogEventSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_receiver_windows_event_log_event_size",
+		Name:        "otelcol_receiver.windows_event_log.event_size",
 		Description: "The size in bytes of the rendered Windows Event XML per event, measured after decoding from the Windows API buffer. [Development]",
 		Unit:        "By",
 		Data: metricdata.Histogram[int64]{
@@ -60,28 +60,28 @@ func AssertEqualReceiverWindowsEventLogEventSize(t *testing.T, tt *componenttest
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_receiver_windows_event_log_event_size")
+	got, err := tt.GetMetric("otelcol_receiver.windows_event_log.event_size")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualReceiverWindowsEventLogLag(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_receiver_windows_event_log_lag",
+		Name:        "otelcol_receiver.windows_event_log.lag",
 		Description: "The lag between the time a Windows event was originally logged and the time it was received by the collector, computed as the maximum observed lag across all log records in the most recent batch. [Development]",
 		Unit:        "s",
 		Data: metricdata.Gauge[float64]{
 			DataPoints: dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_receiver_windows_event_log_lag")
+	got, err := tt.GetMetric("otelcol_receiver.windows_event_log.lag")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualReceiverWindowsEventLogMissedEvents(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_receiver_windows_event_log_missed_events",
+		Name:        "otelcol_receiver.windows_event_log.missed_events",
 		Description: "The estimated number of Windows Event Log records dropped from the ring buffer before being read, detected via gaps in consecutive EventRecordID values. Only meaningful in channel mode (not query mode). Does not count events lost during a complete ring-buffer overflow, which instead triggers a subscription reopen. [Development]",
 		Unit:        "{events}",
 		Data: metricdata.Sum[int64]{
@@ -90,7 +90,7 @@ func AssertEqualReceiverWindowsEventLogMissedEvents(t *testing.T, tt *componentt
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_receiver_windows_event_log_missed_events")
+	got, err := tt.GetMetric("otelcol_receiver.windows_event_log.missed_events")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

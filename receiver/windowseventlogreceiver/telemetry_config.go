@@ -12,11 +12,11 @@ type MetricConfig struct {
 // MetricsConfig holds the per-metric enable/disable flags for the
 // receiver's internal telemetry metrics.
 type MetricsConfig struct {
-	ReceiverWindowsEventLogBatchSize    MetricConfig `mapstructure:"receiver_windows_event_log_batch_size"`
-	ReceiverWindowsEventLogChannelSize  MetricConfig `mapstructure:"receiver_windows_event_log_channel_size"`
-	ReceiverWindowsEventLogEventSize    MetricConfig `mapstructure:"receiver_windows_event_log_event_size"`
-	ReceiverWindowsEventLogLag          MetricConfig `mapstructure:"receiver_windows_event_log_lag"`
-	ReceiverWindowsEventLogMissedEvents MetricConfig `mapstructure:"receiver_windows_event_log_missed_events"`
+	ReceiverWindowsEventLogBatchSize    MetricConfig `mapstructure:"receiver.windows_event_log.batch_size"`
+	ReceiverWindowsEventLogChannelSize  MetricConfig `mapstructure:"receiver.windows_event_log.channel_size"`
+	ReceiverWindowsEventLogEventSize    MetricConfig `mapstructure:"receiver.windows_event_log.event_size"`
+	ReceiverWindowsEventLogLag          MetricConfig `mapstructure:"receiver.windows_event_log.lag"`
+	ReceiverWindowsEventLogMissedEvents MetricConfig `mapstructure:"receiver.windows_event_log.missed_events"`
 	_                                   struct{}     // avoids unkeyed_literal_initialization
 }
 
