@@ -27,6 +27,7 @@ The following settings can be configured:
 - `gomemlimit`: Configures the behavior of setting `GOMEMLIMIT`, the maximum memory limit for Go runtime. Options:
   - `enabled`: A boolean value to enable or disable automatic configuration of `GOMEMLIMIT` (default: true).
   - `ratio`: A floating-point value between 0 and 1 that represents the fraction of the detected memory limit to allocate for the Go runtime (default: 0.9).
+  - `refresh_interval`: A duration value that enables periodic refresh of `GOMEMLIMIT` (default: `0s`, disabled).
 
 ## Examples
 
@@ -39,6 +40,7 @@ extensions:
     gomemlimit:
       enabled: true
       ratio: 0.8
+      refresh_interval: 30s
 ```
 
 ## Contributing
