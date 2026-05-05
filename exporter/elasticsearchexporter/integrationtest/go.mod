@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.151.0
-	github.com/shirou/gopsutil/v4 v4.26.3
+	github.com/shirou/gopsutil/v4 v4.26.4
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/component/componentstatus v0.151.1-0.20260501001745-24aecacf1c04
@@ -86,7 +86,7 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kamstrup/intmap v0.5.2 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
+	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect

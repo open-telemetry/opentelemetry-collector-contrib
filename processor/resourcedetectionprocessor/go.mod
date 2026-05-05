@@ -25,7 +25,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.151.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.36
-	github.com/shirou/gopsutil/v4 v4.26.3
+	github.com/shirou/gopsutil/v4 v4.26.4
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/collector/component v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/component/componenttest v0.151.1-0.20260501001745-24aecacf1c04
