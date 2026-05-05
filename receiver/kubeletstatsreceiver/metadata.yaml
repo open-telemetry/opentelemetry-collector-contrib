@@ -1,5 +1,4 @@
 display_name: Kubelet Stats Receiver
-type: kubeletstats
 type: kubelet_stats
 deprecated_type: kubeletstats
 reaggregation_enabled: true
