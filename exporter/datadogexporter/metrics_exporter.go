@@ -45,7 +45,6 @@ type metricsExporter struct {
 	scrubber         scrub.Scrubber
 	retrier          *clientutil.Retrier
 	onceMetadata     *sync.Once
-	pcfg             hostmetadata.PusherConfig
 	sourceProvider   source.Provider
 	metadataReporter *inframetadata.Reporter
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
@@ -61,7 +60,6 @@ func newMetricsExporter(
 	cfg *datadogconfig.Config,
 	agntConfig *config.AgentConfig,
 	onceMetadata *sync.Once,
-	pcfg hostmetadata.PusherConfig,
 	attrsTranslator *attributes.Translator,
 	sourceProvider source.Provider,
 	metadataReporter *inframetadata.Reporter,
@@ -102,7 +100,6 @@ func newMetricsExporter(
 		scrubber:         scrubber,
 		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
 		onceMetadata:     onceMetadata,
-		pcfg:             pcfg,
 		sourceProvider:   sourceProvider,
 		getPushTime:      func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 		metadataReporter: metadataReporter,
@@ -173,7 +170,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go hostmetadata.RunPusher(exp.ctx, exp.params, exp.pcfg, exp.sourceProvider, attrs, exp.metadataReporter)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs, exp.metadataReporter)
 		})
 
 		// Consume resources for host metadata

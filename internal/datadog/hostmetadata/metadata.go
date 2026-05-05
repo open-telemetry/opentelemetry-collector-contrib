@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/gohai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/internal/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 )
 
@@ -63,9 +64,22 @@ func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attribu
 func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
+		var src source.Source
+		var aliases []string
+		var err error
+		if sap, ok := p.(provider.SourceAliasesProvider); ok {
+			src, aliases, err = sap.SourceWithAliases(context.TODO())
+		} else {
+			src, err = p.Source(context.TODO())
+		}
+		if err == nil && src.Kind == source.HostnameKind {
 			hm.InternalHostname = src.Identifier
 			hm.Meta.Hostname = src.Identifier
+		}
+		for _, alias := range aliases {
+			if !slices.Contains(hm.Meta.HostAliases, alias) {
+				hm.Meta.HostAliases = append(hm.Meta.HostAliases, alias)
+			}
 		}
 	}
 
@@ -90,16 +104,6 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 		hm.Meta.SocketFqdn = systemHostInfo.FQDN
 	}
 
-	for _, ap := range pcfg.HostAliasProviders {
-		alias, err := ap.HostAlias(context.Background())
-		if err != nil {
-			params.Logger.Debug("failed to resolve host alias", zap.Error(err))
-			continue
-		}
-		if !slices.Contains(hm.Meta.HostAliases, alias) {
-			hm.Meta.HostAliases = append(hm.Meta.HostAliases, alias)
-		}
-	}
 }
 
 type pusher struct {

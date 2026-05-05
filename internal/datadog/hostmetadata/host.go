@@ -19,17 +19,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/provider"
 )
 
-// GetSourceAndAliasProviders builds the hostname resolution chain and any host alias providers.
-func GetSourceAndAliasProviders(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, []HostAliasProvider, error) {
+// GetSourceProvider builds the hostname resolution chain.
+func GetSourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
 	ecsProvider, err := ecs.NewProvider(set)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)
+		return nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)
 	}
 
 	azureProvider := azure.NewProvider()
 	ec2Provider, err := ec2.NewProvider(set.Logger)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build EC2 provider: %w", err)
+		return nil, fmt.Errorf("failed to build EC2 provider: %w", err)
 	}
 	gcpProvider := gcp.NewProvider()
 
@@ -42,12 +42,12 @@ func GetSourceAndAliasProviders(set component.TelemetrySettings, configHostname 
 		[]string{"azure", "ec2", "gcp"},
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build Kubernetes cluster name provider: %w", err)
+		return nil, fmt.Errorf("failed to build Kubernetes cluster name provider: %w", err)
 	}
 
 	k8sProvider, err := k8s.NewProvider(set.Logger, clusterNameProvider)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build Kubernetes hostname provider: %w", err)
+		return nil, fmt.Errorf("failed to build Kubernetes hostname provider: %w", err)
 	}
 
 	chain, err := provider.Chain(
@@ -62,16 +62,12 @@ func GetSourceAndAliasProviders(set component.TelemetrySettings, configHostname 
 			"system":     system.NewProvider(set.Logger),
 		},
 		[]string{"config", "azure", "ecs", "ec2", "gcp", "kubernetes", "system"},
+		[]string{"kubernetes"},
 		timeout,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	var aliases []HostAliasProvider
-	if k8sProvider.IsAvailable() {
-		aliases = []HostAliasProvider{k8sProvider}
-	}
-
-	return provider.Once(chain), aliases, nil
+	return provider.Once(chain), nil
 }
