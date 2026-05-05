@@ -90,11 +90,23 @@ var MetricsGaugeCreateTable string
 //go:embed metrics_gauge_insert.sql
 var MetricsGaugeInsert string
 
+//go:embed metrics_gauge_json_table.sql
+var MetricsGaugeJSONCreateTable string
+
+//go:embed metrics_gauge_json_insert.sql
+var MetricsGaugeJSONInsert string
+
 //go:embed metrics_exp_histogram_table.sql
 var MetricsExpHistogramCreateTable string
 
 //go:embed metrics_exp_histogram_insert.sql
 var MetricsExpHistogramInsert string
+
+//go:embed metrics_exp_histogram_json_table.sql
+var MetricsExpHistogramJSONCreateTable string
+
+//go:embed metrics_exp_histogram_json_insert.sql
+var MetricsExpHistogramJSONInsert string
 
 //go:embed metrics_histogram_table.sql
 var MetricsHistogramCreateTable string
@@ -102,14 +114,32 @@ var MetricsHistogramCreateTable string
 //go:embed metrics_histogram_insert.sql
 var MetricsHistogramInsert string
 
+//go:embed metrics_histogram_json_table.sql
+var MetricsHistogramJSONCreateTable string
+
+//go:embed metrics_histogram_json_insert.sql
+var MetricsHistogramJSONInsert string
+
 //go:embed metrics_sum_table.sql
 var MetricsSumCreateTable string
 
 //go:embed metrics_sum_insert.sql
 var MetricsSumInsert string
 
+//go:embed metrics_sum_json_table.sql
+var MetricsSumJSONCreateTable string
+
+//go:embed metrics_sum_json_insert.sql
+var MetricsSumJSONInsert string
+
 //go:embed metrics_summary_table.sql
 var MetricsSummaryCreateTable string
 
 //go:embed metrics_summary_insert.sql
 var MetricsSummaryInsert string
+
+//go:embed metrics_summary_json_table.sql
+var MetricsSummaryJSONCreateTable string
+
+//go:embed metrics_summary_json_insert.sql
+var MetricsSummaryJSONInsert string

@@ -30,6 +30,14 @@ var supportedMetricTypes = map[pmetric.MetricType]string{
 	pmetric.MetricTypeSummary:              sqltemplates.MetricsSummaryCreateTable,
 }
 
+var supportedMetricTypesJSON = map[pmetric.MetricType]string{
+	pmetric.MetricTypeGauge:                sqltemplates.MetricsGaugeJSONCreateTable,
+	pmetric.MetricTypeSum:                  sqltemplates.MetricsSumJSONCreateTable,
+	pmetric.MetricTypeHistogram:            sqltemplates.MetricsHistogramJSONCreateTable,
+	pmetric.MetricTypeExponentialHistogram: sqltemplates.MetricsExpHistogramJSONCreateTable,
+	pmetric.MetricTypeSummary:              sqltemplates.MetricsSummaryJSONCreateTable,
+}
+
 var logger *zap.Logger
 
 type MetricTablesConfigMapper map[pmetric.MetricType]MetricTypeConfig
@@ -61,9 +69,14 @@ func SetLogger(l *zap.Logger) {
 	logger = l
 }
 
-// NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, database, cluster, engine, ttlExpr string, db driver.Conn) error {
-	for key, ddlTemplate := range supportedMetricTypes {
+// NewMetricsTable create metric tables with an expiry time to storage metric telemetry data.
+// When useJSON is true, JSON column type tables are created instead of Map column type tables.
+func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, database, cluster, engine, ttlExpr string, db driver.Conn, useJSON bool) error {
+	templates := supportedMetricTypes
+	if useJSON {
+		templates = supportedMetricTypesJSON
+	}
+	for key, ddlTemplate := range templates {
 		query := fmt.Sprintf(ddlTemplate, database, tablesConfig[key].Name, cluster, engine, ttlExpr)
 		if err := db.Exec(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
@@ -72,8 +85,28 @@ func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper,
 	return nil
 }
 
-// NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tablesConfig MetricTablesConfigMapper, database string) map[pmetric.MetricType]MetricsModel {
+// NewMetricsModel create a model for contain different metric data.
+// When useJSON is true, JSON-aware models are returned that serialize attributes as JSON.
+func NewMetricsModel(tablesConfig MetricTablesConfigMapper, database string, useJSON bool) map[pmetric.MetricType]MetricsModel {
+	if useJSON {
+		return map[pmetric.MetricType]MetricsModel{
+			pmetric.MetricTypeGauge: &gaugeMetricsJSON{
+				insertSQL: fmt.Sprintf(sqltemplates.MetricsGaugeJSONInsert, database, tablesConfig[pmetric.MetricTypeGauge].Name),
+			},
+			pmetric.MetricTypeSum: &sumMetricsJSON{
+				insertSQL: fmt.Sprintf(sqltemplates.MetricsSumJSONInsert, database, tablesConfig[pmetric.MetricTypeSum].Name),
+			},
+			pmetric.MetricTypeHistogram: &histogramMetricsJSON{
+				insertSQL: fmt.Sprintf(sqltemplates.MetricsHistogramJSONInsert, database, tablesConfig[pmetric.MetricTypeHistogram].Name),
+			},
+			pmetric.MetricTypeExponentialHistogram: &expHistogramMetricsJSON{
+				insertSQL: fmt.Sprintf(sqltemplates.MetricsExpHistogramJSONInsert, database, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
+			},
+			pmetric.MetricTypeSummary: &summaryMetricsJSON{
+				insertSQL: fmt.Sprintf(sqltemplates.MetricsSummaryJSONInsert, database, tablesConfig[pmetric.MetricTypeSummary].Name),
+			},
+		}
+	}
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
 			insertSQL: fmt.Sprintf(sqltemplates.MetricsGaugeInsert, database, tablesConfig[pmetric.MetricTypeGauge].Name),

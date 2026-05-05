@@ -22,6 +22,7 @@ type metricsExporter struct {
 	logger       *zap.Logger
 	cfg          *Config
 	tablesConfig metrics.MetricTablesConfigMapper
+	useJSON      bool
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
@@ -31,6 +32,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) *metricsExporter {
 		logger:       logger,
 		cfg:          cfg,
 		tablesConfig: tablesConfig,
+		useJSON:      useJSON(logger, cfg),
 	}
 }
 
@@ -55,7 +57,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 		}
 
 		ttlExpr := internal.GenerateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, clusterStr, e.cfg.tableEngineString(), ttlExpr, e.db)
+		err := metrics.NewMetricsTable(ctx, e.tablesConfig, database, clusterStr, e.cfg.tableEngineString(), ttlExpr, e.db, e.useJSON)
 		if err != nil {
 			return err
 		}
@@ -84,7 +86,7 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := metrics.NewMetricsModel(e.tablesConfig, e.cfg.database())
+	metricsMap := metrics.NewMetricsModel(e.tablesConfig, e.cfg.database(), e.useJSON)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := metrics.Resource().Attributes()
