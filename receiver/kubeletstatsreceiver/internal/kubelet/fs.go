@@ -25,7 +25,12 @@ func addEphemeralStorageMetrics(mb *metadata.MetricsBuilder, esMetrics metadata.
 		return
 	}
 
-	if s.UsedBytes != nil && esMetrics.Usage != nil {
-		esMetrics.Usage(mb, currentTime, int64(*s.UsedBytes), fsType)
+	recordIntDataPointWithFsType(mb, esMetrics.Usage, s.UsedBytes, fsType, currentTime)
+}
+
+func recordIntDataPointWithFsType(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithFsTypeFunc, value *uint64, fsType metadata.AttributeFsType, currentTime pcommon.Timestamp) {
+	if value == nil || recordDataPoint == nil {
+		return
 	}
+	recordDataPoint(mb, currentTime, int64(*value), fsType)
 }
