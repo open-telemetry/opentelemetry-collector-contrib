@@ -1,0 +1,6 @@
+change_type: deprecation
+component: exporter/bmc_helix
+note: Rename exporter type from `bmchelix` to `bmc_helix`
+issues: [45339]
+subtext:
+change_logs: [user]
