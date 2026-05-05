@@ -6,6 +6,7 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,19 +31,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
+var namespacesGVR = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "namespaces"}
+
 type k8seventsReceiver struct {
-	config          *Config
-	settings        receiver.Settings
-	logsConsumer    consumer.Logs
-	stopperChanList []chan struct{}
-	startTime       time.Time
-	ctx             context.Context
-	cancel          context.CancelFunc
-	obsrecv         *receiverhelper.ObsReport
-	mu              sync.Mutex
-	client          dynamic.Interface
-	storageClient   storage.Client
-	wg              sync.WaitGroup
+	config            *Config
+	settings          receiver.Settings
+	logsConsumer      consumer.Logs
+	stopperChanList   []chan struct{}
+	startTime         time.Time
+	namespacesToWatch []string
+	ctx               context.Context
+	cancel            context.CancelFunc
+	obsrecv           *receiverhelper.ObsReport
+	mu                sync.Mutex
+	client            dynamic.Interface
+	storageClient     storage.Client
+	wg                sync.WaitGroup
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -86,6 +91,20 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) err
 			return fmt.Errorf("failed to get storage client: %w", storageErr)
 		}
 		kr.storageClient = storageClient
+	}
+
+	// Resolve the watch list. With exclude_namespaces, list the cluster's namespaces
+	// once and watch only the survivors. Without it, fall back to the configured
+	// allowlist (or all namespaces if neither is set). New namespaces created after
+	// startup are not picked up — restart the collector to refresh the list.
+	if len(kr.config.ExcludeNamespaces) > 0 {
+		included, listErr := kr.resolveNamespaces(ctx)
+		if listErr != nil {
+			return fmt.Errorf("failed to resolve namespaces for exclude_namespaces: %w", listErr)
+		}
+		kr.namespacesToWatch = included
+	} else {
+		kr.namespacesToWatch = kr.config.Namespaces
 	}
 
 	if kr.config.K8sLeaderElector != nil {
@@ -152,6 +171,46 @@ func (kr *k8seventsReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// resolveNamespaces lists the cluster's namespaces and returns the ones not
+// matched by any entry in cfg.ExcludeNamespaces. Regex compile errors on
+// individual entries are logged and skipped, mirroring k8sobjectsreceiver.
+func (kr *k8seventsReceiver) resolveNamespaces(ctx context.Context) ([]string, error) {
+	allNamespaces, err := kr.client.Resource(namespacesGVR).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	compiled := make([]*regexp.Regexp, 0, len(kr.config.ExcludeNamespaces))
+	for _, pattern := range kr.config.ExcludeNamespaces {
+		re, compErr := regexp.Compile(pattern.Regex)
+		if compErr != nil {
+			kr.settings.Logger.Error("failed to compile exclude_namespaces regex",
+				zap.String("regex", pattern.Regex), zap.Error(compErr))
+			continue
+		}
+		compiled = append(compiled, re)
+	}
+
+	included := make([]string, 0, len(allNamespaces.Items))
+	for _, ns := range allNamespaces.Items {
+		name := ns.GetName()
+		excluded := false
+		for _, re := range compiled {
+			if re.MatchString(name) {
+				excluded = true
+				break
+			}
+		}
+		if !excluded {
+			included = append(included, name)
+		}
+	}
+
+	kr.settings.Logger.Info("Watching namespaces after exclude_namespaces filter",
+		zap.Strings("namespaces", included))
+	return included, nil
+}
+
 // startWatchers creates and starts the k8sinventory watch observer
 func (kr *k8seventsReceiver) startWatchers() {
 	// Events GVR (GroupVersionResource)
@@ -161,7 +220,7 @@ func (kr *k8seventsReceiver) startWatchers() {
 		Resource: "events",
 	}
 
-	namespaces := kr.config.Namespaces
+	namespaces := kr.namespacesToWatch
 	if len(namespaces) == 0 {
 		namespaces = []string{""} // Empty string means all namespaces
 	}

@@ -32,6 +32,9 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `namespaces` (default = `all`): An array of `namespaces` to collect events from.
 This receiver will continuously watch all the `namespaces` mentioned in the array for
 new events.
+- `exclude_namespaces`: allows excluding namespaces from being watched. Cannot
+be combined with `namespaces`. (NOTE: if a new namespace that matches the regex
+is added, the collector will need to be restarted.)
 - `kube_api_qps` (default = `5`): Maximum number of queries per second to the Kubernetes API. Increase this if you see `client-side throttling` warnings in the collector logs.
 - `kube_api_burst` (default = `10`): Maximum burst size for requests to the Kubernetes API. Increase this alongside `kube_api_qps` if you see `client-side throttling` warnings.
 - `k8s_leader_elector` (default: none): if specified, will enable Leader Election by using `k8sleaderelector` extension
@@ -49,6 +52,12 @@ Examples:
     storage: file_storage
     k8s_leader_elector: k8s_leader_elector
     namespaces: [default, my_namespace]
+
+  k8s_events/exclude_noisy:
+    auth_type: kubeConfig
+    exclude_namespaces:
+      - regexp: kube-.*
+      - regexp: istio-system
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)

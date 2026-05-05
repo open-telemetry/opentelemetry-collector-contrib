@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/filter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
@@ -44,6 +45,15 @@ func TestConfigValidationAPIRateLimit(t *testing.T) {
 			cfg: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 100, KubeAPIBurst: 200},
 			},
+		},
+		{
+			desc: "namespaces and exclude_namespaces both set is invalid",
+			cfg: &Config{
+				APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+				Namespaces:        []string{"default"},
+				ExcludeNamespaces: []filter.Config{{Regex: "kube-.*"}},
+			},
+			expectedErr: "namespaces and exclude_namespaces cannot both be set at the same time",
 		},
 	}
 
@@ -78,6 +88,20 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "all_settings"),
 			expected: &Config{
 				Namespaces: []string{"default", "my_namespace"},
+				APIConfig: k8sconfig.APIConfig{
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "exclude_namespaces"),
+			expected: &Config{
+				ExcludeNamespaces: []filter.Config{
+					{Regex: "kube-.*"},
+					{Regex: "istio-system"},
+				},
 				APIConfig: k8sconfig.APIConfig{
 					AuthType:     k8sconfig.AuthTypeServiceAccount,
 					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
