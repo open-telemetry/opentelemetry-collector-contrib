@@ -53,6 +53,32 @@ This receiver tails and parses logs from windows event log API using the
 | `discover_domain_controllers`       | `false`      | Automatically discover and collect  events from Active Directory domain controllers.                                                                                                                                           |
 
 
+### Internal Telemetry
+
+The receiver exposes five internal metrics. They are disabled by default and must be opted into via the `telemetry.metrics` configuration.
+
+| Config key                                           | Description |
+|------------------------------------------------------|-------------|
+| `receiver_windows_event_log_batch_size`              | Number of events fetched per EvtNext call |
+| `receiver_windows_event_log_channel_size`            | Approximate number of records in the channel, sampled per collection cycle |
+| `receiver_windows_event_log_event_size`              | Size in bytes of the rendered event XML per event |
+| `receiver_windows_event_log_lag`                     | Maximum lag (seconds) between event log time and collector receipt time, per batch |
+| `receiver_windows_event_log_missed_events`           | Estimated events dropped from the ring buffer before being read |
+
+Example configuration enabling two of the metrics:
+
+```yaml
+receivers:
+  windows_event_log:
+    channel: application
+    telemetry:
+      metrics:
+        receiver_windows_event_log_lag:
+          enabled: true
+        receiver_windows_event_log_batch_size:
+          enabled: true
+```
+
 ### Feature Gates
 
 | Feature Gate                                          | Stage | Description                                                                                                                                                           |
