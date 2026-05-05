@@ -3,14 +3,15 @@
 package metadata
 
 import (
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"testing"
-	"time"
 )
 
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
