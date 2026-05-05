@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:generate mdatagen metadata.yaml
+//go:generate make mdatagen
 
 // Package genainormalizer provides a processor that normalizes GenAI telemetry
 // attributes from OpenInference and OpenLLMetry to the official OTel GenAI
