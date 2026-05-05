@@ -59,11 +59,11 @@ The receiver exposes five internal metrics. They are disabled by default and mus
 
 | Config key                                           | Description |
 |------------------------------------------------------|-------------|
-| `receiver_windows_event_log_batch_size`              | Number of events fetched per EvtNext call |
-| `receiver_windows_event_log_channel_size`            | Approximate number of records in the channel, sampled per collection cycle |
-| `receiver_windows_event_log_event_size`              | Size in bytes of the rendered event XML per event |
-| `receiver_windows_event_log_lag`                     | Maximum lag (seconds) between event log time and collector receipt time, per batch |
-| `receiver_windows_event_log_missed_events`           | Estimated events dropped from the ring buffer before being read |
+| `receiver.windows_event_log.batch_size`              | Number of events fetched per EvtNext call |
+| `receiver.windows_event_log.channel_size`            | Approximate number of records in the channel, sampled per collection cycle |
+| `receiver.windows_event_log.event_size`              | Size in bytes of the rendered event XML per event |
+| `receiver.windows_event_log.lag`                     | Maximum lag (seconds) between event log time and collector receipt time, per batch |
+| `receiver.windows_event_log.missed_events`           | Estimated events dropped from the ring buffer before being read |
 
 Example configuration enabling two of the metrics:
 
@@ -73,9 +73,9 @@ receivers:
     channel: application
     telemetry:
       metrics:
-        receiver_windows_event_log_lag:
+        receiver.windows_event_log.lag:
           enabled: true
-        receiver_windows_event_log_batch_size:
+        receiver.windows_event_log.batch_size:
           enabled: true
 ```
 
