@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -697,4 +698,26 @@ func TestExcludeTopicWithRegex(t *testing.T) {
 	require.Equal(t, 0, consumedTopics["logs-a"], "logs-a should be excluded")
 	require.Equal(t, 0, consumedTopics["logs-b"], "logs-b should be excluded")
 	require.Equal(t, 1, consumedTopics["logs-c"], "logs-c should be consumed")
+}
+
+func TestFranzConsumerBrokerCacheEvictOnDisconnect(t *testing.T) {
+	testTel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
+	require.NoError(t, err)
+	defer tb.Shutdown()
+
+	c := &franzConsumer{
+		telemetryBuilder: tb,
+		brokerReadOpts:   make(map[brokerReadKey]metric.MeasurementOption),
+	}
+	meta := kgo.BrokerMetadata{NodeID: 1, Host: "broker1"}
+
+	// Populate the broker read cache for both outcomes.
+	c.OnBrokerRead(meta, 0, 0, time.Millisecond, time.Millisecond, nil)
+	c.OnBrokerRead(meta, 0, 0, time.Millisecond, time.Millisecond, errors.New("oops"))
+	require.Len(t, c.brokerReadOpts, 2)
+
+	// Disconnect should evict both entries.
+	c.OnBrokerDisconnect(meta, nil)
+	require.Empty(t, c.brokerReadOpts)
 }

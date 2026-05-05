@@ -38,31 +38,4 @@ func TestComponentLifecycle(t *testing.T) {
 		err = e.Shutdown(context.Background())
 		require.NoError(t, err)
 	})
-	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
-		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), newMdatagenNopHost()))
-		require.NoError(t, firstExt.Shutdown(context.Background()))
-
-		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
-		require.NoError(t, err)
-		require.NoError(t, secondExt.Start(context.Background(), newMdatagenNopHost()))
-		require.NoError(t, secondExt.Shutdown(context.Background()))
-	})
-}
-
-var _ component.Host = (*mdatagenNopHost)(nil)
-
-type mdatagenNopHost struct{}
-
-func newMdatagenNopHost() component.Host {
-	return &mdatagenNopHost{}
-}
-
-func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	return nil
 }

@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 )
 
 var errNilValueProvided = errors.New("nil value provided")
@@ -28,22 +30,23 @@ type Manager interface {
 }
 
 type manager struct {
-	log          *zap.Logger
-	migrationMap map[string]*Version // target schema URL → copyFromVersion
+	log              *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
+	migrationMap     map[string]*Version // target schema URL → copyFromVersion
+	cooldown         time.Duration
+	limit            int
 
 	rw            sync.RWMutex
 	providers     []Provider
 	match         map[string]*Version
 	translatorMap map[string]*translator
-	cooldown      time.Duration
-	limit         int
 }
 
 var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
 // of schema
-func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Duration, limit int, migrationMap map[string]*Version, providers ...Provider) (Manager, error) {
+func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Duration, limit int, telemetryBuilder *metadata.TelemetryBuilder, migrationMap map[string]*Version, providers ...Provider) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
@@ -57,21 +60,27 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, cooldown time.Durati
 		match[family] = version
 	}
 
-	// wrap provider with cacheable provider
-	var prs []Provider
-	for _, p := range providers {
-		prs = append(prs, NewCacheableProvider(p, cooldown, limit))
+	m := &manager{
+		log:              log,
+		telemetryBuilder: telemetryBuilder,
+		migrationMap:     migrationMap,
+		cooldown:         cooldown,
+		limit:            limit,
+		match:            match,
+		translatorMap:    make(map[string]*translator),
 	}
 
-	return &manager{
-		log:           log,
-		migrationMap:  migrationMap,
-		match:         match,
-		translatorMap: make(map[string]*translator),
-		providers:     prs,
-		cooldown:      cooldown,
-		limit:         limit,
-	}, nil
+	// wrap providers with cacheable provider
+	for _, p := range providers {
+		m.providers = append(m.providers, m.newCacheableProvider(p))
+	}
+
+	return m, nil
+}
+
+// newCacheableProvider wraps p with a CacheableProvider wired to the manager's telemetry.
+func (m *manager) newCacheableProvider(p Provider) Provider {
+	return NewCacheableProvider(p, m.cooldown, m.limit, m.telemetryBuilder)
 }
 
 func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Translation, error) {
@@ -150,7 +159,7 @@ func (m *manager) AddProvider(p Provider) {
 		return
 	}
 	if _, ok := p.(*CacheableProvider); !ok {
-		p = NewCacheableProvider(p, m.cooldown, m.limit)
+		p = m.newCacheableProvider(p)
 	}
 	m.providers = append(m.providers, p)
 }
