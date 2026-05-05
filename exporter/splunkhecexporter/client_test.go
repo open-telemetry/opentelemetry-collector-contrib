@@ -37,6 +37,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	splunktranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/splunk"
 )
 
 var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
@@ -2263,6 +2264,31 @@ func TestBatcherPartitionsByHecToken(t *testing.T) {
 		requests := runBatchedLogExport(t, makeCfg(), ld, 1)
 		assert.Equal(t, "Splunk token-same", requests[0].headers.Get("Authorization"))
 	})
+}
+
+// TestMarshalEvent_DoesNotEscapeHTML verifies that marshalEvent encodes events
+// without escaping HTML metacharacters (<, >, &). Splunk HEC receives the
+// JSON verbatim, so escaping those bytes corrupts log bodies that
+// legitimately contain them. Regression test for #46545.
+func TestMarshalEvent_DoesNotEscapeHTML(t *testing.T) {
+	event := &splunktranslator.Event{
+		Event:  "<a>hello & 'world'</a>",
+		Host:   "h",
+		Source: "s",
+		Fields: map[string]any{"raw": "x<y>z&w"},
+	}
+
+	var buf bytes.Buffer
+	jsonErr, writeErr := marshalEvent(event, 1024, &buf)
+	require.NoError(t, jsonErr)
+	require.NoError(t, writeErr)
+
+	out := buf.String()
+	assert.Contains(t, out, "<a>hello & 'world'</a>")
+	assert.Contains(t, out, "x<y>z&w")
+	assert.NotContains(t, out, `\u003c`)
+	assert.NotContains(t, out, `\u003e`)
+	assert.NotContains(t, out, `\u0026`)
 }
 
 // validateCompressedContains validates that GZipped `got` contains `expected` strings
