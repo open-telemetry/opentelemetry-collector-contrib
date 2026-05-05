@@ -637,14 +637,15 @@ func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testi
 				},
 			})
 
-			require.Eventually(t, func() bool {
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
 				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
 				if err != nil {
-					t.Logf("Failed healthcheck: %s", err)
-					return false
+					c.Errorf("failed healthcheck: %v", err)
+					return
 				}
-				require.NoError(t, resp.Body.Close())
-				return resp.StatusCode >= 200 && resp.StatusCode < 300
+				require.NoError(c, resp.Body.Close())
+				require.GreaterOrEqual(c, resp.StatusCode, 200)
+				require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
 			}, 10*time.Second, 100*time.Millisecond, "Collector did not become healthy with the working config")
 
 			require.Eventually(t, func() bool {
@@ -671,13 +672,13 @@ func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testi
 
 			firstSupervisor.Shutdown()
 			firstServer.shutdown()
-			require.Eventually(t, func() bool {
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
 				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
 				if err != nil {
-					return true
+					return
 				}
-				require.NoError(t, resp.Body.Close())
-				return false
+				require.NoError(c, resp.Body.Close())
+				c.Errorf("healthcheck endpoint still responding with status %d", resp.StatusCode)
 			}, 5*time.Second, 100*time.Millisecond, "Previous collector instance did not shut down")
 			time.Sleep(250 * time.Millisecond)
 
@@ -718,14 +719,14 @@ func TestSupervisorRestartsWithLastWorkingRemoteConfigAfterFailedConfig(t *testi
 
 			waitForSupervisorConnection(restartServer.supervisorConnected, true)
 
-			require.Eventually(t, func() bool {
+			require.EventuallyWithT(t, func(c *assert.CollectT) {
 				resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
 				if err != nil {
-					t.Logf("Failed restart healthcheck: %s", err)
-					return false
+					c.Errorf("failed healthcheck: %v", err)
+					return
 				}
-				require.NoError(t, resp.Body.Close())
-				return resp.StatusCode >= 200 && resp.StatusCode < 300
+				require.NoError(c, resp.Body.Close())
+				require.True(c, resp.StatusCode >= 200 && resp.StatusCode < 300)
 			}, 10*time.Second, 100*time.Millisecond, "Collector did not restart with the last working config")
 
 			require.Never(t, restartedFallbackStatusReported.Load, time.Second, 100*time.Millisecond, "Last working remote config status should not be reported during restart fallback")
