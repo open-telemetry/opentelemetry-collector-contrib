@@ -1,0 +1,19 @@
+# Readiness probe always fails so the kubelet PATCHes the same Unhealthy Event
+# on every failure, producing MODIFIED watch notifications for dedup_interval
+# to throttle.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: failing-readiness
+  namespace: test-k8sevents-dedup
+spec:
+  restartPolicy: Always
+  containers:
+    - name: app
+      image: registry.k8s.io/pause:3.9
+      readinessProbe:
+        httpGet:
+          path: /healthz
+          port: 8080
+        periodSeconds: 1
+        failureThreshold: 1

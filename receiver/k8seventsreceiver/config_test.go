@@ -6,6 +6,7 @@ package k8seventsreceiver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,6 +44,39 @@ func TestConfigValidationAPIRateLimit(t *testing.T) {
 			desc: "custom qps and burst are valid",
 			cfg: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 100, KubeAPIBurst: 200},
+			},
+		},
+		{
+			desc: "negative entry_ttl is invalid",
+			cfg: &Config{
+				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				EntryTTL:  -1 * time.Second,
+			},
+			expectedErr: "entry_ttl must be non-negative",
+		},
+		{
+			desc: "entry_ttl smaller than dedup_interval is invalid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: 5 * time.Minute,
+				EntryTTL:      1 * time.Minute,
+			},
+			expectedErr: "entry_ttl must be greater than or equal to dedup_interval; otherwise dedup state is evicted before the throttle window expires",
+		},
+		{
+			desc: "negative dedup_interval with default entry_ttl is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: -1 * time.Second,
+				EntryTTL:      defaultEntryTTL,
+			},
+		},
+		{
+			desc: "positive dedup_interval with sufficient entry_ttl is valid",
+			cfg: &Config{
+				APIConfig:     k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount, KubeAPIQPS: 5, KubeAPIBurst: 10},
+				DedupInterval: 5 * time.Minute,
+				EntryTTL:      65 * time.Minute,
 			},
 		},
 	}
@@ -83,6 +117,31 @@ func TestLoadConfig(t *testing.T) {
 					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 				},
+				EntryTTL: defaultEntryTTL,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_dedup"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
+				},
+				DedupInterval: 5 * time.Minute,
+				EntryTTL:      defaultEntryTTL,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "with_dedup_and_ttl"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType:     k8sconfig.AuthTypeServiceAccount,
+					KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
+					KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
+				},
+				DedupInterval: 5 * time.Minute,
+				EntryTTL:      2 * time.Hour,
 			},
 		},
 	}

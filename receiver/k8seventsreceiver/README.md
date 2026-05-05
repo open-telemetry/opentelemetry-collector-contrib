@@ -40,6 +40,10 @@ new events.
   > - **Local or node-pinned volumes** (`hostPath`, local PV): the collector pod becomes tied to a specific node. If that node fails or the pod is rescheduled elsewhere, the persisted data will not be accessible and persistence will not work correctly.
   > - **Network-attached volumes** (`ReadWriteMany`): the volume is accessible from any node, so the collector pod can be freely rescheduled or fail over to a different node while still resuming from the correct resourceVersion. This is the recommended approach, especially when used with `k8s_leader_elector`.
   > - **Block volumes** (`ReadWriteOnce`): supported for single-replica deployments where restarts are graceful. Not recommended with leader election across multiple nodes, as Kubernetes may take 30–90 seconds to detach and reattach the volume after a node failure.
+- `dedup_interval` (default = `0`): Throttles MODIFIED watch events per Event UID.
+See [Event Deduplication](#event-deduplication).
+- `entry_ttl` (default = `65m`): How long per-UID dedup state is retained.
+See [Event Deduplication](#event-deduplication).
 
 Examples:
 
@@ -53,6 +57,54 @@ Examples:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+## Event Deduplication
+
+`dedup_interval` is opt-in (default `0` preserves existing behavior). It throttles
+MODIFIED watch notifications per Event UID, useful when recurring events
+(`CrashLoopBackOff`, failing readiness probes, etc.) inflate log volume without adding
+new information.
+
+Recurrence count is preserved on each emitted record via the `k8s.event.count` attribute.
+
+### Configuration
+
+| `dedup_interval` | Behavior |
+|---|---|
+| `0` (default) | No throttling — emit every MODIFIED |
+| Positive (e.g. `5m`) | Emit the first MODIFIED per UID, then drop until the interval elapses |
+| Negative (e.g. `-1s`) | Drop all MODIFIED events |
+
+ADDED events are always emitted and DELETED watch events are excluded. The dedup
+cache only tracks UIDs that have produced a MODIFIED, so single-fire Events do
+not consume cache space.
+
+```yaml
+k8s_events:
+  dedup_interval: 5m   # MODIFIED at most once per 5 min per Event UID
+  entry_ttl: 65m       # default; see below
+```
+
+### `entry_ttl`
+
+`entry_ttl` bounds how long a per-UID dedup entry lives in the cache. The TTL is
+reset on every emit, so an entry persists for as long as that UID is being
+actively emitted (at most once per `dedup_interval`). When emissions stop the
+entry is evicted after `entry_ttl` so the cache does not grow unbounded.
+
+The only hard constraint, validated at startup, is
+`entry_ttl >= dedup_interval`; otherwise the entry can expire between
+consecutive emits and dedup lapses. The default `65m` is a heuristic that
+roughly tracks the API server's default Event TTL
+([`--event-ttl`](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/),
+default `1h`): once a UID has gone that long without emitting, the underlying
+Event has likely been GC'd by the API server and the entry is safe to drop.
+
+### Internal telemetry
+
+When `dedup_interval` is set, the counter `otelcol.k8s.events.modified.filtered`
+reports how many MODIFIED watch notifications were dropped. See
+[documentation.md](./documentation.md) for the metric definition.
 
 ## Example
 
@@ -286,6 +338,8 @@ will be converted to the following log
             "k8s.event.name": "bad-pod.18633a5aeb89ba21",
             "k8s.event.uid": "86bc5e70-a921-4fbc-8b64-fa1316289423",
             "k8s.namespace.name": "default",
+            "k8s.event.reporting_controller": "kubelet",
+            "k8s.event.reporting_instance": "kind-control-plane",
             "k8s.event.count": 4
           },
           "TraceID": "",

@@ -5,6 +5,7 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -13,6 +14,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
+
+const defaultEntryTTL = 65 * time.Minute
 
 // NewFactory creates a factory for k8s_cluster receiver.
 func NewFactory() receiver.Factory {
@@ -29,6 +32,7 @@ func createDefaultConfig() component.Config {
 			KubeAPIQPS:   k8sconfig.DefaultKubeAPIQPS,
 			KubeAPIBurst: k8sconfig.DefaultKubeAPIBurst,
 		},
+		EntryTTL: defaultEntryTTL,
 	}
 }
 
