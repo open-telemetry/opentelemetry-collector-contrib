@@ -171,8 +171,6 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
 
-	// Fetch database names and record the count before emitting the admin resource,
-	// so the database count metric lands on the admin resource alongside other server metrics.
 	// Database iteration is skipped entirely if no database-level metrics are enabled.
 	var dbNames []string
 	if s.requiresDatabaseIteration() {
@@ -187,11 +185,6 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		s.logger.Debug("Skipping database iteration as all database-level metrics are disabled")
 	}
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetServerAddress(serverAddress)
-	rb.SetServerPort(serverPort)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
@@ -204,6 +197,12 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
 	}
+
+	rb := s.mb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	rb.SetServiceInstanceID(generateInstanceID(serverAddress, serverPort))
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // requiresDatabaseIteration checks if any metrics that require database iteration are enabled.
