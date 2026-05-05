@@ -457,7 +457,7 @@ $defs:
         properties:
           enabled:
             type: boolean
-            default: true
+            default: false
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
             type: array

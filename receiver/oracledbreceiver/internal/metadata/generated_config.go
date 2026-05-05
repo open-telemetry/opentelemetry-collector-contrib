@@ -1207,7 +1207,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ServiceName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ServiceNamespace: ResourceAttributeConfig{
 			Enabled: false,

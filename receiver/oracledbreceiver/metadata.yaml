@@ -30,7 +30,7 @@ resource_attributes:
     type: string
   service.name:
     description: Name of the database service.
-    enabled: true
+    enabled: false
     type: string
   service.namespace:
     description: Logical grouping (e.g., team, business unit).
