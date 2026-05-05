@@ -19,20 +19,20 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.FaroEvents.Add(context.Background(), 1)
-	tb.FaroExceptions.Add(context.Background(), 1)
-	tb.FaroLogs.Add(context.Background(), 1)
-	tb.FaroMeasurements.Add(context.Background(), 1)
-	AssertEqualFaroEvents(t, testTel,
+	tb.FaroEventIngested.Add(context.Background(), 1)
+	tb.FaroExceptionIngested.Add(context.Background(), 1)
+	tb.FaroLogIngested.Add(context.Background(), 1)
+	tb.FaroMeasurementIngested.Add(context.Background(), 1)
+	AssertEqualFaroEventIngested(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualFaroExceptions(t, testTel,
+	AssertEqualFaroExceptionIngested(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualFaroLogs(t, testTel,
+	AssertEqualFaroLogIngested(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualFaroMeasurements(t, testTel,
+	AssertEqualFaroMeasurementIngested(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 

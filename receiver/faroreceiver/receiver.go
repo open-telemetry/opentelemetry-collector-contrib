@@ -177,10 +177,10 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 	}
 
 	ctx := req.Context()
-	r.telemetryBuilder.FaroLogs.Add(ctx, int64(len(payload.Logs)))
-	r.telemetryBuilder.FaroMeasurements.Add(ctx, int64(len(payload.Measurements)))
-	r.telemetryBuilder.FaroExceptions.Add(ctx, int64(len(payload.Exceptions)))
-	r.telemetryBuilder.FaroEvents.Add(ctx, int64(len(payload.Events)))
+	r.telemetryBuilder.FaroLogIngested.Add(ctx, int64(len(payload.Logs)))
+	r.telemetryBuilder.FaroMeasurementIngested.Add(ctx, int64(len(payload.Measurements)))
+	r.telemetryBuilder.FaroExceptionIngested.Add(ctx, int64(len(payload.Exceptions)))
+	r.telemetryBuilder.FaroEventIngested.Add(ctx, int64(len(payload.Events)))
 
 	var errors []string
 

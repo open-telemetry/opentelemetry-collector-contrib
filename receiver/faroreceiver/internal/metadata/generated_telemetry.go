@@ -22,13 +22,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter            metric.Meter
-	mu               sync.Mutex
-	registrations    []metric.Registration
-	FaroEvents       metric.Int64Counter
-	FaroExceptions   metric.Int64Counter
-	FaroLogs         metric.Int64Counter
-	FaroMeasurements metric.Int64Counter
+	meter                   metric.Meter
+	mu                      sync.Mutex
+	registrations           []metric.Registration
+	FaroEventIngested       metric.Int64Counter
+	FaroExceptionIngested   metric.Int64Counter
+	FaroLogIngested         metric.Int64Counter
+	FaroMeasurementIngested metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -60,26 +60,26 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.FaroEvents, err = builder.meter.Int64Counter(
-		"otelcol_faro_events",
+	builder.FaroEventIngested, err = builder.meter.Int64Counter(
+		"otelcol_faro.event.ingested",
 		metric.WithDescription("Number of Faro events ingested. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FaroExceptions, err = builder.meter.Int64Counter(
-		"otelcol_faro_exceptions",
+	builder.FaroExceptionIngested, err = builder.meter.Int64Counter(
+		"otelcol_faro.exception.ingested",
 		metric.WithDescription("Number of Faro exceptions ingested. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FaroLogs, err = builder.meter.Int64Counter(
-		"otelcol_faro_logs",
+	builder.FaroLogIngested, err = builder.meter.Int64Counter(
+		"otelcol_faro.log.ingested",
 		metric.WithDescription("Number of Faro logs ingested. [Development]"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FaroMeasurements, err = builder.meter.Int64Counter(
-		"otelcol_faro_measurements",
+	builder.FaroMeasurementIngested, err = builder.meter.Int64Counter(
+		"otelcol_faro.measurement.ingested",
 		metric.WithDescription("Number of Faro measurements ingested. [Development]"),
 		metric.WithUnit("1"),
 	)
