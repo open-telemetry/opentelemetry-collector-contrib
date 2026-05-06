@@ -8,7 +8,7 @@ require (
 	github.com/elastic/go-docappender/v2 v2.14.1
 	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
-	github.com/klauspost/compress v1.18.5
+	github.com/klauspost/compress v1.18.6
 	github.com/lestrrat-go/strftime v1.1.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0
@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/pdata v1.57.1-0.20260501001745-24aecacf1c04
 	go.opentelemetry.io/collector/pdata/pprofile v0.151.1-0.20260501001745-24aecacf1c04
-	go.opentelemetry.io/ebpf-profiler v0.0.202614
+	go.opentelemetry.io/ebpf-profiler v0.0.202618
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/metric v1.43.0
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
@@ -107,8 +107,8 @@ require (
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
-	google.golang.org/grpc v1.80.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
+	google.golang.org/grpc v1.81.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

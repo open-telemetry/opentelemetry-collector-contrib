@@ -39,7 +39,7 @@ components:
     - exporter/azure_blob
     - exporter/azuredataexplorer
     - exporter/azuremonitor
-    - exporter/bmchelix
+    - exporter/bmc_helix
     - exporter/cassandra
     - exporter/clickhouse
     - exporter/coralogix
@@ -108,6 +108,7 @@ components:
     - extension/k8s_leader_elector
     - extension/k8s_observer
     - extension/kafkatopics_observer
+    - extension/mcp
     - extension/oauth2client
     - extension/observer
     - extension/oidc
@@ -163,6 +164,7 @@ components:
     - pkg/ottl
     - pkg/pdatatest
     - pkg/pdatautil
+    - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
     - pkg/skywalking
@@ -174,7 +176,6 @@ components:
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
-    - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
     - pkg/translator/splunk
@@ -208,8 +209,8 @@ components:
     - processor/logstransform
     - processor/lookup
     - processor/metric_start_time
+    - processor/metrics_transform
     - processor/metricsgeneration
-    - processor/metricstransform
     - processor/novadetector
     - processor/oracleclouddetector
     - processor/probabilistic_sampler
@@ -250,8 +251,8 @@ components:
     - receiver/carbon
     - receiver/chrony
     - receiver/cisco_os
+    - receiver/cloud_foundry
     - receiver/cloudflare
-    - receiver/cloudfoundry
     - receiver/collectd
     - receiver/couchdb
     - receiver/datadog
@@ -285,7 +286,7 @@ components:
     - receiver/k8s_objects
     - receiver/kafka
     - receiver/kafkametrics
-    - receiver/kubeletstats
+    - receiver/kubelet_stats
     - receiver/libhoney
     - receiver/loki
     - receiver/macos_unified_logging
