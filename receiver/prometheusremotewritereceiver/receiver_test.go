@@ -34,6 +34,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -3336,4 +3339,80 @@ func TestHandlePRWConsumerResponse(t *testing.T) {
 		require.NoError(t, err)
 		assert.Contains(t, string(body), "permanent failure")
 	})
+}
+
+// TestInvalidSchemaLogging verifies that invalid histogram schemas trigger debug logs
+func TestInvalidSchemaLogging(t *testing.T) {
+	core, obs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	settings.Logger = logger
+
+	prwReceiver, err := factory.CreateMetrics(t.Context(), settings, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, prwReceiver)
+
+	receiverID := component.MustNewID("test")
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	require.NoError(t, err)
+
+	prwReceiver.(*prometheusRemoteWriteReceiver).obsrecv = obsrecv
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	t.Cleanup(func() {
+		writeReceiver.rmCache.Purge()
+	})
+
+	request := &writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_invalid_histogram",
+			"job", "test_job",
+			"instance", "test_instance",
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
+				Metadata: writev2.Metadata{
+					Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+				},
+				Histograms: []writev2.Histogram{
+					{
+						Timestamp: 123456789,
+						Schema:    -10, // Invalid schema
+						Sum:       100.5,
+						Count:     &writev2.Histogram_CountInt{CountInt: 50},
+						PositiveSpans: []writev2.BucketSpan{
+							{Offset: 0, Length: 2},
+						},
+						PositiveDeltas: []int64{10, 15},
+					},
+				},
+			},
+		},
+	}
+
+	metrics, stats, err := writeReceiver.translateV2(t.Context(), request)
+	require.NoError(t, err)
+	assert.Equal(t, 0, metrics.MetricCount())
+	assert.Equal(t, 0, stats.Histograms)
+
+	// Verify that debug log was emitted for the invalid schema
+	logs := obs.All()
+	require.Len(t, logs, 1, "Expected 1 debug log for invalid schema")
+
+	// Check log entry
+	assert.Equal(t, "Dropping histogram with invalid schema", logs[0].Message)
+	assert.Equal(t, "test_invalid_histogram", logs[0].ContextMap()["metric_name"])
+	assert.Equal(t, int32(-10), logs[0].ContextMap()["schema"])
+	assert.Equal(t, "test_job", logs[0].ContextMap()["job"])
+	assert.Equal(t, "test_instance", logs[0].ContextMap()["instance"])
+	assert.Equal(t, int64(123456789), logs[0].ContextMap()["timestamp"])
 }
