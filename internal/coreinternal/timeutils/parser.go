@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -172,31 +171,6 @@ func ValidateLocale(locale string) error {
 	}
 
 	return fmt.Errorf("invalid locale '%s': %w", locale, err)
-}
-
-type strptimeParseErr struct {
-	err               *time.ParseError
-	ctimeLayout       string
-	nativeSubstitutes map[string]string
-}
-
-func (e *strptimeParseErr) Error() string {
-	if e.err.Message == "" {
-		layoutElem, ok := e.nativeSubstitutes[e.err.LayoutElem]
-		if !ok {
-			layoutElem = e.err.LayoutElem
-		}
-		return "parsing time " +
-			strconv.Quote(e.err.Value) + " as " +
-			strconv.Quote(e.ctimeLayout) + ": cannot parse " +
-			strconv.Quote(e.err.ValueElem) + " as " +
-			strconv.Quote(layoutElem)
-	}
-	return "parsing time " + strconv.Quote(e.err.Value) + e.err.Message
-}
-
-func ToStrptimeParseError(err *time.ParseError, ctimeLayout string, nativeSubstitutes map[string]string) error {
-	return &strptimeParseErr{err, ctimeLayout, nativeSubstitutes}
 }
 
 // Allows tests to override with deterministic value
