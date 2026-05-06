@@ -29,7 +29,7 @@ func TestScrape(t *testing.T) {
 		mutateScraper     func(*pagingScraper)
 	}
 
-	config := metadata.DefaultMetricsBuilderConfig()
+	config := metadata.NewDefaultMetricsBuilderConfig()
 	config.Metrics.SystemPagingUtilization.Enabled = true
 
 	testCases := []testCase{

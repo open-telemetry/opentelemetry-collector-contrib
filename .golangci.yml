@@ -139,12 +139,6 @@ linters:
         path: exporter/clickhouseexporter/
       - linters:
           - forbidigo
-        path: exporter/googlecloudexporter/
-      - linters:
-          - forbidigo
-        path: exporter/prometheusremotewriteexporter/
-      - linters:
-          - forbidigo
         path: exporter/signalfxexporter/
       - linters:
           - forbidigo
@@ -163,32 +157,12 @@ linters:
         path: pkg/translator/prometheus/
       - linters:
           - forbidigo
-        path: processor/tailsamplingprocessor/
-      - linters:
-          - forbidigo
         path: receiver/awscontainerinsightreceiver/
       - linters:
           - forbidigo
         path: receiver/datadogreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/hostmetricsreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/jaegerreceiver/
-      - linters:
-          - forbidigo
-        path: receiver/vcenterreceiver/
 
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/47586
-      - linters:
-          - forbidigo
-        path: receiver/cloudflarereceiver/
-        text: confighttp
-      - linters:
-          - forbidigo
-        path: receiver/mongodbatlasreceiver/
-        text: confighttp
       - linters:
           - forbidigo
         path: internal/aws/proxy/
