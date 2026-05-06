@@ -7,7 +7,7 @@ change_type: enhancement
 component: provider/s3
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for non-AWS S3-compatible services (e.g. GCS, MinIO) using path-style endpoints and insecure HTTP URIs.
+note: Add support for non-AWS S3-compatible services (e.g. MinIO) using path-style endpoints and insecure HTTP URIs.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [47595]
