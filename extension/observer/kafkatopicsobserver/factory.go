@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -36,11 +35,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(
-	_ context.Context,
-	settings extension.Settings,
-	cfg component.Config,
-) (extension.Extension, error) {
-	config := cfg.(*Config)
-	return newObserver(settings.Logger, config, kafka.NewSaramaClusterAdminClient)
+func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
+	return newObserver(settings.Logger, cfg.(*Config))
 }
