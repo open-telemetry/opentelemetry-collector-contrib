@@ -53,6 +53,12 @@ func createDefaultConfig() component.Config {
 			QueueConfig:        configoptional.None[exporterhelper.QueueBatchConfig](),
 			PayloadCompression: QueuePayloadCompressionNone,
 		},
+		CentralQueue: CentralQueueConfig{
+			Enabled:                      false,
+			PayloadCompression:           QueuePayloadCompressionZstd,
+			MaxUncompressedBatchBytes:    defaultCentralQueueMaxUncompressedBatchBytes,
+			MaxInflightUncompressedBytes: defaultCentralQueueMaxInflightBytes,
+		},
 		LogBatcher: LogBatcherConfig{
 			Enabled:            false,
 			MaxRecords:         defaultLogBatchMaxRecords,
@@ -66,6 +72,7 @@ func createDefaultConfig() component.Config {
 			MaxBytes:                 defaultMetricBatchMaxBytes,
 			FlushInterval:            defaultMetricBatchFlushTimeout,
 			MaxRetryBufferMultiplier: defaultMetricBatchRetryBufferMultiplier,
+			PayloadCompression:       QueuePayloadCompressionNone,
 		},
 		EndpointHealth: EndpointHealthConfig{
 			Enabled:            false,
@@ -89,6 +96,9 @@ func createDefaultConfig() component.Config {
 func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg := cfg.Protocol.OTLP
 	oCfg.ClientConfig.Endpoint = endpoint
+	if cfg.CentralQueue.Enabled {
+		oCfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+	}
 
 	return oCfg
 }

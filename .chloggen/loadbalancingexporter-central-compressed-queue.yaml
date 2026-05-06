@@ -1,0 +1,8 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add opt-in central compressed queue support for load-balanced logs and metrics.
+issues: [54]
+subtext: |-
+  Adds `central_queue` with compressed-byte capacity, compressed OTLP queue storage,
+  and opt-in compressed pending chunks for the metric batcher.
+change_logs: [user]

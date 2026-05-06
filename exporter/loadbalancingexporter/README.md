@@ -148,6 +148,15 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `max_bytes` flushes a backend batch when its serialized OTLP payload size before compression reaches this many bytes. Default: `1048576` (`1 MiB`).
   * `flush_interval` flushes a backend batch after this interval even if size limits are not reached. Default: `100ms`.
   * `payload_compression` compresses log batcher chunks while they are pending in memory. Supported values: `none`, `snappy`, `zstd`. Default: `none`.
+* The `metric_batcher` property enables post-routing metric batching per backend. It is `disabled` by default for backward compatibility.
+  * `payload_compression` compresses metric batcher chunks while they are pending in memory. Supported values: `none`, `snappy`, `zstd`. Default: `none`.
+* The `central_queue` property enables a single load-balancer queue per exporter instance for logs and metrics. It is `disabled` by default for backward compatibility.
+  * `enabled` turns the central compressed queue on or off.
+  * `max_compressed_bytes` sets the central queue capacity in compressed OTLP payload bytes and must be greater than zero when enabled.
+  * `payload_compression` controls queued payload compression. Supported values: `snappy`, `zstd`. Default: `zstd`.
+  * `max_uncompressed_batch_bytes` rejects any queued item whose uncompressed OTLP payload is larger than this guardrail. Default: `16777216` (`16 MiB`).
+  * `max_inflight_uncompressed_bytes` limits concurrently decompressed bytes while dispatching queue items. Default: `536870912` (`512 MiB`).
+  * Central queue mode is incompatible with `sending_queue.enabled=true`, `protocol.otlp.sending_queue`, `log_batcher.enabled=true`, and `metric_batcher.enabled=true`. Child OTLP exporter queues are disabled while central queue mode is active.
 
 Simple example
 
@@ -182,6 +191,12 @@ exporters:
       max_bytes: 1048576
       flush_interval: 100ms
       payload_compression: zstd
+    central_queue:
+      enabled: false
+      max_compressed_bytes: 4294967296
+      payload_compression: zstd
+      max_uncompressed_batch_bytes: 16777216
+      max_inflight_uncompressed_bytes: 536870912
     log_routing:
       ignore_trace_id: true
     routing_key: "service"

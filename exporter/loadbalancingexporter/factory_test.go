@@ -155,6 +155,17 @@ func TestBuildExporterConfig(t *testing.T) {
 	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
 
+func TestBuildExporterConfigDisablesChildQueueInCentralQueueMode(t *testing.T) {
+	cfg := simpleConfig()
+	cfg.CentralQueue.Enabled = true
+	cfg.CentralQueue.MaxCompressedBytes = 1024
+	cfg.Protocol.OTLP.QueueConfig = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+
+	exporterCfg := buildExporterConfig(cfg, "the-endpoint")
+
+	require.False(t, exporterCfg.QueueConfig.HasValue())
+}
+
 func TestBuildExporterSettings(t *testing.T) {
 	otlpType := otlpexporter.NewFactory().Type()
 

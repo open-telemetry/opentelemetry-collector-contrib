@@ -7,11 +7,13 @@ import (
 	"context"
 	"errors"
 	"math/rand/v2"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -29,12 +31,16 @@ var _ exporter.Logs = (*logExporterImp)(nil)
 type logExporterImp struct {
 	loadBalancer *loadBalancer
 	batcher      *logBatcher
+	centralQueue *centralQueue
+	centralCodec *queuePayloadCodec
 
 	logger        *zap.Logger
 	started       atomic.Bool
 	telemetry     *metadata.TelemetryBuilder
 	ignoreTraceID bool
 	randomTraceID func() pcommon.TraceID
+	centralCancel context.CancelFunc
+	centralWG     sync.WaitGroup
 }
 
 // Create new logs exporter
@@ -62,6 +68,20 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 		logger:        params.Logger,
 		ignoreTraceID: cfg.(*Config).LogRouting.IgnoreTraceID,
 		randomTraceID: random,
+	}
+	if cfg.(*Config).CentralQueue.Enabled {
+		centralCfg := cfg.(*Config).CentralQueue
+		centralTelemetry, telemetryErr := newCentralQueueTelemetry(params.TelemetrySettings, signalKindLogs)
+		if telemetryErr != nil {
+			return nil, telemetryErr
+		}
+		logExporter.centralQueue = newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           centralCfg.MaxCompressedBytes,
+			maxInflightUncompressedBytes: centralCfg.MaxInflightUncompressedBytes,
+			maxUncompressedBatchBytes:    centralCfg.MaxUncompressedBatchBytes,
+			telemetry:                    centralTelemetry,
+		})
+		logExporter.centralCodec = newQueuePayloadCodec(centralCfg.PayloadCompression)
 	}
 	if cfg.(*Config).LogBatcher.Enabled {
 		logBatcherCfg := cfg.(*Config).LogBatcher
@@ -97,6 +117,12 @@ func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	e.started.Store(true)
+	if e.centralQueue != nil {
+		dispatchCtx, cancel := context.WithCancel(context.Background())
+		e.centralCancel = cancel
+		e.centralWG.Add(1)
+		go e.runCentralQueue(dispatchCtx)
+	}
 	return nil
 }
 
@@ -108,6 +134,20 @@ func (e *logExporterImp) Shutdown(ctx context.Context) error {
 	if e.batcher != nil {
 		err = e.batcher.Shutdown(ctx)
 	}
+	if e.centralQueue != nil {
+		e.centralQueue.stop()
+		if e.centralCancel != nil {
+			e.centralCancel()
+		}
+		waitCtx, cancel := context.WithTimeout(ctx, time.Second)
+		waitErr := waitForInflight(waitCtx, &e.centralWG)
+		cancel()
+		err = errors.Join(err, waitErr)
+		if waitErr != nil {
+			return err
+		}
+		err = errors.Join(err, e.centralCodec.Close())
+	}
 	err = errors.Join(err, e.loadBalancer.Shutdown(ctx))
 	return err
 }
@@ -115,6 +155,9 @@ func (e *logExporterImp) Shutdown(ctx context.Context) error {
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	if !e.started.Load() {
 		return errExporterIsStopping
+	}
+	if e.centralQueue != nil {
+		return e.consumeLogsCentralQueue(ctx, ld)
 	}
 	if e.batcher == nil {
 		var errs error
@@ -126,6 +169,103 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	}
 
 	return e.consumeLogsBatched(ctx, ld)
+}
+
+func (e *logExporterImp) consumeLogsCentralQueue(_ context.Context, ld plog.Logs) error {
+	batches := e.groupLogsByRoutingKey(ld)
+	var errs error
+	now := time.Now()
+	for routingKey, logs := range batches {
+		item, err := newCentralQueueLogsItem(routingKey[:], logs, e.centralCodec, now)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		errs = multierr.Append(errs, e.centralQueue.enqueue(item))
+	}
+	return errs
+}
+
+func (e *logExporterImp) groupLogsByRoutingKey(ld plog.Logs) map[pcommon.TraceID]plog.Logs {
+	batches := make(map[pcommon.TraceID]plog.Logs)
+	emptyTraceFallbackKeys := make(map[[2]int]pcommon.TraceID)
+
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rl := ld.ResourceLogs().At(i)
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				rec := sl.LogRecords().At(k)
+				balancingKey := e.routingKeyForLogRecord(rec, [2]int{i, j}, emptyTraceFallbackKeys)
+				batch, ok := batches[balancingKey]
+				if !ok {
+					batch = plog.NewLogs()
+					batches[balancingKey] = batch
+				}
+				insertLogRecord(batch, rl, sl, rec)
+			}
+		}
+	}
+
+	return batches
+}
+
+func (e *logExporterImp) runCentralQueue(ctx context.Context) {
+	defer e.centralWG.Done()
+	for {
+		lease, err := e.centralQueue.lease(ctx)
+		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, errCentralQueueStopped) {
+				return
+			}
+			if errors.Is(err, errCentralQueueInflightFull) {
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(centralQueueLeasePollInterval):
+					continue
+				}
+			}
+			e.logger.Warn("failed to lease central log queue item", zap.Error(err))
+			continue
+		}
+
+		err = e.consumeCentralQueueLogItem(ctx, lease.item)
+		if err == nil {
+			lease.done()
+			continue
+		}
+		if ctx.Err() != nil {
+			lease.done()
+			return
+		}
+		if consumererror.IsPermanent(err) {
+			e.logger.Warn("dropping central log queue item after permanent export error", zap.Error(err))
+			lease.done()
+			continue
+		}
+		item := lease.item
+		nextAttempt := time.Now().Add(centralQueueRetryDelay(item.attempt))
+		item.attempt++
+		lease.item = item
+		if requeueErr := lease.requeue(nextAttempt); requeueErr != nil {
+			e.logger.Warn("failed to requeue central log queue item", zap.Error(requeueErr), zap.Error(err))
+		}
+	}
+}
+
+func (e *logExporterImp) consumeCentralQueueLogItem(ctx context.Context, item centralQueueItem) error {
+	ld, err := decodeCentralQueueLogsItem(item, e.centralCodec)
+	if err != nil {
+		e.logger.Warn("dropping invalid central log queue payload", zap.Error(err))
+		return nil
+	}
+	le, _, err := e.loadBalancer.exporterAndEndpoint(item.routingKey)
+	if err != nil {
+		return err
+	}
+	_, err = e.consumeBatchWithDecision(ctx, le, ld, logFlushReasonDirect, true, false, false)
+	return err
 }
 
 // endpointBatch holds logs grouped for a single backend endpoint,

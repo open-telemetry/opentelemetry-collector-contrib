@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -174,6 +175,247 @@ func TestConsumeLogs(t *testing.T) {
 
 	// verify
 	assert.NoError(t, res)
+}
+
+func TestConsumeLogsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) {
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	p := &logExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		randomTraceID: func() pcommon.TraceID {
+			return pcommon.TraceID{1}
+		},
+	}
+	p.started.Store(true)
+
+	logs := simpleLogs()
+	require.NoError(t, p.ConsumeLogs(t.Context(), logs))
+	require.Equal(t, 1, p.centralQueue.len())
+	require.Positive(t, p.centralQueue.compressedBytes())
+
+	lease, err := p.centralQueue.lease(t.Context())
+	require.NoError(t, err)
+	defer lease.done()
+	require.Equal(t, signalKindLogs, lease.item.signal)
+	expectedRoutingKey := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID()
+	require.Equal(t, expectedRoutingKey[:], lease.item.routingKey)
+	require.Equal(t, len(lease.item.payload), cap(lease.item.payload))
+
+	decoded, err := decodeCentralQueueLogsItem(lease.item, codec)
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(logs, decoded))
+}
+
+func TestLogsCentralQueueShutdownCancelsBeforeWaiting(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+
+	endpoint := "endpoint-1:4317"
+	consumeStarted := make(chan struct{})
+	p := &logExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			ring: newHashRing([]string{endpoint}),
+			exporters: map[string]*wrappedExporter{endpoint: newWrappedExporter(newMockLogsExporter(func(ctx context.Context, _ plog.Logs) error {
+				close(consumeStarted)
+				<-ctx.Done()
+				return ctx.Err()
+			}), endpoint)},
+			endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+			res:            &mockResolver{},
+		},
+		telemetry: tb,
+		logger:    ts.Logger,
+	}
+	p.started.Store(true)
+	dispatchCtx, cancel := context.WithCancel(t.Context())
+	p.centralCancel = cancel
+	p.centralWG.Add(1)
+	go p.runCentralQueue(dispatchCtx)
+
+	item, err := newCentralQueueLogsItem([]byte("route-a"), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(item))
+	select {
+	case <-consumeStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("expected central queue consume to start")
+	}
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+	defer shutdownCancel()
+	require.NoError(t, p.Shutdown(shutdownCtx))
+}
+
+func TestLogsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.T) {
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	var resolverShutdown atomic.Bool
+	p := &logExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			res: &mockResolver{onShutdown: func(context.Context) error {
+				resolverShutdown.Store(true)
+				return nil
+			}},
+		},
+	}
+	p.started.Store(true)
+	p.centralWG.Add(1)
+	t.Cleanup(p.centralWG.Done)
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+	require.Error(t, p.Shutdown(shutdownCtx))
+	require.False(t, resolverShutdown.Load())
+}
+
+func TestLogsCentralQueueDropsPermanentExportError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	endpoint := "endpoint-1:4317"
+	var calls atomic.Int64
+	p := &logExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			ring: newHashRing([]string{endpoint}),
+			exporters: map[string]*wrappedExporter{endpoint: newWrappedExporter(newMockLogsExporter(func(context.Context, plog.Logs) error {
+				calls.Add(1)
+				return consumererror.NewPermanent(errors.New("bad logs"))
+			}), endpoint)},
+			endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+		},
+		telemetry: tb,
+		logger:    ts.Logger,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	p.centralWG.Add(1)
+	go p.runCentralQueue(ctx)
+	item, err := newCentralQueueLogsItem([]byte("route-a"), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(item))
+
+	require.Eventually(t, func() bool {
+		return calls.Load() == 1 && p.centralQueue.len() == 0
+	}, 2*time.Second, 20*time.Millisecond)
+	cancel()
+	waitErr := waitForInflight(t.Context(), &p.centralWG)
+	require.NoError(t, waitErr)
+}
+
+func TestLogsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	endpoint := "endpoint-1:4317"
+	p := &logExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			ring: newHashRing([]string{endpoint}),
+			exporters: map[string]*wrappedExporter{endpoint: newWrappedExporter(newMockLogsExporter(func(context.Context, plog.Logs) error {
+				return status.Error(codes.Unavailable, "backend unavailable")
+			}), endpoint)},
+			endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+			res:            &mockResolver{},
+		},
+		telemetry: tb,
+		logger:    ts.Logger,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	p.centralWG.Add(1)
+	go p.runCentralQueue(ctx)
+	item, err := newCentralQueueLogsItem([]byte("route-a"), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(item))
+
+	requireCentralQueueFirstRetryDelay(t, p.centralQueue)
+	cancel()
+	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
+}
+
+func TestLogsCentralQueueDoesNotDrainSynchronously(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := endpoint2Config()
+	enableEndpointHealth(cfg)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockLogsExporter(func(context.Context, plog.Logs) error {
+			if endpoint == "endpoint-1:4317" {
+				return status.Error(codes.Unavailable, "backend unavailable")
+			}
+			return nil
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.endpointHealth.reconcile([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1:4317", "endpoint-2:4317"})
+
+	releaseDrain := make(chan struct{})
+	var releaseDrainOnce sync.Once
+	t.Cleanup(func() { releaseDrainOnce.Do(func() { close(releaseDrain) }) })
+	lb.onExporterRemove = func(context.Context, string, *wrappedExporter) error {
+		<-releaseDrain
+		return nil
+	}
+
+	routeForEndpoint1 := findRoutingIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	item, err := newCentralQueueLogsItem([]byte(routeForEndpoint1), simpleLogs(), codec, time.Now())
+	require.NoError(t, err)
+
+	p := &logExporterImp{
+		centralCodec: codec,
+		loadBalancer: lb,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- p.consumeCentralQueueLogItem(t.Context(), item)
+	}()
+
+	select {
+	case err := <-done:
+		require.Error(t, err)
+		releaseDrainOnce.Do(func() { close(releaseDrain) })
+	case <-time.After(200 * time.Millisecond):
+		releaseDrainOnce.Do(func() { close(releaseDrain) })
+		t.Fatal("central log queue consume blocked on removed exporter drain")
+	}
 }
 
 func TestConsumeLogsEmitsOnlyParentExporterMetrics(t *testing.T) {

@@ -172,6 +172,188 @@ func TestMetricsExporterShutdown(t *testing.T) {
 	assert.NoError(t, res)
 }
 
+func TestConsumeMetricsCentralQueueEnqueuesCompressedByRoutingKey(t *testing.T) {
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	p := &metricExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		routingKey:   svcRouting,
+	}
+	p.started.Store(true)
+
+	md := simpleMetricsWithServiceName()
+	require.NoError(t, p.ConsumeMetrics(t.Context(), md))
+	require.Equal(t, 1, p.centralQueue.len())
+	require.Positive(t, p.centralQueue.compressedBytes())
+
+	lease, err := p.centralQueue.lease(t.Context())
+	require.NoError(t, err)
+	defer lease.done()
+	require.Equal(t, signalKindMetrics, lease.item.signal)
+	require.Equal(t, []byte(serviceName1), lease.item.routingKey)
+	require.Equal(t, len(lease.item.payload), cap(lease.item.payload))
+
+	decoded, err := decodeCentralQueueMetricsItem(lease.item, codec)
+	require.NoError(t, err)
+	require.Equal(t, md.DataPointCount(), decoded.DataPointCount())
+}
+
+func TestMetricsCentralQueueDropsPermanentExportError(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	endpoint := "endpoint-1:4317"
+	var calls atomic.Int64
+	p := &metricExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			ring: newHashRing([]string{endpoint}),
+			exporters: map[string]*wrappedExporter{endpoint: newWrappedExporter(newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+				calls.Add(1)
+				return consumererror.NewPermanent(errors.New("bad metrics"))
+			}), endpoint)},
+			endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+		},
+		telemetry: tb,
+		logger:    ts.Logger,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	p.centralWG.Add(1)
+	go p.runCentralQueue(ctx)
+	item, err := newCentralQueueMetricsItem([]byte("route-a"), singleDataPointMetric("permanent"), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(item))
+
+	require.Eventually(t, func() bool {
+		return calls.Load() == 1 && p.centralQueue.len() == 0
+	}, 2*time.Second, 20*time.Millisecond)
+	cancel()
+	waitErr := waitForInflight(t.Context(), &p.centralWG)
+	require.NoError(t, waitErr)
+}
+
+func TestMetricsCentralQueueShutdownTimeoutSkipsLoadBalancerShutdown(t *testing.T) {
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+	var resolverShutdown atomic.Bool
+	p := &metricExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			res: &mockResolver{onShutdown: func(context.Context) error {
+				resolverShutdown.Store(true)
+				return nil
+			}},
+		},
+	}
+	p.started.Store(true)
+	p.centralWG.Add(1)
+	t.Cleanup(p.centralWG.Done)
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+	require.Error(t, p.Shutdown(shutdownCtx))
+	require.False(t, resolverShutdown.Load())
+}
+
+func TestMetricsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	endpoint := "endpoint-1:4317"
+	p := &metricExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: &loadBalancer{
+			ring: newHashRing([]string{endpoint}),
+			exporters: map[string]*wrappedExporter{endpoint: newWrappedExporter(newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+				return status.Error(codes.Unavailable, "backend unavailable")
+			}), endpoint)},
+			endpointHealth: newEndpointHealthManager(endpointHealthSettings{}),
+			res:            &mockResolver{},
+		},
+		telemetry: tb,
+		logger:    ts.Logger,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	p.centralWG.Add(1)
+	go p.runCentralQueue(ctx)
+	item, err := newCentralQueueMetricsItem([]byte("route-a"), singleDataPointMetric("retry"), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(item))
+
+	requireCentralQueueFirstRetryDelay(t, p.centralQueue)
+	cancel()
+	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
+}
+
+func TestMetricsCentralQueueDoesNotDirectReroute(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := endpoint2Config()
+	enableEndpointHealth(cfg)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	calls := map[string]int{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+			calls[endpoint]++
+			if endpoint == "endpoint-1:4317" {
+				return status.Error(codes.Unavailable, "backend unavailable")
+			}
+			return nil
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.endpointHealth.reconcile([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1:4317", "endpoint-2:4317"})
+
+	serviceForEndpoint1 := findRoutingIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	item, err := newCentralQueueMetricsItem(
+		[]byte(serviceForEndpoint1),
+		metricsWithServiceNames(serviceForEndpoint1),
+		codec,
+		time.Now(),
+	)
+	require.NoError(t, err)
+
+	p := &metricExporterImp{
+		centralCodec: codec,
+		loadBalancer: lb,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	err = p.consumeCentralQueueMetricItem(t.Context(), item)
+	require.Error(t, err)
+	assert.Equal(t, 1, calls["endpoint-1:4317"])
+	assert.Zero(t, calls["endpoint-2:4317"])
+}
+
 // loadMetricsMap will parse the given yaml file into a map[string]pmetric.Metrics
 func loadMetricsMap(t *testing.T, path string) map[string]pmetric.Metrics {
 	b, err := os.ReadFile(path)

@@ -16,7 +16,6 @@ $defs:
         type: string
       protocol:
         type: string
-        description: The protocol to parse syslog messages as. Options are rfc3164, rfc5424, and auto.
   config:
     description: Config is the configuration of a syslog parser operator.
     type: object

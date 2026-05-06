@@ -119,6 +119,219 @@ func TestConfigValidateMetricBatcher(t *testing.T) {
 
 	cfg.MetricBatcher.MaxRetryBufferMultiplier = 5
 	require.NoError(t, cfg.Validate())
+
+	cfg.MetricBatcher.PayloadCompression = QueuePayloadCompression("brotli")
+	require.ErrorContains(t, cfg.Validate(), "metric_batcher.payload_compression")
+
+	cfg.MetricBatcher.PayloadCompression = QueuePayloadCompressionSnappy
+	require.NoError(t, cfg.Validate())
+
+	cfg.MetricBatcher.PayloadCompression = QueuePayloadCompressionZstd
+	require.NoError(t, cfg.Validate())
+}
+
+func TestCentralQueueDefaultDisabled(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	require.False(t, cfg.CentralQueue.Enabled)
+	require.Zero(t, cfg.CentralQueue.MaxCompressedBytes)
+	require.Equal(t, QueuePayloadCompressionZstd, cfg.CentralQueue.PayloadCompression)
+	require.Equal(t, 16<<20, cfg.CentralQueue.MaxUncompressedBatchBytes)
+	require.Equal(t, int64(512<<20), cfg.CentralQueue.MaxInflightUncompressedBytes)
+	require.NoError(t, cfg.Validate())
+}
+
+func TestCentralQueueValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		mutate      func(*CentralQueueConfig)
+		expectedErr string
+	}{
+		{
+			name:        "missing compressed budget",
+			mutate:      func(c *CentralQueueConfig) { c.MaxCompressedBytes = 0 },
+			expectedErr: "central_queue.max_compressed_bytes",
+		},
+		{
+			name:        "none compression",
+			mutate:      func(c *CentralQueueConfig) { c.PayloadCompression = QueuePayloadCompressionNone },
+			expectedErr: "central_queue.payload_compression",
+		},
+		{
+			name:        "empty compression",
+			mutate:      func(c *CentralQueueConfig) { c.PayloadCompression = "" },
+			expectedErr: "central_queue.payload_compression",
+		},
+		{
+			name:        "invalid compression",
+			mutate:      func(c *CentralQueueConfig) { c.PayloadCompression = QueuePayloadCompression("brotli") },
+			expectedErr: "central_queue.payload_compression",
+		},
+		{
+			name:        "missing batch budget",
+			mutate:      func(c *CentralQueueConfig) { c.MaxUncompressedBatchBytes = 0 },
+			expectedErr: "central_queue.max_uncompressed_batch_bytes",
+		},
+		{
+			name:        "missing inflight budget",
+			mutate:      func(c *CentralQueueConfig) { c.MaxInflightUncompressedBytes = 0 },
+			expectedErr: "central_queue.max_inflight_uncompressed_bytes",
+		},
+		{
+			name: "batch budget exceeds inflight budget",
+			mutate: func(c *CentralQueueConfig) {
+				c.MaxUncompressedBatchBytes = 2048
+				c.MaxInflightUncompressedBytes = 1024
+			},
+			expectedErr: "central_queue.max_uncompressed_batch_bytes",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.CentralQueue.Enabled = true
+			cfg.CentralQueue.MaxCompressedBytes = 1024
+			tt.mutate(&cfg.CentralQueue)
+
+			require.ErrorContains(t, cfg.Validate(), tt.expectedErr)
+		})
+	}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CentralQueue.Enabled = true
+	cfg.CentralQueue.MaxCompressedBytes = 1024
+	cfg.CentralQueue.PayloadCompression = QueuePayloadCompressionSnappy
+	require.NoError(t, cfg.Validate())
+
+	cfg.CentralQueue.PayloadCompression = QueuePayloadCompressionZstd
+	require.NoError(t, cfg.Validate())
+}
+
+func TestCentralQueueRejectsChildOTLPQueue(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	conf := confmap.NewFromStringMap(map[string]any{
+		"central_queue": map[string]any{
+			"enabled":                         true,
+			"max_compressed_bytes":            1024,
+			"payload_compression":             "zstd",
+			"max_uncompressed_batch_bytes":    1024,
+			"max_inflight_uncompressed_bytes": 2048,
+		},
+		"protocol": map[string]any{
+			"otlp": map[string]any{
+				"endpoint": "localhost:4317",
+				"tls": map[string]any{
+					"insecure": true,
+				},
+				"sending_queue": map[string]any{
+					"enabled":    true,
+					"queue_size": 1000,
+				},
+			},
+		},
+		"resolver": map[string]any{
+			"static": map[string]any{
+				"hostnames": []string{"localhost:4317"},
+			},
+		},
+	})
+
+	require.NoError(t, conf.Unmarshal(cfg))
+	require.ErrorContains(t, cfg.Validate(), "central_queue.enabled=true is incompatible with protocol.otlp.sending_queue")
+}
+
+func TestCentralQueueAllowsChildOTLPQueueRemovalAcrossUnmarshal(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	withChildQueue := confmap.NewFromStringMap(map[string]any{
+		"protocol": map[string]any{
+			"otlp": map[string]any{
+				"endpoint": "localhost:4317",
+				"tls": map[string]any{
+					"insecure": true,
+				},
+				"sending_queue": map[string]any{
+					"enabled":    true,
+					"queue_size": 1000,
+				},
+			},
+		},
+		"resolver": map[string]any{
+			"static": map[string]any{
+				"hostnames": []string{"localhost:4317"},
+			},
+		},
+	})
+	withoutChildQueue := confmap.NewFromStringMap(map[string]any{
+		"central_queue": map[string]any{
+			"enabled":                         true,
+			"max_compressed_bytes":            1024,
+			"payload_compression":             "zstd",
+			"max_uncompressed_batch_bytes":    1024,
+			"max_inflight_uncompressed_bytes": 2048,
+		},
+		"protocol": map[string]any{
+			"otlp": map[string]any{
+				"endpoint": "localhost:4317",
+				"tls": map[string]any{
+					"insecure": true,
+				},
+			},
+		},
+		"resolver": map[string]any{
+			"static": map[string]any{
+				"hostnames": []string{"localhost:4317"},
+			},
+		},
+	})
+
+	require.NoError(t, withChildQueue.Unmarshal(cfg))
+	require.True(t, cfg.protocolOTLPSendingQueueConfigured)
+
+	require.NoError(t, withoutChildQueue.Unmarshal(cfg))
+	require.False(t, cfg.protocolOTLPSendingQueueConfigured)
+	require.NoError(t, cfg.Validate())
+}
+
+func TestCentralQueueRejectsIndependentBuffering(t *testing.T) {
+	tests := []struct {
+		name        string
+		mutate      func(*Config)
+		expectedErr string
+	}{
+		{
+			name: "top level sending queue",
+			mutate: func(cfg *Config) {
+				cfg.QueueSettings.QueueConfig = configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+			},
+			expectedErr: "central_queue.enabled=true is incompatible with sending_queue.enabled=true",
+		},
+		{
+			name: "log batcher",
+			mutate: func(cfg *Config) {
+				cfg.LogBatcher.Enabled = true
+			},
+			expectedErr: "central_queue.enabled=true is incompatible with log_batcher.enabled=true",
+		},
+		{
+			name: "metric batcher",
+			mutate: func(cfg *Config) {
+				cfg.MetricBatcher.Enabled = true
+			},
+			expectedErr: "central_queue.enabled=true is incompatible with metric_batcher.enabled=true",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.CentralQueue.Enabled = true
+			cfg.CentralQueue.MaxCompressedBytes = 1024
+			tt.mutate(cfg)
+
+			require.ErrorContains(t, cfg.Validate(), tt.expectedErr)
+		})
+	}
 }
 
 func TestConfigValidateEndpointHealth(t *testing.T) {

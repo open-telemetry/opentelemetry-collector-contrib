@@ -1,4 +1,26 @@
 $defs:
+  central_queue_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      max_compressed_bytes:
+        type: integer
+        minimum: 1
+        description: Must be greater than 0 when central_queue.enabled is true.
+      max_inflight_uncompressed_bytes:
+        type: integer
+        minimum: 1
+        description: Must be greater than 0 when central_queue.enabled is true.
+      max_uncompressed_batch_bytes:
+        type: integer
+        minimum: 1
+        description: Must be greater than 0 when central_queue.enabled is true.
+      payload_compression:
+        type: string
+        enum:
+          - snappy
+          - zstd
   aws_cloud_map_resolver:
     type: object
     properties:
@@ -98,6 +120,29 @@ $defs:
     properties:
       ignore_trace_id:
         type: boolean
+  metric_batcher_config:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      flush_interval:
+        type: string
+        format: duration
+      max_bytes:
+        type: integer
+        minimum: 1
+      max_datapoints:
+        type: integer
+        minimum: 1
+      max_retry_buffer_multiplier:
+        type: integer
+        minimum: 1
+      payload_compression:
+        type: string
+        enum:
+          - none
+          - snappy
+          - zstd
   protocol:
     description: Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
     type: object
@@ -131,10 +176,14 @@ $defs:
 description: Config defines configuration for the exporter.
 type: object
 properties:
+  central_queue:
+    $ref: central_queue_config
   endpoint_health:
     $ref: endpoint_health_config
   log_routing:
     $ref: log_routing_config
+  metric_batcher:
+    $ref: metric_batcher_config
   protocol:
     $ref: protocol
   resolver:

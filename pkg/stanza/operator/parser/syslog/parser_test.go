@@ -25,7 +25,7 @@ func basicConfig() *syslog.Config {
 	return cfg
 }
 
-func processEntry(t *testing.T, cfg *syslog.Config, body any) (*entry.Entry, error, *testutil.FakeOutput) {
+func processEntry(t *testing.T, cfg *syslog.Config, body any) (*entry.Entry, *testutil.FakeOutput, error) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(t, err)
@@ -37,7 +37,7 @@ func processEntry(t *testing.T, cfg *syslog.Config, body any) (*entry.Entry, err
 	newEntry := entry.New()
 	newEntry.Body = body
 	err = op.Process(t.Context(), newEntry)
-	return newEntry, err, fake
+	return newEntry, fake, err
 }
 
 func requireReceived(t *testing.T, output *testutil.FakeOutput) *entry.Entry {
@@ -223,7 +223,7 @@ func TestSyslogAutoProtocolMatchesSpecificProtocolParsing(t *testing.T) {
 			if tt.configure != nil {
 				tt.configure(specificCfg)
 			}
-			specificEntry, err, specificOutput := processEntry(t, specificCfg, tt.body)
+			specificEntry, specificOutput, err := processEntry(t, specificCfg, tt.body)
 			require.NoError(t, err)
 			requireReceived(t, specificOutput)
 
@@ -232,7 +232,7 @@ func TestSyslogAutoProtocolMatchesSpecificProtocolParsing(t *testing.T) {
 			if tt.configure != nil {
 				tt.configure(autoCfg)
 			}
-			autoEntry, err, autoOutput := processEntry(t, autoCfg, tt.body)
+			autoEntry, autoOutput, err := processEntry(t, autoCfg, tt.body)
 			require.NoError(t, err)
 			requireReceived(t, autoOutput)
 
@@ -263,7 +263,7 @@ func TestSyslogAutoProtocolOnError(t *testing.T) {
 			cfg.OnError = tc.onError
 
 			body := "invalid syslog message"
-			_, err, output := processEntry(t, cfg, body)
+			_, output, err := processEntry(t, cfg, body)
 			require.Error(t, err)
 			require.ErrorContains(t, err, "failed to parse as rfc5424")
 			require.ErrorContains(t, err, "failed to parse as rfc3164")
@@ -331,7 +331,7 @@ func TestSyslogAutoProtocolRFC6587(t *testing.T) {
 			autoCfg := basicConfig()
 			autoCfg.Protocol = syslog.Auto
 			tt.configure(autoCfg)
-			autoEntry, err, autoOutput := processEntry(t, autoCfg, tt.body)
+			autoEntry, autoOutput, err := processEntry(t, autoCfg, tt.body)
 			require.NoError(t, err)
 			requireReceived(t, autoOutput)
 
@@ -343,7 +343,7 @@ func TestSyslogAutoProtocolRFC6587(t *testing.T) {
 			specificCfg := basicConfig()
 			specificCfg.Protocol = tt.specificProtocol
 			tt.configure(specificCfg)
-			specificEntry, err, specificOutput := processEntry(t, specificCfg, tt.body)
+			specificEntry, specificOutput, err := processEntry(t, specificCfg, tt.body)
 			require.NoError(t, err)
 			requireReceived(t, specificOutput)
 
