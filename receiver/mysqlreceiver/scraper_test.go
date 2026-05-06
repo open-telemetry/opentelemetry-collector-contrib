@@ -967,16 +967,16 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 		require.NoError(t, err)
 
 		topLogs := topQueryLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-		top_planHash, _ := topLogs.Attributes().Get("mysql.query_plan.hash")
-		top_planVal, _ := topLogs.Attributes().Get("mysql.query_plan")
-		assert.Empty(t, top_planHash.Str(), "mysql.query_plan should be empty when sample text is unavailable")
-		assert.Empty(t, top_planVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+		topPlanHash, _ := topLogs.Attributes().Get("mysql.query_plan.hash")
+		topPlanVal, _ := topLogs.Attributes().Get("mysql.query_plan")
+		assert.Empty(t, topPlanHash.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+		assert.Empty(t, topPlanVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
 
 		sampleLogs := querySampleLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-		sample_planHash, _ := sampleLogs.Attributes().Get("mysql.query_plan.hash")
-		sample_planVal, _ := sampleLogs.Attributes().Get("mysql.query_plan")
-		assert.Empty(t, sample_planHash.Str(), "mysql.query_plan should be empty when sample text is unavailable")
-		assert.Empty(t, sample_planVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+		samplePlanHash, _ := sampleLogs.Attributes().Get("mysql.query_plan.hash")
+		samplePlanVal, _ := sampleLogs.Attributes().Get("mysql.query_plan")
+		assert.Empty(t, samplePlanHash.Str(), "mysql.query_plan should be empty when sample text is unavailable")
+		assert.Empty(t, samplePlanVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
 	})
 
 	t.Run("top queries first then query samples reuses cached plan", func(t *testing.T) {
