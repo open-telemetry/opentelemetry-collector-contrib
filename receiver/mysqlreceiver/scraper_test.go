@@ -977,7 +977,6 @@ func TestQueryPlanCacheReuse(t *testing.T) {
 		sample_planVal, _ := sampleLogs.Attributes().Get("mysql.query_plan")
 		assert.Empty(t, sample_planHash.Str(), "mysql.query_plan should be empty when sample text is unavailable")
 		assert.Empty(t, sample_planVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
-
 	})
 
 	t.Run("top queries first then query samples reuses cached plan", func(t *testing.T) {
