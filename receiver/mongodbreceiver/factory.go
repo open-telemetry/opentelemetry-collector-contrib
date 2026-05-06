@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 				Endpoint: defaultEndpoint,
 			},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		LogsBuilderConfig:    metadata.DefaultLogsBuilderConfig(),
 		ClientConfig:         configtls.ClientConfig{},
 	}
