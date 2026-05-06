@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,11 +33,7 @@ func getStorageClient(ctx context.Context, host component.Host, storageID *compo
 		return nil, fmt.Errorf("extension %q is not a storage extension", storageID)
 	}
 
-	// Normalize the component type to be immune to underscore renames.
-	// See https://github.com/open-telemetry/opentelemetry-collector/issues/14988.
-	normalizedType := strings.ReplaceAll(componentID.Type().String(), "_", "")
-	normalizedID := component.MustNewIDWithName(normalizedType, componentID.Name())
-	return storageExt.GetClient(ctx, component.KindProcessor, normalizedID, "")
+	return storageExt.GetClient(ctx, component.KindProcessor, componentID, "")
 }
 
 // loadSnapshot attempts to restore tree state from storage. Returns true if a
