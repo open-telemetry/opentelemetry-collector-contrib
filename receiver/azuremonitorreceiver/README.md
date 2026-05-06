@@ -80,7 +80,7 @@ Scraping limited metrics and aggregations:
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     resource_groups:
       - ${resource_groups}
     services:
@@ -109,7 +109,7 @@ The Azure Monitor Metrics Data Plane API present some interesting benefits, espe
 Good news is that it's **very easy for you to try out!**
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     use_batch_api: true
     ... # no change for other configs
 ```
@@ -120,7 +120,7 @@ Using [Service Principal](https://learn.microsoft.com/en-us/azure/developer/go/a
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     subscription_ids: ["${subscription_id}"]
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
@@ -140,7 +140,7 @@ Using [Azure Workload Identity](https://learn.microsoft.com/en-us/azure/develope
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     subscription_ids: ["${subscription_id}"]
     credentials: "workload_identity"
     tenant_id: "${env:AZURE_TENANT_ID}"
@@ -152,7 +152,7 @@ Using [Managed Identity](https://learn.microsoft.com/en-us/azure/developer/go/az
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     subscription_ids: ["${subscription_id}"]
     credentials: "managed_identity"
     client_id: "${env:AZURE_CLIENT_ID}"
@@ -162,7 +162,7 @@ Using [Environment Variables](https://learn.microsoft.com/en-us/azure/developer/
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     subscription_ids: ["${subscription_id}"]
     credentials: "default_credentials"
 ```
@@ -171,13 +171,13 @@ receivers:
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     subscription_ids: ["${subscription_id}"]
     auth:
-      authenticator: azureauth
+      authenticator: azure_auth
 
 extensions:
-  azureauth:
+  azure_auth:
     managed_identity:
       client_id: ${client_id}
 ```
@@ -186,7 +186,7 @@ Overriding dimensions for a particular metric:
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     dimensions:
       enabled: true
       overrides:
@@ -203,7 +203,7 @@ Selectively including resource tags as attributes:
 
 ```yaml
 receivers:
-  azuremonitor:
+  azure_monitor:
     # Include all tags
     append_tags_as_attributes: ["*"]
     
@@ -275,3 +275,9 @@ It is composed by
 > - minimum timegrain.
 > 
 > It is used to get several metrics in one request.
+
+## Troubleshooting
+- [Azure Monitor Troubleshooting Guide](https://learn.microsoft.com/en-us/azure/azure-monitor/metrics/metrics-troubleshoot)
+- Enabling the [debug exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/debugexporter/README.md) will display all the collected metrics
+- Enabling the `service.telemetry.logs.level: DEBUG` ([internal telemetry settings](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs) will display the queries made to the Azure API.
+- It is advised to install the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) and use in particular [`az monitor` command](https://learn.microsoft.com/en-us/cli/azure/monitor?view=azure-cli-latest) to try reproducing these queries.

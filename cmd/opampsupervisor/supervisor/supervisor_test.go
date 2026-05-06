@@ -188,7 +188,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 func Test_composeEffectiveConfig(t *testing.T) {
 	fileLogConfig := `
 receivers:
-  filelog:
+  file_log:
     include: ['/test/logs/input.log']
     start_at: "beginning"
 
@@ -199,7 +199,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [filelog]
+      receivers: [file_log]
       exporters: [file]`
 
 	// load expected effective config bytes once

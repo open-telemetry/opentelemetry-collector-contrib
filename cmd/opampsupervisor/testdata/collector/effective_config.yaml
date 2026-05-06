@@ -16,7 +16,7 @@ extensions:
                 tls:
                     insecure: true
 receivers:
-    filelog:
+    file_log:
         include:
             - /test/logs/input.log
         start_at: beginning
@@ -33,7 +33,7 @@ service:
             exporters:
                 - file
             receivers:
-                - filelog
+                - file_log
     telemetry:
         logs:
             encoding: json

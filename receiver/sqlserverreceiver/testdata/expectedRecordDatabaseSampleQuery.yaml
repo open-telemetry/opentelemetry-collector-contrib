@@ -4,6 +4,12 @@ resourceLogs:
         - key: host.name
           value:
             stringValue: 0.0.0.0
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
         - key: service.instance.id
           value:
             stringValue: 0.0.0.0:1433
@@ -39,7 +45,10 @@ resourceLogs:
                   intValue: "59286"
               - key: sqlserver.blocking_session_id
                 value:
-                  intValue: "0"
+                  intValue: "71"
+              - key: sqlserver.blocking.start_time
+                value:
+                  stringValue: "2025-02-12T16:37:52.393+08:00"
               - key: sqlserver.context_info
                 value:
                   stringValue: ""
@@ -82,6 +91,12 @@ resourceLogs:
               - key: sqlserver.request_status
                 value:
                   stringValue: running
+              - key: sqlserver.wait.resource.id
+                value:
+                  stringValue: "72057594043359232"
+              - key: sqlserver.wait.resource.type
+                value:
+                  stringValue: KEY
               - key: sqlserver.row_count
                 value:
                   intValue: "1"
@@ -102,13 +117,13 @@ resourceLogs:
                   intValue: "2"
               - key: sqlserver.wait_resource
                 value:
-                  stringValue: ""
+                  stringValue: "KEY: 5:72057594043359232 (ce52f1d31b65)"
               - key: sqlserver.wait_time
                 value:
-                  doubleValue: 0
+                  doubleValue: 2.45
               - key: sqlserver.wait_type
                 value:
-                  stringValue: ""
+                  stringValue: LCK_M_S
               - key: sqlserver.writes
                 value:
                   intValue: "0"

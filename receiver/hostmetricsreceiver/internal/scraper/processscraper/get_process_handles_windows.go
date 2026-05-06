@@ -11,16 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/shirou/gopsutil/v4/process"
-	"go.opentelemetry.io/collector/featuregate"
 	"golang.org/x/sys/windows"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"hostmetrics.process.onWindowsUseNewGetProcesses",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("If disabled, the scraper will use the legacy implementation to retrieve process handles."),
-	featuregate.WithRegisterFromVersion("v0.123.0"),
-	featuregate.WithRegisterToVersion("v0.127.0"),
 )
 
 func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {

@@ -16,9 +16,10 @@ import (
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventionsv128 "go.opentelemetry.io/otel/semconv/v1.28.0"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs/internal/metadata"
 )
 
 const (
@@ -141,6 +142,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
+	if metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() &&
+		!metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+		return plog.Logs{}, errors.New("pkg.translator.azurelogs.DontEmitV0LogConventions cannot be enabled without enabling pkg.translator.azurelogs.EmitV1LogConventions")
+	}
+
 	var rawRecordMap map[int]json.RawMessage
 	getRawRecord := func(index int) json.RawMessage {
 		if rawRecordMap == nil {
@@ -183,6 +189,9 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		lr := scopeLogs.LogRecords().AppendEmpty()
 		lr.SetTimestamp(nanos)
 		lr.SetObservedTimestamp(observedTimestamp)
+		if metadata.PkgTranslatorAzurelogsEmitV1LogConventionsFeatureGate.IsEnabled() {
+			lr.SetEventName("az.resource.log")
+		}
 
 		if log.Level != nil {
 			severity := asSeverity(*log.Level)
@@ -225,7 +234,12 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
-		rl.Resource().Attributes().PutStr(string(conventionsv128.EventNameKey), "az.resource.log")
+		// NOTE: event.name semantically belongs on each LogRecord (not the Resource).
+		// Legacy behavior incorrectly placed it on the Resource for all records.
+		// Use pkg.translator.azurelogs.EmitV1LogConventions to migrate to SetEventName().
+		if !metadata.PkgTranslatorAzurelogsDontEmitV0LogConventionsFeatureGate.IsEnabled() {
+			rl.Resource().Attributes().PutStr("event.name", "az.resource.log")
+		}
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 

@@ -17,13 +17,12 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/priorityqueue"
@@ -31,17 +30,8 @@ import (
 )
 
 const (
-	readmeURL            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
-	separateSchemaAttrID = "receiver.postgresql.separateSchemaAttr"
-
+	readmeURL                 = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	defaultPostgreSQLDatabase = "postgres"
-)
-
-var separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
-	separateSchemaAttrID,
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
 )
 
 type postgreSQLScraper struct {
@@ -94,11 +84,11 @@ func newPostgreSQLScraper(
 	for _, db := range config.ExcludeDatabases {
 		excludes[db] = struct{}{}
 	}
-	separateSchemaAttr := separateSchemaAttrGate.IsEnabled()
+	separateSchemaAttr := metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.IsEnabled()
 
 	if !separateSchemaAttr {
 		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", separateSchemaAttrID, readmeURL),
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", metadata.ReceiverPostgresqlSeparateSchemaAttrFeatureGate.ID(), readmeURL),
 		)
 	}
 
@@ -640,7 +630,7 @@ func (p *postgreSQLScraper) collectReplicationStats(
 		if rs.pendingBytes >= 0 {
 			p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
 		}
-		if preciseLagMetricsFg.IsEnabled() {
+		if metadata.PostgresqlreceiverPreciselagmetricsFeatureGate.IsEnabled() {
 			if rs.writeLag >= 0 {
 				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
 			}

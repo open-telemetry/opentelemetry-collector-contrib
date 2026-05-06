@@ -7,17 +7,19 @@ resourceLogs:
         - key: cloud.region
           value:
             stringValue: us-east-1
-        - key: aws.s3.bucket
+        - key: aws.s3.bucket.name
           value:
             stringValue: test-bucket
+        - key: aws.s3.bucket.arn
+          value:
+            stringValue: arn:aws:s3:::test-bucket
         - key: aws.s3.key
           value:
             stringValue: test-file.txt
     scopeLogs:
       - logRecords:
-          - attributes:
-            body:
-              stringValue: H4sIAAAAAAAAAwvOz01VyMlPV8jMUwg2VshPykpNLgEAo01BGxUAAAA=
+          - body:
+              stringValue: Logs in Gzip S3 object
             observedTimeUnixNano: "1764625361000000000"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awslambdareceiver

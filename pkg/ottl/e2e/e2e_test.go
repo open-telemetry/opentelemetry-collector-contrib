@@ -466,7 +466,8 @@ func Test_e2e_editors(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContextEditors()
-				_, _, _ = statement.Execute(t.Context(), tCtx)
+				_, _, err = statement.Execute(t.Context(), tCtx)
+				require.NoError(t, err)
 
 				exTCtx := constructLogTransformContextEditors()
 				tt.want(exTCtx)
@@ -611,6 +612,24 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["decoded_base64"], Decode("cGFzcw==", attributes["encoding"]))`,
 			want: func(tCtx *ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("decoded_base64", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Coalesce([attributes["http.method"], attributes["http.path"], "fallback"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "get")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Coalesce([attributes["nonexistent"], attributes["http.method"], "fallback"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "get")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Coalesce([attributes["nonexistent"], attributes["also.missing"], "fallback"]))`,
+			want: func(tCtx *ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "fallback")
 			},
 		},
 		{
@@ -1458,8 +1477,8 @@ func Test_e2e_converters(t *testing.T) {
 		},
 		{
 			statement: `set(
-	attributes["test"], 
-	ParseSeverity(severity_number, 
+	attributes["test"],
+	ParseSeverity(severity_number,
 		{
 			"error":[
 				{"equals": ["err"]},
@@ -1822,7 +1841,8 @@ func Test_e2e_ottl_features(t *testing.T) {
 
 			for _, statement := range logStatements {
 				tCtx := constructLogTransformContext()
-				_, _, _ = statement.Execute(t.Context(), tCtx)
+				_, _, err = statement.Execute(t.Context(), tCtx)
+				require.NoError(t, err)
 
 				exTCtx := constructLogTransformContext()
 				tt.want(exTCtx)
@@ -1921,7 +1941,8 @@ func Test_e2e_ottl_statement_sequence(t *testing.T) {
 				require.NoError(t, err)
 
 				for _, s := range logStatements {
-					_, _, _ = s.Execute(t.Context(), tCtx)
+					_, _, err = s.Execute(t.Context(), tCtx)
+					require.NoError(t, err)
 				}
 			}
 
@@ -2078,7 +2099,8 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 
 			tCtx := constructSpanTransformContext()
 			defer tCtx.Close()
-			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
+			_, _, err = spanStatements.Execute(t.Context(), tCtx)
+			require.NoError(t, err)
 
 			exTCtx := constructSpanTransformContext()
 			defer exTCtx.Close()
@@ -2113,7 +2135,8 @@ func Test_ProcessSpanEvents(t *testing.T) {
 			require.NoError(t, err)
 
 			tCtx := constructSpanEventTransformContext()
-			_, _, _ = spanStatements.Execute(t.Context(), tCtx)
+			_, _, err = spanStatements.Execute(t.Context(), tCtx)
+			require.NoError(t, err)
 
 			exTCtx := constructSpanEventTransformContext()
 			tt.want(exTCtx)
@@ -2419,7 +2442,10 @@ func Benchmark_XML_Functions(b *testing.B) {
 	b.ReportAllocs()
 
 	for b.Loop() {
-		_, _, _ = logStatements.Execute(b.Context(), actualCtx)
+		_, _, err = logStatements.Execute(b.Context(), actualCtx)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 
 	actualCtx.Close()

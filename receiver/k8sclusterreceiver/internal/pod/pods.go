@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -74,15 +74,15 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 }
 
 func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
-	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
-	mb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
-	rb := mb.NewResourceBuilder()
-	rb.SetK8sNamespaceName(pod.Namespace)
-	rb.SetK8sNodeName(pod.Spec.NodeName)
-	rb.SetK8sPodName(pod.Name)
-	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	e := metadata.NewK8sPodEntity(string(pod.UID))
+	e.SetK8sPodName(pod.Name)
+	e.SetK8sPodQosClass(string(pod.Status.QOSClass))
+	e.SetK8sNamespaceName(pod.Namespace)
+	e.SetK8sNodeName(pod.Spec.NodeName)
+	eb := mb.ForK8sPod(e)
+	eb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
+	eb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
+	eb.Emit()
 
 	for i := range pod.Spec.Containers {
 		c := pod.Spec.Containers[i]
@@ -126,7 +126,10 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 
 // GetMetadata returns all metadata associated with the pod.
 func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
-	meta := maps.MergeStringMaps(map[string]string{}, pod.Labels)
+	meta := map[string]string{}
+	for k, v := range pod.Labels {
+		meta[fmt.Sprintf("k8s.pod.label.%s", k)] = v
+	}
 
 	meta[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 	phase := pod.Status.Phase

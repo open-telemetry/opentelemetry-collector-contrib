@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	gojson "github.com/goccy/go-json"
-	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventionsv138 "go.opentelemetry.io/otel/semconv/v1.38.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension/internal/shared"
 )
@@ -248,8 +248,8 @@ func handleStatus(s *status, attr pcommon.Map) {
 		return
 	}
 
-	shared.PutInt(string(conventions.RPCJSONRPCErrorCodeKey), s.Code, attr)
-	shared.PutStr(string(conventions.RPCJSONRPCErrorMessageKey), s.Message, attr)
+	shared.PutInt(string(conventionsv138.RPCJSONRPCErrorCodeKey), s.Code, attr)
+	shared.PutStr(string(conventionsv138.RPCJSONRPCErrorMessageKey), s.Message, attr)
 }
 
 func handleAuthenticationInfo(info *authenticationInfo, attr pcommon.Map) {
@@ -295,7 +295,7 @@ func handlePolicyViolationInfo(info *policyViolationInfo, attr pcommon.Map) {
 	if len(info.OrgPolicyViolationInfo.ResourceTags) > 0 {
 		tags := attr.PutEmptyMap(gcpAuditPolicyViolationResourceTags)
 		for name, value := range info.OrgPolicyViolationInfo.ResourceTags {
-			shared.PutStr(strcase.ToSnakeWithIgnore(name, "."), value, tags)
+			shared.PutStr(shared.ToSnakeCase(name, "."), value, tags)
 		}
 	}
 
@@ -365,7 +365,7 @@ func handleRequestMetadata(metadata *requestMetadata, attr pcommon.Map) error {
 		if len(metadata.DestinationAttributes.Labels) > 0 {
 			m := attr.PutEmptyMap(gcpAuditDestinationLabels)
 			for l, v := range metadata.DestinationAttributes.Labels {
-				shared.PutStr(strcase.ToSnakeWithIgnore(l, "."), v, m)
+				shared.PutStr(shared.ToSnakeCase(l, "."), v, m)
 			}
 		}
 	}

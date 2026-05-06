@@ -1,16 +1,32 @@
 display_name: GitHub Receiver
 type: github
 
-sem_conv_version: 1.38.0
+sem_conv_version: 1.40.0
 
 status:
   class: receiver
   stability:
-    alpha: [metrics]
-    development: [traces]
+    alpha: [metrics, traces]
   distributions: [contrib]
   codeowners:
     active: [adrielp, crobert-1, TylerHelmuth]
+
+reaggregation_enabled: true
+
+feature_gates:
+  - id: receiver.githubreceiver.UseCheckRunID
+    description: >-
+      When enabled, deterministic job, step, and queue span IDs are derived from the
+      GitHub check_run_id (the WorkflowJob.id webhook field, also exposed in-runner as
+      ${{ job.check_run_id }}). Step span IDs additionally incorporate the step's raw
+      name, allowing in-action telemetry tools to reproduce matching span IDs without
+      calling the GitHub REST API and without knowing the runner-dependent step
+      number. Payloads missing a check_run_id are rejected while this gate is enabled.
+      Workflows with duplicate step names within a job will log a warning; duplicate
+      steps will share the same span ID.
+    stage: beta
+    from_version: "v0.151.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44856
 
 resource_attributes:
   vcs.owner.name:
@@ -26,48 +42,58 @@ attributes:
   vcs.change.state:
     description: The state of a change (pull request)
     type: string
+    requirement_level: recommended
     enum:
       - open
       - merged
   vcs.line_change.type:
     description: The type of line change being measured on a ref (branch).
     type: string
+    requirement_level: recommended
     enum:
       - added
       - removed
   vcs.ref.base.name:
     description: The name of the VCS base reference (branch/tag) for comparison.
     type: string
+    requirement_level: recommended
   vcs.ref.base.type:
     description: The type of the base reference (branch, tag).
     type: string
+    requirement_level: recommended
     enum:
       - branch
       - tag
   vcs.ref.head.name:
     description: The name of the VCS head reference (branch).
     type: string
+    requirement_level: recommended
   vcs.ref.head.type:
     description: The type of the head reference (branch, tag).
     type: string
+    requirement_level: recommended
     enum:
       - branch
       - tag
   vcs.ref.type:
     description: The type of the reference in the repository.
     type: string
+    requirement_level: recommended
     enum:
       - branch
       - tag
   vcs.repository.name:
     description: The name of the VCS repository.
     type: string
+    requirement_level: recommended
   vcs.repository.url.full:
     description: The canonical URL of the repository providing the complete HTTPS address.
     type: string
+    requirement_level: recommended
   vcs.revision_delta.direction:
     description: The type of revision comparison.
     type: string
+    requirement_level: recommended
     enum:
       - ahead
       - behind

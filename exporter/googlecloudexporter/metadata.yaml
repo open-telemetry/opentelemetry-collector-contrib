@@ -9,6 +9,16 @@ status:
   codeowners:
     active: [aabmass, dashpole, braydonk, jsuereth, psx95, ridwanmsharif]
 
+feature_gates:
+  - id: exporter.googlecloud.CustomMonitoredResources
+    description: >-
+      When enabled, the googlecloudexporter will map the OTLP metrics to the monitored resource type
+      defined by the resource label gcp.resource_type. The MR labels are defined by resource labels
+      with the prefix gcp.<monitored_resource_type>.
+    stage: alpha
+    from_version: "v0.122.0"
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38331
+
 tests:
   skip_lifecycle: true
   goleak:

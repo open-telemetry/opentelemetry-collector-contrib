@@ -35,19 +35,21 @@ func init() {
 }
 
 const (
-	dataLen = numContainers*containerMetrics + numPods*podMetrics + numNodes*nodeMetrics + numVolumes*volumeMetrics
-
 	// Number of resources by type in testdata/stats-summary.json
-	numContainers = 9
-	numPods       = 9
-	numNodes      = 1
-	numVolumes    = 8
+	numContainers       = 9
+	numPods             = 9
+	numNodes            = 1
+	numVolumes          = 8
+	numSystemContainers = 3
 
 	// Number of metrics by resource
-	nodeMetrics      = 15
-	podMetrics       = 15
-	containerMetrics = 11
-	volumeMetrics    = 5
+	nodeMetrics            = 15
+	podMetrics             = 15
+	containerMetrics       = 11
+	volumeMetrics          = 5
+	systemContainerMetrics = 4
+
+	dataLen = numContainers*containerMetrics + numPods*podMetrics + numNodes*nodeMetrics + numVolumes*volumeMetrics
 )
 
 var allMetricGroups = map[kubelet.MetricGroup]bool{
@@ -65,7 +67,7 @@ func TestScraper(t *testing.T) {
 		&fakeRestClient{},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
-		metadata.DefaultMetricsBuilderConfig(),
+		metadata.NewDefaultMetricsBuilderConfig(),
 		"worker-42",
 	)
 	require.NoError(t, err)
@@ -74,6 +76,44 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+}
+
+func TestScraperWithSystemContainerMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: allMetricGroups,
+	}
+	metricsConfig := metadata.NewDefaultMetricsBuilderConfig()
+	metricsConfig.Metrics.K8sNodeSystemContainerCPUTime.Enabled = true
+	metricsConfig.Metrics.K8sNodeSystemContainerCPUUsage.Enabled = true
+	metricsConfig.Metrics.K8sNodeSystemContainerMemoryUsage.Enabled = true
+	metricsConfig.Metrics.K8sNodeSystemContainerMemoryWorkingSet.Enabled = true
+
+	r, err := newKubeletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(metadata.Type),
+		options,
+		metricsConfig,
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	md, err := r.ScrapeMetrics(t.Context())
+	require.NoError(t, err)
+
+	require.Equal(t, dataLen+numSystemContainers*systemContainerMetrics, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_system_container_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
 	// golden.WriteMetrics(t, expectedFile, md)
@@ -100,7 +140,7 @@ func TestScraperWithInterfacesMetrics(t *testing.T) {
 		&fakeRestClient{},
 		receivertest.NewNopSettings(metadata.Type),
 		options,
-		metadata.DefaultMetricsBuilderConfig(),
+		metadata.NewDefaultMetricsBuilderConfig(),
 		"worker-42",
 	)
 	require.NoError(t, err)
@@ -323,7 +363,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				&fakeRestClient{},
 				receivertest.NewNopSettings(metadata.Type),
 				options,
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -588,7 +628,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
 				},
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -743,6 +783,14 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			mbc := metadata.NewDefaultMetricsBuilderConfig()
+			mbc.ResourceAttributes.AwsVolumeID.Enabled = true
+			mbc.ResourceAttributes.FsType.Enabled = true
+			mbc.ResourceAttributes.GcePdName.Enabled = true
+			mbc.ResourceAttributes.GlusterfsEndpointsName.Enabled = true
+			mbc.ResourceAttributes.GlusterfsPath.Enabled = true
+			mbc.ResourceAttributes.Partition.Enabled = true
+
 			r, err := newKubeletScraper(
 				&fakeRestClient{},
 				receivertest.NewNopSettings(metadata.Type),
@@ -753,7 +801,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 					},
 					k8sAPIClient: test.k8sAPIClient,
 				},
-				metadata.DefaultMetricsBuilderConfig(),
+				mbc,
 				"worker-42",
 			)
 			require.NoError(t, err)
@@ -838,7 +886,7 @@ func TestClientErrors(t *testing.T) {
 				},
 				settings,
 				options,
-				metadata.DefaultMetricsBuilderConfig(),
+				metadata.NewDefaultMetricsBuilderConfig(),
 				"",
 			)
 			require.NoError(t, err)

@@ -10,11 +10,14 @@ status:
 
 sem_conv_version: 1.9.0
 
+reaggregation_enabled: true
+
 attributes:
   status:
     description: Breakdown status of the processes.
     type: string
     enum: [blocked, daemon, detached, idle, locked, orphan, paging, running, sleeping, stopped, system, unknown, zombies]
+    requirement_level: recommended
 
 metrics:
   system.processes.count:
@@ -29,7 +32,7 @@ metrics:
     attributes: [status]
   system.processes.created:
     enabled: true
-    description: Total number of created processes.
+    description: Total number of created processes. Supported on Linux and OpenBSD.
     unit: "{processes}"
     stability: development
     sum:
