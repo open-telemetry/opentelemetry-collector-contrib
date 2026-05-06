@@ -1,0 +1,26 @@
+display_name: Pebble Tail Storage Extension
+type: pebble_tail_storage
+
+description: Stores pending trace data for tail sampling in a local Pebble database.
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [carsonip, jmacd, axw]
+
+tests:
+  # The lifecycle test starts then re-starts the extension on the same
+  # directory; that conflicts with the ErrorIfExists Pebble option set in
+  # pebble.go (covered by TestStartErrorsIfDBExists in storage_test.go).
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      # Pebble's diskHealthCheckingFS is set up inside pebble.Open and is not
+      # reliably torn down when Open fails (e.g. when ErrorIfExists triggers),
+      # so the ticker goroutine outlives the failed Open call. Ignore it here
+      # rather than reach into pebble internals.
+      top:
+        - github.com/cockroachdb/pebble/v2/vfs.(*diskHealthCheckingFS).startTickerLocked.func1
