@@ -1,5 +1,0 @@
-change_type: breaking
-component: exporter/splunk_hec
-note: Remove deprecated `batcher` config field. Use `sending_queue::batch` instead.
-issues: [47737]
-change_logs: [user, api]

@@ -503,3 +503,39 @@ func TestCustomHeaderAuthenticate(t *testing.T) {
 		})
 	}
 }
+
+func TestBearerTokenFileWithComments(t *testing.T) {
+	scheme := "Bearer"
+	filename := filepath.Join("testdata", t.Name()+".tokens")
+
+	// Create file with various comment styles like:
+	// Standard # comment
+	// C-style // comment
+	// Plain text note
+	// Token with no comment
+	fileContent := "token1 # primary\ntoken2 // secondary\ntoken3 DO NOT DELETE\ntoken4"
+	err := os.WriteFile(filename, []byte(fileContent), 0o600)
+	assert.NoError(t, err)
+	defer os.Remove(filename)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = scheme
+	cfg.Filename = filename
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	assert.NoError(t, bauth.Start(t.Context(), componenttest.NewNopHost()))
+
+	ctx := t.Context()
+
+	// Verification
+	tokens := []string{"token1", "token2", "token3", "token4"}
+	for _, token := range tokens {
+		headers := map[string][]string{"authorization": {"Bearer " + token}}
+		_, err = bauth.Authenticate(ctx, headers)
+		assert.NoError(t, err, "Failed to authenticate with token: %s", token)
+	}
+
+	assert.NoError(t, bauth.Shutdown(t.Context()))
+}
