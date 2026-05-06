@@ -164,6 +164,7 @@ components:
     - pkg/ottl
     - pkg/pdatatest
     - pkg/pdatautil
+    - pkg/prometheus
     - pkg/resourcetotelemetry
     - pkg/sampling
     - pkg/skywalking
@@ -175,7 +176,6 @@ components:
     - pkg/translator/jaeger
     - pkg/translator/loki
     - pkg/translator/pprof
-    - pkg/translator/prometheus
     - pkg/translator/prometheusremotewrite
     - pkg/translator/signalfx
     - pkg/translator/splunk
