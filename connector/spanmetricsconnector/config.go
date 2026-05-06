@@ -38,10 +38,10 @@ type Dimension struct {
 type Config struct {
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - service.name
-	// - span.kind
+	// - span.name
 	// - span.kind
 	// - status.code
-	// - collector.instance.id This dimensions never added unless enable feature-gate connector.spanmetrics.includeCollectorInstanceID
+	// - collector.instance.id
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions        []Dimension `mapstructure:"dimensions"`
