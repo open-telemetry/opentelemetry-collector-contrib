@@ -1,0 +1,9 @@
+change_type: bug_fix
+component: exporter/loadbalancing
+note: Fix central queue oldest-item-age metric registration and retry timestamp tracking.
+issues: [56]
+subtext: |-
+  Ensures logs and metrics central queues each report oldest-item-age datapoints,
+  unregisters the observer when a central queue stops, and avoids duplicate retry
+  timestamps growing the oldest-item heap.
+change_logs: [user]

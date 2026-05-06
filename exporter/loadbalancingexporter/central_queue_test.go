@@ -139,6 +139,81 @@ func TestCentralQueueTelemetryOldestItemAgeAdvancesWithoutQueueMutation(t *testi
 	}, time.Second, 10*time.Millisecond)
 }
 
+func TestCentralQueueStopUnregistersOldestItemAgeObserver(t *testing.T) {
+	reader := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, reader.Shutdown(context.WithoutCancel(t.Context())))
+	})
+	telemetry, err := newCentralQueueTelemetry(reader.NewTelemetrySettings(), signalKindLogs)
+	require.NoError(t, err)
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+		telemetry:                    telemetry,
+	})
+
+	require.NoError(t, q.enqueue(centralQueueItem{signal: signalKindLogs, compressedBytes: 10, uncompressedBytes: 10, count: 1}))
+	require.Eventually(t, func() bool {
+		metric, err := reader.GetMetric("otelcol_loadbalancer_central_queue_oldest_item_age")
+		if err != nil {
+			return false
+		}
+		gauge, ok := metric.Data.(metricdata.Gauge[int64])
+		return ok && len(gauge.DataPoints) == 1
+	}, time.Second, 10*time.Millisecond)
+
+	q.stop()
+
+	require.Eventually(t, func() bool {
+		metric, err := reader.GetMetric("otelcol_loadbalancer_central_queue_oldest_item_age")
+		if err != nil {
+			return true
+		}
+		gauge, ok := metric.Data.(metricdata.Gauge[int64])
+		return ok && len(gauge.DataPoints) == 0
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestCentralQueueRetriesDoNotGrowOldestEnqueuedHeap(t *testing.T) {
+	q := newCentralQueue(centralQueueSettings{
+		maxCompressedBytes:           100,
+		maxInflightUncompressedBytes: 100,
+		maxUncompressedBatchBytes:    100,
+	})
+	base := time.Unix(10, 0)
+	blockedOldest := centralQueueItem{
+		signal:              signalKindLogs,
+		compressedBytes:     10,
+		uncompressedBytes:   10,
+		count:               1,
+		nextAttemptUnixNano: base.Add(time.Hour).UnixNano(),
+		enqueuedAtUnixNano:  base.UnixNano(),
+	}
+	retryingItem := centralQueueItem{
+		signal:             signalKindLogs,
+		compressedBytes:    10,
+		uncompressedBytes:  10,
+		count:              1,
+		enqueuedAtUnixNano: base.Add(time.Millisecond).UnixNano(),
+	}
+	require.NoError(t, q.enqueueAt(blockedOldest, base))
+	require.NoError(t, q.enqueueAt(retryingItem, base))
+
+	now := base.Add(time.Second)
+	for range 10 {
+		lease, err := q.tryLease(now)
+		require.NoError(t, err)
+		require.NotNil(t, lease)
+		require.NoError(t, lease.requeue(now))
+	}
+
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	require.Len(t, q.enqueuedAtCounts, 2)
+	require.Len(t, q.oldestEnqueuedAt, 2)
+}
+
 func TestCentralQueueRejectsOversizedUncompressedItem(t *testing.T) {
 	q := newCentralQueue(centralQueueSettings{
 		maxCompressedBytes:           100,

@@ -25,6 +25,7 @@ type centralQueueTelemetry struct {
 	retries              metric.Int64Counter
 	inflightUncompressed metric.Int64Gauge
 	oldestItemAge        metric.Int64ObservableGauge
+	oldestItemAgeReg     metric.Registration
 	oldestItemAgeMu      sync.RWMutex
 	oldestItemAgeMillis  func() int64
 }
@@ -89,17 +90,20 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 		"otelcol_loadbalancer_central_queue_oldest_item_age",
 		metric.WithDescription("Age in ms of the oldest queued central load-balancing item."),
 		metric.WithUnit("ms"),
-		metric.WithInt64Callback(func(_ context.Context, observer metric.Int64Observer) error {
+	)
+	errs = errors.Join(errs, err)
+	if err == nil {
+		t.oldestItemAgeReg, err = meter.RegisterCallback(func(_ context.Context, observer metric.Observer) error {
 			t.oldestItemAgeMu.RLock()
 			oldestItemAgeMillis := t.oldestItemAgeMillis
 			t.oldestItemAgeMu.RUnlock()
 			if oldestItemAgeMillis != nil {
-				observer.Observe(oldestItemAgeMillis(), t.signalAttrs)
+				observer.ObserveInt64(t.oldestItemAge, oldestItemAgeMillis(), t.signalAttrs)
 			}
 			return nil
-		}),
-	)
-	errs = errors.Join(errs, err)
+		}, t.oldestItemAge)
+		errs = errors.Join(errs, err)
+	}
 	return t, errs
 }
 
@@ -137,4 +141,18 @@ func (t *centralQueueTelemetry) observeOldestItemAge(oldestItemAgeMillis func() 
 	t.oldestItemAgeMu.Lock()
 	defer t.oldestItemAgeMu.Unlock()
 	t.oldestItemAgeMillis = oldestItemAgeMillis
+}
+
+func (t *centralQueueTelemetry) stopObservingOldestItemAge() {
+	if t == nil {
+		return
+	}
+	t.oldestItemAgeMu.Lock()
+	registration := t.oldestItemAgeReg
+	t.oldestItemAgeReg = nil
+	t.oldestItemAgeMillis = nil
+	t.oldestItemAgeMu.Unlock()
+	if registration != nil {
+		_ = registration.Unregister()
+	}
 }

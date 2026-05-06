@@ -43,6 +43,28 @@ func TestCentralQueueTelemetryRecordsInstruments(t *testing.T) {
 	requireCentralQueueIntSum(t, reader, "otelcol_loadbalancer_central_queue_retries", "{retries}", attrs, 1)
 }
 
+func TestCentralQueueTelemetryOldestItemAgeReportsMultipleSignals(t *testing.T) {
+	reader := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, reader.Shutdown(context.WithoutCancel(t.Context())))
+	})
+	logsTelemetry, err := newCentralQueueTelemetry(reader.NewTelemetrySettings(), signalKindLogs)
+	require.NoError(t, err)
+	metricsTelemetry, err := newCentralQueueTelemetry(reader.NewTelemetrySettings(), signalKindMetrics)
+	require.NoError(t, err)
+	logsTelemetry.observeOldestItemAge(func() int64 { return 125 })
+	metricsTelemetry.observeOldestItemAge(func() int64 { return 250 })
+
+	metric, err := reader.GetMetric("otelcol_loadbalancer_central_queue_oldest_item_age")
+	require.NoError(t, err)
+	require.Equal(t, "ms", metric.Unit)
+	gauge, ok := metric.Data.(metricdata.Gauge[int64])
+	require.True(t, ok)
+	require.Len(t, gauge.DataPoints, 2)
+	requireCentralQueueIntGaugeDatapoint(t, gauge.DataPoints, attribute.NewSet(attribute.String("signal", string(signalKindLogs))), 125)
+	requireCentralQueueIntGaugeDatapoint(t, gauge.DataPoints, attribute.NewSet(attribute.String("signal", string(signalKindMetrics))), 250)
+}
+
 func requireCentralQueueIntGauge(t *testing.T, reader *componenttest.Telemetry, name, unit string, attrs attribute.Set, value int64) {
 	t.Helper()
 	metric, err := reader.GetMetric(name)
@@ -51,8 +73,18 @@ func requireCentralQueueIntGauge(t *testing.T, reader *componenttest.Telemetry, 
 	gauge, ok := metric.Data.(metricdata.Gauge[int64])
 	require.True(t, ok)
 	require.Len(t, gauge.DataPoints, 1)
-	require.Equal(t, attrs, gauge.DataPoints[0].Attributes)
-	require.Equal(t, value, gauge.DataPoints[0].Value)
+	requireCentralQueueIntGaugeDatapoint(t, gauge.DataPoints, attrs, value)
+}
+
+func requireCentralQueueIntGaugeDatapoint(t *testing.T, datapoints []metricdata.DataPoint[int64], attrs attribute.Set, value int64) {
+	t.Helper()
+	for _, datapoint := range datapoints {
+		if datapoint.Attributes.Equals(&attrs) {
+			require.Equal(t, value, datapoint.Value)
+			return
+		}
+	}
+	require.Failf(t, "missing datapoint", "attributes: %v", attrs)
 }
 
 func requireCentralQueueFloatGauge(t *testing.T, reader *componenttest.Telemetry, name, unit string, attrs attribute.Set, value float64) {
