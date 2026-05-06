@@ -397,11 +397,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricID := createMetricIdentity(
-			resourceID,  // Resource identity
-			metricName,  // Metric name
-			unit,                // Unit
-			si,                  // Scope info
-			ts.Metadata.Type,    // Metric type
+			resourceID,       // Resource identity
+			metricName,       // Metric name
+			unit,             // Unit
+			si,               // Scope info
+			ts.Metadata.Type, // Metric type
 		)
 
 		metricKey := metricID.Hash()
