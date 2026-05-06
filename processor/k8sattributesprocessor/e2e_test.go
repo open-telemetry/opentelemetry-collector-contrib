@@ -1985,6 +1985,7 @@ func TestE2E_SharedProcessor(t *testing.T) {
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
+	// wip
 
 	nsFile := filepath.Join(testDir, "namespace.yaml")
 	buf, err := os.ReadFile(nsFile)
