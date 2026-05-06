@@ -672,10 +672,10 @@ func (tsp *tailSamplingSpanProcessor) waitForSpace(tickChan <-chan time.Time) {
 		return
 	}
 
-	// TODO: Isn't this basically a starvation risk though?
-	//       Instead of some portion getting through, if we're always dropping from the front
-	//       and adding to the back, it's possible we'll never actually flush anything?
-	//       Is that the desired behavior?
+	// TODO: note this removal policy could be a starvation risk. Instead of some portion of
+	//       complete traces getting through, if we're always dropping from the front
+	//       and appending to the back, it's possible we'll never actually flush any traces
+	//       instead of flushing some complete traces.
 	front := tsp.deleteTraceQueue.Front()
 	if front == nil {
 		// This should be impossible.
