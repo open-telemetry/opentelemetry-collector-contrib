@@ -1049,7 +1049,7 @@ func isQueryExplainable(query string) bool {
 	}
 
 	trimmedQuery := strings.TrimSpace(query)
-	lowerQuery := strings.ToLower(trimmedQuery)
+	lowerQuery := strings.ToLower(stripLeadingSQLComments(trimmedQuery))
 
 	for _, keyword := range sqlStartingKeywords {
 		if strings.HasPrefix(lowerQuery, keyword) {
@@ -1057,6 +1057,30 @@ func isQueryExplainable(query string) bool {
 		}
 	}
 	return false
+}
+
+// stripLeadingSQLComments removes leading block (/* ... */)
+// and line comments (-- ... and # ...) from a query.
+func stripLeadingSQLComments(query string) string {
+	for {
+		switch {
+		case strings.HasPrefix(query, "/*"):
+			end := strings.Index(query, "*/")
+			if end == -1 {
+				return query
+			}
+			query = strings.TrimSpace(query[end+2:])
+		case strings.HasPrefix(query, "--"), strings.HasPrefix(query, "#"):
+			end := strings.Index(query, "\n")
+			if end == -1 {
+				// remaining text is a comment
+				return ""
+			}
+			query = strings.TrimSpace(query[end+1:])
+		default:
+			return query
+		}
+	}
 }
 
 func query(c mySQLClient, query string) (map[string]string, error) {
