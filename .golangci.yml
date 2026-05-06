@@ -145,9 +145,6 @@ linters:
         path: extension/encoding/awslogsencodingextension/
       - linters:
           - forbidigo
-        path: extension/opampextension/
-      - linters:
-          - forbidigo
         path: internal/filter/
       - linters:
           - forbidigo
