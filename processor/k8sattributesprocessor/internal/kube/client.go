@@ -1013,7 +1013,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.ClusterUID {
-		if val, ok := c.Namespaces["kube-system"]; ok {
+		if val, ok := c.GetNamespace("kube-system"); ok {
 			tags[string(conventions.K8SClusterUIDKey)] = val.NamespaceUID
 		} else {
 			c.logger.Debug("unable to find kube-system namespace, cluster uid will not be available")

@@ -4720,3 +4720,53 @@ func TestCompactPodMap(t *testing.T) {
 	assert.NotContains(t, c.Pods, podA)
 	assert.Len(t, c.Pods, 2)
 }
+
+// TestExtractPodAttributesClusterUIDRace is a regression test for issue 47910
+// There used to be a data race where extractPodAttributes read c.Namespaces
+// without holding the client's read lock while populating the k8s.cluster.uid
+// attribute.
+// This test must be run with the race detector enabled (go test -race) to catch regressions.
+func TestExtractPodAttributesClusterUIDRace(t *testing.T) {
+	c, _ := newTestClient(t)
+	c.Rules = ExtractionRules{ClusterUID: true}
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "pod",
+			Namespace: "default",
+			UID:       "pod-uid",
+		},
+	}
+
+	kubeSystem := &api_v1.Namespace{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "kube-system",
+			UID:  "kube-system-uid",
+		},
+	}
+
+	const iterations = 500
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Writer: continuously add and delete the kube-system namespace, mimicking
+	// the namespace informer touching c.Namespaces under c.m.Lock().
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			c.handleNamespaceAdd(kubeSystem)
+			c.handleNamespaceDelete(kubeSystem)
+		}
+	}()
+
+	// Reader: concurrently extract pod attributes, which resolves the
+	// ClusterUID by reading the kube-system entry from c.Namespaces.
+	go func() {
+		defer wg.Done()
+		for range iterations {
+			_ = c.extractPodAttributes(pod)
+		}
+	}()
+
+	wg.Wait()
+}
