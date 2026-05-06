@@ -285,7 +285,7 @@ components:
     - receiver/k8s_events
     - receiver/k8s_objects
     - receiver/kafka
-    - receiver/kafkametrics
+    - receiver/kafka_metrics
     - receiver/kubelet_stats
     - receiver/libhoney
     - receiver/loki

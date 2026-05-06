@@ -181,7 +181,7 @@ components:
         - k8s_events
         - k8s_objects
         - kafka
-        - kafkametrics
+        - kafka_metrics
         - kubelet_stats
         - libhoney
         - loki

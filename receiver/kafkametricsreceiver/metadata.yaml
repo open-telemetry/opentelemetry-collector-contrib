@@ -1,5 +1,6 @@
 display_name: Kafka Metrics Receiver
-type: kafkametrics
+type: kafka_metrics
+deprecated_type: kafkametrics
 
 description: |
   The Kafka Metrics Receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from a kafka server,
