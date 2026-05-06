@@ -1234,36 +1234,32 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 		t.Fatal("Failed to get agent description after 5 seconds")
 	}
 
-	expectedDescription := &protobufs.AgentDescription{
-		IdentifyingAttributes: []*protobufs.KeyValue{
-			stringKeyValue("client.id", "my-client-id"),
-			stringKeyValue("service.instance.id", uuid.UUID(ad.InstanceUid).String()),
-			stringKeyValue("service.name", command),
-			stringKeyValue("service.version", version),
-		},
-		NonIdentifyingAttributes: []*protobufs.KeyValue{
-			stringKeyValue("env", "prod"),
-			stringKeyValue("host.arch", runtime.GOARCH),
-			stringKeyValue("host.name", host),
-			stringKeyValue("os.type", runtime.GOOS),
-		},
+	expectedIdentifyingAttributes := map[string]string{
+		"client.id":           "my-client-id",
+		"service.instance.id": uuid.UUID(ad.InstanceUid).String(),
+		"service.name":        command,
+		"service.version":     version,
 	}
-
-	require.Subset(t, ad.AgentDescription.IdentifyingAttributes, expectedDescription.IdentifyingAttributes)
-	require.Subset(t, ad.AgentDescription.NonIdentifyingAttributes, expectedDescription.NonIdentifyingAttributes)
+	expectedNonIdentifyingAttributes := map[string]string{
+		"env":       "prod",
+		"host.arch": runtime.GOARCH,
+		"host.name": host,
+		"os.type":   runtime.GOOS,
+	}
+	actualIdentifyingAttributes := keyValuesToStringMap(ad.AgentDescription.IdentifyingAttributes)
+	require.Subset(t, actualIdentifyingAttributes, expectedIdentifyingAttributes)
+	actualNonIdentifyingAttributes := keyValuesToStringMap(ad.AgentDescription.NonIdentifyingAttributes)
+	require.Subset(t, actualNonIdentifyingAttributes, expectedNonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
 }
 
-func stringKeyValue(key, val string) *protobufs.KeyValue {
-	return &protobufs.KeyValue{
-		Key: key,
-		Value: &protobufs.AnyValue{
-			Value: &protobufs.AnyValue_StringValue{
-				StringValue: val,
-			},
-		},
+func keyValuesToStringMap(kvs []*protobufs.KeyValue) map[string]string {
+	out := make(map[string]string, len(kvs))
+	for _, kv := range kvs {
+		out[kv.Key] = kv.Value.GetStringValue()
 	}
+	return out
 }
 
 // Creates a Collector config that reads and writes logs to files and provides
