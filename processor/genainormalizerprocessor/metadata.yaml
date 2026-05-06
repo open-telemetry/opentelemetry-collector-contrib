@@ -7,7 +7,7 @@ status:
     development: [traces]
   distributions: []
   codeowners:
-    active: [kylehounslow, TylerHelmuth]
+    active: [TylerHelmuth]
 
 tests:
   config:
