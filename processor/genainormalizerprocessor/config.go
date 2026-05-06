@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 // SourceName identifies a supported source instrumentation convention.
@@ -46,19 +46,11 @@ type Source struct {
 // Config holds the configuration for the genainormalizer processor.
 type Config struct {
 	// Sources selects which source conventions to normalize and their per-source options.
-	// If omitted, both openinference and openllmetry are enabled with default options.
-	// If specified, the provided map replaces the defaults entirely.
+	// At least one source must be specified.
 	Sources map[SourceName]Source `mapstructure:"sources"`
 }
 
-// Unmarshal implements confmap.Unmarshaler so that a user-specified `sources`
-// map replaces the default sources instead of merging with them.
-func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	if conf.IsSet("sources") {
-		c.Sources = nil
-	}
-	return conf.Unmarshal(c)
-}
+var _ xconfmap.Validator = (*Config)(nil)
 
 // Validate checks that the configuration is valid.
 func (c *Config) Validate() error {

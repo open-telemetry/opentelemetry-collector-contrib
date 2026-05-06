@@ -23,14 +23,11 @@ func NewFactory() processor.Factory {
 	)
 }
 
-// createDefaultConfig returns the default configuration. Both openinference
-// and openllmetry are enabled with zero-value options.
+// createDefaultConfig returns the default configuration. Sources must be
+// explicitly specified by the user; there are no built-in source defaults.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Sources: map[SourceName]Source{
-			SourceOpenInference: {RemoveOriginals: false, Overwrite: false, CustomMappings: nil},
-			SourceOpenLLMetry:   {RemoveOriginals: false, Overwrite: false, CustomMappings: nil},
-		},
+		Sources: map[SourceName]Source{},
 	}
 }
 

@@ -12,8 +12,8 @@ genainormalizer:
       custom_mappings:
         other_vendor.tokens: gen_ai.usage.input_tokens
 
-# Sources omitted: defaults apply (openinference + openllmetry, zero-value options).
-genainormalizer/defaults:
+# Sources omitted entirely: validation error (at least one source required).
+genainormalizer/empty:
 
 # Sources explicitly provided with only openinference: defaults are replaced.
 genainormalizer/openinference_only:

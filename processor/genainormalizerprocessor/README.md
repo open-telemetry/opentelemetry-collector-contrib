@@ -25,7 +25,7 @@ The GenAI Normalizer Processor rewrites span attributes emitted by non-OTel GenA
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `sources` | map[[source](#source)] | `{openinference: {}, openllmetry: {}}` | Source conventions to normalize. See [Defaults and overrides](#defaults-and-overrides). |
+| `sources` | map[[source](#source)] | _required_ | Source conventions to normalize. At least one must be specified. |
 
 ### Source
 
@@ -37,20 +37,19 @@ Each entry in `sources` is keyed by a supported source name (`openinference`, `o
 | `overwrite` | bool | `false` | When `true`, overwrite the target attribute if it already exists on the span. When `false`, skip the mapping. |
 | `custom_mappings` | map[string]string | `{}` | Additional source-to-target attribute mappings applied after built-in mappings, overriding them on conflict. Required when the source is `custom`. |
 
-### Defaults and overrides
-
-If `sources` is omitted, both `openinference` and `openllmetry` are enabled with default options. If `sources` is specified, the provided map replaces the defaults entirely — there is no field-level merge. To disable a default source, omit it from `sources`.
-
 ## Examples
 
-Use defaults (openinference and openllmetry, default options):
+Normalize OpenInference and OpenLLMetry:
 
 ```yaml
 processors:
-  genainormalizer: {}
+  genainormalizer:
+    sources:
+      openinference: {}
+      openllmetry: {}
 ```
 
-Normalize only OpenInference (openllmetry is dropped):
+Normalize only OpenInference:
 
 ```yaml
 processors:
@@ -69,7 +68,7 @@ processors:
         remove_originals: true
 ```
 
-Use only user-defined mappings (both built-in sources are dropped):
+Apply only user-defined mappings:
 
 ```yaml
 processors:
