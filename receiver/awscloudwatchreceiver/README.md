@@ -92,12 +92,13 @@ List every metric you want to collect. Each entry supports:
 
 Instead of listing metrics manually, the receiver can call [ListMetrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_ListMetrics.html) to discover them automatically.
 
-| Parameter     | Type            | Default | Description |
-| ------------- | --------------- | ------- | ----------- |
-| `namespace`   | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). If omitted, all namespaces are discovered. |
-| `metric_name` | String          | —       | Restrict discovery to metrics with this name. |
-| `limit`       | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
-| `stats`       | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
+| Parameter              | Type            | Default | Description |
+| ---------------------- | --------------- | ------- | ----------- |
+| `filters`              | Object          | —       | Optional sub-block to narrow which metrics are discovered. If omitted, all metrics in all namespaces are discovered. |
+| `filters.namespace`    | String          | —       | Restrict discovery to a single namespace (e.g. `AWS/EC2`). |
+| `filters.metric_name`  | String          | —       | Restrict discovery to metrics with this name. |
+| `limit`                | Integer         | 100     | Maximum number of metrics to discover and scrape per collection cycle. |
+| `stats`                | List of strings | —       | Statistics to fetch for every discovered metric. Same values as in `queries`. |
 
 #### Statistics
 
@@ -171,7 +172,8 @@ awscloudwatch:
     period: 300s
     delay: 10m
     discovery:
-      namespace: AWS/EC2
+      filters:
+        namespace: AWS/EC2
       limit: 200
 ```
 

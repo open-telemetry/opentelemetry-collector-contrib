@@ -6,5 +6,6 @@ receivers:
       collection_interval: 5m
       period: 300s
       discovery:
-        namespace: AWS/EC2
+        filters:
+          namespace: AWS/EC2
         limit: 50

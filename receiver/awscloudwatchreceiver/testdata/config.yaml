@@ -79,7 +79,8 @@ awscloudwatch/metrics-discovery:
     collection_interval: 5m
     period: 300s
     discovery:
-      namespace: AWS/EC2
+      filters:
+        namespace: AWS/EC2
       limit: 200
 
 awscloudwatch/metrics-discovery-gauge:
@@ -88,7 +89,8 @@ awscloudwatch/metrics-discovery-gauge:
     collection_interval: 5m
     period: 300s
     discovery:
-      namespace: AWS/EC2
+      filters:
+        namespace: AWS/EC2
       limit: 100
       stats: [Sum, Average]
 

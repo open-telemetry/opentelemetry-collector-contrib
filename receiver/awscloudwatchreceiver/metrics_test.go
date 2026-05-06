@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -593,8 +594,8 @@ func TestScrape_Discovery(t *testing.T) {
 		Metrics: MetricsConfig{
 			Period: 60 * time.Second,
 			Discovery: &MetricsDiscoveryConfig{
-				Namespace: "AWS/EC2",
-				Limit:     10,
+				Filters: configoptional.Some(MetricsDiscoveryFilters{Namespace: "AWS/EC2"}),
+				Limit:   10,
 			},
 		},
 	}

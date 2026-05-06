@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -305,7 +306,7 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Region: "us-east-1",
 				Logs:   defaultLogs(),
 				Metrics: MetricsConfig{
-					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute},
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
 					Period:           60 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Queries: []MetricQuery{
@@ -328,12 +329,12 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Region: "us-east-1",
 				Logs:   defaultLogs(),
 				Metrics: MetricsConfig{
-					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute},
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute, InitialDelay: time.Second},
 					Period:           300 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
-						Namespace: "AWS/EC2",
-						Limit:     200,
+						Filters: configoptional.Some(MetricsDiscoveryFilters{Namespace: "AWS/EC2"}),
+						Limit:   200,
 					},
 				},
 			},
@@ -344,7 +345,7 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Region: "us-east-1",
 				Logs:   defaultLogs(),
 				Metrics: MetricsConfig{
-					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute},
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
 					Period:           60 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Queries: []MetricQuery{
@@ -363,13 +364,13 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Region: "us-east-1",
 				Logs:   defaultLogs(),
 				Metrics: MetricsConfig{
-					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute},
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 5 * time.Minute, InitialDelay: time.Second},
 					Period:           300 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{
-						Namespace: "AWS/EC2",
-						Limit:     100,
-						Stats:     []string{"Sum", "Average"},
+						Filters: configoptional.Some(MetricsDiscoveryFilters{Namespace: "AWS/EC2"}),
+						Limit:   100,
+						Stats:   []string{"Sum", "Average"},
 					},
 				},
 			},
@@ -380,7 +381,7 @@ func TestLoadMetricsConfig(t *testing.T) {
 				Region: "us-west-2",
 				Logs:   defaultLogs(),
 				Metrics: MetricsConfig{
-					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 2 * time.Minute},
+					ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 2 * time.Minute, InitialDelay: time.Second},
 					Period:           120 * time.Second,
 					Delay:            defaultMetricsDelay,
 					Discovery: &MetricsDiscoveryConfig{

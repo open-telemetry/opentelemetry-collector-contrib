@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -46,18 +47,24 @@ type MetricsConfig struct {
 	// Defaults to 10m.
 	Delay     time.Duration           `mapstructure:"delay"`
 	Queries   []MetricQuery           `mapstructure:"queries"`
-	Discovery *MetricsDiscoveryConfig `mapstructure:"discovery,omitempty"`
+	Discovery *MetricsDiscoveryConfig `mapstructure:"discovery"`
 }
 
 // MetricsDiscoveryConfig configures automatic discovery of metrics via ListMetrics.
 // Discovered metrics are then scraped with GetMetricData. Mutually exclusive with metrics (explicit list).
 type MetricsDiscoveryConfig struct {
-	Namespace  string `mapstructure:"namespace"`   // optional filter, e.g. "AWS/EC2"
-	MetricName string `mapstructure:"metric_name"` // optional filter
-	Limit      int    `mapstructure:"limit"`       // max metrics to discover and scrape (default 100)
+	Filters configoptional.Optional[MetricsDiscoveryFilters] `mapstructure:"filters"`
+	Limit   int                                              `mapstructure:"limit"` // max metrics to discover and scrape (default 100)
 	// Stats selects which CloudWatch statistics to fetch for all discovered metrics.
 	// Same semantics as MetricQuery.Stats.
 	Stats []string `mapstructure:"stats"`
+}
+
+// MetricsDiscoveryFilters optionally narrows which metrics are discovered.
+// When absent, all metrics in all namespaces are discovered.
+type MetricsDiscoveryFilters struct {
+	Namespace  string `mapstructure:"namespace"`
+	MetricName string `mapstructure:"metric_name"`
 }
 
 // MetricQuery defines a single CloudWatch metric to scrape via GetMetricData.
@@ -172,11 +179,11 @@ func (c *Config) validateMetricsConfig() error {
 	if c.Metrics.Discovery != nil && len(c.Metrics.Queries) > 0 {
 		return errMetricsAndDiscoveryConfigured
 	}
-	if c.Metrics.Discovery != nil {
-		if c.Metrics.Discovery.Limit <= 0 {
+	if discovery := c.Metrics.Discovery; discovery != nil {
+		if discovery.Limit <= 0 {
 			return errInvalidDiscoveryLimit
 		}
-		for j, st := range c.Metrics.Discovery.Stats {
+		for j, st := range discovery.Stats {
 			if st == "" {
 				return fmt.Errorf("metrics.discovery.stats[%d]: %w", j, errEmptyStatName)
 			}

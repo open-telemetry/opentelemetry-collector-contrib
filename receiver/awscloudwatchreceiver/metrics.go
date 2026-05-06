@@ -57,12 +57,12 @@ type metricsClient interface {
 
 func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloudWatchMetricsScraper {
 	var discovery *MetricsDiscoveryConfig
-	if cfg.Metrics.Discovery != nil {
-		d := *cfg.Metrics.Discovery
-		if d.Limit <= 0 {
-			d.Limit = defaultMetricsDiscoverLimit
+	if d := cfg.Metrics.Discovery; d != nil {
+		copy := *d
+		if copy.Limit <= 0 {
+			copy.Limit = defaultMetricsDiscoverLimit
 		}
-		discovery = &d
+		discovery = &copy
 	}
 	return &cloudWatchMetricsScraper{
 		settings:           settings,
@@ -156,11 +156,13 @@ func alignTimeToPeriod(t time.Time, periodSec int64) time.Time {
 // listMetrics discovers metrics via ListMetrics API, respecting discovery config (namespace, metric name, limit).
 func (s *cloudWatchMetricsScraper) listMetrics(ctx context.Context) ([]MetricQuery, error) {
 	input := &cloudwatch.ListMetricsInput{}
-	if s.discovery.Namespace != "" {
-		input.Namespace = aws.String(s.discovery.Namespace)
-	}
-	if s.discovery.MetricName != "" {
-		input.MetricName = aws.String(s.discovery.MetricName)
+	if f := s.discovery.Filters.Get(); f != nil {
+		if f.Namespace != "" {
+			input.Namespace = aws.String(f.Namespace)
+		}
+		if f.MetricName != "" {
+			input.MetricName = aws.String(f.MetricName)
+		}
 	}
 
 	var out []MetricQuery
