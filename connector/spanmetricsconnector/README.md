@@ -68,7 +68,15 @@ across all spans:
 
 The `collector.instance.id` dimension is intended to add a unique UUID to all metrics, ensuring that the spanmetrics connector
 does not violate the **Single Writer Principle** when spanmetrics is used in a multi-deployment model.
-Currently, `collector.instance.id` can be manually disabled via the feature gate: `connector.spanmetrics.includeCollectorInstanceID`.
+To disable, use `exclude_dimensions` setting:
+
+```yaml
+connectors:
+  spanmetrics:
+    exclude_dimensions: ['collector.instance.id']
+```
+
+Or, disable via the feature gate: `--feature-gates=-connector.spanmetrics.includeCollectorInstanceID`.
 More detail, please see [Known Limitation: the Single Writer Principle](#known-limitation-the-single-writer-principle)
 
 ## Span to Metrics processor to Span to metrics connector
