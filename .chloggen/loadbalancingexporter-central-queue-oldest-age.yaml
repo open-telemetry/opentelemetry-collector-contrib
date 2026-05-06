@@ -1,0 +1,8 @@
+change_type: enhancement
+component: exporter/loadbalancing
+note: Add a central queue oldest-item-age metric for load-balanced logs and metrics.
+issues: [55]
+subtext: |-
+  Adds `otelcol_loadbalancer_central_queue_oldest_item_age` so operators can track
+  stale compressed central queue backlog separately from queue size and saturation.
+change_logs: [user]

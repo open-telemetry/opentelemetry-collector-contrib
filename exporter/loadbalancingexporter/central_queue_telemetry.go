@@ -6,6 +6,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
@@ -23,6 +24,9 @@ type centralQueueTelemetry struct {
 	rejectedBytes        metric.Int64Counter
 	retries              metric.Int64Counter
 	inflightUncompressed metric.Int64Gauge
+	oldestItemAge        metric.Int64ObservableGauge
+	oldestItemAgeMu      sync.RWMutex
+	oldestItemAgeMillis  func() int64
 }
 
 type centralQueueSnapshot struct {
@@ -30,6 +34,7 @@ type centralQueueSnapshot struct {
 	compressedCapacity   int64
 	items                int64
 	inflightUncompressed int64
+	oldestItemAgeMillis  int64
 }
 
 func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signalKind) (*centralQueueTelemetry, error) {
@@ -80,6 +85,21 @@ func newCentralQueueTelemetry(settings component.TelemetrySettings, signal signa
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	t.oldestItemAge, err = meter.Int64ObservableGauge(
+		"otelcol_loadbalancer_central_queue_oldest_item_age",
+		metric.WithDescription("Age in ms of the oldest queued central load-balancing item."),
+		metric.WithUnit("ms"),
+		metric.WithInt64Callback(func(_ context.Context, observer metric.Int64Observer) error {
+			t.oldestItemAgeMu.RLock()
+			oldestItemAgeMillis := t.oldestItemAgeMillis
+			t.oldestItemAgeMu.RUnlock()
+			if oldestItemAgeMillis != nil {
+				observer.Observe(oldestItemAgeMillis(), t.signalAttrs)
+			}
+			return nil
+		}),
+	)
+	errs = errors.Join(errs, err)
 	return t, errs
 }
 
@@ -108,4 +128,13 @@ func (t *centralQueueTelemetry) recordRetry(ctx context.Context) {
 		return
 	}
 	t.retries.Add(ctx, 1, t.signalAttrs)
+}
+
+func (t *centralQueueTelemetry) observeOldestItemAge(oldestItemAgeMillis func() int64) {
+	if t == nil {
+		return
+	}
+	t.oldestItemAgeMu.Lock()
+	defer t.oldestItemAgeMu.Unlock()
+	t.oldestItemAgeMillis = oldestItemAgeMillis
 }

@@ -522,3 +522,4 @@ The following metrics are recorded by this exporter:
   * `otelcol_loadbalancer_metric_batch_pending_oldest_datapoint_age` reports the age of the oldest metric datapoint currently pending for each backend endpoint.
   * `otelcol_loadbalancer_metric_batch_pending_oldest_datapoint_age_max` reports the maximum pending oldest-datapoint age across all backend endpoints.
   * `otelcol_loadbalancer_metric_batch_flush_oldest_datapoint_age` records the age of the oldest metric datapoint in each flushed batch.
+* When central queue mode is active, `otelcol_loadbalancer_central_queue_oldest_item_age` reports the age in milliseconds of the oldest item waiting in the central queue.
