@@ -1,6 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build cgo && unix
+
+// This file is ONLY used as part of TestTimeParserStrptimeCgo to verify that TestParseStrptime is correct.
+
 package timeutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 
 // #define _XOPEN_SOURCE

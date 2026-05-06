@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build cgo
+//go:build cgo && unix
 
 package timeutils
 
@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestParseStrptimeCgo verifies that the input/output pairs in strptime_test.go accurately reflect the behavior of strptime(3).
 func TestParseStrptimeCgo(t *testing.T) {
 	// Verify that libc's strptime parses these in the same way.
 
