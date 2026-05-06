@@ -77,6 +77,7 @@ const (
 	faroGeoASNID          = "geo_asn_id"
 
 	faroIsK6Browser = "k6_isK6Browser"
+	faroK6TestRunID = "k6_testRunId"
 
 	faroPageID         = "page_id"
 	faroPageURL        = "page_url"
@@ -615,6 +616,9 @@ func extractK6FromKeyVal(kv map[string]string) (faroTypes.K6, error) {
 			return k6, err
 		}
 		k6.IsK6Browser = isK6Browser
+	}
+	if testRunID, ok := kv[faroK6TestRunID]; ok {
+		k6.TestRunID = testRunID
 	}
 	return k6, nil
 }
