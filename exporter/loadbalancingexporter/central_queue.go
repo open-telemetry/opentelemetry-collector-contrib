@@ -33,6 +33,7 @@ type centralQueue struct {
 	currentCompressedBytes int64
 	currentInflightBytes   int64
 	enqueuedAtCounts       map[int64]int
+	enqueuedAtHeapEntries  map[int64]struct{}
 	oldestEnqueuedAt       centralQueueEnqueuedAtHeap
 }
 
@@ -185,6 +186,7 @@ func (q *centralQueue) stop() {
 	q.mu.Lock()
 	q.stopped = true
 	q.mu.Unlock()
+	q.settings.telemetry.stopObservingOldestItemAge()
 }
 
 func (q *centralQueue) compressedBytes() int64 {
@@ -244,8 +246,12 @@ func (q *centralQueue) trackOldestEnqueuedAtLocked(item centralQueueItem) {
 	if q.enqueuedAtCounts == nil {
 		q.enqueuedAtCounts = map[int64]int{}
 	}
-	if q.enqueuedAtCounts[item.enqueuedAtUnixNano] == 0 {
+	if q.enqueuedAtHeapEntries == nil {
+		q.enqueuedAtHeapEntries = map[int64]struct{}{}
+	}
+	if _, ok := q.enqueuedAtHeapEntries[item.enqueuedAtUnixNano]; !ok {
 		heap.Push(&q.oldestEnqueuedAt, item.enqueuedAtUnixNano)
+		q.enqueuedAtHeapEntries[item.enqueuedAtUnixNano] = struct{}{}
 	}
 	q.enqueuedAtCounts[item.enqueuedAtUnixNano]++
 }
@@ -265,7 +271,8 @@ func (q *centralQueue) untrackOldestEnqueuedAtLocked(item centralQueueItem) {
 
 func (q *centralQueue) pruneOldestEnqueuedAtLocked() {
 	for len(q.oldestEnqueuedAt) > 0 && q.enqueuedAtCounts[q.oldestEnqueuedAt[0]] == 0 {
-		heap.Pop(&q.oldestEnqueuedAt)
+		enqueuedAt := heap.Pop(&q.oldestEnqueuedAt).(int64)
+		delete(q.enqueuedAtHeapEntries, enqueuedAt)
 	}
 }
 
