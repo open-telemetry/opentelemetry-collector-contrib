@@ -15,9 +15,11 @@
 package opsrampotlpexporter // import "go.opentelemetry.io/collector/exporter/otlpexporter"
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,8 +45,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
 	"golang.org/x/net/http/httpproxy"
-	"golang.org/x/net/proxy"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -185,6 +187,15 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (err error) {
+	if e.config.ClientConfig.TLSSetting.ServerName == "" {
+		if serverName := endpointServerName(e.config.Endpoint); serverName != "" {
+			e.config.ClientConfig.TLSSetting.ServerName = serverName
+			e.settings.Logger.Info("opsrampotlp tls server name inferred",
+				zap.String("endpoint", e.config.Endpoint),
+				zap.String("server_name", serverName),
+			)
+		}
+	}
 
 	e.clientConn, err = e.config.ClientConfig.ToClientConn(
 		ctx,
@@ -192,21 +203,121 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 		e.settings,
 		configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent)),
 		configgrpc.WithGrpcDialOption(
-			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-				if httpproxy.FromEnvironment().HTTPProxy == "" {
-					return (&net.Dialer{}).Dial("tcp", addr)
+			grpc.WithContextDialer(func(dialCtx context.Context, addr string) (net.Conn, error) {
+				dialAddr := sanitizeDialAddress(addr)
+				e.settings.Logger.Debug("opsrampotlp dial attempt",
+					zap.String("addr", addr),
+					zap.String("dial_addr", dialAddr),
+					zap.String("endpoint", e.config.Endpoint),
+				)
+				if shouldBypassProxy(dialAddr) {
+					e.settings.Logger.Info("opsrampotlp dialing direct (bypass)",
+						zap.String("dial_addr", dialAddr),
+					)
+					return (&net.Dialer{}).DialContext(dialCtx, "tcp", dialAddr)
 				}
 
-				uri, er := url.Parse(httpproxy.FromEnvironment().HTTPProxy)
-				if er != nil {
-					return nil, er
+				targetURL := &url.URL{Scheme: proxyLookupScheme(e.config.Endpoint, e.config.ClientConfig.TLSSetting.Insecure), Host: dialAddr}
+				proxyURI, err := httpproxy.FromEnvironment().ProxyFunc()(targetURL)
+				if err != nil {
+					e.settings.Logger.Debug("opsrampotlp proxy resolution failed",
+						zap.String("target", targetURL.String()),
+						zap.Error(err),
+					)
+					return nil, fmt.Errorf("failed to resolve proxy from environment: %w", err)
 				}
 
-				dialer, er := proxy.FromURL(uri, proxy.Direct)
-				if er != nil {
-					return nil, er
+				// No proxy set or target excluded by NO_PROXY, connect directly.
+				if proxyURI == nil {
+					e.settings.Logger.Info("opsrampotlp dialing direct (no proxy from env)",
+						zap.String("dial_addr", dialAddr),
+						zap.String("lookup_target", targetURL.String()),
+					)
+					return (&net.Dialer{}).DialContext(dialCtx, "tcp", dialAddr)
 				}
-				return dialer.Dial("tcp", addr)
+
+				e.settings.Logger.Info("opsrampotlp dialing via proxy",
+					zap.String("dial_addr", dialAddr),
+					zap.String("proxy_host", proxyURI.Host),
+					zap.String("lookup_target", targetURL.String()),
+				)
+
+				// Step 1: TCP connect to Squid proxy
+				proxyAddr := proxyURI.Host // 172.16.7.37:3128
+				conn, err := (&net.Dialer{}).DialContext(dialCtx, "tcp", proxyAddr)
+				if err != nil {
+					e.settings.Logger.Debug("opsrampotlp proxy tcp connect failed",
+						zap.String("proxy_addr", proxyAddr),
+						zap.Error(err),
+					)
+					return nil, fmt.Errorf("failed to connect to proxy %s: %w", proxyAddr, err)
+				}
+
+				// Step 2: Send HTTP/1.1 CONNECT to Squid
+				connectReq := &http.Request{
+					Method:     "CONNECT",
+					URL:        &url.URL{Host: dialAddr},
+					Host:       dialAddr,
+					Header:     make(http.Header),
+					Proto:      "HTTP/1.1",
+					ProtoMajor: 1,
+					ProtoMinor: 1,
+				}
+
+				// Add proxy auth if present in URL
+				if proxyURI.User != nil {
+					username := proxyURI.User.Username()
+					password, _ := proxyURI.User.Password()
+					connectReq.Header.Set(
+						"Proxy-Authorization",
+						"Basic "+basicAuth(username, password),
+					)
+				}
+
+				// Write CONNECT request to proxy
+				if err := connectReq.Write(conn); err != nil {
+					e.settings.Logger.Debug("opsrampotlp proxy CONNECT write failed",
+						zap.String("dial_addr", dialAddr),
+						zap.String("proxy_addr", proxyAddr),
+						zap.Error(err),
+					)
+					conn.Close()
+					return nil, fmt.Errorf("failed to write CONNECT request: %w", err)
+				}
+
+				// Step 3: Read Squid's response.
+				// Use a shared reader so any bytes read ahead during response parsing are
+				// preserved for gRPC's HTTP/2/TLS handshakes.
+				br := bufio.NewReader(conn)
+				resp, err := http.ReadResponse(br, connectReq)
+				if err != nil {
+					e.settings.Logger.Debug("opsrampotlp proxy CONNECT read failed",
+						zap.String("dial_addr", dialAddr),
+						zap.String("proxy_addr", proxyAddr),
+						zap.Error(err),
+					)
+					conn.Close()
+					return nil, fmt.Errorf("failed to read CONNECT response: %w", err)
+				}
+
+				e.settings.Logger.Info("opsrampotlp proxy CONNECT response",
+					zap.String("dial_addr", dialAddr),
+					zap.String("proxy_addr", proxyAddr),
+					zap.Int("status_code", resp.StatusCode),
+					zap.String("status", resp.Status),
+				)
+
+				// Step 4: Check tunnel established
+				if resp.StatusCode != http.StatusOK {
+					resp.Body.Close()
+					conn.Close()
+					return nil, fmt.Errorf("proxy CONNECT failed: %s", resp.Status)
+				}
+
+				// Do not close resp.Body here. For a successful CONNECT, the response body
+				// represents the live tunnel and closing it would tear down the underlying
+				// socket before gRPC can perform its TLS and HTTP/2 handshakes.
+				return &bufferedConn{Conn: conn, reader: br}, nil
 			})),
 	)
 	if err != nil {
@@ -540,6 +651,83 @@ func getAuthTokenWithTlsDisabled(cfg SecuritySettings) (string, error) {
 	}
 
 	return credentials.AccessToken, nil
+}
+
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+type bufferedConn struct {
+	net.Conn
+	reader *bufio.Reader
+}
+
+func (c *bufferedConn) Read(p []byte) (int, error) {
+	return c.reader.Read(p)
+}
+
+func proxyLookupScheme(endpoint string, insecure bool) string {
+	if strings.HasPrefix(endpoint, "http://") {
+		return "http"
+	}
+	if strings.HasPrefix(endpoint, "https://") {
+		return "https"
+	}
+	if insecure {
+		return "http"
+	}
+
+	return "https"
+}
+
+func sanitizeDialAddress(addr string) string {
+	for _, prefix := range []string{"dns:///", "passthrough:///"} {
+		if strings.HasPrefix(addr, prefix) {
+			return strings.TrimPrefix(addr, prefix)
+		}
+	}
+
+	return addr
+}
+
+func shouldBypassProxy(addr string) bool {
+	host := addr
+	if h, _, err := net.SplitHostPort(addr); err == nil {
+		host = h
+	}
+	host = strings.Trim(host, "[]")
+
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+func endpointServerName(endpoint string) string {
+	if endpoint == "" {
+		return ""
+	}
+
+	if strings.Contains(endpoint, "://") {
+		u, err := url.Parse(endpoint)
+		if err == nil {
+			return u.Hostname()
+		}
+	}
+
+	host := endpoint
+	if idx := strings.Index(host, "/"); idx >= 0 {
+		host = host[:idx]
+	}
+
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return strings.Trim(h, "[]")
+	}
+
+	return strings.Trim(host, "[]")
 }
 
 //func initLogger() *zap.Logger {
