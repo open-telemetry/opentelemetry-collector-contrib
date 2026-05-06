@@ -5,11 +5,9 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"encoding/hex"
-	"fmt"
-	"strings"
+	"hash/fnv"
 	"time"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/schema"
@@ -154,11 +152,10 @@ type exemplarKey struct {
 }
 
 func (k exemplarKey) hash() uint64 {
-	const sep = "\xff"
-	return xxhash.Sum64String(strings.Join([]string{
-		k.ScopeName,
-		k.ScopeVersion,
-		k.MetricName,
-		fmt.Sprintf("%d", k.MetricType),
-	}, sep))
+	h := fnv.New64a()
+	h.Write([]byte(k.ScopeName))
+	h.Write([]byte(k.ScopeVersion))
+	h.Write([]byte(k.MetricName))
+	h.Write([]byte(k.MetricType.String()))
+	return h.Sum64()
 }

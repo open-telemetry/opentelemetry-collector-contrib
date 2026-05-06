@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
@@ -69,10 +68,6 @@ type prometheusRemoteWriteReceiver struct {
 	bodyBufferPool *sync.Pool
 }
 
-// labelSeparator is used as a separator when building hashes from label values.
-// 0xff is chosen because it cannot appear in valid UTF-8, avoiding accidental collisions.
-const labelSeparator = "\xff"
-
 // scopeInfo holds instrumentation scope fields extracted from otel_scope_* labels.
 type scopeInfo struct {
 	Name       string
@@ -87,21 +82,11 @@ type attribute struct {
 	Value string
 }
 
-func (si scopeInfo) key() string {
-	const fixedFields = 3 // Name, Version, SchemaURL
-	parts := make([]string, 0, fixedFields+len(si.scopeAttrs))
-	parts = append(parts, si.Name, si.Version, si.SchemaURL)
-	for _, kv := range si.scopeAttrs {
-		parts = append(parts, kv.Key+labelSeparator+kv.Value)
-	}
-	return strings.Join(parts, labelSeparator)
-}
-
 // metricIdentity contains all the components that uniquely identify a metric
 // according to the OpenTelemetry Protocol data model.
 // The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
 type metricIdentity struct {
-	ResourceID     string
+	resource       identity.Resource
 	ScopeName      string
 	ScopeVersion   string
 	ScopeSchemaURL string
@@ -112,9 +97,9 @@ type metricIdentity struct {
 }
 
 // createMetricIdentity creates a metricIdentity struct from the required components
-func createMetricIdentity(resourceID, metricName, unit string, si scopeInfo, metricType writev2.Metadata_MetricType) metricIdentity {
+func createMetricIdentity(resource identity.Resource, metricName, unit string, si scopeInfo, metricType writev2.Metadata_MetricType) metricIdentity {
 	return metricIdentity{
-		ResourceID:     resourceID,
+		resource:       resource,
 		ScopeName:      si.Name,
 		ScopeVersion:   si.Version,
 		ScopeSchemaURL: si.SchemaURL,
@@ -125,21 +110,21 @@ func createMetricIdentity(resourceID, metricName, unit string, si scopeInfo, met
 	}
 }
 
-// Hash generates a unique hash for the metric identity
+// Hash generates a unique hash for the metric identity using the identity library's hasher
+// as a foundation, extended with scope and metric fields.
 func (mi metricIdentity) Hash() uint64 {
-	parts := []string{
-		mi.ResourceID,
-		mi.ScopeName,
-		mi.ScopeVersion,
-		mi.ScopeSchemaURL,
-		mi.MetricName,
-		mi.Unit,
-		fmt.Sprintf("%d", mi.Type),
-	}
+	h := mi.resource.Hash()
+	h.Write([]byte(mi.ScopeName))
+	h.Write([]byte(mi.ScopeVersion))
+	h.Write([]byte(mi.ScopeSchemaURL))
 	for _, kv := range mi.ScopeAttrs {
-		parts = append(parts, kv.Key+labelSeparator+kv.Value)
+		h.Write([]byte(kv.Key))
+		h.Write([]byte(kv.Value))
 	}
-	return xxhash.Sum64String(strings.Join(parts, labelSeparator))
+	h.Write([]byte(mi.MetricName))
+	h.Write([]byte(mi.Unit))
+	h.Write([]byte(mi.Type.String()))
+	return h.Sum64()
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -296,7 +281,11 @@ func (*prometheusRemoteWriteReceiver) parseProto(contentType string) (remoteapi.
 // from the LRU cache when available. Never returns cached objects to avoid shared
 // mutation across concurrent requests.
 func (prw *prometheusRemoteWriteReceiver) getOrCreateRM(ls labels.Labels, otelMetrics pmetric.Metrics, reqRM map[uint64]pmetric.ResourceMetrics) (pmetric.ResourceMetrics, uint64) {
-	hashedLabels := xxhash.Sum64String(ls.Get("job") + labelSeparator + ls.Get("instance"))
+	// Build a temporary resource with the parsed job/instance attributes so we can
+	// use identity.OfResource for a consistent, attribute-based hash.
+	tempRes := pcommon.NewResource()
+	parseJobAndInstance(tempRes.Attributes(), ls.Get("job"), ls.Get("instance"))
+	hashedLabels := identity.OfResource(tempRes).Hash().Sum64()
 
 	if rm, ok := reqRM[hashedLabels]; ok {
 		return rm, hashedLabels
@@ -408,8 +397,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		resourceID := identity.OfResource(rm.Resource())
 		metricID := createMetricIdentity(
-			resourceID.String(), // Resource identity
-			metricName,          // Metric name
+			resourceID,  // Resource identity
+			metricName,  // Metric name
 			unit,                // Unit
 			si,                  // Scope info
 			ts.Metadata.Type,    // Metric type
@@ -579,15 +568,19 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 			applyScopeInfo(scope, si)
 		}
 
-		metricID := fmt.Sprintf("%s:%s:%s:%s:%s:%s",
-			resourceID.String(),
-			si.key(),
-			metricName,
-			unit,
-			fmt.Sprintf("%d", ts.Metadata.Type),
-			histogramType,
-		)
-		metricIDHash := xxhash.Sum64String(metricID)
+		histogramOpts := resourceID.Hash()
+		histogramOpts.Write([]byte(si.Name))
+		histogramOpts.Write([]byte(si.Version))
+		histogramOpts.Write([]byte(si.SchemaURL))
+		for _, kv := range si.scopeAttrs {
+			histogramOpts.Write([]byte(kv.Key))
+			histogramOpts.Write([]byte(kv.Value))
+		}
+		histogramOpts.Write([]byte(metricName))
+		histogramOpts.Write([]byte(unit))
+		histogramOpts.Write([]byte(ts.Metadata.Type.String()))
+		histogramOpts.Write([]byte(histogramType))
+		metricIDHash := histogramOpts.Sum64()
 
 		histMetric, exists := metricCache[metricIDHash]
 		if !exists {
