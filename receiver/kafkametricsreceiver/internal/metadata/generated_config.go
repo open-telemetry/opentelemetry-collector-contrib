@@ -759,7 +759,7 @@ func (ms *KafkaTopicReplicationFactorMetricConfig) Validate() error {
 	return nil
 }
 
-// MetricsConfig provides config for kafkametrics metrics.
+// MetricsConfig provides config for kafka_metrics metrics.
 type MetricsConfig struct {
 	KafkaBrokerLogRetentionPeriod KafkaBrokerLogRetentionPeriodMetricConfig `mapstructure:"kafka.broker.log_retention_period"`
 	KafkaBrokers                  KafkaBrokersMetricConfig                  `mapstructure:"kafka.brokers"`
@@ -888,7 +888,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for kafkametrics resource attributes.
+// ResourceAttributesConfig provides config for kafka_metrics resource attributes.
 type ResourceAttributesConfig struct {
 	KafkaClusterAlias ResourceAttributeConfig `mapstructure:"kafka.cluster.alias"`
 }
@@ -901,7 +901,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for kafkametrics metrics builder.
+// MetricsBuilderConfig is a configuration for kafka_metrics metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
