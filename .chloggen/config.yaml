@@ -196,6 +196,7 @@ components:
     - processor/drain
     - processor/dynatracedetector
     - processor/filter
+    - processor/genainormalizer
     - processor/geoip
     - processor/groupbyattrs
     - processor/groupbytrace
