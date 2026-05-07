@@ -1136,12 +1136,10 @@ func TestScrapeQuerySamplesExplainPlan(t *testing.T) {
 	assert.Equal(t, 1, mc.explainQueryCallCount)
 }
 
-// TestScrapeQuerySamplesNoExplain verifies that scrapeQuerySampleFunc never calls
-// explainQuery. Explain runs only in the top-query scraper; query_sample events
-// carry mysql.query_plan.hash (the digest) but not the plan itself.
-// The shared plan cache is passed through to prove that its presence does not
-// cause an unexpected explainQuery call.
-func TestScrapeQuerySamplesNoExplain(t *testing.T) {
+// TestScrapeQuerySamplesCallsExplain verifies that scrapeQuerySampleFunc calls
+// explainQuery when a digest is present. query_sample events carry mysql.query_plan
+// (fetched via EXPLAIN) and mysql.query_plan.hash when a plan is available.
+func TestScrapeQuerySamplesCallsExplain(t *testing.T) {
 	sharedCache := newTTLCache[string](100, 0)
 
 	cfg := createDefaultConfig().(*Config)
@@ -1161,6 +1159,58 @@ func TestScrapeQuerySamplesNoExplain(t *testing.T) {
 
 	assert.Equal(t, 1, mc.explainQueryCallCount,
 		"scrapeQuerySampleFunc must call explainQuery")
+}
+
+// TestScrapeQuerySamplesExplainMySQL57 verifies that scrapeQuerySamples calls
+// explainQuery for MySQL 5.7. Unlike the top-query path, scrapeQuerySamples uses
+// events_statements_current.SQL_TEXT which is available on all supported versions,
+// so EXPLAIN runs regardless of whether querySampleText is populated.
+func TestScrapeQuerySamplesExplainMySQL57(t *testing.T) {
+	v57 := mustDBVersion(t, "5.7.44")
+	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &v57}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s.sqlclient = mc
+	s.detectedVersion = mc.getDBVersion()
+
+	logs, err := s.scrapeQuerySampleFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	assert.Equal(t, 1, mc.explainQueryCallCount, "explainQuery must be called for MySQL 5.7 query samples")
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	_, hasPlan := lr.Attributes().Get("mysql.query_plan")
+	assert.True(t, hasPlan, "mysql.query_plan must be present on query_sample events for MySQL 5.7")
+}
+
+// TestScrapeQuerySamplesExplainMariaDB verifies that scrapeQuerySamples calls
+// explainQuery for MariaDB. See TestScrapeQuerySamplesExplainMySQL57 for rationale.
+func TestScrapeQuerySamplesExplainMariaDB(t *testing.T) {
+	mariadb := mustDBVersion(t, "10.11.6-MariaDB")
+	mc := &mockClient{querySamplesFile: "query_samples", dbVersionOverride: &mariadb}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+	cfg.LogsBuilderConfig.Events.DbServerQuerySample.Enabled = true
+	s := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg, newCache[int64](1), newTTLCache[string](100, 0))
+	s.sqlclient = mc
+	s.detectedVersion = mc.getDBVersion()
+
+	logs, err := s.scrapeQuerySampleFunc(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, 1, logs.ResourceLogs().Len())
+
+	assert.Equal(t, 1, mc.explainQueryCallCount, "explainQuery must be called for MariaDB query samples")
+
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	_, hasPlan := lr.Attributes().Get("mysql.query_plan")
+	assert.True(t, hasPlan, "mysql.query_plan must be present on query_sample events for MariaDB")
 }
 
 // TestLogDetectedVersion verifies the version-detection log output produced by
