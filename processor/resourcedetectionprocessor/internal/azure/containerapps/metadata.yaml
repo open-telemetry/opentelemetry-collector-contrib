@@ -1,0 +1,21 @@
+type: resourcedetectionprocessor/azurecontainerapps
+
+parent: resourcedetection
+
+resource_attributes:
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  service.instance.id:
+    description: The name of the Azure Container App replica
+    type: string
+    enabled: true
+  service.name:
+    description: The name of the Azure Container App
+    type: string
+    enabled: true
