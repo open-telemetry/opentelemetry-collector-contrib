@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.77.0-devel.0.20260213154712-e02b9359151a
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.12.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.151.0
@@ -120,8 +120,8 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
-	google.golang.org/grpc v1.80.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
+	google.golang.org/grpc v1.81.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
