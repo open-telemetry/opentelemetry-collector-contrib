@@ -1123,9 +1123,9 @@ func TestScrapeQuerySamplesExplainPlan(t *testing.T) {
 
 	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
-	// mysql.query_plan is must appear on query_sample events.
+	// mysql.query_plan must appear on query_sample events.
 	_, hasPlan := lr.Attributes().Get("mysql.query_plan")
-	assert.True(t, hasPlan, "mysql.query_plan must not be present on query_sample events")
+	assert.True(t, hasPlan, "mysql.query_plan must be present on query_sample events")
 
 	// mysql.query_plan.hash is valid on query_sample events.
 	hashVal, hasHash := lr.Attributes().Get("mysql.query_plan.hash")
