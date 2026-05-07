@@ -7,8 +7,12 @@ $defs:
         type: string
         format: duration
   strategy:
-    description: Strategy defines the interface for different failover strategies
-    type: string
+    description: Strategy is a discriminated union of failover-strategy variants. Exactly one of its sub-block fields may be non-nil; the empty value selects the standard variant with default options.
+    type: object
+    properties:
+      standard:
+        x-pointer: true
+        $ref: standard_config
 type: object
 properties:
   max_retries:
@@ -34,9 +38,6 @@ properties:
     description: QueueSettings use the exporterhelper sending_queue to move the queue to the connector to avoid data being stuck in the queue of an unhealthy exporter
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
-  standard:
-    description: Standard holds configuration that applies when Strategy is "standard".
-    $ref: standard_config
   strategy:
-    description: 'Strategy determines the failover strategy to use. Options: "standard".'
+    description: Strategy selects the failover strategy and holds its options. Exactly one variant sub-block (e.g. Standard) may be set; the absence of any variant is equivalent to selecting the standard variant with default options.
     $ref: strategy

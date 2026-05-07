@@ -5,7 +5,6 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
-	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -16,10 +15,7 @@ import (
 var (
 	errNoPipelinePriority    = errors.New("No pipelines are defined in the priority list")
 	errInvalidRetryIntervals = errors.New("Retry interval must be positive")
-	errInvalidStrategy       = errors.New("strategy is invalid")
 )
-
-var validStrategies = []Strategy{StrategyStandard}
 
 const defaultRetryInterval = 10 * time.Minute
 
@@ -35,11 +31,10 @@ type Config struct {
 	// level is considered unhealthy
 	PipelinePriority [][]pipeline.ID `mapstructure:"priority_levels"`
 
-	// Strategy determines the failover strategy to use. Options: "standard".
+	// Strategy selects the failover strategy and holds its options. Exactly one
+	// variant sub-block (e.g. Standard) may be set; the absence of any variant
+	// is equivalent to selecting the standard variant with default options.
 	Strategy Strategy `mapstructure:"strategy"`
-
-	// Standard holds configuration that applies when Strategy is "standard".
-	Standard StandardConfig `mapstructure:"standard"`
 
 	// RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over
 	// all levels below the current
@@ -57,21 +52,29 @@ type Config struct {
 	_ struct{}
 }
 
+// Strategy is a discriminated union of failover-strategy variants. Exactly one
+// of its sub-block fields may be non-nil; the empty value selects the standard
+// variant with default options.
+type Strategy struct {
+	Standard *StandardConfig `mapstructure:"standard"`
+	_        struct{}
+}
+
 type StandardConfig struct {
 	RetryInterval *time.Duration `mapstructure:"retry_interval"`
 }
 
-// effectiveRetryInterval returns the standard.retry_interval if set, otherwise
-// the deprecated top-level retry_interval, otherwise defaultRetryInterval.
+// effectiveRetryInterval returns the strategy.standard.retry_interval if set,
+// otherwise the deprecated top-level retry_interval, otherwise defaultRetryInterval.
 //
 // TODO(strategy-config): the top-level retry_interval fallback is temporary.
 // When that field is removed in a future release, this resolver collapses to a
-// direct read of c.Standard.RetryInterval (with defaultRetryInterval as the
-// only fallback).
+// direct read of c.Strategy.Standard.RetryInterval (with defaultRetryInterval
+// as the only fallback).
 func (c *Config) effectiveRetryInterval() time.Duration {
 	switch {
-	case c.Standard.RetryInterval != nil:
-		return *c.Standard.RetryInterval
+	case c.Strategy.Standard != nil && c.Strategy.Standard.RetryInterval != nil:
+		return *c.Strategy.Standard.RetryInterval
 	case c.RetryInterval != nil:
 		return *c.RetryInterval
 	default:
@@ -87,11 +90,8 @@ func (c *Config) Validate() error {
 	if c.RetryInterval != nil && *c.RetryInterval <= 0 {
 		return errInvalidRetryIntervals
 	}
-	if c.Standard.RetryInterval != nil && *c.Standard.RetryInterval <= 0 {
+	if c.Strategy.Standard != nil && c.Strategy.Standard.RetryInterval != nil && *c.Strategy.Standard.RetryInterval <= 0 {
 		return errInvalidRetryIntervals
-	}
-	if !slices.Contains(validStrategies, c.Strategy) {
-		return errInvalidStrategy
 	}
 	return nil
 }

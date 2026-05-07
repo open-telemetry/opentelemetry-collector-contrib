@@ -29,9 +29,6 @@ func NewFactory() connector.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
-		Strategy:      StrategyStandard,
-		RetryGap:      0,
-		MaxRetries:    0,
 	}
 }
 

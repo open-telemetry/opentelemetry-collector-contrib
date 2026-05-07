@@ -26,7 +26,7 @@ func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*
 	}
 
 	// Create the appropriate strategy based on the failover mode
-	factory := getFailoverStrategyFactory(cfg.Strategy)
+	factory := cfg.Strategy.selectFactory()
 	strategy := factory.CreateTracesStrategy(failover)
 
 	return &tracesRouter{

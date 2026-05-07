@@ -24,7 +24,8 @@ func TestStrategies(t *testing.T) {
 		name     string
 		strategy Strategy
 	}{
-		{name: "standard", strategy: StrategyStandard},
+		{name: "default", strategy: Strategy{}},
+		{name: "standard", strategy: Strategy{Standard: &StandardConfig{}}},
 	}
 
 	for _, s := range strategies {

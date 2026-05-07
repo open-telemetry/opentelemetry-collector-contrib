@@ -34,7 +34,6 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
 					},
 				},
-				Strategy: StrategyStandard,
 			},
 		},
 		{
@@ -56,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, "fourth"),
 					},
 				},
-				Strategy:      StrategyStandard,
 				RetryInterval: durationPtr(5 * time.Minute),
 			},
 		},
@@ -68,8 +66,7 @@ func TestLoadConfig(t *testing.T) {
 					{pipeline.NewIDWithName(pipeline.SignalTraces, "first")},
 					{pipeline.NewIDWithName(pipeline.SignalTraces, "second")},
 				},
-				Strategy: StrategyStandard,
-				Standard: StandardConfig{RetryInterval: durationPtr(5 * time.Minute)},
+				Strategy: Strategy{Standard: &StandardConfig{RetryInterval: durationPtr(5 * time.Minute)}},
 			},
 		},
 	}
@@ -107,11 +104,6 @@ func TestValidateConfig(t *testing.T) {
 			name: "invalid retry_interval",
 			id:   component.NewIDWithName(metadata.Type, "invalid"),
 			err:  errInvalidRetryIntervals,
-		},
-		{
-			name: "invalid strategy",
-			id:   component.NewIDWithName(metadata.Type, "invalid_strategy"),
-			err:  errInvalidStrategy,
 		},
 	}
 

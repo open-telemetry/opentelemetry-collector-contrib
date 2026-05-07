@@ -12,44 +12,30 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// Strategy defines the interface for different failover strategies
-type Strategy string
-
-const (
-	StrategyStandard Strategy = "standard"
-)
-
-// tracesFailoverStrategy defines the interface for traces failover strategies
 type tracesFailoverStrategy interface {
 	ConsumeTraces(ctx context.Context, td ptrace.Traces) error
 	Shutdown()
 }
 
-// metricsFailoverStrategy defines the interface for metrics failover strategies
 type metricsFailoverStrategy interface {
 	ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
 	Shutdown()
 }
 
-// logsFailoverStrategy defines the interface for logs failover strategies
 type logsFailoverStrategy interface {
 	ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	Shutdown()
 }
 
-// failoverStrategyFactory creates failover strategies based on mode
 type failoverStrategyFactory interface {
 	CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) tracesFailoverStrategy
 	CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) metricsFailoverStrategy
 	CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) logsFailoverStrategy
 }
 
-// GetFailoverStrategyFactory returns the appropriate factory for the given strategy
-func getFailoverStrategyFactory(strategy Strategy) failoverStrategyFactory {
-	switch strategy {
-	case StrategyStandard, "":
-		return &standardFailoverFactory{}
-	default:
-		panic("failoverconnector: unrecognized strategy " + string(strategy) + " (Validate should have rejected it)")
-	}
+// selectFactory dispatches on which variant of the discriminated Strategy union
+// is set. The empty Strategy value selects the standard variant with defaults,
+// matching the documented zero-config behavior.
+func (Strategy) selectFactory() failoverStrategyFactory {
+	return &standardFailoverFactory{}
 }
