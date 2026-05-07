@@ -249,7 +249,8 @@ func TestConsumeTraces_ConcurrentBackendSends(t *testing.T) {
 	endpointByID := make(map[string]struct{})
 	for i := range 200 {
 		id := fmt.Sprintf("service-%d", i)
-		_, endpoint, err := p.loadBalancer.exporterAndEndpoint([]byte(id))
+		routingKey := buildAttributeRoutingKeyStrValue("service.name", id)
+		_, endpoint, err := p.loadBalancer.exporterAndEndpoint([]byte(routingKey))
 		require.NoError(t, err)
 		if _, ok := endpointByID[endpoint]; ok {
 			continue
