@@ -9,16 +9,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
 )
 
 func NewFactory() connector.Factory {
-	return connector.NewFactory(
+	return xconnector.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		xconnector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		xconnector.WithDeprecatedTypeAlias(metadata.DeprecatedType),
 	)
 }
 
