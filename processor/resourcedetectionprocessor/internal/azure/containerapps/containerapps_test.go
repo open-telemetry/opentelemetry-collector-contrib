@@ -39,6 +39,6 @@ func TestDetector_Detect_NotContainerApp(t *testing.T) {
 	require.NoError(t, err)
 	res, schemaURL, err := containerAppDetector.Detect(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.Equal(t, 0, res.Attributes().Len(), "Resource object should be empty")
 }

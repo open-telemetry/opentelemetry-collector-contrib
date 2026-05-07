@@ -21,7 +21,7 @@ const (
 
 	// Environment variables that are set when running in Azure Container Apps.
 	// https://learn.microsoft.com/en-us/azure/container-apps/environment-variables?tabs=portal#built-in-environment-variables
-	containerAppNameEnvVar = "CONTAINER_APP_NAME"
+	containerAppNameEnvVar        = "CONTAINER_APP_NAME"
 	containerAppReplicaNameEnvVar = "CONTAINER_APP_REPLICA_NAME"
 )
 
