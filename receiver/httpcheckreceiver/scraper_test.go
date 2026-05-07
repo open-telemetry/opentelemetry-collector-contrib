@@ -582,13 +582,14 @@ func TestGetDurationsSubMillisecondPrecision(t *testing.T) {
 	timing.readStart.Store(base)
 	timing.readEnd.Store(base + 100*microsecond)
 
-	dnsMs, tcpMs, tlsMs, requestMs, responseMs := timing.getDurations()
+	dnsNs, tcpNs, tlsNs, requestNs, responseNs := timing.getDurations()
 
-	assert.InDelta(t, 0.5, dnsMs, 0.001)
-	assert.InDelta(t, 0.3, tcpMs, 0.001)
-	assert.InDelta(t, 0.8, tlsMs, 0.001)
-	assert.InDelta(t, 0.2, requestMs, 0.001)
-	assert.InDelta(t, 0.1, responseMs, 0.001)
+	// With nanoseconds, 500µs = 500,000 ns (never 0 regardless of platform)
+	assert.Equal(t, int64(500*microsecond), dnsNs)
+	assert.Equal(t, int64(300*microsecond), tcpNs)
+	assert.Equal(t, int64(800*microsecond), tlsNs)
+	assert.Equal(t, int64(200*microsecond), requestNs)
+	assert.Equal(t, int64(100*microsecond), responseNs)
 }
 
 // TestTimingMetricsNonZeroValues is a regression test for
@@ -620,7 +621,7 @@ func TestTimingMetricsNonZeroValues(t *testing.T) {
 
 	ilm := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0)
 
-	timingValues := make(map[string]float64)
+	timingValues := make(map[string]int64)
 	for i := 0; i < ilm.Metrics().Len(); i++ {
 		m := ilm.Metrics().At(i)
 		switch m.Name() {
@@ -630,19 +631,19 @@ func TestTimingMetricsNonZeroValues(t *testing.T) {
 			"httpcheck.response.duration":
 			require.Equal(t, pmetric.MetricTypeGauge, m.Type(), "metric %s should be a gauge", m.Name())
 			require.Positive(t, m.Gauge().DataPoints().Len())
-			timingValues[m.Name()] = m.Gauge().DataPoints().At(0).DoubleValue()
+			timingValues[m.Name()] = m.Gauge().DataPoints().At(0).IntValue()
 		}
 	}
 	assert.Len(t, timingValues, 4)
 
-	// The key assertion is that these metrics use DoubleValue() (not IntValue()),
-	// which is what DoubleValue() calls above already verify.
-	// Phase durations may be 0 on some platforms (e.g. Windows loopback does not
-	// always fire all httptrace callbacks), so we only assert non-negative.
-	assert.GreaterOrEqual(t, timingValues["httpcheck.dns.lookup.duration"], float64(0))
-	assert.GreaterOrEqual(t, timingValues["httpcheck.client.connection.duration"], float64(0))
-	assert.GreaterOrEqual(t, timingValues["httpcheck.client.request.duration"], float64(0))
-	assert.GreaterOrEqual(t, timingValues["httpcheck.response.duration"], float64(0))
+	// Timing values are in nanoseconds. They may be 0 on some platforms (e.g.
+	// Windows loopback where httptrace callbacks don't always fire), so we only
+	// assert non-negative. The unit test TestGetDurationsSubMillisecondPrecision
+	// verifies the sub-millisecond precision numerically.
+	assert.GreaterOrEqual(t, timingValues["httpcheck.dns.lookup.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.client.connection.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.client.request.duration"], int64(0))
+	assert.GreaterOrEqual(t, timingValues["httpcheck.response.duration"], int64(0))
 }
 
 func TestRequestBodySupport(t *testing.T) {

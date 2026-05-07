@@ -79,19 +79,19 @@ type metricHttpcheckClientConnectionDuration struct {
 func (m *metricHttpcheckClientConnectionDuration) init() {
 	m.data.SetName("httpcheck.client.connection.duration")
 	m.data.SetDescription("Time spent establishing TCP connection to the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHttpcheckClientConnectionDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, httpURLAttributeValue string, networkTransportAttributeValue string) {
+func (m *metricHttpcheckClientConnectionDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string, networkTransportAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
 	dp.Attributes().PutStr("network.transport", networkTransportAttributeValue)
 }
@@ -132,19 +132,19 @@ type metricHttpcheckClientRequestDuration struct {
 func (m *metricHttpcheckClientRequestDuration) init() {
 	m.data.SetName("httpcheck.client.request.duration")
 	m.data.SetDescription("Time spent sending the HTTP request to the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHttpcheckClientRequestDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (m *metricHttpcheckClientRequestDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
 }
 
@@ -184,19 +184,19 @@ type metricHttpcheckDNSLookupDuration struct {
 func (m *metricHttpcheckDNSLookupDuration) init() {
 	m.data.SetName("httpcheck.dns.lookup.duration")
 	m.data.SetDescription("Time spent performing DNS lookup for the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHttpcheckDNSLookupDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (m *metricHttpcheckDNSLookupDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
 }
 
@@ -343,19 +343,19 @@ type metricHttpcheckResponseDuration struct {
 func (m *metricHttpcheckResponseDuration) init() {
 	m.data.SetName("httpcheck.response.duration")
 	m.data.SetDescription("Time spent receiving the HTTP response from the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHttpcheckResponseDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (m *metricHttpcheckResponseDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
 }
 
@@ -559,19 +559,19 @@ type metricHttpcheckTLSHandshakeDuration struct {
 func (m *metricHttpcheckTLSHandshakeDuration) init() {
 	m.data.SetName("httpcheck.tls.handshake.duration")
 	m.data.SetDescription("Time spent performing TLS handshake with the endpoint.")
-	m.data.SetUnit("ms")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHttpcheckTLSHandshakeDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (m *metricHttpcheckTLSHandshakeDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
 }
 
@@ -867,17 +867,17 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordHttpcheckClientConnectionDurationDataPoint adds a data point to httpcheck.client.connection.duration metric.
-func (mb *MetricsBuilder) RecordHttpcheckClientConnectionDurationDataPoint(ts pcommon.Timestamp, val float64, httpURLAttributeValue string, networkTransportAttributeValue string) {
+func (mb *MetricsBuilder) RecordHttpcheckClientConnectionDurationDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string, networkTransportAttributeValue string) {
 	mb.metricHttpcheckClientConnectionDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue, networkTransportAttributeValue)
 }
 
 // RecordHttpcheckClientRequestDurationDataPoint adds a data point to httpcheck.client.request.duration metric.
-func (mb *MetricsBuilder) RecordHttpcheckClientRequestDurationDataPoint(ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (mb *MetricsBuilder) RecordHttpcheckClientRequestDurationDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	mb.metricHttpcheckClientRequestDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
 }
 
 // RecordHttpcheckDNSLookupDurationDataPoint adds a data point to httpcheck.dns.lookup.duration metric.
-func (mb *MetricsBuilder) RecordHttpcheckDNSLookupDurationDataPoint(ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (mb *MetricsBuilder) RecordHttpcheckDNSLookupDurationDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	mb.metricHttpcheckDNSLookupDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
 }
 
@@ -892,7 +892,7 @@ func (mb *MetricsBuilder) RecordHttpcheckErrorDataPoint(ts pcommon.Timestamp, va
 }
 
 // RecordHttpcheckResponseDurationDataPoint adds a data point to httpcheck.response.duration metric.
-func (mb *MetricsBuilder) RecordHttpcheckResponseDurationDataPoint(ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (mb *MetricsBuilder) RecordHttpcheckResponseDurationDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	mb.metricHttpcheckResponseDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
 }
 
@@ -912,7 +912,7 @@ func (mb *MetricsBuilder) RecordHttpcheckTLSCertRemainingDataPoint(ts pcommon.Ti
 }
 
 // RecordHttpcheckTLSHandshakeDurationDataPoint adds a data point to httpcheck.tls.handshake.duration metric.
-func (mb *MetricsBuilder) RecordHttpcheckTLSHandshakeDurationDataPoint(ts pcommon.Timestamp, val float64, httpURLAttributeValue string) {
+func (mb *MetricsBuilder) RecordHttpcheckTLSHandshakeDurationDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
 	mb.metricHttpcheckTLSHandshakeDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
 }
 
