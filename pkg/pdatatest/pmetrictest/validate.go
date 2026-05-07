@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
@@ -32,21 +33,13 @@ func ValidateMetrics(md pmetric.Metrics) error {
 				if err := validateDatapointUniqueness(m); err != nil {
 					errPrefix := fmt.Sprintf(`resource "%v": scope %q: metric %q`,
 						rm.Resource().Attributes().AsRaw(), sm.Scope().Name(), m.Name())
-					errs = multierr.Append(errs, addErrPrefix(errPrefix, err))
+					errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, err))
 				}
 			}
 		}
 	}
 
 	return errs
-}
-
-func addErrPrefix(prefix string, in error) error {
-	var out error
-	for _, err := range multierr.Errors(in) {
-		out = multierr.Append(out, fmt.Errorf("%s: %w", prefix, err))
-	}
-	return out
 }
 
 // validateDatapointUniqueness checks that no two datapoints within the given
