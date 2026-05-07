@@ -90,6 +90,24 @@ $defs:
       node_from_env_var:
         description: 'NodeFromEnv can be used to extract the node name from an environment variable. The value must be the name of the environment variable. This is useful when the node a Otel agent will run on cannot be predicted. In such cases, the Kubernetes downward API can be used to add the node name to each pod as an environment variable. K8s tagger can then read this value and filter pods by it. For example, node name can be passed to each agent with the downward API as follows env: - name: K8S_NODE_NAME valueFrom: fieldRef: fieldPath: spec.nodeName Then the NodeFromEnv field can be set to `K8S_NODE_NAME` to filter all pods by the node that the agent is running on. More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/'
         type: string
+  node_association_config:
+    description: NodeAssociationConfig contain single rule on how to associate node metadata with logs, spans and metrics
+    type: object
+    properties:
+      sources:
+        description: List of node association sources which should be taken to identify a node
+        type: array
+        items:
+          $ref: node_association_source_config
+  node_association_source_config:
+    type: object
+    properties:
+      from:
+        description: From represents the source of the association. Allowed value is only "resource_attribute".
+        type: string
+      name:
+        description: Name represents extracted key name. e.g. k8s.node.name, node_uid, my.custom.node.attribute
+        type: string
   pod_association_config:
     description: PodAssociationConfig contain single rule how to associate Pod metadata with logs, spans and metrics
     type: object
@@ -120,6 +138,11 @@ properties:
   filter:
     description: Filter section allows specifying filters to filter pods by labels, fields, namespaces, nodes, etc.
     $ref: filter_config
+  node_association:
+    description: Node Association section allows to define rules for tagging spans, metrics, and logs with Node metadata.
+    type: array
+    items:
+      $ref: node_association_config
   passthrough:
     description: Passthrough mode only annotates resources with the pod IP and does not try to extract any other metadata. It does not need access to the K8S cluster API. Agent/Collector must receive spans directly from services to be able to correctly detect the pod IPs.
     type: boolean

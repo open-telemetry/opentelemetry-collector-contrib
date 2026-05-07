@@ -277,6 +277,7 @@ func createProcessorOpts(cfg component.Config) []option {
 		withFilterFields(oCfg.Filter.Fields...),
 		withAPIConfig(oCfg.APIConfig),
 		withExtractPodAssociations(oCfg.Association...),
+		withExtractNodeAssociations(oCfg.NodeAssociation...),
 		withExcludes(oCfg.Exclude),
 		withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout))
 

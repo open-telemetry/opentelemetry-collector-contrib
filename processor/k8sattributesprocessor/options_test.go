@@ -733,6 +733,51 @@ func TestWithExtractPodAssociation(t *testing.T) {
 	}
 }
 
+func TestWithExtractNodeAssociations(t *testing.T) {
+	tests := []struct {
+		name string
+		args []NodeAssociationConfig
+		want []kube.Association
+	}{
+		{
+			"empty",
+			[]NodeAssociationConfig{},
+			[]kube.Association{},
+		},
+		{
+			"basic",
+			[]NodeAssociationConfig{
+				{
+					Sources: []NodeAssociationSourceConfig{
+						{
+							From: "label",
+							Name: "node",
+						},
+					},
+				},
+			},
+			[]kube.Association{
+				{
+					Sources: []kube.AssociationSource{
+						{
+							From: "label",
+							Name: "node",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &kubernetesprocessor{}
+			opt := withExtractNodeAssociations(tt.args...)
+			assert.NoError(t, opt(p))
+			assert.Equal(t, tt.want, p.nodeAssociations)
+		})
+	}
+}
+
 func TestWithExcludes(t *testing.T) {
 	tests := []struct {
 		name string

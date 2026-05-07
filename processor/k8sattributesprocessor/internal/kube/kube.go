@@ -30,8 +30,9 @@ const (
 	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
 	MetadataFromDaemonSet = "daemonset"
 	// MetadataFromJob  is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob        = "job"
-	PodIdentifierMaxLength = 4
+	MetadataFromJob         = "job"
+	PodIdentifierMaxLength  = 4
+	NodeIdentifierMaxLength = 2
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
@@ -59,7 +60,7 @@ func PodIdentifierAttributeFromSource(source AssociationSource, value string) Po
 	}
 }
 
-// PodIdentifierAttributeFromSource builds PodIdentifierAttribute for connection with given value
+// PodIdentifierAttributeFromConnection builds PodIdentifierAttribute for connection with given value
 func PodIdentifierAttributeFromConnection(value string) PodIdentifierAttribute {
 	return PodIdentifierAttributeFromSource(
 		AssociationSource{
@@ -70,9 +71,42 @@ func PodIdentifierAttributeFromConnection(value string) PodIdentifierAttribute {
 	)
 }
 
-// PodIdentifierAttributeFromSource builds PodIdentifierAttribute for given resource_attribute name and value
+// PodIdentifierAttributeFromResourceAttribute builds PodIdentifierAttribute for given resource_attribute name and value
 func PodIdentifierAttributeFromResourceAttribute(key, value string) PodIdentifierAttribute {
 	return PodIdentifierAttributeFromSource(
+		AssociationSource{
+			From: ResourceSource,
+			Name: key,
+		},
+		value,
+	)
+}
+
+// NodeIdentifierAttribute represents AssociationSource with matching value for node
+type NodeIdentifierAttribute struct {
+	Source AssociationSource
+	Value  string
+}
+
+// NodeIdentifier is a custom type to represent node identification
+type NodeIdentifier [NodeIdentifierMaxLength]NodeIdentifierAttribute
+
+// IsNotEmpty checks if NodeIdentifier is empty or not
+func (n *NodeIdentifier) IsNotEmpty() bool {
+	return n[0].Source.From != ""
+}
+
+// NodeIdentifierAttributeFromSource builds NodeIdentifierAttribute using AssociationSource and value
+func NodeIdentifierAttributeFromSource(source AssociationSource, value string) NodeIdentifierAttribute {
+	return NodeIdentifierAttribute{
+		Source: source,
+		Value:  value,
+	}
+}
+
+// NodeIdentifierAttributeFromResourceAttribute builds NodeIdentifierAttributeFromResourceAttribute for given resource_attribute name and value
+func NodeIdentifierAttributeFromResourceAttribute(key, value string) NodeIdentifierAttribute {
+	return NodeIdentifierAttributeFromSource(
 		AssociationSource{
 			From: ResourceSource,
 			Name: key,

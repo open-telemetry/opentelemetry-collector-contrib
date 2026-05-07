@@ -226,6 +226,23 @@ wait_for_metadata: true
 wait_for_metadata_timeout: 10s
 ```
 
+### Node Association
+
+Node association is useful for telemetry that is scoped to a node but not to a specific pod, for example, node-level metrics from kube-state-metrics (like `kube_node_*` series), kubelet metrics about the node itself, or host-level metrics from a node exporter.
+
+Example configuration:
+
+```yaml
+node_association:
+  - sources:
+    - from: resource_attribute
+      name: my.custom.node.name.attribute
+```
+
+If the node association rules are not configured, the processor falls back to using the `k8s.node.name` resource attribute if present.
+
+> **NOTE**: Unlike pod association, node association only supports `resource_attribute` source (not `connection`).
+
 ## Extracting attributes from pod labels and annotations
 
 The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces, deployments, statefulsets, daemonsets, jobs and nodes.

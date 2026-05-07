@@ -391,6 +391,28 @@ func withExtractPodAssociations(podAssociations ...PodAssociationConfig) option 
 	}
 }
 
+func withExtractNodeAssociations(nodeAssociations ...NodeAssociationConfig) option {
+	return func(p *kubernetesprocessor) error {
+		associations := make([]kube.Association, 0, len(nodeAssociations))
+		var assoc kube.Association
+		for _, association := range nodeAssociations {
+			assoc = kube.Association{
+				Sources: []kube.AssociationSource{},
+			}
+
+			for _, associationSource := range association.Sources {
+				assoc.Sources = append(assoc.Sources, kube.AssociationSource{
+					From: associationSource.From,
+					Name: associationSource.Name,
+				})
+			}
+			associations = append(associations, assoc)
+		}
+		p.nodeAssociations = associations
+		return nil
+	}
+}
+
 // withExcludes allows specifying pods to exclude
 func withExcludes(podExclude ExcludeConfig) option {
 	return func(p *kubernetesprocessor) error {
