@@ -88,7 +88,7 @@ func validateDatapointUniqueness(m pmetric.Metric) error {
 // using a callback, since the various datapoint slice types share no common interface.
 func extractAttributeMaps(count int, getAttrs func(int) pcommon.Map) []pcommon.Map {
 	attrs := make([]pcommon.Map, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		attrs[i] = getAttrs(i)
 	}
 	return attrs

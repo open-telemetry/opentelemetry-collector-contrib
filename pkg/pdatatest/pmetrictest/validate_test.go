@@ -266,7 +266,7 @@ func TestValidateMetrics(t *testing.T) {
 		m.SetEmptyGauge()
 
 		// Three datapoints with same attributes → indices 1 and 2 are duplicates of index 0.
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.Attributes().PutStr("key", "same")
 		}
