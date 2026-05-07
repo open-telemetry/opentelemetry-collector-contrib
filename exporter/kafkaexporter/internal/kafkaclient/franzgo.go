@@ -54,16 +54,20 @@ type RecordHeader struct {
 // maintaining compatibility with the existing Kafka exporter code.
 type FranzSyncProducer struct {
 	client          *kgo.Client
+	clientCancel    context.CancelFunc
 	metadataKeys    []string
 	recordHeaders   []kgo.RecordHeader
 	maxMessageBytes int
 }
 
 // NewFranzSyncProducer Franz-go producer from a kgo.Client and a Messenger.
+// clientCancel must cancel the context passed to kgo.WithContext when the client was created;
+// it is called by Close to unblock any in-flight ProduceSync calls.
 func NewFranzSyncProducer(client *kgo.Client,
 	metadataKeys []string,
 	recordHeaders []RecordHeader,
 	maxMessageBytes int,
+	clientCancel context.CancelFunc,
 ) *FranzSyncProducer {
 	headers := make([]kgo.RecordHeader, 0, len(recordHeaders))
 	for _, pair := range recordHeaders {
@@ -75,6 +79,7 @@ func NewFranzSyncProducer(client *kgo.Client,
 
 	return &FranzSyncProducer{
 		client:          client,
+		clientCancel:    clientCancel,
 		metadataKeys:    metadataKeys,
 		recordHeaders:   headers,
 		maxMessageBytes: maxMessageBytes,
@@ -107,10 +112,22 @@ func (p *FranzSyncProducer) ExportData(ctx context.Context, msgs Messages) error
 	return errors.Join(errs...)
 }
 
-// Close shuts down the producer and flushes any remaining messages.
-func (p *FranzSyncProducer) Close() error {
-	p.client.Close()
-	return nil
+// Close shuts down the producer, unblocking any in-flight ExportData call.
+func (p *FranzSyncProducer) Close(ctx context.Context) error {
+	if p.clientCancel != nil {
+		p.clientCancel()
+	}
+	done := make(chan struct{})
+	go func() {
+		p.client.Close()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func makeFranzMessages(messages Messages, recordHeaders, metadataHeaders []kgo.RecordHeader) []*kgo.Record {
