@@ -1,4 +1,4 @@
-k8sobjects:
+k8s_objects:
   include_initial_state: false
   objects:
     - name: pods
@@ -11,7 +11,7 @@ k8sobjects:
       group: events.k8s.io
       namespaces: [default]
       exclude_watch_type: [DELETED]
-k8sobjects/pull_with_resource:
+k8s_objects/pull_with_resource:
   include_initial_state: false
   objects:
     - name: pods
@@ -21,7 +21,7 @@ k8sobjects/pull_with_resource:
     - name: events
       mode: pull
       interval: 1h
-k8sobjects/watch_with_resource:
+k8s_objects/watch_with_resource:
   objects:
     - name: events
       mode: watch
@@ -32,7 +32,7 @@ k8sobjects/watch_with_resource:
       group: events.k8s.io
       namespaces: [default]
       resource_version: "2"
-k8sobjects/watch_with_initial_state:
+k8s_objects/watch_with_initial_state:
   include_initial_state: true
   objects:
     - name: pods
@@ -42,28 +42,28 @@ k8sobjects/watch_with_initial_state:
       mode: watch
       group: events.k8s.io
       namespaces: [default]
-k8sobjects/watch_without_initial_state:
+k8s_objects/watch_without_initial_state:
   include_initial_state: false
   objects:
     - name: events
       mode: watch
       group: events.k8s.io
       namespaces: [default]
-k8sobjects/invalid_resource:
+k8s_objects/invalid_resource:
   objects:
     - name: fake_resource
       mode: watch
-k8sobjects/exclude_deleted_with_pull:
+k8s_objects/exclude_deleted_with_pull:
   include_initial_state: false
   objects:
     - name: events
       mode: pull
       exclude_watch_type: [DELETED]
-k8sobjects/invalid_mode:
+k8s_objects/invalid_mode:
   objects:
     - name: pods
       mode: invalid_mode
-k8sobjects/exclude_namespaces:
+k8s_objects/exclude_namespaces:
   objects:
     - name: pods
       mode: watch

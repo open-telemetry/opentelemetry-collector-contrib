@@ -1,4 +1,5 @@
-type: servicegraph
+type: service_graph
+deprecated_type: servicegraph
 display_name: Service Graph Connector
 
 status:

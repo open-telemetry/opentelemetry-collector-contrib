@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 
-	testMetrics := metadata.DefaultMetricsBuilderConfig()
+	testMetrics := metadata.NewDefaultMetricsBuilderConfig()
 	testMetrics.Metrics.SnowflakeDatabaseBytesScannedAvg.Enabled = true
 	testMetrics.Metrics.SnowflakeQueryBytesDeletedAvg.Enabled = false
 
