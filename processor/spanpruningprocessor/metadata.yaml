@@ -1,3 +1,4 @@
+display_name: Span Pruning Processor
 type: spanpruning
 
 status:
@@ -6,7 +7,7 @@ status:
     alpha: [traces]
   distributions: [contrib]
   codeowners:
-    active: [portertech]
+    active: [portertech, csmarchbanks]
 
 telemetry:
   metrics:

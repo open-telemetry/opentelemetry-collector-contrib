@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/kafkaclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka"
 )
 
@@ -141,6 +142,9 @@ type Config struct {
 
 	// IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
 	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
+
+	// RecordHeaders sets static headers on every outgoing Kafka record.
+	RecordHeaders []kafkaclient.RecordHeader `mapstructure:"record_headers"`
 
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`

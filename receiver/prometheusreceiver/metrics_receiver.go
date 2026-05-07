@@ -193,7 +193,7 @@ func (r *pReceiver) initPrometheusComponents(
 			Set(reflect.ValueOf(true))
 	}
 
-	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, store, nil, r.registerer)
+	scrapeManager, err := scrape.NewManager(scrapeOpts, logger, nil, nil, store, r.registerer)
 	if err != nil {
 		return err
 	}
@@ -306,14 +306,14 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 				f(w, r)
 			}
 		},
-		o.LocalStorage,   // nil
-		o.TSDBDir,        // nil
-		o.EnableAdminAPI, // nil
+		nil,              // TSDBAdminStats
+		o.TSDBDir,        // ""
+		o.EnableAdminAPI, // false
 		logger,
 		factoryRr,
-		o.RemoteReadSampleLimit,      // nil
-		o.RemoteReadConcurrencyLimit, // nil
-		o.RemoteReadBytesInFrame,     // nil
+		o.RemoteReadSampleLimit,      // 0
+		o.RemoteReadConcurrencyLimit, // 0
+		o.RemoteReadBytesInFrame,     // 0
 		o.IsAgent,
 		o.CORSOrigin,
 		func() (api_v1.RuntimeInfo, error) {

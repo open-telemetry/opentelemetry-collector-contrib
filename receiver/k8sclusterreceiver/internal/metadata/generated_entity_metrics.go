@@ -910,6 +910,141 @@ func (e *K8sServiceEntity) copyToResource(cfg ResourceAttributesConfig, res pcom
 	}
 }
 
+// K8sPersistentvolumeEntity represents a k8s.persistentvolume entity.
+// Create one with NewK8sPersistentvolumeEntity and pass it to EmitForEntity.
+type K8sPersistentvolumeEntity struct {
+	k8sPersistentvolumeUID           string
+	k8sPersistentvolumeName          string
+	k8sStorageclassName              string
+	k8sPersistentvolumeReclaimPolicy string
+}
+
+// NewK8sPersistentvolumeEntity creates a new K8sPersistentvolumeEntity.
+// Identity attributes are required and must be provided at construction time.
+func NewK8sPersistentvolumeEntity(k8sPersistentvolumeUID string) *K8sPersistentvolumeEntity {
+	return &K8sPersistentvolumeEntity{
+		k8sPersistentvolumeUID: k8sPersistentvolumeUID,
+	}
+}
+
+// Description attribute setters for k8s.persistentvolume.
+
+// SetK8sPersistentvolumeName sets the k8s.persistentvolume.name description attribute.
+func (e *K8sPersistentvolumeEntity) SetK8sPersistentvolumeName(val string) {
+	e.k8sPersistentvolumeName = val
+}
+
+// SetK8sStorageclassName sets the k8s.storageclass.name description attribute.
+func (e *K8sPersistentvolumeEntity) SetK8sStorageclassName(val string) {
+	e.k8sStorageclassName = val
+}
+
+// SetK8sPersistentvolumeReclaimPolicy sets the k8s.persistentvolume.reclaim_policy description attribute.
+func (e *K8sPersistentvolumeEntity) SetK8sPersistentvolumeReclaimPolicy(val string) {
+	e.k8sPersistentvolumeReclaimPolicy = val
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sPersistentvolumeEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sPersistentvolumeUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.persistentvolume")
+		ent.IdentifyingAttributes().PutStr("k8s.persistentvolume.uid", e.k8sPersistentvolumeUID)
+		if cfg.K8sPersistentvolumeName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.persistentvolume.name", e.k8sPersistentvolumeName)
+		}
+		if cfg.K8sStorageclassName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.storageclass.name", e.k8sStorageclassName)
+		}
+		if cfg.K8sPersistentvolumeReclaimPolicy.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.persistentvolume.reclaim_policy", e.k8sPersistentvolumeReclaimPolicy)
+		}
+	} else {
+		if cfg.K8sPersistentvolumeUID.Enabled {
+			res.Attributes().PutStr("k8s.persistentvolume.uid", e.k8sPersistentvolumeUID)
+		}
+		if cfg.K8sPersistentvolumeName.Enabled {
+			res.Attributes().PutStr("k8s.persistentvolume.name", e.k8sPersistentvolumeName)
+		}
+		if cfg.K8sStorageclassName.Enabled {
+			res.Attributes().PutStr("k8s.storageclass.name", e.k8sStorageclassName)
+		}
+		if cfg.K8sPersistentvolumeReclaimPolicy.Enabled {
+			res.Attributes().PutStr("k8s.persistentvolume.reclaim_policy", e.k8sPersistentvolumeReclaimPolicy)
+		}
+	}
+}
+
+// K8sPersistentvolumeclaimEntity represents a k8s.persistentvolumeclaim entity.
+// Create one with NewK8sPersistentvolumeclaimEntity and pass it to EmitForEntity.
+type K8sPersistentvolumeclaimEntity struct {
+	k8sPersistentvolumeclaimUID  string
+	k8sPersistentvolumeclaimName string
+	k8sNamespaceName             string
+	k8sStorageclassName          string
+}
+
+// NewK8sPersistentvolumeclaimEntity creates a new K8sPersistentvolumeclaimEntity.
+// Identity attributes are required and must be provided at construction time.
+func NewK8sPersistentvolumeclaimEntity(k8sPersistentvolumeclaimUID string) *K8sPersistentvolumeclaimEntity {
+	return &K8sPersistentvolumeclaimEntity{
+		k8sPersistentvolumeclaimUID: k8sPersistentvolumeclaimUID,
+	}
+}
+
+// Description attribute setters for k8s.persistentvolumeclaim.
+
+// SetK8sPersistentvolumeclaimName sets the k8s.persistentvolumeclaim.name description attribute.
+func (e *K8sPersistentvolumeclaimEntity) SetK8sPersistentvolumeclaimName(val string) {
+	e.k8sPersistentvolumeclaimName = val
+}
+
+// Extra attribute setters for k8s.persistentvolumeclaim.
+// These attributes are contextually relevant but are not part of the entity's identity or description.
+
+// SetK8sNamespaceName sets the k8s.namespace.name extra attribute on the resource.
+func (e *K8sPersistentvolumeclaimEntity) SetK8sNamespaceName(val string) {
+	e.k8sNamespaceName = val
+}
+
+// SetK8sStorageclassName sets the k8s.storageclass.name extra attribute on the resource.
+func (e *K8sPersistentvolumeclaimEntity) SetK8sStorageclassName(val string) {
+	e.k8sStorageclassName = val
+}
+
+// copyToResource populates res with the entity's attributes according to cfg.
+// If all identity attributes are enabled, an entity ref is produced; otherwise
+// the enabled attributes are written directly as plain resource attributes.
+func (e *K8sPersistentvolumeclaimEntity) copyToResource(cfg ResourceAttributesConfig, res pcommon.Resource) {
+	if cfg.K8sPersistentvolumeclaimUID.Enabled {
+		ent := entity.ResourceEntities(res).PutEmpty("k8s.persistentvolumeclaim")
+		ent.IdentifyingAttributes().PutStr("k8s.persistentvolumeclaim.uid", e.k8sPersistentvolumeclaimUID)
+		if cfg.K8sPersistentvolumeclaimName.Enabled {
+			ent.DescriptiveAttributes().PutStr("k8s.persistentvolumeclaim.name", e.k8sPersistentvolumeclaimName)
+		}
+		if cfg.K8sNamespaceName.Enabled {
+			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+		if cfg.K8sStorageclassName.Enabled {
+			res.Attributes().PutStr("k8s.storageclass.name", e.k8sStorageclassName)
+		}
+	} else {
+		if cfg.K8sPersistentvolumeclaimUID.Enabled {
+			res.Attributes().PutStr("k8s.persistentvolumeclaim.uid", e.k8sPersistentvolumeclaimUID)
+		}
+		if cfg.K8sPersistentvolumeclaimName.Enabled {
+			res.Attributes().PutStr("k8s.persistentvolumeclaim.name", e.k8sPersistentvolumeclaimName)
+		}
+		if cfg.K8sNamespaceName.Enabled {
+			res.Attributes().PutStr("k8s.namespace.name", e.k8sNamespaceName)
+		}
+		if cfg.K8sStorageclassName.Enabled {
+			res.Attributes().PutStr("k8s.storageclass.name", e.k8sStorageclassName)
+		}
+	}
+}
+
 // K8sHpaEntity represents a k8s.hpa entity.
 // Create one with NewK8sHpaEntity and pass it to EmitForEntity.
 type K8sHpaEntity struct {
@@ -1460,6 +1595,65 @@ func (eb *K8sServiceMetricsBuilder) RecordK8sServiceLoadBalancerIngressCountData
 // disabled identity attributes suppress the entity (other enabled attributes are added directly
 // to the resource); disabled descriptive/extra attributes are omitted entirely.
 func (eb *K8sServiceMetricsBuilder) Emit() {
+	res := pcommon.NewResource()
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	eb.mb.EmitForResource(withResourceMoved(res))
+}
+
+// K8sPersistentvolumeMetricsBuilder records metrics for the k8s.persistentvolume entity.
+// Obtain one via MetricsBuilder.ForK8sPersistentvolume().
+type K8sPersistentvolumeMetricsBuilder struct {
+	mb     *MetricsBuilder
+	entity *K8sPersistentvolumeEntity
+}
+
+// RecordK8sPersistentvolumeStatusPhaseDataPoint records a data point for the k8s.persistentvolume.status.phase metric.
+func (eb *K8sPersistentvolumeMetricsBuilder) RecordK8sPersistentvolumeStatusPhaseDataPoint(ts pcommon.Timestamp, val int64, k8sPersistentvolumeStatusPhaseAttributeValue AttributeK8sPersistentvolumeStatusPhase) {
+	eb.mb.metricK8sPersistentvolumeStatusPhase.recordDataPoint(eb.mb.startTime, ts, val, k8sPersistentvolumeStatusPhaseAttributeValue.String())
+}
+
+// RecordK8sPersistentvolumeStorageCapacityDataPoint records a data point for the k8s.persistentvolume.storage.capacity metric.
+func (eb *K8sPersistentvolumeMetricsBuilder) RecordK8sPersistentvolumeStorageCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	eb.mb.metricK8sPersistentvolumeStorageCapacity.recordDataPoint(eb.mb.startTime, ts, val)
+}
+
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
+func (eb *K8sPersistentvolumeMetricsBuilder) Emit() {
+	res := pcommon.NewResource()
+	cfg := eb.mb.config.ResourceAttributes
+	eb.entity.copyToResource(cfg, res)
+	eb.mb.EmitForResource(withResourceMoved(res))
+}
+
+// K8sPersistentvolumeclaimMetricsBuilder records metrics for the k8s.persistentvolumeclaim entity.
+// Obtain one via MetricsBuilder.ForK8sPersistentvolumeclaim().
+type K8sPersistentvolumeclaimMetricsBuilder struct {
+	mb     *MetricsBuilder
+	entity *K8sPersistentvolumeclaimEntity
+}
+
+// RecordK8sPersistentvolumeclaimStatusPhaseDataPoint records a data point for the k8s.persistentvolumeclaim.status.phase metric.
+func (eb *K8sPersistentvolumeclaimMetricsBuilder) RecordK8sPersistentvolumeclaimStatusPhaseDataPoint(ts pcommon.Timestamp, val int64, k8sPersistentvolumeclaimStatusPhaseAttributeValue AttributeK8sPersistentvolumeclaimStatusPhase) {
+	eb.mb.metricK8sPersistentvolumeclaimStatusPhase.recordDataPoint(eb.mb.startTime, ts, val, k8sPersistentvolumeclaimStatusPhaseAttributeValue.String())
+}
+
+// RecordK8sPersistentvolumeclaimStorageCapacityDataPoint records a data point for the k8s.persistentvolumeclaim.storage.capacity metric.
+func (eb *K8sPersistentvolumeclaimMetricsBuilder) RecordK8sPersistentvolumeclaimStorageCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	eb.mb.metricK8sPersistentvolumeclaimStorageCapacity.recordDataPoint(eb.mb.startTime, ts, val)
+}
+
+// RecordK8sPersistentvolumeclaimStorageRequestDataPoint records a data point for the k8s.persistentvolumeclaim.storage.request metric.
+func (eb *K8sPersistentvolumeclaimMetricsBuilder) RecordK8sPersistentvolumeclaimStorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
+	eb.mb.metricK8sPersistentvolumeclaimStorageRequest.recordDataPoint(eb.mb.startTime, ts, val)
+}
+
+// Emit emits all pending metrics for the entity. Resource attributes are filtered by config:
+// disabled identity attributes suppress the entity (other enabled attributes are added directly
+// to the resource); disabled descriptive/extra attributes are omitted entirely.
+func (eb *K8sPersistentvolumeclaimMetricsBuilder) Emit() {
 	res := pcommon.NewResource()
 	cfg := eb.mb.config.ResourceAttributes
 	eb.entity.copyToResource(cfg, res)

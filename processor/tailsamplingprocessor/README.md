@@ -6,8 +6,8 @@
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
 | Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_tailsampling)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_tailsampling&displayType=list) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@Logiraptor](https://www.github.com/Logiraptor), [@jmacd](https://www.github.com/jmacd) \| Seeking more code owners! |
-| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech), [@jmacd](https://www.github.com/jmacd), [@csmarchbanks](https://www.github.com/csmarchbanks), [@carsonip](https://www.github.com/carsonip) \| Seeking more code owners! |
+| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling), [@Logiraptor](https://www.github.com/Logiraptor) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -652,6 +652,16 @@ When this feature gate is set, this will add additional attributes on each sampl
 | `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always, unless trace was sampled by the decision cache |
 | `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used                             |
 | `tailsampling.cached_decision`  | Records whether a trace was sampled by the decision cache                 | When decision cache used                               |
+
+### Tail storage extension
+
+To configure `tail_storage` on the tailsampling processor, you must enable the `processor.tailsamplingprocessor.tailstorageextension` feature gate. 
+When a storage extension implements the experimental `TailStorage` extension, it
+will be used instead of the default in-memory approach.
+
+Tail storage extension support is under active development. This feature gate is used to guard users from potential breaking changes and unstable behavior while the interface and implementation mature.
+
+By default, this feature gate is disabled. If `tail_storage` is set while the gate is disabled, configuration validation fails and the collector returns an error.
 
 ### Disable invert decisions
 

@@ -39,34 +39,20 @@ func invertHasResourceOrSpanWithCondition(
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
 ) samplingpolicy.Decision {
-	isd := IsInvertDecisionsDisabled()
-
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
 
 		resource := rs.Resource()
 		if !shouldSampleResource(resource) {
-			if isd {
-				return samplingpolicy.NotSampled
-			}
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-			return samplingpolicy.InvertNotSampled
+			return samplingpolicy.NotSampled
 		}
 
 		if !hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan, true) {
-			if isd {
-				return samplingpolicy.NotSampled
-			}
-			//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-			return samplingpolicy.InvertNotSampled
+			return samplingpolicy.NotSampled
 		}
 	}
 
-	if isd {
-		return samplingpolicy.Sampled
-	}
-	//nolint:staticcheck // SA1019: Use of inverted decisions until they are fully removed.
-	return samplingpolicy.InvertSampled
+	return samplingpolicy.Sampled
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.

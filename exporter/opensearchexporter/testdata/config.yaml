@@ -114,6 +114,11 @@ opensearch/traces_index_time_format_invalid:
   traces_index_fallback: "default-service"
   traces_index_time_format: "invalid_format!"
 
+opensearch/pipeline:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  pipeline: "my-pipeline"
+
 opensearch/sending_queue_with_batch:
   http:
     endpoint: https://opensearch.example.com:9200
