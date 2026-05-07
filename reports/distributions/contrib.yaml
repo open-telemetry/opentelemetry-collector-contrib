@@ -9,11 +9,11 @@ components:
         - failover
         - grafanacloud
         - otlpjson
-        - roundrobin
+        - round_robin
         - routing
-        - servicegraph
+        - service_graph
         - signal_to_metrics
-        - spanmetrics
+        - span_metrics
         - sum
     exporter:
         - alibabacloud_logservice
@@ -25,7 +25,7 @@ components:
         - azure_blob
         - azuredataexplorer
         - azuremonitor
-        - bmchelix
+        - bmc_helix
         - cassandra
         - clickhouse
         - coralogix
@@ -39,7 +39,7 @@ components:
         - googlecloud
         - googlecloudpubsub
         - googlemanagedprometheus
-        - honeycombmarker
+        - honeycomb_marker
         - influxdb
         - kafka
         - loadbalancing
@@ -112,10 +112,10 @@ components:
         - interval
         - isolationforest
         - k8s_attributes
-        - logdedup
+        - log_dedup
         - metric_start_time
+        - metrics_transform
         - metricsgeneration
-        - metricstransform
         - probabilistic_sampler
         - redaction
         - remotetap
@@ -150,8 +150,8 @@ components:
         - carbon
         - chrony
         - cisco_os
+        - cloud_foundry
         - cloudflare
-        - cloudfoundry
         - collectd
         - couchdb
         - datadog
@@ -163,12 +163,12 @@ components:
         - file_log
         - file_stats
         - flinkmetrics
-        - fluentforward
+        - fluent_forward
         - github
         - gitlab
+        - google_cloud_spanner
         - googlecloudmonitoring
         - googlecloudpubsub
-        - googlecloudspanner
         - haproxy
         - host_metrics
         - http_check
@@ -179,10 +179,10 @@ components:
         - journald
         - k8s_cluster
         - k8s_events
-        - k8sobjects
+        - k8s_objects
         - kafka
-        - kafkametrics
-        - kubeletstats
+        - kafka_metrics
+        - kubelet_stats
         - libhoney
         - loki
         - macos_unified_logging

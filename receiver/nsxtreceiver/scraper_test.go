@@ -47,7 +47,7 @@ func TestScrape(t *testing.T) {
 
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -71,7 +71,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -89,7 +89,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
@@ -106,7 +106,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: mockClient.URL,
 			},
@@ -120,7 +120,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 func TestStartBadUrl(t *testing.T) {
 	scraper := newScraper(
 		&Config{
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "\x00",
 			},
@@ -138,7 +138,7 @@ func TestScraperRecordNoStat(_ *testing.T) {
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "http://localhost",
 			},
-			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopSettings(metadata.Type),
 	)
