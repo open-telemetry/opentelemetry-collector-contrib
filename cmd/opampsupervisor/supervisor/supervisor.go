@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -483,34 +484,23 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 			response := &protobufs.ServerToAgent{}
+
+			if !slices.Equal(message.GetInstanceUid(), s.persistentState.InstanceID[:]) {
+				done <- fmt.Errorf(
+					"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
+					hex.EncodeToString(message.GetInstanceUid()),
+					s.persistentState.InstanceID.String(),
+					errNonMatchingInstanceUID,
+				)
+				return response
+			}
+
 			if message.GetAvailableComponents() != nil {
 				s.setAvailableComponents(message.AvailableComponents)
 			}
 
 			if message.AgentDescription != nil {
-				instanceIDSeen := false
 				s.setAgentDescription(message.AgentDescription)
-				identAttr := message.AgentDescription.IdentifyingAttributes
-
-				for _, attr := range identAttr {
-					if attr.Key == string(conventions.ServiceInstanceIDKey) {
-						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
-							done <- fmt.Errorf(
-								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
-								attr.Value.GetStringValue(),
-								s.persistentState.InstanceID.String(),
-								errNonMatchingInstanceUID,
-							)
-							return response
-						}
-						instanceIDSeen = true
-					}
-				}
-
-				if !instanceIDSeen {
-					done <- errors.New("the Collector did not specify an instance ID in its AgentDescription message")
-					return response
-				}
 			}
 
 			// agent description must be defined

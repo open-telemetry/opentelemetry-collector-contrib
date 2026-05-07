@@ -477,6 +477,10 @@ component_management:
     name: processor_filter
     paths:
     - processor/filterprocessor/**
+  - component_id: processor_genainormalizer
+    name: processor_genainormalizer
+    paths:
+    - processor/genainormalizerprocessor/**
   - component_id: processor_geoip
     name: processor_geoip
     paths:
