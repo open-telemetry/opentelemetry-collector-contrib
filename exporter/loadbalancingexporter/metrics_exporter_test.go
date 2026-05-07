@@ -309,6 +309,78 @@ func TestMetricsCentralQueueFirstRetryUsesInitialDelay(t *testing.T) {
 	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
 }
 
+func TestMetricsCentralQueueRetriesOnlyFailedEndpointItem(t *testing.T) {
+	ts, tb := getTelemetryAssets(t)
+	cfg := endpoint2Config()
+	enableEndpointHealth(cfg)
+	codec := newQueuePayloadCodec(QueuePayloadCompressionZstd)
+	t.Cleanup(func() { require.NoError(t, codec.Close()) })
+
+	var callsMu sync.Mutex
+	calls := map[string]int{}
+	componentFactory := func(_ context.Context, endpoint string) (component.Component, error) {
+		return newMockMetricsExporter(func(context.Context, pmetric.Metrics) error {
+			callsMu.Lock()
+			calls[endpoint]++
+			callsMu.Unlock()
+			if endpoint == "endpoint-1:4317" {
+				return status.Error(codes.Unavailable, "backend unavailable")
+			}
+			return nil
+		}), nil
+	}
+	lb, err := newLoadBalancer(ts.Logger, cfg, componentFactory, tb)
+	require.NoError(t, err)
+	lb.endpointHealth.reconcile([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.ring = newHashRing([]string{"endpoint-1:4317", "endpoint-2:4317"})
+	lb.addMissingExporters(t.Context(), []string{"endpoint-1:4317", "endpoint-2:4317"})
+
+	failedRoute := findRoutingIDForEndpoint(t, lb.ring, "endpoint-1:4317")
+	successRoute := findRoutingIDForEndpoint(t, lb.ring, "endpoint-2:4317")
+	p := &metricExporterImp{
+		centralQueue: newCentralQueue(centralQueueSettings{
+			maxCompressedBytes:           1 << 20,
+			maxInflightUncompressedBytes: 1 << 20,
+			maxUncompressedBatchBytes:    1 << 20,
+		}),
+		centralCodec: codec,
+		loadBalancer: lb,
+		logger:       ts.Logger,
+		telemetry:    tb,
+	}
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	p.centralWG.Add(1)
+	go p.runCentralQueue(ctx)
+
+	failedItem, err := newCentralQueueMetricsItem([]byte(failedRoute), metricsWithServiceNames(failedRoute), codec, time.Now())
+	require.NoError(t, err)
+	// Keep the retry far enough out that slow CI cannot process it before assertions.
+	failedItem.attempt = 10
+	require.NoError(t, p.centralQueue.enqueue(failedItem))
+	successItem, err := newCentralQueueMetricsItem([]byte(successRoute), metricsWithServiceNames(successRoute), codec, time.Now())
+	require.NoError(t, err)
+	require.NoError(t, p.centralQueue.enqueue(successItem))
+
+	require.Eventually(t, func() bool {
+		callsMu.Lock()
+		defer callsMu.Unlock()
+		return calls["endpoint-1:4317"] == 1 && calls["endpoint-2:4317"] == 1 && p.centralQueue.len() == 1
+	}, time.Second, time.Millisecond)
+	cancel()
+	require.NoError(t, waitForInflight(t.Context(), &p.centralWG))
+
+	p.centralQueue.mu.Lock()
+	items := append([]centralQueueItem(nil), p.centralQueue.items...)
+	p.centralQueue.mu.Unlock()
+	require.Len(t, items, 1)
+	remaining := items[0]
+	require.Equal(t, []byte(failedRoute), remaining.routingKey)
+	require.Equal(t, 11, remaining.attempt)
+	require.NotZero(t, remaining.nextAttemptUnixNano)
+}
+
 func TestMetricsCentralQueueDoesNotDirectReroute(t *testing.T) {
 	ts, tb := getTelemetryAssets(t)
 	cfg := endpoint2Config()
