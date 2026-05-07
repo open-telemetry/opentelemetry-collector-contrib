@@ -6,7 +6,7 @@ components:
         - count
         - exceptions
         - failover
-        - otlpjson
+        - otlp_json
         - round_robin
         - routing
         - service_graph
