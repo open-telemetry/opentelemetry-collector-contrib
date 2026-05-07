@@ -15,6 +15,9 @@ import (
 	remoteapi "github.com/prometheus/client_golang/exp/api/remote"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
 // makeLabels builds a labels.Labels with the given total number of labels.
@@ -134,5 +137,39 @@ func BenchmarkRemoteWrite(b *testing.B) {
 				})
 			}
 		}
+	}
+}
+
+// BenchmarkMetricIdentityHash measures the cost of hashing a metric identity,
+// which is the core operation performed per time series during translation.
+func BenchmarkMetricIdentityHash(b *testing.B) {
+	res := pcommon.NewResource()
+	res.Attributes().PutStr("job", "test_job")
+	res.Attributes().PutStr("instance", "localhost:9090")
+	resourceID := identity.OfResource(res)
+
+	si := scopeInfo{Name: "instrumentation_scope", Version: "1.0.0"}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mi := createMetricIdentity(resourceID, "http_requests_total", "1", si, writev2.Metadata_METRIC_TYPE_COUNTER)
+		_ = mi.Hash()
+	}
+}
+
+// BenchmarkExemplarKeyHash measures the cost of hashing an exemplar key.
+func BenchmarkExemplarKeyHash(b *testing.B) {
+	key := exemplarKey{
+		ScopeName:    "instrumentation_scope",
+		ScopeVersion: "1.0.0",
+		MetricName:   "http_requests_total",
+		MetricType:   writev2.Metadata_METRIC_TYPE_COUNTER,
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = key.hash()
 	}
 }

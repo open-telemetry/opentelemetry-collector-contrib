@@ -115,14 +115,21 @@ func createMetricIdentity(resource identity.Resource, metricName, unit string, s
 func (mi metricIdentity) Hash() uint64 {
 	h := mi.resource.Hash()
 	h.Write([]byte(mi.ScopeName))
+	h.Write(sep)
 	h.Write([]byte(mi.ScopeVersion))
+	h.Write(sep)
 	h.Write([]byte(mi.ScopeSchemaURL))
+	h.Write(sep)
 	for _, kv := range mi.ScopeAttrs {
 		h.Write([]byte(kv.Key))
+		h.Write(sep)
 		h.Write([]byte(kv.Value))
+		h.Write(sep)
 	}
 	h.Write([]byte(mi.MetricName))
+	h.Write(sep)
 	h.Write([]byte(mi.Unit))
+	h.Write(sep)
 	h.Write([]byte(mi.Type.String()))
 	return h.Sum64()
 }
@@ -570,15 +577,23 @@ func (prw *prometheusRemoteWriteReceiver) processHistogramTimeSeries(
 
 		histogramOpts := resourceID.Hash()
 		histogramOpts.Write([]byte(si.Name))
+		histogramOpts.Write(sep)
 		histogramOpts.Write([]byte(si.Version))
+		histogramOpts.Write(sep)
 		histogramOpts.Write([]byte(si.SchemaURL))
+		histogramOpts.Write(sep)
 		for _, kv := range si.scopeAttrs {
 			histogramOpts.Write([]byte(kv.Key))
+			histogramOpts.Write(sep)
 			histogramOpts.Write([]byte(kv.Value))
+			histogramOpts.Write(sep)
 		}
 		histogramOpts.Write([]byte(metricName))
+		histogramOpts.Write(sep)
 		histogramOpts.Write([]byte(unit))
+		histogramOpts.Write(sep)
 		histogramOpts.Write([]byte(ts.Metadata.Type.String()))
+		histogramOpts.Write(sep)
 		histogramOpts.Write([]byte(histogramType))
 		metricIDHash := histogramOpts.Sum64()
 
