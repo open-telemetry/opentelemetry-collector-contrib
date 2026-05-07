@@ -58,11 +58,11 @@ type metricsClient interface {
 func newCloudWatchMetricsScraper(cfg *Config, settings receiver.Settings) *cloudWatchMetricsScraper {
 	var discovery *MetricsDiscoveryConfig
 	if d := cfg.Metrics.Discovery; d != nil {
-		copy := *d
-		if copy.Limit <= 0 {
-			copy.Limit = defaultMetricsDiscoverLimit
+		discoveryCfg := *d
+		if discoveryCfg.Limit <= 0 {
+			discoveryCfg.Limit = defaultMetricsDiscoverLimit
 		}
-		discovery = &copy
+		discovery = &discoveryCfg
 	}
 	return &cloudWatchMetricsScraper{
 		settings:           settings,
