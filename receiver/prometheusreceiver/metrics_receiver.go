@@ -200,8 +200,7 @@ func (r *pReceiver) initPrometheusComponents(
 	r.scrapeManager = scrapeManager
 
 	r.unregisterMetrics = func() {
-		sdMetrics.RefreshManager.Unregister()
-		for _, sdMetric := range sdMetrics.MechanismMetrics {
+		for _, sdMetric := range sdMetrics {
 			sdMetric.Unregister()
 		}
 		r.discoveryManager.UnregisterMetrics()
