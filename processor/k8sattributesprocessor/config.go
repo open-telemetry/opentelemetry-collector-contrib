@@ -4,6 +4,7 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -46,11 +47,26 @@ type Config struct {
 
 	// WaitForMetadataTimeout is the maximum time the processor will wait for the k8s metadata to be synced.
 	WaitForMetadataTimeout time.Duration `mapstructure:"wait_for_metadata_timeout"`
+
+	// WatchSyncPeriod determines the resync period for K8s informers.
+	// Reprocessing the informer cache periodically can cause significant memory churn and CPU spikes.
+	// Setting this to 0 disables resync.
+	WatchSyncPeriod time.Duration `mapstructure:"watch_sync_period"`
+
+	// PodDeleteGracePeriod is the duration to wait before deleting a pod from the cache after receiving a delete event.
+	PodDeleteGracePeriod time.Duration `mapstructure:"pod_delete_grace_period"`
 }
 
 func (cfg *Config) Validate() error {
 	if err := cfg.APIConfig.Validate(); err != nil {
 		return err
+	}
+
+	if cfg.WatchSyncPeriod < 0 {
+		return errors.New("watch_sync_period must be greater than or equal to 0")
+	}
+	if cfg.PodDeleteGracePeriod < 0 {
+		return errors.New("pod_delete_grace_period must be greater than or equal to 0")
 	}
 
 	for _, assoc := range cfg.Association {

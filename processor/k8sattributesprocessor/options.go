@@ -423,3 +423,19 @@ func withWaitForMetadataTimeout(timeout time.Duration) option {
 		return nil
 	}
 }
+
+// withWatchSyncPeriod allows specifying the resync period for informer.
+func withWatchSyncPeriod(duration time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.watchSyncPeriod = duration
+		return nil
+	}
+}
+
+// withPodDeleteGracePeriod allows specifying the grace period for pod deletion.
+func withPodDeleteGracePeriod(duration time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.podDeleteGracePeriod = duration
+		return nil
+	}
+}

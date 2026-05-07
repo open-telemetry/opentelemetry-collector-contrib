@@ -53,6 +53,8 @@ type WatchClient struct {
 	stopCh                 chan struct{}
 	waitForMetadata        bool
 	waitForMetadataTimeout time.Duration
+	watchSyncPeriod        time.Duration
+	podDeleteGracePeriod   time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -125,6 +127,8 @@ func New(
 	informersFactory InformersFactoryList,
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
+	watchSyncPeriod time.Duration,
+	podDeleteGracePeriod time.Duration,
 ) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
@@ -143,6 +147,8 @@ func New(
 		telemetryBuilder:       telemetryBuilder,
 		waitForMetadata:        waitForMetadata,
 		waitForMetadataTimeout: waitForMetadataTimeout,
+		watchSyncPeriod:        watchSyncPeriod,
+		podDeleteGracePeriod:   podDeleteGracePeriod,
 	}
 
 	c.Pods = map[PodIdentifier]*Pod{}
@@ -174,7 +180,9 @@ func New(
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
 	if informersFactory.newInformer == nil {
-		informersFactory.newInformer = newSharedInformer
+		informersFactory.newInformer = func(client kubernetes.Interface, ns string, ls labels.Selector, fs fields.Selector) cache.SharedInformer {
+			return newSharedInformer(client, ns, ls, fs, watchSyncPeriod)
+		}
 	}
 
 	if informersFactory.newNamespaceInformer == nil {
@@ -182,11 +190,15 @@ func New(
 		case c.extractNamespaceLabelsAnnotations():
 			// if rules to extract metadata from namespace is configured use namespace shared informer containing
 			// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
-			informersFactory.newNamespaceInformer = newNamespaceSharedInformer
+			informersFactory.newNamespaceInformer = func(client clientmeta.Interface) cache.SharedInformer {
+				return newNamespaceSharedInformer(client, watchSyncPeriod)
+			}
 		case rules.ClusterUID:
 			// use kube-system shared informer to only watch kube-system namespace
 			// reducing overhead of watching all the namespaces
-			informersFactory.newNamespaceInformer = newKubeSystemSharedInformer
+			informersFactory.newNamespaceInformer = func(client clientmeta.Interface) cache.SharedInformer {
+				return newKubeSystemSharedInformer(client, watchSyncPeriod)
+			}
 		default:
 			informersFactory.newNamespaceInformer = NewNoOpInformer
 		}
@@ -211,7 +223,9 @@ func New(
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if informersFactory.newReplicaSetInformer == nil {
-			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
+			informersFactory.newReplicaSetInformer = func(client clientmeta.Interface, namespace string) cache.SharedInformer {
+				return newReplicaSetSharedInformer(client, namespace, watchSyncPeriod)
+			}
 		}
 
 		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.mc, c.Filters.Namespace)
@@ -221,23 +235,23 @@ func New(
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		c.nodeInformer = newNodeSharedInformer(c.mc, c.Filters.Node)
+		c.nodeInformer = newNodeSharedInformer(c.mc, c.Filters.Node, watchSyncPeriod)
 	}
 
 	if c.extractDeploymentLabelsAnnotations() {
-		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace)
+		c.deploymentInformer = newDeploymentSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
 	if c.extractStatefulSetLabelsAnnotations() {
-		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace)
+		c.statefulsetInformer = newStatefulSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
 	if c.extractDaemonSetLabelsAnnotations() {
-		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace)
+		c.daemonsetInformer = newDaemonSetSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 
 	if c.extractJobLabelsAnnotations() || rules.CronJobUID {
-		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace)
+		c.jobInformer = newJobSharedInformer(c.mc, c.Filters.Namespace, watchSyncPeriod)
 	}
 	return c, err
 }
@@ -245,7 +259,7 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	// Start the delete loop for cleaning up old pods from cache
-	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
+	go c.deleteLoop(time.Second*30, c.podDeleteGracePeriod)
 
 	synced := make([]cache.InformerSynced, 0)
 	// start the replicaSet informer first, as the replica sets need to be
