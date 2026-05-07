@@ -897,6 +897,12 @@ func TestScrapeTopQueriesNoSampleText(t *testing.T) {
 	if hasPlan {
 		assert.Empty(t, planVal.Str(), "mysql.query_plan should be empty when sample text is unavailable")
 	}
+
+	// mysql.query_plan.hash should also be empty when no plan is available.
+	hashVal, hasHash := lr.Attributes().Get("mysql.query_plan.hash")
+	if hasHash {
+		assert.Empty(t, hashVal.Str(), "mysql.query_plan.hash should be empty when no plan is available")
+	}
 }
 
 // TestScrapeTopQueriesMariaDB verifies the same no-explain behavior for MariaDB.
@@ -916,6 +922,13 @@ func TestScrapeTopQueriesMariaDB(t *testing.T) {
 	require.Equal(t, 1, logs.ResourceLogs().Len())
 
 	assert.Equal(t, 0, mc.explainQueryCallCount, "explainQuery should not be called for MariaDB")
+
+	// mysql.query_plan.hash should be empty when no plan is available.
+	lr := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	hashVal, hasHash := lr.Attributes().Get("mysql.query_plan.hash")
+	if hasHash {
+		assert.Empty(t, hashVal.Str(), "mysql.query_plan.hash should be empty when no plan is available")
+	}
 }
 
 // TestScrapeQuerySamplesExplainPlan verifies that scrapeQuerySamples emits the

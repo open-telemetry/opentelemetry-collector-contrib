@@ -775,13 +775,18 @@ func (m *mySQLScraper) scrapeTopQueries(now pcommon.Timestamp, errs *scrapererro
 			}
 		}
 
+		queryPlanHash := ""
+		if queryPlan != "" {
+			queryPlanHash = q.digest
+		}
+
 		m.lb.RecordDbServerTopQueryEvent(
 			context.Background(),
 			now,
 			metadata.AttributeDbSystemNameMysql,
 			obfuscatedQuery,
 			queryPlan,
-			q.digest,
+			queryPlanHash,
 			q.digest,
 			countStarVal,
 			sumTimerWaitVal,
