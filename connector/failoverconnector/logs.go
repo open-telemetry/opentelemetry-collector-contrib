@@ -15,7 +15,7 @@ import (
 
 type logsRouter struct {
 	*baseFailoverRouter[consumer.Logs]
-	strategy LogsFailoverStrategy
+	strategy logsFailoverStrategy
 }
 
 func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logsRouter, error) {
@@ -25,7 +25,7 @@ func newLogsRouter(provider consumerProvider[consumer.Logs], cfg *Config) (*logs
 	}
 
 	// Create the appropriate strategy based on the failover mode
-	factory := getFailoverStrategyFactory(cfg.FailoverMode)
+	factory := getFailoverStrategyFactory(cfg.Strategy)
 	strategy := factory.CreateLogsStrategy(failover)
 
 	return &logsRouter{

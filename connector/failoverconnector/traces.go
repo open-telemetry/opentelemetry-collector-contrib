@@ -16,7 +16,7 @@ import (
 
 type tracesRouter struct {
 	*baseFailoverRouter[consumer.Traces]
-	strategy TracesFailoverStrategy
+	strategy tracesFailoverStrategy
 }
 
 func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*tracesRouter, error) {
@@ -26,7 +26,7 @@ func newTracesRouter(provider consumerProvider[consumer.Traces], cfg *Config) (*
 	}
 
 	// Create the appropriate strategy based on the failover mode
-	factory := getFailoverStrategyFactory(cfg.FailoverMode)
+	factory := getFailoverStrategyFactory(cfg.Strategy)
 	strategy := factory.CreateTracesStrategy(failover)
 
 	return &tracesRouter{

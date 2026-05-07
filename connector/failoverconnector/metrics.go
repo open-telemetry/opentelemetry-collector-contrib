@@ -15,7 +15,7 @@ import (
 
 type metricsRouter struct {
 	*baseFailoverRouter[consumer.Metrics]
-	strategy MetricsFailoverStrategy
+	strategy metricsFailoverStrategy
 }
 
 func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) (*metricsRouter, error) {
@@ -25,7 +25,7 @@ func newMetricsRouter(provider consumerProvider[consumer.Metrics], cfg *Config) 
 	}
 
 	// Create the appropriate strategy based on the failover mode
-	factory := getFailoverStrategyFactory(cfg.FailoverMode)
+	factory := getFailoverStrategyFactory(cfg.Strategy)
 	strategy := factory.CreateMetricsStrategy(failover)
 
 	return &metricsRouter{

@@ -26,7 +26,7 @@ func TestFailoverRecovery(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{

@@ -18,15 +18,15 @@ import (
 // standardFailoverFactory creates standard failover strategies
 type standardFailoverFactory struct{}
 
-func (*standardFailoverFactory) CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) TracesFailoverStrategy {
+func (*standardFailoverFactory) CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) tracesFailoverStrategy {
 	return &standardTracesStrategy{newStandardStrategy(router)}
 }
 
-func (*standardFailoverFactory) CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) MetricsFailoverStrategy {
+func (*standardFailoverFactory) CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) metricsFailoverStrategy {
 	return &standardMetricsStrategy{newStandardStrategy(router)}
 }
 
-func (*standardFailoverFactory) CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) LogsFailoverStrategy {
+func (*standardFailoverFactory) CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) logsFailoverStrategy {
 	return &standardLogsStrategy{newStandardStrategy(router)}
 }
 
@@ -45,7 +45,7 @@ func newStandardStrategy[C any](router *baseFailoverRouter[C]) *standardStrategy
 	done := make(chan struct{})
 	notifyRetry := make(chan struct{}, 1)
 	pSConstants := state.PSConstants{
-		RetryInterval: cfg.RetryInterval,
+		RetryInterval: cfg.effectiveRetryInterval(),
 		RetryGap:      cfg.RetryGap,
 		MaxRetries:    cfg.MaxRetries,
 	}

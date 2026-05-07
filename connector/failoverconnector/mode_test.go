@@ -19,24 +19,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
-func TestFailoverModes(t *testing.T) {
-	modes := []struct {
-		name string
-		mode FailoverMode
+func TestStrategies(t *testing.T) {
+	strategies := []struct {
+		name     string
+		strategy Strategy
 	}{
-		{name: "standard_mode", mode: FailoverModeStandard},
+		{name: "standard", strategy: StrategyStandard},
 	}
 
-	for _, m := range modes {
-		t.Run(m.name, func(t *testing.T) {
-			t.Run("traces", func(t *testing.T) { runTracesFailoverModeTest(t, m.mode) })
-			t.Run("metrics", func(t *testing.T) { runMetricsFailoverModeTest(t, m.mode) })
-			t.Run("logs", func(t *testing.T) { runLogsFailoverModeTest(t, m.mode) })
+	for _, s := range strategies {
+		t.Run(s.name, func(t *testing.T) {
+			t.Run("traces", func(t *testing.T) { runTracesStrategyTest(t, s.strategy) })
+			t.Run("metrics", func(t *testing.T) { runMetricsStrategyTest(t, s.strategy) })
+			t.Run("logs", func(t *testing.T) { runLogsStrategyTest(t, s.strategy) })
 		})
 	}
 }
 
-func runTracesFailoverModeTest(t *testing.T, mode FailoverMode) {
+func runTracesStrategyTest(t *testing.T, strategy Strategy) {
 	t.Helper()
 
 	var sinkFirst, sinkSecond consumertest.TracesSink
@@ -45,8 +45,8 @@ func runTracesFailoverModeTest(t *testing.T, mode FailoverMode) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{first}, {second}},
-		FailoverMode:     mode,
-		RetryInterval:    50 * time.Millisecond,
+		Strategy:         strategy,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -73,7 +73,7 @@ func runTracesFailoverModeTest(t *testing.T, mode FailoverMode) {
 	assert.Len(t, sinkSecond.AllTraces(), 1)
 }
 
-func runMetricsFailoverModeTest(t *testing.T, mode FailoverMode) {
+func runMetricsStrategyTest(t *testing.T, strategy Strategy) {
 	t.Helper()
 
 	var sinkFirst, sinkSecond consumertest.MetricsSink
@@ -82,8 +82,8 @@ func runMetricsFailoverModeTest(t *testing.T, mode FailoverMode) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{first}, {second}},
-		FailoverMode:     mode,
-		RetryInterval:    50 * time.Millisecond,
+		Strategy:         strategy,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
@@ -110,7 +110,7 @@ func runMetricsFailoverModeTest(t *testing.T, mode FailoverMode) {
 	assert.Len(t, sinkSecond.AllMetrics(), 1)
 }
 
-func runLogsFailoverModeTest(t *testing.T, mode FailoverMode) {
+func runLogsStrategyTest(t *testing.T, strategy Strategy) {
 	t.Helper()
 
 	var sinkFirst, sinkSecond consumertest.LogsSink
@@ -119,8 +119,8 @@ func runLogsFailoverModeTest(t *testing.T, mode FailoverMode) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{first}, {second}},
-		FailoverMode:     mode,
-		RetryInterval:    50 * time.Millisecond,
+		Strategy:         strategy,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{

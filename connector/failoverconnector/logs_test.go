@@ -32,7 +32,7 @@ func TestLogsRegisterConsumers(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 
@@ -71,7 +71,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -109,7 +109,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -144,7 +144,7 @@ func TestLogsWithQueue(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 

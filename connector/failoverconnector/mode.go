@@ -12,44 +12,44 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// FailoverMode defines the interface for different failover strategies
-type FailoverMode string
+// Strategy defines the interface for different failover strategies
+type Strategy string
 
 const (
-	FailoverModeStandard FailoverMode = "standard"
+	StrategyStandard Strategy = "standard"
 )
 
-// TracesFailoverStrategy defines the interface for traces failover strategies
-type TracesFailoverStrategy interface {
+// tracesFailoverStrategy defines the interface for traces failover strategies
+type tracesFailoverStrategy interface {
 	ConsumeTraces(ctx context.Context, td ptrace.Traces) error
 	Shutdown()
 }
 
-// MetricsFailoverStrategy defines the interface for metrics failover strategies
-type MetricsFailoverStrategy interface {
+// metricsFailoverStrategy defines the interface for metrics failover strategies
+type metricsFailoverStrategy interface {
 	ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error
 	Shutdown()
 }
 
-// LogsFailoverStrategy defines the interface for logs failover strategies
-type LogsFailoverStrategy interface {
+// logsFailoverStrategy defines the interface for logs failover strategies
+type logsFailoverStrategy interface {
 	ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	Shutdown()
 }
 
-// FailoverStrategyFactory creates failover strategies based on mode
-type FailoverStrategyFactory interface {
-	CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) TracesFailoverStrategy
-	CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) MetricsFailoverStrategy
-	CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) LogsFailoverStrategy
+// failoverStrategyFactory creates failover strategies based on mode
+type failoverStrategyFactory interface {
+	CreateTracesStrategy(router *baseFailoverRouter[consumer.Traces]) tracesFailoverStrategy
+	CreateMetricsStrategy(router *baseFailoverRouter[consumer.Metrics]) metricsFailoverStrategy
+	CreateLogsStrategy(router *baseFailoverRouter[consumer.Logs]) logsFailoverStrategy
 }
 
-// GetFailoverStrategyFactory returns the appropriate factory for the given mode
-func getFailoverStrategyFactory(mode FailoverMode) FailoverStrategyFactory {
-	switch mode {
-	case FailoverModeStandard, "":
+// GetFailoverStrategyFactory returns the appropriate factory for the given strategy
+func getFailoverStrategyFactory(strategy Strategy) failoverStrategyFactory {
+	switch strategy {
+	case StrategyStandard, "":
 		return &standardFailoverFactory{}
 	default:
-		panic("failoverconnector: unrecognized failover mode " + string(mode) + " (Validate should have rejected it)")
+		panic("failoverconnector: unrecognized strategy " + string(strategy) + " (Validate should have rejected it)")
 	}
 }

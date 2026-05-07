@@ -34,8 +34,7 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
 					},
 				},
-				FailoverMode:  FailoverModeStandard,
-				RetryInterval: 10 * time.Minute,
+				Strategy: StrategyStandard,
 			},
 		},
 		{
@@ -57,8 +56,20 @@ func TestLoadConfig(t *testing.T) {
 						pipeline.NewIDWithName(pipeline.SignalTraces, "fourth"),
 					},
 				},
-				FailoverMode:  FailoverModeStandard,
-				RetryInterval: 5 * time.Minute,
+				Strategy:      StrategyStandard,
+				RetryInterval: durationPtr(5 * time.Minute),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "standard_retry_interval"),
+			expected: &Config{
+				QueueSettings: configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+				PipelinePriority: [][]pipeline.ID{
+					{pipeline.NewIDWithName(pipeline.SignalTraces, "first")},
+					{pipeline.NewIDWithName(pipeline.SignalTraces, "second")},
+				},
+				Strategy: StrategyStandard,
+				Standard: StandardConfig{RetryInterval: durationPtr(5 * time.Minute)},
 			},
 		},
 	}
@@ -98,9 +109,9 @@ func TestValidateConfig(t *testing.T) {
 			err:  errInvalidRetryIntervals,
 		},
 		{
-			name: "invalid failover_mode",
-			id:   component.NewIDWithName(metadata.Type, "invalid_mode"),
-			err:  errInvalidFailoverMode,
+			name: "invalid strategy",
+			id:   component.NewIDWithName(metadata.Type, "invalid_strategy"),
+			err:  errInvalidStrategy,
 		},
 	}
 

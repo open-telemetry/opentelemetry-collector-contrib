@@ -32,7 +32,7 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
@@ -69,7 +69,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
@@ -106,7 +106,7 @@ func TestMetricsWithFailoverError(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 	}
 
 	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
@@ -141,7 +141,7 @@ func TestMetricsWithQueue(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    50 * time.Millisecond,
+		RetryInterval:    durationPtr(50 * time.Millisecond),
 		QueueSettings:    configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
 	}
 

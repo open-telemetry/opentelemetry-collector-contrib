@@ -1,12 +1,16 @@
 $defs:
-  failover_mode:
-    description: FailoverMode defines the interface for different failover strategies
+  standard_config:
+    type: object
+    properties:
+      retry_interval:
+        x-pointer: true
+        type: string
+        format: duration
+  strategy:
+    description: Strategy defines the interface for different failover strategies
     type: string
 type: object
 properties:
-  failover_mode:
-    description: 'FailoverMode determines the failover strategy to use. Options: "standard".'
-    $ref: failover_mode
   max_retries:
     description: MaxRetry is the maximum retries per level, once this limit is hit for a level, even if the next pipeline level fails, it will not try to recover the level that exceeded the maximum retries
     type: integer
@@ -23,9 +27,16 @@ properties:
     format: duration
   retry_interval:
     description: RetryInterval is the frequency at which the pipeline levels will attempt to recover by going over all levels below the current
+    x-pointer: true
     type: string
     format: duration
   sending_queue:
     description: QueueSettings use the exporterhelper sending_queue to move the queue to the connector to avoid data being stuck in the queue of an unhealthy exporter
     x-optional: true
     $ref: go.opentelemetry.io/collector/exporter/exporterhelper.queue_batch_config
+  standard:
+    description: Standard holds configuration that applies when Strategy is "standard".
+    $ref: standard_config
+  strategy:
+    description: 'Strategy determines the failover strategy to use. Options: "standard".'
+    $ref: strategy
