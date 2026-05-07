@@ -115,6 +115,7 @@ body:
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/k8sleaderelector
+      - extension/mcp
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/cfgardenobserver
@@ -201,6 +202,7 @@ body:
       - processor/deltatorate
       - processor/drain
       - processor/filter
+      - processor/genainormalizer
       - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
