@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkam
 go 1.25.0
 
 require (
-	github.com/IBM/sarama v1.48.0
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.151.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.151.0
@@ -30,6 +29,7 @@ require (
 )
 
 require (
+	github.com/IBM/sarama v1.48.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.16 // indirect
@@ -75,7 +75,6 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.13.1 // indirect
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0 // indirect
 	github.com/twmb/franz-go/plugin/kzap v1.1.2 // indirect
